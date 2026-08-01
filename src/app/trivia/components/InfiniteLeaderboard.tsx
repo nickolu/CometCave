@@ -122,21 +122,24 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
   }, [userCategoryStats])
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/trivia/infinite/leaderboard?sort=${sort}`)
+        const res = await fetch(`/api/v1/trivia/infinite/leaderboard?sort=${sort}`, { signal: controller.signal })
         if (!res.ok) throw new Error('Failed to load leaderboard')
         const json = (await res.json()) as LeaderboardResponse
         setData(json)
-      } catch {
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return
         setError('Failed to load leaderboard.')
       } finally {
         setLoading(false)
       }
     }
     load()
+    return () => controller.abort()
   }, [sort])
 
   const renderContent = () => {

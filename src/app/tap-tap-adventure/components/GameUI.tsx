@@ -155,6 +155,7 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
   const [newlyCompletedIds, setNewlyCompletedIds] = useState<string[]>([])
   const [showDailyReward, setShowDailyReward] = useState(false)
   const [floatingResources, setFloatingResources] = useState<ResourceEvent[]>([])
+  const floatingResourcesTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [mobileCategory, setMobileCategory] = useState<MobileCategory>(null)
   const [travelTarget, setTravelTarget] = useState<string | null>(null)
   const [gearSubTab, setGearSubTab] = useState<GearSubTab>('equipment')
@@ -351,7 +352,8 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
         }
         if (events.length > 0) {
           setFloatingResources(events)
-          setTimeout(() => setFloatingResources([]), 2000)
+          if (floatingResourcesTimerRef.current != null) clearTimeout(floatingResourcesTimerRef.current)
+          floatingResourcesTimerRef.current = setTimeout(() => setFloatingResources([]), 2000)
         }
       },
     })
@@ -473,6 +475,11 @@ export default function GameUI({ onOpenStatus }: GameUIProps) {
       clearAutoWalk()
     }
   }, [clearAutoWalk])
+
+  // Clean up floating resources timer on unmount
+  useEffect(() => {
+    return () => { if (floatingResourcesTimerRef.current != null) clearTimeout(floatingResourcesTimerRef.current) }
+  }, [])
 
   // Keyboard shortcuts
   useEffect(() => {

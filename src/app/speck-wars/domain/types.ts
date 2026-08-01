@@ -20,6 +20,7 @@ export interface SpeckMeta {
   attackMoveTargetX?: number        // temporary target speck position while attack-moving
   attackMoveTargetY?: number
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
+  committedBuildId?: string   // if set, this speck is marching to construct a building
 }
 
 export interface BuildingEntity {
@@ -79,14 +80,22 @@ export interface SimulationState {
   selectedBuildingId: string | null   // player building currently selected
   spatialGrid: SpatialGrid
   dominationTimer: number    // ms of continuous triple-outpost control; resets on loss
-  surgeDuration: number      // ms remaining in active surge, 0 = inactive
-  surgeCooldown: number      // ms remaining before surge can be used again, 0 = ready
   survivalWinWaves: number | null   // non-null on survival levels; win when waveNumber reaches this
   turretBudget: number              // turrets remaining to place (0 = no turrets available)
   waveCountdown: number | null   // ms until next AI wave (null = waves disabled on this difficulty)
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
   obstacles: WallObstacle[]
+  pendingBuilds: Array<{
+    id: string
+    typeId: string
+    x: number
+    y: number
+    ownerId: string
+    committedSpeckIds: string[]   // string IDs of the 20 committed specks
+    arrivedCount: number
+    requiredCount: number
+  }>
   isSurvival: boolean
   survivalTimeRemaining: number    // ms countdown to win
   survivalWaveTimer: number        // ms until next wave spawns
@@ -100,7 +109,6 @@ export type InputEvent =
   | { type: 'SET_SPAWN_TYPE'; ownerId: string; speckTypeId: string; buildingId?: string }
   | { type: 'BOX_SELECT'; ownerId: string; x1: number; y1: number; x2: number; y2: number }
   | { type: 'CLEAR_SELECT'; ownerId: string }
-  | { type: 'SURGE'; ownerId: string }
   | { type: 'STOP'; ownerId: string }
   | { type: 'HOLD'; ownerId: string }
   | { type: 'SELECT_BUILDING'; ownerId: string; buildingId: string | null }
@@ -134,8 +142,6 @@ export interface HudData {
   }>
   attackedBuildingIds: string[]
   captureInfo: Record<string, { progress: number; side: string } | null>  // outpostId → active capture
-  surgeDuration: number    // ms remaining in active surge
-  surgeCooldown: number    // ms remaining before surge can be used again
   selectedSpeckCount: number   // 0 when no selection active
   selectedComposition: { types: Record<string, number>; veteranCount: number; eliteCount: number; legendCount: number } | null
   spawnRates: Record<string, number>   // playerId → effective specks/min

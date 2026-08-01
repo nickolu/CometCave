@@ -335,7 +335,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>Drag — box select specks</span>
             <span>1/2/3 — spawn basic/heavy/dart</span>
             <span style={{ gridColumn: 'span 2', color: 'rgba(255,255,255,0.2)' }}>↳ heavy beats basic · dart beats heavy · basic beats dart</span>
-            <span>Q — surge (2× spawn 8s · 45s CD)</span>
             <span>V — snap to recent kills</span>
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
             <span>X — speed · E — all · Esc — clear</span>
@@ -372,7 +371,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
-            'Tap ★ SURGE for 2× production 8s — use it before big pushes.',
             'Select specks, then tap the map to move them · long-press to attack-move (fight en route).',
             'Heavy specks deal 2× damage but produce 2× slower. Mix types wisely.',
             'Tap ⚔ FIGHT to snap the camera to where the fighting is happening.',
@@ -390,7 +388,6 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             'Types counter each other: heavy beats basic, dart beats heavy, basic beats dart.',
             'Veterans deal +20% damage after 3 kills. Protect them!',
             'Fortify outposts by holding them 30s — nearby specks deal +25% damage within 200px.',
-            'Surge (Q) doubles production for 8s — use it before big pushes.',
             'Drag to box-select specks, then click anywhere to rally only your selection.',
             'Heavy specks deal 2× damage but produce 2× slower. Mix types wisely.',
             'V key snaps the camera to recent kill positions — find the heat of battle.',

@@ -69,6 +69,10 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 })
   }
 
+  if (!body.state || typeof body.state !== 'object' || Array.isArray(body.state)) {
+    return NextResponse.json({ error: 'state must be a non-null object' }, { status: 400 })
+  }
+
   const state = sanitize(body.state)
   const db = getFirestoreDb()
   await db.doc(docPath(res.uid)).set(

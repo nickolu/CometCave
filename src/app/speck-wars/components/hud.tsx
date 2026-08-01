@@ -838,7 +838,11 @@ export function HUD() {
       {/* Help overlay */}
       {showHelp && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close help"
           onClick={() => setShowHelp(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') setShowHelp(false) }}
           style={{
             position: 'absolute', inset: 0,
             background: 'rgba(0,0,0,0.7)',
@@ -876,7 +880,6 @@ export function HUD() {
                   ['⬡ ALL', 'Select all your specks'],
                   ['⌂ HOME', 'Camera → your base'],
                   ['⚔ FIGHT', 'Camera → active battle'],
-                  ['★ SURGE', '2× spawn rate for 8s'],
                   ['⊞ SEL', 'Tap then drag to box-select units'],
                   ['1× / 2× / 4×', 'Game speed'],
                   ['⊕ (minimap)', 'Expand/collapse minimap for overview'],
@@ -914,10 +917,9 @@ export function HUD() {
               <span style={{ color: 'rgba(255,180,80,0.75)' }}>Double-tap canvas → zoom toggle (mobile)</span><span style={{ color: 'rgba(255,180,80,0.75)' }}>2-finger tap → stop (mobile)</span>
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
-              <span>Q — surge (2× spawn 8s · 45s CD)</span><span>V — snap to recent kills</span>
-              <span>1/2/3 — set spawn type (click building first)</span><span>Minimap — left-click to rally</span>
-              <span>X — cycle speed (1×/2×/4×)</span><span>? — this help</span>
-              <span>G — guard: rally to nearest friendly outpost</span>
+              <span>V — snap to recent kills</span><span>1/2/3 — set spawn type (click building first)</span>
+              <span>Minimap — left-click to rally</span><span>X — cycle speed (1×/2×/4×)</span>
+              <span>? — this help</span><span>G — guard: rally to nearest friendly outpost</span>
               <span style={{ color: 'rgba(160,220,255,0.7)', gridColumn: '1/-1' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
                 Daily map seed changes each day · layout changes per difficulty · army cap: 120 specks (outpost spawn halts above cap)
@@ -1241,12 +1243,18 @@ export function HUD() {
 
       {/* Paused overlay */}
       {phase === 'paused' && (
-        <div onClick={togglePause} style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
-          cursor: 'pointer',
-        }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Resume game"
+          onClick={togglePause}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') togglePause() }}
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+            cursor: 'pointer',
+          }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
           </span>
@@ -1474,6 +1482,90 @@ export function HUD() {
                     {!isTouchDevice && <span style={{ fontSize: 7, color: '#888', letterSpacing: 0.5 }}>[{key}]</span>}
                   </button>
                 ))}
+                {/* Clear Rally button */}
+                <button
+                  onClick={() => { navigator.vibrate?.(8); gameActions?.clearRally?.() }}
+                  title="Clear rally [R]"
+                  aria-label="Clear rally [R]"
+                  style={{
+                    width: 44, height: 44, borderRadius: 8,
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                    gap: 1,
+                    background: 'rgba(255,255,255,0.07)',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    color: '#ddd', fontSize: 13,
+                    cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                  }}
+                >
+                  <span>✕</span>
+                  {!isTouchDevice && <span style={{ fontSize: 7, color: '#888', letterSpacing: 0.5 }}>[R]</span>}
+                </button>
+                {/* Build + Turret dropdown */}
+                {hud?.buildModeEnabled && (() => {
+                  const selectedCount = hud?.selectedSpeckCount ?? 0
+                  const canBuild = selectedCount >= 20
+                  return (
+                    <div style={{ position: 'relative', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
+                      <button
+                        onClick={() => {
+                          if (canBuild) {
+                            navigator.vibrate?.(12)
+                            useSpeckWarsStore.getState().setBuildMenuOpen(!buildMenuOpen)
+                          }
+                        }}
+                        title={canBuild ? '[B] Open build menu' : 'Select 20+ units to build'}
+                        aria-label={canBuild ? 'Open build menu [B]' : `Build — need 20 units selected (${selectedCount} selected)`}
+                        style={{
+                          width: 44, height: 44, borderRadius: 8,
+                          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                          gap: 1,
+                          background: canBuild ? 'rgba(255,136,68,0.18)' : 'rgba(255,255,255,0.04)',
+                          border: `1px solid ${canBuild ? 'rgba(255,136,68,0.55)' : 'rgba(255,255,255,0.1)'}`,
+                          color: canBuild ? '#ff8844' : 'rgba(255,255,255,0.25)',
+                          fontSize: 13, cursor: canBuild ? 'pointer' : 'default',
+                          pointerEvents: 'auto', flexShrink: 0,
+                          opacity: canBuild ? 1 : 0.5,
+                        }}
+                      >
+                        <span>🏗</span>
+                        {!isTouchDevice && <span style={{ fontSize: 7, color: canBuild ? '#ff8844' : '#666', letterSpacing: 0.5 }}>[B]</span>}
+                      </button>
+                      {buildMenuOpen && canBuild && (
+                        <div style={{
+                          position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+                          marginBottom: 4,
+                          display: 'flex', flexDirection: 'column', gap: 4,
+                          background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,136,68,0.4)',
+                          borderRadius: 8, padding: '6px 8px',
+                          animation: 'panel-slide-up 0.15s ease-out',
+                          zIndex: 20,
+                        }}>
+                          <span style={{ fontSize: 8, color: 'rgba(255,180,80,0.7)', letterSpacing: 1, whiteSpace: 'nowrap', pointerEvents: 'none', paddingBottom: 2 }}>
+                            COSTS 20 UNITS
+                          </span>
+                          <button
+                            onClick={() => {
+                              navigator.vibrate?.(12)
+                              useSpeckWarsStore.getState().setBuildMenuOpen(false)
+                              gameActions?.activateBuildMode?.('turret')
+                            }}
+                            title="[T] Place Turret — ranged defense"
+                            aria-label="Place Turret — costs 20 units [T]"
+                            style={{
+                              padding: '8px 10px', fontSize: 10, cursor: 'pointer',
+                              background: 'rgba(255,136,68,0.12)', border: '1px solid rgba(255,136,68,0.55)',
+                              borderRadius: 16, color: '#ff8844', letterSpacing: 0.8,
+                              minHeight: 44, fontFamily: 'monospace', fontWeight: 700,
+                              pointerEvents: 'auto', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            [T] Turret
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
                 {/* Touch-only utility buttons */}
                 {isTouchDevice && (
                   <>
@@ -1573,191 +1665,6 @@ export function HUD() {
           display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6,
           pointerEvents: 'auto',
         }}>
-          {/* Spawn type quick-select removed — set per-building via building panel */}
-          <div style={{
-            display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end',
-          }}>
-          <button
-            onClick={() => { navigator.vibrate?.(12); gameActions.defend?.() }}
-            title="[D] Defend — rally to your base"
-            aria-label="Defend — rally to your base [D]"
-            style={{
-              padding: '8px 12px',
-              fontSize: 11,
-              cursor: 'pointer',
-              background: 'rgba(74,247,196,0.08)',
-              border: '1px solid rgba(74,247,196,0.4)',
-              borderRadius: 20,
-              color: '#4af7c4',
-              letterSpacing: 1,
-              minHeight: 44,
-              fontFamily: 'monospace',
-            }}
-          >
-            🛡 D
-          </button>
-          <button
-            onClick={() => { navigator.vibrate?.(12); gameActions.advance?.() }}
-            title="[N] Advance — rally to nearest outpost"
-            aria-label="Advance — rally to nearest outpost [N]"
-            style={{
-              padding: '8px 12px',
-              fontSize: 11,
-              cursor: 'pointer',
-              background: 'rgba(255,215,0,0.08)',
-              border: '1px solid rgba(255,215,0,0.4)',
-              borderRadius: 20,
-              color: '#ffd700',
-              letterSpacing: 1,
-              minHeight: 44,
-              fontFamily: 'monospace',
-            }}
-          >
-            {isTouchDevice ? '→ ADV' : '→ N'}
-          </button>
-          <button
-            onClick={() => { navigator.vibrate?.(20); gameActions.rush?.() }}
-            title="[B] Rush — attack enemy base"
-            aria-label="Rush — attack enemy base [B]"
-            style={{
-              padding: '8px 12px',
-              fontSize: 11,
-              cursor: 'pointer',
-              background: 'rgba(255,79,123,0.08)',
-              border: '1px solid rgba(255,79,123,0.4)',
-              borderRadius: 20,
-              color: '#ff4f7b',
-              letterSpacing: 1,
-              minHeight: 44,
-              fontFamily: 'monospace',
-            }}
-          >
-            {isTouchDevice ? '⚡ RUSH' : '⚡ B'}
-          </button>
-          {(() => {
-            const surgeActive = (hud?.surgeDuration ?? 0) > 0
-            const surgeCd = hud?.surgeCooldown ?? 0
-            const surgeReady = !surgeActive && surgeCd <= 0
-            return (
-              <button
-                onClick={() => { if (surgeReady) { navigator.vibrate?.(30); gameActions.surge?.() } }}
-                title="[Q] Surge — 2× production for 8s (45s cooldown)"
-                aria-label={surgeActive ? `Surge active — ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s remaining` : surgeCd > 0 ? `Surge on cooldown — ${Math.ceil(surgeCd / 1000)}s` : 'Surge — 2× production for 8s [Q]'}
-                style={{
-                  padding: '8px 12px',
-                  fontSize: 11,
-                  cursor: surgeReady ? 'pointer' : 'default',
-                  background: surgeActive ? 'rgba(255,215,0,0.25)' : 'rgba(255,215,0,0.06)',
-                  border: surgeActive
-                    ? '1px solid rgba(255,215,0,0.9)'
-                    : surgeReady
-                      ? '1px solid rgba(255,215,0,0.4)'
-                      : '1px solid rgba(255,215,0,0.15)',
-                  borderRadius: 20,
-                  color: surgeActive ? '#ffd700' : surgeReady ? '#c8a800' : 'rgba(200,168,0,0.4)',
-                  letterSpacing: 1,
-                  minHeight: 44,
-                  fontFamily: 'monospace',
-                  opacity: surgeReady || surgeActive ? 1 : 0.6,
-                }}
-              >
-                {surgeActive
-                  ? `★ ${Math.ceil((hud?.surgeDuration ?? 0) / 1000)}s`
-                  : surgeCd > 0
-                    ? `${isTouchDevice ? 'SURGE' : 'Q'} ${Math.ceil(surgeCd / 1000)}s`
-                    : isTouchDevice ? '⚡ SURGE' : '★ Q'}
-              </button>
-            )
-          })()}
-          {hud?.buildModeEnabled && (() => {
-            const selectedCount = hud?.selectedSpeckCount ?? 0
-            const canBuild = selectedCount >= 20
-            return (
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
-                {/* Build button */}
-                <button
-                  onClick={() => {
-                    if (canBuild) {
-                      navigator.vibrate?.(12)
-                      useSpeckWarsStore.getState().setBuildMenuOpen(!buildMenuOpen)
-                    }
-                  }}
-                  title={canBuild ? '[B] Open build menu' : 'Select 20+ units to build'}
-                  aria-label={canBuild ? 'Open build menu [B]' : `Build — need 20 units selected (${selectedCount} selected)`}
-                  style={{
-                    padding: '8px 12px',
-                    fontSize: 10,
-                    cursor: canBuild ? 'pointer' : 'default',
-                    background: canBuild ? 'rgba(255,136,68,0.18)' : 'rgba(0,0,0,0.2)',
-                    border: `1px solid ${canBuild ? 'rgba(255,136,68,0.55)' : 'rgba(255,255,255,0.12)'}`,
-                    borderRadius: 20,
-                    color: canBuild ? '#ff8844' : 'rgba(255,255,255,0.3)',
-                    letterSpacing: 0.8,
-                    minHeight: 44,
-                    fontFamily: 'monospace',
-                    fontWeight: 700,
-                    opacity: canBuild ? 1 : 0.5,
-                    pointerEvents: 'auto',
-                  }}
-                >
-                  {canBuild ? (buildMenuOpen ? '▲ B Build' : '▼ B Build') : `Build (need 20)`}
-                </button>
-                {/* Build dropdown */}
-                {buildMenuOpen && canBuild && (
-                  <div style={{
-                    position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
-                    display: 'flex', flexDirection: 'column', gap: 4,
-                    background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,136,68,0.4)',
-                    borderRadius: 8, padding: '6px 8px',
-                    animation: 'panel-slide-up 0.15s ease-out',
-                    zIndex: 20,
-                  }}>
-                    <span style={{ fontSize: 8, color: 'rgba(255,180,80,0.7)', letterSpacing: 1, whiteSpace: 'nowrap', pointerEvents: 'none', paddingBottom: 2 }}>
-                      COSTS 20 UNITS
-                    </span>
-                    <button
-                      onClick={() => {
-                        navigator.vibrate?.(12)
-                        useSpeckWarsStore.getState().setBuildMenuOpen(false)
-                        gameActions?.activateBuildMode?.('turret')
-                      }}
-                      title="[T] Place Turret — ranged defense"
-                      aria-label="Place Turret — costs 20 units [T]"
-                      style={{
-                        padding: '8px 10px', fontSize: 10, cursor: 'pointer',
-                        background: 'rgba(255,136,68,0.12)', border: '1px solid rgba(255,136,68,0.55)',
-                        borderRadius: 16, color: '#ff8844', letterSpacing: 0.8,
-                        minHeight: 44, fontFamily: 'monospace', fontWeight: 700,
-                        pointerEvents: 'auto', whiteSpace: 'nowrap',
-                      }}
-                    >
-                      [T] Turret
-                    </button>
-                  </div>
-                )}
-              </div>
-            )
-          })()}
-          <button
-            onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
-            title="[R] Clear rally"
-            aria-label="Clear rally point [R]"
-            style={{
-              padding: '8px 12px',
-              fontSize: 11,
-              cursor: 'pointer',
-              background: 'rgba(0,0,0,0.4)',
-              border: '1px solid rgba(255,255,255,0.2)',
-              borderRadius: 20,
-              color: 'rgba(255,255,255,0.6)',
-              letterSpacing: 1,
-              minHeight: 44,
-              fontFamily: 'monospace',
-            }}
-          >
-            ✕ R
-          </button>
-          </div>
           {/* Control group buttons — touch only */}
           {isTouchDevice && (() => {
             const selectedSpeckCount = hud?.selectedSpeckCount ?? 0

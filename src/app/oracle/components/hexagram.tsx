@@ -93,10 +93,20 @@ export const LineControl = ({
 }) => {
   return (
     <div className="flex gap-2">
-      <div onClick={() => toggleLine()}>
+      <div
+        onClick={isStatic ? undefined : () => toggleLine()}
+        role={isStatic ? undefined : 'button'}
+        tabIndex={isStatic ? undefined : 0}
+        onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
+      >
         <Line type={lineData?.type} isStatic={isStatic} />
       </div>
-      <div onClick={() => toggleHasChanges()}>
+      <div
+        onClick={isStatic ? undefined : () => toggleHasChanges()}
+        role={isStatic ? undefined : 'button'}
+        tabIndex={isStatic ? undefined : 0}
+        onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}
+      >
         <ChangeMarker hasChanges={Boolean(lineData?.hasChanges)} isStatic={isStatic} />
       </div>
     </div>

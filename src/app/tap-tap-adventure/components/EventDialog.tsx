@@ -65,9 +65,15 @@ export function EventDialog({
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"
       style={{ backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.6)' }}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Event"
     >
       <div
         className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg max-w-md w-full p-5 shadow-xl max-h-[80vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Event"
         onClick={e => e.stopPropagation()}
       >
         {/* Results step */}
@@ -160,7 +166,7 @@ export function EventDialog({
                   </div>
                 ) : (
                   <div className="space-y-2 mt-2">
-                    {decisionPoint.options.map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
+                    {(decisionPoint.options ?? []).map((option: { id: string; text: string; successEffects?: { reputation?: number }; failureEffects?: { reputation?: number }; effects?: { reputation?: number } }, index: number) => {
                       if (!option) return null
 
                       // Enrich crossroads travel options with region data

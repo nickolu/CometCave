@@ -174,6 +174,7 @@ const ALL_STYLES: string[] = Array.from(
 
 export default function AvatarMakerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string>('')
   const [generatedImages, setGeneratedImages] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
@@ -193,6 +194,17 @@ export default function AvatarMakerPage() {
     isImageGenerationAllowedClient().then(setImageGenerationAllowed)
     getImageGenerationDisableReasonClient().then(setDisableReason)
   }, [])
+
+  // Manage object URL lifecycle — revoke previous URL when imageFile changes
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreviewUrl(null)
+      return
+    }
+    const url = URL.createObjectURL(imageFile)
+    setImagePreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [imageFile])
 
   // Style list becomes dependent on selected medium
   const styleOptions = medium && mediumStyles[medium] ? mediumStyles[medium].styles : ALL_STYLES
@@ -371,7 +383,11 @@ export default function AvatarMakerPage() {
 
               {/* Dropzone */}
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload image"
                 onClick={() => fileInputRef.current?.click()}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } }}
                 onDragOver={e => e.preventDefault()}
                 onDrop={e => {
                   e.preventDefault()
@@ -388,9 +404,9 @@ export default function AvatarMakerPage() {
                   imageFile ? 'border-surface-variant' : 'border-outline-variant hover:border-ds-primary'
                 )}
               >
-                {imageFile ? (
+                {imagePreviewUrl ? (
                   <Image
-                    src={URL.createObjectURL(imageFile)}
+                    src={imagePreviewUrl}
                     alt="Uploaded preview"
                     className="rounded max-h-80 object-contain w-full"
                     width={320}

@@ -207,6 +207,8 @@ export function useResolveDecisionMutation() {
             if (combatData.updatedCharacter) {
               updateSelectedCharacter(combatData.updatedCharacter)
             }
+          } else {
+            console.error('[useResolveDecisionMutation] combat/start failed:', combatRes.status)
           }
           addStoryEvent({
             id: `result-${Date.now()}`,
@@ -352,6 +354,8 @@ export function useResolveDecisionMutation() {
         if (shopRes.ok) {
           const shopData = await shopRes.json()
           setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
+        } else {
+          console.error('[useResolveDecisionMutation] shop/generate failed:', shopRes.status)
         }
       }
 
@@ -402,6 +406,8 @@ export function useResolveDecisionMutation() {
           if (combatData.updatedCharacter) {
             updateSelectedCharacter(combatData.updatedCharacter)
           }
+        } else {
+          console.error('[useResolveDecisionMutation] combat/start failed:', combatRes.status)
         }
       }
 

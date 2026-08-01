@@ -18,6 +18,7 @@ export class GameInstance {
   private renderer: Renderer
   private rafId: number | null = null
   private destroyed = false
+  private pendingTimeouts: ReturnType<typeof setTimeout>[] = []
   private lastTime: number = 0
   private camera: Camera
   private inputHandler!: InputHandler
@@ -46,7 +47,6 @@ export class GameInstance {
   private notifGen = 0
   private prevBaseUnderThreat = false
   private prevEnemyAdvance = false
-  private prevSurgeCooldown = 0
   private prevWaveCountdown: number | null = null  // track wave countdown for 30s pre-warning
   private prevWaveInProgress = false
   private controlGroups = new Map<number, string[]>()
@@ -205,7 +205,6 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      () => { this.surge() },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
       () => { this.snapToBase() },                                          // H — snap camera to home base
       (typeId: 'basic' | 'heavy' | 'scout') => {               // 1/2/3 — set spawn type for selected building only
@@ -329,7 +328,6 @@ export class GameInstance {
         this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
         this.sim.rallyPoints['player-selected'] = null
       },
-      surge: () => { this.surge() },
       rally: (x: number, y: number) => this.rally(x, y),
       setSpawnType: (typeId: 'basic' | 'heavy' | 'scout') => {
         const selectedBuildingId = this.sim.selectedBuildingId
@@ -435,15 +433,15 @@ export class GameInstance {
     // Freeze the sim for the countdown duration
     this.cinematicMs = 3000  // 3 seconds total
     useSpeckWarsStore.getState().setCountdown(3)
-    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(2) }, 1000)
-    setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(1) }, 2000)
-    setTimeout(() => {
+    this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(2) }, 1000))
+    this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) useSpeckWarsStore.getState().setCountdown(1) }, 2000))
+    this.pendingTimeouts.push(setTimeout(() => {
       if (this.destroyed) return
       useSpeckWarsStore.getState().setCountdown(null)
       this.cinematicMs = 0
       this.notify('⚔ FIGHT!', '#4af7c4', 800)
       navigator.vibrate?.([50, 30, 50, 30, 100])
-    }, 3000)
+    }, 3000))
 
     // Show tutorial hints for first-time players
     if (isFirstGame()) {
@@ -453,17 +451,15 @@ export class GameInstance {
         { delay: 1200,  message: '💡 Tap the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
         { delay: 13000, message: '💡 Long-press for attack-move — hold 0.5s!', color: '#ff8c44' },
-        { delay: 22000, message: '💡 Use ⚡ SURGE button — doubles production for 8s!', color: '#ffd700' },
-        { delay: 38000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
+        { delay: 22000, message: '💡 Double-tap canvas to zoom in/out!', color: '#aaddff' },
       ] : [
         { delay: 1200,  message: '💡 Click the map to rally your specks!', color: '#aaddff' },
         { delay: 6000,  message: '💡 Capture outposts to boost production!', color: '#aaddff' },
-        { delay: 13000, message: '💡 Press Q for Surge — doubles production for 8s!', color: '#ffd700' },
-        { delay: 22000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/dart)', color: '#aaddff' },
-        { delay: 32000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
+        { delay: 13000, message: '💡 Press 1/2/3 to switch spawn type (basic/heavy/dart)', color: '#aaddff' },
+        { delay: 22000, message: '💡 Press A then click to attack-move — specks engage enemies en route!', color: '#ff8c44' },
       ]
       for (const { delay, message, color } of hints) {
-        setTimeout(() => { if (!this.destroyed) this.notify(message, color, 3000) }, delay)
+        this.pendingTimeouts.push(setTimeout(() => { if (!this.destroyed) this.notify(message, color, 3000) }, delay))
       }
     }
   }
@@ -541,7 +537,7 @@ export class GameInstance {
             color: isComeback ? '#ffd700' : won ? '#4af7c4' : '#ff4f7b',
           })
           const elapsedAtEnd = this.elapsedMs
-          setTimeout(() => {
+          this.pendingTimeouts.push(setTimeout(() => {
             if (this.destroyed) return
             const s = useSpeckWarsStore.getState()
             const isCampaign = s.campaignLevel !== null
@@ -567,7 +563,7 @@ export class GameInstance {
               s.setIsNewBest(false)
               s.setPhase('defeat')
             }
-          }, 1400)
+          }, 1400))
         }
         if (event.type === 'HUD_UPDATE') {
           const cameraViewport = {
@@ -650,14 +646,6 @@ export class GameInstance {
             this.notify(`✓ WAVE${waveNum} CLEARED`, '#44dd88', 2000)
           }
           this.prevWaveInProgress = waveInProg
-
-          // Surge cooldown ready notification
-          const surgeCd = event.data.surgeCooldown ?? 0
-          const surgeActive = (event.data.surgeDuration ?? 0) > 0
-          if (!surgeActive && surgeCd === 0 && this.prevSurgeCooldown > 0) {
-            this.notify('⚡ SURGE READY', '#ffd700', 2000)
-          }
-          this.prevSurgeCooldown = surgeCd
 
         }
         if (event.type === 'SPECK_DIED') {
@@ -903,6 +891,8 @@ export class GameInstance {
 
   destroy() {
     this.destroyed = true
+    for (const id of this.pendingTimeouts) clearTimeout(id)
+    this.pendingTimeouts = []
     if (this.rafId !== null) {
       cancelAnimationFrame(this.rafId)
       this.rafId = null
@@ -1016,18 +1006,6 @@ export class GameInstance {
     }
   }
 
-  surge() {
-    if (this.sim.surgeDuration > 0) return  // already active — do nothing
-    if (this.sim.surgeCooldown > 0) {
-      const remaining = Math.ceil(this.sim.surgeCooldown / 1000)
-      this.notify(`Surge ready in ${remaining}s`, 'rgba(255,215,0,0.65)', 1200)
-      return
-    }
-    this.sim.inputQueue.push({ type: 'SURGE', ownerId: 'player' })
-    useSpeckWarsStore.getState().addSurgeUsed()
-    this.notify('⚡ SURGE ACTIVE!', '#ffd700')
-  }
-
   snapToAction() {
     const now = Date.now()
     // Use deaths from the last 5 seconds; fall back to all recent deaths
@@ -1065,9 +1043,9 @@ export class GameInstance {
   private notify(message: string, color: string, durationMs = 1200) {
     const gen = ++this.notifGen
     useSpeckWarsStore.getState().setNotification({ message, color })
-    setTimeout(() => {
+    this.pendingTimeouts.push(setTimeout(() => {
       if (!this.destroyed && this.notifGen === gen) useSpeckWarsStore.getState().setNotification(null)
-    }, durationMs)
+    }, durationMs))
   }
 
   getSim(): SimulationState {

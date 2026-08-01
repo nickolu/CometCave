@@ -24,7 +24,7 @@ export default function CharacterUserItem({ character }: Props) {
       }
     >
       <ListItemAvatar>
-        <Avatar>{character.name[0]}</Avatar>
+        <Avatar>{character.name?.[0] ?? '?'}</Avatar>
       </ListItemAvatar>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, width: '100%' }}>
         <ListItemText
