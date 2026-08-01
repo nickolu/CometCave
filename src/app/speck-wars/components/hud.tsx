@@ -99,11 +99,6 @@ export function HUD() {
   const gameActions = useSpeckWarsStore(s => s.gameActions)
   const campaignLevel = useSpeckWarsStore(s => s.campaignLevel)
 
-  // Auto-collapse building drawer when building is deselected
-  useEffect(() => {
-    if (!hud?.selectedBuilding) setBuildingPanelExpanded(false)
-  }, [hud?.selectedBuilding])
-
   // Show level intro when a campaign level starts playing (only on first play of each level)
   useEffect(() => {
     if (phase === 'playing' && campaignLevel !== null) {
