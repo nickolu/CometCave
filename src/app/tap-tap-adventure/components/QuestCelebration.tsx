@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
@@ -13,6 +13,11 @@ interface QuestCelebrationProps {
 export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
 
+  const claimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => { if (claimTimerRef.current != null) clearTimeout(claimTimerRef.current) }
+  }, [])
+
   useEffect(() => {
     soundEngine.playVictory()
     requestAnimationFrame(() => setIsVisible(true))
@@ -20,11 +25,14 @@ export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
 
   const handleClaim = () => {
     setIsVisible(false)
-    setTimeout(onClaim, 300)
+    claimTimerRef.current = setTimeout(onClaim, 300)
   }
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Quest complete"
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}

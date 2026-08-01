@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 
 interface OnboardingHintProps {
@@ -12,6 +12,11 @@ interface OnboardingHintProps {
 export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) {
   const [isVisible, setIsVisible] = useState(false)
 
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
+  }, [])
+
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true))
   }, [])
@@ -20,7 +25,7 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' || e.key === 'Enter') {
         setIsVisible(false)
-        setTimeout(onDismiss, 300)
+        dismissTimerRef.current = setTimeout(onDismiss, 300)
       }
     }
     window.addEventListener('keydown', handleKey)
@@ -29,11 +34,14 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
 
   const handleDismiss = () => {
     setIsVisible(false)
-    setTimeout(onDismiss, 300)
+    dismissTimerRef.current = setTimeout(onDismiss, 300)
   }
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Onboarding hint"
       className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
