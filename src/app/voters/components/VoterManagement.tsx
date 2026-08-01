@@ -370,9 +370,19 @@ function EditVoterModal({ voter, onUpdate, onCancel, onRemove }: EditVoterModalP
   const [showAdvanced, setShowAdvanced] = useState(false)
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-      <div className="bg-surface-container rounded-2xl p-8 md:p-12 w-full max-w-2xl border border-surface-variant/30 m-4">
-        <h3 className="text-xl font-bold mb-4 text-on-surface">Edit Voter Type</h3>
+    <div
+      className="fixed inset-0 bg-black/80 flex items-center justify-center z-50"
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-voter-title"
+        className="bg-surface-container rounded-2xl p-8 md:p-12 w-full max-w-2xl border border-surface-variant/30 m-4"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={e => { if (e.key === 'Escape') onCancel() }}
+      >
+        <h3 id="edit-voter-title" className="text-xl font-bold mb-4 text-on-surface">Edit Voter Type</h3>
 
         <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
