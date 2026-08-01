@@ -68,12 +68,14 @@ const playerSpawnInterval: Record<Difficulty, number | undefined> = {
   'very-hard': undefined,  // same as hard — no advantage
 }
 
-export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium', mapPreset: MapPreset = 'random', outpostCount: number = 3): SimulationState {
+export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'medium', mapPreset: MapPreset = 'random', outpostCount: number = 3, options?: { playerBaseCenter?: boolean; noAiBase?: boolean; isSurvival?: boolean; surviveLengthMs?: number }): SimulationState {
+  const playerBaseX = options?.playerBaseCenter ? 1500 : PLAYER_BASE_X
+  const playerBaseY = options?.playerBaseCenter ? 1500 : PLAYER_BASE_Y
   const playerBase: BuildingEntity = {
     id: 'building-player-base',
     typeId: 'base',
     ownerId: 'player',
-    x: PLAYER_BASE_X, y: PLAYER_BASE_Y,
+    x: playerBaseX, y: playerBaseY,
     hp: BASE_HP, maxHp: BASE_HP,
     spawnTimer: 0,
     spawnIntervalOverride: playerSpawnInterval[difficulty],
@@ -132,10 +134,15 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
   // seed-pinned regression tests; balance must be measured as an average over many games.
   // Making the run reproducible means routing those calls through a seeded PRNG — a real
   // project, not a drive-by fix.
+  const initialBuildings: Record<string, BuildingEntity> = { 'building-player-base': playerBase, ...outpostBuildings }
+  if (!options?.noAiBase) {
+    initialBuildings['building-ai-base'] = aiBase
+  }
+
   const sim: SimulationState = {
     tick: 0,
     players: { player, ai, neutral },
-    buildings: { 'building-player-base': playerBase, 'building-ai-base': aiBase, ...outpostBuildings },
+    buildings: initialBuildings,
     speckIds: new Array(MAX_SPECKS).fill(''),
     speckX: new Float32Array(MAX_SPECKS),
     speckY: new Float32Array(MAX_SPECKS),
@@ -162,6 +169,11 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveInProgress: false,
     waveNumber: 0,
     obstacles,
+    isSurvival: options?.isSurvival ?? false,
+    survivalTimeRemaining: options?.isSurvival ? (options?.surviveLengthMs ?? 5 * 60 * 1000) : 0,
+    survivalWaveTimer: 15000,  // first wave at 15s
+    survivalWaveRemainingMs: 0,
+    survivalWaveNumber: 0,
   }
 
   return sim

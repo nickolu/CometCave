@@ -24,7 +24,8 @@ export class AIController {
   }
 
   update(sim: SimulationState, dt: number = 16) {
-    if (this.waveEnabled) {
+    // Survival mode manages its own wave spawning via survival-spawner.ts
+    if (this.waveEnabled && !sim.isSurvival) {
       this.waveTimer -= dt
       if (this.waveRemainingMs > 0) {
         this.waveRemainingMs = Math.max(0, this.waveRemainingMs - dt)
@@ -45,6 +46,8 @@ export class AIController {
     this.lastDecisionTick = sim.tick
 
     if (sim.players[this.playerId]?.isDefeated) return
+    // In survival mode the AI has no base — specks are managed by survival-spawner.ts
+    if (sim.isSurvival) return
 
     // Compute AI swarm centroid (or fall back to own base)
     let cx = 0, cy = 0, count = 0

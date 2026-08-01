@@ -69,6 +69,8 @@ interface SpeckWarsStore {
   setCampaignLevel: (n: number | null) => void
   surrender: () => void
   resetGame: () => void
+  buildMenuOpen: boolean
+  setBuildMenuOpen: (open: boolean) => void
 }
 
 export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
@@ -134,6 +136,8 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
   setGameActions: (actions) => set({ gameActions: actions ?? { defend: null, advance: null, rush: null, clearRally: null, surge: null, rally: null, setSpawnType: null, panCamera: null, stop: null, hold: null, guard: null, saveControlGroup: null, recallControlGroup: null, selectAll: null, snapToBase: null, snapToAction: null, activatePatrol: null, activateSelectMode: null, selectByType: null, selectBuilding: null, commandAt: null, clearSelection: null, activateBuildMode: null } }),
   campaignLevel: null,
   setCampaignLevel: n => set({ campaignLevel: n }),
+  buildMenuOpen: false,
+  setBuildMenuOpen: (open) => set({ buildMenuOpen: open }),
   surrender: () => {
     const s = get()
     resetWinStreak()
@@ -165,5 +169,6 @@ export const useSpeckWarsStore = create<SpeckWarsStore>()((set, get) => ({
     aiPersonality: null,
     difficulty: s.difficulty,
     campaignLevel: null,
+    buildMenuOpen: false,
   })),
 }))
