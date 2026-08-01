@@ -89,6 +89,7 @@ async function fetchOpenTDBQuestions(dateStr: string): Promise<TriviaQuestionWit
     try {
       const url = `https://opentdb.com/api.php?amount=${count}&category=${categoryId}&difficulty=${difficulty}&type=multiple`
       const res = await fetch(url)
+      if (!res.ok) throw new Error(`OpenTDB API error: ${res.status}`)
       const data: OpenTDBResponse = await res.json()
 
       if (data.response_code === 0 && data.results.length > 0) {

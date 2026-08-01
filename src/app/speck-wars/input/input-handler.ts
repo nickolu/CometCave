@@ -16,7 +16,6 @@ export class InputHandler {
   private onRush?: () => void
   private onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void
   private onClearSelect?: () => void
-  private onSurge?: () => void
   private onSnapToAction?: () => void
   private onSnapToBase?: () => void
   private onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void
@@ -82,7 +81,6 @@ export class InputHandler {
     onRush?: () => void,
     onBoxSelect?: (x1: number, y1: number, x2: number, y2: number) => void,
     onClearSelect?: () => void,
-    onSurge?: () => void,
     onSnapToAction?: () => void,
     onSnapToBase?: () => void,
     onSetSpawnType?: (typeId: 'basic' | 'heavy' | 'scout') => void,
@@ -107,7 +105,6 @@ export class InputHandler {
     this.onRush = onRush
     this.onBoxSelect = onBoxSelect
     this.onClearSelect = onClearSelect
-    this.onSurge = onSurge
     this.onSnapToAction = onSnapToAction
     this.onSnapToBase = onSnapToBase
     this.onSetSpawnType = onSetSpawnType
@@ -134,7 +131,7 @@ export class InputHandler {
     window.addEventListener('touchend', this.onTouchEnd)
     window.addEventListener('keydown', this.onKeyDown)
     window.addEventListener('keyup', this.onKeyUp)
-    window.addEventListener('blur', () => this.heldKeys.clear())
+    window.addEventListener('blur', this.onBlur)
     this.canvas.addEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.addEventListener('mouseleave', this.onMouseLeave)
   }
@@ -144,6 +141,8 @@ export class InputHandler {
     this.mouseX = e.clientX - rect.left
     this.mouseY = e.clientY - rect.top
   }
+
+  private onBlur = () => this.heldKeys.clear()
 
   private onMouseLeave = () => { this.mouseX = -1; this.mouseY = -1 }
 
@@ -185,8 +184,16 @@ export class InputHandler {
 
   private onMouseMove = (e: MouseEvent) => {
     const rect = this.canvas.getBoundingClientRect()
-    this.mouseX = e.clientX - rect.left
-    this.mouseY = e.clientY - rect.top
+    // Only track position for edge-panning when cursor is directly over the canvas,
+    // not over HUD overlay elements (buttons, panels, etc.). The -1 sentinel causes
+    // getEdgePanDelta to return {dx:0,dy:0} via its early-exit guard.
+    if (e.target === this.canvas) {
+      this.mouseX = e.clientX - rect.left
+      this.mouseY = e.clientY - rect.top
+    } else {
+      this.mouseX = -1
+      this.mouseY = -1
+    }
     if (this.isPanDragging) {
       this.camera.x += e.clientX - this.lastX
       this.camera.y += e.clientY - this.lastY
@@ -587,8 +594,6 @@ export class InputHandler {
       if (this.onBuildMenu) { this.onBuildMenu() } else { this.onRush?.() }
     } else if (e.code === 'KeyT') {
       this.onBuildTurret?.()
-    } else if (e.code === 'KeyQ') {
-      this.onSurge?.()
     } else if (e.code === 'KeyV') {
       this.onSnapToAction?.()
     } else if (e.code === 'Digit1') {
@@ -672,6 +677,7 @@ export class InputHandler {
     window.removeEventListener('touchend', this.onTouchEnd)
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
+    window.removeEventListener('blur', this.onBlur)
     this.canvas.removeEventListener('mousemove', this.onCanvasMouseMove)
     this.canvas.removeEventListener('mouseleave', this.onMouseLeave)
   }

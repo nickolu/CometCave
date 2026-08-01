@@ -91,8 +91,14 @@ export function FlagQuestion({ questionId, runId, onFlagged }: Props) {
       </button>
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm">
-          <div className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4">
-            <h3 className="text-on-surface font-bold text-lg">Report Question</h3>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="flag-question-title"
+            className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 id="flag-question-title" className="text-on-surface font-bold text-lg">Report Question</h3>
             <div className="flex flex-col gap-2">
               {FLAG_REASONS.map(r => (
                 <label key={r.value} className="flex items-center gap-2 text-on-surface/80 text-sm cursor-pointer">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { DailyReward } from '@/app/tap-tap-adventure/config/dailyRewards'
 import { ClaimResult } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
@@ -16,6 +16,11 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
   const [isVisible, setIsVisible] = useState(false)
   const [claimed, setClaimed] = useState(false)
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null)
+
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
+  }, [])
 
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true))
@@ -43,12 +48,15 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Daily reward"
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={claimed ? () => { setIsVisible(false); setTimeout(onDismiss, 300) } : undefined} />
+      <div className="absolute inset-0 bg-black/60" onClick={claimed ? () => { setIsVisible(false); dismissTimerRef.current = setTimeout(onDismiss, 300) } : undefined} />
 
       {/* Content */}
       <div
@@ -56,7 +64,12 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
           isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
         }`}
       >
-        <div className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Daily Reward"
+          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4"
+        >
           {!claimed ? (
             <>
               {/* Title */}

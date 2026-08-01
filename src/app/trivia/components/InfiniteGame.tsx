@@ -302,8 +302,15 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
         {/* Rules overlay — dismissible modal, separate from category selection */}
         {showRulesOverlay && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4" onClick={() => setShowRulesOverlay(false)}>
-            <div className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero" onClick={e => e.stopPropagation()}>
-              <h3 className="text-on-surface text-lg font-bold mb-3">How to Play</h3>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="rules-overlay-title"
+              className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero"
+              onClick={e => e.stopPropagation()}
+              onKeyDown={e => { if (e.key === 'Escape') setShowRulesOverlay(false) }}
+            >
+              <h3 id="rules-overlay-title" className="text-on-surface text-lg font-bold mb-3">How to Play</h3>
               <ul className="text-on-surface/80 text-sm flex flex-col gap-2 mb-4">
                 <li className="flex gap-2">
                   <span>❤️</span>

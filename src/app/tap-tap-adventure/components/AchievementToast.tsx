@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
 
 interface AchievementToastProps {
@@ -10,6 +10,7 @@ interface AchievementToastProps {
 
 export function AchievementToast({ achievementId, onDismiss }: AchievementToastProps) {
   const [isVisible, setIsVisible] = useState(false)
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const achievement = ACHIEVEMENTS.find(a => a.id === achievementId)
 
   useEffect(() => {
@@ -18,12 +19,13 @@ export function AchievementToast({ achievementId, onDismiss }: AchievementToastP
     // Auto-dismiss after 3 seconds
     const dismissTimeout = setTimeout(() => {
       setIsVisible(false)
-      setTimeout(onDismiss, 300) // Wait for fade-out animation
+      dismissTimerRef.current = setTimeout(onDismiss, 300)
     }, 3000)
 
     return () => {
       clearTimeout(showTimeout)
       clearTimeout(dismissTimeout)
+      if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current)
     }
   }, [onDismiss])
 

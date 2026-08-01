@@ -320,7 +320,7 @@ export function CombatUI({ combatState }: CombatUIProps) {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  })
+  }, [status, isPending, playerState, combatState, canAttackAtDistance, classAbility, abilityCooldown, handleAction])
 
   const handleUseItem = useCallback(
     (itemId: string) => {

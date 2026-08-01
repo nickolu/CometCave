@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
@@ -97,6 +97,12 @@ export function EnchantingPanel() {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null)
   const [feedbackSuccess, setFeedbackSuccess] = useState(false)
 
+  useEffect(() => {
+    if (!feedbackMessage) return
+    const id = setTimeout(() => setFeedbackMessage(null), 3000)
+    return () => clearTimeout(id)
+  }, [feedbackMessage])
+
   const character = useGameStore(s =>
     s.gameState.characters.find(c => c.id === s.gameState.selectedCharacterId)
   )
@@ -118,7 +124,6 @@ export function EnchantingPanel() {
     if (result) {
       setFeedbackSuccess(result.success)
       setFeedbackMessage(result.message)
-      setTimeout(() => setFeedbackMessage(null), 3000)
     }
   }
 

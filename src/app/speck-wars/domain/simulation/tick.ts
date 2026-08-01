@@ -26,6 +26,63 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
   // 2c. Survival mode: spawn waves and tick countdown
   updateSurvivalSpawner(sim, dt)
 
+  // 2d. Resolve pending builds — check if committed specks have arrived at build site
+  if (sim.pendingBuilds.length > 0) {
+    const ARRIVAL_RADIUS_SQ = 35 * 35
+    const toRemove = new Set<string>()
+
+    for (const pb of sim.pendingBuilds) {
+      // Check all live specks committed to this build
+      let anyAlive = false
+      for (let i = 0; i < sim.speckCount; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || meta.committedBuildId !== pb.id) continue
+        if (sim.speckHp[i] <= 0) continue
+        anyAlive = true
+        const dx = sim.speckX[i] - pb.x
+        const dy = sim.speckY[i] - pb.y
+        if (dx * dx + dy * dy <= ARRIVAL_RADIUS_SQ) {
+          // Arrived — sacrifice this speck
+          sim.speckHp[i] = 0
+          meta.committedBuildId = undefined
+          pb.arrivedCount++
+        }
+      }
+
+      if (pb.arrivedCount >= pb.requiredCount) {
+        // Enough specks arrived — place the building
+        const btype = BUILDING_TYPES[pb.typeId]
+        if (btype) {
+          const buildingId = `building-player-${pb.typeId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+          sim.buildings[buildingId] = {
+            id: buildingId,
+            typeId: pb.typeId,
+            ownerId: pb.ownerId,
+            x: pb.x, y: pb.y,
+            hp: btype.maxHp, maxHp: btype.maxHp,
+            spawnTimer: 0, fireTimer: 0,
+          }
+        }
+        // Kill any remaining committed specks (shouldn't happen if count matches)
+        for (let i = 0; i < sim.speckCount; i++) {
+          const meta = sim.speckMeta[i]
+          if (meta?.committedBuildId === pb.id) {
+            sim.speckHp[i] = 0
+            meta.committedBuildId = undefined
+          }
+        }
+        toRemove.add(pb.id)
+      } else if (!anyAlive) {
+        // All committed specks died before enough arrived — cancel build
+        toRemove.add(pb.id)
+      }
+    }
+
+    if (toRemove.size > 0) {
+      sim.pendingBuilds = sim.pendingBuilds.filter(pb => !toRemove.has(pb.id))
+    }
+  }
+
   // 3. Each speck picks/validates its target
   runSpeckAI(sim)
 
@@ -50,10 +107,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 7b. HP regeneration for owned buildings when not under attack
   regenBuildingHp(sim, dt)
-
-  // 7c. Surge timers
-  if (sim.surgeDuration > 0) sim.surgeDuration = Math.max(0, sim.surgeDuration - dt)
-  if (sim.surgeCooldown > 0) sim.surgeCooldown = Math.max(0, sim.surgeCooldown - dt)
 
   // 8. Check win/loss + domination timer
   checkVictory(sim)
@@ -115,6 +168,7 @@ function consumeInputs(sim: SimulationState) {
           const meta = sim.speckMeta[i]
           if (!meta || !sim.speckIds[i] || meta.ownerId !== 'player') continue
           if (!sim.selectedSpeckIds.has(meta.id)) continue
+          if (meta.committedBuildId) continue   // don't redirect specks marching to build site
           meta.assignedRallyX = event.x
           meta.assignedRallyY = event.y
           meta.commandGroupId = groupId
@@ -229,45 +283,54 @@ function consumeInputs(sim: SimulationState) {
       // homeBuildingId each tick. Specks given a direct order elsewhere have already dropped that
       // link and are deliberately left where the player put them.
     }
-    if (event.type === 'SURGE') {
-      if (event.ownerId === 'player' && sim.surgeCooldown <= 0) {
-        sim.surgeDuration = 8000
-        sim.surgeCooldown = 45000
-      }
-    }
     if (event.type === 'BUILD_STRUCTURE') {
       if (event.ownerId !== 'player') continue
       const SACRIFICE_COST = 20
-      // Must have enough selected specks to sacrifice
       if (sim.selectedSpeckIds.size < SACRIFICE_COST) continue
       const btype = BUILDING_TYPES[event.typeId]
-      if (!btype) continue  // unknown type, skip
-      // Don't allow placing on top of an existing building (within 60px)
+      if (!btype) continue
+
+      // Don't place on top of an existing building
       const tooClose = Object.values(sim.buildings).some(b => {
         const dx = b.x - event.x, dy = b.y - event.y
         return dx * dx + dy * dy < 60 * 60
       })
       if (tooClose) continue
-      const buildingId = `building-player-${event.typeId}-${Date.now()}-${Math.floor(Math.random() * 10000)}`
-      sim.buildings[buildingId] = {
-        id: buildingId,
-        typeId: event.typeId,
-        ownerId: 'player',
-        x: event.x,
-        y: event.y,
-        hp: btype.maxHp,
-        maxHp: btype.maxHp,
-        spawnTimer: 0,
-        fireTimer: 0,
-      }
-      // Sacrifice 20 selected specks (set HP to 0; removeDeadSpecks cleans up next tick)
-      let sacrificed = 0
-      for (let i = 0; i < sim.speckCount && sacrificed < SACRIFICE_COST; i++) {
+
+      // Don't place on top of a pending build site
+      const tooCloseToPending = sim.pendingBuilds.some(pb => {
+        const dx = pb.x - event.x, dy = pb.y - event.y
+        return dx * dx + dy * dy < 60 * 60
+      })
+      if (tooCloseToPending) continue
+
+      const buildId = `pending-build-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+
+      // Commit up to SACRIFICE_COST selected player specks — rally them to the build site
+      const committedSpeckIds: string[] = []
+      for (let i = 0; i < sim.speckCount && committedSpeckIds.length < SACRIFICE_COST; i++) {
         const meta = sim.speckMeta[i]
-        if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
-        sim.speckHp[i] = 0
-        sacrificed++
+        if (!meta || !sim.speckIds[i] || meta.ownerId !== 'player') continue
+        if (!sim.selectedSpeckIds.has(meta.id)) continue
+        committedSpeckIds.push(meta.id)
+        meta.assignedRallyX = event.x
+        meta.assignedRallyY = event.y
+        meta.committedBuildId = buildId
+        meta.attackMoveMode = false
+        meta.holdPosition = false
       }
+
+      if (committedSpeckIds.length < SACRIFICE_COST) continue
+
+      sim.pendingBuilds.push({
+        id: buildId,
+        typeId: event.typeId,
+        x: event.x, y: event.y,
+        ownerId: 'player',
+        committedSpeckIds,
+        arrivedCount: 0,
+        requiredCount: SACRIFICE_COST,
+      })
       sim.selectedSpeckIds.clear()
     }
     if (event.type === 'STOP') {
@@ -360,14 +423,11 @@ function emitHudUpdate(sim: SimulationState) {
   for (const [pid] of Object.entries(sim.players)) {
     if (pid === 'neutral') continue
     let totalRate = 0
-    const hasSurge = pid === 'player' && sim.surgeDuration > 0
     for (const building of Object.values(sim.buildings)) {
       if (building.ownerId !== pid) continue
       const btype = BUILDING_TYPES[building.typeId]
       if (!btype?.spawnTypeId) continue
-      const baseInterval = building.spawnIntervalOverride ?? btype.spawnInterval
-      const divisor = (hasSurge ? 2 : 1)
-      const effectiveInterval = baseInterval / divisor
+      const effectiveInterval = building.spawnIntervalOverride ?? btype.spawnInterval
       totalRate += (btype.spawnCount ?? 1) * 60000 / effectiveInterval
     }
     spawnRates[pid] = Math.round(totalRate)
@@ -465,7 +525,7 @@ function emitHudUpdate(sim: SimulationState) {
       return { id: b.id, typeId: b.typeId, name: btype?.name ?? b.typeId, hp: b.hp, maxHp: btype?.maxHp ?? 100 }
     })
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, playerBuildings, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, playerBuildings, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
 }
 
 function pruneCommandGroups(sim: SimulationState) {

@@ -94,8 +94,8 @@ export const LEVELS: LevelConfig[] = [
   },
   {
     id: 7,
-    name: 'Surge',
-    flavor: 'They outpace you. Wait for the right moment — then burst.',
+    name: 'The Burst',
+    flavor: 'They outpace you. Wait for the right moment — then strike.',
     difficulty: 'hard',
     seed: 1007,
     outpostCount: 1,
