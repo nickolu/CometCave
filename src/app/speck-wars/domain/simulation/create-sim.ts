@@ -169,6 +169,7 @@ export function createSim(seed: number = Date.now(), difficulty: Difficulty = 'm
     waveInProgress: false,
     waveNumber: 0,
     obstacles,
+    pendingBuilds: [],
     isSurvival: options?.isSurvival ?? false,
     survivalTimeRemaining: options?.isSurvival ? (options?.surviveLengthMs ?? 5 * 60 * 1000) : 0,
     survivalWaveTimer: 15000,  // first wave at 15s

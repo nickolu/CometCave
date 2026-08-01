@@ -20,6 +20,7 @@ export interface SpeckMeta {
   attackMoveTargetX?: number        // temporary target speck position while attack-moving
   attackMoveTargetY?: number
   missionTargetId?: string | null     // for missiles: specific enemy speck ID to home into
+  committedBuildId?: string   // if set, this speck is marching to construct a building
 }
 
 export interface BuildingEntity {
@@ -87,6 +88,16 @@ export interface SimulationState {
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
   obstacles: WallObstacle[]
+  pendingBuilds: Array<{
+    id: string
+    typeId: string
+    x: number
+    y: number
+    ownerId: string
+    committedSpeckIds: string[]   // string IDs of the 20 committed specks
+    arrivedCount: number
+    requiredCount: number
+  }>
   isSurvival: boolean
   survivalTimeRemaining: number    // ms countdown to win
   survivalWaveTimer: number        // ms until next wave spawns
