@@ -180,9 +180,9 @@ export class GameInstance {
         this.commandAt(wx, wy)
       },
       () => useSpeckWarsStore.getState().togglePause(),   // Space
-      () => {                                              // R — rally hint if building selected, else clear rally
+      () => {                                              // R — rally placement mode if building selected, else clear rally
         if (this.sim.selectedBuildingId) {
-          this.notify('Right-click to set rally point', 'rgba(255,255,255,0.5)', 1200)
+          this.activateBuildingRallyMode()
         } else {
           this.clearRally()
         }
@@ -351,7 +351,7 @@ export class GameInstance {
       stop: () => this.sim.inputQueue.push({ type: 'STOP', ownerId: 'player' }),
       hold: () => this.sim.inputQueue.push({ type: 'HOLD', ownerId: 'player' }),
       guard: () => this.guard(),
-      buildingRallyHint: () => this.notify('Right-click to set rally point', 'rgba(255,255,255,0.5)', 1200),
+      buildingRallyHint: () => this.activateBuildingRallyMode(),
       saveControlGroup: (slot: number) => {
         this.inputHandler.onSaveControlGroup?.(slot)
       },
@@ -1037,6 +1037,12 @@ export class GameInstance {
     this.camera.y = h / 2 - cy * this.camera.zoom
     clampCamera(this.camera, w, h)
     this.notify('⚔ Battle', '#ff8844', 700)
+  }
+
+  private activateBuildingRallyMode() {
+    this.inputHandler.pendingModifier = 'rally'
+    if (this.canvas) this.canvas.style.cursor = 'crosshair'
+    this.notify('Left-click to set rally point', 'rgba(100,200,255,0.7)', 1500)
   }
 
   private snapToBase() {
