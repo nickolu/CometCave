@@ -59,23 +59,27 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
 
   // Fetch leaderboard when period or category changes
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       setLoading(true)
       setError(null)
       try {
         const res = await fetch(
-          `/api/v1/tap-tap-adventure/leaderboard?period=${period}&category=${category}`
+          `/api/v1/tap-tap-adventure/leaderboard?period=${period}&category=${category}`,
+          { signal: controller.signal }
         )
         if (!res.ok) throw new Error('Failed to load leaderboard')
         const json = await res.json()
         setData(json)
-      } catch {
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return
         setError('Failed to load leaderboard.')
       } finally {
         setLoading(false)
       }
     }
     load()
+    return () => controller.abort()
   }, [period, category])
 
   const handleSaveName = () => {
