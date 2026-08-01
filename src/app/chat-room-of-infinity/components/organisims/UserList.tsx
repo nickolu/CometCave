@@ -79,7 +79,7 @@ export default function UserList() {
   return (
     <Box sx={sx.container}>
       <Box sx={sx.drawerToggle(isCollapsed)}>
-        <IconButton onClick={toggleUserList}>
+        <IconButton onClick={toggleUserList} aria-label={isCollapsed ? 'Expand user list' : 'Collapse user list'}>
           {isCollapsed ? <ExpandMore /> : <ExpandLess />}
         </IconButton>
       </Box>
@@ -92,6 +92,7 @@ export default function UserList() {
                 <IconButton
                   onClick={toggleUserSelector}
                   color={isSelectorOpen ? 'primary' : 'default'}
+                  aria-label={isSelectorOpen ? 'Close character selector' : 'Add new character'}
                   sx={sx.iconButton(isSelectorOpen)}
                 >
                   {isSelectorOpen ? <Close /> : <PersonAdd />}
