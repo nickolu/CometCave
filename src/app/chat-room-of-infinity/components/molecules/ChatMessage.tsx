@@ -24,7 +24,7 @@ export default function ChatMessage({ message }: Props) {
         sx={{
           maxWidth: '70%',
           backgroundColor: isSelf ? 'primary.main' : 'secondary.main',
-          color: isSelf ? 'white' : 'text.primary',
+          color: isSelf ? 'primary.contrastText' : 'secondary.contrastText',
           borderRadius: 2,
           p: 2,
         }}
