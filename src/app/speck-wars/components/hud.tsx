@@ -1399,30 +1399,48 @@ export function HUD() {
                         fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
                       }}
                     >✗</button>
-                    <button
-                      onClick={() => {
-                        const next = !touchSelectActive
-                        setTouchSelectActive(next)
-                        if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
-                      }}
-                      title="Drag-select"
-                      aria-label="Drag-select mode"
-                      aria-pressed={touchSelectActive}
-                      style={{
-                        width: 44, height: 44, borderRadius: 8,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
-                        border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
-                        color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
-                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
-                      }}
-                    >⊞</button>
                   </>
                 )}
               </>
             )}
             {/* Right spacer */}
             <div style={{ flex: 1 }} />
+            {/* Touch-only persistent selection controls — always visible so players can enter select mode */}
+            {isTouchDevice && (
+              <>
+                <button
+                  onClick={() => { navigator.vibrate?.(8); gameActions?.selectAll?.() }}
+                  title="Select all units"
+                  aria-label="Select all units"
+                  style={{
+                    width: 44, height: 44, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                  }}
+                >◉</button>
+                <button
+                  onClick={() => {
+                    const next = !touchSelectActive
+                    setTouchSelectActive(next)
+                    if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
+                  }}
+                  title="Drag-select mode"
+                  aria-label="Drag-select mode"
+                  aria-pressed={touchSelectActive}
+                  style={{
+                    width: 44, height: 44, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
+                    border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
+                    color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
+                    fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                  }}
+                >⊞</button>
+              </>
+            )}
             {/* Selection count chip — units only */}
             {(hud?.selectedSpeckCount ?? 0) > 0 && (
               <div style={{
