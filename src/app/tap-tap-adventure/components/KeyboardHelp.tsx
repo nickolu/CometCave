@@ -41,11 +41,15 @@ export function KeyboardHelp({ onClose }: KeyboardHelpProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="keyboard-help-title"
         className="relative bg-[#161723] border border-[#3a3c56] rounded-xl p-5 max-w-sm w-full mx-4 shadow-2xl"
         onClick={e => e.stopPropagation()}
+        onKeyDown={e => { if (e.key === 'Escape') onClose() }}
       >
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-bold text-white">Keyboard Shortcuts</h3>
+          <h3 id="keyboard-help-title" className="text-lg font-bold text-white">Keyboard Shortcuts</h3>
           <button
             onClick={onClose}
             className="text-slate-400 hover:text-white text-sm px-2 py-1"
