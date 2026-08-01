@@ -9,6 +9,7 @@ import { updateCapture } from './capture'
 import { BUILDING_TYPES } from '../config/building-types'
 import { HUD_UPDATE_INTERVAL, DOMINATION_TIME } from '../constants'
 import { updateTurrets } from './turret'
+import { updateSurvivalSpawner } from './survival-spawner'
 
 export function tick(sim: SimulationState, dt: number): SimulationState {
   sim.events = []  // clear outbound events from previous tick
@@ -21,6 +22,9 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
 
   // 2b. Turrets: fire missiles at nearby enemies
   updateTurrets(sim, dt)
+
+  // 2c. Survival mode: spawn waves and tick countdown
+  updateSurvivalSpawner(sim, dt)
 
   // 3. Each speck picks/validates its target
   runSpeckAI(sim)
@@ -70,13 +74,6 @@ export function tick(sim: SimulationState, dt: number): SimulationState {
     }
   } else {
     sim.dominationTimer = 0
-  }
-
-  // Survival win: on survival levels, winning enough waves beats the level
-  if (sim.survivalWinWaves !== null &&
-      sim.waveNumber >= sim.survivalWinWaves &&
-      !sim.waveInProgress) {
-    sim.events.push({ type: 'GAME_OVER', winnerId: 'player', victoryType: 'survival' })
   }
 
   // 9. Emit HUD update every N ticks
@@ -240,7 +237,9 @@ function consumeInputs(sim: SimulationState) {
     }
     if (event.type === 'BUILD_STRUCTURE') {
       if (event.ownerId !== 'player') continue
-      if (sim.turretBudget <= 0) continue
+      const SACRIFICE_COST = 20
+      // Must have enough selected specks to sacrifice
+      if (sim.selectedSpeckIds.size < SACRIFICE_COST) continue
       const btype = BUILDING_TYPES[event.typeId]
       if (!btype) continue  // unknown type, skip
       // Don't allow placing on top of an existing building (within 60px)
@@ -261,7 +260,15 @@ function consumeInputs(sim: SimulationState) {
         spawnTimer: 0,
         fireTimer: 0,
       }
-      sim.turretBudget--
+      // Sacrifice 20 selected specks (set HP to 0; removeDeadSpecks cleans up next tick)
+      let sacrificed = 0
+      for (let i = 0; i < sim.speckCount && sacrificed < SACRIFICE_COST; i++) {
+        const meta = sim.speckMeta[i]
+        if (!meta || !sim.speckIds[i] || !sim.selectedSpeckIds.has(meta.id)) continue
+        sim.speckHp[i] = 0
+        sacrificed++
+      }
+      sim.selectedSpeckIds.clear()
     }
     if (event.type === 'STOP') {
       if (event.ownerId === 'player' && sim.selectedSpeckIds.size === 0) continue
@@ -447,7 +454,7 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.turretBudget >= 0 && sim.survivalWinWaves !== null } })
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, surgeDuration: sim.surgeDuration, surgeCooldown: sim.surgeCooldown, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
 }
 
 function pruneCommandGroups(sim: SimulationState) {
