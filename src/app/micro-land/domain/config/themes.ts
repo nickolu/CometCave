@@ -1,0 +1,347 @@
+/**
+ * Themes — the worlds you can switch between.
+ *
+ * A theme is a terrain generator plus a mood: what the void behind the world
+ * looks like, how dark it is, how hard gravity pulls, and which creatures show
+ * up already living there. Switching themes rebuilds the tile grid; summoned
+ * creatures survive the change.
+ */
+import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
+import { type Rng, fbm, makeNoise2D } from '@/app/micro-land/domain/sim/prng'
+import type { MaterialId } from '@/app/micro-land/domain/types'
+
+import { MATERIAL_INDEX } from './materials'
+
+export interface Theme {
+  id: string
+  name: string
+  blurb: string
+  /** Two-stop gradient behind the world, top to bottom. */
+  sky: [string, string]
+  /** 0 = evenly lit, 1 = only glowing things are visible. */
+  gloom: number
+  /** Gravity multiplier. The station is 0.35; everywhere else is 1. */
+  gravity: number
+  /** Who already lives here. */
+  starters: { id: string; count: number }[]
+  build: (tiles: Uint8Array, rng: Rng) => void
+}
+
+const M = MATERIAL_INDEX
+
+function fill(tiles: Uint8Array, id: MaterialId) {
+  tiles.fill(M[id])
+}
+
+function set(tiles: Uint8Array, x: number, y: number, id: MaterialId) {
+  if (x < 0 || y < 0 || x >= WORLD_W || y >= WORLD_H) return
+  tiles[y * WORLD_W + x] = M[id]
+}
+
+function rect(
+  tiles: Uint8Array,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  id: MaterialId
+) {
+  for (let y = Math.max(0, y0); y <= Math.min(WORLD_H - 1, y1); y++) {
+    for (let x = Math.max(0, x0); x <= Math.min(WORLD_W - 1, x1); x++) {
+      tiles[y * WORLD_W + x] = M[id]
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+const EMPTY: Theme = {
+  id: 'empty',
+  name: 'Empty',
+  blurb: 'Nothing at all. Build it yourself.',
+  sky: ['#141026', '#090713'],
+  gloom: 0.1,
+  gravity: 1,
+  starters: [],
+  build: (tiles) => fill(tiles, 'air'),
+}
+
+const EARTH: Theme = {
+  id: 'earth',
+  name: 'Cross-Section',
+  blurb: 'Sky, grass, dirt, caves, and molten rock at the bottom.',
+  sky: ['#7fc4e8', '#2a3a5c'],
+  gloom: 0.34,
+  gravity: 1,
+  starters: [
+    { id: 'sunleaf', count: 44 },
+    { id: 'bramble', count: 14 },
+    { id: 'mite', count: 10 },
+    { id: 'hopper', count: 6 },
+    { id: 'glimmer-moth', count: 6 },
+    { id: 'stalker', count: 2 },
+    { id: 'delver', count: 4 },
+    { id: 'sporecap', count: 5 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.3)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      // Rolling hills: a couple of octaves is enough at this width.
+      const h = fbm(surfaceNoise, x * 0.035, 0.5, 3)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 18)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        let mat: MaterialId
+        if (y === surface) mat = 'grass'
+        else if (depth < 0.22) mat = 'dirt'
+        else if (depth > 0.9) mat = 'lava'
+        else mat = 'stone'
+
+        // Carve caves out of the rock, but never out of the top crust.
+        if (mat === 'stone' && depth < 0.88) {
+          const c = fbm(caveNoise, x * 0.06, y * 0.09, 3)
+          if (c > 0.62) mat = 'air'
+        }
+        // Occasional water pockets and sand seams.
+        if (mat === 'stone' && depth > 0.35 && depth < 0.7) {
+          const o = oreNoise(x * 0.12, y * 0.12)
+          if (o > 0.88) mat = 'water'
+          else if (o < 0.08) mat = 'sand'
+        }
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // A shallow pond or two on the surface.
+    const ponds = 2 + Math.floor(rng() * 2)
+    for (let p = 0; p < ponds; p++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const w = 8 + Math.floor(rng() * 14)
+      for (let x = cx - w; x <= cx + w; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        // Find the surface at this column, then scoop a bowl into it.
+        let surface = 0
+        while (surface < WORLD_H && tiles[surface * WORLD_W + x] === M.air) surface++
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const depth = Math.floor(t * 5)
+        for (let d = 0; d < depth; d++) set(tiles, x, surface + d, 'water')
+      }
+    }
+  },
+}
+
+const STATION: Theme = {
+  id: 'station',
+  name: 'Broken Station',
+  blurb: 'Metal rooms adrift in orbit. Everything falls slowly here.',
+  sky: ['#060812', '#01030a'],
+  gloom: 0.62,
+  gravity: 0.35,
+  starters: [
+    { id: 'rustbot', count: 5 },
+    { id: 'sporecap', count: 18 },
+    { id: 'drifter-jelly', count: 5 },
+    { id: 'glimmer-moth', count: 7 },
+    { id: 'mite', count: 8 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+
+    // Chop the interior into rooms by recursively splitting a box, then hollow
+    // each one out and knock a doorway through — cheap, and it always connects.
+    interface Box {
+      x0: number
+      y0: number
+      x1: number
+      y1: number
+    }
+    const rooms: Box[] = []
+
+    function split(box: Box, depth: number) {
+      const w = box.x1 - box.x0
+      const h = box.y1 - box.y0
+      if (depth > 4 || (w < 26 && h < 20) || rooms.length > 24) {
+        rooms.push(box)
+        return
+      }
+      const horizontal = w > h * 1.4 ? true : h > w * 1.4 ? false : rng() > 0.5
+      if (horizontal) {
+        const cut = box.x0 + Math.floor(w * (0.35 + rng() * 0.3))
+        split({ ...box, x1: cut }, depth + 1)
+        split({ ...box, x0: cut }, depth + 1)
+      } else {
+        const cut = box.y0 + Math.floor(h * (0.35 + rng() * 0.3))
+        split({ ...box, y1: cut }, depth + 1)
+        split({ ...box, y0: cut }, depth + 1)
+      }
+    }
+
+    const margin = 12
+    split(
+      { x0: margin, y0: 10, x1: WORLD_W - margin, y1: WORLD_H - 10 },
+      0
+    )
+
+    for (const room of rooms) {
+      // Skip a few rooms entirely — a station with holes in it reads as broken.
+      if (rng() < 0.18) continue
+      rect(tiles, room.x0, room.y0, room.x1, room.y1, 'metal')
+      rect(tiles, room.x0 + 2, room.y0 + 2, room.x1 - 2, room.y1 - 2, 'air')
+
+      // Viewports.
+      if (rng() < 0.5) {
+        const gy = room.y0 + 2 + Math.floor(rng() * Math.max(1, room.y1 - room.y0 - 4))
+        rect(tiles, room.x0, gy, room.x0 + 1, gy + 1, 'glass')
+      }
+      // Doorway to the room on the right.
+      const dy = room.y1 - 3
+      rect(tiles, room.x1 - 2, dy - 2, room.x1 + 2, dy, 'air')
+
+      // Leftover cargo: water tanks, scrap piles, and — critically — soil.
+      //
+      // Metal and glass are not fertile, so a station built only from those has
+      // nowhere for a plant to root. Nothing grows, nothing eats, and the whole
+      // station starves within a couple of minutes. These are the overgrown
+      // hydroponics beds, and they are what make the place survivable.
+      const roll = rng()
+      if (roll < 0.2) {
+        rect(tiles, room.x0 + 3, room.y1 - 6, room.x0 + 10, room.y1 - 3, 'water')
+      } else if (roll < 0.32) {
+        rect(tiles, room.x0 + 4, room.y1 - 4, room.x0 + 9, room.y1 - 3, 'metal')
+      }
+      if (rng() < 0.65) {
+        const bedX = room.x0 + 3
+        const bedW = Math.max(4, Math.floor((room.x1 - room.x0) * 0.5))
+        rect(tiles, bedX, room.y1 - 3, bedX + bedW, room.y1 - 3, 'dirt')
+      }
+    }
+  },
+}
+
+const TIDEPOOL: Theme = {
+  id: 'tidepool',
+  name: 'Tidepool',
+  blurb: 'Shallow water over rock shelves and sand.',
+  sky: ['#bfe6f5', '#4a89a8'],
+  gloom: 0.22,
+  gravity: 1,
+  starters: [
+    { id: 'kelp', count: 34 },
+    { id: 'sunleaf', count: 8 },
+    { id: 'finling', count: 10 },
+    { id: 'mite', count: 6 },
+    { id: 'gulper', count: 2 },
+    { id: 'drifter-jelly', count: 4 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const floorNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const shelfNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const waterLine = Math.floor(WORLD_H * 0.34)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const f = fbm(floorNoise, x * 0.045, 2.5, 3)
+      const floor = Math.floor(WORLD_H * 0.66 + (f - 0.5) * 26)
+
+      for (let y = waterLine; y < floor; y++) set(tiles, x, y, 'water')
+      for (let y = floor; y < WORLD_H; y++) {
+        const depth = y - floor
+        set(tiles, x, y, depth < 3 ? 'sand' : 'stone')
+      }
+
+      // Rock shelves that break the surface — the tide leaves these dry.
+      const s = fbm(shelfNoise, x * 0.03, 8.5, 2)
+      if (s > 0.66) {
+        const top = waterLine - Math.floor((s - 0.66) * 34)
+        for (let y = top; y < floor; y++) {
+          set(tiles, x, y, y < waterLine + 1 ? 'stone' : 'stone')
+        }
+        set(tiles, x, top, 'stone')
+      }
+    }
+
+    // Scattered tidepools sitting on top of the shelves.
+    for (let i = 0; i < 14; i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      let y = 0
+      while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
+      if (y >= waterLine || y >= WORLD_H - 2) continue
+      const w = 2 + Math.floor(rng() * 5)
+      for (let x = cx - w; x <= cx + w; x++) {
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        for (let d = 0; d < Math.floor(t * 4); d++) set(tiles, x, y + d, 'water')
+      }
+    }
+  },
+}
+
+const VOLCANIC: Theme = {
+  id: 'volcanic',
+  name: 'Volcanic',
+  blurb: 'Ash, black rock and rivers of lava. Only tough things last.',
+  sky: ['#3a1512', '#120608'],
+  gloom: 0.5,
+  gravity: 1,
+  starters: [
+    { id: 'sporecap', count: 20 },
+    { id: 'ember-grub', count: 7 },
+    { id: 'cinder-wyrm', count: 3 },
+    { id: 'mite', count: 6 },
+    { id: 'delver', count: 3 },
+    { id: 'rustbot', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.28)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(surfaceNoise, x * 0.05, 1.5, 4)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 30)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        let mat: MaterialId
+        if (depth < 0.06) mat = 'ash'
+        else if (depth > 0.86) mat = 'lava'
+        else mat = depth > 0.55 ? 'obsidian' : 'stone'
+
+        if ((mat === 'stone' || mat === 'obsidian') && depth < 0.82) {
+          const c = fbm(caveNoise, x * 0.07, y * 0.1, 3)
+          if (c > 0.6) mat = 'air'
+          else if (c < 0.16 && depth > 0.4) mat = 'lava'
+        }
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Lava falls spilling down from the surface.
+    for (let i = 0; i < 4; i++) {
+      const cx = 12 + Math.floor(rng() * (WORLD_W - 24))
+      let y = 0
+      while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
+      const w = 1 + Math.floor(rng() * 2)
+      for (let d = 0; d < 18; d++) {
+        for (let x = cx - w; x <= cx + w; x++) set(tiles, x, y + d, 'lava')
+      }
+    }
+  },
+}
+
+export const THEMES: Theme[] = [EMPTY, EARTH, STATION, TIDEPOOL, VOLCANIC]
+
+export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(
+  THEMES.map((t) => [t.id, t])
+)
+
+export const DEFAULT_THEME = 'empty'
