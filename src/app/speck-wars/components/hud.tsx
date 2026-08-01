@@ -17,6 +17,13 @@ function formatTime(ms: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
+function formatSurvivalTime(ms: number): string {
+  const s = Math.ceil(ms / 1000)
+  const m = Math.floor(s / 60)
+  const sec = s % 60
+  return `${m}:${sec.toString().padStart(2, '0')}`
+}
+
 export function HUD() {
   const [showHelp, setShowHelp] = useState(false)
   const [winStreak, setWinStreak] = useState(0)
@@ -98,6 +105,7 @@ export function HUD() {
   const surrender = useSpeckWarsStore(s => s.surrender)
   const gameActions = useSpeckWarsStore(s => s.gameActions)
   const campaignLevel = useSpeckWarsStore(s => s.campaignLevel)
+  const buildMenuOpen = useSpeckWarsStore(s => s.buildMenuOpen)
 
   // Show level intro when a campaign level starts playing (only on first play of each level)
   useEffect(() => {
@@ -208,6 +216,20 @@ export function HUD() {
             border: 'none', fontFamily: 'monospace',
           }}
         >⚠ BASE UNDER ATTACK ↑</button>
+      )}
+      {hud?.survivalTimeRemaining != null && phase === 'playing' && (
+        <div style={{
+          position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
+          fontFamily: 'monospace', fontSize: 16, letterSpacing: 2,
+          color: hud.survivalTimeRemaining < 30000 ? '#ff4f7b' : hud.survivalTimeRemaining < 60000 ? '#ffaa44' : '#4af7c4',
+          textShadow: '0 0 12px currentColor',
+          pointerEvents: 'none', zIndex: 12,
+        }}>
+          {hud.waveInProgress
+            ? `WAVE ${hud.waveNumber} — HOLD!`
+            : `SURVIVE ${formatSurvivalTime(hud.survivalTimeRemaining)}`
+          }
+        </div>
       )}
       {(() => {
         const myCount = hud?.players?.player?.speckCount ?? 0
@@ -325,8 +347,8 @@ export function HUD() {
         )
       })()}
 
-      {/* Wave countdown — only shows when wave is imminent or in progress */}
-      {hud && (hud.waveCountdown !== null || hud.waveInProgress) && (() => {
+      {/* Wave countdown — only shows when wave is imminent or in progress (not on survival levels which use their own timer) */}
+      {hud && hud.survivalTimeRemaining == null && (hud.waveCountdown !== null || hud.waveInProgress) && (() => {
         const countdown = hud.waveCountdown ?? 0
         const inProgress = hud.waveInProgress
         if (!inProgress && countdown > 30000) return null  // only show when < 30s
@@ -1394,30 +1416,48 @@ export function HUD() {
                         fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
                       }}
                     >✗</button>
-                    <button
-                      onClick={() => {
-                        const next = !touchSelectActive
-                        setTouchSelectActive(next)
-                        if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
-                      }}
-                      title="Drag-select"
-                      aria-label="Drag-select mode"
-                      aria-pressed={touchSelectActive}
-                      style={{
-                        width: 44, height: 44, borderRadius: 8,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
-                        border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
-                        color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
-                        fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
-                      }}
-                    >⊞</button>
                   </>
                 )}
               </>
             )}
             {/* Right spacer */}
             <div style={{ flex: 1 }} />
+            {/* Touch-only persistent selection controls — always visible so players can enter select mode */}
+            {isTouchDevice && (
+              <>
+                <button
+                  onClick={() => { navigator.vibrate?.(8); gameActions?.selectAll?.() }}
+                  title="Select all units"
+                  aria-label="Select all units"
+                  style={{
+                    width: 44, height: 44, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(0,0,0,0.35)',
+                    border: '1px solid rgba(255,255,255,0.2)',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                  }}
+                >◉</button>
+                <button
+                  onClick={() => {
+                    const next = !touchSelectActive
+                    setTouchSelectActive(next)
+                    if (next) { navigator.vibrate?.([10, 20, 10]); gameActions?.activateSelectMode?.() }
+                  }}
+                  title="Drag-select mode"
+                  aria-label="Drag-select mode"
+                  aria-pressed={touchSelectActive}
+                  style={{
+                    width: 44, height: 44, borderRadius: 8,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: touchSelectActive ? 'rgba(74,247,196,0.25)' : 'rgba(0,0,0,0.35)',
+                    border: touchSelectActive ? '1px solid rgba(74,247,196,0.9)' : '1px solid rgba(255,255,255,0.2)',
+                    color: touchSelectActive ? '#4af7c4' : 'rgba(255,255,255,0.5)',
+                    fontSize: 15, cursor: 'pointer', pointerEvents: 'auto', flexShrink: 0,
+                  }}
+                >⊞</button>
+              </>
+            )}
             {/* Selection count chip — units only */}
             {(hud?.selectedSpeckCount ?? 0) > 0 && (
               <div style={{
@@ -1555,46 +1595,75 @@ export function HUD() {
               </button>
             )
           })()}
-          {hud?.buildModeEnabled && (
-            <>
-              <span style={{ fontSize: 9, color: 'rgba(255,180,80,0.7)', fontFamily: 'monospace', letterSpacing: 0.5, whiteSpace: 'nowrap', pointerEvents: 'none' }}>
-                Builds: {hud?.turretBudget ?? 0}
-              </span>
-              {([
-                { typeId: 'turret',     label: '⬡ Turret',     bg: 'rgba(255,136,68,0.12)',  border: 'rgba(255,136,68,0.55)',  color: '#ff8844', title: 'Place Turret — ranged defense' },
-                { typeId: 'scoutPost',  label: '⟩ Scout Post', bg: 'rgba(80,200,255,0.10)',  border: 'rgba(80,200,255,0.50)',  color: '#50c8ff', title: 'Place Scout Post — spawns fast scouts' },
-                { typeId: 'heavyForge', label: '▣ Heavy Forge', bg: 'rgba(255,80,60,0.10)',  border: 'rgba(255,100,60,0.50)',  color: '#ff6644', title: 'Place Heavy Forge — spawns tanky heavies' },
-              ] as const).map(({ typeId, label, bg, border, color, title }) => {
-                const disabled = (hud?.turretBudget ?? 0) <= 0
-                return (
-                  <button
-                    key={typeId}
-                    onClick={() => { if (!disabled) { navigator.vibrate?.(12); gameActions?.activateBuildMode?.(typeId) } }}
-                    title={title}
-                    aria-label={`${title} — ${hud?.turretBudget ?? 0} placement${(hud?.turretBudget ?? 0) !== 1 ? 's' : ''} remaining`}
-                    disabled={disabled}
-                    style={{
-                      padding: '8px 10px',
-                      fontSize: 10,
-                      cursor: disabled ? 'not-allowed' : 'pointer',
-                      background: disabled ? 'rgba(0,0,0,0.2)' : bg,
-                      border: `1px solid ${disabled ? 'rgba(255,255,255,0.12)' : border}`,
-                      borderRadius: 20,
-                      color: disabled ? 'rgba(255,255,255,0.3)' : color,
-                      letterSpacing: 0.8,
-                      minHeight: 44,
-                      fontFamily: 'monospace',
-                      fontWeight: 700,
-                      opacity: disabled ? 0.5 : 1,
-                      pointerEvents: 'auto',
-                    }}
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-            </>
-          )}
+          {hud?.buildModeEnabled && (() => {
+            const selectedCount = hud?.selectedSpeckCount ?? 0
+            const canBuild = selectedCount >= 20
+            return (
+              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                {/* Build button */}
+                <button
+                  onClick={() => {
+                    if (canBuild) {
+                      navigator.vibrate?.(12)
+                      useSpeckWarsStore.getState().setBuildMenuOpen(!buildMenuOpen)
+                    }
+                  }}
+                  title={canBuild ? '[B] Open build menu' : 'Select 20+ units to build'}
+                  aria-label={canBuild ? 'Open build menu [B]' : `Build — need 20 units selected (${selectedCount} selected)`}
+                  style={{
+                    padding: '8px 12px',
+                    fontSize: 10,
+                    cursor: canBuild ? 'pointer' : 'default',
+                    background: canBuild ? 'rgba(255,136,68,0.18)' : 'rgba(0,0,0,0.2)',
+                    border: `1px solid ${canBuild ? 'rgba(255,136,68,0.55)' : 'rgba(255,255,255,0.12)'}`,
+                    borderRadius: 20,
+                    color: canBuild ? '#ff8844' : 'rgba(255,255,255,0.3)',
+                    letterSpacing: 0.8,
+                    minHeight: 44,
+                    fontFamily: 'monospace',
+                    fontWeight: 700,
+                    opacity: canBuild ? 1 : 0.5,
+                    pointerEvents: 'auto',
+                  }}
+                >
+                  {canBuild ? (buildMenuOpen ? '▲ B Build' : '▼ B Build') : `Build (need 20)`}
+                </button>
+                {/* Build dropdown */}
+                {buildMenuOpen && canBuild && (
+                  <div style={{
+                    position: 'absolute', bottom: '100%', right: 0, marginBottom: 4,
+                    display: 'flex', flexDirection: 'column', gap: 4,
+                    background: 'rgba(0,0,0,0.85)', border: '1px solid rgba(255,136,68,0.4)',
+                    borderRadius: 8, padding: '6px 8px',
+                    animation: 'panel-slide-up 0.15s ease-out',
+                    zIndex: 20,
+                  }}>
+                    <span style={{ fontSize: 8, color: 'rgba(255,180,80,0.7)', letterSpacing: 1, whiteSpace: 'nowrap', pointerEvents: 'none', paddingBottom: 2 }}>
+                      COSTS 20 UNITS
+                    </span>
+                    <button
+                      onClick={() => {
+                        navigator.vibrate?.(12)
+                        useSpeckWarsStore.getState().setBuildMenuOpen(false)
+                        gameActions?.activateBuildMode?.('turret')
+                      }}
+                      title="[T] Place Turret — ranged defense"
+                      aria-label="Place Turret — costs 20 units [T]"
+                      style={{
+                        padding: '8px 10px', fontSize: 10, cursor: 'pointer',
+                        background: 'rgba(255,136,68,0.12)', border: '1px solid rgba(255,136,68,0.55)',
+                        borderRadius: 16, color: '#ff8844', letterSpacing: 0.8,
+                        minHeight: 44, fontFamily: 'monospace', fontWeight: 700,
+                        pointerEvents: 'auto', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      [T] Turret
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
           <button
             onClick={() => { navigator.vibrate?.(8); gameActions.clearRally?.() }}
             title="[R] Clear rally"

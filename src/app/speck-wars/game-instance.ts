@@ -82,9 +82,16 @@ export class GameInstance {
       if (levelConfig) {
         difficulty = levelConfig.difficulty
         this.levelConfig = levelConfig
-        sim = createSim(levelConfig.seed, levelConfig.difficulty, levelConfig.mapPreset ?? 'open', levelConfig.outpostCount)
+        sim = createSim(levelConfig.seed, levelConfig.difficulty, levelConfig.mapPreset ?? 'open', levelConfig.outpostCount, {
+          playerBaseCenter: levelConfig.playerBaseCenter,
+          noAiBase: levelConfig.noAiBase,
+          isSurvival: levelConfig.isSurvival,
+          surviveLengthMs: levelConfig.surviveLengthMs,
+        })
         preSpawnUnits(sim, 'player', levelConfig.preSpawn.player)
-        preSpawnUnits(sim, 'ai', levelConfig.preSpawn.ai)
+        if (!levelConfig.isSurvival) {
+          preSpawnUnits(sim, 'ai', levelConfig.preSpawn.ai)
+        }
         if (levelConfig.survivalWaves) {
           sim.survivalWinWaves = levelConfig.survivalWaves
         }
@@ -148,6 +155,13 @@ export class GameInstance {
       this.canvas,
       this.camera,
       (wx, wy) => {
+        // Right-click in build mode: cancel build
+        if (this.buildModeTypeId) {
+          this.buildModeTypeId = null
+          if (this.canvas) this.canvas.style.cursor = 'default'
+          this.notify('Build cancelled', 'rgba(255,255,255,0.4)', 600)
+          return
+        }
         // Check if click hit a player building — select it instead of rallying
         // Touch devices get a larger buffer to ensure 44px+ screen hit area at default zoom
         const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
@@ -187,20 +201,9 @@ export class GameInstance {
       (x1, y1, x2, y2) => {                                           // drag — box-select specks
         this.sim.inputQueue.push({ type: 'BOX_SELECT', ownerId: 'player', x1, y1, x2, y2 })
       },
-      () => {                                                          // Escape/left-click — clear selection or place structure
-        if (this.buildModeTypeId) {
-          // In build mode, left-click places a structure at the mouse world position
-          const mousePos = this.inputHandler.getMouseScreenPos()
-          if (mousePos) {
-            const { x: wx, y: wy } = screenToWorld(mousePos.x, mousePos.y, this.camera)
-            this.sim.inputQueue.push({ type: 'BUILD_STRUCTURE', ownerId: 'player', typeId: this.buildModeTypeId, x: wx, y: wy })
-          }
-          this.buildModeTypeId = null
-          if (this.canvas) this.canvas.style.cursor = 'default'
-        } else {
-          this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
-          this.sim.rallyPoints['player-selected'] = null
-        }
+      () => {                                                          // Escape — clear selection
+        this.sim.inputQueue.push({ type: 'CLEAR_SELECT', ownerId: 'player' })
+        this.sim.rallyPoints['player-selected'] = null
       },
       () => { this.surge() },  // Q — production surge
       () => { this.snapToAction() },                                        // V — snap camera to battle
@@ -259,6 +262,13 @@ export class GameInstance {
     )
     this.inputHandler.onGuard = () => { if (this.sim.selectedBuildingId) return; this.guard(); this.notify('🛡 GUARD', '#4af7c4', 1000) }
     this.inputHandler.onTap = (wx, wy) => {
+      // Build mode: left-click places the structure
+      if (this.buildModeTypeId) {
+        this.sim.inputQueue.push({ type: 'BUILD_STRUCTURE', ownerId: 'player', typeId: this.buildModeTypeId, x: wx, y: wy })
+        this.buildModeTypeId = null
+        if (this.canvas) this.canvas.style.cursor = 'default'
+        return
+      }
       // Left-click: select a player building if tapped, otherwise deselect
       const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
       const hitBuffer = isTouchDevice ? 30 : 20
@@ -294,6 +304,21 @@ export class GameInstance {
         if (aliveIds.has(id)) this.sim.selectedSpeckIds.add(id)
       }
       this.sim.rallyPoints['player-selected'] = this.sim.rallyPoints['player']
+    }
+    this.inputHandler.onBuildMenu = () => {
+      if (this.sim.isSurvival && this.sim.selectedSpeckIds.size >= 20) {
+        const current = useSpeckWarsStore.getState().buildMenuOpen
+        useSpeckWarsStore.getState().setBuildMenuOpen(!current)
+      } else {
+        // Fall through to rush if not in survival mode or not enough units
+        this.rush(); this.notify('⚡ RUSH!', '#ff4f7b')
+      }
+    }
+    this.inputHandler.onBuildTurret = () => {
+      if (this.sim.isSurvival && this.sim.selectedSpeckIds.size >= 20) {
+        useSpeckWarsStore.getState().setBuildMenuOpen(false)
+        useSpeckWarsStore.getState().gameActions?.activateBuildMode?.('turret')
+      }
     }
     useSpeckWarsStore.getState().setGameActions({
       defend: () => { this.defend(); this.notify('🛡 DEFEND', '#4af7c4') },
@@ -341,13 +366,12 @@ export class GameInstance {
       activatePatrol: () => this.inputHandler.activateTouchPatrol(),
       activateSelectMode: () => this.inputHandler.activateTouchSelectMode(),
       activateBuildMode: (typeId: string) => {
-        if (this.sim.turretBudget <= 0) return
         this.buildModeTypeId = typeId
         if (this.canvas) this.canvas.style.cursor = 'crosshair'
         const labels: Record<string, string> = {
-          turret: 'Click to place Turret',
-          scoutPost: 'Click to place Scout Post',
-          heavyForge: 'Click to place Heavy Forge',
+          turret: 'Click to place Turret (costs 20 units)',
+          scoutPost: 'Click to place Scout Post (costs 20 units)',
+          heavyForge: 'Click to place Heavy Forge (costs 20 units)',
         }
         this.notify(labels[typeId] ?? 'Click to place', '#ff8844', 1500)
       },
@@ -794,13 +818,6 @@ export class GameInstance {
           const waveColors = ['#ff4f7b', '#ff6b35', '#cc00ff']
           const color = waveColors[(event.waveNumber - 1) % waveColors.length]
           this.notify(`⚠ WAVE ${event.waveNumber} ASSAULT!`, color, 3000)
-          if (this.levelConfig?.allowTurrets) {
-            // Reward: earn one more turret to place after each wave starts
-            if (this.sim.turretBudget < 8) {  // cap at 8 total
-              this.sim.turretBudget++
-              this.notify('⬡ Turret ready (+1)', '#ff8844', 1800)
-            }
-          }
         }
         if (event.type === 'AI_SPAWN_SWITCH' && event.speckTypeId === 'heavy') {
           this.notify('⚠ ENEMY SWITCHING TO HEAVY', '#ff8844')

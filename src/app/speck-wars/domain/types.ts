@@ -87,6 +87,11 @@ export interface SimulationState {
   waveInProgress: boolean        // true during the 15s wave assault
   waveNumber: number             // current wave count (0 = not started)
   obstacles: WallObstacle[]
+  isSurvival: boolean
+  survivalTimeRemaining: number    // ms countdown to win
+  survivalWaveTimer: number        // ms until next wave spawns
+  survivalWaveRemainingMs: number  // ms left in current wave
+  survivalWaveNumber: number       // current wave count
 }
 
 export type InputEvent =
@@ -149,4 +154,5 @@ export interface HudData {
     aiRallyPoint: { x: number; y: number } | null
   }
   cameraViewport?: { x: number; y: number; w: number; h: number }  // world-space viewport rect
+  survivalTimeRemaining: number | null
 }
