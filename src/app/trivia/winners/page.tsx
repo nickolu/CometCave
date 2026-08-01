@@ -60,7 +60,10 @@ export default function WinnersPage() {
 
   useEffect(() => {
     fetch('/api/v1/trivia/weekly-winners')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
       .then((data) => {
         setWinners(data.winners ?? [])
         setLoading(false)
