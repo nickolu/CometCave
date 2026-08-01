@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Item } from '@/app/tap-tap-adventure/models/types'
 
 const RARITY_CONFIG = {
@@ -48,6 +48,11 @@ interface RareLootCelebrationProps {
 export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
 
+  const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
+  }, [])
+
   const rarity = (item.rarity === 'legendary' || item.rarity === 'epic')
     ? item.rarity as CelebrationRarity
     : 'epic'
@@ -60,7 +65,7 @@ export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProp
 
     const timer = setTimeout(() => {
       setIsVisible(false)
-      setTimeout(onDismiss, 300)
+      dismissTimerRef.current = setTimeout(onDismiss, 300)
     }, 4000)
 
     return () => clearTimeout(timer)
@@ -68,7 +73,7 @@ export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProp
 
   const handleDismiss = () => {
     setIsVisible(false)
-    setTimeout(onDismiss, 300)
+    dismissTimerRef.current = setTimeout(onDismiss, 300)
   }
 
   const effectsSummary = item.effects
@@ -80,6 +85,9 @@ export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProp
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Rare loot drop"
       className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}

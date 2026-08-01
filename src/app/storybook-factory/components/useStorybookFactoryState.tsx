@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import type { GeneratedStory } from '../types'
 
 export interface StoryConfiguration {
@@ -120,6 +120,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [isGeneratingIllustrations, setIsGeneratingIllustrations] = useState(false)
   const [illustrationProgress, setIllustrationProgress] = useState({ completed: 0, total: 0 })
   const [illustrationError, setIllustrationError] = useState<string | null>(null)
+  const illustrationAbortRef = useRef<AbortController | null>(null)
 
   // Inline editing & revision state
   const [editingPanel, setEditingPanel] = useState<{ pageIndex: number; panelIndex: number } | null>(null)
@@ -270,13 +271,20 @@ export function useStorybookFactoryState(): StorybookFactoryState {
 
     if (illustrationPanels.length === 0) return
 
+    // Abort any in-progress generation before starting a new one
+    illustrationAbortRef.current?.abort()
+    const controller = new AbortController()
+    illustrationAbortRef.current = controller
+
     setIsGeneratingIllustrations(true)
     setIllustrationError(null)
     setIllustrationProgress({ completed: 0, total: illustrationPanels.length })
 
     const storyContext = `A ${generatedStory.layout.type} story called "${generatedStory.layout.title}"`
+    let failedCount = 0
 
     for (const { key, prompt } of illustrationPanels) {
+      if (controller.signal.aborted) break
       try {
         const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
           method: 'POST',
@@ -286,6 +294,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
             artStyle: storyConfig.artStyle,
             storyContext,
           }),
+          signal: controller.signal,
         })
 
         if (response.ok) {
@@ -293,16 +302,25 @@ export function useStorybookFactoryState(): StorybookFactoryState {
           setIllustrationUrls(prev => ({ ...prev, [key]: data.imageUrl }))
         } else {
           console.error(`Failed to generate illustration for ${key}: HTTP ${response.status}`)
+          failedCount++
         }
       } catch (err) {
+        if ((err as Error)?.name === 'AbortError') break
         console.error(`Failed to generate illustration for ${key}:`, err)
-        // Continue with remaining panels even on individual failure
+        failedCount++
       }
 
       setIllustrationProgress(prev => ({ ...prev, completed: prev.completed + 1 }))
     }
 
-    setIsGeneratingIllustrations(false)
+    if (!controller.signal.aborted) {
+      if (failedCount > 0) {
+        setIllustrationError(
+          `${failedCount} of ${illustrationPanels.length} illustration${failedCount > 1 ? 's' : ''} failed to generate. You can try again.`
+        )
+      }
+      setIsGeneratingIllustrations(false)
+    }
   }
 
   const updatePanelContent = (pageIndex: number, panelIndex: number, content: string) => {
@@ -372,9 +390,13 @@ export function useStorybookFactoryState(): StorybookFactoryState {
       if (response.ok) {
         const data = await response.json()
         setIllustrationUrls(prev => ({ ...prev, [key]: data.imageUrl }))
+      } else {
+        console.error(`Failed to regenerate illustration for ${key}: HTTP ${response.status}`)
+        setIllustrationError('Failed to regenerate illustration. Please try again.')
       }
     } catch (err) {
       console.error(`Failed to regenerate illustration for ${key}:`, err)
+      setIllustrationError('Failed to regenerate illustration. Please try again.')
     }
   }
 

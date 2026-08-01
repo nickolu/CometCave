@@ -819,7 +819,11 @@ export function HUD() {
       {/* Help overlay */}
       {showHelp && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close help"
           onClick={() => setShowHelp(false)}
+          onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') setShowHelp(false) }}
           style={{
             position: 'absolute', inset: 0,
             background: 'rgba(0,0,0,0.7)',
@@ -1165,12 +1169,18 @@ export function HUD() {
 
       {/* Paused overlay */}
       {phase === 'paused' && (
-        <div onClick={togglePause} style={{
-          position: 'absolute', inset: 0,
-          background: 'rgba(0,0,0,0.55)',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
-          cursor: 'pointer',
-        }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Resume game"
+          onClick={togglePause}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') togglePause() }}
+          style={{
+            position: 'absolute', inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20,
+            cursor: 'pointer',
+          }}>
           <span style={{ fontSize: 36, fontWeight: 'bold', letterSpacing: 4, opacity: 0.9 }}>
             PAUSED
           </span>

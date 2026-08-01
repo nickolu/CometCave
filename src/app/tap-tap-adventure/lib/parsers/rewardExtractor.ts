@@ -29,6 +29,10 @@ export default async function extractRewardItemsFromText(text: string): Promise<
         response_format: { type: 'json_object' },
       }),
     })
+    if (!response.ok) {
+      console.error('[rewardExtractor] OpenAI API error:', response.status, response.statusText)
+      throw new Error(`OpenAI API error: ${response.status}`)
+    }
     const data = await response.json()
     const content = data.choices?.[0]?.message?.content?.trim()
     if (!content) return []

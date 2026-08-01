@@ -96,6 +96,8 @@ export function useMoveForwardMutation() {
           setGenericMessage(null)
           setDecisionPoint(null)
           setShopState({ items: shopData.shopItems, isOpen: true, shopMount: shopData.shopMount ?? null })
+        } else {
+          console.error('[useMoveForwardMutation] shop/generate failed:', shopRes.status)
         }
       } else if (data.decisionPoint) {
         if (data.decisionPoint.isLegendary) {

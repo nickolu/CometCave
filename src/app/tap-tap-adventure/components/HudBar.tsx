@@ -136,6 +136,7 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
   interface StatDelta { id: string; key: IconType; delta: number }
   const [statDeltas, setStatDeltas] = useState<StatDelta[]>([])
   const prevStatsRef = useRef<Partial<Record<IconType, number>>>({})
+  const tooltipTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const trackedKeys: IconType[] = ['heartIcon', 'sunIcon', 'waterDropIcon']
@@ -151,18 +152,25 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
         prevStatsRef.current[key] = current
       }
     }
+    const timerIds: ReturnType<typeof setTimeout>[] = []
     if (newDeltas.length > 0) {
       setStatDeltas(prev => {
         const combined = [...prev, ...newDeltas].slice(-5)
         return combined
       })
       newDeltas.forEach(d => {
-        setTimeout(() => {
+        const id = setTimeout(() => {
           setStatDeltas(prev => prev.filter(x => x.id !== d.id))
         }, 1200)
+        timerIds.push(id)
       })
     }
+    return () => { timerIds.forEach(clearTimeout) }
   }, [stats])
+
+  useEffect(() => {
+    return () => { if (tooltipTimerRef.current != null) clearTimeout(tooltipTimerRef.current) }
+  }, [])
 
   const [soundEnabled, setSoundEnabled] = useState(true)
 
@@ -206,8 +214,8 @@ export function HudBar({ onOpenStatus }: HudBarProps = {}) {
 
   const handleStatTap = useCallback((key: IconType) => {
     setActiveTooltip(prev => prev === key ? null : key)
-    // Auto-dismiss after 2 seconds
-    setTimeout(() => setActiveTooltip(null), 2000)
+    if (tooltipTimerRef.current != null) clearTimeout(tooltipTimerRef.current)
+    tooltipTimerRef.current = setTimeout(() => setActiveTooltip(null), 2000)
   }, [])
 
   const reputationTier = getReputationTier(character?.reputation ?? 0)
