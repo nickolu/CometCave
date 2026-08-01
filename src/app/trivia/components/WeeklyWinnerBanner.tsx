@@ -38,7 +38,10 @@ export function WeeklyWinnerBanner() {
 
   useEffect(() => {
     fetch('/api/v1/trivia/weekly-winner')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error(`weekly-winner fetch failed: ${res.status}`)
+        return res.json()
+      })
       .then((d: WinnerData) => {
         setData(d)
         if (d.weekKey) {
@@ -49,7 +52,9 @@ export function WeeklyWinnerBanner() {
           setDismissed(true)
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('[WeeklyWinnerBanner] Failed to load winner data:', err)
+        // Hide the banner rather than showing broken state
         setDismissed(true)
       })
   }, [user?.uid])
