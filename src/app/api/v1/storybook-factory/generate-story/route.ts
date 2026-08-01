@@ -49,7 +49,17 @@ export async function POST(request: Request) {
       apiKey: process.env.OPENAI_API_KEY,
     })
 
-    const { caption1, caption2, storyDirectionPrompt, storyConfig } = await request.json()
+    const { caption1, caption2, storyDirectionPrompt, storyConfig: rawStoryConfig } = await request.json()
+
+    if (!rawStoryConfig || typeof rawStoryConfig !== 'object' || Array.isArray(rawStoryConfig)) {
+      return NextResponse.json({ error: 'storyConfig is required' }, { status: 400 })
+    }
+    const MAX_PAGE_COUNT = 24
+    const MIN_PAGE_COUNT = 4
+    const storyConfig = {
+      ...rawStoryConfig,
+      pageCount: Math.min(Math.max(Number(rawStoryConfig.pageCount) || 8, MIN_PAGE_COUNT), MAX_PAGE_COUNT),
+    }
 
     const imageDescriptions = [
       caption1 ? `Image 1: "${caption1}"` : 'Image 1: (no caption provided)',
