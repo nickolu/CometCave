@@ -23,7 +23,7 @@ export async function POST(
     }
 
     // Empty answer (timeout) is treated as incorrect — skip the judge
-    const isTimeout = !answer || answer.trim() === ''
+    const isTimeout = !answer || typeof answer !== 'string' || answer.trim() === ''
 
     // Load question
     const db = getFirestoreDb();
