@@ -91,15 +91,6 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
               <MenuItem value="offline">Offline</MenuItem>
             </Select>
           </FormControl>
-          <TextField
-            margin="dense"
-            label="Description"
-            fullWidth
-            multiline
-            rows={3}
-            value={formData.description}
-            onChange={e => setFormData({ ...formData, description: e.target.value })}
-          />
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>Cancel</Button>
