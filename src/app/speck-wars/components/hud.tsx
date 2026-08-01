@@ -79,6 +79,24 @@ export function HUD() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
+  // Ctrl+1–9: quick-select building by position in the footer bar
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!e.ctrlKey) return
+      const digit = parseInt(e.code.replace('Digit', ''))
+      if (isNaN(digit) || digit < 1 || digit > 9) return
+      const buildings = hud?.playerBuildings
+      if (!buildings) return
+      const target = buildings[digit - 1]
+      if (!target) return
+      e.preventDefault()
+      navigator.vibrate?.(8)
+      gameActions?.selectBuilding?.(target.id)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [hud?.playerBuildings, gameActions])
+
   useEffect(() => {
     if (!isTouchDevice) return
     const unsub1 = onLongPressStart((x, y) => setLongPressRing({ x, y }))
@@ -1114,7 +1132,7 @@ export function HUD() {
             return (
               <button
                 key={b.id}
-                onClick={() => { navigator.vibrate?.(8); selectBuilding?.(b.id) }}
+                onClick={() => { navigator.vibrate?.(8); gameActions?.selectBuilding?.(b.id) }}
                 title={`${b.name} [Ctrl+${i + 1}]`}
                 aria-label={`Select ${b.name} (Ctrl+${i + 1})`}
                 style={{
