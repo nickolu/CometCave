@@ -1,7 +1,7 @@
 'use client'
 
 import { Play } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useCastVote } from '@/app/voters/api/hooks'
 import type { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
@@ -21,6 +21,11 @@ export default function VotingExecution({
   onVotingComplete,
   onBack,
 }: VotingExecutionProps) {
+  const isMountedRef = useRef(true)
+  useEffect(() => {
+    return () => { isMountedRef.current = false }
+  }, [])
+
   const [isVoting, setIsVoting] = useState(false)
   const [progress, setProgress] = useState(0)
   const [currentVoter, setCurrentVoter] = useState('')
@@ -76,6 +81,7 @@ export default function VotingExecution({
 
             // Small delay to show progress
             await new Promise(resolve => setTimeout(resolve, 100))
+            if (!isMountedRef.current) break
           } catch (error) {
             console.error('Error casting vote:', error)
             errors.push(
@@ -87,6 +93,7 @@ export default function VotingExecution({
             setProgress((completedVotes / totalVoters) * 100)
           }
         }
+        if (!isMountedRef.current) break
       }
 
       if (errors.length > 0) {
