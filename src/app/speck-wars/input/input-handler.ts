@@ -24,7 +24,7 @@ export class InputHandler {
   private onSelectAll?: () => void
   public onSaveControlGroup?: (slot: number) => void
   public onRecallControlGroup?: (slot: number) => void
-  private pendingModifier: 'none' | 'attack' = 'none'
+  public pendingModifier: 'none' | 'attack' | 'rally' = 'none'
   private isPanDragging = false   // middle-mouse only
   private isRightDragging = false
   private pendingBuildActive = false
@@ -228,6 +228,10 @@ export class InputHandler {
         const world = screenToWorld(sx, sy, this.camera)
         if (this.pendingModifier === 'attack') {
           this.onAttackMove?.(world.x, world.y)
+          this.pendingModifier = 'none'
+          if (this.canvas) this.canvas.style.cursor = 'default'
+        } else if (this.pendingModifier === 'rally') {
+          this.onRally?.(world.x, world.y)
           this.pendingModifier = 'none'
           if (this.canvas) this.canvas.style.cursor = 'default'
         } else {
