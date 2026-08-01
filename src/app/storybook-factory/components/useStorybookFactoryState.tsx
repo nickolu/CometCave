@@ -390,9 +390,13 @@ export function useStorybookFactoryState(): StorybookFactoryState {
       if (response.ok) {
         const data = await response.json()
         setIllustrationUrls(prev => ({ ...prev, [key]: data.imageUrl }))
+      } else {
+        console.error(`Failed to regenerate illustration for ${key}: HTTP ${response.status}`)
+        setIllustrationError('Failed to regenerate illustration. Please try again.')
       }
     } catch (err) {
       console.error(`Failed to regenerate illustration for ${key}:`, err)
+      setIllustrationError('Failed to regenerate illustration. Please try again.')
     }
   }
 
