@@ -64,7 +64,12 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
           isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
         }`}
       >
-        <div className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Daily Reward"
+          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4"
+        >
           {!claimed ? (
             <>
               {/* Title */}
