@@ -250,6 +250,7 @@ export default function RunSummary({
               value={nameInput}
               onChange={e => setNameInput(e.target.value.slice(0, 20))}
               placeholder="Enter your player name"
+              aria-label="Player name"
               className="flex-1 px-3 py-2 rounded bg-[#161723] border border-[#3a3c56] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
               onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
             />

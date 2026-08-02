@@ -59,7 +59,8 @@ export default function WinnersPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/v1/trivia/weekly-winners')
+    const controller = new AbortController()
+    fetch('/api/v1/trivia/weekly-winners', { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         return res.json()
@@ -68,7 +69,11 @@ export default function WinnersPage() {
         setWinners(data.winners ?? [])
         setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        if (err instanceof Error && err.name === 'AbortError') return
+        setLoading(false)
+      })
+    return () => controller.abort()
   }, [])
 
   const currentUid = user?.uid

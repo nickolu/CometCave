@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-08",
+  "categoryId": 29,
+  "categoryName": "Entertainment: Comics",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-08-0",
+      "question": "In \"Homestuck\" what is Dave Strider's guardian?",
+      "options": [
+        "Doc Scratch",
+        "Halley",
+        "Becquerel",
+        "Bro"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Bro"
+    },
+    {
+      "id": "opentdb-2026-06-08-1",
+      "question": "According to their longtime nickname, what kind of \"duo\" are Batman & Robin?",
+      "options": [
+        "Dangerous",
+        "Dynastic",
+        "Delirious",
+        "Dynamic"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Dynamic"
+    },
+    {
+      "id": "opentdb-2026-06-08-2",
+      "question": "The main six year old protagonist in Calvin and Hobbes is named after what theologian?",
+      "options": [
+        "Calvin Klein",
+        "Phillip Calvin McGraw",
+        "Calvin Coolidge",
+        "John Calvin"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "John Calvin"
+    },
+    {
+      "id": "opentdb-2026-06-08-3",
+      "question": "In Pre-Super Genesis universe of \"Sonic the Hedgehog\" comic, what was the name of  Sally Acorn's brother?",
+      "options": [
+        "Alexis Acorn",
+        "Frederick Acorn",
+        "Maximillian Acorn",
+        "Elias Acorn"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Elias Acorn"
+    },
+    {
+      "id": "opentdb-2026-06-08-4",
+      "question": "In Marvel Comics, Taurus is the founder and leader of which criminal organization?",
+      "options": [
+        "Scorpio",
+        "Tiger Mafia",
+        "The Union",
+        "Zodiac"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Zodiac"
+    },
+    {
+      "id": "opentdb-2026-06-08-5",
+      "question": "What are the Three Virtues of Bionicle?",
+      "options": [
+        "Build, Play, Change",
+        "Work, Play, Live",
+        "Forge, Build, Fight",
+        "Unity, Duty, Destiny"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Unity, Duty, Destiny"
+    },
+    {
+      "id": "ai-2026-06-08-6",
+      "question": "What is the name of the orphaned boy who transforms into the adult superhero Shazam by saying a magic word?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Billy Batson",
+      "explanation": "Billy Batson is a young orphan who, when he shouts \"Shazam!\", is transformed into an adult superhero of the same name. The name \"Shazam\" is actually an acronym drawn from the powers of six legendary figures: Solomon, Hercules, Atlas, Zeus, Achilles, and Mercury. The character was originally known as Captain Marvel when first introduced by Fawcett Comics in 1939."
+    },
+    {
+      "id": "ai-2026-06-08-7",
+      "question": "What is the real name of the Marvel superhero who carries a star-spangled shield?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Steve Rogers",
+      "explanation": "Steve Rogers is the civilian identity of Captain America, one of Marvel's most iconic superheroes. A frail young man from Brooklyn, Rogers was transformed into a super-soldier during World War II and went on to become a founding member of the Avengers."
+    },
+    {
+      "id": "ai-2026-06-08-8",
+      "question": "Which Marvel Epic imprint miniseries was both written and illustrated by Bill Sienkiewicz?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Stray Toasters",
+      "explanation": "Stray Toasters is a four-issue miniseries published in 1988–1989 under Marvel's creator-owned Epic imprint, with Bill Sienkiewicz serving as both writer and artist — a rare dual role for him. The series is known for its surreal, painted artwork and dark psychological narrative. It remains one of Sienkiewicz's most personal and experimental works."
+    },
+    {
+      "id": "ai-2026-06-08-9",
+      "question": "In Spy × Family, what is the surname given to the Loid, Yor, and Anya's fake family unit, chosen as a wordplay on the concept of falsifying documents or identities?",
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Forger",
+      "explanation": "The Forger family name in Spy × Family is a deliberate pun on \"forgery,\" reflecting that the entire family unit is a fabricated cover identity. Loid is a spy, Yor is an assassin, and Anya is a telepath — none of them are a genuine family, making the name a winking meta-joke by creator Tatsuya Endo. The wordplay is subtle enough that it rewards attentive readers familiar with the series' spy-thriller premise."
+    }
+  ]
+}

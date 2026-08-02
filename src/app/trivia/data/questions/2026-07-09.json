@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-09",
+  "categoryId": 12,
+  "categoryName": "Entertainment: Music",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-09-0",
+      "question": "Which of these is NOT the name of an album released by English singer-songwriter Adele?",
+      "options": [
+        "19",
+        "21",
+        "25",
+        "12"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "12"
+    },
+    {
+      "id": "opentdb-2026-07-09-1",
+      "question": "What is the name of Finnish DJ Darude's hit single released in October 1999?",
+      "options": [
+        "Dust Devil",
+        "Sirocco",
+        "Khamsin",
+        "Sandstorm"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Sandstorm"
+    },
+    {
+      "id": "opentdb-2026-07-09-2",
+      "question": "Who performed \"I Took A Pill In Ibiza\"?",
+      "options": [
+        "Robbie Williams",
+        "Harry Styles",
+        "Avicii",
+        "Mike Posner"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Mike Posner"
+    },
+    {
+      "id": "opentdb-2026-07-09-3",
+      "question": "Who is the frontman of Muse?",
+      "options": [
+        "Thom Yorke",
+        "Jonny Greenwood",
+        "Dominic Howard",
+        "Matt Bellamy"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Matt Bellamy"
+    },
+    {
+      "id": "opentdb-2026-07-09-4",
+      "question": "Where did the British Boy Band \"Bros\" come from?",
+      "options": [
+        "Guildford",
+        "Aldershot",
+        "Bagshot",
+        "Camberley"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Camberley"
+    },
+    {
+      "id": "opentdb-2026-07-09-5",
+      "question": "This album, now considered to be one of the greatest of all time, was a commercial failure when it was released.",
+      "options": [
+        "Abbey Road",
+        "Pet Sounds",
+        "Led Zeppelin IV",
+        "The Velvet Underground and Nico"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "The Velvet Underground and Nico"
+    },
+    {
+      "id": "ai-2026-07-09-6",
+      "question": "Which K-pop girl group has a name designed to pair pink (softness and femininity) with black (power and edge)?",
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "BLACKPINK",
+      "explanation": "BLACKPINK's name was deliberately crafted to blend two contrasting ideas: pink representing softness and femininity, and black representing power and edge. The group debuted under YG Entertainment in 2016 and went on to become one of the best-selling girl groups of all time. The duality in their name reflects their musical style, which blends fierce, bold tracks with more delicate, melodic ones."
+    },
+    {
+      "id": "ai-2026-07-09-7",
+      "question": "Which music subgenre emerged in the mid-1970s as a raw, rebellious reaction to disco and progressive rock dominating the charts?",
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "punk rock",
+      "explanation": "Punk rock burst onto the scene in the mid-1970s as a stripped-down, high-energy antidote to the polished excess of disco, progressive rock, and string-heavy pop. Bands like the Sex Pistols and The Ramones led the charge, embracing a DIY ethos and aggressive sound. The movement had a massive cultural impact, influencing fashion, politics, and countless music genres that followed."
+    },
+    {
+      "id": "ai-2026-07-09-8",
+      "question": "Which John Coltrane album, recorded in late 1964, was described by its creator as his \"attempt to say 'THANK YOU GOD' through our work\"?",
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "A Love Supreme",
+      "explanation": "John Coltrane recorded \"A Love Supreme\" in December 1964 as a deeply personal spiritual offering, reflecting his religious re-awakening after years of struggle with addiction. The album is widely regarded as one of the greatest jazz recordings ever made, featuring his classic quartet. Its four-part suite — Resolution, Acknowledgement, Pursuance, and Psalm — maps a journey of devotion and gratitude."
+    },
+    {
+      "id": "ai-2026-07-09-9",
+      "question": "Which extreme metal subgenre is known for lyrical themes spanning slasher-film-style violence, true crime, religion, and science fiction?",
+      "difficulty": "hard",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "Death metal",
+      "explanation": "Death metal is one of heavy metal's most lyrically extreme subgenres, drawing from horror cinema, real-world crime, theological concepts, and sci-fi narratives. Pioneered in the mid-1980s by bands like Death, Possessed, and Morbid Angel, it pushed both musical and lyrical boundaries far beyond mainstream metal. Its diverse thematic palette is part of what distinguishes it from other extreme subgenres like black metal or thrash."
+    }
+  ]
+}

@@ -1,6 +1,22 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+
+const GenerateSummaryRequestSchema = z.object({
+  voterGroup: z.object({
+    name: z.string().max(200),
+    description: z.string().max(1000),
+  }),
+  votes: z.array(z.object({
+    choice: z.string().max(500),
+    reasoning: z.string().max(1000),
+  })).min(1).max(100),
+  criteria: z.object({
+    question: z.string().max(1000),
+    options: z.array(z.string().max(500)).max(20),
+  }),
+})
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,14 +35,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { voterGroup, votes, criteria } = await request.json()
-
-    if (!voterGroup || !votes || !Array.isArray(votes) || votes.length === 0) {
+    const parseResult = GenerateSummaryRequestSchema.safeParse(await request.json())
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Invalid request: voterGroup and votes are required' },
+        { error: parseResult.error.errors[0]?.message ?? 'Invalid request' },
         { status: 400 }
       )
     }
+    const { voterGroup, votes, criteria } = parseResult.data
 
     // Create a summary of the voting patterns and reasoning
     const votingData = votes.map(vote => ({

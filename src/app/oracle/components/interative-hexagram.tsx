@@ -81,6 +81,7 @@ export const LineControl = ({
     <div className="flex gap-2">
       <div
         role="button"
+        aria-label="Toggle line — solid or broken"
         tabIndex={0}
         onClick={() => toggleLine()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
@@ -89,6 +90,7 @@ export const LineControl = ({
       </div>
       <div
         role="button"
+        aria-label="Toggle changing line"
         tabIndex={0}
         onClick={() => toggleHasChanges()}
         onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}

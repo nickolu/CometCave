@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-28",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-28-0",
+      "question": "What is a fundamental element of the Gothic style of architecture?",
+      "options": [
+        "façades surmounted by a pediment ",
+        "internal frescoes",
+        "coffered ceilings",
+        "pointed arch"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "pointed arch"
+    },
+    {
+      "id": "opentdb-2026-06-28-1",
+      "question": "Which artist is famous for cutting off his ear?",
+      "options": [
+        "Rembrandt",
+        "Michelangelo",
+        "Salvador Dali",
+        "Vincent van Gogh"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Vincent van Gogh"
+    },
+    {
+      "id": "opentdb-2026-06-28-2",
+      "question": "Who painted \"Swans Reflecting Elephants\", \"Sleep\", and \"The Persistence of Memory\"?",
+      "options": [
+        "Jackson Pollock",
+        "Edgar Degas",
+        "Vincent van Gogh",
+        "Salvador Dali"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Salvador Dali"
+    },
+    {
+      "id": "opentdb-2026-06-28-3",
+      "question": "What were Marcel Duchamp's readymades?",
+      "options": [
+        "a series focused on color and light as opposed to line and shape",
+        "paintings with a barely visible outlined square",
+        "a group of identical steel boxes jutting from the wall ",
+        "utilitarian objects elevated to the status of art"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "utilitarian objects elevated to the status of art"
+    },
+    {
+      "id": "opentdb-2026-06-28-4",
+      "question": "Which time signature is commonly known as \"Cut Time?\"",
+      "options": [
+        "4/4",
+        "3/4",
+        "6/8",
+        "2/2"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "2/2"
+    },
+    {
+      "id": "opentdb-2026-06-28-5",
+      "question": "What nationality was the famous artist Pablo Picasso?",
+      "options": [
+        "Italian",
+        "German",
+        "French",
+        "Spanish"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Spanish"
+    },
+    {
+      "id": "ai-2026-06-28-6",
+      "question": "Who painted The Birth of Venus?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Sandro Botticelli",
+      "explanation": "The Birth of Venus was painted by Sandro Botticelli, one of the most celebrated artists of the Italian Renaissance. The iconic work depicts the goddess Venus emerging from the sea and is housed in the Uffizi Gallery in Florence, Italy. It remains one of the most recognizable paintings in Western art history."
+    },
+    {
+      "id": "ai-2026-06-28-7",
+      "question": "When artists and illustrators choose a drawing pencil, which grade sits at the midpoint of the graphite hardness scale — between the hardest (10H) and softest (10B) ends — and is also the standard for everyday writing pencils?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "HB",
+      "explanation": "Graphite pencils used in drawing and sketching are graded on a scale from 10H (hardest, lightest marks) to 10B (softest, darkest marks), with HB sitting right in the middle. Artists rely on this scale to choose the right pencil for their work — harder grades for fine, light lines and softer grades for bold, expressive shading. HB is also equivalent to the everyday #2 pencil."
+    },
+    {
+      "id": "ai-2026-06-28-8",
+      "question": "At which French university did renowned documentary photographer Sebastião Salgado earn a PhD in economics?",
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "University of Paris",
+      "explanation": "Before becoming one of the world's most celebrated photojournalists, Sebastião Salgado pursued an academic career, earning a PhD in economics from the University of Paris. He later abandoned economics for photography in the early 1970s, going on to document humanitarian crises and environmental issues across the globe. His epic long-term projects, such as \"Workers\" and \"Genesis,\" have cemented his legacy as one of photography's great visual storytellers."
+    },
+    {
+      "id": "ai-2026-06-28-9",
+      "question": "Which art museum specifies that provenance should be listed in chronological order, beginning with the commission of a work if applicable, then its place of creation from smallest to largest location?",
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "NC Museum of Art",
+      "explanation": "The NC Museum of Art provides detailed guidelines for documenting provenance, the ownership history of artworks. Their standard calls for chronological ordering starting with the commission (if known), followed by the place of creation listed from the most specific to the broadest geographic unit. Proper provenance documentation is critical in the art world for establishing authenticity and legal ownership."
+    }
+  ]
+}

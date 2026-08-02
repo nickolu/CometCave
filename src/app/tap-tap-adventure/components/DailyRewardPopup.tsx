@@ -18,6 +18,8 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
   const [claimResult, setClaimResult] = useState<ClaimResult | null>(null)
 
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
   }, [])
@@ -25,6 +27,21 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
   useEffect(() => {
     requestAnimationFrame(() => setIsVisible(true))
   }, [])
+
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [])
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsVisible(false)
+        dismissTimerRef.current = setTimeout(onDismiss, 300)
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onDismiss])
 
   // Auto-dismiss after claiming
   useEffect(() => {
@@ -62,10 +79,12 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
         }`}
       >
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Daily Reward"
-          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4"
+          tabIndex={-1}
+          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 outline-none"
         >
           {!claimed ? (
             <>

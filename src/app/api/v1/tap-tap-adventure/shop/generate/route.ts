@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error generating shop', err)
     return NextResponse.json(
-      { error: 'Failed to generate shop', details: (err as Error).message },
+      { error: 'Failed to generate shop' },
       { status: 500 }
     )
   }

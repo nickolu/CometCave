@@ -1,0 +1,415 @@
+{
+  "timestamp": "2026-05-18T07:02:40.989Z",
+  "appVersion": "b8a9cb14e9a70716dbdff97998a9bf20e87e1cf8",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 253,
+    "generationFailed": 2,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.4912760000000045,
+    "perTrialUsd": 0.021534415686274528,
+    "byStage": {
+      "facts": 0.3265659999999999,
+      "factPicker": 0.134971,
+      "construct": 2.981231999999999,
+      "review": 0.546358,
+      "judge": 1.1091399999999993,
+      "repair": 0.39300900000000016
+    },
+    "byModel": {
+      "sonar": 0.3265659999999999,
+      "claude-haiku-4-5-20251001": 0.6813290000000012,
+      "claude-sonnet-4-6": 3.3742409999999987,
+      "gpt-4o": 1.1091399999999993
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 253,
+    "score3": 653,
+    "score2": 26,
+    "score1": 80,
+    "shipPct": 72.33201581027669,
+    "factualMean": 2.758893280632411,
+    "difficultyMean": 2.8616600790513833,
+    "concisionMean": 2.644268774703557
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 83,
+      "score3": 203,
+      "score2": 18,
+      "score1": 28,
+      "shipPct": 69.87951807228916,
+      "factualMean": 2.8795180722891565,
+      "difficultyMean": 2.710843373493976,
+      "concisionMean": 2.5180722891566263
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 223,
+      "score2": 4,
+      "score1": 28,
+      "shipPct": 71.76470588235294,
+      "factualMean": 2.7176470588235295,
+      "difficultyMean": 2.8941176470588235,
+      "concisionMean": 2.6823529411764704
+    },
+    "hard": {
+      "total": 85,
+      "scored": 85,
+      "score3": 227,
+      "score2": 4,
+      "score1": 24,
+      "shipPct": 75.29411764705883,
+      "factualMean": 2.6823529411764704,
+      "difficultyMean": 2.976470588235294,
+      "concisionMean": 2.7294117647058824
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 0,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 3,
+      "difficultyMean": 3,
+      "concisionMean": 2.6
+    },
+    "Film": {
+      "total": 15,
+      "scored": 13,
+      "score3": 32,
+      "score2": 0,
+      "score1": 7,
+      "shipPct": 69.23076923076923,
+      "factualMean": 2.6923076923076925,
+      "difficultyMean": 2.8461538461538463,
+      "concisionMean": 2.3846153846153846
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 0,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.6,
+      "difficultyMean": 3,
+      "concisionMean": 3
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.7333333333333334
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 1,
+      "score1": 4,
+      "shipPct": 80,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.8666666666666667
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.2666666666666666
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 3,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.8666666666666667
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.6666666666666665,
+      "concisionMean": 2.6
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 41,
+      "score2": 2,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 3,
+      "concisionMean": 2.8666666666666667
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 2,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 33,
+      "score2": 3,
+      "score1": 9,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.533333333333333,
+      "concisionMean": 2.2
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 37,
+      "score2": 2,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.533333333333333,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 0,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.7333333333333334
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.6666666666666665,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.8666666666666667
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.6,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.533333333333333
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 1,
+      "score1": 8,
+      "shipPct": 60,
+      "factualMean": 2.7333333333333334,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.3333333333333335
+    }
+  },
+  "worst": [
+    {
+      "category": "Film",
+      "difficulty": "medium",
+      "question": "Which director of the Berlin International Film Festival faced a censorship controversy after prizewinners' acceptance speeches criticized Israel and Germany, reigniting debates about free speech at major film festivals?",
+      "correctAnswer": "Tricia Tuttle",
+      "factualScore": 1,
+      "factualRationale": "Tricia Tuttle is not the director of the Berlin International Film Festival; she is associated with the BFI London Film Festival, making the stated correct answer factually incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "Tricia Tuttle is not a widely recognized name in the film industry, making this question more appropriate for a hard difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, including the specific film festival, the nature of the controversy, and the countries involved, which trivialize the answer.",
+      "sourceUrl": "https://hyperallergic.com/how-the-berlinale-turned-into-a-horror-show-of-german-censorship/"
+    },
+    {
+      "category": "Film",
+      "difficulty": "hard",
+      "question": "At the 1989 Razzies, a fictional fast-food mascot clown — rather than a human actor — won the Worst New Star award, beating out then-newcomer Jean-Claude Van Damme. Which iconic commercial character claimed this dubious honor?",
+      "correctAnswer": "Ronald McDonald",
+      "factualScore": 1,
+      "factualRationale": "Ronald McDonald did not win the Worst New Star award at the 1989 Razzies; the award went to the character 'The Teenage Mutant Ninja Turtles' collectively.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as hard because it requires specific knowledge of a niche event at the 1989 Razzies, which is not common knowledge.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple redundant clues, as both 'fictional fast-food mascot clown' and 'iconic commercial character' independently lead directly to Ronald McDonald.",
+      "sourceUrl": "https://www.mentalfloss.com/article/91545/12-surprising-razzie-award-winners"
+    },
+    {
+      "category": "Music",
+      "difficulty": "medium",
+      "question": "According to a Cambridge study on syncopation, which type of syncopation first appears in musical notation in ragtime songs and piano music at the end of the 19th century?",
+      "correctAnswer": "fourth-position syncopation",
+      "factualScore": 1,
+      "factualRationale": "There is no widely recognized concept of 'fourth-position syncopation' in music theory, making the stated correct answer incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The concept of 'fourth-position syncopation' is too specialized for a medium difficulty question, as it requires specific knowledge of music theory not typically known by casual followers.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing necessary context without redundant clues that would trivialize the answer.",
+      "sourceUrl": "https://www.cambridge.org/core/journals/popular-music/article/origins-of-syncopation-in-american-popular-music/941F3ADA4C6254F1D26025152F4806F3"
+    },
+    {
+      "category": "Video Games",
+      "difficulty": "easy",
+      "question": "Which PlayStation game featuring a purple dragon sold about 4.8 million copies, making it one of the best-selling games on the console?",
+      "correctAnswer": "Spyro the Dragon",
+      "factualScore": 2,
+      "factualRationale": "While 'Spyro the Dragon' is a well-known PlayStation game featuring a purple dragon, the specific sales figure of 4.8 million copies is not widely verified, making the answer broadly right but with a minor issue.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While 'Spyro the Dragon' is a well-known game among gamers, it may not be a household name for those without interest in video games, making it borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: 'purple dragon' and '4.8 million copies' both independently identify 'Spyro the Dragon' as the answer.",
+      "sourceUrl": "https://www.thegamer.com/spyro-dragon-facts-trivia/"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "easy",
+      "question": "In what format are IPv4 addresses written, using four numbers separated by periods?",
+      "correctAnswer": "dotted decimal",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'dotted decimal' is accurate for the format in which IPv4 addresses are written.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The term 'dotted decimal' is a specialist label not commonly known by the general public, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question over-specifies by mentioning both the format (four numbers) and the separator (periods), either of which alone would lead to the answer.",
+      "sourceUrl": "https://www.geeksforgeeks.org/computer-networks/what-is-ipv4/"
+    },
+    {
+      "category": "Computers",
+      "difficulty": "hard",
+      "question": "According to Mozilla's Firefox history page, what web technology did Microsoft deploy as a counter-move during the browser wars that subsequently became the standard for styling web page design?",
+      "correctAnswer": "Cascading Style Sheets",
+      "factualScore": 1,
+      "factualRationale": "Cascading Style Sheets (CSS) were not introduced by Microsoft; they were developed by Håkon Wium Lie and Bert Bos and became a standard through the W3C, not as a counter-move by Microsoft.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific historical knowledge about web technologies and the browser wars, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues: Microsoft's counter-move during the browser wars and the standard for styling web pages, both of which independently lead to Cascading Style Sheets.",
+      "sourceUrl": "https://www.firefox.com/en-US/more/browser-history/"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "easy",
+      "question": "By 1932, which type of vehicle had reached a count of 63,000 on U.S. roads?",
+      "correctAnswer": "school buses",
+      "factualScore": 1,
+      "factualRationale": "There is no verifiable evidence that 63,000 school buses were on U.S. roads by 1932, making the stated answer incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The answer 'school buses' is not a common or intuitive guess for an easy question about vehicle types in 1932.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing only the necessary context of the year and vehicle count without redundant clues.",
+      "sourceUrl": "https://americanhistory.si.edu/explore/exhibitions/america-on-the-move/online/school-bus"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "question": "Which rebuilt Alco locomotive model appears on CSX's official roster of active locomotives?",
+      "correctAnswer": "MT4",
+      "factualScore": 1,
+      "factualRationale": "The MT4 is not a known rebuilt Alco locomotive model on CSX's active roster, making the stated answer incorrect.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question requires specific knowledge of locomotive models and CSX's roster, which is too specialized for a medium difficulty tier.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise and does not include redundant clues, focusing solely on the specific locomotive model on CSX's roster.",
+      "sourceUrl": "https://www.rrpicturearchives.net/railroads/csx-railroad/CSX/locomotives/modelsummary"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "easy",
+      "question": "Who wrote the classic holiday special \"A Charlie Brown Christmas,\" basing it on his comic strip?",
+      "correctAnswer": "Charles Schulz",
+      "factualScore": 1,
+      "factualRationale": "Charles Schulz created the Peanuts comic strip, but the screenplay for 'A Charlie Brown Christmas' was written by Charles Schulz, Bill Melendez, and Lee Mendelson, making the stated answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Charles Schulz is a household name and the creator of the widely known Peanuts comic strip, making this question well-suited for the easy tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question redundantly specifies both the holiday special and the comic strip, either of which alone would identify Charles Schulz.",
+      "sourceUrl": "https://www.youtube.com/watch?v=9t3Cdx22ODA"
+    },
+    {
+      "category": "Cartoons & Animation",
+      "difficulty": "hard",
+      "question": "Whose classic animated features were notably often produced at 12 frames per second — \"on twos\" — rather than on every frame, a technique now considered standard in the industry?",
+      "correctAnswer": "Disney",
+      "factualScore": 1,
+      "factualRationale": "Disney's classic animated features were typically produced at 24 frames per second, not 12, making the stated correct answer incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question requires specific knowledge about animation techniques and industry standards, fitting the 'hard' difficulty tier.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, as both 'classic animated features' and 'produced at 12 frames per second' independently point to Disney, trivializing the answer.",
+      "sourceUrl": "https://animationobsessive.substack.com/p/dont-call-it-limited-animation"
+    }
+  ],
+  "generationFailures": [
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: duplicate answer: \"Academy Awards\" already exists as active question ai-infinite-1778134406156-qq60jpfc"
+    },
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "error": "Generation failed quality gate after 3 attempts: duplicate answer: \"The Incredibles\" already exists as active question ai-infinite-1778166389336-6kbku7fe"
+    }
+  ]
+}

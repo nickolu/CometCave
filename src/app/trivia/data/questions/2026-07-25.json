@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-25",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-25-0",
+      "question": "During World War 2, with tank was the most fear by the allies?",
+      "options": [
+        "Marder III",
+        "Mks Matilda II",
+        "PanzerKampfwagen VI Tiger ",
+        "PanzerKampfwagen V Panther"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "PanzerKampfwagen V Panther"
+    },
+    {
+      "id": "opentdb-2026-07-25-1",
+      "question": "Which car tire manufacturer is famous for its \"Eagle\" brand of tires, and is the official tire supplier of NASCAR?",
+      "options": [
+        "Pirelli",
+        "Michelin",
+        "Bridgestone",
+        "Goodyear"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Goodyear"
+    },
+    {
+      "id": "opentdb-2026-07-25-2",
+      "question": "Which of the following vehicles from Ford is named after a WW2 Fighter Plane?",
+      "options": [
+        "Ranger",
+        "Galaxy",
+        "Explorer",
+        "Mustang"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Mustang"
+    },
+    {
+      "id": "opentdb-2026-07-25-3",
+      "question": "Which of the following passenger jets is the longest?",
+      "options": [
+        "Airbus A350-1000",
+        "Boeing 787-10",
+        "Airbus A330-200",
+        "Boeing 747-8"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Boeing 747-8"
+    },
+    {
+      "id": "opentdb-2026-07-25-4",
+      "question": "Which of these car models are produced by Lamborghini?",
+      "options": [
+        "918",
+        "Chiron",
+        "Huayra",
+        "Aventador"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Aventador"
+    },
+    {
+      "id": "opentdb-2026-07-25-5",
+      "question": "Volkswagen's legendary VR6 engine has cylinders positioned at what degree angle?",
+      "options": [
+        "30 Degree",
+        "45 Degree",
+        "90 Degree",
+        "15 Degree"
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "15 Degree"
+    },
+    {
+      "id": "ai-2026-07-25-6",
+      "question": "According to which well-known consumer advocacy publication is a minivan often easier to get into and out of than other vehicles?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Consumer Reports",
+      "explanation": "Consumer Reports is a trusted nonprofit organization that tests and reviews products, including vehicles. They note that minivans' lower step-in height and wide sliding doors make entry and exit easier for both kids and adults compared to many other vehicle types."
+    },
+    {
+      "id": "ai-2026-07-25-7",
+      "question": "Which luxury sports car brand is famous for its exclusivity and is considered one of the most prestigious automotive names in the world?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Ferrari",
+      "explanation": "Ferrari, the iconic Italian automaker, has built its brand around exclusivity and luxury, deliberately limiting production to maintain its prestige. Founded by Enzo Ferrari in 1939, the company is synonymous with high performance and elite status. Owning a Ferrari is widely considered a symbol of wealth and success."
+    },
+    {
+      "id": "ai-2026-07-25-8",
+      "question": "What lightweight material was used to construct the body panels and understructure of the McLaren F1?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "carbon fiber",
+      "explanation": "The McLaren F1, produced in the 1990s, was a pioneer in using carbon fiber extensively throughout its construction, keeping its weight remarkably low. This material choice contributed to the F1's legendary performance, helping it achieve a top speed of 240.1 mph — a record for a production car that stood for over a decade. Carbon fiber's high strength-to-weight ratio made it ideal for a supercar pushing the boundaries of engineering at the time."
+    },
+    {
+      "id": "ai-2026-07-25-9",
+      "question": "Which EV charging standard is uniquely designed to handle both AC and DC charging through a single, unified plug rather than separate hardware?",
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "NACS connector",
+      "explanation": "The North American Charging Standard (NACS) connector, originally developed by Tesla, consolidates AC and DC charging into one compact plug — unlike rival standards such as CCS (Combined Charging System), which uses a separate DC inlet bolted below the AC port. This elegant design has contributed to NACS being adopted as the dominant charging standard across North America, with major automakers and charging networks transitioning to it."
+    }
+  ]
+}

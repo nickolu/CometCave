@@ -26,6 +26,22 @@ export async function POST(request: Request) {
     const { chatMessages, characters, charactersRespondToEachOther } =
       (await request.json()) as ConversationManagerRequest
 
+    if (!Array.isArray(chatMessages) || chatMessages.length > 100) {
+      return NextResponse.json(
+        { error: 'chatMessages must be an array of 100 or fewer items' },
+        { status: 400 }
+      )
+    }
+
+    for (const msg of chatMessages) {
+      if (typeof msg.message !== 'string' || msg.message.length > 2000) {
+        return NextResponse.json(
+          { error: 'Each message must be a string of 2000 characters or fewer.' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Check if the last message is from a character and if characters shouldn't respond to each other
     const lastMessage = chatMessages[chatMessages.length - 1]
     const isLastMessageFromCharacter = lastMessage && lastMessage.character.id !== 'user'

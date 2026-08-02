@@ -95,7 +95,7 @@ export function NoticeBoard({ character, activeQuest, onAcceptQuest, onClose }: 
       {/* Header */}
       <div className="flex justify-between items-center">
         <span className="text-sm font-bold text-amber-400">📋 Notice Board</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose}>✕</button>
+        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close notice board">✕</button>
       </div>
 
       {/* Section 1: Quests & Bounties */}
