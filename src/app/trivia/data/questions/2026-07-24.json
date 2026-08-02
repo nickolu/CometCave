@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-24",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-24-0",
+      "question": "The Kākāpō is a large, flightless, nocturnal parrot native to which country?",
+      "options": [
+        "South Africa",
+        "Madagascar",
+        "Australia",
+        "New Zealand"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "New Zealand"
+    },
+    {
+      "id": "opentdb-2026-07-24-1",
+      "question": "Which class of animals are newts members of?",
+      "options": [
+        "Fish",
+        "Reptiles",
+        "Mammals",
+        "Amphibian"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Amphibian"
+    },
+    {
+      "id": "opentdb-2026-07-24-2",
+      "question": "Snakes and lizards are known to flick their tongue, this behavior is to?",
+      "options": [
+        "Taste the sweet air",
+        "Threaten other species",
+        "Attract female mates",
+        "Capture scent particles"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Capture scent particles"
+    },
+    {
+      "id": "opentdb-2026-07-24-3",
+      "question": "Which of the following is true when alligators are behaving territorially?",
+      "options": [
+        "Open their jaws while making a clicking noise",
+        "They run full force at the threat",
+        "Slap their tails on the ground",
+        "They bellow while showing their tail and neck"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "They bellow while showing their tail and neck"
+    },
+    {
+      "id": "opentdb-2026-07-24-4",
+      "question": "What is the name for a male bee that comes from an unfertilized egg?",
+      "options": [
+        "Worker",
+        "Male",
+        "Soldier",
+        "Drone"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Drone"
+    },
+    {
+      "id": "opentdb-2026-07-24-5",
+      "question": "What bird is born with claws on its wing digits?",
+      "options": [
+        "Cassowary",
+        "Secretary bird",
+        "Cormorant",
+        "Hoatzin"
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Hoatzin"
+    },
+    {
+      "id": "ai-2026-07-24-6",
+      "question": "Which animal is humans' closest living relative, sharing about 98.6% of our DNA?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "chimpanzees",
+      "explanation": "Chimpanzees share approximately 98.6% of their DNA with humans, making them our closest living relatives. This remarkable genetic similarity means we share many biological traits, behaviors, and even some diseases with chimps. Despite this closeness, the small percentage of differing DNA accounts for the vast differences in cognition, language, and culture between our two species."
+    },
+    {
+      "id": "ai-2026-07-24-7",
+      "question": "Which type of bee can lay up to 2,500 eggs per day during the summer months?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "queen bee",
+      "explanation": "The queen bee is the sole reproductive female in a hive and can lay an astonishing 2,500 eggs per day at peak production during summer. This prolific egg-laying is essential for maintaining a healthy colony, which can number in the tens of thousands. Worker bees, by contrast, are sterile females and cannot lay fertilized eggs."
+    },
+    {
+      "id": "ai-2026-07-24-8",
+      "question": "Among all living fish — including cartilaginous species like sharks and rays — which flat-bodied, wing-finned ocean creature holds the record for the largest brain-to-body ratio, making it considered unusually intelligent?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "manta rays",
+      "explanation": "Manta rays possess the largest brain-to-body ratio of any known living fish, including cartilaginous fish (elasmobranchs) such as sharks and other rays. This relatively large brain is linked to their remarkable intelligence, which includes complex social behaviors, cooperative feeding strategies, and even apparent self-recognition in mirrors. Their cognitive abilities are thought to support sophisticated navigation across vast ocean distances."
+    },
+    {
+      "id": "ai-2026-07-24-9",
+      "question": "In sawfish, the tooth-like structures lining the rostral saw are not true teeth but are instead specialized scales — what is the correct anatomical term for these structures?",
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "denticles",
+      "explanation": "Despite their fearsome, tooth-studded appearance, the \"teeth\" on a sawfish's rostrum are actually denticles — the same type of modified scales that cover the skin of sharks and rays. This makes sawfish unique among animals commonly associated with toothed appendages, as their saw is technically a scale-covered structure rather than a jaw-derived one. Denticles are also called placoid scales and are a defining feature of cartilaginous fish."
+    }
+  ]
+}

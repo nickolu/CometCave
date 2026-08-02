@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-13",
+  "categoryId": 16,
+  "categoryName": "Entertainment: Board Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-13-0",
+      "question": "On a standard Monopoly board, which square is diagonally opposite 'Go'? ",
+      "options": [
+        "Go to Jail",
+        "Jail",
+        "The Electric Company",
+        "Free Parking"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Free Parking"
+    },
+    {
+      "id": "opentdb-2026-07-13-1",
+      "question": "In chess, which is a characteristic of the King's Gambit?",
+      "options": [
+        "Sacrificing the king for a queen",
+        "Moving the king on the 2nd move",
+        "Castling kingside",
+        "Sacrificing a pawn"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Sacrificing a pawn"
+    },
+    {
+      "id": "opentdb-2026-07-13-2",
+      "question": "How many pieces are there on the board at the start of a game of chess?",
+      "options": [
+        "20",
+        "36",
+        "16",
+        "32"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "32"
+    },
+    {
+      "id": "opentdb-2026-07-13-3",
+      "question": "In what year was the card game Magic: the Gathering first introduced?",
+      "options": [
+        "1998",
+        "2003",
+        "1987",
+        "1993"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "1993"
+    },
+    {
+      "id": "opentdb-2026-07-13-4",
+      "question": "Which of the following tabletop games is the oldest?",
+      "options": [
+        "Chess",
+        "Shogi",
+        "Mahjong",
+        "Go"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Go"
+    },
+    {
+      "id": "opentdb-2026-07-13-5",
+      "question": "Some of the \"Fallen Empires\" cards from \"Magic: The Gathering\" were misprinted on the backs of which other card game?",
+      "options": [
+        "Pokemon",
+        "Yu-Gi-Oh",
+        "Dominion",
+        "Wyvern"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Wyvern"
+    },
+    {
+      "id": "ai-2026-07-13-6",
+      "question": "Which science fantasy tabletop miniature wargame is produced by Games Workshop?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Warhammer 40,000",
+      "explanation": "Warhammer 40,000, often called \"40K,\" is a hugely popular tabletop miniature wargame set in a dark, distant future where humanity battles aliens and chaos forces. It has been produced by Games Workshop since 1987 and has spawned novels, video games, and a passionate global community."
+    },
+    {
+      "id": "ai-2026-07-13-7",
+      "question": "What Jackbox Games bundle, designed as an easy entry point for new players, packages together Quiplash 3, Trivia Murder Party 2, and Tee K.O.?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Jackbox Party Starter",
+      "explanation": "Jackbox Party Starter is a curated bundle released by Jackbox Games that packages three fan-favorite titles: Quiplash 3, Trivia Murder Party 2, and Tee K.O. It was designed as an accessible entry point for players new to the Jackbox universe. The bundle makes it easy to jump into party gaming without purchasing games individually."
+    },
+    {
+      "id": "ai-2026-07-13-8",
+      "question": "In the card game Bohnanza, what are the designated plots where players grow their crops called?",
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "bean fields",
+      "explanation": "Bohnanza is a card-based trading and planting game where players manage designated plots called bean fields to grow different varieties of beans. Unlike many tabletop games, it uses no physical board — the bean fields exist only as card zones in front of each player. The game's name itself is a pun on \"Bonanza\" and the German word for bean, \"Bohne.\""
+    },
+    {
+      "id": "ai-2026-07-13-9",
+      "question": "Which prolific board game designer has openly described himself as \"a thief\" due to his habit of stealing cutlery from airplanes — and even organizing others to do the same?",
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Reiner Knizia",
+      "explanation": "Reiner Knizia, the German-born designer behind hundreds of games including Tigris & Euphrates and Ra, has humorously confessed to being a serial collector of airline cutlery, going so far as to recruit fellow passengers to swipe pieces for him. Known for his prolific output and mathematical approach to game design, this quirky habit adds a surprisingly roguish dimension to his public persona. It's a well-known anecdote among dedicated board game enthusiasts but obscure enough to stump casual fans."
+    }
+  ]
+}

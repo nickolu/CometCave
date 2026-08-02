@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-14",
+  "categoryId": 11,
+  "categoryName": "Entertainment: Film",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-14-0",
+      "question": "When was the movie 'Con Air' released?",
+      "options": [
+        "1985",
+        "1999",
+        "1990",
+        "1997"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "1997"
+    },
+    {
+      "id": "opentdb-2026-06-14-1",
+      "question": "Max Schreck, a famous German silent film actor, plays a famous monster in which 1922 film?",
+      "options": [
+        "The Headless Horseman",
+        "H&auml;xan",
+        "Frankenstein ",
+        "Nosferatu"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Nosferatu"
+    },
+    {
+      "id": "opentdb-2026-06-14-2",
+      "question": "Which movie contains the quote, \"Say hello to my little friend!\"?",
+      "options": [
+        "Heat",
+        "Goodfellas",
+        "Reservoir Dogs",
+        "Scarface"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Scarface"
+    },
+    {
+      "id": "opentdb-2026-06-14-3",
+      "question": "This movie contains the quote, \"I love the smell of napalm in the morning!\"",
+      "options": [
+        "Platoon",
+        "The Deer Hunter",
+        "Full Metal Jacket",
+        "Apocalypse Now"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Apocalypse Now"
+    },
+    {
+      "id": "opentdb-2026-06-14-4",
+      "question": "Which actor and martial artist starred as Colonel Guile in the 1994 action film adaptation of Street Fighter?",
+      "options": [
+        "Chuck Norris",
+        "Scott Adkins",
+        "Steven Seagal",
+        "Jean-Claude Van Damme"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Jean-Claude Van Damme"
+    },
+    {
+      "id": "opentdb-2026-06-14-5",
+      "question": "According to \"Star Wars\" lore, which planet does Obi-Wan Kenobi come from?",
+      "options": [
+        "Tatooine",
+        "Naboo",
+        "Alderaan",
+        "Stewjon"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Stewjon"
+    },
+    {
+      "id": "ai-2026-06-14-6",
+      "question": "In the Disney animated film Encanto, what is the name of the family whose children receive magical gifts — all except Mirabel?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Madrigal",
+      "explanation": "In Encanto (2021), the Madrigal family lives in a magical Colombian home called the Casita, where each child is granted a unique gift — except Mirabel, who receives none. The film follows Mirabel's journey to save her family's magic despite feeling like an outsider. Encanto won the Academy Award for Best Animated Feature in 2022."
+    },
+    {
+      "id": "ai-2026-06-14-7",
+      "question": "Which Hollywood studio, founded in 1923, shares its name with its founding brothers?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Warner Bros.",
+      "explanation": "Warner Bros. was founded in 1923 by the four Warner brothers — Harry, Albert, Sam, and Jack. It grew into one of Hollywood's most iconic studios, responsible for classics ranging from Casablanca to the Harry Potter franchise."
+    },
+    {
+      "id": "ai-2026-06-14-8",
+      "question": "Which actor played the title role of a slave-turned-gladiator who leads a rebellion against Rome in the 1960 epic film Spartacus?",
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Kirk Douglas",
+      "explanation": "Kirk Douglas starred as Spartacus in the 1960 Stanley Kubrick-directed epic, portraying the historical Thracian gladiator who led a major slave uprising against the Roman Republic. The film is considered one of Hollywood's greatest historical epics and features the iconic \"I am Spartacus!\" scene. Douglas was also a producer on the film and fought to have blacklisted screenwriter Dalton Trumbo credited for his work."
+    },
+    {
+      "id": "ai-2026-06-14-9",
+      "question": "According to the academic review \"(Why) Do You Like Scary Movies?\", which personality trait — when present at lower levels — is associated with greater enjoyment of horror films alongside higher fearfulness?",
+      "difficulty": "hard",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Low empathy",
+      "explanation": "The review \"(Why) Do You Like Scary Movies?\" identifies low empathy and fearfulness as psychological traits linked to heightened enjoyment of horror films. This counterintuitive finding suggests that people who feel less distress at others' suffering may be more entertained than disturbed by on-screen horror. It helps explain why certain viewers are especially drawn to psychologically intense horror content."
+    }
+  ]
+}

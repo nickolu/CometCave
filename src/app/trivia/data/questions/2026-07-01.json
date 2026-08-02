@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-01",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-01-0",
+      "question": "Which of the following collision avoidance systems helps airplanes avoid colliding with each other?",
+      "options": [
+        "GPWS",
+        "OCAS",
+        "TAWS",
+        "TCAS"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "TCAS"
+    },
+    {
+      "id": "opentdb-2026-07-01-1",
+      "question": "Which Italian city is home of the car manufacturer 'Fiat'?",
+      "options": [
+        "Maranello",
+        "Rome",
+        "Modena",
+        "Turin"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Turin"
+    },
+    {
+      "id": "opentdb-2026-07-01-2",
+      "question": "What animal is pictured on the logo of the automobile manufacturer Porsche?",
+      "options": [
+        "Lion",
+        "Cheetah",
+        "Bull",
+        "Horse"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Horse"
+    },
+    {
+      "id": "opentdb-2026-07-01-3",
+      "question": "Which of the following is NOT a Russian car manufacturer?",
+      "options": [
+        "Silant",
+        "Dragon",
+        "GAZ",
+        "BYD"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "BYD"
+    },
+    {
+      "id": "opentdb-2026-07-01-4",
+      "question": "Which of the following countries has officially banned the civilian use of dash cams in cars?",
+      "options": [
+        "United States",
+        "South Korea",
+        "Czechia",
+        "Austria"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Austria"
+    },
+    {
+      "id": "opentdb-2026-07-01-5",
+      "question": "The difference between the lengths of a Boeing 777-300ER and an Airbus A350-1000 is closest to:",
+      "options": [
+        "10m ",
+        "100m",
+        "1m",
+        "0.1m"
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "0.1m"
+    },
+    {
+      "id": "ai-2026-07-01-6",
+      "question": "What type of German submarine vessel became the country's most powerful naval weapon during World War I?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "U-boat",
+      "explanation": "The U-boat (short for Unterseeboot, meaning \"undersea boat\") became Germany's most powerful naval weapon during World War I, wreaking havoc on Allied shipping lanes across the Atlantic. Germany's campaign of unrestricted submarine warfare was so effective and controversial that it helped draw the United States into the war in 1917."
+    },
+    {
+      "id": "ai-2026-07-01-7",
+      "question": "What type of vessel — pioneered for leisure travel by P&O as early as 1844 — is associated with luxury voyages across the world's oceans?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "cruise ship",
+      "explanation": "P&O (Peninsular and Oriental Steam Navigation Company) is credited with offering some of the earliest luxury pleasure voyages by sea as early as 1844, helping to establish the cruise ship as a vehicle for leisure travel. Cruise ships are large ocean-going vessels purpose-built or adapted to carry passengers on scenic or destination-focused journeys. Today, cruise ships are among the largest vehicles ever built by humans."
+    },
+    {
+      "id": "ai-2026-07-01-8",
+      "question": "Which California-developed cargo bike concept, created by Ross Evans, gave rise to the modern longtail cargo bike?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Xtracycle Free Radical",
+      "explanation": "The Xtracycle Free Radical was an innovative add-on frame extension designed by Ross Evans that effectively created the longtail cargo bike category. It allowed a standard bicycle to carry significantly more cargo and passengers by extending the rear of the frame. This concept laid the groundwork for a whole genre of utility bikes now popular for family and cargo transport."
+    },
+    {
+      "id": "ai-2026-07-01-9",
+      "question": "Which European DC fast-charging hardware briefly suffered a bug that allowed virtually any compatible electric vehicle to charge there for free?",
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Tesla CCS V3 Superchargers",
+      "explanation": "A software bug in Tesla's CCS V3 Superchargers in Europe temporarily allowed non-Tesla CCS-equipped EVs to authenticate and charge without being billed. This was notable because Tesla's Supercharger network is typically proprietary, and the CCS V3 rollout in Europe was part of Tesla's effort to open its network to other brands. The bug was patched after it was discovered and publicized."
+    }
+  ]
+}

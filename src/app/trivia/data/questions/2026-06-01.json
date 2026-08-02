@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-01",
+  "categoryId": 22,
+  "categoryName": "Geography",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-01-0",
+      "question": "The derisive acronym \"PIIGS\" refers to which of the following European countries and their economic statuses?",
+      "options": [
+        "Poland, Iceland, Italy, Greenland, Spain",
+        "Portugal, Iceland, Ireland, Greece, Serbia",
+        "Poland, Iceland, Italy, Greece, Serbia",
+        "Portugal, Ireland, Italy, Greece, Spain"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Portugal, Ireland, Italy, Greece, Spain"
+    },
+    {
+      "id": "opentdb-2026-06-01-1",
+      "question": "Which country does Austria not border?",
+      "options": [
+        "Slovenia",
+        "Slovakia",
+        "Switzerland",
+        "France"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "France"
+    },
+    {
+      "id": "opentdb-2026-06-01-2",
+      "question": "If soccer is called football in England, what is American football called in England?",
+      "options": [
+        "Combball",
+        "Touchdown",
+        "Handball",
+        "American football"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "American football"
+    },
+    {
+      "id": "opentdb-2026-06-01-3",
+      "question": "What African country has Portuguese as its official language?",
+      "options": [
+        "Botswana",
+        "Togo",
+        "Gabon",
+        "Mozambique"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Mozambique"
+    },
+    {
+      "id": "opentdb-2026-06-01-4",
+      "question": "In which English county is Stonehenge?",
+      "options": [
+        "Somerset",
+        "Cumbria",
+        "Herefordshire",
+        "Wiltshire"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Wiltshire"
+    },
+    {
+      "id": "opentdb-2026-06-01-5",
+      "question": "Where is the city of Haarlem located?",
+      "options": [
+        "Germany",
+        "United States",
+        "Switzerland",
+        "The Netherlands"
+      ],
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "The Netherlands"
+    },
+    {
+      "id": "ai-2026-06-01-6",
+      "question": "In Christian tradition, which river is closely associated with the baptism of Jesus?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Jordan River",
+      "explanation": "The Jordan River, flowing through the Middle East and emptying into the Dead Sea, is one of the most sacred waterways in Christianity due to its association with the baptism of Jesus by John the Baptist. This event is described in the Gospels and marks the beginning of Jesus's public ministry. The river remains a pilgrimage site for Christians today."
+    },
+    {
+      "id": "ai-2026-06-01-7",
+      "question": "Which U.S. state has the largest land area?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Alaska",
+      "explanation": "Alaska is by far the largest state in the United States by land area, covering about 663,000 square miles — more than twice the size of Texas, the second-largest state. Despite its massive size, Alaska is one of the least densely populated states in the country."
+    },
+    {
+      "id": "ai-2026-06-01-8",
+      "question": "The Forbidden City, a vast imperial palace complex spanning 180 acres in the heart of which Asian capital city, housed 24 emperors before becoming the Palace Museum after the last emperor's expulsion?",
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Beijing",
+      "explanation": "The Forbidden City is located in the center of Beijing, China, and served as the imperial palace for 24 emperors of the Ming and Qing dynasties. After the last emperor Puyi was expelled in 1924, the complex was repurposed as the Palace Museum, now one of the world's most visited sites. Spanning roughly 180 acres with nearly 1,000 buildings, it remains one of the best-preserved examples of ancient Chinese palatial architecture."
+    },
+    {
+      "id": "ai-2026-06-01-9",
+      "question": "The Maldives' main international gateway is an airport located not in the capital Malé itself, but on the nearby Hulhulé Island — what is this airport called?",
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Velana International Airport",
+      "explanation": "Velana International Airport, located on Hulhulé Island just northeast of Malé, serves as the Maldives' main international gateway. It was renamed from Malé International Airport to Velana International Airport in 2016, with \"Velana\" being a historical name for the area. Its island location makes it one of the few major airports in the world accessible from the capital primarily by boat or seaplane."
+    }
+  ]
+}
