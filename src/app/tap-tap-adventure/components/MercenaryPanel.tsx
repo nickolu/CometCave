@@ -232,6 +232,7 @@ export function MercenaryPanel({ character }: MercenaryPanelProps) {
                       <button
                         className="text-[10px] px-1.5 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
                         onClick={() => setDismissConfirm(`roster-${merc.id}`)}
+                        aria-label="Close mercenary panel"
                       >
                         ✕
                       </button>

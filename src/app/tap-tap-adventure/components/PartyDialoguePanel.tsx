@@ -96,7 +96,7 @@ export function PartyDialoguePanel({
             {tier.label}
           </span>
         </div>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose}>&#x2715;</button>
+        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close dialogue">&#x2715;</button>
       </div>
 
       {/* Disposition bar */}
