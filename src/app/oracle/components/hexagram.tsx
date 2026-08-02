@@ -17,7 +17,7 @@ export const SolidLine = ({ isStatic = false }: { isStatic?: boolean }) => {
 export const EmptyLine = ({ isStatic = false }: { isStatic?: boolean }) => {
   return (
     <div
-      className={`w-44 h-4 border b-2 ${lineBorder} opacity-[0.4] hover:opacity-60 transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`}
+      className={`w-44 h-4 border-2 ${lineBorder} opacity-[0.4] hover:opacity-60 transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`}
     />
   )
 }
@@ -46,7 +46,7 @@ export const ChangeMarker = ({
         `w-4 h-4 rounded-full transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`,
         hasChanges
           ? `${lineBg} opacity-[0.4]`
-          : `bg-transparent border b-4 ${lineBorder} opacity-[0.4] hover:opacity-60`
+          : `bg-transparent border-4 ${lineBorder} opacity-[0.4] hover:opacity-60`
       )}
     />
   )
