@@ -136,6 +136,7 @@ export function PartyDialoguePanel({
           type="text"
           className="flex-1 bg-[#252638] border border-[#3a3c56] rounded px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
           placeholder={conversationComplete ? 'Conversation ended' : 'Say something...'}
+          aria-label="Dialogue input"
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleSend()}
