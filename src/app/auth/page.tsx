@@ -145,6 +145,7 @@ function AuthPageInner() {
                 <Input
                   type="email"
                   required
+                  aria-label="Email"
                   placeholder="Email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -154,6 +155,7 @@ function AuthPageInner() {
                 <Input
                   type="password"
                   required
+                  aria-label="Password"
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
