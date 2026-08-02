@@ -363,12 +363,10 @@ export interface WorldState {
   flowPhase: number
   /**
    * Species that belong to this world — theme starters plus anything the player
-   * summoned. Repopulation only ever draws from this list, so a desert never
-   * spontaneously sprouts kelp.
+   * summoned. The ground's seed bank only ever draws from this list, so a desert
+   * never spontaneously sprouts kelp.
    */
   natives: string[]
-  /** Next world-clock time at which repopulation may fire. */
-  nextSeedRain: number
   /** Next world-clock time at which the ground may seed native plants. */
   nextPlantSeed: number
   /**

@@ -141,8 +141,8 @@ case). Then per creature:
    `MAX_PLANTS` / per-species cap. Plants pay no hunger cost (they
    photosynthesise; charging them would sterilise them permanently)
 
-After the loop: filter the dead, `seedNativePlants` (plants first — everything
-is downstream of them), `repopulate`, `tickParticles`.
+After the loop: filter the dead, `seedNativePlants` (the only regrowth there is
+— animals that die out stay dead), `tickParticles`.
 
 ### `tickTiles`
 
