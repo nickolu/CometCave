@@ -171,8 +171,11 @@ function TextPanel({
     return (
       <div
         className="w-full h-full flex items-center justify-center bg-white border-[3px] border-black p-2 overflow-hidden cursor-pointer group border-dashed hover:border-primary/50 transition-colors"
+        role="button"
+        tabIndex={0}
         onClick={onEdit}
-        title="Click to edit text"
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+        aria-label="Edit panel text"
       >
         <p className="font-body text-xs text-black leading-snug text-center">{panel.content}</p>
         <span
@@ -187,8 +190,11 @@ function TextPanel({
   return (
     <div
       className="w-full h-full flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-xl p-4 overflow-hidden shadow-sm cursor-pointer group hover:ring-2 hover:ring-dashed hover:ring-outline-variant/50 transition-all"
+      role="button"
+      tabIndex={0}
       onClick={onEdit}
-      title="Click to edit text"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+      aria-label="Edit panel text"
     >
       <p className="font-body text-sm text-on-surface leading-relaxed text-center">{panel.content}</p>
       <span
@@ -243,8 +249,11 @@ function SpeechBubblePanel({
   return (
     <div
       className={`w-full h-full flex flex-col p-2 overflow-hidden relative ${containerClass} cursor-pointer group hover:ring-2 hover:ring-dashed hover:ring-outline-variant/50 transition-all`}
+      role="button"
+      tabIndex={0}
       onClick={onEdit}
-      title="Click to edit speech"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+      aria-label="Edit speech bubble"
     >
       {panel.character && (
         <p
@@ -322,8 +331,11 @@ function NarrationBoxPanel({
   return (
     <div
       className={`w-full h-full flex items-center justify-center p-2 overflow-hidden ${containerClass} cursor-pointer group hover:ring-2 hover:ring-dashed hover:ring-amber-400/50 transition-all`}
+      role="button"
+      tabIndex={0}
       onClick={onEdit}
-      title="Click to edit narration"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+      aria-label="Edit narration"
     >
       <div className="flex items-center gap-1">
         <p
@@ -371,8 +383,11 @@ function SoundEffectPanel({
   return (
     <div
       className="w-full h-full flex items-center justify-center overflow-hidden cursor-pointer group hover:opacity-80 transition-opacity"
+      role="button"
+      tabIndex={0}
       onClick={onEdit}
-      title="Click to edit sound effect"
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onEdit() } }}
+      aria-label="Edit sound effect"
     >
       <p
         className="text-red-500 font-bold text-2xl uppercase tracking-wider select-none"
