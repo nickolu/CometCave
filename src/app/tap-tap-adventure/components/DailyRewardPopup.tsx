@@ -48,9 +48,6 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Daily reward"
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
