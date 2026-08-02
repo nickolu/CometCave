@@ -11,7 +11,7 @@ interface Props {
   question: InfiniteQuestion
   onSubmit: (answer: string) => void
   isSubmitting: boolean
-  answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number }) | null
+  answerResult: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number; topWrongAnswers?: Array<{ text: string; count: number }> }) | null
   questionsAnswered: number
   skipsRemaining?: number
   onSkip?: () => void
@@ -151,6 +151,32 @@ export function InfiniteQuestionCard({
             {answerResult.explanation && (
               <div className="text-on-surface/50 text-sm mt-1">
                 {answerResult.explanation}
+              </div>
+            )}
+            {answerResult.topWrongAnswers && answerResult.topWrongAnswers.length > 0 && (
+              <div style={{ marginTop: 12 }}>
+                <div style={{ fontSize: 11, opacity: 0.5, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
+                  Others said
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {answerResult.topWrongAnswers.map((entry, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        background: 'rgba(255,255,255,0.06)',
+                        fontSize: 12,
+                        opacity: 0.75,
+                      }}
+                    >
+                      {entry.text}
+                      {entry.count > 1 && (
+                        <span style={{ opacity: 0.5, marginLeft: 4, fontSize: 10 }}>×{entry.count}</span>
+                      )}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
             {/* Community accuracy — exclude the current player from the count */}

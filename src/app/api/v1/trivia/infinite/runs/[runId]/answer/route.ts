@@ -4,6 +4,7 @@ import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { judgeAnswer } from '@/lib/trivia/answerJudge';
 import { submitAnswer } from '@/lib/trivia/infiniteRuns';
+import { getTopWrongAnswers, recordWrongAnswer } from '@/lib/trivia/wrongAnswers';
 
 export async function POST(
   request: NextRequest,
@@ -51,12 +52,22 @@ export async function POST(
     const timesShown = updatedQ?.timesShown ?? 1;
     const timesCorrect = updatedQ?.timesCorrect ?? 0;
 
+    let topWrongAnswers: Array<{ text: string; count: number }> = []
+    if (!correct && !isTimeout) {
+      // Fire-and-forget the write so it doesn't block the response
+      recordWrongAnswer(questionId, answer).catch((err) =>
+        console.error('Failed to record wrong answer:', err),
+      )
+      topWrongAnswers = await getTopWrongAnswers(questionId, 5).catch(() => [])
+    }
+
     return NextResponse.json({
       ...result,
       correctAnswer: qData.correctAnswer,
       explanation: qData.explanation ?? null,
       timesShown,
       timesCorrect,
+      topWrongAnswers,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);

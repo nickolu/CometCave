@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { dailyCache } from '@/app/trivia/lib/questionCache'
 import { getTodayPST } from '@/lib/dates'
 import { getDailyQuestions } from '@/lib/trivia/dailyQuestionsDb'
+import { getTopWrongAnswers, recordWrongAnswer } from '@/lib/trivia/wrongAnswers'
 
 export async function POST(request: NextRequest) {
   try {
@@ -83,10 +84,21 @@ Be generous — if the core concept is correct, mark it correct.`,
         maxTokens: 100,
       })
 
+      const topWrongAnswers = result.object.correct
+        ? []
+        : await (async () => {
+            // Fire-and-forget the write so it doesn't block the response
+            recordWrongAnswer(questionId, answer).catch((err) =>
+              console.error('Failed to record wrong answer:', err),
+            )
+            return getTopWrongAnswers(questionId, 5).catch(() => [])
+          })()
+
       return NextResponse.json({
         correct: result.object.correct,
         correctAnswer: question.correctAnswer,
         explanation: question.explanation,
+        topWrongAnswers,
       })
     }
 
