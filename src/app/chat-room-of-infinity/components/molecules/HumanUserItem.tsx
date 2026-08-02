@@ -17,6 +17,8 @@ export default function HumanUserItem() {
     <>
       <UserListItem
         onClick={() => setIsProfileOpen(true)}
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsProfileOpen(true) } }}
         sx={{
           cursor: 'pointer',
           '&:hover': {
