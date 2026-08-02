@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 import { BrandMark } from '@/components/brand-mark'
 
 export function Footer() {
@@ -9,24 +7,9 @@ export function Footer() {
         <BrandMark size="sm" />
 
         <div className="flex gap-6">
-          <Link
-            href="#"
-            className="text-on-surface-variant hover:text-on-surface text-sm transition-colors"
-          >
-            About
-          </Link>
-          <Link
-            href="#"
-            className="text-on-surface-variant hover:text-on-surface text-sm transition-colors"
-          >
-            Privacy
-          </Link>
-          <Link
-            href="#"
-            className="text-on-surface-variant hover:text-on-surface text-sm transition-colors"
-          >
-            Contact
-          </Link>
+          <span className="text-on-surface-variant/40 text-sm">About</span>
+          <span className="text-on-surface-variant/40 text-sm">Privacy</span>
+          <span className="text-on-surface-variant/40 text-sm">Contact</span>
         </div>
 
         <div className="text-on-surface-variant/60 text-xs">

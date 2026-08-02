@@ -143,21 +143,24 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
 
   // Load stats (no auth needed)
   useEffect(() => {
+    const controller = new AbortController()
     async function loadStats() {
       setStatsLoading(true)
       setStatsError(null)
       try {
-        const res = await fetch('/api/v1/trivia/questions/stats')
+        const res = await fetch('/api/v1/trivia/questions/stats', { signal: controller.signal })
         if (!res.ok) throw new Error('Failed to load stats')
         const json = await res.json()
         setStats(json)
-      } catch {
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return
         setStatsError('Failed to load stats.')
       } finally {
         setStatsLoading(false)
       }
     }
     void loadStats()
+    return () => controller.abort()
   }, [])
 
   // Load questions (requires auth token)

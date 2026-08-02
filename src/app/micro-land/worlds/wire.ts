@@ -206,7 +206,9 @@ function validSnapshot(value: unknown): WorldSnapshot | null {
     flowPhase: num(value.flowPhase, 0),
     dormant: value.dormant === true,
     nextCreatureId: Math.max(1, Math.floor(num(value.nextCreatureId, 1))),
-    nextSeedRain: clamp(value.nextSeedRain, 0, 1e9, 0),
+    // `nextSeedRain` used to live here, back when animals wandered back into a
+    // world they had died out of. Worlds saved before that was removed still
+    // carry the field; dropping it on the way in is all the migration needed.
     nextPlantSeed: clamp(value.nextPlantSeed, 0, 1e9, 0),
     natives,
     tiles,

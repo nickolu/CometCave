@@ -36,6 +36,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (word.length > 100) {
+      return NextResponse.json({ error: 'word must be 100 characters or fewer.' }, { status: 400 })
+    }
+
     // Prompt instructing the LLM to assign a frequency band score and label
     const prompt = `You are tasked with evaluating the approximate frequency of English words in everyday usage. Use the frequency bands below to score the provided word. Output must strictly follow the provided JSON schema.
 

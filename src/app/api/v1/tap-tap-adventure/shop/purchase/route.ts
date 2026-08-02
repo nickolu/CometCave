@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error purchasing item', err)
     return NextResponse.json(
-      { error: 'Failed to purchase item', details: (err as Error).message },
+      { error: 'Failed to purchase item' },
       { status: 500 }
     )
   }

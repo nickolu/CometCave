@@ -29,7 +29,6 @@ import {
   boxLiquidFraction,
   boxViscosity,
   inBounds,
-  repopulate,
   seedNativePlants,
   setTile,
   settleOnGround,
@@ -280,9 +279,9 @@ export function tickCreatures(
     w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
-  // Plants first — everything else in the world is downstream of them.
+  // The only thing the world regrows on its own. Animals that die out stay
+  // dead — see `seedNativePlants`.
   seedNativePlants(w, rng)
-  repopulate(w, rng)
 
   tickParticles(w, dt, gravityScale)
 }
@@ -538,7 +537,35 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
         Math.floor(c.y + body.dy + body.h / 2)
       )
       const wantsUp = wantY < -0.4
-      if (c.grounded && (blocked || (wantsUp && rng() < 0.08))) {
+
+      /**
+       * How badly it wants to be off the ground, in launches per second.
+       *
+       * Fleeing is the case that earns this. A walker that only ever runs
+       * sideways is caught by anything faster than it, so every chase had the
+       * same ending; going *over* the thing chasing you is the one answer a
+       * pursuer can't match by simply being quicker. Reaching for prey overhead
+       * is the same move from the other side. An unbothered walker still stays
+       * on the ground, which is what keeps a leap worth watching.
+       *
+       * The reaching term is the old per-tick 0.08 restated per second, so a
+       * hunter still climbs after prey exactly as eagerly as it used to; the
+       * fleeing term is new, and adds to it when a cornered creature is both
+       * running away and looking up.
+       */
+      const urgency = (wantsUp ? 4.8 : 0) + (c.mood === 'flee' ? 3 : 0)
+
+      // A hopper doesn't run, it launches: its whole speed is spent at take-off
+      // rather than built up by its legs, so it covers roughly the ground a
+      // walker does but in arcs, with a beat on landing. That beat is the trade
+      // — it can still steer in the air, but it cannot turn round on the spot
+      // the way something running can.
+      const going = Math.abs(wantX) > 0.15
+      if (c.grounded && bp.move.hop > 0 && going && rng() < bp.move.hop * 6 * dt) {
+        c.vx = Math.sign(wantX) * speed
+        c.vy = -bp.move.jump
+        c.grounded = false
+      } else if (c.grounded && (blocked || rng() < urgency * dt)) {
         c.vy = -bp.move.jump
         c.grounded = false
       }

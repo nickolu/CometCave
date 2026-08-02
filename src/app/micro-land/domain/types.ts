@@ -157,6 +157,16 @@ export interface CreatureMove {
   speed: number
   /** Jump impulse in tiles/second. Only used by `walk`. */
   jump: number
+  /**
+   * How much of its travelling is done in the air, 0..1. Only used by `walk`.
+   *
+   * At 0 it runs, and only leaves the ground when something is in its way or
+   * it is trying to escape. Above 0 it *hops*: the whole of its speed goes into
+   * the leap rather than into its legs, so it covers roughly the ground a
+   * walker does but in bursts, with a beat on landing. 0.3 is a frog that sits
+   * between jumps; 1 is a grasshopper that is barely ever down.
+   */
+  hop: number
   /** Chance per second of picking a new idle direction, 0..1. */
   restlessness: number
 }
@@ -363,12 +373,10 @@ export interface WorldState {
   flowPhase: number
   /**
    * Species that belong to this world — theme starters plus anything the player
-   * summoned. Repopulation only ever draws from this list, so a desert never
-   * spontaneously sprouts kelp.
+   * summoned. The ground's seed bank only ever draws from this list, so a desert
+   * never spontaneously sprouts kelp.
    */
   natives: string[]
-  /** Next world-clock time at which repopulation may fire. */
-  nextSeedRain: number
   /** Next world-clock time at which the ground may seed native plants. */
   nextPlantSeed: number
   /**

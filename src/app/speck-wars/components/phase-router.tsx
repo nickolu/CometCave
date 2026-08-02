@@ -12,6 +12,7 @@ import { LEVELS, saveLevelStars, getLevelStars, getLevelBestTime, saveLevelBestT
 export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const { phase, winnerId, setPhase, difficulty, setDifficulty, elapsedMs, resetGame, kills, losses, isNewBest, hud, fogEnabled, setFogEnabled, mapPreset, setMapPreset, campaignLevel, setCampaignLevel } = useSpeckWarsStore()
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [bestTimes, setBestTimes] = useState<Partial<Record<Difficulty, number>>>({})
   const [winStreak, setWinStreak] = useState(0)
   const [lifetimeStats, setLifetimeStats] = useState({ gamesPlayed: 0, totalKills: 0, bestStreak: 0 })
@@ -19,6 +20,8 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
   const [isNewLevelBest, setIsNewLevelBest] = useState(false)
   const resultHeadingRef = useRef<HTMLHeadingElement>(null)
   const { user } = useAuth()
+
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const router = useRouter()
 
@@ -469,8 +472,9 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
       } else {
         await navigator.clipboard.writeText(`${shareText} ${url}`)
         navigator.vibrate?.(12)
+        clearTimeout(copiedTimerRef.current)
         setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
       }
     }
 

@@ -1,6 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSpeckWarsStore } from './store'
 import { LEVELS, getLevelStars, getLevelBestTime, isLevelUnlocked } from './campaign/levels'
 
@@ -19,6 +19,9 @@ export default function SpeckWarsCampaignPage() {
     return s
   })
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
   const [hoveredLevel, setHoveredLevel] = useState<number | null>(null)
   const [focusedLevel, setFocusedLevel] = useState<number | null>(null)
 
@@ -44,8 +47,9 @@ export default function SpeckWarsCampaignPage() {
       try { await navigator.share({ title: 'Speck Wars', text, url }) } catch { /* cancelled */ }
     } else {
       await navigator.clipboard.writeText(`${text} ${url}`)
+      clearTimeout(copiedTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     }
   }
 

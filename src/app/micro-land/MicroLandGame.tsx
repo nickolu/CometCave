@@ -136,6 +136,11 @@ export function MicroLandGame() {
    * token refresh and would otherwise re-adopt every hour. The ref guards the
    * remount case, where the effect re-runs with a uid already adopted.
    */
+  // Whether the tool drawer was left folded away. Its own effect rather than a
+  // line in the one above: it is a preference about the screen, not about the
+  // world, and it has nothing to do with getting the first tick out on time.
+  useEffect(() => useMicroLand.getState().hydrateToolbar(), [])
+
   // Storage state into the store, so any panel can render it like other state.
   useEffect(() => onSaveState(useMicroLand.getState().setSaveState), [])
   useEffect(() => onShelf(useMicroLand.getState().setShelf), [])
@@ -148,7 +153,10 @@ export function MicroLandGame() {
     // `getIdToken` refreshes on its own when the cached token has expired, so
     // asking per request is what keeps a long session writable.
     const getToken = () => user.getIdToken()
-    void adoptAccount(accountBackend(getToken)).then(() => {
+    // The uid goes along so both stores can tell "this device holds work the
+    // account has never seen" from "this device is a stale copy of it" — the
+    // difference between merging and honouring a deletion. See `sync-mark.ts`.
+    void adoptAccount(accountBackend(getToken), uid).then(() => {
       // The merge may have brought in creatures made on another device; the
       // roster was built before any of them existed.
       gameRef.current?.refreshRoster()
@@ -156,7 +164,7 @@ export function MicroLandGame() {
     // Independently of the chronicle: a shelf that fails to reach the account
     // still has whatever this browser kept, which is the anonymous-first
     // promise applied to worlds as well as to records.
-    void adoptWorldsAccount(accountWorldsBackend(getToken))
+    void adoptWorldsAccount(accountWorldsBackend(getToken), uid)
   }, [user])
 
   /**

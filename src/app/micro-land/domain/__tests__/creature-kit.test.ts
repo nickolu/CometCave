@@ -9,6 +9,7 @@ import {
   draftToArt,
   floodFill,
   inkBounds,
+  planOf,
   resizeDraft,
   sizeForWidth,
   trimDraft,
@@ -207,5 +208,40 @@ describe('buildRawCreature', () => {
     expect(animal.tags).toContain('meat')
     expect(animal.tags).not.toContain('plant')
     expect(animal.diet.eats).toEqual(['meat'])
+  })
+
+  it('makes the Hopper chip a walker that bounces, and Walker one that does not', () => {
+    const hopper = build({ planId: 'hop' }) as { move: CreatureBlueprint['move'] }
+    expect(hopper.move.kind).toBe('walk')
+    expect(hopper.move.hop).toBeGreaterThan(0)
+
+    const walker = build({ planId: 'walk' }) as { move: CreatureBlueprint['move'] }
+    expect(walker.move.hop).toBe(0)
+  })
+})
+
+describe('planOf', () => {
+  it('lights the Hopper chip for a springy walker and Walker for the rest', () => {
+    const springy = sanitizeBlueprint({
+      name: 'Frog',
+      move: { kind: 'walk', hop: 1 },
+    }) as CreatureBlueprint
+    expect(planOf(springy)).toBe('hop')
+
+    const plodding = sanitizeBlueprint({
+      name: 'Ox',
+      move: { kind: 'walk' },
+    }) as CreatureBlueprint
+    expect(planOf(plodding)).toBe('walk')
+  })
+
+  it('treats a blueprint written before hopping existed as a plain walker', () => {
+    // Worlds and chronicles keep summoned blueprints exactly as they were
+    // stored, so one saved before `hop` was a field arrives without it.
+    const old = {
+      ...(sanitizeBlueprint({ name: 'Old', move: { kind: 'walk' } }) as CreatureBlueprint),
+    }
+    old.move = { kind: 'walk', speed: 4, jump: 8, restlessness: 0.3 } as CreatureBlueprint['move']
+    expect(planOf(old)).toBe('walk')
   })
 })

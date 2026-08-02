@@ -20,6 +20,7 @@ interface ChatState {
   isTyping: boolean
   charactersRespondToEachOther: boolean
   remainingCharacterMessages: number
+  consecutiveCharacterResponses: number
 }
 
 export interface Store {
@@ -55,16 +56,6 @@ export interface Store {
   toggleCustomCharacterForm: () => void
   updateCustomCharacterForm: (updates: Partial<CustomCharacterFormState>) => void
   saveCustomCharacter: () => void
-}
-
-interface ChatState {
-  messages: ChatMessage[]
-  characters: Character[]
-  typingCharacters: Character[]
-  isTyping: boolean
-  charactersRespondToEachOther: boolean
-  remainingCharacterMessages: number
-  consecutiveCharacterResponses: number
 }
 
 export const useStore = create<Store>()(
@@ -156,7 +147,7 @@ export const useStore = create<Store>()(
             messages: [
               ...(state.chat.messages || []),
               {
-                id: Math.random().toString(36).substring(7),
+                id: crypto.randomUUID(),
                 character: {
                   id: 'user',
                   name: 'You',
@@ -178,7 +169,7 @@ export const useStore = create<Store>()(
             messages: [
               ...(state.chat.messages || []),
               {
-                id: Math.random().toString(36).substring(7),
+                id: crypto.randomUUID(),
                 character,
                 message,
                 timestamp: Date.now(),
@@ -284,7 +275,7 @@ export const useStore = create<Store>()(
       saveCustomCharacter: () =>
         set(state => {
           const character: Character = {
-            id: Math.random().toString(36).substring(7),
+            id: crypto.randomUUID(),
             name: state.customCharacterForm.name,
             description: state.customCharacterForm.description,
           }

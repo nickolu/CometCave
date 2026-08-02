@@ -9,6 +9,7 @@
  * is an acceptable trade; janking the frame loop is not.
  */
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import { CHRONICLE_SYNC_KEY, readSyncMark, writeSyncMark } from '@/app/micro-land/sync-mark'
 
 import { type ChronicleBackend, INITIAL_DATA, localBackend } from './backend'
 import {
@@ -50,6 +51,19 @@ let dirty = false
 let flushTimer: ReturnType<typeof setTimeout> | null = null
 /** True once `adoptAccount` has moved writes off this device. */
 let remote = false
+/**
+ * The device copy, once the account has taken over the writes.
+ *
+ * The account is where the chronicle lives after `adoptAccount`, but the local
+ * copy is not abandoned — it is kept in step *behind* it, so a player whose
+ * account is unreachable next session still opens a game with their records in
+ * it. A mirror that stopped being written would be worse than no mirror at all:
+ * it freezes at the moment of sign-in and then argues, on every load, for
+ * putting back everything deleted since. See `sync-mark.ts`.
+ */
+let mirror: ChronicleBackend | null = null
+/** Whose account `backend` is writing to, so the mark can name it. */
+let accountId: string | null = null
 
 // ---------------------------------------------------------------------------
 // Save state
@@ -129,6 +143,8 @@ export function setBackend(next: ChronicleBackend): void {
   loaded = false
   loading = null
   remote = false
+  mirror = null
+  accountId = null
 }
 
 /**
@@ -150,8 +166,19 @@ export function setBackend(next: ChronicleBackend): void {
  * The write-back is unconditional. Even when the account wins on every record,
  * the local archive may hold a creature it has never seen, and that creature is
  * the thing this whole path exists to save.
+ *
+ * The merge is skipped in exactly one case: when this device's copy is already
+ * known to be in step with *this* account (see `sync-mark.ts`). Then the account
+ * holds everything the local copy does, plus every deletion made since, so
+ * unioning the two would resurrect every creature the player has thrown away —
+ * which is what "deleting does not work, it comes back on refresh" was. In that
+ * case the account is simply the truth.
+ *
+ * `stored` being null is deliberately *not* treated as "the account is empty".
+ * A dropped connection reads the same way, and the safe answer to both is to
+ * keep what this device has and hand it up.
  */
-export async function adoptAccount(next: ChronicleBackend): Promise<void> {
+export async function adoptAccount(next: ChronicleBackend, account: string): Promise<void> {
   if (backend === next) return
 
   // Never merge into a chronicle that hasn't finished loading — the local read
@@ -159,9 +186,18 @@ export async function adoptAccount(next: ChronicleBackend): Promise<void> {
   await initChronicle()
 
   const stored = await next.load()
+  const mirrored = readSyncMark(CHRONICLE_SYNC_KEY) === account
+
+  // Whatever was being written before the account took over becomes the mirror —
+  // `localBackend` in the game, and whatever a test installed in a test. Adopting
+  // a *second* account (a sign-out and back in under another uid) leaves it
+  // alone: the device is still the thing to mirror, the account being left
+  // behind is not.
+  if (!remote) mirror = backend
   backend = next
+  accountId = account
   remote = true
-  if (stored) data = mergeChronicles(migrate(stored), data)
+  if (stored) data = mirrored ? migrate(stored) : mergeChronicles(migrate(stored), data)
 
   touch()
   await flushChronicle()
@@ -264,6 +300,24 @@ export async function flushChronicle(): Promise<void> {
   setSaveState({ kind: 'saving' })
   try {
     await backend.save(data)
+    /**
+     * The device copy trails the account, and only ever on success.
+     *
+     * Written *after* the account rather than alongside it, so the mark can only
+     * ever claim something true: everything on this device is also up there.
+     * Mirroring a failed account save would put the device ahead instead, and
+     * the next load would merge it back up — which for a deletion means undoing
+     * it, the exact bug this is here to close.
+     *
+     * So a flush that cannot reach the account leaves the device holding the
+     * last state that did reach it. The in-memory chronicle keeps the newer one
+     * and `dirty` keeps retrying; nothing is lost that was not already lost
+     * before this mirror existed.
+     */
+    if (mirror) {
+      await mirror.save(data)
+      writeSyncMark(CHRONICLE_SYNC_KEY, accountId)
+    }
     setSaveState({
       kind: 'saved',
       at: Date.now(),

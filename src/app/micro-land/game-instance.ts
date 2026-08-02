@@ -749,12 +749,11 @@ export class GameInstance {
     /**
      * `natives` must lose it too.
      *
-     * `registerBlueprint` pushes every species onto that list, and both safety
-     * nets read `w.blueprints[id]` straight off it — `nativePlants` to decide
-     * what the soil can re-seed, `repopulate` to pick who comes back. Leaving a
-     * dangling id there hands `undefined` to `isPlant` and breaks the two
-     * mechanisms that stop the world flatlining, which would look nothing like
-     * a deletion bug when it eventually surfaced.
+     * `registerBlueprint` pushes every species onto that list, and the soil's
+     * seed bank reads `w.blueprints[id]` straight off it to decide what it can
+     * re-seed. Leaving a dangling id there hands `undefined` to `isPlant` and
+     * breaks the one mechanism that stops the world flatlining, which would look
+     * nothing like a deletion bug when it eventually surfaced.
      */
     w.natives = w.natives.filter(id => id !== blueprintId)
 
