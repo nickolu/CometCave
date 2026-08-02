@@ -48,6 +48,14 @@ import { SummonLoader } from './summon-loader'
  * rest of the blueprint is inherited from whatever the drawing started from, so
  * recolouring a summoned creature keeps the parts of it that no canvas can
  * express.
+ *
+ * Opening a creature that already exists can mean two different things, and the
+ * panel used to assume the wrong one: saving always minted a new species, so
+ * fixing four pixels on your own dragon left you with two dragons. Editing and
+ * branching are now separate buttons, and which of them you get depends on what
+ * was opened — your own creature can be changed in place, the shipped roster
+ * can only be branched from, and the one machine with the repo checked out can
+ * write to the roster itself.
  */
 
 const IDEAS = [
@@ -60,6 +68,17 @@ const IDEAS = [
 
 /** How many to drop into the world the moment it is finished. */
 const PLACE_COUNT = 4
+
+/**
+ * Whether the roster can be written to from here.
+ *
+ * The starter creatures are global assets — everybody's, not the player's — so
+ * changing one is a change to the repository. Inlined at build time by Next, so
+ * in a deployed build this is `false` at the point the bundle is written and
+ * the button does not exist rather than being hidden; the route that would
+ * serve it is a 404 in production for the same reason.
+ */
+const CAN_EDIT_ROSTER = process.env.NODE_ENV === 'development'
 
 type PaintTool = 'draw' | 'fill' | 'erase' | 'pick'
 
@@ -92,11 +111,16 @@ function inksFor(draft: Draft): string[] {
 
 export function CreatureBuilder({
   onIntroduce,
+  onRevise,
 }: {
   onIntroduce: (
     raw: unknown,
     count: number
   ) => { blueprint: CreatureBlueprint; placed: number } | null
+  onRevise: (
+    blueprintId: string,
+    raw: unknown
+  ) => { blueprint: CreatureBlueprint; living: number } | null
 }) {
   const open = useMicroLand(s => s.builderOpen)
   const setOpen = useMicroLand(s => s.setBuilderOpen)
@@ -106,6 +130,15 @@ export function CreatureBuilder({
 
   const [draft, setDraft] = useState<Draft | null>(null)
   const [seed, setSeed] = useState<CreatureBlueprint | null>(null)
+  /**
+   * The species this drawing *is*, as opposed to the one it started from.
+   *
+   * Only set when a creature was opened off the shelf. A sketch the model just
+   * drew is also a whole blueprint and makes a perfectly good seed, but it has
+   * never been registered in the world — offering to save changes to it would
+   * mean offering to edit something that does not exist yet.
+   */
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [frame, setFrame] = useState(0)
   const [tool, setPaintTool] = useState<PaintTool>('draw')
@@ -122,6 +155,7 @@ export function CreatureBuilder({
 
   const [prompt, setPrompt] = useState('')
   const [busy, setBusy] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
@@ -151,10 +185,16 @@ export function CreatureBuilder({
 
   useEffect(() => () => abortRef.current?.abort(), [])
 
-  /** Adopt a drawing and everything that came with it. */
-  const adopt = useCallback((next: Draft, from: CreatureBlueprint | null) => {
+  /**
+   * Adopt a drawing and everything that came with it.
+   *
+   * `existing` says whether `from` is a creature already in the world, which is
+   * the difference between "change this one" and "start from this one".
+   */
+  const adopt = useCallback((next: Draft, from: CreatureBlueprint | null, existing = false) => {
     setDraft(next)
     setSeed(from)
+    setEditingId(existing && from ? from.id : null)
     setPast([])
     setFuture([])
     setFrame(0)
@@ -270,9 +310,16 @@ export function CreatureBuilder({
     }
   }
 
+  /** The literal the drawing describes. Same shape the model returns. */
+  function compose(): Record<string, unknown> | null {
+    if (!draft || empty) return null
+    return buildRawCreature({ name, draft, planId, dietId, glows, fireproof, seed })
+  }
+
+  /** Make a new species out of the drawing, leaving whatever it came from alone. */
   function bringToLife() {
-    if (!draft || empty) return
-    const raw = buildRawCreature({ name, draft, planId, dietId, glows, fireproof, seed })
+    const raw = compose()
+    if (!raw) return
     const result = onIntroduce(raw, PLACE_COUNT)
     if (!result) {
       setError('It would not hold together. Try again.')
@@ -283,12 +330,86 @@ export function CreatureBuilder({
     setOpen(false)
   }
 
+  /** Change the creature this drawing *is*. Everything alive follows along. */
+  function saveChanges() {
+    const raw = compose()
+    if (!raw || !editingId) return
+    const result = onRevise(editingId, raw)
+    if (!result) {
+      setError('That one is not here any more. You can still save it as a new creature.')
+      return
+    }
+    setTool({ kind: 'creature', blueprintId: result.blueprint.id })
+    notify(
+      result.living > 0
+        ? `Every ${result.blueprint.name} changes at once.`
+        : `${result.blueprint.name} is redrawn. Tap the world to place some.`
+    )
+    setOpen(false)
+  }
+
+  /**
+   * Write a starter creature back into the game's own source. Local only.
+   *
+   * The world is updated first and independently of the file. The two can
+   * disagree — a checkout can be read-only, the file can have moved — and when
+   * they do, the drawing you are looking at is still the one that matters right
+   * now, so it is applied either way and only the *permanence* is reported as
+   * having failed.
+   */
+  async function saveToRoster() {
+    const raw = compose()
+    if (!raw || !editingId || saving) return
+
+    setSaving(true)
+    setError(null)
+
+    const applied = onRevise(editingId, raw)
+    if (!applied) {
+      setError('That one is not here any more. You can still save it as a new creature.')
+      setSaving(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/v1/micro-land/roster', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: editingId, blueprint: raw }),
+      })
+      const data = (await response.json().catch(() => ({}))) as { error?: string }
+      if (!response.ok) throw new Error(data.error ?? 'The roster would not take it.')
+    } catch (err) {
+      setError(
+        `${err instanceof Error ? err.message : 'Could not write it.'} The change is live here but is not saved to the file.`
+      )
+      setSaving(false)
+      return
+    }
+
+    setSaving(false)
+    notify(`${applied.blueprint.name} is written into the roster. Commit it to keep it.`)
+    setOpen(false)
+  }
+
   // Both walk every pixel of every frame. `draft` is replaced rather than
   // mutated, so the compiler's own memoization keys off it exactly and neither
   // re-runs on the cells of a drag that didn't change it.
   const empty = draft === null || inkBounds(draft) === null
   const trimmed = draft ? trimDraft(draft) : null
   const size = trimmed && !empty ? sizeForWidth(trimmed.w) : 0
+
+  /**
+   * What saving is allowed to mean here.
+   *
+   * A creature the player made is theirs to change. A starter creature is
+   * everybody's — on a deployed build it can only ever be branched from, since
+   * an edit to it would live in one browser and quietly disagree with the game
+   * every other player is running. On the machine holding the repo it can be
+   * edited properly, by writing the source.
+   */
+  const editingOwn = editingId !== null && seed?.summoned === true
+  const editingRoster = editingId !== null && seed !== null && !seed.summoned && CAN_EDIT_ROSTER
 
   const describe = useCallback(
     (index: number) => {
@@ -367,7 +488,7 @@ export function CreatureBuilder({
             setPrompt={setPrompt}
             onDraw={() => void drawFromPrompt()}
             onBlank={(w, h) => adopt(blankDraft(w, h), null)}
-            onCopy={bp => adopt(draftFromBlueprint(bp), bp)}
+            onCopy={bp => adopt(draftFromBlueprint(bp), bp, true)}
             blueprints={blueprints}
             error={error}
           />
@@ -725,34 +846,65 @@ export function CreatureBuilder({
                 </p>
               )}
 
-              <button
-                type="button"
-                className="cc-btn"
-                onClick={bringToLife}
-                disabled={empty}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  fontFamily: 'var(--cc-font-mono)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: 2,
-                  textTransform: 'uppercase',
-                  padding: '13px 22px',
-                  minHeight: 48,
-                  borderRadius: 5,
-                  background: 'linear-gradient(180deg, var(--cc-mint), var(--cc-mint-hi))',
-                  border: '1px solid var(--cc-mint)',
-                  color: 'var(--cc-on-mint)',
-                  boxShadow: 'var(--cc-mint-glow)',
-                  opacity: empty ? 0.4 : 1,
-                }}
-              >
-                <SparkleIcon size={13} />
-                Bring it to life
-              </button>
+              {/*
+                One primary button, whatever it happens to mean here. Showing
+                "save" and "save as new" as equals would make the player decide
+                which is the ordinary one every single time; the ordinary one is
+                whichever matches how the drawing was opened.
+              */}
+              {editingOwn ? (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={saveChanges}
+                  disabled={empty}
+                  style={primaryButton(empty)}
+                >
+                  <SparkleIcon size={13} />
+                  Save changes
+                </button>
+              ) : editingRoster ? (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={() => void saveToRoster()}
+                  disabled={empty || saving}
+                  style={primaryButton(empty || saving)}
+                >
+                  <SparkleIcon size={13} />
+                  {saving ? 'Writing…' : 'Save to roster'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={bringToLife}
+                  disabled={empty}
+                  style={primaryButton(empty)}
+                >
+                  <SparkleIcon size={13} />
+                  Bring it to life
+                </button>
+              )}
+
+              {(editingOwn || editingRoster) && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={bringToLife}
+                  disabled={empty || saving}
+                  style={{ ...ghostButton, minHeight: 40, opacity: empty || saving ? 0.4 : 1 }}
+                >
+                  Save as a new creature
+                </button>
+              )}
+
+              {editingRoster && (
+                <p style={note}>
+                  Writes over {seed?.name} in the game’s own files. Only you can do this, and only
+                  while the game is running on this computer.
+                </p>
+              )}
 
               <button
                 type="button"
@@ -760,6 +912,7 @@ export function CreatureBuilder({
                 onClick={() => {
                   setDraft(null)
                   setSeed(null)
+                  setEditingId(null)
                   setPast([])
                   setFuture([])
                   setError(null)
@@ -1050,6 +1203,28 @@ const note: React.CSSProperties = {
 const rule: React.CSSProperties = {
   height: 1,
   background: 'var(--cc-panel-divider)',
+}
+
+function primaryButton(dimmed: boolean): React.CSSProperties {
+  return {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    fontFamily: 'var(--cc-font-mono)',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    padding: '13px 22px',
+    minHeight: 48,
+    borderRadius: 5,
+    background: 'linear-gradient(180deg, var(--cc-mint), var(--cc-mint-hi))',
+    border: '1px solid var(--cc-mint)',
+    color: 'var(--cc-on-mint)',
+    boxShadow: 'var(--cc-mint-glow)',
+    opacity: dimmed ? 0.4 : 1,
+  }
 }
 
 const ghostButton: React.CSSProperties = {

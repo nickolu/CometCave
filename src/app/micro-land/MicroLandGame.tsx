@@ -268,6 +268,10 @@ export function MicroLandGame() {
     return gameRef.current?.introduce(raw, count) ?? null
   }, [])
 
+  const handleRevise = useCallback((blueprintId: string, raw: unknown) => {
+    return gameRef.current?.reviseSpecies(blueprintId, raw) ?? null
+  }, [])
+
   const handleNameElder = useCallback((name: string) => {
     return gameRef.current?.nameElder(name) ?? false
   }, [])
@@ -309,7 +313,7 @@ export function MicroLandGame() {
       <Toolbar onRemoveSpecies={handleRemoveSpecies} />
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
-      <CreatureBuilder onIntroduce={handleIntroduce} />
+      <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />
       <SettingsPanel />
     </div>
