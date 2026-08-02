@@ -560,7 +560,22 @@ export function sanitizeBlueprint(
     },
     diet: {
       eats: cleanTags(diet.eats, []),
-      fears: cleanTags(diet.fears, []),
+      /**
+       * Nothing is afraid of its own kind.
+       *
+       * A model asked for "a timid glowing bug" reasonably enough writes
+       * `tags: ['meat', 'bug']` and `fears: ['bug']`, and before breeding needed
+       * a partner that only made the species skittish around itself — odd, but
+       * it lived. Now it is sterile: the sense pass sees its own kind, the fear
+       * check fires first, and it flees the one creature it needs to stand next
+       * to. Every other species in the world breeds and this one silently never
+       * does, which is precisely the kind of broken summon a kid cannot debug.
+       *
+       * Filtered here rather than in the sense pass because it is a statement
+       * about what a coherent creature *is*, and this file is where an incoherent
+       * one is quietly made playable. No built-in trips it.
+       */
+      fears: cleanTags(diet.fears, []).filter(t => !tags.includes(t)),
       hungerRate: clamp(diet.hungerRate, 0, 0.3, 0.03),
       starveSeconds: clamp(diet.starveSeconds, 3, 300, 30),
       breedAt: clamp(diet.breedAt, 0.1, 1, 0.75),
@@ -652,7 +667,7 @@ export const CREATURE_GROUPS: { id: CreatureGroup; label: string }[] = [
 ]
 
 /** Anything that photosynthesises rather than hunts — moss, coral, a sky flower. */
-function isPlantLike(bp: CreatureBlueprint): boolean {
+export function isPlantLike(bp: CreatureBlueprint): boolean {
   return bp.move.kind === 'root' || (bp.diet.eats.length === 0 && bp.tags.includes('plant'))
 }
 

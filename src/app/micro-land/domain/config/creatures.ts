@@ -201,10 +201,10 @@ const HOPPER = builtin('hopper', {
   size: 2,
   tags: ['meat', 'bug'],
   art: {
-    palette: { b: '#63c15a', d: '#2f7a34', e: '#ffffff' },
+    palette: { a: '#63c15a', b: '#2f7a34', c: '#e04b4b', d: '#ffffff' },
     frames: [
-      ['..bb..', '.bbbbe', 'bbbbbb', '.d..d.', 'd....d'],
-      ['..bb..', '.bbbbe', 'bbbbbb', '.dd.d.', '..d..d'],
+      ['..aa..', '.aaaac', 'aaaaaa', '.b..b.', 'b....b'],
+      ['..aa..', '.aaaad', 'aaaaaa', '.bb.b.', '..b..b'],
     ],
     frameMs: 150,
     faceMotion: true,
@@ -225,7 +225,7 @@ const HOPPER = builtin('hopper', {
   senses: { sight: 20 },
   habitat: { needs: null, drowns: true },
   dig: { through: [], speed: 1 },
-  death: { becomes: null, particleColor: '#63c15a', particleCount: 6 },
+  death: { becomes: null, particleColor: '#63c15a', particleCount: 8 },
   aura: null,
   glow: 0,
 })
