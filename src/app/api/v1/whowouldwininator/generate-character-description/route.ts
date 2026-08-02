@@ -1,16 +1,23 @@
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
 
+const RequestSchema = z.object({
+  name: z.string().min(1, 'Character name is required').max(200),
+})
+
 export async function POST(request: Request) {
   try {
-    const { name } = await request.json()
-
-    if (!name || name.trim() === '') {
-      return NextResponse.json({ error: 'Character name is required' }, { status: 400 })
+    const body = await request.json()
+    const parseResult = RequestSchema.safeParse(body)
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.errors[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
+
+    const { name } = parseResult.data
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
