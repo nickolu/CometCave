@@ -98,3 +98,27 @@ export const PLANT_SPECIES_CAP = 55
 export const PARTICLE_LIFE = 0.9
 
 export const MAX_PARTICLES = 400
+
+// ---------------------------------------------------------------------------
+// Records
+// ---------------------------------------------------------------------------
+
+/**
+ * How old something has to get before it can hold the longevity record.
+ *
+ * Without a floor the very first creature in a fresh land takes the record at
+ * one hundredth of a second and wears its halo immediately, which makes the mark
+ * meaningless and puts it on screen constantly — the opposite of the intent.
+ * Sixty seconds is long enough that most things are eaten first, so an elder is
+ * genuinely something that survived rather than something that merely spawned.
+ */
+export const ELDER_MIN_SECONDS = 60
+
+/**
+ * How long a land must hold together before its steady streak is worth showing.
+ *
+ * Below this the number would flicker on and off during the early churn while
+ * populations find their level, which reads as noise. Two minutes in, a streak
+ * means the food web actually settled.
+ */
+export const STEADY_SHOW_SECONDS = 120

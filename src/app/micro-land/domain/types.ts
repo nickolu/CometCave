@@ -244,6 +244,22 @@ export interface Creature {
   digProgress: number
   /** Lifetime tally of tiles tunnelled through. */
   tilesDug: number
+  /**
+   * How far back this creature's line goes. 1 was placed or seeded by hand or by
+   * the world; anything higher was born here, to a parent one lower.
+   *
+   * Counts ancestry rather than population, so it survives a crash: a species
+   * can dwindle to a single individual and its line keeps its depth.
+   */
+  generation: number
+  /**
+   * What the player called it.
+   *
+   * Only ever offered for a creature holding the longevity record — naming is
+   * the moment a creature stops being one of the hoppers and becomes *yours*,
+   * and it is worth more if it has to be earned.
+   */
+  name: string | null
 }
 
 export interface Particle {

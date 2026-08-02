@@ -1,6 +1,8 @@
 'use client'
 
 import { THEMES } from '@/app/micro-land/domain/config/themes'
+import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
+import { formatDuration } from '@/app/micro-land/format'
 import { SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
 
 const SPEEDS = [
@@ -45,8 +47,12 @@ export function Hud({
   const population = useMicroLand((s) => s.population)
   const setGuideOpen = useMicroLand((s) => s.setGuideOpen)
   const summonedLand = useMicroLand((s) => s.summonedLand)
+  const steadySeconds = useMicroLand((s) => s.records.steadySeconds)
 
   const species = population.length
+  // Below the threshold this would flicker on and off through the early churn,
+  // which reads as a broken counter rather than as a streak.
+  const steady = steadySeconds >= STEADY_SHOW_SECONDS ? formatDuration(steadySeconds) : null
 
   return (
     <header
@@ -137,8 +143,19 @@ export function Hud({
           className="cc-btn"
           onClick={() => setGuideOpen(true)}
           style={chipBase}
+          title={
+            steady
+              ? 'How long this land has gone without losing a species'
+              : undefined
+          }
         >
           {species} kinds · {total} alive
+          {steady && (
+            <>
+              {' · '}
+              <span style={{ color: 'var(--cc-gold)' }}>{steady} steady</span>
+            </>
+          )}
         </button>
         <button
           type="button"

@@ -18,6 +18,7 @@ export default defineConfig({
       'src/app/comet-cards/**/*.test.tsx',
       'src/lib/trivia/**/*.test.ts',
       'src/app/trivia/**/*.test.ts',
+      'src/app/micro-land/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

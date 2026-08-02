@@ -11,6 +11,7 @@ import { create } from 'zustand'
 
 import { DEFAULT_THEME } from './domain/config/themes'
 
+import type { ElderRecord, SpeciesRecord } from './chronicle/types'
 import type { CreatureBlueprint, MaterialId } from './domain/types'
 
 /** Theme id standing for "the land the player summoned". */
@@ -48,6 +49,46 @@ export interface Inspected {
   grounded: boolean
   /** What it's chasing or running from right now. */
   targetName: string | null
+  /** How far back its line goes; 1 means it was placed rather than born. */
+  generation: number
+  /** Player-given name, if this one earned the right to have one. */
+  name: string | null
+  /** True while this creature holds the land's longevity record. */
+  isElder: boolean
+}
+
+/**
+ * Records for the land currently on screen, as the UI wants them.
+ *
+ * Flattened out of the chronicle rather than exposing it directly: the panels
+ * want "best ever here" and "how it's going right now" side by side, and those
+ * come from two different places.
+ */
+export interface RecordsView {
+  /** Best ever in this land. */
+  elder: ElderRecord | null
+  bestSteadySeconds: number
+  bestGenerations: number
+  bestGenerationsSpeciesName: string | null
+  /** How this run is going. */
+  steadySeconds: number
+  deepestGeneration: number
+}
+
+export interface EarnedMilestone {
+  id: string
+  text: string
+  /** Epoch ms it was first reached. */
+  at: number
+}
+
+const EMPTY_RECORDS: RecordsView = {
+  elder: null,
+  bestSteadySeconds: 0,
+  bestGenerations: 0,
+  bestGenerationsSpeciesName: null,
+  steadySeconds: 0,
+  deepestGeneration: 0,
 }
 
 export interface PopulationEntry {
@@ -83,6 +124,18 @@ interface MicroLandState {
   guideOpen: boolean
   inspected: Inspected | null
 
+  /** Records for the land on screen. */
+  records: RecordsView
+  /**
+   * Every species ever seen alive, including summoned ones from past visits.
+   *
+   * Pushed only when it actually changes rather than on every stats tick — it
+   * turns over rarely and re-rendering the guide three times a second for a list
+   * that hasn't moved is wasted work.
+   */
+  archive: SpeciesRecord[]
+  milestones: EarnedMilestone[]
+
   notices: Notice[]
 
   setTheme: (id: string) => void
@@ -99,6 +152,9 @@ interface MicroLandState {
   setSummonError: (message: string | null) => void
   setGuideOpen: (open: boolean) => void
   setInspected: (snapshot: Inspected | null) => void
+  setRecords: (records: RecordsView) => void
+  setArchive: (archive: SpeciesRecord[]) => void
+  setMilestones: (milestones: EarnedMilestone[]) => void
   notify: (text: string) => void
   dismissNotice: (id: number) => void
 }
@@ -125,6 +181,10 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   guideOpen: false,
   inspected: null,
 
+  records: EMPTY_RECORDS,
+  archive: [],
+  milestones: [],
+
   notices: [],
 
   setTheme: (themeId) => set({ themeId }),
@@ -142,6 +202,9 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   setSummonError: (summonError) => set({ summonError }),
   setGuideOpen: (guideOpen) => set({ guideOpen }),
   setInspected: (inspected) => set({ inspected }),
+  setRecords: (records) => set({ records }),
+  setArchive: (archive) => set({ archive }),
+  setMilestones: (milestones) => set({ milestones }),
 
   notify: (text) =>
     set((s) => ({
