@@ -132,17 +132,23 @@ export function accountWorldsBackend(getToken: () => Promise<string | null>): Wo
   }
 
   return {
+    /**
+     * Throws when the account cannot be reached, deliberately.
+     *
+     * An empty shelf and an unreadable one are identical to a caller handed `[]`
+     * for both, and they call for opposite responses. `adoptWorldsAccount`
+     * reconciles this device's shelf against what the account lists — treating a
+     * dropped connection as "the account lists nothing" would read as "every
+     * world you kept was deleted on another device" and take the local copies
+     * with it.
+     */
     async list() {
-      try {
-        const headers = await authorized()
-        if (!headers) return []
-        const response = await fetch(ENDPOINT, { headers })
-        if (!response.ok) return []
-        const body = (await response.json()) as { worlds?: unknown }
-        return Array.isArray(body.worlds) ? (body.worlds as WorldSummary[]) : []
-      } catch {
-        return []
-      }
+      const headers = await authorized()
+      if (!headers) throw new Error('not signed in yet')
+      const response = await fetch(ENDPOINT, { headers })
+      if (!response.ok) throw new Error(`world list failed: ${response.status}`)
+      const body = (await response.json()) as { worlds?: unknown }
+      return Array.isArray(body.worlds) ? (body.worlds as WorldSummary[]) : []
     },
 
     async load(id) {
