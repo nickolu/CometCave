@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-10",
+  "categoryId": 31,
+  "categoryName": "Entertainment: Japanese Anime & Manga",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-10-0",
+      "question": "Who is the colossal titan in \"Attack On Titan\"?",
+      "options": [
+        "Reiner",
+        "Sasha",
+        "Eren",
+        "Bertolt Hoover"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Bertolt Hoover"
+    },
+    {
+      "id": "opentdb-2026-06-10-1",
+      "question": "Who is the author of the manga series \"Astro Boy\"?",
+      "options": [
+        "Takao Saito",
+        "Yoshihiro Tatsumi",
+        "Mitsuteri Yokoyama",
+        "Osamu Tezuka"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Osamu Tezuka"
+    },
+    {
+      "id": "opentdb-2026-06-10-2",
+      "question": "In \"The Melancholy of Haruhi Suzumiya\" series, the SOS Brigade club leader is unknowingly treated as a(n) __ by her peers.",
+      "options": [
+        "Alien",
+        "Time Traveler",
+        "Esper",
+        "God"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "God"
+    },
+    {
+      "id": "opentdb-2026-06-10-3",
+      "question": "In the 2011 TV anime series, \"THE iDOLM@STER\", what was the name of Iori's stuffed toy bunny?",
+      "options": [
+        "Kero",
+        "Usagi",
+        "Bubsy",
+        "Charles"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Charles"
+    },
+    {
+      "id": "opentdb-2026-06-10-4",
+      "question": "Which anime did Seiji Kishi NOT direct?",
+      "options": [
+        "Humanity Has Declined",
+        "Danganronpa: The Animation",
+        "Assassination Classroom",
+        "Another"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Another"
+    },
+    {
+      "id": "opentdb-2026-06-10-5",
+      "question": "Which animation studio animated \"Psycho Pass\"?",
+      "options": [
+        "Kyoto Animation",
+        "Trigger",
+        "Shaft",
+        "Production I.G"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Production I.G"
+    },
+    {
+      "id": "ai-2026-06-10-6",
+      "question": "In anime opening sequences, which group of characters is typically highlighted so viewers immediately know who the story follows?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "main characters",
+      "explanation": "Anime opening sequences are carefully crafted to introduce viewers to the core cast right away, making it easy to identify who the story revolves around. This tradition helps new viewers quickly get their bearings before the episode even begins. It's also a stylistic showcase, often featuring dynamic animation and theme music that sets the tone for the series."
+    },
+    {
+      "id": "ai-2026-06-10-7",
+      "question": "In JoJo's Bizarre Adventure, what is the name of the signature supernatural power that characters manifest as a visual fighting spirit?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Stand",
+      "explanation": "In JoJo's Bizarre Adventure, a Stand is a supernatural power or entity manifested by its user, often appearing as a ghostly figure with unique abilities. Stands became the defining mechanic of the series starting from Part 3: Stardust Crusaders. The concept has become iconic in anime and manga culture worldwide."
+    },
+    {
+      "id": "ai-2026-06-10-8",
+      "question": "Which animation studio produced the anime adaptation of Goblin Slayer?",
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "White Fox",
+      "explanation": "White Fox, the Japanese animation studio also known for series like Steins;Gate and Re:Zero, produced the Goblin Slayer anime adaptation, which premiered in 2018. The series, based on Kumo Kagyu's light novel and manga, drew significant attention for its dark fantasy tone and mature content."
+    },
+    {
+      "id": "ai-2026-06-10-9",
+      "question": "According to Make Magazine, heat is an effective styling tool for anime-convention costumes' hairpieces because the fibers can be permanently redirected — but what type of material are these hairpieces typically made of?",
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "plastic",
+      "explanation": "Most cosplay wigs are synthetic, constructed from plastic fibers rather than natural hair, which means heat can be used to permanently reshape and style them. Make Magazine highlights this property as the key reason heat works so well as a wig-styling tool in cosplay craft. This is a handy tip for anime and manga convention cosplayers looking to achieve accurate character hairstyles."
+    }
+  ]
+}

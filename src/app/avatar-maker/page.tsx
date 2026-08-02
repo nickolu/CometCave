@@ -230,6 +230,7 @@ export default function AvatarMakerPage() {
       const img = new window.Image()
       const objectUrl = URL.createObjectURL(file)
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
         const canvas = document.createElement('canvas')
         canvas.width = img.width
         canvas.height = img.height

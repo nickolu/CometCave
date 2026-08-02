@@ -41,6 +41,20 @@ export async function POST(request: Request) {
       )
     }
 
+    if (previousCharacters.length > 50) {
+      return NextResponse.json(
+        { error: 'previousCharacters must have 50 or fewer entries' },
+        { status: 400 }
+      )
+    }
+
+    if (criteria && criteria.length > 500) {
+      return NextResponse.json(
+        { error: 'criteria must be 500 characters or fewer.' },
+        { status: 400 }
+      )
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       // No API key — return fallback characters that don't conflict with existing ones
       const existingNames = new Set((previousCharacters as Character[]).map(c => c.name))

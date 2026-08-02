@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
@@ -103,10 +103,13 @@ interface TriviaResultsProps {
 
 export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, onStartInfinite, onNextDay, onPreviousDay, isRetroactive }: TriviaResultsProps) {
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const { user } = useAuth()
   const { stats, displayName } = useTriviaUser()
   const currentStreak = stats.currentStreak
   const countdown = useCountdown()
+
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
 
   // Treat anonymous Firebase users as "not signed in" for share-text and CTAs.
   const isNamedUser = !!user && !user.isAnonymous
@@ -129,8 +132,9 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
     }
     try {
       await navigator.clipboard.writeText(text)
+      clearTimeout(copiedTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // Fallback for older browsers
       const textarea = document.createElement('textarea')
@@ -139,8 +143,9 @@ export function TriviaResults({ result, onBack, onViewStats, onViewLeaderboard, 
       textarea.select()
       document.execCommand('copy')
       document.body.removeChild(textarea)
+      clearTimeout(copiedTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     }
   }
 

@@ -95,6 +95,14 @@ export async function POST(request: NextRequest) {
     // Get existing voters from request body
     const { existingVoters = [] } = await request.json()
 
+    if (!Array.isArray(existingVoters)) {
+      return NextResponse.json({ error: 'existingVoters must be an array.' }, { status: 400 })
+    }
+
+    if (existingVoters.length > 50) {
+      return NextResponse.json({ error: 'existingVoters must contain 50 entries or fewer.' }, { status: 400 })
+    }
+
     // Pick a random category
     const randomCategory = VOTER_CATEGORIES[Math.floor(Math.random() * VOTER_CATEGORIES.length)]
 

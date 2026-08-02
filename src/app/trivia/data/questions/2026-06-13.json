@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-13",
+  "categoryId": 10,
+  "categoryName": "Entertainment: Books",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-13-0",
+      "question": "What is the title of the first Sherlock Holmes book by Arthur Conan Doyle?",
+      "options": [
+        "A Case of Identity",
+        "The Doings of Raffles Haw",
+        "The Sign of the Four",
+        "A Study in Scarlet"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "A Study in Scarlet"
+    },
+    {
+      "id": "opentdb-2026-06-13-1",
+      "question": "What is the name of Sherlock Holmes's brother?",
+      "options": [
+        "Mederi Holmes",
+        "Martin Holmes",
+        "Herbie Hancock Holmes",
+        "Mycroft Holmes"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Mycroft Holmes"
+    },
+    {
+      "id": "opentdb-2026-06-13-2",
+      "question": "Under what pseudonym did Stephen King publish five novels between 1977 and 1984?",
+      "options": [
+        "J. D. Robb",
+        "Lewis Carroll",
+        "Mark Twain",
+        "Richard Bachman"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Richard Bachman"
+    },
+    {
+      "id": "opentdb-2026-06-13-3",
+      "question": "How many books are in the Chronicles of Narnia series?",
+      "options": [
+        "8",
+        "5",
+        "6",
+        "7"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "7"
+    },
+    {
+      "id": "opentdb-2026-06-13-4",
+      "question": "Who is the author of the series \"Malazan Book of the Fallen\"?",
+      "options": [
+        "Ian Cameron Esslemont",
+        "George R. R. Martin",
+        "J. R. R. Tolkien",
+        "Steven Erikson"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Steven Erikson"
+    },
+    {
+      "id": "opentdb-2026-06-13-5",
+      "question": "The novel \"Jane Eyre\" was written by what author? ",
+      "options": [
+        "Emily Bront&euml;",
+        "Louisa May Alcott",
+        "Jane Austen",
+        "Charlotte Bront&euml;"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Charlotte Bront&euml;"
+    },
+    {
+      "id": "ai-2026-06-13-6",
+      "question": "Which Jane Austen novel features the famous opening line about a single man in possession of a good fortune being in want of a wife?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Pride and Prejudice",
+      "explanation": "Pride and Prejudice, published in 1813, is one of Jane Austen's most beloved novels and a cornerstone of English literature. It follows the spirited Elizabeth Bennet as she navigates issues of love, class, and marriage — most notably with the proud Mr. Darcy. Its iconic opening line has become one of the most recognized in literary history."
+    },
+    {
+      "id": "ai-2026-06-13-7",
+      "question": "In the novel \"The Martian,\" what is the name of the astronaut stranded alone on Mars?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Mark Watney",
+      "explanation": "Mark Watney is the resourceful astronaut at the center of Andy Weir's 2011 novel \"The Martian,\" left behind on Mars after his crew believes him dead. He must use his botany and engineering skills to survive until a rescue mission can reach him. The story was later adapted into a hit 2015 film starring Matt Damon."
+    },
+    {
+      "id": "ai-2026-06-13-8",
+      "question": "Romance of the Three Kingdoms is regarded as a member of which celebrated grouping of Chinese literary classics?",
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Four Great Classic Novels",
+      "explanation": "The Four Great Classic Novels of Chinese literature are Romance of the Three Kingdoms, Water Margin, Journey to the West, and Dream of the Red Chamber. These works, written between the 14th and 18th centuries, are considered the pinnacle of Chinese storytelling and have had an enormous influence on East Asian culture. Romance of the Three Kingdoms, attributed to Luo Guanzhong, dramatizes the turbulent end of the Han Dynasty."
+    },
+    {
+      "id": "ai-2026-06-13-9",
+      "question": "Which novel, originally self-published on its author's blog, was later acquired by Crown Publishing and reissued in 2014?",
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Martian",
+      "explanation": "Andy Weir initially released The Martian chapter by chapter on his personal blog for free before it gained enough of a following to attract traditional publishers. Crown Publishing acquired the rights and released the official print edition in 2014, after which it became a massive bestseller and was adapted into a blockbuster film starring Matt Damon."
+    }
+  ]
+}
