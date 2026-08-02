@@ -18,6 +18,7 @@ export function ItemRow({
       type="button"
       onClick={onClick}
       aria-label={`${name}: ${description}`}
+      aria-pressed={selected}
       className="cc-btn flex w-full items-start gap-3 rounded-md p-2.5 text-left transition-colors"
       style={{
         background: selected
