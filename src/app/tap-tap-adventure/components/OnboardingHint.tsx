@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface OnboardingHintProps {
   title: string
@@ -11,6 +12,9 @@ interface OnboardingHintProps {
 
 export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) {
   const [isVisible, setIsVisible] = useState(false)
+
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
@@ -39,9 +43,6 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Onboarding hint"
       className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
@@ -53,6 +54,7 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
         }`}
       >
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label={title}

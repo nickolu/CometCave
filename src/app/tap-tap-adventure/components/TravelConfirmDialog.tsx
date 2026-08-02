@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Region } from '@/app/tap-tap-adventure/config/regions'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface TravelConfirmDialogProps {
   region: Region
@@ -30,6 +31,9 @@ export function TravelConfirmDialog({ region, onConfirm, onCancel }: TravelConfi
   const difficulty = DIFFICULTY_BADGE[region.difficulty] ?? DIFFICULTY_BADGE.easy
   const element = ELEMENT_BADGE[region.element] ?? ELEMENT_BADGE.none
 
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
+
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel()
@@ -45,6 +49,7 @@ export function TravelConfirmDialog({ region, onConfirm, onCancel }: TravelConfi
       onClick={onCancel}
     >
       <div
+        ref={dialogRef}
         className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg max-w-sm w-full p-5 space-y-4 shadow-xl"
         role="dialog"
         aria-modal="true"

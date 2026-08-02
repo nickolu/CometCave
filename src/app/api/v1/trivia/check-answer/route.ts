@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // For AI questions, use semantic matching via GPT
     if (question.source === 'ai') {
-      let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+      let apiKey = process.env.OPENAI_API_KEY
       const headerApiKey = request.headers.get('x-openai-api-key')
       if (headerApiKey) apiKey = headerApiKey
 

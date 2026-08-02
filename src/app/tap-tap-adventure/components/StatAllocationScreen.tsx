@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface StatAllocationScreenProps {
   character: FantasyCharacter
@@ -25,6 +26,8 @@ const STAT_LABELS: Record<string, string> = {
 
 export function StatAllocationScreen({ character, onConfirm }: StatAllocationScreenProps) {
   const [allocation, setAllocation] = useState({ strength: 0, intelligence: 0, luck: 0, charisma: 0 })
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const totalAllocated = allocation.strength + allocation.intelligence + allocation.luck + allocation.charisma
   const remaining = (character.pendingStatPoints ?? 0) - totalAllocated
@@ -48,7 +51,7 @@ export function StatAllocationScreen({ character, onConfirm }: StatAllocationScr
   const stats = ['strength', 'intelligence', 'luck', 'charisma'] as const
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Allocate stat points">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" />
 

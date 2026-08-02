@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 
 import { submitAdventureScore } from '@/app/tap-tap-adventure/lib/adventureLeaderboardStore'
+import { verifyRequestAuth } from '@/lib/api/auth'
 import { getTodayPST } from '@/lib/dates'
 
 const MAX_NAME_LENGTH = 20
@@ -11,6 +12,9 @@ const MAX_LEVEL = 500
 const MAX_GOLD = 10_000_000
 
 export async function POST(request: NextRequest) {
+  const authResult = await verifyRequestAuth(request)
+  if ('error' in authResult) return authResult.error
+
   try {
     const body = await request.json()
     const {

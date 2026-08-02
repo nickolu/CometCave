@@ -88,6 +88,7 @@ function ImageUploadZone({ label, imageBase64, onImageSelect, onImageRemove }: I
         <div
           role="button"
           tabIndex={0}
+          aria-label="Upload image"
           onClick={() => fileInputRef.current?.click()}
           onKeyDown={e => {
             if (e.key === 'Enter' || e.key === ' ') {

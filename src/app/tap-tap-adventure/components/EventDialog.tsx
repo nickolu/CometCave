@@ -1,7 +1,8 @@
 'use client'
 
-import React from 'react'
+import React, { useRef } from 'react'
 import { LoaderCircle } from 'lucide-react'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 import { Button } from './ui/button'
 import { REGIONS } from '@/app/tap-tap-adventure/config/regions'
 import type { RegionDifficulty } from '@/app/tap-tap-adventure/config/regions'
@@ -61,15 +62,16 @@ export function EventDialog({
   showNPCPanel,
   npcPanelContent,
 }: EventDialogProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"
       style={{ backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.6)' }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Event"
     >
       <div
+        ref={dialogRef}
         className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg max-w-md w-full p-5 shadow-xl max-h-[80vh] overflow-y-auto"
         role="dialog"
         aria-modal="true"

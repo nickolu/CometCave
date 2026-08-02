@@ -449,7 +449,7 @@ export function SummonLoader({
           color: 'var(--cc-text-muted)',
         }}
       >
-        Never mind
+        Cancel
       </button>
     </div>
   )

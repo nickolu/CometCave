@@ -99,7 +99,6 @@ export const LineControl = ({
         aria-label={isStatic ? undefined : 'Toggle line — solid or broken'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
-        aria-label={isStatic ? undefined : 'Toggle line type'}
       >
         <Line type={lineData?.type} isStatic={isStatic} />
       </div>
@@ -109,7 +108,6 @@ export const LineControl = ({
         aria-label={isStatic ? undefined : 'Toggle changing line'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}
-        aria-label={isStatic ? undefined : 'Toggle changing line'}
       >
         <ChangeMarker hasChanges={Boolean(lineData?.hasChanges)} isStatic={isStatic} />
       </div>

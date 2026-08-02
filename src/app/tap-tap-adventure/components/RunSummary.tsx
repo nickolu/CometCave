@@ -7,6 +7,7 @@ import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManage
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
 import type { RunSummaryData } from '@/app/tap-tap-adventure/models/types'
 import { getTodayPST } from '@/lib/dates'
+import { useAuth } from '@/hooks/useAuth'
 
 import AdventureLeaderboard from './AdventureLeaderboard'
 
@@ -102,6 +103,8 @@ export default function RunSummary({
 }: RunSummaryProps) {
   const { character, reason, essenceEarned, heirloom, killedBy } = data
 
+  const { user } = useAuth()
+
   const [playerName, setPlayerName] = useState<string>('')
   const [nameInput, setNameInput] = useState<string>('')
   const [showNameInput, setShowNameInput] = useState(false)
@@ -131,9 +134,14 @@ export default function RunSummary({
     if (!playerName || submitStatus === 'submitting') return
     setSubmitStatus('submitting')
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (user) {
+        const token = await user.getIdToken()
+        headers['Authorization'] = `Bearer ${token}`
+      }
       const res = await fetch('/api/v1/tap-tap-adventure/leaderboard/submit-score', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           playerName,
           characterId: character.id,
@@ -177,7 +185,7 @@ export default function RunSummary({
   // Leaderboard overlay
   if (showLeaderboard) {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1a1b2e] p-4">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1a1b2e] p-4" role="dialog" aria-modal="true" aria-label="Leaderboard">
         <AdventureLeaderboard onBack={() => setShowLeaderboard(false)} />
       </div>
     )

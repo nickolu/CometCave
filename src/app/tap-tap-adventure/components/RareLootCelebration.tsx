@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 const RARITY_CONFIG = {
   legendary: {
@@ -48,6 +49,9 @@ interface RareLootCelebrationProps {
 export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
 
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
+
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
@@ -85,6 +89,7 @@ export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProp
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Rare loot drop"

@@ -119,6 +119,7 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
 
   const roundTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const burstTimers = useRef<ReturnType<typeof setTimeout>[]>([])
   // The deck is large and never rendered directly; keep it off the render state.
   const deckRef = useRef<number[][]>([])
 
@@ -127,6 +128,8 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
     if (flashTimer.current) clearTimeout(flashTimer.current)
     roundTimer.current = null
     flashTimer.current = null
+    burstTimers.current.forEach(clearTimeout)
+    burstTimers.current = []
   }, [])
 
   useEffect(() => () => clearTimers(), [clearTimers])
@@ -184,8 +187,8 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
     sfx.win()
     const ranked = [...st.players].sort((a, b) => b.score - a.score)
     burst(window.innerWidth / 2, window.innerHeight * 0.4, ranked[0]?.color)
-    setTimeout(() => burst(window.innerWidth * 0.25, window.innerHeight * 0.5), 220)
-    setTimeout(() => burst(window.innerWidth * 0.75, window.innerHeight * 0.5), 440)
+    burstTimers.current.push(setTimeout(() => burst(window.innerWidth * 0.25, window.innerHeight * 0.5), 220))
+    burstTimers.current.push(setTimeout(() => burst(window.innerWidth * 0.75, window.innerHeight * 0.5), 440))
   }, [burst])
 
   const award = useCallback(

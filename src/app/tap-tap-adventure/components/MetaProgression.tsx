@@ -1,7 +1,8 @@
 'use client'
-import React from 'react'
+import React, { useRef } from 'react'
 
 import { ETERNAL_UPGRADES } from '@/app/tap-tap-adventure/config/eternalUpgrades'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import type { GameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { EternalUpgrade } from '@/app/tap-tap-adventure/models/metaProgression'
@@ -82,6 +83,8 @@ function UpgradeCard({
 export default function MetaProgression({ onClose }: { onClose: () => void }) {
   const metaProgression = useGameStore(selectMetaProgression)
   const purchaseUpgrade = useGameStore(selectPurchaseUpgrade)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const soulEssence = metaProgression?.soulEssence ?? 0
   const totalEssenceEarned = metaProgression?.totalEssenceEarned ?? 0
@@ -95,7 +98,7 @@ export default function MetaProgression({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900/95 overflow-y-auto">
+    <div ref={dialogRef} className="fixed inset-0 z-50 bg-gray-900/95 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Eternal upgrades">
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

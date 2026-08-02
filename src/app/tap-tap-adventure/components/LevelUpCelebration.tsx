@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 const PARTICLE_COLORS = ['#FACC15', '#FB923C', '#A78BFA', '#60A5FA']
 const PARTICLES = Array.from({ length: 12 }, (_, i) => {
@@ -20,6 +21,8 @@ interface LevelUpCelebrationProps {
 
 export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   useEffect(() => {
     // Play level up sound
@@ -38,6 +41,7 @@ export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Level up!"
