@@ -403,7 +403,16 @@ export const SIZE_WORDS: Record<number, string> = {
 // Body plans
 // ---------------------------------------------------------------------------
 
-export type PlanId = LocomotionKind
+/**
+ * The chips on the drawing panel.
+ *
+ * Mostly the locomotion kinds, plus `hop` — which is not a seventh way of
+ * moving but a walker with `move.hop` turned up. It gets its own chip because
+ * "it bounces" is the difference a child sees, and asking them to pick Walker
+ * and then find a slider would be asking them to know how the simulation is
+ * put together.
+ */
+export type PlanId = LocomotionKind | 'hop'
 
 interface BodyPlan {
   id: PlanId
@@ -432,9 +441,9 @@ export const BODY_PLANS: BodyPlan[] = [
   {
     id: 'walk',
     label: 'Walker',
-    hint: 'Runs along the ground and jumps.',
+    hint: 'Runs along the ground. Jumps when it has to.',
     flavour: ['beast'],
-    move: { kind: 'walk', speed: 5, jump: 10, restlessness: 0.3 },
+    move: { kind: 'walk', speed: 5, jump: 10, hop: 0, restlessness: 0.3 },
     body: { mass: 1, bounce: 0.15, drag: 0.4, buoyancy: 0.85 },
     habitat: { needs: null, drowns: true },
     hungerRate: 0.027,
@@ -444,11 +453,28 @@ export const BODY_PLANS: BodyPlan[] = [
     faceMotion: true,
   },
   {
+    // A Walker with its speed moved into the leap — same numbers off the same
+    // starter (the Hopper), so a drawn hopper drops into the food chain in the
+    // place the built-in one already holds.
+    id: 'hop',
+    label: 'Hopper',
+    hint: 'Bounces along in leaps.',
+    flavour: ['beast'],
+    move: { kind: 'walk', speed: 5, jump: 12, hop: 1, restlessness: 0.35 },
+    body: { mass: 1, bounce: 0.2, drag: 0.4, buoyancy: 0.85 },
+    habitat: { needs: null, drowns: true },
+    hungerRate: 0.026,
+    starveSeconds: 28,
+    breedAt: 0.8,
+    lifespanSeconds: 200,
+    faceMotion: true,
+  },
+  {
     id: 'fly',
     label: 'Flyer',
     hint: 'Goes anywhere in the air.',
     flavour: ['bug'],
-    move: { kind: 'fly', speed: 4.5, jump: 0, restlessness: 0.55 },
+    move: { kind: 'fly', speed: 4.5, jump: 0, hop: 0, restlessness: 0.55 },
     body: { mass: 0.12, bounce: 0.1, drag: 0.5, buoyancy: 1.4 },
     habitat: { needs: null, drowns: true },
     hungerRate: 0.03,
@@ -462,7 +488,7 @@ export const BODY_PLANS: BodyPlan[] = [
     label: 'Swimmer',
     hint: 'Needs water. Gasps on dry land.',
     flavour: ['fish'],
-    move: { kind: 'swim', speed: 5, jump: 0, restlessness: 0.4 },
+    move: { kind: 'swim', speed: 5, jump: 0, hop: 0, restlessness: 0.4 },
     body: { mass: 0.4, bounce: 0.1, drag: 0.45, buoyancy: 1 },
     habitat: { needs: ['water'], drowns: false },
     hungerRate: 0.03,
@@ -476,7 +502,7 @@ export const BODY_PLANS: BodyPlan[] = [
     label: 'Crawler',
     hint: 'Sticks to walls and ceilings.',
     flavour: ['bug'],
-    move: { kind: 'crawl', speed: 3, jump: 0, restlessness: 0.35 },
+    move: { kind: 'crawl', speed: 3, jump: 0, hop: 0, restlessness: 0.35 },
     body: { mass: 1, bounce: 0.05, drag: 0.35, buoyancy: 0.8 },
     habitat: { needs: null, drowns: true },
     hungerRate: 0.028,
@@ -492,7 +518,7 @@ export const BODY_PLANS: BodyPlan[] = [
     flavour: [],
     // Buoyancy a hair over 1 keeps it at the waterline instead of climbing out
     // of the sea and sailing off the top of the world.
-    move: { kind: 'drift', speed: 1.8, jump: 0, restlessness: 0.5 },
+    move: { kind: 'drift', speed: 1.8, jump: 0, hop: 0, restlessness: 0.5 },
     body: { mass: 0.15, bounce: 0.3, drag: 0.55, buoyancy: 1.03 },
     habitat: { needs: null, drowns: false },
     hungerRate: 0.02,
@@ -506,7 +532,7 @@ export const BODY_PLANS: BodyPlan[] = [
     label: 'Plant',
     hint: 'Never moves. Feeds everything else.',
     flavour: [],
-    move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+    move: { kind: 'root', speed: 0, jump: 0, hop: 0, restlessness: 0 },
     body: { mass: 1, bounce: 0, drag: 0.2, buoyancy: 0.6 },
     habitat: { needs: null, drowns: false },
     hungerRate: 0,
@@ -531,8 +557,17 @@ export const DIET_CHOICES: { id: DietId; label: string; hint: string }[] = [
   { id: 'none', label: 'Nothing', hint: 'Never gets hungry.' },
 ]
 
-/** Which chip should be lit when an existing creature is opened for editing. */
+/**
+ * Which chip should be lit when an existing creature is opened for editing.
+ *
+ * A walker that spends a fair share of its travel airborne is a Hopper as far
+ * as the panel is concerned, so opening a summoned frog lights the chip that
+ * describes what the player can see it doing. The threshold is deliberately low:
+ * anything with a real bounce reads as a hopper, and only a token amount of
+ * jumping comes back as a plain Walker.
+ */
 export function planOf(bp: CreatureBlueprint): PlanId {
+  if (bp.move.kind === 'walk' && bp.move.hop >= 0.25) return 'hop'
   return PLAN_BY_ID.has(bp.move.kind) ? bp.move.kind : 'walk'
 }
 

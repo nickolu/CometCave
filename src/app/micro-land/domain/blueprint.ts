@@ -122,6 +122,11 @@ export const BlueprintSchema = z.object({
         ),
       speed: z.number().describe('Top speed in tiles per second, 0.5-14.'),
       jump: z.number().describe('Jump strength for walkers, 0-20. Ignored otherwise.'),
+      hop: z
+        .number()
+        .describe(
+          'How much of a walking creature travels by jumping, 0-1. 0 = runs along the ground, 0.3 = a frog that pauses between leaps, 1 = a grasshopper that bounces constantly. Use it for anything springy — frogs, fleas, rabbits, kangaroos, bouncing blobs. Ignored by everything that is not a walker.'
+        ),
       restlessness: z
         .number()
         .describe('Chance per second of changing idle direction, 0-1. 0.2 is calm.'),
@@ -548,6 +553,9 @@ export function sanitizeBlueprint(
       kind,
       speed: clamp(move.speed, 0, 16, 3),
       jump: clamp(move.jump, 0, 24, 8),
+      // Defaults to 0 — running is the ordinary way to be a walker, and every
+      // blueprint written before hopping existed means to run.
+      hop: clamp(move.hop, 0, 1, 0),
       restlessness: clamp(move.restlessness, 0, 1, 0.25),
     },
     diet: {
@@ -616,6 +624,19 @@ export const MOVE_WORDS: Record<LocomotionKind, string> = {
   crawl: 'climbs',
   drift: 'floats',
   root: 'stays put',
+}
+
+/**
+ * What one particular creature is doing, rather than what its kind is called.
+ *
+ * A springy walker is a hopper first — bouncing is the thing you notice about
+ * it long before you notice it has legs. The filter still files it under
+ * "walks" with every other ground animal, which is right: hopping is a way of
+ * walking, not a seventh way of being alive.
+ */
+export function moveWord(bp: CreatureBlueprint): string {
+  if (bp.move.kind === 'walk' && bp.move.hop >= 0.25) return 'hops'
+  return MOVE_WORDS[bp.move.kind] ?? bp.move.kind
 }
 
 export type CreatureGroup = 'yours' | 'plants' | 'grazers' | 'hunters' | 'giants' | 'helpers'
