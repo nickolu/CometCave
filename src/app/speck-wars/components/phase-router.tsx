@@ -342,7 +342,7 @@ export function PhaseRouter({ children }: { children: React.ReactNode }) {
             <span>A(+click) — attack-move · N — advance · B — rush · D — defend</span>
             <span>X — speed · E — all · Esc — clear</span>
             <span>Ctrl+4-9 save group · 4-9 recall</span>
-            <span>Minimap — left-click to rally</span>
+            <span>Minimap — click/drag to pan</span>
             <span>Scroll — zoom · Shift+scroll — pan</span>
             <span>Arrow keys / W S — pan</span>
           </div>
