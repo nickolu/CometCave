@@ -61,6 +61,19 @@ export interface Notice {
   text: string
 }
 
+/**
+ * A creature that has been asked for but hasn't arrived yet.
+ *
+ * A single creature is summoned without blocking the game, so the wait has to
+ * be visible somewhere the player isn't using: an empty slot holds its place in
+ * the creature strip until the response lands. More than one can be in flight —
+ * nothing stops a player from asking for a second while the first is coming.
+ */
+export interface PendingSummon {
+  id: number
+  prompt: string
+}
+
 interface MicroLandState {
   themeId: string
   tool: Tool
@@ -80,6 +93,8 @@ interface MicroLandState {
   /** Name of the summoned land, if there is one — shown in the world picker. */
   summonedLand: string | null
   summonError: string | null
+  /** Creature summons in flight, in the order they were asked for. */
+  pendingSummons: PendingSummon[]
   guideOpen: boolean
   inspected: Inspected | null
 
@@ -97,6 +112,9 @@ interface MicroLandState {
   setSummonMode: (mode: 'creature' | 'scene' | 'terrain') => void
   setSummonedLand: (name: string | null) => void
   setSummonError: (message: string | null) => void
+  /** Opens a slot for a creature on its way; returns the id to close it with. */
+  addPendingSummon: (prompt: string) => number
+  removePendingSummon: (id: number) => void
   setGuideOpen: (open: boolean) => void
   setInspected: (snapshot: Inspected | null) => void
   notify: (text: string) => void
@@ -104,6 +122,7 @@ interface MicroLandState {
 }
 
 let noticeId = 0
+let pendingId = 0
 
 export const useMicroLand = create<MicroLandState>((set) => ({
   themeId: DEFAULT_THEME,
@@ -122,6 +141,7 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   summonMode: 'creature',
   summonedLand: null,
   summonError: null,
+  pendingSummons: [],
   guideOpen: false,
   inspected: null,
 
@@ -140,6 +160,13 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   setSummonMode: (summonMode) => set({ summonMode }),
   setSummonedLand: (summonedLand) => set({ summonedLand }),
   setSummonError: (summonError) => set({ summonError }),
+  addPendingSummon: (prompt) => {
+    const id = ++pendingId
+    set((s) => ({ pendingSummons: [...s.pendingSummons, { id, prompt }] }))
+    return id
+  },
+  removePendingSummon: (id) =>
+    set((s) => ({ pendingSummons: s.pendingSummons.filter((p) => p.id !== id) })),
   setGuideOpen: (guideOpen) => set({ guideOpen }),
   setInspected: (inspected) => set({ inspected }),
 
