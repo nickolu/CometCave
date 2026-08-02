@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-21",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-21-0",
+      "question": "Who was the 45th President of the United States?",
+      "options": [
+        "Bill Clinton",
+        "George Bush",
+        "Barack Obama",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-07-21-1",
+      "question": "Which former US president was nicknamed \"Teddy\" after he refused to shoot a defenseless black bear?",
+      "options": [
+        "Woodrow Wilson",
+        "Andrew Jackson",
+        "James F. Fielder",
+        "Theodore Roosevelt"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Theodore Roosevelt"
+    },
+    {
+      "id": "opentdb-2026-07-21-2",
+      "question": "How many people are in the U.S. House of Representatives?",
+      "options": [
+        "260",
+        "50",
+        "415",
+        "435"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "435"
+    },
+    {
+      "id": "opentdb-2026-07-21-3",
+      "question": "What are the first names of the first father and son pair that were both Prime Ministers of Canada?",
+      "options": [
+        "Brian and Justin",
+        "Brian and Pierre",
+        "John and Louis",
+        "Justin and Pierre"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Justin and Pierre"
+    },
+    {
+      "id": "opentdb-2026-07-21-4",
+      "question": "The 2014 movie \"The Raid 2: Berandal\" was mainly filmed in which Asian country?",
+      "options": [
+        "Thailand",
+        "Brunei",
+        "Malaysia",
+        "Indonesia"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Indonesia"
+    },
+    {
+      "id": "opentdb-2026-07-21-5",
+      "question": "Which of the following United States senators is known for performing a 24-hour long filibuster?",
+      "options": [
+        "Roy Blunt",
+        "Chuck Schumer",
+        "John Barrasso",
+        "Strom Thurmond"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Strom Thurmond"
+    },
+    {
+      "id": "ai-2026-07-21-6",
+      "question": "What word, meaning \"apartness\" in Afrikaans, was used to name South Africa's official policy of racial segregation?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "apartheid",
+      "explanation": "Apartheid was the official government policy of racial segregation and discrimination enforced in South Africa from 1948 to the early 1990s. The word comes from Afrikaans and literally means \"apartness,\" reflecting the policy's goal of keeping racial groups separated. It was dismantled following international pressure and negotiations, leading to South Africa's first fully democratic elections in 1994."
+    },
+    {
+      "id": "ai-2026-07-21-7",
+      "question": "Which U.S. court receives its power directly from the Constitution?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Supreme Court",
+      "explanation": "The Supreme Court of the United States is the only court explicitly established and empowered by the U.S. Constitution itself, in Article III. All other federal courts — such as district courts and courts of appeals — were created by Congress through legislation, not directly by the Constitution."
+    },
+    {
+      "id": "ai-2026-07-21-8",
+      "question": "A political science study covering the period 1948 to 2003 analyzed the state visit travel patterns of heads of state from which three countries?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "France, Germany, and the United States",
+      "explanation": "This research examined decades of diplomatic travel by the heads of state of France, Germany, and the United States, spanning the Cold War era and beyond. State visits are formal diplomatic trips made by a head of state to a foreign country, and studying them reveals patterns in international relations and alliance-building. The 1948–2003 timeframe captures significant geopolitical shifts, including the post-WWII order, the Cold War, and the post-Soviet world."
+    },
+    {
+      "id": "ai-2026-07-21-9",
+      "question": "Who chaired the UN committee responsible for drafting the Universal Declaration of Human Rights?",
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Eleanor Roosevelt",
+      "explanation": "Eleanor Roosevelt chaired the UN Commission on Human Rights, which drafted the Universal Declaration of Human Rights, adopted by the UN General Assembly in 1948. Her leadership was instrumental in shaping the document, which remains one of the most significant human rights texts in history. It was a remarkable role for a former First Lady who had transformed into a formidable diplomat and advocate."
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-10",
+  "categoryId": 13,
+  "categoryName": "Entertainment: Musicals & Theatres",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-10-0",
+      "question": "How many plays is Shakespeare generally considered to have written?",
+      "options": [
+        "18",
+        "54",
+        "25",
+        "37"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "37"
+    },
+    {
+      "id": "opentdb-2026-07-10-1",
+      "question": "Who wrote the play 'Angels in America'?",
+      "options": [
+        "Tom Stoppard",
+        "Anthony Neilson",
+        "Matthew Lopez",
+        "Tony Kusher"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Tony Kusher"
+    },
+    {
+      "id": "opentdb-2026-07-10-2",
+      "question": "In Shakespeare's play Julius Caesar, Caesar's last words were...",
+      "options": [
+        "Iacta alea est!",
+        "Vidi, vini, vici.",
+        "Aegri somnia vana.",
+        "Et tu, Brute? "
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Et tu, Brute? "
+    },
+    {
+      "id": "opentdb-2026-07-10-3",
+      "question": "What was George Bizet's last opera?",
+      "options": [
+        "Don Rodrigue",
+        "Grisélidis",
+        "Les p&ecirc;cheurs de perles",
+        "Carmen"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Carmen"
+    },
+    {
+      "id": "opentdb-2026-07-10-4",
+      "question": "Who is the musical director for the award winning musical \"Hamilton\"?",
+      "options": [
+        "Lin-Manuel Miranda",
+        "Leslie Odom Jr.",
+        "Renee Elise-Goldberry",
+        "Alex Lacamoire"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Alex Lacamoire"
+    },
+    {
+      "id": "opentdb-2026-07-10-5",
+      "question": "Which actor has NOT portrayed Billy Flynn in the musical \"Chicago\"?",
+      "options": [
+        "Jerry Springer",
+        "Patrick Swayze",
+        "David Hasselhoff",
+        "Christopher Walken"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Christopher Walken"
+    },
+    {
+      "id": "ai-2026-07-10-6",
+      "question": "Which director co-wrote the 2001 film that the stage musical Moulin Rouge! was adapted from?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Baz Luhrmann",
+      "explanation": "The stage musical Moulin Rouge! is based on the screenplay written by Baz Luhrmann and Craig Pearce for the 2001 film of the same name. Luhrmann is the Australian director known for his visually extravagant style, also behind films like The Great Gatsby and Romeo + Juliet. The Broadway musical opened in 2018 and went on to win 10 Tony Awards."
+    },
+    {
+      "id": "ai-2026-07-10-7",
+      "question": "Which famous New York City concert hall celebrated its opening with a full week of festivities?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Carnegie Hall",
+      "explanation": "Carnegie Hall opened in 1891 with a week-long series of concerts and events, making it a landmark occasion for New York City's cultural life. The hall was funded by industrialist Andrew Carnegie and has since become one of the most prestigious music venues in the world. Its opening festivities reflected the grand ambitions of the Gilded Age for American arts and culture."
+    },
+    {
+      "id": "ai-2026-07-10-8",
+      "question": "Which pop star wrote the score for the Broadway musical Kinky Boots, which features a book by Harvey Fierstein?",
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Cyndi Lauper",
+      "explanation": "Cyndi Lauper made history with Kinky Boots by becoming the first solo woman to win the Tony Award for Best Original Score. The musical, which opened on Broadway in 2013, features a book by Harvey Fierstein and tells the story of a struggling shoe factory saved by a drag queen's bold vision. Lauper's pop sensibility brought a vibrant, energetic sound to the show."
+    },
+    {
+      "id": "ai-2026-07-10-9",
+      "question": "During the writing of which Tony Award-winning musical did its creators take a research trip to the city that is also repeatedly referenced and sung about throughout the show?",
+      "difficulty": "hard",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Salt Lake City",
+      "explanation": "The creators of *The Book of Mormon*, Trey Parker, Matt Stone, and Robert Lopez, visited Salt Lake City while developing the musical to research Mormon culture firsthand. Salt Lake City — home of The Church of Jesus Christ of Latter-day Saints — is woven throughout the show's songs and dialogue as a symbol of the missionaries' idealized homeland. The musical went on to win nine Tony Awards, including Best Musical, in 2011."
+    }
+  ]
+}

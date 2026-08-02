@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-30",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-30-0",
+      "question": "What is Grumpy Cat's real name?",
+      "options": [
+        "Minnie",
+        "Broccoli",
+        "Sauce",
+        "Tardar Sauce"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Tardar Sauce"
+    },
+    {
+      "id": "opentdb-2026-06-30-1",
+      "question": "Wombats are native to which Country?",
+      "options": [
+        "New Zealand",
+        "Palau",
+        "Papua New Guinea",
+        "Australia"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Australia"
+    },
+    {
+      "id": "opentdb-2026-06-30-2",
+      "question": "Which is the national animal of India?",
+      "options": [
+        "Lion",
+        "Camel",
+        "Horse",
+        "Tiger"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Tiger"
+    },
+    {
+      "id": "opentdb-2026-06-30-3",
+      "question": "A carnivorous animal eats flesh, what does a nucivorous animal eat?",
+      "options": [
+        "Nothing",
+        "Fruit",
+        "Seaweed",
+        "Nuts"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Nuts"
+    },
+    {
+      "id": "opentdb-2026-06-30-4",
+      "question": "Which of these species is not extinct?",
+      "options": [
+        "Japanese sea lion",
+        "Tasmanian tiger",
+        "Saudi gazelle",
+        "Komodo dragon"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Komodo dragon"
+    },
+    {
+      "id": "opentdb-2026-06-30-5",
+      "question": "What is the scientific name for the Bald Eagle?",
+      "options": [
+        "Cyanocitta Cristata",
+        "Aquila Chrysaetos",
+        "Tyto Alba",
+        "Haliaeetus Leucocephalus "
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Haliaeetus Leucocephalus "
+    },
+    {
+      "id": "ai-2026-06-30-6",
+      "question": "Which animals are the tallest mammals on Earth, capable of reaching about 5.5 meters in height?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Giraffes",
+      "explanation": "Giraffes are the tallest mammals on Earth, with adults reaching around 5.5 meters (about 18 feet) tall. Much of their height comes from their extraordinarily long necks, which can measure up to 1.8 meters alone. This impressive height helps them feed on leaves in tall trees that other animals cannot reach."
+    },
+    {
+      "id": "ai-2026-06-30-7",
+      "question": "Which Massachusetts peninsula was named after a fish that was historically abundant in its surrounding waters?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Cape Cod",
+      "explanation": "Cape Cod, the hook-shaped peninsula in Massachusetts, was named by English explorer Bartholomew Gosnold in 1602 after the Atlantic cod, which once teemed in enormous numbers in the surrounding waters. Cod were so vital to the New England economy that a wooden carving of one, known as the \"Sacred Cod,\" still hangs in the Massachusetts State House today."
+    },
+    {
+      "id": "ai-2026-06-30-8",
+      "question": "Which large fruit bats are known to flap their wings as a self-cooling mechanism during hot weather?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Flying foxes",
+      "explanation": "Flying foxes, the large fruit bats of the genus Pteropus, use their wings as natural fans to regulate body temperature when temperatures soar. Unlike many mammals, they cannot sweat efficiently, so wing-fanning is a critical behavioral adaptation. Some species also lick their wings to aid evaporative cooling."
+    },
+    {
+      "id": "ai-2026-06-30-9",
+      "question": "When two nudibranchs mate, both individuals can end up fertilized and both can lay eggs — a consequence of what reproductive classification that applies to this group of sea slugs?",
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "hermaphrodites",
+      "explanation": "Nudibranchs are simultaneous hermaphrodites, meaning each individual possesses both male and female reproductive organs. When two nudibranchs mate, they can mutually fertilize each other, so both partners may go on to lay eggs — a remarkable reproductive strategy seen across several marine invertebrate groups."
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { InfiniteMode, InfiniteRunState } from '@/app/trivia/hooks/useInfiniteRun'
 import { ChunkyButton } from '@/components/ui/chunky-button'
@@ -47,8 +47,11 @@ type AnswerEntry = InfiniteRunState['answers'][number]
 export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged, ratings }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
   const [detailFor, setDetailFor] = useState<AnswerEntry | null>(null)
+
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
 
   const questionsCorrect = state.answers.filter(a => a.correct).length
 
@@ -63,8 +66,9 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, on
 
     try {
       await navigator.clipboard.writeText(lines)
+      clearTimeout(copiedTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // Silent fail
     }

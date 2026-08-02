@@ -16,6 +16,13 @@ export async function POST(request: Request) {
       )
     }
 
+    if (message.length > 2000) {
+      return NextResponse.json(
+        { error: 'message must be 2000 characters or fewer.' },
+        { status: 400 }
+      )
+    }
+
     if (!process.env.OPENAI_API_KEY) {
       // No API key available — assume message is safe rather than blocking all messages
       return NextResponse.json({ safe: true, reason: '' })
