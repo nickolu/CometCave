@@ -12,7 +12,7 @@ import {
   Select,
   TextField,
 } from '@mui/material'
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useState } from 'react'
 
 import { useStore } from '@/app/chat-room-of-infinity/store'
 import { CharacterStatus, HumanUser } from '@/app/chat-room-of-infinity/types'
@@ -31,6 +31,16 @@ export default function UserProfileDialog({ open, onClose }: UserProfileDialogPr
     status: humanUser.status,
     description: humanUser.description || '',
   })
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: humanUser.name,
+        status: humanUser.status,
+        description: humanUser.description || '',
+      })
+    }
+  }, [open, humanUser])
 
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()

@@ -65,9 +65,6 @@ export function EventDialog({
     <div
       className="fixed inset-0 z-50 flex items-start justify-center pt-16 px-4"
       style={{ backdropFilter: 'blur(4px)', background: 'rgba(0,0,0,0.6)' }}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Event"
     >
       <div
         className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg max-w-md w-full p-5 shadow-xl max-h-[80vh] overflow-y-auto"
