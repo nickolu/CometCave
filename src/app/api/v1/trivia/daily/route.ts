@@ -284,7 +284,7 @@ export async function GET(request: NextRequest) {
     console.warn(`No pre-generated questions for ${targetDate}, falling back to live generation`)
 
     // Resolve API key for AI question
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    let apiKey = process.env.OPENAI_API_KEY
     const headerApiKey = request.headers.get('x-openai-api-key')
     if (headerApiKey) apiKey = headerApiKey
 

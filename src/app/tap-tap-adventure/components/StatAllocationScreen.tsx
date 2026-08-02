@@ -48,7 +48,7 @@ export function StatAllocationScreen({ character, onConfirm }: StatAllocationScr
   const stats = ['strength', 'intelligence', 'luck', 'charisma'] as const
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Allocate stat points">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" />
 

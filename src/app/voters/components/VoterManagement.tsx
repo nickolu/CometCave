@@ -293,6 +293,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                       size="sm"
                       onClick={() => setEditingVoterId(voter.id)}
                       className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                      aria-label="Edit voter"
                     >
                       <Pencil className="w-4 h-4" />
                     </ChunkyButton>
@@ -301,6 +302,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                       size="sm"
                       onClick={() => duplicateVoter(voter)}
                       className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                      aria-label="Duplicate voter"
                     >
                       <Copy className="w-4 h-4" />
                     </ChunkyButton>
@@ -309,6 +311,7 @@ export default function VoterManagement({ voters, onVotersChange, onNext }: Vote
                       size="sm"
                       onClick={() => removeVoter(voter.id)}
                       className="text-on-surface-variant hover:text-on-surface hover:bg-surface-container"
+                      aria-label="Delete voter"
                     >
                       <Trash2 className="w-4 h-4" />
                     </ChunkyButton>
