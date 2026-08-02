@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getReputationTier, ReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { calculateDay, levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
@@ -11,6 +11,7 @@ import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
 
@@ -118,6 +119,8 @@ function getMetaBonusDescriptions(bonuses: ReturnType<typeof useGameStore.getSta
 export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   const { getSelectedCharacter, getMetaBonuses: getMetaBonusesFn, setMount } = useGameStore()
   const [showRenameModal, setShowRenameModal] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const character = getSelectedCharacter()
   if (!character) return null
@@ -206,7 +209,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Character status">
+    <div ref={dialogRef} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Character status">
       {/* Fixed header with close button */}
       <div className="shrink-0 bg-[#1a1b2e] border-b border-slate-700/50 px-4 py-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-white">Character Status</h2>

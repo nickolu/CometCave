@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface MountNamingModalProps {
   mount: Mount
@@ -20,6 +21,8 @@ const MOUNT_RARITY_COLORS: Record<string, string> = {
 
 export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalProps) {
   const [inputValue, setInputValue] = useState('')
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const handleConfirm = () => {
     const trimmed = inputValue.trim()
@@ -55,6 +58,7 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
 
       {/* Content */}
       <div
+        ref={dialogRef}
         className="relative z-10 bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 w-full"
         role="dialog"
         aria-modal="true"
