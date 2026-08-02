@@ -16,7 +16,7 @@ import { z } from 'zod'
 import { BASE_MATERIAL_IDS, IS_LIQUID, MATERIAL_IDS, MATERIAL_INDEX } from './config/materials'
 import { TerrainSchema } from './terrain'
 
-import type { CreatureAura, CreatureBlueprint, MaterialId } from './types'
+import type { CreatureAura, CreatureBlueprint, LocomotionKind, MaterialId } from './types'
 
 export const ART_MIN = 3
 /**
@@ -599,6 +599,24 @@ export function canEat(hunter: CreatureBlueprint, prey: CreatureBlueprint): bool
 // ---------------------------------------------------------------------------
 // Grouping
 // ---------------------------------------------------------------------------
+
+/**
+ * How each way of moving is said out loud.
+ *
+ * Verbs rather than the schema's nouns — a kid reading the field guide meets
+ * "climbs", not "crawl". Lives here beside `CREATURE_GROUPS` because this file
+ * already owns the player-facing vocabulary for the roster, and because the
+ * field guide and the creature filter must never drift into calling the same
+ * locomotion two different things.
+ */
+export const MOVE_WORDS: Record<LocomotionKind, string> = {
+  walk: 'walks',
+  fly: 'flies',
+  swim: 'swims',
+  crawl: 'climbs',
+  drift: 'floats',
+  root: 'stays put',
+}
 
 export type CreatureGroup = 'yours' | 'plants' | 'grazers' | 'hunters' | 'giants' | 'helpers'
 

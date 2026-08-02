@@ -1,22 +1,13 @@
 'use client'
 
 import type { SpeciesRecord } from '@/app/micro-land/chronicle/types'
-import { canEat } from '@/app/micro-land/domain/blueprint'
+import { MOVE_WORDS, canEat } from '@/app/micro-land/domain/blueprint'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
-
-const KIND_WORDS: Record<string, string> = {
-  walk: 'walks',
-  fly: 'flies',
-  swim: 'swims',
-  crawl: 'climbs',
-  drift: 'floats',
-  root: 'stays put',
-}
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -303,7 +294,7 @@ function GuideEntry({
             lineHeight: 1.6,
           }}
         >
-          Size {bp.size} · {KIND_WORDS[bp.move.kind] ?? bp.move.kind}
+          Size {bp.size} · {MOVE_WORDS[bp.move.kind] ?? bp.move.kind}
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
           {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}
