@@ -7,7 +7,7 @@ import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { Pill } from '@/components/ui/pill'
 import { useAuth } from '@/hooks/useAuth'
-import { getCategoryIdByName } from '@/lib/trivia/categories'
+import { CATEGORY_META, getCategoryIdByName } from '@/lib/trivia/categories'
 import type { MedalTier } from '@/lib/trivia/medals'
 
 import { SignInBanner } from './SignInCTA'
@@ -21,6 +21,8 @@ interface OverallEntry {
   score: number
   longestStreak: number
   questionsAnswered: number
+  categoryFilters: number[]
+  customCategory: string | null
 }
 
 interface CategoryEntry {
@@ -59,6 +61,13 @@ const TIER_EMOJI: Record<MedalTier, string> = {
   gold: '🥇',
   platinum: '🏅',
   diamond: '💎',
+}
+
+function formatCategory(categoryFilters: number[], customCategory: string | null): string {
+  if (customCategory) return customCategory
+  if (categoryFilters.length === 0) return 'All Categories'
+  if (categoryFilters.length === 1) return CATEGORY_META[categoryFilters[0]]?.name ?? 'Unknown'
+  return 'Mixed'
 }
 
 export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
@@ -207,9 +216,10 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
           const primary = data.sort === 'score'
             ? `${entry.score.toLocaleString()} pts`
             : `${entry.longestStreak} streak`
+          const category = formatCategory(entry.categoryFilters, entry.customCategory)
           const secondary = data.sort === 'score'
-            ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs`
-            : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs`
+            ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs · ${category}`
+            : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs · ${category}`
 
           return (
             <LeaderboardRow
