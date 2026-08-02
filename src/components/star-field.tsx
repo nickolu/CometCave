@@ -48,6 +48,21 @@ export function StarField() {
       })
     }
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) {
+      // Draw static stars — no animation loop
+      stars.forEach(star => {
+        ctx.beginPath()
+        ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2)
+        ctx.fillStyle = `rgba(255, 255, 240, ${star.opacity})`
+        ctx.fill()
+      })
+      return () => {
+        window.removeEventListener('resize', resizeCanvas)
+      }
+    }
+
     // Animation loop
     let animationFrameId: number
     const animate = () => {

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parseResult = DialogueRequestSchema.safeParse(body)
     if (!parseResult.success) {
-      return NextResponse.json({ error: 'Invalid request', details: parseResult.error }, { status: 400 })
+      return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
     const {

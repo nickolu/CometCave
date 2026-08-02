@@ -6,6 +6,9 @@ import { getTodayPST } from '@/lib/dates'
 const MAX_NAME_LENGTH = 20
 const MAX_CHAR_NAME_LENGTH = 50
 const MAX_REGIONS = 20
+const MAX_DISTANCE = 1_000_000
+const MAX_LEVEL = 500
+const MAX_GOLD = 10_000_000
 
 export async function POST(request: NextRequest) {
   try {
@@ -57,18 +60,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate distance
-    if (typeof distance !== 'number' || distance < 0) {
-      return NextResponse.json({ error: 'distance must be a number >= 0.' }, { status: 400 })
+    if (typeof distance !== 'number' || distance < 0 || distance > MAX_DISTANCE) {
+      return NextResponse.json({ error: `distance must be a number between 0 and ${MAX_DISTANCE}.` }, { status: 400 })
     }
 
     // Validate level
-    if (typeof level !== 'number' || level < 1) {
-      return NextResponse.json({ error: 'level must be a number >= 1.' }, { status: 400 })
+    if (typeof level !== 'number' || level < 1 || level > MAX_LEVEL) {
+      return NextResponse.json({ error: `level must be a number between 1 and ${MAX_LEVEL}.` }, { status: 400 })
     }
 
     // Validate gold
-    if (typeof gold !== 'number' || gold < 0) {
-      return NextResponse.json({ error: 'gold must be a number >= 0.' }, { status: 400 })
+    if (typeof gold !== 'number' || gold < 0 || gold > MAX_GOLD) {
+      return NextResponse.json({ error: `gold must be a number between 0 and ${MAX_GOLD}.` }, { status: 400 })
     }
 
     // Validate regionsConquered
