@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
     typeof body.prompt === 'string' ? body.prompt.trim().slice(0, MAX_PROMPT) : ''
 
   if (description.length < 2) {
-    return NextResponse.json({ error: 'Tell me what to summon first.' }, { status: 400 })
+    return NextResponse.json({ error: 'Tell me what to generate first.' }, { status: 400 })
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY

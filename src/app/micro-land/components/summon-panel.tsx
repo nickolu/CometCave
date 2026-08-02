@@ -6,6 +6,7 @@ import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
+import { SparkleIcon } from './sparkle-icon'
 import { SummonLoader } from './summon-loader'
 
 const CREATURE_IDEAS = [
@@ -62,7 +63,7 @@ export function SummonPanel({
   const [text, setText] = useState('')
   const [made, setMade] = useState<CreatureBlueprint[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
-  /** Live while a summon is in flight, so the player can call it off. */
+  /** Live while a generation is in flight, so the player can call it off. */
   const abortRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
@@ -88,7 +89,7 @@ export function SummonPanel({
 
   const ideas = mode === 'scene' ? SCENE_IDEAS : mode === 'terrain' ? TERRAIN_IDEAS : CREATURE_IDEAS
 
-  async function summon() {
+  async function generate() {
     const prompt = text.trim()
     if (prompt.length < 2 || busy) return
 
@@ -108,7 +109,7 @@ export function SummonPanel({
       })
       if (!response.ok) {
         const detail = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(detail?.error ?? 'The summoning fizzled.')
+        throw new Error(detail?.error ?? 'That did not come through. Try again.')
       }
 
       const data = await response.json()
@@ -165,7 +166,7 @@ export function SummonPanel({
     } catch (err) {
       // Calling it off isn't a failure — the player already knows what happened.
       if (!(err instanceof DOMException && err.name === 'AbortError')) {
-        setError(err instanceof Error ? err.message : 'The summoning fizzled.')
+        setError(err instanceof Error ? err.message : 'That did not come through. Try again.')
       }
     } finally {
       abortRef.current = null
@@ -182,7 +183,7 @@ export function SummonPanel({
       <div
         role="dialog"
         aria-modal="true"
-        aria-label="Summon a creature"
+        aria-label="Generate a creature"
         className="w-full max-w-lg overflow-y-auto rounded-t-xl sm:rounded-xl"
         style={{
           maxHeight: '88dvh',
@@ -196,6 +197,7 @@ export function SummonPanel({
           style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
         >
           <h2
+            className="flex items-center gap-2"
             style={{
               fontFamily: 'var(--cc-font-mono)',
               fontSize: 11,
@@ -204,7 +206,8 @@ export function SummonPanel({
               color: 'var(--cc-mint)',
             }}
           >
-            Summon
+            <SparkleIcon size={13} />
+            Generate
           </h2>
           <button
             type="button"
@@ -228,7 +231,7 @@ export function SummonPanel({
           />
         ) : (
           <div className="flex flex-col gap-3 p-4">
-            <div className="flex gap-1.5" role="group" aria-label="What to summon">
+            <div className="flex gap-1.5" role="group" aria-label="What to generate">
               {(['creature', 'terrain', 'scene'] as const).map(option => (
                 <button
                   key={option}
@@ -271,11 +274,11 @@ export function SummonPanel({
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={e => {
-                if (e.key === 'Enter') void summon()
+                if (e.key === 'Enter') void generate()
               }}
               maxLength={300}
               placeholder={ideas[0]}
-              aria-label="Describe what to summon"
+              aria-label="Describe what to generate"
               style={{
                 width: '100%',
                 padding: '12px 14px',
@@ -348,9 +351,13 @@ export function SummonPanel({
             <button
               type="button"
               className="cc-btn"
-              onClick={() => void summon()}
+              onClick={() => void generate()}
               disabled={text.trim().length < 2}
               style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 11,
                 fontWeight: 700,
@@ -366,11 +373,12 @@ export function SummonPanel({
                 opacity: text.trim().length < 2 ? 0.4 : 1,
               }}
             >
+              <SparkleIcon size={13} />
               {mode === 'creature'
-                ? 'Summon it'
+                ? 'Generate it'
                 : mode === 'terrain'
-                  ? 'Build the land'
-                  : 'Summon it all'}
+                  ? 'Generate the land'
+                  : 'Generate it all'}
             </button>
           </div>
         )}

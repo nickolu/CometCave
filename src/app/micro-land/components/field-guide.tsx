@@ -4,6 +4,7 @@ import { canEat } from '@/app/micro-land/domain/blueprint'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
+import { SparkleIcon } from './sparkle-icon'
 
 const KIND_WORDS: Record<string, string> = {
   walk: 'walks',
@@ -120,6 +121,7 @@ export function FieldGuide() {
                     </span>
                     {bp.summoned && (
                       <span
+                        className="inline-flex items-center gap-1"
                         style={{
                           fontFamily: 'var(--cc-font-mono)',
                           fontSize: 9,
@@ -131,7 +133,8 @@ export function FieldGuide() {
                           border: '1px solid var(--cc-pink-border)',
                         }}
                       >
-                        Summoned
+                        <SparkleIcon size={9} />
+                        Generated
                       </span>
                     )}
                   </div>
