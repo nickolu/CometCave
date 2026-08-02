@@ -11,6 +11,9 @@ export async function POST(request: Request) {
     if (!name || name.trim() === '') {
       return NextResponse.json({ error: 'Character name is required' }, { status: 400 })
     }
+    if (name.length > 200) {
+      return NextResponse.json({ error: 'name must be 200 characters or fewer.' }, { status: 400 })
+    }
 
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
