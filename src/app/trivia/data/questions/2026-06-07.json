@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-07",
+  "categoryId": 28,
+  "categoryName": "Vehicles",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-07-0",
+      "question": "Automobiles produced by Tesla Motors operate on which form of energy?",
+      "options": [
+        "Gasoline",
+        "Diesel",
+        "Nuclear",
+        "Electricity"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Electricity"
+    },
+    {
+      "id": "opentdb-2026-06-07-1",
+      "question": "What animal is pictured on the logo of the automobile manufacturer Porsche?",
+      "options": [
+        "Lion",
+        "Cheetah",
+        "Bull",
+        "Horse"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Horse"
+    },
+    {
+      "id": "opentdb-2026-06-07-2",
+      "question": "Which of the following vehicles from Ford is named after a WW2 Fighter Plane?",
+      "options": [
+        "Ranger",
+        "Galaxy",
+        "Explorer",
+        "Mustang"
+      ],
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Mustang"
+    },
+    {
+      "id": "opentdb-2026-06-07-3",
+      "question": "What do the 4 Rings in Audi's Logo represent?",
+      "options": [
+        "Main cities vital to Audi",
+        "Countries in which Audi makes the most sales",
+        "States in which Audi makes the most sales",
+        "Previously independent automobile manufacturers"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Previously independent automobile manufacturers"
+    },
+    {
+      "id": "opentdb-2026-06-07-4",
+      "question": "Which of the following car models has been badge-engineered (rebadged) the most?",
+      "options": [
+        "Holden Monaro",
+        "Chevy Camaro",
+        "Suzuki Swift",
+        "Isuzu Trooper"
+      ],
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "Isuzu Trooper"
+    },
+    {
+      "id": "opentdb-2026-06-07-5",
+      "question": "The difference between the lengths of a Boeing 777-300ER and an Airbus A350-1000 is closest to:",
+      "options": [
+        "10m ",
+        "100m",
+        "1m",
+        "0.1m"
+      ],
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "opentdb",
+      "correctAnswer": "0.1m"
+    },
+    {
+      "id": "ai-2026-06-07-6",
+      "question": "What color was chosen for school buses because it stands out against black lettering in the early morning light?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "school bus yellow",
+      "explanation": "School bus yellow was officially standardized in North America in 1939 at a conference led by Columbia University professor Frank Cyr, earning him the nickname \"the father of the school bus.\" The color was specifically selected for its high visibility in low-light conditions, making it easier to read black lettering at dawn. It remains one of the most recognizable colors in the world precisely because of this safety-driven design choice."
+    },
+    {
+      "id": "ai-2026-06-07-7",
+      "question": "What can a helicopter do in mid-air that most fixed-wing aircraft cannot — staying perfectly still in one spot?",
+      "difficulty": "easy",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "hover",
+      "explanation": "Helicopters can hover in place by generating lift through their rotating blades, allowing them to stay stationary in the air. This unique ability makes them invaluable for missions like search and rescue, medical evacuations, and precision cargo drops. Fixed-wing aircraft must keep moving forward to maintain lift."
+    },
+    {
+      "id": "ai-2026-06-07-8",
+      "question": "Rocket Lab designed its Electron launch vehicle around the idea that which type of small satellite needed a dedicated rocket, rather than a rideshare on traditional systems?",
+      "difficulty": "medium",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "CubeSats",
+      "explanation": "Rocket Lab built Electron specifically to serve the growing market of CubeSats and other small payloads, which were often forced to wait for secondary slots on large rockets. By offering a dedicated small launch vehicle, Electron gave these miniature satellites more scheduling flexibility and mission control. This approach helped pioneer the modern small-launch industry."
+    },
+    {
+      "id": "ai-2026-06-07-9",
+      "question": "According to the National Railway Museum, which locomotive was the first to travel all the way around the world?",
+      "difficulty": "hard",
+      "category": "Vehicles",
+      "source": "ai",
+      "correctAnswer": "Flying Scotsman",
+      "explanation": "Flying Scotsman, the iconic LNER Class A1/A3 steam locomotive, made history by becoming the first locomotive to circumnavigate the globe. It achieved this during its tour of North America and Australia in the 1960s and 1970s. The locomotive is now preserved at the National Railway Museum in York, England."
+    }
+  ]
+}

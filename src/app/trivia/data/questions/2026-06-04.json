@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-04",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-04-0",
+      "question": "What is the name of the Japanese art of folding paper into decorative shapes and figures?",
+      "options": [
+        "Sumi-e",
+        "Ukiyo-e",
+        "Haiku",
+        "Origami"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Origami"
+    },
+    {
+      "id": "opentdb-2026-06-04-1",
+      "question": "Which artist is famous for cutting off his ear?",
+      "options": [
+        "Salvador Dali",
+        "Rembrandt",
+        "Michelangelo",
+        "Vincent van Gogh"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Vincent van Gogh"
+    },
+    {
+      "id": "opentdb-2026-06-04-2",
+      "question": "Who painted \"Swans Reflecting Elephants\", \"Sleep\", and \"The Persistence of Memory\"?",
+      "options": [
+        "Jackson Pollock",
+        "Edgar Degas",
+        "Vincent van Gogh",
+        "Salvador Dali"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Salvador Dali"
+    },
+    {
+      "id": "opentdb-2026-06-04-3",
+      "question": "Who painted the painting \"Nighthawks\"?",
+      "options": [
+        "Vincent van Gogh",
+        "Salvador Dali",
+        "Johannes Vermeer",
+        "Edward Hopper"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Edward Hopper"
+    },
+    {
+      "id": "opentdb-2026-06-04-4",
+      "question": "Who painted the epic mural Guernica?",
+      "options": [
+        "Francisco Goya",
+        "Henri Matisse",
+        "Leonardo da Vinci",
+        "Pablo Picasso"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Pablo Picasso"
+    },
+    {
+      "id": "opentdb-2026-06-04-5",
+      "question": "Who painted \"American Gothic\"?",
+      "options": [
+        "Pablo Picasso",
+        "Marc Chagall",
+        "Anita Malfatti",
+        "Grant Wood"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Grant Wood"
+    },
+    {
+      "id": "ai-2026-06-04-6",
+      "question": "Which Alfred Stieglitz photograph is widely regarded as an early masterpiece of artistic modernism in photography?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "The Steerage",
+      "explanation": "Alfred Stieglitz captured The Steerage in 1907 aboard a ship crossing the Atlantic, depicting immigrants in the lower deck area. It is celebrated as a landmark in photography's transition from mere documentation to fine art, and is considered one of the most important photographs ever taken."
+    },
+    {
+      "id": "ai-2026-06-04-7",
+      "question": "Which crystalline form of carbon is commonly used to make pencil \"leads\" for drawing and writing?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "graphite",
+      "explanation": "Graphite is a naturally occurring crystalline form of carbon found in various types of rocks. It has been used in pencils since the 16th century, and despite being called \"pencil lead,\" it contains no actual lead. Its smooth, layered structure makes it ideal for leaving marks on paper, a property widely used in art and drafting."
+    },
+    {
+      "id": "ai-2026-06-04-8",
+      "question": "Which photography institution describes Robert Capa as a Hungarian-born American photographer who lived from 1913 to 1954?",
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "International Center of Photography",
+      "explanation": "The International Center of Photography (ICP), founded in New York City in 1974, is a leading museum and school dedicated to the art of photography. Robert Capa, born Endre Ernő Friedmann in Budapest in 1913, became one of the most celebrated war photographers in history before dying in 1954 after stepping on a landmine in Vietnam. The ICP serves as a key institutional authority on photographers like Capa and their legacies."
+    },
+    {
+      "id": "ai-2026-06-04-9",
+      "question": "In the art world, what specialized field of study uses the history of an artwork's ownership to help determine its attribution and authenticity?",
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "provenance research",
+      "explanation": "Provenance research traces the chain of ownership of an artwork from its creation to the present day, helping scholars and institutions verify authenticity and proper attribution. It became especially critical after World War II as a tool for identifying art looted by the Nazis and returning it to its rightful owners. Major museums and auction houses now routinely conduct provenance research before acquiring or selling significant works."
+    }
+  ]
+}

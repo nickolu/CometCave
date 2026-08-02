@@ -20,7 +20,12 @@ const chipBase: React.CSSProperties = {
   borderRadius: 4,
   padding: '7px 10px',
   minHeight: 34,
-  border: '1px solid var(--cc-mint-line)',
+  // Longhand rather than the `border` shorthand on purpose: the active and
+  // tuned states below override borderColor alone, and React warns when a
+  // longhand is dropped back out while a conflicting shorthand stays put.
+  borderWidth: 1,
+  borderStyle: 'solid',
+  borderColor: 'var(--cc-mint-line)',
   background: 'transparent',
   color: 'var(--cc-text-muted)',
 }
