@@ -2,6 +2,7 @@
 
 import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
+import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
 import { formatDuration } from '@/app/micro-land/format'
 import { SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
 
@@ -30,6 +31,26 @@ const activeChip: React.CSSProperties = {
   color: 'var(--cc-mint)',
 }
 
+/**
+ * Three sliders, drawn on the same grid as everything else in the world.
+ *
+ * A gear would be the obvious icon and the wrong one: a gear means "app
+ * settings", and this opens the numbers the ecosystem runs on. Sliders say what
+ * is behind it.
+ */
+function SlidersIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true">
+      <rect x="0" y="2" width="13" height="1" />
+      <rect x="3" y="0" width="3" height="5" />
+      <rect x="0" y="6" width="13" height="1" />
+      <rect x="8" y="4" width="3" height="5" />
+      <rect x="0" y="10" width="13" height="1" />
+      <rect x="1" y="8" width="3" height="5" />
+    </svg>
+  )
+}
+
 export function Hud({
   onReshuffle,
   onClearLife,
@@ -37,17 +58,29 @@ export function Hud({
   onReshuffle: () => void
   onClearLife: () => void
 }) {
-  const themeId = useMicroLand((s) => s.themeId)
-  const setTheme = useMicroLand((s) => s.setTheme)
-  const paused = useMicroLand((s) => s.paused)
-  const togglePaused = useMicroLand((s) => s.togglePaused)
-  const speed = useMicroLand((s) => s.speed)
-  const setSpeed = useMicroLand((s) => s.setSpeed)
-  const total = useMicroLand((s) => s.totalCreatures)
-  const population = useMicroLand((s) => s.population)
-  const setGuideOpen = useMicroLand((s) => s.setGuideOpen)
-  const summonedLand = useMicroLand((s) => s.summonedLand)
-  const steadySeconds = useMicroLand((s) => s.records.steadySeconds)
+  const themeId = useMicroLand(s => s.themeId)
+  const setTheme = useMicroLand(s => s.setTheme)
+  const paused = useMicroLand(s => s.paused)
+  const togglePaused = useMicroLand(s => s.togglePaused)
+  const speed = useMicroLand(s => s.speed)
+  const setSpeed = useMicroLand(s => s.setSpeed)
+  const total = useMicroLand(s => s.totalCreatures)
+  const population = useMicroLand(s => s.population)
+  const setGuideOpen = useMicroLand(s => s.setGuideOpen)
+  const summonedLand = useMicroLand(s => s.summonedLand)
+  const steadySeconds = useMicroLand(s => s.records.steadySeconds)
+  const setWorldsOpen = useMicroLand(s => s.setWorldsOpen)
+  const activeWorldId = useMicroLand(s => s.shelf.activeId)
+  const settingsOpen = useMicroLand(s => s.settingsOpen)
+  const setSettingsOpen = useMicroLand(s => s.setSettingsOpen)
+  const tuning = useMicroLand(s => s.tuning)
+
+  // A world running on numbers other than the shipped ones is worth saying out
+  // loud — otherwise a land that behaves strangely months from now is a mystery
+  // rather than a slider someone left pushed over.
+  const tuned = (Object.keys(TUNING_DEFAULTS) as TuningKey[]).some(
+    key => tuning[key] !== TUNING_DEFAULTS[key]
+  )
 
   const species = population.length
   // Below the threshold this would flicker on and off through the early churn,
@@ -81,21 +114,19 @@ export function Hud({
       <select
         id="micro-land-theme"
         value={themeId}
-        onChange={(e) => setTheme(e.target.value)}
+        onChange={e => setTheme(e.target.value)}
         style={{
           ...chipBase,
           color: 'var(--cc-text-default)',
           background: 'var(--cc-panel-grad-to)',
         }}
       >
-        {THEMES.map((theme) => (
+        {THEMES.map(theme => (
           <option key={theme.id} value={theme.id}>
             {theme.name}
           </option>
         ))}
-        {summonedLand && (
-          <option value={SUMMONED_THEME_ID}>✦ {summonedLand}</option>
-        )}
+        {summonedLand && <option value={SUMMONED_THEME_ID}>✦ {summonedLand}</option>}
       </select>
 
       <button
@@ -108,6 +139,25 @@ export function Hud({
         Reshape
       </button>
 
+      {/*
+        Next to the world picker rather than off with the settings, because it is
+        part of the same question: which land am I in? The picker chooses a kind
+        of world; this chooses one you have already made.
+      */}
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => setWorldsOpen(true)}
+        style={{ ...chipBase, ...(activeWorldId ? activeChip : {}) }}
+        title={
+          activeWorldId
+            ? 'This world is kept — everything you do here is saved'
+            : 'Keep this world, or open one you kept'
+        }
+      >
+        {activeWorldId ? 'Kept' : 'Keep'}
+      </button>
+
       <div className="flex items-center gap-1" role="group" aria-label="Speed">
         <button
           type="button"
@@ -118,7 +168,7 @@ export function Hud({
         >
           {paused ? 'Paused' : 'Pause'}
         </button>
-        {SPEEDS.map((option) => (
+        {SPEEDS.map(option => (
           <button
             key={option.value}
             type="button"
@@ -141,13 +191,27 @@ export function Hud({
         <button
           type="button"
           className="cc-btn"
+          onClick={() => setSettingsOpen(!settingsOpen)}
+          style={{
+            ...chipBase,
+            padding: '7px 9px',
+            ...(settingsOpen ? activeChip : {}),
+            ...(tuned && !settingsOpen
+              ? { borderColor: 'var(--cc-gold)', color: 'var(--cc-gold)' }
+              : {}),
+          }}
+          aria-pressed={settingsOpen}
+          aria-label="World settings"
+          title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
+        >
+          <SlidersIcon />
+        </button>
+        <button
+          type="button"
+          className="cc-btn"
           onClick={() => setGuideOpen(true)}
           style={chipBase}
-          title={
-            steady
-              ? 'How long this land has gone without losing a species'
-              : undefined
-          }
+          title={steady ? 'How long this land has gone without losing a species' : undefined}
         >
           {species} kinds · {total} alive
           {steady && (

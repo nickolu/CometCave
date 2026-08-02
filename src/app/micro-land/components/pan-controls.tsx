@@ -25,7 +25,7 @@ export function PanControls({
   onHold: (direction: -1 | 0 | 1) => void
   onNudge: (direction: -1 | 1) => void
 }) {
-  const canPan = useMicroLand((s) => s.canPan)
+  const canPan = useMicroLand(s => s.canPan)
   const pressedAt = useRef(0)
 
   const stop = useCallback(() => {
@@ -59,12 +59,12 @@ export function PanControls({
         opacity: 0.62,
         touchAction: 'none',
       }}
-      onPointerDown={(e) => {
+      onPointerDown={e => {
         e.preventDefault()
         pressedAt.current = e.timeStamp
         onHold(direction)
       }}
-      onPointerUp={(e) => {
+      onPointerUp={e => {
         // Let go quickly and the hold barely moved anything; give it one clean
         // step so a tap always does something you can see.
         if (pressedAt.current > 0 && e.timeStamp - pressedAt.current < TAP_MS) {
@@ -75,7 +75,7 @@ export function PanControls({
       onPointerLeave={stop}
       // Enter and Space fire a click with no pointer event behind it, and that
       // is the only case this needs to catch — `detail` is 0 for exactly those.
-      onClick={(e) => {
+      onClick={e => {
         if (e.detail === 0) onNudge(direction)
       }}
     >

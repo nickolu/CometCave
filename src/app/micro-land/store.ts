@@ -10,9 +10,21 @@
 import { create } from 'zustand'
 
 import { DEFAULT_THEME } from './domain/config/themes'
+import {
+  TUNING,
+  type Tuning,
+  type TuningKey,
+  clearStoredTuning,
+  loadTuning,
+  resetTuning,
+  saveTuning,
+  setTuning,
+} from './domain/tuning'
 
+import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
 import type { CreatureBlueprint, MaterialId } from './domain/types'
+import type { ShelfState } from './worlds/shelf'
 
 /** Theme id standing for "the land the player summoned". */
 export const SUMMONED_THEME_ID = 'summoned'
@@ -100,6 +112,15 @@ export interface PopulationEntry {
 export interface Notice {
   id: number
   text: string
+  /**
+   * An optional one-tap follow-up, used for undo.
+   *
+   * Lives on the notice rather than in a dialog because the audience is a child
+   * mid-play: a strip that says what happened and offers to take it back costs
+   * no reading and no dismissal, and a wrong tap costs exactly one more tap.
+   * Running it dismisses the notice.
+   */
+  action?: { label: string; run: () => void }
 }
 
 /**
@@ -136,7 +157,25 @@ interface MicroLandState {
   summonError: string | null
   /** Creature summons in flight, in the order they were asked for. */
   pendingSummons: PendingSummon[]
+  /**
+   * The hand-drawing panel.
+   *
+   * Its own flag rather than a fourth `summonMode`: drawing is a session the
+   * player comes back to, not a one-shot request, and it has to survive the
+   * summon panel being opened and closed around it.
+   */
+  builderOpen: boolean
   guideOpen: boolean
+  settingsOpen: boolean
+  /**
+   * A copy of the live tuning knobs, kept only so React can draw the sliders.
+   *
+   * The simulation reads the mutable `TUNING` object directly and never looks at
+   * this. Two representations of the same thing is normally a smell; here it is
+   * the same trade the world itself makes — the thing that runs sixty times a
+   * second stays out of React, and React gets a snapshot it can render.
+   */
+  tuning: Tuning
   inspected: Inspected | null
 
   /** Records for the land on screen. */
@@ -160,6 +199,27 @@ interface MicroLandState {
 
   notices: Notice[]
 
+  /**
+   * What the chronicle's storage layer is doing.
+   *
+   * Mirrored into the store rather than read through a hook so the field guide
+   * can render it like any other piece of state. Kept deliberately factual —
+   * whether records are safe, and where — because a player who cannot tell the
+   * difference between "kept forever" and "kept until you clear your browser"
+   * cannot make a sensible decision about signing up.
+   */
+  saveState: SaveState
+
+  /**
+   * The shelf of saved worlds, mirrored out of `worlds/shelf.ts`.
+   *
+   * Same arrangement as `saveState`: the module owns it because it outlives any
+   * React tree and the game instance reads it imperatively, and the store gets a
+   * copy so panels can render it like any other state.
+   */
+  shelf: ShelfState
+  worldsOpen: boolean
+
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
@@ -175,20 +235,38 @@ interface MicroLandState {
   /** Opens a slot for a creature on its way; returns the id to close it with. */
   addPendingSummon: (prompt: string) => number
   removePendingSummon: (id: number) => void
+  setBuilderOpen: (open: boolean) => void
   setGuideOpen: (open: boolean) => void
+  setSettingsOpen: (open: boolean) => void
+  /** Move one knob. Takes effect on the very next tick and is remembered. */
+  setTuningKnob: (key: TuningKey, value: number) => void
+  /** Put every knob back to what the game shipped with. */
+  resetTuningKnobs: () => void
+  /**
+   * Pull remembered knobs out of storage.
+   *
+   * Called once from the client rather than done when this module loads: the
+   * store is built during the server render too, and reading `localStorage`
+   * there gives a different answer than the browser will, which is a hydration
+   * mismatch waiting to happen.
+   */
+  hydrateTuning: () => void
   setInspected: (snapshot: Inspected | null) => void
   setRecords: (records: RecordsView) => void
   setArchive: (archive: SpeciesRecord[]) => void
   setMilestones: (milestones: EarnedMilestone[]) => void
   setCanPan: (canPan: boolean) => void
-  notify: (text: string) => void
+  setSaveState: (state: SaveState) => void
+  setShelf: (shelf: ShelfState) => void
+  setWorldsOpen: (open: boolean) => void
+  notify: (text: string, action?: Notice['action']) => void
   dismissNotice: (id: number) => void
 }
 
 let noticeId = 0
 let pendingId = 0
 
-export const useMicroLand = create<MicroLandState>((set) => ({
+export const useMicroLand = create<MicroLandState>(set => ({
   themeId: DEFAULT_THEME,
   tool: { kind: 'material', material: 'dirt' },
   brush: 4,
@@ -206,7 +284,10 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   summonedLand: null,
   summonError: null,
   pendingSummons: [],
+  builderOpen: false,
   guideOpen: false,
+  settingsOpen: false,
+  tuning: { ...TUNING },
   inspected: null,
   canPan: true,
 
@@ -215,39 +296,64 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   milestones: [],
 
   notices: [],
+  saveState: { kind: 'idle' },
+  shelf: { worlds: [], activeId: null, busy: false, error: null },
+  worldsOpen: false,
 
-  setTheme: (themeId) => set({ themeId }),
-  setTool: (tool) => set({ tool }),
-  setBrush: (brush) => set({ brush }),
-  togglePaused: () => set((s) => ({ paused: !s.paused })),
-  setSpeed: (speed) => set({ speed }),
-  setBlueprints: (blueprints) => set({ blueprints }),
-  setStats: (population, totalCreatures, elapsed) =>
-    set({ population, totalCreatures, elapsed }),
-  setSummonOpen: (summonOpen) => set({ summonOpen }),
-  setSummonBusy: (summonBusy) => set({ summonBusy }),
-  setSummonMode: (summonMode) => set({ summonMode }),
-  setSummonedLand: (summonedLand) => set({ summonedLand }),
-  setSummonError: (summonError) => set({ summonError }),
-  addPendingSummon: (prompt) => {
+  setTheme: themeId => set({ themeId }),
+  setTool: tool => set({ tool }),
+  setBrush: brush => set({ brush }),
+  togglePaused: () => set(s => ({ paused: !s.paused })),
+  setSpeed: speed => set({ speed }),
+  setBlueprints: blueprints => set({ blueprints }),
+  setStats: (population, totalCreatures, elapsed) => set({ population, totalCreatures, elapsed }),
+  setSummonOpen: summonOpen => set({ summonOpen }),
+  setSummonBusy: summonBusy => set({ summonBusy }),
+  setSummonMode: summonMode => set({ summonMode }),
+  setSummonedLand: summonedLand => set({ summonedLand }),
+  setSummonError: summonError => set({ summonError }),
+  addPendingSummon: prompt => {
     const id = ++pendingId
-    set((s) => ({ pendingSummons: [...s.pendingSummons, { id, prompt }] }))
+    set(s => ({ pendingSummons: [...s.pendingSummons, { id, prompt }] }))
     return id
   },
-  removePendingSummon: (id) =>
-    set((s) => ({ pendingSummons: s.pendingSummons.filter((p) => p.id !== id) })),
-  setGuideOpen: (guideOpen) => set({ guideOpen }),
-  setInspected: (inspected) => set({ inspected }),
-  setRecords: (records) => set({ records }),
-  setArchive: (archive) => set({ archive }),
-  setMilestones: (milestones) => set({ milestones }),
-  setCanPan: (canPan) => set({ canPan }),
+  removePendingSummon: id =>
+    set(s => ({ pendingSummons: s.pendingSummons.filter(p => p.id !== id) })),
+  setBuilderOpen: builderOpen => set({ builderOpen }),
+  setGuideOpen: guideOpen => set({ guideOpen }),
+  setSettingsOpen: settingsOpen => set({ settingsOpen }),
 
-  notify: (text) =>
-    set((s) => ({
+  // Every one of these writes the mutable object first and mirrors it after,
+  // never the other way round: `setTuning` clamps and can hold one knob against
+  // another, so the snapshot has to be taken of what actually landed.
+  setTuningKnob: (key, value) => {
+    setTuning({ [key]: value })
+    saveTuning()
+    set({ tuning: { ...TUNING } })
+  },
+  resetTuningKnobs: () => {
+    resetTuning()
+    clearStoredTuning()
+    set({ tuning: { ...TUNING } })
+  },
+  hydrateTuning: () => {
+    loadTuning()
+    set({ tuning: { ...TUNING } })
+  },
+  setInspected: inspected => set({ inspected }),
+  setRecords: records => set({ records }),
+  setArchive: archive => set({ archive }),
+  setMilestones: milestones => set({ milestones }),
+  setCanPan: canPan => set({ canPan }),
+
+  setSaveState: saveState => set({ saveState }),
+  setShelf: shelf => set({ shelf }),
+  setWorldsOpen: worldsOpen => set({ worldsOpen }),
+
+  notify: (text, action) =>
+    set(s => ({
       // Keep the last few — a population crash can fire several at once.
-      notices: [...s.notices, { id: ++noticeId, text }].slice(-3),
+      notices: [...s.notices, { id: ++noticeId, text, action }].slice(-3),
     })),
-  dismissNotice: (id) =>
-    set((s) => ({ notices: s.notices.filter((n) => n.id !== id) })),
+  dismissNotice: id => set(s => ({ notices: s.notices.filter(n => n.id !== id) })),
 }))

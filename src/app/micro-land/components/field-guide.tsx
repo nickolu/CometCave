@@ -9,7 +9,6 @@ import { useMicroLand } from '@/app/micro-land/store'
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 
-
 const KIND_WORDS: Record<string, string> = {
   walk: 'walks',
   fly: 'flies',
@@ -48,30 +47,26 @@ const recordLabel: React.CSSProperties = {
  * whoever wants it.
  */
 export function FieldGuide() {
-  const open = useMicroLand((s) => s.guideOpen)
-  const setOpen = useMicroLand((s) => s.setGuideOpen)
-  const blueprints = useMicroLand((s) => s.blueprints)
-  const population = useMicroLand((s) => s.population)
-  const records = useMicroLand((s) => s.records)
-  const archive = useMicroLand((s) => s.archive)
-  const milestones = useMicroLand((s) => s.milestones)
+  const open = useMicroLand(s => s.guideOpen)
+  const setOpen = useMicroLand(s => s.setGuideOpen)
+  const blueprints = useMicroLand(s => s.blueprints)
+  const population = useMicroLand(s => s.population)
+  const records = useMicroLand(s => s.records)
+  const archive = useMicroLand(s => s.archive)
+  const milestones = useMicroLand(s => s.milestones)
 
   if (!open) return null
 
-  const counts = new Map(population.map((p) => [p.blueprintId, p.count]))
-  const ordered = [...blueprints].sort(
-    (a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0)
-  )
+  const counts = new Map(population.map(p => [p.blueprintId, p.count]))
+  const ordered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
 
   // Species the player has met before that aren't in this world — the reason a
   // summoned creature no longer dies with the tab it was invented in.
-  const here = new Set(blueprints.map((b) => b.id))
-  const remembered = archive.filter((s) => !here.has(s.blueprint.id))
+  const here = new Set(blueprints.map(b => b.id))
+  const remembered = archive.filter(s => !here.has(s.blueprint.id))
 
   const hasRecords =
-    records.elder !== null ||
-    records.bestSteadySeconds > 0 ||
-    records.bestGenerations > 1
+    records.elder !== null || records.bestSteadySeconds > 0 || records.bestGenerations > 1
 
   return (
     <div
@@ -89,7 +84,7 @@ export function FieldGuide() {
           background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
           border: '1px solid var(--cc-modal-border)',
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div
           className="sticky top-0 flex items-center justify-between px-4 py-3"
@@ -173,7 +168,7 @@ export function FieldGuide() {
         )}
 
         <ul className="flex flex-col">
-          {ordered.map((bp) => (
+          {ordered.map(bp => (
             <GuideEntry
               key={bp.id}
               bp={bp}
@@ -195,7 +190,7 @@ export function FieldGuide() {
               Kinds you have met before. None of them are in this land.
             </p>
             <ul className="flex flex-col">
-              {remembered.map((record) => (
+              {remembered.map(record => (
                 <RememberedEntry key={record.blueprint.id} record={record} />
               ))}
             </ul>
@@ -203,15 +198,12 @@ export function FieldGuide() {
         )}
 
         {milestones.length > 0 && (
-          <section
-            className="px-4 py-3"
-            style={{ borderTop: '1px solid var(--cc-panel-divider)' }}
-          >
+          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
             <h3 className="pb-2" style={sectionHeading}>
               Things that have happened
             </h3>
             <ul className="flex flex-col gap-1.5">
-              {milestones.map((m) => (
+              {milestones.map(m => (
                 <li
                   key={m.id}
                   className="flex items-baseline justify-between gap-3"
@@ -247,8 +239,8 @@ function GuideEntry({
   alive: number
   blueprints: CreatureBlueprint[]
 }) {
-  const eats = blueprints.filter((other) => canEat(bp, other))
-  const eatenBy = blueprints.filter((other) => canEat(other, bp))
+  const eats = blueprints.filter(other => canEat(bp, other))
+  const eatenBy = blueprints.filter(other => canEat(other, bp))
 
   return (
     <li
@@ -300,9 +292,7 @@ function GuideEntry({
           )}
         </div>
 
-        <p style={{ fontSize: 13, color: 'var(--cc-text-muted)', marginTop: 2 }}>
-          {bp.blurb}
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--cc-text-muted)', marginTop: 2 }}>{bp.blurb}</p>
 
         <p
           style={{
@@ -325,8 +315,7 @@ function GuideEntry({
                 bp.aura.helps.length > 0 &&
                   bp.aura.boost > 1 &&
                   `${bp.aura.helps.join(' and ')} nearby grow back faster`,
-                bp.aura.converts &&
-                  `turns ${bp.aura.converts.from} into ${bp.aura.converts.to}`,
+                bp.aura.converts && `turns ${bp.aura.converts.from} into ${bp.aura.converts.to}`,
               ]
                 .filter(Boolean)
                 .join(' · ')}
@@ -335,13 +324,13 @@ function GuideEntry({
           <br />
           <strong style={{ fontWeight: 600 }}>Eats:</strong>{' '}
           {eats.length > 0
-            ? eats.map((e) => e.name).join(', ')
+            ? eats.map(e => e.name).join(', ')
             : bp.move.kind === 'root'
               ? 'sunlight'
               : 'nothing here'}
           <br />
           <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
-          {eatenBy.length > 0 ? eatenBy.map((e) => e.name).join(', ') : 'nothing here'}
+          {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
         </p>
       </div>
     </li>
@@ -395,9 +384,7 @@ function RememberedEntry({ record }: { record: SpeciesRecord }) {
             </span>
           )}
         </div>
-        <p style={{ fontSize: 12, color: 'var(--cc-text-muted)', marginTop: 1 }}>
-          {bp.blurb}
-        </p>
+        <p style={{ fontSize: 12, color: 'var(--cc-text-muted)', marginTop: 1 }}>{bp.blurb}</p>
         <p
           style={{
             fontFamily: 'var(--cc-font-mono)',

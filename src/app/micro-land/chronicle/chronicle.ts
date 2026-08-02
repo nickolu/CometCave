@@ -10,11 +10,7 @@
  */
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 
-import {
-  type ChronicleBackend,
-  INITIAL_DATA,
-  localBackend,
-} from './backend'
+import { type ChronicleBackend, INITIAL_DATA, localBackend } from './backend'
 import {
   CHRONICLE_VERSION,
   type ChronicleData,
@@ -40,8 +36,63 @@ const MAX_ARCHIVED_SUMMONED = 80
 let data: ChronicleData = INITIAL_DATA
 let backend: ChronicleBackend = localBackend
 let loaded = false
+/**
+ * The in-flight load, so concurrent callers await one read instead of racing.
+ *
+ * `loaded` alone is not enough: it is only set *after* the await, so a second
+ * caller arriving while the first is still reading storage would sail past the
+ * guard and start its own load. Both would then assign to `data`, and the slower
+ * one would win — which on the account path means a freshly merged chronicle
+ * being quietly replaced by the local-only copy it was merged from.
+ */
+let loading: Promise<ChronicleData> | null = null
 let dirty = false
 let flushTimer: ReturnType<typeof setTimeout> | null = null
+/** True once `adoptAccount` has moved writes off this device. */
+let remote = false
+
+// ---------------------------------------------------------------------------
+// Save state
+// ---------------------------------------------------------------------------
+
+/**
+ * What the storage layer is doing, for anything that wants to show it.
+ *
+ * `remote` rides along on the two settled states because "saved" means something
+ * different depending on it: saved to this device only, or saved to an account
+ * that another device can read. A player deciding whether their creatures are
+ * really safe needs to be told which one they got.
+ */
+export type SaveState =
+  | { kind: 'idle' }
+  | { kind: 'saving' }
+  | { kind: 'saved'; at: number; species: number; remote: boolean }
+  | { kind: 'failed'; at: number; remote: boolean }
+
+let saveState: SaveState = { kind: 'idle' }
+const saveListeners = new Set<(state: SaveState) => void>()
+
+/**
+ * Published rather than pushed into the store directly.
+ *
+ * This module is imported by the headless harness, which has no React and no
+ * Zustand. A listener set keeps the chronicle honest about that — the UI
+ * subscribes, the harness does not, and neither knows about the other.
+ */
+export function onSaveState(fn: (state: SaveState) => void): () => void {
+  saveListeners.add(fn)
+  fn(saveState)
+  return () => saveListeners.delete(fn)
+}
+
+export function readSaveState(): SaveState {
+  return saveState
+}
+
+function setSaveState(next: SaveState): void {
+  saveState = next
+  for (const fn of saveListeners) fn(next)
+}
 
 // ---------------------------------------------------------------------------
 // Identity
@@ -72,22 +123,71 @@ export function landId(themeId: string, summonedLandName: string | null): string
 // Lifecycle
 // ---------------------------------------------------------------------------
 
-/** Swap the storage backend. Called once at startup when accounts land. */
+/** Swap the storage backend and forget what was loaded. For tests and startup. */
 export function setBackend(next: ChronicleBackend): void {
   backend = next
   loaded = false
+  loading = null
+  remote = false
 }
 
 /**
- * Read the chronicle in. Safe to call more than once; only the first does work.
+ * Move an in-progress session onto an account, keeping both sets of records.
+ *
+ * The game starts on `localBackend` and never waits for the network, because
+ * anonymous-first (CLAUDE.md #1) means a player with no account and no
+ * connection still gets a working world. Auth resolves a moment later, and this
+ * is what happens then: read what the account already knows, fold the two
+ * together, and write the result back.
+ *
+ * Merging rather than choosing is the whole point, and it is why
+ * `mergeChronicles` was written long before there was anything to call it. Both
+ * sides are real: the account holds what this player did on their phone last
+ * week, the local copy holds what they have done in the last thirty seconds on
+ * this laptop. Every record is a high-water mark, so there is no conflict to
+ * resolve and nothing to ask the player about.
+ *
+ * The write-back is unconditional. Even when the account wins on every record,
+ * the local archive may hold a creature it has never seen, and that creature is
+ * the thing this whole path exists to save.
+ */
+export async function adoptAccount(next: ChronicleBackend): Promise<void> {
+  if (backend === next) return
+
+  // Never merge into a chronicle that hasn't finished loading — the local read
+  // would land afterwards and overwrite the merged result with its own half.
+  await initChronicle()
+
+  const stored = await next.load()
+  backend = next
+  remote = true
+  if (stored) data = mergeChronicles(migrate(stored), data)
+
+  touch()
+  await flushChronicle()
+}
+
+/**
+ * Read the chronicle in. Safe to call more than once, and safe to call
+ * concurrently; only the first does work and the rest await it.
  */
 export async function initChronicle(): Promise<ChronicleData> {
   if (loaded) return data
-  const stored = await backend.load()
-  data = migrate(stored)
-  loaded = true
-  attachFlushOnHide()
-  return data
+  if (loading) return loading
+
+  loading = (async () => {
+    const stored = await backend.load()
+    data = migrate(stored)
+    loaded = true
+    attachFlushOnHide()
+    return data
+  })()
+
+  try {
+    return await loading
+  } finally {
+    loading = null
+  }
 }
 
 /**
@@ -137,6 +237,22 @@ function touch(): void {
   }
 }
 
+/**
+ * Write the chronicle out, and say what happened.
+ *
+ * The failure handling is the load-bearing part. `dirty` is cleared *before* the
+ * write so that records changed while it is in flight are not lost — but if the
+ * write then fails, clearing it would mark the chronicle clean when nothing was
+ * stored, and those records would never be retried. A dropped connection would
+ * silently cost the player everything since the last successful flush. So a
+ * failure puts the flag back and re-arms the debounce.
+ *
+ * Failures are caught rather than thrown, because every caller is a page-hide
+ * handler or a fire-and-forget timer and none of them can do anything useful
+ * with an exception. Swallowing them *here* rather than inside the backend is
+ * the difference between unobservable and merely non-fatal: the state goes to
+ * `failed`, the UI can say so, and the next flush tries again.
+ */
 export async function flushChronicle(): Promise<void> {
   if (!dirty) return
   dirty = false
@@ -144,7 +260,24 @@ export async function flushChronicle(): Promise<void> {
     clearTimeout(flushTimer)
     flushTimer = null
   }
-  await backend.save(data)
+
+  setSaveState({ kind: 'saving' })
+  try {
+    await backend.save(data)
+    setSaveState({
+      kind: 'saved',
+      at: Date.now(),
+      species: Object.keys(data.species).length,
+      remote,
+    })
+  } catch (error) {
+    console.warn('micro-land: could not save records —', error)
+    // Put it back in the queue. `touch` re-arms the debounce, so a transient
+    // failure costs a few seconds rather than the session.
+    dirty = true
+    touch()
+    setSaveState({ kind: 'failed', at: Date.now(), remote })
+  }
 }
 
 /**
@@ -211,6 +344,28 @@ export function noteSpeciesLife(blueprintId: string, seconds: number): boolean {
   return true
 }
 
+/**
+ * Drop a species from the archive, returning what was removed.
+ *
+ * The returned record is the whole undo: it carries `firstSeen` and
+ * `longestLife`, which cannot be reconstructed from the blueprint, so putting it
+ * back with `restoreSpeciesRecord` restores the history rather than a creature
+ * that claims to have been discovered just now.
+ */
+export function forgetSpecies(id: string): SpeciesRecord | null {
+  const record = data.species[id]
+  if (!record) return null
+  delete data.species[id]
+  touch()
+  return record
+}
+
+/** Put a forgotten species back exactly as it was. The other half of undo. */
+export function restoreSpeciesRecord(record: SpeciesRecord): void {
+  data.species[record.blueprint.id] = record
+  touch()
+}
+
 /** Every archived species, newest sighting first. */
 export function archivedSpecies(): SpeciesRecord[] {
   return Object.values(data.species).sort((a, b) => b.lastSeen - a.lastSeen)
@@ -225,7 +380,7 @@ export function claimMilestone(id: string, now: number): boolean {
 }
 
 function pruneArchive(): void {
-  const summoned = Object.values(data.species).filter((s) => s.blueprint.summoned)
+  const summoned = Object.values(data.species).filter(s => s.blueprint.summoned)
   if (summoned.length <= MAX_ARCHIVED_SUMMONED) return
   summoned.sort((a, b) => a.lastSeen - b.lastSeen)
   const excess = summoned.length - MAX_ARCHIVED_SUMMONED
@@ -253,10 +408,7 @@ export function mergeChronicles(a: ChronicleData, b: ChronicleData): ChronicleDa
     const right = b.lands[id] ?? emptyLandRecord()
     const deeper = right.generations > left.generations ? right : left
     merged.lands[id] = {
-      elder:
-        (right.elder?.seconds ?? 0) > (left.elder?.seconds ?? 0)
-          ? right.elder
-          : left.elder,
+      elder: (right.elder?.seconds ?? 0) > (left.elder?.seconds ?? 0) ? right.elder : left.elder,
       steadySeconds: Math.max(left.steadySeconds, right.steadySeconds),
       generations: deeper.generations,
       generationsBlueprintId: deeper.generationsBlueprintId,

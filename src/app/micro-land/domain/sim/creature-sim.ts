@@ -13,22 +13,13 @@ import type { BodyBox } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
-  BREED_COOLDOWN,
-  BREED_COST,
-  GRAVITY,
-  MAX_CREATURES,
   MAX_FALL,
   MAX_PARTICLES,
-  MAX_PLANTS,
-  MEAL_VALUE,
   PARTICLE_LIFE,
-  PLANT_MATURITY,
-  PLANT_SPECIES_CAP,
-  PLANT_SPREAD_COOLDOWN,
-  SPECIES_SOFT_CAP,
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
+import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
 import {
@@ -206,7 +197,7 @@ export function tickCreatures(
     const wet = boxLiquidFraction(w, px, py, body.w, body.h)
     const deadlyMat = boxDeadlyMaterial(w, px, py, body.w, body.h)
     if (deadlyMat !== null) {
-      const immune = bp.body.immuneTo.some((m) => MATERIAL_INDEX[m] === deadlyMat)
+      const immune = bp.body.immuneTo.some(m => MATERIAL_INDEX[m] === deadlyMat)
       if (!immune) {
         kill(w, c, bp, dead, events, 'burned')
         continue
@@ -256,14 +247,14 @@ export function tickCreatures(
     // usual hunger cost would sterilise them permanently — their hungerRate is
     // 0, so the debt could never be paid back and each plant would breed twice
     // in its entire life.
-    const maturity = isPlant ? PLANT_MATURITY : bp.diet.lifespanSeconds * 0.2
+    const maturity = isPlant ? TUNING.plantMaturity : bp.diet.lifespanSeconds * 0.2
     if (
       c.breedCooldown <= 0 &&
       fullness >= bp.diet.breedAt &&
       c.ageSeconds > maturity &&
-      creatures.length < MAX_CREATURES &&
-      !(isPlant && plantsAlive >= MAX_PLANTS) &&
-      (speciesCount[bp.id] ?? 0) < (isPlant ? PLANT_SPECIES_CAP : SPECIES_SOFT_CAP)
+      creatures.length < TUNING.maxCreatures &&
+      !(isPlant && plantsAlive >= TUNING.maxPlants) &&
+      (speciesCount[bp.id] ?? 0) < (isPlant ? TUNING.plantSpeciesCap : TUNING.speciesSoftCap)
     ) {
       const child = reproduce(w, c, bp, bw, bh, rng)
       if (child) {
@@ -272,11 +263,11 @@ export function tickCreatures(
         child.generation = c.generation + 1
         c.children++
         if (isPlant) plantsAlive++
-        else c.hunger = Math.min(1, c.hunger + BREED_COST)
+        else c.hunger = Math.min(1, c.hunger + TUNING.breedCost)
         speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
         // A pollinator nearby shortens the wait before the next one.
         const help = auraBoost(w, c, bp, bw, bh, helpers)
-        c.breedCooldown = (isPlant ? PLANT_SPREAD_COOLDOWN : BREED_COOLDOWN) / help
+        c.breedCooldown = (isPlant ? TUNING.plantSpreadCooldown : TUNING.breedCooldown) / help
         events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
       } else {
         // Nowhere to put it — wait a bit before trying again.
@@ -286,7 +277,7 @@ export function tickCreatures(
   }
 
   if (dead.size > 0) {
-    w.creatures = creatures.filter((c) => !dead.has(c.id))
+    w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
   // Plants first — everything else in the world is downstream of them.
@@ -347,11 +338,10 @@ function look(
     if (hungry && canEat(bp, obp)) {
       // Bodies touching? Eat now, don't bother pathing.
       const touching =
-        Math.abs(dx) <= (bw + ow) / 2 + BITE_PAD &&
-        Math.abs(dy) <= (bh + oh) / 2 + BITE_PAD
+        Math.abs(dx) <= (bw + ow) / 2 + BITE_PAD && Math.abs(dy) <= (bh + oh) / 2 + BITE_PAD
       if (touching) {
         devour(w, other, obp, dead, events)
-        c.hunger = Math.max(0, c.hunger - MEAL_VALUE)
+        c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
         c.mood = 'eat'
@@ -437,7 +427,7 @@ function auraBoost(
     if (helper.id === c.id) continue
     const aura = w.blueprints[helper.blueprintId]?.aura
     if (!aura || aura.helps.length === 0) continue
-    if (!aura.helps.some((tag) => bp.tags.includes(tag))) continue
+    if (!aura.helps.some(tag => bp.tags.includes(tag))) continue
 
     const hbp = w.blueprints[helper.blueprintId]
     if (!hbp) continue
@@ -493,13 +483,7 @@ function applyConversion(
 // Steering
 // ---------------------------------------------------------------------------
 
-function steer(
-  w: WorldState,
-  c: Creature,
-  bp: CreatureBlueprint,
-  dt: number,
-  rng: Rng
-): void {
+function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rng: Rng): void {
   const { w: bw, h: bh } = artSize(bp)
   const body = bodyBox(bp)
   const cx = c.x + bw / 2
@@ -650,7 +634,7 @@ function integrate(
   const inGoo = goo > 0.05
 
   if (!weightless) {
-    let g = GRAVITY * bp.body.mass * gravityScale
+    let g = TUNING.gravity * bp.body.mass * gravityScale
     if (inLiquid) {
       // Buoyancy above 1 pushes up harder than gravity pulls down.
       g *= 1 - bp.body.buoyancy
@@ -705,8 +689,7 @@ function integrate(
     c.vx *= 0.2
   } else {
     const bx = nx + ox
-    c.x =
-      (c.vx > 0 ? Math.floor(bx + body.w - 0.001) - body.w : Math.floor(bx) + 1) - ox
+    c.x = (c.vx > 0 ? Math.floor(bx + body.w - 0.001) - body.w : Math.floor(bx) + 1) - ox
     c.vx = -c.vx * bp.body.bounce
     c.drift = -c.drift
     c.facing = (c.facing === 1 ? -1 : 1) as 1 | -1
@@ -760,7 +743,7 @@ function chewThrough(
   bh: number,
   dt: number
 ): boolean {
-  const diggable = new Set(bp.dig.through.map((m) => MATERIAL_INDEX[m]))
+  const diggable = new Set(bp.dig.through.map(m => MATERIAL_INDEX[m]))
 
   // Collect the blocking tiles this move would run into.
   const x0 = Math.floor(x)
@@ -866,20 +849,9 @@ function kill(
   if (dead.has(c.id)) return
   dead.add(c.id)
   const { w: bw, h: bh } = artSize(bp)
-  emitParticles(
-    w,
-    c.x + bw / 2,
-    c.y + bh / 2,
-    bp.death.particleColor,
-    bp.death.particleCount
-  )
+  emitParticles(w, c.x + bw / 2, c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)
   if (bp.death.becomes) {
-    setTile(
-      w,
-      Math.floor(c.x + bw / 2),
-      Math.floor(c.y + bh / 2),
-      MATERIAL_INDEX[bp.death.becomes]
-    )
+    setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])
   }
   events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y })
 }
@@ -916,7 +888,7 @@ function tickParticles(w: WorldState, dt: number, gravityScale: number): void {
   for (const p of w.particles) {
     p.life -= dt
     if (p.life <= 0) continue
-    p.vy += GRAVITY * 0.35 * gravityScale * dt
+    p.vy += TUNING.gravity * 0.35 * gravityScale * dt
     p.x += p.vx * dt
     p.y += p.vy * dt
     if (p.x < 0 || p.y < 0 || p.x >= WORLD_W || p.y >= WORLD_H) continue
