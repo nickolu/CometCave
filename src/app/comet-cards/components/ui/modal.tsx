@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useId, useRef } from 'react'
 
 import { GhostButton } from '@/app/comet-cards/components/cosmic/buttons'
 
@@ -15,6 +15,13 @@ export function Modal({
   title?: string
   eyebrow?: string
 }) {
+  const titleId = useId()
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -25,8 +32,6 @@ export function Modal({
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
       onClick={onClose}
       className="cosmic-cards fixed inset-0 z-50 flex items-center justify-center"
       style={{
@@ -35,8 +40,13 @@ export function Modal({
       }}
     >
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={title ? titleId : undefined}
+        tabIndex={-1}
         onClick={e => e.stopPropagation()}
-        className="w-full"
+        className="w-full outline-none"
         style={{
           maxWidth: 720,
           margin: '0 5%',
@@ -67,7 +77,7 @@ export function Modal({
                 </div>
               )}
               {title && (
-                <div style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{title}</div>
+                <div id={titleId} style={{ fontSize: 24, fontWeight: 600, marginTop: 4 }}>{title}</div>
               )}
             </div>
             <GhostButton onClick={onClose}>Close</GhostButton>
