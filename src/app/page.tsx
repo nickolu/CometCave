@@ -20,6 +20,7 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'Storybook Factory', icon: 'auto_stories', href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, description: 'Create illustrated comic books and storybooks from your pictures' },
   { title: 'Speck Wars', icon: 'bug_report', href: ROUTE_CONSTANTS.SPECK_WARS, description: 'Command your specks to capture enemy bases in this real-time strategy micro-battle' },
   { title: 'Disneyland Hunt', icon: 'search', href: ROUTE_CONSTANTS.DISNEYLAND_HUNT, description: 'Scavenger hunt checklist for your Disneyland visit — track finds, earn bonus stars' },
+  { title: 'Micro Land', icon: 'pest_control', href: ROUTE_CONSTANTS.MICRO_LAND, description: 'A tiny living world — build the ground, summon creatures, and watch them eat each other' },
 ]
 
 export default function Home() {
@@ -36,7 +37,7 @@ export default function Home() {
             AI Dream Arcade — explore an infinite galaxy of games, challenges, and cosmic adventures.
           </p>
           <Link href={ROUTE_CONSTANTS.TRIVIA}>
-            <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined">play_circle</span>}>
+            <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined" aria-hidden="true">play_circle</span>}>
               START QUESTING
             </ChunkyButton>
           </Link>
@@ -46,7 +47,7 @@ export default function Home() {
       {/* Arcade Floor */}
       <section>
         <h2 className="font-headline text-headline-md text-on-surface mb-6 flex items-center gap-3">
-          <span className="material-symbols-outlined text-ds-tertiary text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+          <span className="material-symbols-outlined text-ds-tertiary text-[32px]" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
             sports_esports
           </span>
           Arcade Floor
@@ -57,7 +58,7 @@ export default function Home() {
               <ChunkyCard variant="surface-variant" interactive cornerGlow="primary" className="h-full">
                 <ChunkyCardContent className="pt-6 pb-6 flex flex-col items-center text-center gap-3">
                   <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ds-surface border-2 border-outline-variant">
-                    <span className="material-symbols-outlined text-[32px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    <span className="material-symbols-outlined text-[32px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
                       {game.icon}
                     </span>
                   </div>

@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-25",
+  "categoryId": 22,
+  "categoryName": "Geography",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-25-0",
+      "question": "Which of the following former Yugoslavian states is landlocked?",
+      "options": [
+        "Montenegro",
+        "Croatia",
+        "Bosnia and Herzegovina",
+        "Serbia"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Serbia"
+    },
+    {
+      "id": "opentdb-2026-06-25-1",
+      "question": "In which ocean is the Réunion island?",
+      "options": [
+        "Atlantic Ocean",
+        "South Pacific Ocean",
+        "North Pacific Ocean",
+        "Indian Ocean"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Indian Ocean"
+    },
+    {
+      "id": "opentdb-2026-06-25-2",
+      "question": "Guyana is in which continent?",
+      "options": [
+        "Africa",
+        "Asia",
+        "North America",
+        "South America"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "South America"
+    },
+    {
+      "id": "opentdb-2026-06-25-3",
+      "question": "How many independent countries are there within the continent of South America?",
+      "options": [
+        "9",
+        "10",
+        "8",
+        "12"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "12"
+    },
+    {
+      "id": "opentdb-2026-06-25-4",
+      "question": "In which English county is the city of Portsmouth?",
+      "options": [
+        "Oxfordshire",
+        "Buckinghamshire",
+        "Surrey",
+        "Hampshire"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Hampshire"
+    },
+    {
+      "id": "opentdb-2026-06-25-5",
+      "question": "Which river was dammed to create Gatun Lake and the Panama Canal?",
+      "options": [
+        "Tuira River",
+        "Chepo River ",
+        "Chucunaque River",
+        "Chagres River"
+      ],
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Chagres River"
+    },
+    {
+      "id": "ai-2026-06-25-6",
+      "question": "Which iconic landmark, gifted to the United States by France, stands in New York City's harbor?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Statue of Liberty",
+      "explanation": "The Statue of Liberty has stood in New York Harbor since 1886, when it was dedicated as a gift from France to the United States. It depicts the Roman goddess Libertas holding a torch and a tablet, and has become one of the most recognizable symbols of freedom and democracy in the world."
+    },
+    {
+      "id": "ai-2026-06-25-7",
+      "question": "Which famous explorer and traveler was born in Venice, Italy?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Marco Polo",
+      "explanation": "Marco Polo, born in Venice around 1254, became one of history's most celebrated explorers after his legendary journey to Asia and the court of Kublai Khan. His travels, documented in \"The Travels of Marco Polo,\" introduced Europeans to the cultures and riches of the Far East. Venice proudly claims him as one of its most famous sons, and his name remains deeply tied to Venetian identity."
+    },
+    {
+      "id": "ai-2026-06-25-8",
+      "question": "Which Moroccan city, despite sitting on the Atlantic coast rather than the Mediterranean Sea, is described as having a Mediterranean-style climate with mild, wet winters and hot, dry summers?",
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Casablanca",
+      "explanation": "Casablanca, Morocco's largest city and economic hub, lies along the Atlantic coast yet experiences a climate that closely mirrors the Mediterranean pattern — mild, wet winters and hot, dry summers. While technically influenced by the Atlantic Ocean, its climate is broadly classified as Mediterranean-style due to these characteristic seasonal patterns. This makes Casablanca one of the more temperate major cities on the African continent."
+    },
+    {
+      "id": "ai-2026-06-25-9",
+      "question": "Colombo became the capital of which country when it gained independence from Britain on February 4, 1948?",
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Sri Lanka",
+      "explanation": "Sri Lanka, formerly known as Ceylon, gained independence from British rule on February 4, 1948, with Colombo serving as its capital. The country was officially renamed Sri Lanka in 1972 when it became a republic. February 4th is still celebrated as National Day in Sri Lanka."
+    }
+  ]
+}

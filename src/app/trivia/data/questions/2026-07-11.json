@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-11",
+  "categoryId": 14,
+  "categoryName": "Entertainment: Television",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-11-0",
+      "question": "What is the name of Chris's brother in \"Everybody Hates Chris\"?",
+      "options": [
+        "Greg",
+        "Joe",
+        "Jerome",
+        "Drew"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Drew"
+    },
+    {
+      "id": "opentdb-2026-07-11-1",
+      "question": "In which British seaside town was the BBC sitcom \"Fawlty Towers\" set?",
+      "options": [
+        "Blackpool",
+        "Great Yarmouth",
+        "Bournemouth",
+        "Torquay"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Torquay"
+    },
+    {
+      "id": "opentdb-2026-07-11-2",
+      "question": "On the show \"Rick and Morty\", in episode \"Total Rickall\", who was a parasite?",
+      "options": [
+        "Beth Smith",
+        "Mr. Poopy Butthole",
+        "Summer Smith",
+        "Pencilvester"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Pencilvester"
+    },
+    {
+      "id": "opentdb-2026-07-11-3",
+      "question": "In \"The Big Bang Theory\", what is Howard Wolowitz's nickname in World of Warcraft?",
+      "options": [
+        "Sheldor",
+        "Priya",
+        "Rajesh",
+        "Wolowizard"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Wolowizard"
+    },
+    {
+      "id": "opentdb-2026-07-11-4",
+      "question": "Who was the first Big Brother US winner to win with a perfect game?",
+      "options": [
+        "Ian Terry",
+        "Jordan Lloyd",
+        "Rachael Reilly",
+        "Dan Gheesling"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Dan Gheesling"
+    },
+    {
+      "id": "opentdb-2026-07-11-5",
+      "question": "Who was the winner of \"Big Brother\" Season 10?",
+      "options": [
+        "Bryce Kranyik",
+        "Ryan Sutfin",
+        "Chris Mundorf",
+        "Dan Gheesling"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Dan Gheesling"
+    },
+    {
+      "id": "ai-2026-07-11-6",
+      "question": "Who created the animated TV show South Park?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Trey Parker and Matt Stone",
+      "explanation": "South Park was created by Trey Parker and Matt Stone and first aired on Comedy Central in 1997. The show follows four foul-mouthed boys in a fictional Colorado mountain town and is known for its sharp satirical humor. It remains one of the longest-running animated series in television history."
+    },
+    {
+      "id": "ai-2026-07-11-7",
+      "question": "What phrase is used to describe the moment when a TV series begins to decline in quality?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "jump the shark",
+      "explanation": "The phrase \"jump the shark\" originated from a 1977 episode of Happy Days in which Fonzie literally jumps over a shark on water skis — widely seen as the moment the show lost its edge. It has since become a popular idiom for the turning point when any TV series (or other creative work) starts going downhill."
+    },
+    {
+      "id": "ai-2026-07-11-8",
+      "question": "Which actor on the sitcom Superstore also held the uncommon dual role of executive producer on the same show?",
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Ben Feldman",
+      "explanation": "Ben Feldman, known for his role as Jonah on Superstore, also served as an executive producer of the NBC series — a rare arrangement that put him both in front of and behind the camera. This kind of dual on-screen/producing credit is more commonly seen with veteran stars who have significant leverage in a show's production. Superstore ran for six seasons from 2015 to 2021."
+    },
+    {
+      "id": "ai-2026-07-11-9",
+      "question": "Which co-creator of the R-rated Hulu \"traumedy\" set in the year 2000 coined that term to describe the show's middle-school setting?",
+      "difficulty": "hard",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Anna Konkle",
+      "explanation": "Anna Konkle, who co-created and stars in PEN15 alongside Maya Erskine, described the show as a \"traumedy\" — a blend of trauma and comedy — to capture its unflinching, R-rated look at middle school life set in the year 2000. The series is notable for Konkle and Erskine playing 13-year-old versions of themselves as adults alongside actual child actors. PEN15 aired on Hulu from 2019 to 2021."
+    }
+  ]
+}

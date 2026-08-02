@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-22",
+  "categoryId": 25,
+  "categoryName": "Art",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-22-0",
+      "question": "What is a fundamental element of the Gothic style of architecture?",
+      "options": [
+        "coffered ceilings",
+        "façades surmounted by a pediment ",
+        "internal frescoes",
+        "pointed arch"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "pointed arch"
+    },
+    {
+      "id": "opentdb-2026-07-22-1",
+      "question": "Who painted the Mona Lisa?",
+      "options": [
+        "Pablo Picasso",
+        "Claude Monet",
+        "Vincent van Gogh",
+        "Leonardo da Vinci"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Leonardo da Vinci"
+    },
+    {
+      "id": "opentdb-2026-07-22-2",
+      "question": "Who painted the Sistine Chapel?",
+      "options": [
+        "Pablo Picasso",
+        "Raphael",
+        "Leonardo da Vinci",
+        "Michelangelo"
+      ],
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Michelangelo"
+    },
+    {
+      "id": "opentdb-2026-07-22-3",
+      "question": "What nationality was the surrealist painter Salvador Dali?",
+      "options": [
+        "French",
+        "Portuguese",
+        "Italian",
+        "Spanish"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Spanish"
+    },
+    {
+      "id": "opentdb-2026-07-22-4",
+      "question": "Who painted the painting \"Nighthawks\"?",
+      "options": [
+        "Johannes Vermeer",
+        "Salvador Dali",
+        "Vincent van Gogh",
+        "Edward Hopper"
+      ],
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "Edward Hopper"
+    },
+    {
+      "id": "opentdb-2026-07-22-5",
+      "question": "How many paint and pastel versions of \"The Scream\" is Norwegian painter Edvard Munch believed to have produced?",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "opentdb",
+      "correctAnswer": "4"
+    },
+    {
+      "id": "ai-2026-07-22-6",
+      "question": "In the art world, what type of event gives a gallery the chance to showcase new work and introduce its artists to collectors and fans?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "gallery opening",
+      "explanation": "A gallery opening is a special event where an art gallery debuts new work and connects its featured artists with collectors, critics, and art enthusiasts. These events are often social occasions with refreshments and the opportunity to meet the artists in person. They serve as an important marketing and community-building tool for galleries."
+    },
+    {
+      "id": "ai-2026-07-22-7",
+      "question": "Which ancient civilization's art was deeply tied to religion and helping the deceased in the afterlife?",
+      "difficulty": "easy",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "Egyptian",
+      "explanation": "Egyptian art was not merely decorative — it served a sacred purpose, helping to maintain cosmic order and guide the souls of the dead through the afterlife. This is why tombs were filled with elaborate paintings and sculptures depicting gods, rituals, and daily life. The art followed strict conventions for thousands of years to preserve its spiritual power."
+    },
+    {
+      "id": "ai-2026-07-22-8",
+      "question": "Albrecht Dürer was among the first German artists to incorporate what type of subjects into his prints?",
+      "difficulty": "medium",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "mythological subjects",
+      "explanation": "Dürer was a pioneering figure of the Northern Renaissance who helped bridge Italian humanist traditions with German art. By weaving mythological themes into his engravings and woodcuts, he introduced a new intellectual dimension to printmaking in Germany. Works like \"The Abduction of Proserpine\" exemplify this innovative blending of classical mythology with his distinctive graphic style."
+    },
+    {
+      "id": "ai-2026-07-22-9",
+      "question": "In drawings and prints, what technique of shading with parallel lines was commonly used to achieve chiaroscuro modeling?",
+      "difficulty": "hard",
+      "category": "Art",
+      "source": "ai",
+      "correctAnswer": "hatching",
+      "explanation": "Hatching involves drawing closely spaced parallel lines to simulate shadow and volume, making it a fundamental tool for chiaroscuro — the dramatic contrast of light and dark — in works on paper. Cross-hatching, a variant using intersecting sets of parallel lines, allows artists to build even deeper tonal ranges. Masters like Dürer and Rembrandt used hatching extensively in their prints and drawings."
+    }
+  ]
+}

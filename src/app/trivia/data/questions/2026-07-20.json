@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-20",
+  "categoryId": 23,
+  "categoryName": "History",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-20-0",
+      "question": "Who discovered Penicillin?",
+      "options": [
+        "Marie Curie",
+        "Alfred Nobel",
+        "Louis Pasteur",
+        "Alexander Flemming"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Alexander Flemming"
+    },
+    {
+      "id": "opentdb-2026-07-20-1",
+      "question": "On what street did the 1666 Great Fire of London start?",
+      "options": [
+        "Baker Street",
+        "St Paul's Cathedral",
+        "Houses of Parliament",
+        "Pudding Lane"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Pudding Lane"
+    },
+    {
+      "id": "opentdb-2026-07-20-2",
+      "question": "How old was Adolf Hitler when he died?",
+      "options": [
+        "65",
+        "47",
+        "43",
+        "56"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "56"
+    },
+    {
+      "id": "opentdb-2026-07-20-3",
+      "question": "How many years did the Hundred Years' War last?",
+      "options": [
+        "90",
+        "101",
+        "100",
+        "116"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "116"
+    },
+    {
+      "id": "opentdb-2026-07-20-4",
+      "question": "In what year did the First World War end?",
+      "options": [
+        "1914",
+        "1912",
+        "1916",
+        "1918"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "1918"
+    },
+    {
+      "id": "opentdb-2026-07-20-5",
+      "question": "When did Spanish Peninsular War start?",
+      "options": [
+        "1806",
+        "1809",
+        "1810",
+        "1808"
+      ],
+      "difficulty": "hard",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "1808"
+    },
+    {
+      "id": "ai-2026-07-20-6",
+      "question": "What historical event in 1947 divided British India into the two independent nations of India and Pakistan?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Partition of India",
+      "explanation": "The Partition of India in 1947 marked the end of British colonial rule and split the subcontinent along religious lines, creating a Muslim-majority Pakistan and a Hindu-majority India. The event triggered one of the largest mass migrations in human history, with an estimated 10–20 million people displaced. Widespread communal violence during the partition resulted in hundreds of thousands of deaths."
+    },
+    {
+      "id": "ai-2026-07-20-7",
+      "question": "What name is given to the decades-long geopolitical standoff between the United States and the Soviet Union that lasted from 1947 to 1991?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Cold War",
+      "explanation": "The Cold War (1947–1991) was a prolonged period of political and military tension between the U.S. and Soviet Union, fought through proxy wars, espionage, and an arms race rather than direct combat. The term \"cold\" reflects the absence of large-scale direct warfare between the two superpowers. It ended with the dissolution of the Soviet Union in 1991."
+    },
+    {
+      "id": "ai-2026-07-20-8",
+      "question": "To consolidate power under a single-leader model, Xi Jinping took personal control of major policy commissions covering which two areas?",
+      "difficulty": "medium",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "economic reform and national security commissions",
+      "explanation": "By chairing commissions on economic reform and national security, Xi Jinping centralized authority in ways that departed from the collective leadership model that had defined Chinese governance since Deng Xiaoping. This shift marked one of the most significant consolidations of power in modern Chinese political history. Critics and analysts noted it resembled a return to the strongman style of Mao Zedong's era."
+    },
+    {
+      "id": "ai-2026-07-20-9",
+      "question": "Which castle-town served as the administrative center of the Teutonic Order's Prussian branch and anchored its Baltic power base?",
+      "difficulty": "hard",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Marienburg",
+      "explanation": "Marienburg (modern-day Malbork, Poland) was the headquarters of the Teutonic Order's Prussian branch and one of the largest Gothic brick castles ever built. It served as the Grand Master's residence and the nerve center of the Order's territorial and military operations across the Baltic region from the 13th century onward. Today, Malbork Castle is a UNESCO World Heritage Site."
+    }
+  ]
+}

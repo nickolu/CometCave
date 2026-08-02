@@ -241,7 +241,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
                 heirloom: null,
               })
               recordRun({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+                id: crypto.randomUUID(),
                 characterName: victoryChar.name,
                 characterClass: victoryChar.class,
                 level: victoryChar.level,
@@ -340,7 +340,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             })
 
             recordRun({
-              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              id: crypto.randomUUID(),
               characterName: character.name,
               characterClass: character.class,
               level: character.level,
@@ -400,7 +400,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
             })
 
             recordRun({
-              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              id: crypto.randomUUID(),
               characterName: character.name,
               characterClass: character.class,
               level: character.level,

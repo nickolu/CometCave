@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-16",
+  "categoryId": 19,
+  "categoryName": "Science: Mathematics",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-16-0",
+      "question": "What type of angle is greater than 90°?",
+      "options": [
+        "Acute",
+        "Right",
+        "Straight",
+        "Obtuse"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Obtuse"
+    },
+    {
+      "id": "opentdb-2026-07-16-1",
+      "question": "Who proved Fermat's Last Theorem?",
+      "options": [
+        "Leonhard Euler",
+        "Carl Friedrich Gauss",
+        "Srinivasa Ramanujan",
+        "Andrew Wiles"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Andrew Wiles"
+    },
+    {
+      "id": "opentdb-2026-07-16-2",
+      "question": "What is the symbol for Displacement?",
+      "options": [
+        "Dp",
+        "r",
+        "dr",
+        "&Delta;r"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "&Delta;r"
+    },
+    {
+      "id": "opentdb-2026-07-16-3",
+      "question": "In the hexadecimal system, what number comes after 9?",
+      "options": [
+        "10",
+        "16",
+        "The Number 0",
+        "The Letter A"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "The Letter A"
+    },
+    {
+      "id": "opentdb-2026-07-16-4",
+      "question": "In a normal distribution, 95% of the data lies within how many standard deviations of the mean?",
+      "options": [
+        "3",
+        "4",
+        "1",
+        "2"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "2"
+    },
+    {
+      "id": "opentdb-2026-07-16-5",
+      "question": "How many Millibars (mbar) to 1 Inch of Mercury (inHg)",
+      "options": [
+        "30.0",
+        "27.4",
+        "10.6",
+        "33.9"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "33.9"
+    },
+    {
+      "id": "ai-2026-07-16-6",
+      "question": "What type of number is defined as being greater than 1 and having exactly two positive divisors?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Prime number",
+      "explanation": "A prime number is any integer greater than 1 that can only be divided evenly by 1 and itself — those are its exactly two positive divisors. Primes like 2, 3, 5, and 7 are considered basic building blocks of mathematics because every whole number greater than 1 can be expressed as a unique product of primes, a result known as the Fundamental Theorem of Arithmetic."
+    },
+    {
+      "id": "ai-2026-07-16-7",
+      "question": "Which mathematical constant represents the ratio of a circle's circumference to its diameter?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "pi",
+      "explanation": "Pi (π) is one of the most famous constants in mathematics, approximately equal to 3.14159. It appears not just in geometry but throughout physics, engineering, and even statistics, making it one of the most universally useful numbers ever discovered."
+    },
+    {
+      "id": "ai-2026-07-16-8",
+      "question": "Which famous unsolved problem in computer science and mathematics asks whether every language accepted by a nondeterministic polynomial-time algorithm can also be accepted by a deterministic polynomial-time algorithm?",
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "P versus NP problem",
+      "explanation": "The P versus NP problem is one of the seven Millennium Prize Problems, with a $1 million reward offered by the Clay Mathematics Institute for its solution. It essentially asks whether problems whose solutions can be quickly verified can also be quickly solved. Most researchers believe P ≠ NP, but no proof has been found either way."
+    },
+    {
+      "id": "ai-2026-07-16-9",
+      "question": "According to the MAA, eigenvectors serve as a central tool and have an \"immediate application\" in a branch of mathematics that studies how figures are mapped, reflected, rotated, and otherwise transformed in space — what is this branch called?",
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "transformational geometry",
+      "explanation": "The Mathematical Association of America (MAA) specifically highlights that eigenvectors have an immediate application in transformational geometry, where they function as a central tool. In transformational geometry, eigenvectors identify directions that remain invariant or are scaled under linear maps such as rotations, reflections, and shears, providing key geometric insight into how these mappings behave."
+    }
+  ]
+}

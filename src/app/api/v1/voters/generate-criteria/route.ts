@@ -17,6 +17,11 @@ const CriteriaSchema = z.object({
     .describe('2-4 tips for improving the question or options'),
 })
 
+const RequestSchema = z.object({
+  question: z.string().min(1, 'Question is required').max(1000),
+  existingOptions: z.array(z.string().max(500)).max(20).optional(),
+})
+
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
@@ -34,14 +39,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { question, existingOptions = [] } = await request.json()
-
-    if (!question || typeof question !== 'string' || question.trim().length === 0) {
+    const parseResult = RequestSchema.safeParse(await request.json())
+    if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Question is required and must be a non-empty string.' },
+        { error: parseResult.error.errors[0]?.message ?? 'Invalid request' },
         { status: 400 }
       )
     }
+    const { question, existingOptions = [] } = parseResult.data
 
     const existingOptionsText =
       existingOptions.length > 0
