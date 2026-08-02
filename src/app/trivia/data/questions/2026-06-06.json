@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-06",
+  "categoryId": 27,
+  "categoryName": "Animals",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-06-0",
+      "question": "Which is the national animal of India?",
+      "options": [
+        "Horse",
+        "Camel",
+        "Lion",
+        "Tiger"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Tiger"
+    },
+    {
+      "id": "opentdb-2026-06-06-1",
+      "question": "By definition, where does an abyssopelagic animal live?",
+      "options": [
+        "In the desert",
+        "On top of a mountain",
+        "Inside a tree",
+        "At the bottom of the ocean"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "At the bottom of the ocean"
+    },
+    {
+      "id": "opentdb-2026-06-06-2",
+      "question": "Which breed of dog is traditionally associated with firefighters?",
+      "options": [
+        "German Shepard",
+        "Mastiff",
+        "Great Dane",
+        "Dalmatians"
+      ],
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Dalmatians"
+    },
+    {
+      "id": "opentdb-2026-06-06-3",
+      "question": "Which of these species is not extinct?",
+      "options": [
+        "Tasmanian tiger",
+        "Saudi gazelle",
+        "Japanese sea lion",
+        "Komodo dragon"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Komodo dragon"
+    },
+    {
+      "id": "opentdb-2026-06-06-4",
+      "question": "What are the scales on all snakes and most lizards are made of?",
+      "options": [
+        "Ecdysis",
+        "Epidermis",
+        "Ankyloglossia",
+        "Keratin"
+      ],
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Keratin"
+    },
+    {
+      "id": "opentdb-2026-06-06-5",
+      "question": "What is the scientific name of the cheetah?",
+      "options": [
+        "Panthera onca",
+        "Felis catus",
+        "Lynx rufus",
+        "Acinonyx jubatus"
+      ],
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "opentdb",
+      "correctAnswer": "Acinonyx jubatus"
+    },
+    {
+      "id": "ai-2026-06-06-6",
+      "question": "The peregrine falcon is found on every continent except which one?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "Antarctica",
+      "explanation": "The peregrine falcon is one of the most widespread birds on Earth, native to every continent except Antarctica. It is also the fastest animal on the planet, reaching speeds over 240 mph in a dive. Its adaptability has allowed it to thrive in environments ranging from Arctic tundra to tropical rainforests."
+    },
+    {
+      "id": "ai-2026-06-06-7",
+      "question": "What is the name for the elaborate fan of feathers a peacock spreads out to attract a mate?",
+      "difficulty": "easy",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "train",
+      "explanation": "A peacock's iconic display is called its \"train,\" which is made up of elongated upper tail feathers — not the tail itself. The train can be up to 6 feet long and features iridescent eyespots that the peacock fans out and shakes to impress peahens."
+    },
+    {
+      "id": "ai-2026-06-06-8",
+      "question": "Which cat breed registry first recognized the Bengal as an experimental breed before it achieved championship status?",
+      "difficulty": "medium",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "The International Cat Association",
+      "explanation": "The International Cat Association (TICA) was the first major registry to formally recognize the Bengal cat, initially granting it experimental breed status before it eventually earned full championship standing. The Bengal is a hybrid breed developed by crossing domestic cats with the Asian leopard cat, giving it a distinctive wild-looking spotted or marbled coat. TICA remains one of the world's largest genetic registries for domestic cats."
+    },
+    {
+      "id": "ai-2026-06-06-9",
+      "question": "What term describes the unusual jaw structure of the goblin shark, which allows its jaws to shoot dramatically forward to snatch prey?",
+      "difficulty": "hard",
+      "category": "Animals",
+      "source": "ai",
+      "correctAnswer": "protrusible mouth",
+      "explanation": "The goblin shark possesses a protrusible mouth, meaning its jaws can thrust forward with remarkable speed to capture prey — a trait rarely seen to such an extreme degree in any other shark. This slingshot-like feeding mechanism compensates for the goblin shark's sluggish swimming speed in the deep ocean. It is one of the most distinctive anatomical features in the shark world."
+    }
+  ]
+}

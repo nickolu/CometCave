@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-26",
+  "categoryId": 23,
+  "categoryName": "History",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-26-0",
+      "question": "The \"Trail of Tears\" was a result of which United States President's Indian Removal Policy?",
+      "options": [
+        "Harry S. Truman",
+        "John Quincy Adams",
+        "Martin Van Buren",
+        "Andrew Jackson"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Andrew Jackson"
+    },
+    {
+      "id": "opentdb-2026-06-26-1",
+      "question": "Who was the first American in space?",
+      "options": [
+        "Neil Armstrong",
+        "Jim Lovell",
+        "John Glenn",
+        "Alan Shephard"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Alan Shephard"
+    },
+    {
+      "id": "opentdb-2026-06-26-2",
+      "question": "Who led the Communist Revolution of Russia?",
+      "options": [
+        "Joseph Stalin",
+        "Vladimir Putin",
+        "Mikhail Gorbachev",
+        "Vladimir Lenin"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Vladimir Lenin"
+    },
+    {
+      "id": "opentdb-2026-06-26-3",
+      "question": "When did Vesuvius destroy the city of Pompeii? ",
+      "options": [
+        "62 AD",
+        "31 BC",
+        "54 BC",
+        "79 AD"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "79 AD"
+    },
+    {
+      "id": "opentdb-2026-06-26-4",
+      "question": "What day did the Battle of Gettysburg begin?",
+      "options": [
+        "September 17, 1862",
+        "July 21, 1861",
+        "Apr 30, 1863",
+        "July 1, 1863"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "July 1, 1863"
+    },
+    {
+      "id": "opentdb-2026-06-26-5",
+      "question": "Which of these positions did the astronomer and physicist Isaac Newton not hold?",
+      "options": [
+        "Warden of the Royal Mint",
+        "Member of Parliament",
+        "Professor of Mathematics",
+        "Surveyor to the City of London"
+      ],
+      "difficulty": "hard",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Surveyor to the City of London"
+    },
+    {
+      "id": "ai-2026-06-26-6",
+      "question": "Which Italian artist and polymath is often called the \"Renaissance Man\"?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Leonardo da Vinci",
+      "explanation": "Leonardo da Vinci is widely regarded as the ultimate Renaissance Man due to his extraordinary talents spanning painting, sculpture, architecture, science, and engineering. He is best known for masterpieces like the Mona Lisa and The Last Supper. His insatiable curiosity and diverse genius made him a defining figure of the Italian Renaissance."
+    },
+    {
+      "id": "ai-2026-06-26-7",
+      "question": "Which ancient religion, with roots in the Indus Valley region, is considered one of the world's oldest, dating back at least 5,000 years?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Hinduism",
+      "explanation": "Hinduism is widely regarded as the world's oldest living religion, with origins tracing back at least 5,000 years to the Indus Valley civilization in the Indian subcontinent. Its traditions evolved over millennia, incorporating diverse philosophies, rituals, and texts such as the Vedas. Today, it remains one of the world's largest religions, with over a billion followers."
+    },
+    {
+      "id": "ai-2026-06-26-8",
+      "question": "Which monarch had his African territory recognized as personal private property at the Berlin Conference?",
+      "difficulty": "medium",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "King Leopold II",
+      "explanation": "The 1884–85 Berlin Conference, which divided Africa among European powers, recognized the Congo Free State as the personal property of Belgium's King Leopold II. His rule over the territory became notorious for extreme brutality and exploitation of the Congolese people. The arrangement was unique in history — a vast African territory owned not by a nation, but by a single individual."
+    },
+    {
+      "id": "ai-2026-06-26-9",
+      "question": "Which medieval pope framed the First Crusade as a religious mission to reclaim the Holy Land from Muslim control when he initiated it in 1095?",
+      "difficulty": "hard",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Pope Urban II",
+      "explanation": "Pope Urban II launched the First Crusade at the Council of Clermont in 1095, calling on Christian knights to march to Jerusalem and wrest it from Muslim rule. His speech masterfully blended religious duty with promises of spiritual reward, drawing an enormous armed response from across Western Europe. The resulting campaign ultimately captured Jerusalem in 1099, establishing the Crusader states in the Holy Land."
+    }
+  ]
+}

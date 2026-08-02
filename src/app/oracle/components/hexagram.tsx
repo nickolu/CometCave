@@ -17,7 +17,7 @@ export const SolidLine = ({ isStatic = false }: { isStatic?: boolean }) => {
 export const EmptyLine = ({ isStatic = false }: { isStatic?: boolean }) => {
   return (
     <div
-      className={`w-44 h-4 border b-2 ${lineBorder} opacity-[0.4] hover:opacity-60 transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`}
+      className={`w-44 h-4 border-2 ${lineBorder} opacity-[0.4] hover:opacity-60 transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`}
     />
   )
 }
@@ -46,7 +46,7 @@ export const ChangeMarker = ({
         `w-4 h-4 rounded-full transition-all duration-200 ${isStatic ? '' : 'cursor-pointer'}`,
         hasChanges
           ? `${lineBg} opacity-[0.4]`
-          : `bg-transparent border b-4 ${lineBorder} opacity-[0.4] hover:opacity-60`
+          : `bg-transparent border-4 ${lineBorder} opacity-[0.4] hover:opacity-60`
       )}
     />
   )
@@ -96,16 +96,20 @@ export const LineControl = ({
       <div
         onClick={isStatic ? undefined : () => toggleLine()}
         role={isStatic ? undefined : 'button'}
+        aria-label={isStatic ? undefined : 'Toggle line — solid or broken'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
+        aria-label={isStatic ? undefined : 'Toggle line type'}
       >
         <Line type={lineData?.type} isStatic={isStatic} />
       </div>
       <div
         onClick={isStatic ? undefined : () => toggleHasChanges()}
         role={isStatic ? undefined : 'button'}
+        aria-label={isStatic ? undefined : 'Toggle changing line'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}
+        aria-label={isStatic ? undefined : 'Toggle changing line'}
       >
         <ChangeMarker hasChanges={Boolean(lineData?.hasChanges)} isStatic={isStatic} />
       </div>

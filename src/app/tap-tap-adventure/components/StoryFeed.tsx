@@ -225,6 +225,7 @@ export function StoryFeed({
         <input
           type="text"
           placeholder="Search..."
+          aria-label="Search events"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="flex-1 min-w-[80px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-[10px] text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"

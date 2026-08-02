@@ -63,7 +63,11 @@ export const Step02SelectGenerationMethod = ({
               <div className="grid md:grid-cols-2 gap-6">
                 <ChunkyCard
                   className="cursor-pointer hover:border-surface-variant hover:shadow-lg transition-all duration-200 group relative overflow-hidden"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSelectGenerationMethod('generate')}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectGenerationMethod('generate') } }}
+                  aria-label="Generate with Divination"
                 >
                   <div className="absolute top-4 right-4">
                     <SparkleIcon />
@@ -95,7 +99,11 @@ export const Step02SelectGenerationMethod = ({
 
                 <ChunkyCard
                   className="cursor-pointer hover:border-surface-variant hover:shadow-lg transition-all duration-200 group relative overflow-hidden"
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleSelectGenerationMethod('build')}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectGenerationMethod('build') } }}
+                  aria-label="Enter Hexagram Manually"
                 >
                   <div className="absolute top-4 right-4">
                     <HexagramIcon />

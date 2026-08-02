@@ -77,25 +77,29 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
     Record<string, { answered: number; correct: number }> | null
   >(null)
 
-  const fetchUserStats = useCallback(async () => {
+  const fetchUserStats = useCallback(async (signal?: AbortSignal) => {
     if (!user) return
     try {
       const token = await user.getIdToken()
       const res = await fetch('/api/v1/trivia/stats/me', {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       })
       if (res.ok) {
         const stats = await res.json()
         setUserCategoryStats(stats.byCategory ?? null)
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return
       // silent — accuracy is a nice-to-have
     }
   }, [user])
 
   useEffect(() => {
     if (sort === 'allCategories' && user && !userCategoryStats) {
-      fetchUserStats()
+      const controller = new AbortController()
+      fetchUserStats(controller.signal)
+      return () => controller.abort()
     }
   }, [sort, user, userCategoryStats, fetchUserStats])
 
