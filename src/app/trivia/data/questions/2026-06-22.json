@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-22",
+  "categoryId": 19,
+  "categoryName": "Science: Mathematics",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-22-0",
+      "question": "What is the correct order of operations for solving equations?",
+      "options": [
+        "Addition, Multiplication, Division, Subtraction, Addition, Parentheses",
+        "The order in which the operations are written.",
+        "Parentheses, Exponents, Addition, Substraction, Multiplication, Division",
+        "Parentheses, Exponents, Multiplication, Division, Addition, Subtraction"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Parentheses, Exponents, Multiplication, Division, Addition, Subtraction"
+    },
+    {
+      "id": "opentdb-2026-06-22-1",
+      "question": "Which two men are credited with independently discovering differential calculus? ",
+      "options": [
+        "Asiimov and Rutherford",
+        "Dvorak and Smith",
+        "Plato and Aristotle",
+        "Newton and Leibnitz"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Newton and Leibnitz"
+    },
+    {
+      "id": "opentdb-2026-06-22-2",
+      "question": "How many degrees make a full circle?",
+      "options": [
+        "180",
+        "90",
+        "720",
+        "360"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "360"
+    },
+    {
+      "id": "opentdb-2026-06-22-3",
+      "question": "Which greek mathematician ran through the streets of Syracuse naked while shouting \"Eureka\" after discovering the principle of displacement?",
+      "options": [
+        "Euclid",
+        "Homer",
+        "Eratosthenes",
+        "Archimedes"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "Archimedes"
+    },
+    {
+      "id": "opentdb-2026-06-22-4",
+      "question": "A mathematical constant, known as \"The Golden Ratio\", is most commonly represented by which greek letter?",
+      "options": [
+        "&pi; (pi)",
+        "&Psi; (psi)",
+        "&Tau; (tau)",
+        "&Phi; (phi)"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "&Phi; (phi)"
+    },
+    {
+      "id": "opentdb-2026-06-22-5",
+      "question": "How many Millibars (mbar) to 1 Inch of Mercury (inHg)",
+      "options": [
+        "27.4",
+        "10.6",
+        "30.0",
+        "33.9"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "opentdb",
+      "correctAnswer": "33.9"
+    },
+    {
+      "id": "ai-2026-06-22-6",
+      "question": "What is the name of the perfectly symmetrical 3D shape where every point on its surface is the same distance from its center?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "sphere",
+      "explanation": "A sphere is a perfectly symmetrical three-dimensional shape in which every point on its surface is equidistant from the center — that distance being the radius. Spheres appear throughout nature and mathematics, from planets and bubbles to the study of geometry and calculus."
+    },
+    {
+      "id": "ai-2026-06-22-7",
+      "question": "The mathematical constant Pi (π) is defined as the ratio of what measurement of a circle to its diameter?",
+      "difficulty": "easy",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "circumference",
+      "explanation": "Pi (π) is the mathematical constant representing the ratio of a circle's circumference to its diameter, approximately equal to 3.14159. This ratio holds true for every circle, regardless of size. Pi is one of the most famous and widely studied constants in all of mathematics."
+    },
+    {
+      "id": "ai-2026-06-22-8",
+      "question": "Which famous open problem in mathematics, unsolved for about a century, did Grigori Perelman prove?",
+      "difficulty": "medium",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "Poincaré conjecture",
+      "explanation": "Grigori Perelman, a reclusive Russian mathematician, published his proof of the Poincaré conjecture between 2002 and 2003, solving one of the Millennium Prize Problems. The conjecture, originally posed by Henri Poincaré in 1904, concerns the characterization of the three-dimensional sphere. Perelman famously declined both the Fields Medal and the $1 million Millennium Prize."
+    },
+    {
+      "id": "ai-2026-06-22-9",
+      "question": "In Hamming's framework for error-correcting codes, what mathematical mechanism produces a failure pattern that directly pinpoints the position of a single flipped bit?",
+      "difficulty": "hard",
+      "category": "Science: Mathematics",
+      "source": "ai",
+      "correctAnswer": "parity checks",
+      "explanation": "In Hamming codes, multiple parity checks are strategically placed so that each bit position is covered by a unique combination of them. When a single-bit error occurs, the subset of parity checks that fail forms a binary pattern — essentially a binary address — that identifies exactly which bit is corrupted. This elegant self-locating property is the foundation of Hamming's error-correction scheme."
+    }
+  ]
+}

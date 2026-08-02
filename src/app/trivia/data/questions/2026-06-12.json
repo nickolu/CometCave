@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-12",
+  "categoryId": 9,
+  "categoryName": "General Knowledge",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-12-0",
+      "question": "What does VR stand for?",
+      "options": [
+        "Visual Recognition",
+        "Voice Recognition",
+        "Very Real",
+        "Virtual Reality"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Virtual Reality"
+    },
+    {
+      "id": "opentdb-2026-06-12-1",
+      "question": "What do the letters of the fast food chain KFC stand for?",
+      "options": [
+        "Kibbled Freaky Cow",
+        "Kiwi Food Cut",
+        "Kentucky Fresh Cheese",
+        "Kentucky Fried Chicken"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Kentucky Fried Chicken"
+    },
+    {
+      "id": "opentdb-2026-06-12-2",
+      "question": "How many letters are in the English alphabet?",
+      "options": [
+        "30",
+        "5",
+        "17",
+        "26"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "26"
+    },
+    {
+      "id": "opentdb-2026-06-12-3",
+      "question": "Which logical fallacy means to attack the character of your opponent rather than their arguments?",
+      "options": [
+        "Post hoc ergo propter hoc",
+        "Tu quoque",
+        "Argumentum ad populum",
+        "Ad hominem"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Ad hominem"
+    },
+    {
+      "id": "opentdb-2026-06-12-4",
+      "question": "What was the soft drink Pepsi originally introduced as?",
+      "options": [
+        "Pepsin Pop",
+        "Pepsin Syrup",
+        "Carolina Cola",
+        "Brad's Drink"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Brad's Drink"
+    },
+    {
+      "id": "opentdb-2026-06-12-5",
+      "question": "In \"Resident Evil 3\", how many inventory slots does Jill have at the start of the game?",
+      "options": [
+        "10",
+        "12",
+        "6",
+        "8"
+      ],
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "8"
+    },
+    {
+      "id": "ai-2026-06-12-6",
+      "question": "Which famous playwright is credited with adding 1,700 words to the English language?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Shakespeare",
+      "explanation": "William Shakespeare is credited with coining or first recording approximately 1,700 words in the English language, including everyday words like \"bedroom,\" \"lonely,\" and \"generous.\" His prolific writing across plays and sonnets gave him ample opportunity to invent and popularize new vocabulary. This makes him one of the single greatest contributors to the English language in history."
+    },
+    {
+      "id": "ai-2026-06-12-7",
+      "question": "What term describes a type of wordplay that uses words with multiple meanings or similar sounds to create humor?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "pun",
+      "explanation": "A pun is one of the oldest and most recognized forms of wordplay, exploiting ambiguity in language for comic effect. Puns can rely on homophones, double meanings, or similar-sounding words. They appear in everything from Shakespeare's plays to modern dad jokes."
+    },
+    {
+      "id": "ai-2026-06-12-8",
+      "question": "According to one theory, which nursery rhyme originated from a pilgrim observing Native American women hanging birchbark cradles on tree branches?",
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Rock-a-bye Baby",
+      "explanation": "One popular theory holds that \"Rock-a-bye Baby\" was inspired by a pilgrim who witnessed Native American mothers suspending birchbark cradles from low tree branches, allowing the wind to rock their babies to sleep while they worked. The imagery of a cradle swaying in the treetops maps neatly onto the song's lyrics. It remains one of several competing origin theories for this well-known lullaby."
+    },
+    {
+      "id": "ai-2026-06-12-9",
+      "question": "According to the writing-assistance platform Grammarly, what poetic meter is characterized by a da-DUM da-DUM da-DUM da-DUM da-DUM rhythm that gives poetry a sense of musicality and order?",
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "iambic pentameter",
+      "explanation": "Grammarly describes iambic pentameter using the phonetic shorthand \"da-DUM da-DUM da-DUM da-DUM da-DUM\" to illustrate its five iambic feet per line, each consisting of an unstressed syllable followed by a stressed one. This meter is most famously associated with Shakespeare's sonnets and plays, and its resemblance to a natural heartbeat is often cited as the reason it feels so musical and resonant in English poetry."
+    }
+  ]
+}

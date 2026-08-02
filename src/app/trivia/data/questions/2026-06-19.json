@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-19",
+  "categoryId": 16,
+  "categoryName": "Entertainment: Board Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-19-0",
+      "question": "How many dice are used in the game of Yahtzee?",
+      "options": [
+        "Four",
+        "Eight",
+        "Six",
+        "Five"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Five"
+    },
+    {
+      "id": "opentdb-2026-06-19-1",
+      "question": "Which of the following is NOT a class in Dungeons and Dragons 5e?",
+      "options": [
+        "Fighter ",
+        "Bard",
+        "Paladin ",
+        "Engineer "
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Engineer "
+    },
+    {
+      "id": "opentdb-2026-06-19-2",
+      "question": "How many pieces are there on the board at the start of a game of chess?",
+      "options": [
+        "20",
+        "36",
+        "16",
+        "32"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "32"
+    },
+    {
+      "id": "opentdb-2026-06-19-3",
+      "question": "Who was world chess champion between 1894 and 1921",
+      "options": [
+        "José Raúl Capablanca",
+        "Wilhelm Steinitz",
+        "Bobby Fischer",
+        "Emanuel Lasker"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Emanuel Lasker"
+    },
+    {
+      "id": "opentdb-2026-06-19-4",
+      "question": "In \"Magic: The Gathering\", during the design for Planar Chaos, what color did the developers think of adding in as the sixth color?",
+      "options": [
+        "Brown",
+        "Orange",
+        "Pink",
+        "Purple"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Purple"
+    },
+    {
+      "id": "opentdb-2026-06-19-5",
+      "question": "What was the development code name for the \"Urza's Destiny\" expansion for \"Magic: The Gathering\", released in 1999?",
+      "options": [
+        "Taquito",
+        "Enchilada",
+        "Burrito",
+        "Chimichanga"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "opentdb",
+      "correctAnswer": "Chimichanga"
+    },
+    {
+      "id": "ai-2026-06-19-6",
+      "question": "In the Heads Up! board game, what do players wear on their heads to play?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "headbands",
+      "explanation": "Heads Up! is a popular party board game that comes with six headbands, which players wear to hold cards on their foreheads for others to give clues about. The game is based on the hit mobile app created by Ellen DeGeneres and has become a staple at game nights and parties."
+    },
+    {
+      "id": "ai-2026-06-19-7",
+      "question": "In which party board game does the whole team act out clues together for just one person to guess?",
+      "difficulty": "easy",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Reverse Charades",
+      "explanation": "Reverse Charades flips the classic charades format: instead of one person acting for the group to guess, the entire team acts simultaneously while a single player tries to guess the word or phrase. This \"reverse\" twist makes the game louder, sillier, and more chaotic than traditional charades. It's a popular party game for groups looking for a fun, high-energy experience."
+    },
+    {
+      "id": "ai-2026-06-19-8",
+      "question": "Who designed the 2015 board game Blood Rage, published by CMON Limited?",
+      "difficulty": "medium",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Eric Lang",
+      "explanation": "Blood Rage is a Viking-themed area-control and drafting game released in 2015 by CMON Limited, designed by Eric Lang. Lang is a prolific board game designer also known for titles like Rising Sun and A Song of Ice and Fire: Tabletop Miniatures Game. Blood Rage was a major hit, praised for its high-quality miniatures and strategic depth."
+    },
+    {
+      "id": "ai-2026-06-19-9",
+      "question": "Which board game designer, best known for titles like 7 Wonders and Hanabi, also works across role-playing games, video games, and children's books?",
+      "difficulty": "hard",
+      "category": "Entertainment: Board Games",
+      "source": "ai",
+      "correctAnswer": "Antoine Bauza",
+      "explanation": "Antoine Bauza is a prolific French game designer whose work spans far beyond board games, extending into role-playing games, video games, and children's books. He is perhaps best known for designing 7 Wonders, which won the Spiel des Jahres in 2011, and Hanabi, which also claimed the same prestigious award in 2013. His versatility across creative mediums makes him a uniquely multifaceted figure in the gaming world."
+    }
+  ]
+}

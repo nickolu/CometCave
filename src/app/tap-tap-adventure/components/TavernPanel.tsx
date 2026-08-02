@@ -90,7 +90,7 @@ export function TavernPanel({ character, townName, onRest, isResting, onClose }:
       {/* Header */}
       <div className="flex justify-between items-center">
         <span className="text-sm font-bold text-amber-400">🍺 Tavern &amp; Inn</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose}>✕</button>
+        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close tavern">✕</button>
       </div>
 
       {/* Atmosphere */}

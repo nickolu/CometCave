@@ -37,7 +37,8 @@ export function WeeklyWinnerBanner() {
   const [dismissed, setDismissed] = useState<boolean | null>(null)
 
   useEffect(() => {
-    fetch('/api/v1/trivia/weekly-winner')
+    const controller = new AbortController()
+    fetch('/api/v1/trivia/weekly-winner', { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`weekly-winner fetch failed: ${res.status}`)
         return res.json()
@@ -53,10 +54,12 @@ export function WeeklyWinnerBanner() {
         }
       })
       .catch((err) => {
+        if (err instanceof Error && err.name === 'AbortError') return
         console.error('[WeeklyWinnerBanner] Failed to load winner data:', err)
         // Hide the banner rather than showing broken state
         setDismissed(true)
       })
+    return () => controller.abort()
   }, [user?.uid])
 
   if (data === null || dismissed === null || dismissed) return null

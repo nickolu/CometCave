@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-21",
+  "categoryId": 18,
+  "categoryName": "Science: Computers",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-21-0",
+      "question": "What does the term USB stand for?",
+      "options": [
+        "Universal Simtex Blot",
+        "Unified Signal Bus",
+        "Unityped Semtex Backer",
+        "Universal Serial Bus"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Universal Serial Bus"
+    },
+    {
+      "id": "opentdb-2026-06-21-1",
+      "question": "What language does Node.js use?",
+      "options": [
+        "Java Source",
+        "Joomla Source Code",
+        "Java",
+        "JavaScript"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "JavaScript"
+    },
+    {
+      "id": "opentdb-2026-06-21-2",
+      "question": "This mobile OS held the largest market share in 2012.",
+      "options": [
+        "BlackBerry",
+        "Symbian",
+        "Android",
+        "iOS"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "iOS"
+    },
+    {
+      "id": "opentdb-2026-06-21-3",
+      "question": "In CSS, which of these values CANNOT be used with the \"position\" property?",
+      "options": [
+        "static",
+        "absolute",
+        "relative",
+        "center"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "center"
+    },
+    {
+      "id": "opentdb-2026-06-21-4",
+      "question": "What does the term MIME stand for, in regards to computing?",
+      "options": [
+        "Mail Internet Mail Exchange",
+        "Mail Interleave Method Exchange",
+        "Multipurpose Interleave Mail Exchange",
+        "Multipurpose Internet Mail Extensions"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Multipurpose Internet Mail Extensions"
+    },
+    {
+      "id": "opentdb-2026-06-21-5",
+      "question": "Which of the following computer components can be built using only NAND gates?",
+      "options": [
+        "RAM",
+        "Register",
+        "CPU",
+        "ALU"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "ALU"
+    },
+    {
+      "id": "ai-2026-06-21-6",
+      "question": "What company did Bill Gates co-found with Paul Allen in 1975?",
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Microsoft",
+      "explanation": "Bill Gates and Paul Allen, childhood friends from Seattle, co-founded Microsoft in 1975, which went on to become one of the world's largest technology companies. Microsoft's early success was driven by its deal to provide the operating system for IBM's personal computers in the 1980s. Today it is best known for products like Windows and the Office suite."
+    },
+    {
+      "id": "ai-2026-06-21-7",
+      "question": "Which Microsoft operating system was launched on August 24, 1995?",
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Windows 95",
+      "explanation": "Windows 95 was a landmark operating system released by Microsoft on August 24, 1995, after first being released to manufacturing in July of that year. It introduced the iconic Start menu and taskbar, revolutionizing how everyday users interacted with personal computers. Its launch was a massive cultural event, with stores opening at midnight and lines of eager customers waiting to buy it."
+    },
+    {
+      "id": "ai-2026-06-21-8",
+      "question": "What programming paradigm, emphasizing clear control flow and modularity, strongly influenced the design of Pascal and helped establish it as a popular teaching language?",
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "structured programming",
+      "explanation": "Pascal, developed by Niklaus Wirth in the late 1960s, was designed with structured programming principles at its core — favoring constructs like loops and conditionals over arbitrary jumps. This made it highly readable and predictable, which is why it became a staple in computer science education for decades. Structured programming itself was championed by figures like Edsger Dijkstra, whose famous letter \"Go To Statement Considered Harmful\" helped popularize the paradigm."
+    },
+    {
+      "id": "ai-2026-06-21-9",
+      "question": "Which early Microsoft browser was essentially Spyglass Mosaic with minimal modifications, revealing its deep roots in Mosaic technology?",
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Internet Explorer 2.0",
+      "explanation": "Internet Explorer 2.0 was built so closely on top of Spyglass Mosaic's codebase that it was nearly indistinguishable from it, highlighting Microsoft's licensing deal with Spyglass Inc. during the early browser wars. Spyglass had itself licensed the original Mosaic code from NCSA, making IE 2.0 essentially a second-generation derivative of the pioneering browser. This tight coupling later became a source of legal and financial tension between Microsoft and Spyglass."
+    }
+  ]
+}

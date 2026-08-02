@@ -46,6 +46,8 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const flagBonusRef = useRef(false)
   const lastMedalAnswerIdRef = useRef<string | null>(null)
   const ratingsRef = useRef<Map<string, 'up' | 'down'>>(new Map())
+  const bonusLifeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const medalTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -112,18 +114,17 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   // Detect streak bonus life — compare lives before and after answering.
   // Skip when a flag bonus just granted the extra life (flagBonusRef).
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined
     if (state.phase === 'answered' && state.lastAnswer?.correct && prevLivesRef.current !== null) {
       if (state.livesRemaining > prevLivesRef.current && !flagBonusRef.current) {
         setBonusLifeToast(`🔥 ${state.lastAnswer.currentStreak}-streak! +1 Bonus Life`)
-        t = setTimeout(() => setBonusLifeToast(null), 3000)
+        clearTimeout(bonusLifeTimerRef.current)
+        bonusLifeTimerRef.current = setTimeout(() => setBonusLifeToast(null), 3000)
       }
       flagBonusRef.current = false
     }
     if (state.phase === 'playing' || state.phase === 'answered') {
       prevLivesRef.current = state.livesRemaining
     }
-    return () => clearTimeout(t)
   }, [state.phase, state.livesRemaining, state.lastAnswer])
 
   // Show medal toast when an answer crosses a tier line. Track the question
@@ -142,9 +143,14 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
       : earned.tier === 'platinum' ? '🏅'
       : '💎'
     setMedalToast(`${tierEmoji} ${earned.label} — ${earned.categoryName}`)
-    const t = setTimeout(() => setMedalToast(null), 4000)
-    return () => clearTimeout(t)
+    clearTimeout(medalTimerRef.current)
+    medalTimerRef.current = setTimeout(() => setMedalToast(null), 4000)
   }, [state.phase, state.lastAnswer, state.answers])
+
+  useEffect(() => () => {
+    clearTimeout(bonusLifeTimerRef.current)
+    clearTimeout(medalTimerRef.current)
+  }, [])
 
   const handlePlayAgain = useCallback(() => {
     setShowPreGame(true)
@@ -501,7 +507,8 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
                   if (result.bonusLifeGranted) {
                     flagBonusRef.current = true
                     setBonusLifeToast('❤️ +1 Bonus Life for reporting!')
-                    setTimeout(() => setBonusLifeToast(null), 3000)
+                    clearTimeout(bonusLifeTimerRef.current)
+                    bonusLifeTimerRef.current = setTimeout(() => setBonusLifeToast(null), 3000)
                   }
                 }}
               />

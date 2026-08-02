@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-05",
+  "categoryId": 26,
+  "categoryName": "Celebrities",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-05-0",
+      "question": "By what name is Carlos Estevez better known? ",
+      "options": [
+        "Ricky Martin",
+        "Joaquin Phoenix",
+        "Bruno Mars",
+        "Charlie Sheen"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Charlie Sheen"
+    },
+    {
+      "id": "opentdb-2026-06-05-1",
+      "question": "Which celebrity announced his presidency in 2015?",
+      "options": [
+        "Leonardo DiCaprio",
+        "Miley Cyrus",
+        "Donald Trump",
+        "Kanye West"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Kanye West"
+    },
+    {
+      "id": "opentdb-2026-06-05-2",
+      "question": "What was James Coburn's last film role before his death?",
+      "options": [
+        "Monsters Inc",
+        "Texas Rangers",
+        "Snow Dogs",
+        "American Gun"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "American Gun"
+    },
+    {
+      "id": "opentdb-2026-06-05-3",
+      "question": "What is Doug Walker's YouTube name?",
+      "options": [
+        "The Angry Video Game Nerd",
+        "The Cinema Snob",
+        "AngryJoeShow",
+        "The Nostalgia Critic"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "The Nostalgia Critic"
+    },
+    {
+      "id": "opentdb-2026-06-05-4",
+      "question": "How old was Muhammad Ali when he died?",
+      "options": [
+        "61",
+        "He's still alive",
+        "56",
+        "74"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "74"
+    },
+    {
+      "id": "opentdb-2026-06-05-5",
+      "question": "Billy Herrington is from which US state?",
+      "options": [
+        "Arizona",
+        "California",
+        "Georgia",
+        "New York"
+      ],
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "New York"
+    },
+    {
+      "id": "ai-2026-06-05-6",
+      "question": "Which prestigious awards ceremony honors the biggest celebrity stars and performances on the New York City stage, much like the Oscars do for film?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "The Tony Awards",
+      "explanation": "The Tony Awards, officially known as the Antoinette Perry Awards for Excellence in Broadway Theatre, celebrate the best shows and performances on Broadway in New York City. Named after celebrated actress and director Antoinette \"Tony\" Perry, they are considered the highest honor in American theater. Just as the Oscars spotlight Hollywood celebrities, the Tonys put Broadway's biggest stars in the spotlight each year."
+    },
+    {
+      "id": "ai-2026-06-05-7",
+      "question": "Which American actress, born on November 22, 1984, is known for playing Black Widow in the Marvel Cinematic Universe?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Scarlett Johansson",
+      "explanation": "Scarlett Johansson was born on November 22, 1984, in New York City. She became one of Hollywood's biggest stars, famously portraying Natasha Romanoff / Black Widow across multiple Marvel films. She has also received Academy Award nominations for her dramatic roles in films like Marriage Story and Jojo Rabbit."
+    },
+    {
+      "id": "ai-2026-06-05-8",
+      "question": "What is the name of the duet that Janet Jackson recorded with her brother Michael Jackson?",
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Scream",
+      "explanation": "Released in 1995, \"Scream\" was a high-energy protest song by Michael and Janet Jackson, responding to media scrutiny of Michael's personal life. It became one of the most expensive music videos ever made at the time, with a reported budget of $7 million."
+    },
+    {
+      "id": "ai-2026-06-05-9",
+      "question": "According to his biography, which U.S. political party does actor and filmmaker Ben Affleck publicly support?",
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Democratic Party",
+      "explanation": "Ben Affleck has been an outspoken supporter of the Democratic Party throughout his public life, including campaigning for Democratic candidates. He is one of several high-profile Hollywood figures known for their alignment with the party's platform on social and political issues."
+    }
+  ]
+}

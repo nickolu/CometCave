@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-27",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-27-0",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Ted Cruz",
+        "Bernie Sanders",
+        "Marco Rubio",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-06-27-1",
+      "question": "Which former US president was nicknamed \"Teddy\" after he refused to shoot a defenseless black bear?",
+      "options": [
+        "Woodrow Wilson",
+        "James F. Fielder",
+        "Andrew Jackson",
+        "Theodore Roosevelt"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Theodore Roosevelt"
+    },
+    {
+      "id": "opentdb-2026-06-27-2",
+      "question": "The largest consumer market in 2015 was...",
+      "options": [
+        "Germany",
+        "Japan",
+        "United Kingdom",
+        "The United States of America"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The United States of America"
+    },
+    {
+      "id": "opentdb-2026-06-27-3",
+      "question": "Who succeeded Joseph Stalin as General Secretary of the Communist Party of the Soviet Union?",
+      "options": [
+        "Mikhail Gorbachev",
+        "Boris Yeltsin",
+        "Leonid Brezhnev",
+        "Nikita Khrushchev"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Nikita Khrushchev"
+    },
+    {
+      "id": "opentdb-2026-06-27-4",
+      "question": "Which of these is NOT one of Donald Trump's children?",
+      "options": [
+        "Donald Jr.",
+        "Eric",
+        "Ivanka",
+        "Julius"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Julius"
+    },
+    {
+      "id": "opentdb-2026-06-27-5",
+      "question": "Which nation joined NATO as its 29th member in 2017?",
+      "options": [
+        "Estonia",
+        "Iceland",
+        "Andorra",
+        "Montenegro"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Montenegro"
+    },
+    {
+      "id": "ai-2026-06-27-6",
+      "question": "Which political ideology advocates for collective or government ownership of the means of production and distribution?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "socialism",
+      "explanation": "Socialism is a broad political and economic ideology that prioritizes collective or state control over the means of production, rather than private ownership. It contrasts with capitalism, which favors private ownership and free markets. Socialism has taken many forms throughout history, from democratic socialism to more authoritarian variants."
+    },
+    {
+      "id": "ai-2026-06-27-7",
+      "question": "Which Supreme Court case settled the disputed Florida recount in the 2000 U.S. presidential election?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Bush v. Gore",
+      "explanation": "Bush v. Gore was the landmark 5–4 Supreme Court decision that effectively ended the Florida recount, handing the presidency to George W. Bush over Al Gore. The Court ruled that the inconsistent recount standards across Florida counties violated the Equal Protection Clause. It remains one of the most controversial Supreme Court decisions in American history."
+    },
+    {
+      "id": "ai-2026-06-27-8",
+      "question": "Which Russian legislative system is credited with opening the door to representative government and helping legitimize the post-1991 push to establish democracy?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Duma system",
+      "explanation": "The Duma system, rooted in the pre-revolutionary legislative assemblies established by Tsar Nicholas II in 1906, provided a historical precedent for representative governance in Russia. After the Soviet Union's collapse in 1991, reformers drew on this tradition to legitimize the creation of a new democratic framework. The modern State Duma became the lower house of Russia's Federal Assembly under the 1993 constitution."
+    },
+    {
+      "id": "ai-2026-06-27-9",
+      "question": "According to Amnesty International, which specific entitlement is enshrined in the Universal Declaration of Human Rights alongside freedoms such as expression and education — and is particularly relevant to refugees fleeing persecution?",
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "right to seek asylum",
+      "explanation": "The Universal Declaration of Human Rights, adopted in 1948, includes the right to seek asylum in Article 14, establishing it as a fundamental human right. Amnesty International frequently cites this alongside other core protections like freedom of expression and the right to education when advocating for refugees and displaced persons. The right to seek asylum remains a flashpoint in contemporary political debates over immigration and border policy worldwide."
+    }
+  ]
+}

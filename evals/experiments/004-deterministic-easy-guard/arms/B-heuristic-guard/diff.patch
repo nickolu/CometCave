@@ -1,0 +1,174 @@
+--- /tmp/cometcave-arm-snapshots/r004/generateQuestion.baseline.ts	2026-05-17 22:40:21
++++ src/lib/trivia/generateQuestion.ts	2026-05-17 23:09:59
+@@ -422,6 +422,131 @@
+   })
+ 
+   return substantive.length === 0
++}
++
++// Award-discipline tokens that signal a fragile "Lifetime Achievement
++// X Award" style multi-word answer most casual players would type
++// shorter ("Lifetime Achievement Award", not "Lifetime Achievement
++// Grammy Award"). Used by detectEasySpecialistHeuristic.
++const AWARD_DISCIPLINE_TOKENS = new Set([
++  'grammy', 'oscar', 'emmy', 'tony', 'pulitzer', 'bafta', 'golden',
++  'cannes', 'hugo', 'nebula', 'pen', 'caldecott', 'newbery',
++])
++
++// Casual-form name roots that have a longer regnal "the Great" / "the
++// Younger" / etc. form. Casual players type the short root, so the
++// regnal form fails the easy bar.
++const REGNAL_CASUAL_FORMS = new Set([
++  'constantine', 'catherine', 'frederick', 'henry', 'louis', 'philip',
++  'charles', 'ivan', 'peter', 'alexander', 'pliny', 'cato', 'pope',
++])
++
++// Production / studio / label / publishing tail tokens. When the
++// answer ends in one of these and the public-facing name of the work
++// is what a casual player would type, the answer is a behind-the-
++// scenes specialist string.
++const PRODUCTION_TAIL_TOKENS = new Set([
++  'productions', 'studios', 'pictures', 'records', 'publishing',
++  'entertainment', 'media', 'films', 'animation',
++])
++
++// Medical / scientific multi-word terms whose tail token tags the
++// answer as specialist jargon (most casual players wouldn't produce
++// the full term verbatim).
++const SCIENTIFIC_TAIL_TOKENS = new Set([
++  'disorder', 'syndrome', 'phenomenon', 'paradox', 'principle',
++  'theorem', 'hypothesis', 'conjecture',
++])
++
++// Synchronous deterministic check for easy-tier draft answers that
++// are too specialist for a casual party-trivia player to type. Same
++// shape as detectAnswerLeak / detectNumericAnswer: returns true when
++// the answer fails the easy bar and the caller should trigger repair.
++//
++// Narrower than the round-002 Haiku version on purpose — high
++// precision, lower recall — but adds zero LLM cost so it cannot pay
++// the unexplained "hard tier" tax we attributed to B-002.
++//
++// Patterns fired:
++//   - "Lifetime/Achievement/Honorary X Award" with a discipline word
++//     in the middle ("Lifetime Achievement Grammy Award" → the casual
++//     form drops "Grammy").
++//   - Regnal forms like "Constantine the Great" / "Henry IV" where
++//     the casual root is in REGNAL_CASUAL_FORMS.
++//   - Production / studio / label trailing tokens ("Desilu
++//     Productions", "Pixar Animation Studios").
++//   - Acronym answer (≤5 uppercase chars) whose spelled-out form
++//     appears in the question text — the question already gave the
++//     hint away to the spelled form.
++//   - Medical / scientific multi-word terms with a specialist tail
++//     ("Stockholm Syndrome").
++export function detectEasySpecialistHeuristic(
++  question: string,
++  correctAnswer: string
++): boolean {
++  const answer = correctAnswer.trim()
++  if (answer.length === 0) return false
++
++  const tokens = answer.split(/\s+/)
++  const lowerTokens = tokens.map((t) => t.toLowerCase().replace(/[.,'"]/g, ''))
++
++  // "X Y Award" multi-word with a discipline word in the middle.
++  if (
++    lowerTokens.length >= 3 &&
++    lowerTokens[lowerTokens.length - 1] === 'award' &&
++    lowerTokens.some((t) => AWARD_DISCIPLINE_TOKENS.has(t))
++  ) {
++    return true
++  }
++
++  // Regnal forms: "<casual-root> the <suffix>" or "<casual-root>
++  // <roman-numeral>".
++  if (lowerTokens.length >= 2 && REGNAL_CASUAL_FORMS.has(lowerTokens[0])) {
++    if (lowerTokens[1] === 'the') return true
++    if (/^[IVX]+$/.test(tokens[1] ?? '')) return true
++  }
++
++  // Production / studio / label tail.
++  if (
++    lowerTokens.length >= 2 &&
++    PRODUCTION_TAIL_TOKENS.has(lowerTokens[lowerTokens.length - 1])
++  ) {
++    return true
++  }
++
++  // Acronym with spelled-out form in the question.
++  if (
++    tokens.length === 1 &&
++    /^[A-Z]{2,5}$/.test(tokens[0])
++  ) {
++    // Look for the spelled-out form: the question contains words whose
++    // first letters spell the acronym in order, separated by other
++    // words. Cheap approximation: check if all the acronym letters
++    // appear as initials of words in the question.
++    const acronymLetters = tokens[0].split('')
++    const qWords = question.split(/\s+/).map((w) => w[0]?.toUpperCase())
++    let pos = 0
++    let matched = true
++    for (const letter of acronymLetters) {
++      const found = qWords.indexOf(letter, pos)
++      if (found < 0) {
++        matched = false
++        break
++      }
++      pos = found + 1
++    }
++    if (matched) return true
++  }
++
++  // Scientific / medical specialist tail.
++  if (
++    lowerTokens.length >= 2 &&
++    SCIENTIFIC_TAIL_TOKENS.has(lowerTokens[lowerTokens.length - 1])
++  ) {
++    return true
++  }
++
++  return false
+ }
+ 
+ async function reviewQuestion(
+@@ -708,6 +833,39 @@
+         const reason = `The current answer "${draft.correct_answer}" is a number, year, date, or measurement. Numeric answers are unfair — players have to guess. FLIP the question: ask about a NAMED entity in the source fact (the person, place, work, event, or thing the number describes) and put the number INSIDE the question text as a discriminating clue. Adjust correct_answer to that named entity. Example: instead of "What is the depth of Lake Baikal?" → "1,642 meters", ask "Which Russian lake reaches a maximum depth of 1,642 meters?" → "Lake Baikal".`
+         lastReason = `pre-check numeric-answer: ${reason}`
+         console.warn('[generateInfiniteQuestion] draft rejected (pre-check numeric-answer)', {
++          attempt,
++          repair,
++          category: categoryName,
++          correctAnswer: draft.correct_answer,
++          question: draft.question,
++        })
++        if (repair < MAX_REPAIRS_PER_DRAFT) {
++          try {
++            draft = await repairDraft(apiKey, draft, reason)
++            models.repair = REPAIR_MODEL
++          } catch (err) {
++            lastReason = `repair failed: ${err instanceof Error ? err.message : String(err)}`
++            console.warn('[generateInfiniteQuestion] repair threw', { attempt, repair, reason: lastReason })
++            break
++          }
++          continue
++        }
++        break
++      }
++
++      // Deterministic easy-specialist heuristic: catch fragile answer
++      // strings (regnal forms, "X Award" multi-words, production-company
++      // names, acronyms whose spelled form is already in the question)
++      // that ship as easy-tier but fail the casual-naming bar.
++      // Synchronous — no LLM call — so it cannot pay the rate-limit tax
++      // that B-002's Haiku version was suspected of triggering.
++      if (
++        difficulty === 'easy' &&
++        detectEasySpecialistHeuristic(draft.question, draft.correct_answer)
++      ) {
++        const reason = `The current answer "${draft.correct_answer}" matches a known easy-tier-misfit pattern (fragile multi-word string, regnal form, production-company name, leaked acronym, or specialist jargon). Repoint the question to ask about a more universally recognizable element of the same source fact and set correct_answer to that. Put the original string into the explanation if relevant, not as the answer.`
++        lastReason = `pre-check easy-specialist: ${reason}`
++        console.warn('[generateInfiniteQuestion] draft rejected (pre-check easy-specialist)', {
+           attempt,
+           repair,
+           category: categoryName,

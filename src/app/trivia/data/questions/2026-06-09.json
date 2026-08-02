@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-09",
+  "categoryId": 30,
+  "categoryName": "Science: Gadgets",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-09-0",
+      "question": "When did the CD begin to appear on the consumer market?",
+      "options": [
+        "1992",
+        "1962",
+        "1972",
+        "1982"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "1982"
+    },
+    {
+      "id": "opentdb-2026-06-09-1",
+      "question": "When was the Tamagotchi digital pet released?",
+      "options": [
+        "1989",
+        "1992",
+        "1990",
+        "1996"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "1996"
+    },
+    {
+      "id": "opentdb-2026-06-09-2",
+      "question": "Which gaming console is developed by Sony?",
+      "options": [
+        "Xbox",
+        "Atari",
+        "Nintendo Switch",
+        "PlayStation"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "PlayStation"
+    },
+    {
+      "id": "opentdb-2026-06-09-3",
+      "question": "What was the first Infinity Coaster in the world and where is it located?",
+      "options": [
+        "Madagascar Mad Pursuit, Motiongate Dubai, UAE",
+        "Gold Rush, Slagharen, Netherlands ",
+        "Monster, Adventureland Altoona, USA",
+        "The Smiler, Alton Towers, UK"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "The Smiler, Alton Towers, UK"
+    },
+    {
+      "id": "opentdb-2026-06-09-4",
+      "question": "Out of all of the NASA Space Shuttles, which 2 have been destroyed in disasters?",
+      "options": [
+        "Discovery and Endeavour",
+        "None of the Above",
+        "Enterprise and Atlantis",
+        "Challenger and Columbia"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Challenger and Columbia"
+    },
+    {
+      "id": "opentdb-2026-06-09-5",
+      "question": "Which of the following cellular device companies is NOT headquartered in Asia?",
+      "options": [
+        "Samsung",
+        "HTC",
+        "LG Electronics",
+        "Nokia"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Gadgets",
+      "source": "opentdb",
+      "correctAnswer": "Nokia"
+    },
+    {
+      "id": "ai-2026-06-09-6",
+      "question": "What small battery-operated medical device helps the heart beat in a regular rhythm?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "pacemaker",
+      "explanation": "A pacemaker is a small device implanted under the skin that uses electrical pulses to prompt the heart to beat at a normal rate. It is commonly used to treat arrhythmias, conditions where the heart beats too slowly, too quickly, or irregularly. Modern pacemakers can even adjust the heart rate automatically based on the patient's level of physical activity."
+    },
+    {
+      "id": "ai-2026-06-09-7",
+      "question": "What is the name of iRobot's popular autonomous robotic vacuum cleaner?",
+      "difficulty": "easy",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Roomba",
+      "explanation": "The Roomba, made by iRobot, was first introduced in 2002 and became one of the best-selling robots in history. It uses sensors to navigate and clean floors autonomously, without human guidance. Its success helped popularize the concept of home robotics for everyday consumers."
+    },
+    {
+      "id": "ai-2026-06-09-8",
+      "question": "Which French physicist is credited with developing the first known overhead projection apparatus, in 1853?",
+      "difficulty": "medium",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Edmond Becquerel",
+      "explanation": "Edmond Becquerel, best known for his work on photovoltaic effects and luminescence, also pioneered early projection technology by developing the first known overhead projector in 1853. He comes from a renowned scientific family — his son Henri Becquerel later discovered radioactivity. The overhead projector wouldn't become a classroom staple until over a century later."
+    },
+    {
+      "id": "ai-2026-06-09-9",
+      "question": "According to IEC 60825-1:2014, which laser safety classification must consumer and industrial lidar sensors meet to be considered eye-safe?",
+      "difficulty": "hard",
+      "category": "Science: Gadgets",
+      "source": "ai",
+      "correctAnswer": "Class 1 eye-safe standard",
+      "explanation": "IEC 60825-1:2014 is the international standard governing laser product safety, and Class 1 is its lowest-risk classification, meaning the laser output is safe under all normal operating conditions. Lidar manufacturers like Blickfeld design their sensors to meet this classification, ensuring the emitted light poses no eye hazard to users. This is especially important for consumer-facing lidar applications where uncontrolled exposure is likely."
+    }
+  ]
+}
