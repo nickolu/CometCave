@@ -39,9 +39,6 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
 
   return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Onboarding hint"
       className={`fixed inset-0 z-[60] flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
