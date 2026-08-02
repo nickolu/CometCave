@@ -241,6 +241,8 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
             <button
               key={key}
               type="button"
+              role="tab"
+              aria-selected={period === key}
               onClick={() => setPeriod(key)}
               className={`text-sm py-1.5 rounded transition-colors ${
                 period === key
