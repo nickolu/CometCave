@@ -236,11 +236,13 @@ export default function AvatarMakerPage() {
         canvas.height = img.height
         const ctx = canvas.getContext('2d')
         if (!ctx) {
+          URL.revokeObjectURL(objectUrl)
           reject(new Error('Canvas not supported'))
           return
         }
         ctx.drawImage(img, 0, 0)
         canvas.toBlob(blob => {
+          URL.revokeObjectURL(objectUrl)
           if (!blob) {
             reject(new Error('Failed to convert image'))
             return
