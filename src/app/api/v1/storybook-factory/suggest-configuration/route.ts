@@ -21,6 +21,16 @@ export async function POST(request: Request) {
 
     const { caption1, caption2, storyDirectionPrompt } = await request.json()
 
+    if (caption1 && caption1.length > 500) {
+      return NextResponse.json({ error: 'caption1 must be 500 characters or fewer.' }, { status: 400 })
+    }
+    if (caption2 && caption2.length > 500) {
+      return NextResponse.json({ error: 'caption2 must be 500 characters or fewer.' }, { status: 400 })
+    }
+    if (storyDirectionPrompt && storyDirectionPrompt.length > 1000) {
+      return NextResponse.json({ error: 'storyDirectionPrompt must be 1000 characters or fewer.' }, { status: 400 })
+    }
+
     const imageDescriptions = [
       caption1 ? `Image 1: "${caption1}"` : 'Image 1: (no caption provided)',
       caption2 ? `Image 2: "${caption2}"` : 'Image 2: (no caption provided)',

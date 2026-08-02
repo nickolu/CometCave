@@ -35,11 +35,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    if (playerMessage.length > 500) {
+      return NextResponse.json({ error: 'playerMessage must be 500 characters or fewer.' }, { status: 400 })
+    }
+
     if (!aiSecretWord || typeof aiSecretWord !== 'string') {
       return NextResponse.json(
         { error: 'aiSecretWord is required and must be a string' },
         { status: 400 }
       )
+    }
+
+    if (aiSecretWord.length > 100) {
+      return NextResponse.json({ error: 'aiSecretWord must be 100 characters or fewer.' }, { status: 400 })
+    }
+
+    if (Array.isArray(gameMessages) && gameMessages.length > 100) {
+      return NextResponse.json({ error: 'gameMessages must contain 100 entries or fewer.' }, { status: 400 })
     }
 
     // Build conversation context

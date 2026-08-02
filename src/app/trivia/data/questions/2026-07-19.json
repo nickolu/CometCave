@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-19",
+  "categoryId": 22,
+  "categoryName": "Geography",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-19-0",
+      "question": "What is the capital of Bangladesh?",
+      "options": [
+        "Khulna",
+        "London",
+        "Lahore",
+        "Dhaka"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Dhaka"
+    },
+    {
+      "id": "opentdb-2026-07-19-1",
+      "question": "Which of the following Arab countries does NOT have a flag containing only Pan-Arab colours?",
+      "options": [
+        "Kuwait",
+        "United Arab Emirates",
+        "Jordan",
+        "Qatar"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Qatar"
+    },
+    {
+      "id": "opentdb-2026-07-19-2",
+      "question": "Harvard University is located in which city?",
+      "options": [
+        "Providence",
+        "New York",
+        "Washington D.C.",
+        "Cambridge"
+      ],
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Cambridge"
+    },
+    {
+      "id": "opentdb-2026-07-19-3",
+      "question": "Where are the Nazca Lines located?",
+      "options": [
+        "Colombia",
+        "Ecuador",
+        "Brazil",
+        "Peru"
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Peru"
+    },
+    {
+      "id": "opentdb-2026-07-19-4",
+      "question": "Which one of these archipelagos are NOT a part of the United Kingdom?",
+      "options": [
+        "Orkney Islands",
+        "Shetland Islands ",
+        "Isles of Scilly",
+        "The Channel Islands "
+      ],
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "The Channel Islands "
+    },
+    {
+      "id": "opentdb-2026-07-19-5",
+      "question": "Which of these is NOT a province in China?",
+      "options": [
+        "Sichuan",
+        "Guangdong",
+        "Fujian",
+        "Yangtze"
+      ],
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "opentdb",
+      "correctAnswer": "Yangtze"
+    },
+    {
+      "id": "ai-2026-07-19-6",
+      "question": "Which continent is the second-smallest in the world by land area?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Europe",
+      "explanation": "Europe is the second-smallest continent by land area, covering roughly 10.5 million square kilometers — only Australia is smaller. Despite its modest size, Europe contains over 44 countries and has had an outsized influence on world history, culture, and politics."
+    },
+    {
+      "id": "ai-2026-07-19-7",
+      "question": "Which U.S. city sits on the banks of the Mississippi River, south of Lake Pontchartrain, in the river's delta?",
+      "difficulty": "easy",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "New Orleans",
+      "explanation": "New Orleans is uniquely situated in the Mississippi River Delta, nestled between the river to the south and Lake Pontchartrain to the north. This low-lying geography makes the city especially vulnerable to flooding, as was tragically demonstrated during Hurricane Katrina in 2005. The city's location has also made it a historically vital port and cultural crossroads."
+    },
+    {
+      "id": "ai-2026-07-19-8",
+      "question": "Which European capital holds the distinction of being both the largest and the fastest-growing city in its country?",
+      "difficulty": "medium",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Vienna",
+      "explanation": "Vienna is Austria's largest city by population and also its fastest-growing, a rare combination for a capital city. It has experienced significant population growth in recent decades, driven by migration and a high quality of life that consistently ranks it among the world's most livable cities."
+    },
+    {
+      "id": "ai-2026-07-19-9",
+      "question": "Which street in Minsk holds the distinction of being Belarus's longest and has been renamed 14 times throughout its history?",
+      "difficulty": "hard",
+      "category": "Geography",
+      "source": "ai",
+      "correctAnswer": "Independence Avenue",
+      "explanation": "Independence Avenue in Minsk is not only the longest street in Belarus but has also undergone an extraordinary 14 name changes, reflecting the turbulent political history of the region. The avenue stretches through the heart of the Belarusian capital and is lined with Soviet-era architecture, earning it a place on the UNESCO World Heritage tentative list. Its many names have mirrored shifts in power, from tsarist to Soviet to post-independence Belarusian governance."
+    }
+  ]
+}

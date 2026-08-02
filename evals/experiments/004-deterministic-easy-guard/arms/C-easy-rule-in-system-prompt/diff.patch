@@ -1,0 +1,20 @@
+--- /tmp/cometcave-arm-snapshots/r004/generateQuestion.baseline.ts	2026-05-17 22:40:21
++++ src/lib/trivia/generateQuestion.ts	2026-05-17 23:36:15
+@@ -160,11 +160,16 @@
+ ): Promise<DraftQuestion> {
+   const anthropicClient = createAnthropic({ apiKey })
+ 
++  const easyRule =
++    ctx.difficulty === 'easy'
++      ? '\n\nEASY-TIER RULE (load-bearing — this is your most important constraint when difficulty is EASY): the correct_answer string you output MUST be one a casual party-trivia player would naturally type. If the source fact\'s keyDetail is a specialist label for something famous (a UNESCO site name when the city is more recognized, a regnal full form like "Constantine the Great" when "Constantine" is the casual form, a fragile multi-word award title), you MUST repoint the question to ask about the recognizable element of the same fact and adjust correct_answer accordingly. The specialist label can live in the explanation. Do not ship an EASY question whose answer is a string most players would not produce verbatim. Apply this rule before you do anything else when difficulty is EASY.'
++      : ''
+   const result = await generateObject({
+     model: anthropicClient(QUESTION_MODEL),
+     schema: QuestionSchema,
+     system:
+-      'You are a trivia question writer for a cosmic-cave-themed game. You receive a verified fact and turn it into a single short trivia question that asks for the fact\'s keyDetail. You never invent details; you only ask about what the fact already states.',
++      'You are a trivia question writer for a cosmic-cave-themed game. You receive a verified fact and turn it into a single short trivia question that asks for the fact\'s keyDetail. You never invent details; you only ask about what the fact already states.' +
++      easyRule,
+     prompt: `Build a ${ctx.difficulty} trivia question from this fact.
+ 
+ Fact: ${fact.claim}

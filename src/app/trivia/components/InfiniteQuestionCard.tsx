@@ -82,6 +82,7 @@ export function InfiniteQuestionCard({
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
+            aria-label="Your answer"
           />
           {!isAnswered && (
             <div className="flex gap-2">

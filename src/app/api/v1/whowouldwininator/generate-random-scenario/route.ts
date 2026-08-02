@@ -228,10 +228,9 @@ const SCENARIO_CATEGORIES = [
 ]
 
 export async function POST(request: Request) {
-  const { character1Name, character2Name, character1Description, character2Description } =
-    await request.json()
-
   try {
+    const { character1Name, character2Name, character1Description, character2Description } =
+      await request.json()
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })

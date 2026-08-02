@@ -142,6 +142,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
         </h3>
         <select
           value={sortBy}
+          aria-label="Sort items"
           onChange={e => setSortBy(e.target.value as typeof sortBy)}
           className="bg-[#2a2b3f] border border-[#3a3c56] text-gray-300 text-xs rounded px-2 py-1"
         >

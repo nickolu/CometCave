@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-29",
+  "categoryId": 32,
+  "categoryName": "Entertainment: Cartoon & Animations",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-29-0",
+      "question": "Which of these is NOT a catchphrase used by Rick Sanchez in the TV show \"Rick and Morty\"?",
+      "options": [
+        "Hit the sack, Jack!",
+        "Rikki-Tikki-Tavi, biatch!",
+        "Wubba-lubba-dub-dub!",
+        "Slam dunk, nothing but net!"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Slam dunk, nothing but net!"
+    },
+    {
+      "id": "opentdb-2026-07-29-1",
+      "question": "What is the relationship between Rick and Morty in the show \"Rick and Morty\"?",
+      "options": [
+        "Father and Son",
+        "Crimefighting Partners",
+        "Best Friends",
+        "Grandfather and Grandson"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Grandfather and Grandson"
+    },
+    {
+      "id": "opentdb-2026-07-29-2",
+      "question": "Which cartoon family lives in 742 Evergreen Terrace, Springfield USA?",
+      "options": [
+        "The Flintstones",
+        "The Griffins",
+        "The Hills",
+        "The Simpsons"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "The Simpsons"
+    },
+    {
+      "id": "opentdb-2026-07-29-3",
+      "question": "Adam West was the mayor of which cartoon town?",
+      "options": [
+        "South Park",
+        "Langley Falls",
+        "Springfield",
+        "Quahog"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Quahog"
+    },
+    {
+      "id": "opentdb-2026-07-29-4",
+      "question": "Which Sanrio character was introduced in 1996?",
+      "options": [
+        "My Melody",
+        "Kerropi",
+        "Badtz-Maru",
+        "Pompompurin"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Pompompurin"
+    },
+    {
+      "id": "opentdb-2026-07-29-5",
+      "question": "In \"Gravity Falls\", the character Bill Cipher remarks that \"the universe is what?\"",
+      "options": [
+        "An illusion ",
+        "Corrupting",
+        "A simulation",
+        "A hologram "
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "A hologram "
+    },
+    {
+      "id": "ai-2026-07-29-6",
+      "question": "In the animated series Animaniacs, which three siblings were inspired by creator Tom Ruegger's own sons?",
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Yakko, Wakko, and Dot",
+      "explanation": "Tom Ruegger, the creator of Animaniacs, based the Warner siblings — Yakko, Wakko, and Dot — on his three real-life sons. The show debuted in 1993 and became a beloved classic of 90s animation. This personal inspiration helped give the trio their distinct, energetic personalities."
+    },
+    {
+      "id": "ai-2026-07-29-7",
+      "question": "Which 1965 animated TV special was the first to be based on the Peanuts comic strip?",
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "A Charlie Brown Christmas",
+      "explanation": "A Charlie Brown Christmas aired in December 1965 and became the first television special based on Charles M. Schulz's beloved Peanuts comic strip. It was an instant classic, praised for its jazz soundtrack by Vince Guaraldi and its heartfelt message about the true meaning of Christmas. The special has aired every year since and remains one of the most watched holiday programs in American television history."
+    },
+    {
+      "id": "ai-2026-07-29-8",
+      "question": "In the animated series TaleSpin, what is the name of the seaplane that Baloo and Kit use for their delivery runs?",
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Sea Duck",
+      "explanation": "The Sea Duck is the iconic yellow seaplane flown by Baloo the bear and his navigator Kit Cloudkicker in TaleSpin, the 1990 Disney animated series. The show reimagined characters from The Jungle Book in a 1930s-inspired adventure setting centered around the cargo airline Higher for Hire."
+    },
+    {
+      "id": "ai-2026-07-29-9",
+      "question": "What is the term most historians use to describe the dominant animation style of the Silent Age, in which characters' arms and legs were drawn like rubber tubing with no elbows or knees?",
+      "difficulty": "hard",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Rubber Hose Animation",
+      "explanation": "Rubber Hose Animation is the label most historians apply to the dominant style of the Silent Age of Animation, characterized by characters whose limbs resembled flexible rubber tubing, completely lacking elbows or knees. This gave early cartoon characters a fluid, bouncy quality that became iconic of the era. Famous examples include early Felix the Cat and pre-1930s Mickey Mouse cartoons."
+    }
+  ]
+}

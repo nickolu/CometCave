@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Region } from '@/app/tap-tap-adventure/config/regions'
 
 interface TravelConfirmDialogProps {
@@ -28,6 +29,14 @@ const ELEMENT_BADGE: Record<string, { label: string; classes: string }> = {
 export function TravelConfirmDialog({ region, onConfirm, onCancel }: TravelConfirmDialogProps) {
   const difficulty = DIFFICULTY_BADGE[region.difficulty] ?? DIFFICULTY_BADGE.easy
   const element = ELEMENT_BADGE[region.element] ?? ELEMENT_BADGE.none
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [onCancel])
 
   return (
     <div
@@ -85,6 +94,7 @@ export function TravelConfirmDialog({ region, onConfirm, onCancel }: TravelConfi
             Travel
           </button>
           <button
+            autoFocus
             onClick={onCancel}
             className="flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium transition-colors"
           >
