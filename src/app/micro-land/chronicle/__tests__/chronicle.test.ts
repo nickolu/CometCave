@@ -26,6 +26,12 @@ import {
 import type { ChronicleData } from '@/app/micro-land/chronicle/types'
 import { reserveSummonIds, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import {
+  CHRONICLE_SYNC_KEY,
+  readSyncMark,
+  setSyncStore,
+  writeSyncMark,
+} from '@/app/micro-land/sync-mark'
 
 /**
  * A blueprint stub.
@@ -59,7 +65,18 @@ async function loadWith(stored: ChronicleData | null) {
   return mem
 }
 
+/** Stands in for `localStorage`, which the sync marks live in. */
+function memoryStore() {
+  const entries = new Map<string, string>()
+  return {
+    getItem: (key: string) => entries.get(key) ?? null,
+    setItem: (key: string, value: string) => void entries.set(key, value),
+    removeItem: (key: string) => void entries.delete(key),
+  }
+}
+
 beforeEach(async () => {
+  setSyncStore(memoryStore())
   await loadWith(null)
 })
 
@@ -175,7 +192,7 @@ describe('adoptAccount', () => {
     stored.lands.tidepool = { ...emptyLandRecord(), steadySeconds: 200 }
 
     const account = memoryBackend(stored)
-    await adoptAccount(account.backend)
+    await adoptAccount(account.backend, 'uid-1')
 
     const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
     expect(ids.has('drawn-by-hand')).toBe(true)
@@ -189,7 +206,7 @@ describe('adoptAccount', () => {
     rememberSpecies(bp('drawn-by-hand', true), 500)
 
     const account = memoryBackend(emptyChronicle())
-    await adoptAccount(account.backend)
+    await adoptAccount(account.backend, 'uid-1')
 
     expect(Object.keys(account.state.saved?.species ?? {})).toContain('drawn-by-hand')
   })
@@ -199,23 +216,107 @@ describe('adoptAccount', () => {
     rememberSpecies(bp('first-ever', true), 10)
 
     const account = memoryBackend(null)
-    await adoptAccount(account.backend)
+    await adoptAccount(account.backend, 'uid-1')
 
     expect(account.state.saved).not.toBeNull()
     expect(Object.keys(account.state.saved?.species ?? {})).toContain('first-ever')
   })
 
-  it('sends later records to the account rather than the device', async () => {
+  /**
+   * The device copy has to keep moving after sign-in, or it freezes at that
+   * moment and spends every later load arguing for putting back what has been
+   * deleted since. That is the bug this whole mirror exists to close.
+   */
+  it('keeps the device copy in step behind the account', async () => {
     const local = await loadWith(null)
     const account = memoryBackend(null)
-    await adoptAccount(account.backend)
+    await adoptAccount(account.backend, 'uid-1')
 
     rememberSpecies(bp('after-sign-in', true), 900)
     await flushChronicle()
 
     expect(Object.keys(account.state.saved?.species ?? {})).toContain('after-sign-in')
-    // The local backend was only ever written by the pre-adoption flush.
-    expect(Object.keys(local.state.saved?.species ?? {})).not.toContain('after-sign-in')
+    expect(Object.keys(local.state.saved?.species ?? {})).toContain('after-sign-in')
+  })
+
+  it('marks the device as in step only once the account write has landed', async () => {
+    await loadWith(null)
+    const local = memoryBackend(null)
+    setBackend(local.backend)
+    await initChronicle()
+
+    rememberSpecies(bp('made-offline', true), 900)
+    await adoptAccount(
+      {
+        async load() {
+          return null
+        },
+        async save() {
+          throw new Error('offline')
+        },
+      },
+      'uid-1'
+    )
+
+    // Nothing reached the account, so the device must not claim it did — the
+    // next load has to merge, which is what carries this creature up.
+    expect(readSyncMark(CHRONICLE_SYNC_KEY)).toBeNull()
+  })
+
+  /**
+   * The reported bug, reduced: a creature deleted in the last session is gone
+   * from the account and still sitting in this device's copy, because the
+   * deletion was written to the account the device was mirroring.
+   */
+  it('lets the account drop a species the device copy still remembers', async () => {
+    const stale = emptyChronicle()
+    stale.species.wyrm = {
+      blueprint: bp('wyrm', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 30,
+    }
+    await loadWith(stale)
+    writeSyncMark(CHRONICLE_SYNC_KEY, 'uid-1')
+
+    await adoptAccount(memoryBackend(emptyChronicle()).backend, 'uid-1')
+
+    expect(archivedSpecies()).toHaveLength(0)
+  })
+
+  it('still merges when the device was last in step with a different account', async () => {
+    const stale = emptyChronicle()
+    stale.species.wyrm = {
+      blueprint: bp('wyrm', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 30,
+    }
+    await loadWith(stale)
+    writeSyncMark(CHRONICLE_SYNC_KEY, 'someone-else')
+
+    await adoptAccount(memoryBackend(emptyChronicle()).backend, 'uid-1')
+
+    // Nothing here says this account has ever seen the wyrm, so it is a
+    // creature to carry up rather than one to let go of.
+    expect(archivedSpecies()).toHaveLength(1)
+  })
+
+  it('keeps the device copy when the account cannot be read at all', async () => {
+    const stale = emptyChronicle()
+    stale.species.wyrm = {
+      blueprint: bp('wyrm', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 30,
+    }
+    await loadWith(stale)
+    writeSyncMark(CHRONICLE_SYNC_KEY, 'uid-1')
+
+    // A dropped connection and a player who has never saved both read as null.
+    await adoptAccount(memoryBackend(null).backend, 'uid-1')
+
+    expect(archivedSpecies()).toHaveLength(1)
   })
 
   it('ignores a stored chronicle from an unknown version', async () => {
@@ -230,7 +331,7 @@ describe('adoptAccount', () => {
       longestLife: 0,
     }
 
-    await adoptAccount(memoryBackend(stored).backend)
+    await adoptAccount(memoryBackend(stored).backend, 'uid-1')
 
     const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
     expect(ids.has('garbage')).toBe(false)
@@ -242,7 +343,7 @@ describe('adoptAccount', () => {
     const mem = memoryBackend(null)
     setBackend(mem.backend)
     await initChronicle()
-    await adoptAccount(mem.backend)
+    await adoptAccount(mem.backend, 'uid-1')
     expect(mem.state.saved).toBeNull()
   })
 
@@ -282,7 +383,7 @@ describe('adoptAccount', () => {
     }
 
     const init = initChronicle()
-    const adopt = adoptAccount(memoryBackend(accountData).backend)
+    const adopt = adoptAccount(memoryBackend(accountData).backend, 'uid-1')
     release()
     await Promise.all([init, adopt])
 
