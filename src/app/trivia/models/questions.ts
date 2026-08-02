@@ -28,4 +28,5 @@ export interface CheckAnswerResponse {
   correct: boolean
   correctAnswer: string
   explanation?: string
+  topWrongAnswers?: Array<{ text: string; count: number }>
 }

@@ -41,7 +41,7 @@ export interface InfiniteRunState {
   skipsRemaining: number
   skipsUsed: number
   flaggedQuestionIds: string[]
-  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number; medalEarned?: MedalEarned | null }) | null
+  lastAnswer: (AnswerResult & { trailblazer: boolean; correctAnswer: string; explanation: string | null; timesShown?: number; timesCorrect?: number; medalEarned?: MedalEarned | null; topWrongAnswers?: Array<{ text: string; count: number }> }) | null
   // Per-category correct-answer deltas accumulated within the current run.
   // Combined with each category's lifetime baseline (from the category-stats
   // API), this gives the player's live count for any question.
