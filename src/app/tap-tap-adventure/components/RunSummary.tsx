@@ -177,7 +177,7 @@ export default function RunSummary({
   // Leaderboard overlay
   if (showLeaderboard) {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1a1b2e] p-4">
+      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1a1b2e] p-4" role="dialog" aria-modal="true" aria-label="Leaderboard">
         <AdventureLeaderboard onBack={() => setShowLeaderboard(false)} />
       </div>
     )

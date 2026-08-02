@@ -106,6 +106,7 @@ export default function UserSelector() {
         Select Character
         <IconButton
           onClick={toggleUserSelector}
+          aria-label="Close character selection"
           sx={{
             color: 'text.secondary',
             '&:hover': {
