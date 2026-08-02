@@ -433,7 +433,7 @@ export function SummonLoader({
       </p>
 
       <span className="sr-only" role="status">
-        Summoning. This can take a minute.
+        Generating. This can take a minute.
       </span>
 
       <button

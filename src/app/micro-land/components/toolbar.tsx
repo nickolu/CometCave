@@ -4,6 +4,7 @@ import { MATERIALS, PAINTABLE } from '@/app/micro-land/domain/config/materials'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
+import { SparkleIcon } from './sparkle-icon'
 
 const BRUSHES = [2, 4, 8, 14]
 
@@ -145,9 +146,13 @@ export function Toolbar() {
             border: '1px solid var(--cc-mint)',
             color: 'var(--cc-on-mint)',
             boxShadow: 'var(--cc-mint-glow)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
           }}
         >
-          ✦ Summon
+          <SparkleIcon size={12} />
+          Generate
         </button>
         <button
           type="button"
