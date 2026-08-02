@@ -141,7 +141,7 @@ export function WorldsPanel({
           className="flex flex-col gap-2 px-4 py-3"
           style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
         >
-          <h3 style={heading}>{active ? 'Kept as' : 'Keep this one'}</h3>
+          <h3 style={heading}>{active ? 'Saved as' : 'Save this world'}</h3>
           <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
             {active
               ? `${active.name} — everything you do here is written back on its own.`
@@ -178,12 +178,12 @@ export function WorldsPanel({
               disabled={shelf.busy || full}
               style={{ ...primaryButton, opacity: shelf.busy || full ? 0.45 : 1 }}
             >
-              {active ? 'Save now' : 'Keep it'}
+              Save
             </button>
           </div>
           {full && (
             <p style={{ fontSize: 11, color: 'var(--cc-gold)' }}>
-              The shelf holds {MAX_SAVED_WORLDS}. Delete one to make room.
+              You can save {MAX_SAVED_WORLDS} worlds. Delete one to make room.
             </p>
           )}
           {shelf.error && (
@@ -193,12 +193,12 @@ export function WorldsPanel({
 
         <section className="flex flex-col gap-2 px-4 py-3">
           <h3 style={heading}>
-            On the shelf · {shelf.worlds.length}/{MAX_SAVED_WORLDS}
+            Saved worlds · {shelf.worlds.length}/{MAX_SAVED_WORLDS}
           </h3>
 
           {shelf.worlds.length === 0 && (
             <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
-              Nothing kept yet. A world you keep comes back exactly as you left it — same ground,
+              No saved worlds yet. A world you save comes back exactly as you left it — same ground,
               same creatures, same hungers.
             </p>
           )}
@@ -299,7 +299,7 @@ export function WorldsPanel({
 
           {!active && shelf.worlds.length > 0 && (
             <p style={{ fontSize: 11, color: 'var(--cc-text-muted)' }}>
-              The land you are in now is not on the shelf. Opening one of these leaves it behind.
+              The land you are in now is not saved. Opening one of these leaves it behind.
             </p>
           )}
         </section>
