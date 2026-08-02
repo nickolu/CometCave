@@ -78,6 +78,12 @@ const eslintConfig = [
     ignores: [
       'src/app/globals.css',
       'src/app/ring-toss/**',
+      // Micro Land's creature palettes, tile materials and terrain themes are
+      // pixel-art asset data, not themeable chrome — a creature's colors are
+      // part of the creature, and summoned ones carry their own palette from
+      // the model. Its React components are NOT exempt and use tokens.
+      'src/app/micro-land/domain/**',
+      'src/app/micro-land/rendering/**',
       'src/**/*.test.*',
       'src/**/*.spec.*',
       'src/**/*.stories.*',

@@ -178,6 +178,7 @@ const CharacterCard = ({
             <ChunkyButton
               variant="ghost"
               size="sm"
+              aria-label={isEditing('backstory') ? 'Save backstory' : 'Edit backstory'}
               onClick={() => toggleEdit(candidateNumber, 'backstory')}
             >
               {isEditing('backstory') ? (
@@ -226,7 +227,7 @@ const CharacterCard = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-on-surface">Powers</h3>
-            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'powers')}>
+            <ChunkyButton variant="ghost" size="sm" aria-label={isEditing('powers') ? 'Save powers' : 'Edit powers'} onClick={() => toggleEdit(candidateNumber, 'powers')}>
               {isEditing('powers') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
             </ChunkyButton>
           </div>
@@ -267,7 +268,7 @@ const CharacterCard = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-on-surface">Combat Stats</h3>
-            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'stats')}>
+            <ChunkyButton variant="ghost" size="sm" aria-label={isEditing('stats') ? 'Save stats' : 'Edit stats'} onClick={() => toggleEdit(candidateNumber, 'stats')}>
               {isEditing('stats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
             </ChunkyButton>
           </div>
@@ -325,7 +326,7 @@ const CharacterCard = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-lg font-semibold text-on-surface">Notable Feats</h3>
-            <ChunkyButton variant="ghost" size="sm" onClick={() => toggleEdit(candidateNumber, 'feats')}>
+            <ChunkyButton variant="ghost" size="sm" aria-label={isEditing('feats') ? 'Save feats' : 'Edit feats'} onClick={() => toggleEdit(candidateNumber, 'feats')}>
               {isEditing('feats') ? <Save className="w-4 h-4" /> : <Edit2 className="w-4 h-4" />}
             </ChunkyButton>
           </div>

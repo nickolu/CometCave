@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-12",
+  "categoryId": 15,
+  "categoryName": "Entertainment: Video Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-12-0",
+      "question": "What is the first weapon you acquire in Half-Life?",
+      "options": [
+        "The H.E.V suit",
+        "Your fists",
+        "A pistol",
+        "A crowbar"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "A crowbar"
+    },
+    {
+      "id": "opentdb-2026-07-12-1",
+      "question": "What game mode was not in the original \"Wii Sports\"?",
+      "options": [
+        "Boxing",
+        "Baseball",
+        "Bowling",
+        "Table Tennis"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Table Tennis"
+    },
+    {
+      "id": "opentdb-2026-07-12-2",
+      "question": "Lanky, Funky, and Chunky are all characters featured in which series owned by Nintendo?",
+      "options": [
+        "Mario",
+        "Zelda",
+        "Kirby",
+        "Donkey Kong"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Donkey Kong"
+    },
+    {
+      "id": "opentdb-2026-07-12-3",
+      "question": "Which unlockable character in Super Smash Bros. For Wii U and 3DS does not have to be fought to be unlocked?",
+      "options": [
+        "Ness",
+        "R.O.B.",
+        "Mewtwo",
+        "Mii Fighters"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Mii Fighters"
+    },
+    {
+      "id": "opentdb-2026-07-12-4",
+      "question": "Where was the Sniper character in Team Fortress 2 born?",
+      "options": [
+        "South Africa",
+        "Australia",
+        "Antarctica",
+        "New Zealand"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "New Zealand"
+    },
+    {
+      "id": "opentdb-2026-07-12-5",
+      "question": "Why was the character Trevor Philips discharged from the Air Force?",
+      "options": [
+        "Disease",
+        "Danger to Others",
+        "Injuries",
+        "Mental Health Issues"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Mental Health Issues"
+    },
+    {
+      "id": "ai-2026-07-12-6",
+      "question": "According to BCG, which game led all esports titles in hours watched in 2022, capturing 23% of total viewing?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "League of Legends",
+      "explanation": "A 2022 BCG report found that five games dominated esports viewership, with League of Legends topping the list at 23% of total esports hours watched. The game, developed by Riot Games, has consistently been one of the most-watched esports titles since its release in 2009. Its annual World Championship regularly draws tens of millions of concurrent viewers worldwide."
+    },
+    {
+      "id": "ai-2026-07-12-7",
+      "question": "Which manga and anime series is widely cited as a major influence on the look and tone of Dark Souls?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Berserk",
+      "explanation": "Berserk, the dark fantasy manga created by Kentaro Miura, is one of the most frequently cited inspirations behind the Dark Souls series. Its grim medieval world, grotesque monsters, and themes of struggle against overwhelming odds are deeply reflected in the games. Many specific enemies and armor sets in Dark Souls are also visually reminiscent of characters and creatures from Berserk."
+    },
+    {
+      "id": "ai-2026-07-12-8",
+      "question": "In the video game Cuphead, which antagonist reflects the game's use of gambling, heaven, and hell imagery — a tradition historically tied to moralizing 1930s cartoons?",
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "the devil",
+      "explanation": "Cuphead's visual and thematic style draws heavily from 1930s Fleischer Studios-era cartoons, which often used imagery of gambling, heaven, and hell to deliver moral lessons. The Devil serves as the game's final boss, embodying these themes as players fight to reclaim their souls from a wager gone wrong. This connection to early animation's moralizing tradition gives Cuphead a deeper cultural resonance beyond its striking art style."
+    },
+    {
+      "id": "ai-2026-07-12-9",
+      "question": "Intelligent Systems, the developer behind Fire Emblem, is also responsible for which grid-based turn-based strategy series distinct from Fire Emblem?",
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Advance Wars",
+      "explanation": "Advance Wars is a grid-based turn-based strategy series developed by Intelligent Systems, the same studio behind Fire Emblem. The series debuted in 2001 on the Game Boy Advance and is known for its military-themed tactical gameplay. It was later revived with Advance Wars: Re-Boot Camp, a remake of the first two titles released in 2023."
+    }
+  ]
+}

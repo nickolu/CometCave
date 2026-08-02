@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-23",
+  "categoryId": 26,
+  "categoryName": "Celebrities",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-23-0",
+      "question": "Named after a character he played in a 1969 film, what is the name of the ski resort in Utah that Robert Redford bought in 1968?",
+      "options": [
+        "Turner",
+        "Booker",
+        "Woodward",
+        "Sundance"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Sundance"
+    },
+    {
+      "id": "opentdb-2026-07-23-1",
+      "question": "Which actress married Michael Douglas in 2000?",
+      "options": [
+        "Pam Ferris",
+        "Sara Sugarman",
+        "Ruth Jones",
+        "Catherine Zeta-Jones"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Catherine Zeta-Jones"
+    },
+    {
+      "id": "opentdb-2026-07-23-2",
+      "question": "What does film maker Dan Bell typically focus his films on?",
+      "options": [
+        "Historic Landmarks",
+        "Documentaries ",
+        "Action Films",
+        "Abandoned Buildings and Dead Malls"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Abandoned Buildings and Dead Malls"
+    },
+    {
+      "id": "opentdb-2026-07-23-3",
+      "question": "In what year did \"Bob Ross\" die?",
+      "options": [
+        "1986",
+        "1989",
+        "1997",
+        "1995"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "1995"
+    },
+    {
+      "id": "opentdb-2026-07-23-4",
+      "question": "If he was still alive, in what year would Elvis Presley celebrate his 100th birthday?",
+      "options": [
+        "2040",
+        "2045",
+        "2030",
+        "2035"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "2035"
+    },
+    {
+      "id": "opentdb-2026-07-23-5",
+      "question": "What was the religion of famous singer \"Freddie Mercury\"?",
+      "options": [
+        "Ashurism",
+        "Judaism",
+        "Paganism",
+        "Zoroastrianism"
+      ],
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Zoroastrianism"
+    },
+    {
+      "id": "ai-2026-07-23-6",
+      "question": "Which prestigious U.S. television award, presented by the Television Academy, is considered one of the \"Big Four\" American entertainment honors alongside the Grammy, Oscar, and Tony?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Emmy Award",
+      "explanation": "The Emmy Award is one of the most coveted honors in U.S. television, presented by the Television Academy. It is part of the \"Big Four\" American entertainment awards, alongside the Grammy (music), Oscar (film), and Tony (theater). Winning an Emmy is a career milestone for actors, directors, and writers in the television industry."
+    },
+    {
+      "id": "ai-2026-07-23-7",
+      "question": "For which film did Emma Stone win the Academy Award for Best Actress?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "La La Land",
+      "explanation": "Emma Stone won the Academy Award for Best Actress at the 2017 Oscars for her role as an aspiring actress in \"La La Land,\" directed by Damien Chazelle. The film was a musical romantic drama set in Los Angeles and became a massive awards-season hit. It was Stone's first Oscar win, though she has since won a second for \"Poor Things\" in 2024."
+    },
+    {
+      "id": "ai-2026-07-23-8",
+      "question": "Which celebrity completed their PEGOT in 2022 with an Emmy won for the interactive media project \"Baba Yaga\"?",
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Jennifer Hudson",
+      "explanation": "Jennifer Hudson achieved PEGOT status — a rare distinction for winners of a Pulitzer, Emmy, Grammy, Oscar, and Tony — in 2022 when she received an Emmy for her work on the interactive project \"Baba Yaga.\" PEGOT is an even rarer club than EGOT, as it adds the Pulitzer Prize to the mix. Hudson is one of only a handful of entertainers to have earned all five honors."
+    },
+    {
+      "id": "ai-2026-07-23-9",
+      "question": "Which Hollywood actor and filmmaker, known for directing and starring in \"Gone Baby Gone\" and winning an Oscar for co-writing \"Good Will Hunting,\" is the subject of a long-running dedicated trivia page on FunTrivia with more than 45 questions devoted to him?",
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Ben Affleck",
+      "explanation": "Ben Affleck, the Oscar-winning writer, director, and actor, has a long-running dedicated trivia page on FunTrivia with more than 45 questions and answers devoted to him. Affleck co-wrote \"Good Will Hunting\" with Matt Damon, winning the Academy Award for Best Original Screenplay in 1998, and later directed acclaimed films like \"Gone Baby Gone\" and \"Argo.\" His enduring pop-culture prominence has made him a rich subject for trivia enthusiasts."
+    }
+  ]
+}

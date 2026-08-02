@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { GeneratedStory } from '../types'
 
 export interface StoryConfiguration {
@@ -121,6 +121,9 @@ export function useStorybookFactoryState(): StorybookFactoryState {
   const [illustrationProgress, setIllustrationProgress] = useState({ completed: 0, total: 0 })
   const [illustrationError, setIllustrationError] = useState<string | null>(null)
   const illustrationAbortRef = useRef<AbortController | null>(null)
+
+  // Cancel any in-flight illustration generation on unmount
+  useEffect(() => () => { illustrationAbortRef.current?.abort() }, [])
 
   // Inline editing & revision state
   const [editingPanel, setEditingPanel] = useState<{ pageIndex: number; panelIndex: number } | null>(null)

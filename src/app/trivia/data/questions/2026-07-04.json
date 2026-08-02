@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-04",
+  "categoryId": 31,
+  "categoryName": "Entertainment: Japanese Anime & Manga",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-04-0",
+      "question": "In the 2012 animated film \"Wolf Children\", what are the names of the wolf children?",
+      "options": [
+        "Ame & Hana",
+        "Chuck & Anna",
+        "Hana & Yuki",
+        "Ame & Yuki"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Ame & Yuki"
+    },
+    {
+      "id": "opentdb-2026-07-04-1",
+      "question": "In Ms. Kobayashi's Dragon Maid, who is Kobayashi's maid?",
+      "options": [
+        "Kanna",
+        "Elma",
+        "Lucoa",
+        "Tohru"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Tohru"
+    },
+    {
+      "id": "opentdb-2026-07-04-2",
+      "question": "What is the name of JoJo's Bizarre Adventure Part 5?",
+      "options": [
+        "Vento Oreo",
+        "Vento Eureo",
+        "Vanto Aureo",
+        "Vento Aureo"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Vento Aureo"
+    },
+    {
+      "id": "opentdb-2026-07-04-3",
+      "question": "Which studio made Cowboy Bebop?",
+      "options": [
+        "Madhouse",
+        "Pierriot",
+        "Bones",
+        "Sunrise"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Sunrise"
+    },
+    {
+      "id": "opentdb-2026-07-04-4",
+      "question": "Who voices the character \"Reigen\"  in the English dub of \"Mob Psycho 100\"?",
+      "options": [
+        "Max Mittelman",
+        "Kyle McCarley",
+        "Casey Mongillo",
+        "Chris Niosi"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Chris Niosi"
+    },
+    {
+      "id": "opentdb-2026-07-04-5",
+      "question": "In \"One Piece\", who confirms the existence of the legendary treasure, One Piece?",
+      "options": [
+        "Former Marine Fleet Admiral Sengoku",
+        "Silvers Rayleigh",
+        "Pirate King Gol D Roger",
+        "Edward \"Whitebeard\" Newgate"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Edward \"Whitebeard\" Newgate"
+    },
+    {
+      "id": "ai-2026-07-04-6",
+      "question": "What is the name of the hit opening theme song performed by LiSA for the anime Demon Slayer: Kimetsu no Yaiba?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Gurenge",
+      "explanation": "\\\"Gurenge\\\" by LiSA became a massive hit as the opening theme for Demon Slayer: Kimetsu no Yaiba, topping Japanese music charts and introducing many international fans to J-pop. The song's success mirrored the anime's explosive popularity, making it one of the most recognizable anime theme songs of the 2010s. It helped cement LiSA as one of Japan's top anime music artists."
+    },
+    {
+      "id": "ai-2026-07-04-7",
+      "question": "Which manga series surpassed 100 million copies in circulation by April 2024, including spin-off sales?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "My Hero Academia",
+      "explanation": "My Hero Academia, created by Kōhei Horikoshi, is one of the best-selling manga series of all time, reaching over 100 million copies in circulation by April 2024 when including spin-off sales. The series follows Izuku Midoriya, a boy born without superpowers in a world where they are common, who dreams of becoming a hero. Its massive popularity has also spawned a successful anime adaptation, films, and multiple spin-off manga."
+    },
+    {
+      "id": "ai-2026-07-04-8",
+      "question": "In the anime Ranma 1/2, which character's male form was voiced by Kappei Yamaguchi in his voice-acting debut?",
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Saotome Ranma",
+      "explanation": "Kappei Yamaguchi launched his voice-acting career in 1989 by voicing the male version of Saotome Ranma in Ranma 1/2, the iconic shape-shifting martial artist who transforms into a girl when splashed with cold water. The role became one of his most celebrated performances, and he went on to voice other beloved characters such as Inuyasha and Usopp from One Piece."
+    },
+    {
+      "id": "ai-2026-07-04-9",
+      "question": "According to The Foamory, many fans in the anime and manga community construct their entire costumes from scratch rather than buying them pre-made — what is the name of the popular hobby, closely tied to anime conventions, that this do-it-yourself costume-making tradition is considered a major part of?",
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "cosplay",
+      "explanation": "Cosplay — derived from \"costume play\" — is the hobby of dressing as characters from anime, manga, video games, and other media, and it has a strong do-it-yourself tradition where fans handcraft their own outfits. The Foamory, a well-known cosplay crafting resource, highlights that many cosplayers make their entire costume on their own, making DIY costume making a defining pillar of the craft. This hands-on ethos is especially celebrated in anime and manga fandoms, where enthusiasts painstakingly recreate intricate armor, props, and garments."
+    }
+  ]
+}

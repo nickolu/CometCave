@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-17",
+  "categoryId": 20,
+  "categoryName": "Mythology",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-17-0",
+      "question": "Who was the King of Gods in Ancient Greek mythology?",
+      "options": [
+        "Apollo",
+        "Poseidon",
+        "Hermes",
+        "Zeus"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Zeus"
+    },
+    {
+      "id": "opentdb-2026-07-17-1",
+      "question": "The ancient Roman god of war was commonly known as which of the following?",
+      "options": [
+        "Jupiter",
+        "Juno",
+        "Ares",
+        "Mars"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Mars"
+    },
+    {
+      "id": "opentdb-2026-07-17-2",
+      "question": "What mytological creatures have women's faces and vultures' bodies?",
+      "options": [
+        "Mermaids",
+        "Nymph",
+        "Lilith",
+        "Harpies"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Harpies"
+    },
+    {
+      "id": "opentdb-2026-07-17-3",
+      "question": "In Greek Mythology, who killed Achilles?",
+      "options": [
+        "Hector",
+        "Helen",
+        "Pericles",
+        "Paris"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Paris"
+    },
+    {
+      "id": "opentdb-2026-07-17-4",
+      "question": "According to the Egyptian Myth of Osiris, who murdered Osiris?",
+      "options": [
+        "Horus",
+        "Anhur",
+        "Ra",
+        "Set"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Set"
+    },
+    {
+      "id": "opentdb-2026-07-17-5",
+      "question": "Nidhogg is a mythical creature from what mythology?",
+      "options": [
+        "Greek",
+        "Hindu",
+        "Egyptian",
+        "Norse"
+      ],
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Norse"
+    },
+    {
+      "id": "ai-2026-07-17-6",
+      "question": "In Greek mythology, who is the goddess of love, beauty, and fertility?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Aphrodite",
+      "explanation": "Aphrodite is one of the twelve Olympian gods in Greek mythology, revered as the goddess of love, beauty, and fertility. She has a Roman counterpart known as Venus. Her origins vary by myth — some say she was born from sea foam, while others claim she was the daughter of Zeus and Titaness Dione."
+    },
+    {
+      "id": "ai-2026-07-17-7",
+      "question": "In Greek mythology, which hero is the central character of Homer's epic poem \"The Odyssey\"?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Odysseus",
+      "explanation": "The Odyssey is one of the two major ancient Greek epic poems attributed to Homer, following Odysseus, king of Ithaca, on his long and perilous journey home after the fall of Troy. The voyage takes ten years and is filled with encounters with monsters, gods, and temptations. In Roman mythology, Odysseus is known as Ulysses."
+    },
+    {
+      "id": "ai-2026-07-17-8",
+      "question": "In Norse mythology, what is the name of Freyr's magical ship that can be folded small enough to fit in a pocket?",
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Skidbladnir",
+      "explanation": "Skidbladnir is a legendary ship in Norse mythology, crafted by the dwarves known as the Ivaldi's sons. Despite being large enough to carry all the gods and their armor, it could be folded up like a cloth and tucked into a pocket when not in use, making it one of the greatest treasures of the gods."
+    },
+    {
+      "id": "ai-2026-07-17-9",
+      "question": "In Greco-Egyptian syncretism, the Egyptian god Set was fused with which Greek deity, leading to his portrayal as a desert-and-storm force of chaos in hybrid texts?",
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Typhon",
+      "explanation": "As Greek and Egyptian cultures blended after Alexander's conquest, Set's violent, chaotic nature was identified with Typhon, the monstrous storm-giant of Greek myth. This fusion, sometimes called \"Seth-Typhon,\" appears in Greco-Egyptian magical papyri and religious texts. Both figures shared associations with destructive forces and opposition to divine order, making the syncretism a natural fit."
+    }
+  ]
+}

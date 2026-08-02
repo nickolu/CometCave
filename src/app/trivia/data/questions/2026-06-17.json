@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-17",
+  "categoryId": 14,
+  "categoryName": "Entertainment: Television",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-17-0",
+      "question": "In which state of America was the Fresh Prince of Bel-Air born and raised in?",
+      "options": [
+        "Florida",
+        "New Jersey",
+        "California",
+        "Pennsylvania"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Pennsylvania"
+    },
+    {
+      "id": "opentdb-2026-06-17-1",
+      "question": "Which of these Bojack Horseman characters is a human?",
+      "options": [
+        "Princess Carolyn",
+        "Tom Jumbo-Grumbo",
+        "Lennie Turtletaub",
+        "Todd Chavez"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Todd Chavez"
+    },
+    {
+      "id": "opentdb-2026-06-17-2",
+      "question": "The \"Psycho\" series of videos on YouTube was created by which of the following?",
+      "options": [
+        "Dan Bell",
+        "Billy Familia",
+        "VeganGainz",
+        "RiDGiD STUDiOS"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "RiDGiD STUDiOS"
+    },
+    {
+      "id": "opentdb-2026-06-17-3",
+      "question": "What was Nickelodeon's original name?",
+      "options": [
+        "MTVKids",
+        "Splat!",
+        "KidsTV",
+        "Pinwheel"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Pinwheel"
+    },
+    {
+      "id": "opentdb-2026-06-17-4",
+      "question": "In \"The Big Bang Theory\", what is Howard Wolowitz's nickname in World of Warcraft?",
+      "options": [
+        "Sheldor",
+        "Rajesh",
+        "Priya",
+        "Wolowizard"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Wolowizard"
+    },
+    {
+      "id": "opentdb-2026-06-17-5",
+      "question": "Which of these Nickelodeon game shows aired first?",
+      "options": [
+        "Finders Keepers",
+        "Nickelodeon Guts",
+        "Nick Arcade",
+        "Double Dare"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Television",
+      "source": "opentdb",
+      "correctAnswer": "Double Dare"
+    },
+    {
+      "id": "ai-2026-06-17-6",
+      "question": "Which ABC sitcom ran for 11 seasons from 1974 to 1984, making it one of the network's longest-running primetime shows?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Happy Days",
+      "explanation": "Happy Days aired on ABC from 1974 to 1984, spanning 11 seasons and becoming one of the network's longest-running primetime series. The show made a cultural icon out of Arthur \"The Fonz\" Fonzarelli, played by Henry Winkler, and even gave rise to the phrase \"jumping the shark\" from one of its later episodes."
+    },
+    {
+      "id": "ai-2026-06-17-7",
+      "question": "Which beloved British sitcom character was created by Rowan Atkinson and Richard Curtis?",
+      "difficulty": "easy",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Mr. Bean",
+      "explanation": "Mr. Bean is a classic British sitcom that first aired in 1990, starring Rowan Atkinson as the bumbling, largely silent title character. The show was co-created by Atkinson and screenwriter Richard Curtis, who later became famous for romantic comedies like Four Weddings and a Funeral. Mr. Bean's slapstick humor has made it one of the most internationally recognized British TV shows ever made."
+    },
+    {
+      "id": "ai-2026-06-17-8",
+      "question": "Which Starfleet science officer is the central protagonist of Star Trek: Discovery?",
+      "difficulty": "medium",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Michael Burnham",
+      "explanation": "Michael Burnham, played by Sonequa Martin-Green, is the lead character of Star Trek: Discovery, the first Trek series to center on a non-captain protagonist. The show follows her journey through the Federation-Klingon War of 2256 and beyond."
+    },
+    {
+      "id": "ai-2026-06-17-9",
+      "question": "PEN15, the Hulu comedy series in which two of its three creators star as fictionalized versions of their middle-school selves, was co-created by Sam Zvibleman and which actress?",
+      "difficulty": "hard",
+      "category": "Entertainment: Television",
+      "source": "ai",
+      "correctAnswer": "Maya Erskine",
+      "explanation": "PEN15 was created by Maya Erskine, Anna Konkle, and Sam Zvibleman, with Erskine and Konkle also starring as adult women playing 13-year-old versions of themselves. The show ran on Hulu from 2019 to 2021 and was praised for its unflinching, cringe-comedy portrayal of middle school life. Specifying Zvibleman (the lesser-known, non-acting co-creator) as the anchor clue makes this a genuine deep cut."
+    }
+  ]
+}

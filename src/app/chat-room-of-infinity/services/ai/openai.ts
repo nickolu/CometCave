@@ -4,6 +4,15 @@ import { Character } from '@/app/chat-room-of-infinity/types'
 
 import { AIService, AIServiceConfig, Message, SafetyCheckResponse } from './types'
 
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export class OpenAIService implements AIService {
   private client: OpenAI
   private config: AIServiceConfig
@@ -164,8 +173,7 @@ You will receive a list of available characters with their descriptions and the 
 
       if (!toolCalls || toolCalls.length === 0) {
         const numToSelect = Math.floor(Math.random() * 3) + 1
-        const shuffled = [...characters].sort(() => 0.5 - Math.random())
-        return shuffled.slice(0, Math.min(numToSelect, characters.length))
+        return shuffled(characters).slice(0, Math.min(numToSelect, characters.length))
       }
 
       // Get the function call arguments
@@ -181,15 +189,13 @@ You will receive a list of available characters with their descriptions and the 
           selectedIds = args.character_ids
         } else {
           const numToSelect = Math.floor(Math.random() * 3) + 1
-          const shuffled = [...characters].sort(() => 0.5 - Math.random())
-          return shuffled.slice(0, Math.min(numToSelect, characters.length))
+          return shuffled(characters).slice(0, Math.min(numToSelect, characters.length))
         }
       } catch (error) {
         console.error('Error parsing character selection response:', error)
         // Fall back to random selection
         const numToSelect = Math.floor(Math.random() * 3) + 1
-        const shuffled = [...characters].sort(() => 0.5 - Math.random())
-        return shuffled.slice(0, Math.min(numToSelect, characters.length))
+        return shuffled(characters).slice(0, Math.min(numToSelect, characters.length))
       }
 
       // Find the characters with the selected IDs
@@ -198,8 +204,7 @@ You will receive a list of available characters with their descriptions and the 
       // If no characters were selected or something went wrong, fall back to random selection
       if (selectedCharacters?.length === 0) {
         const numToSelect = Math.floor(Math.random() * 3) + 1
-        const shuffled = [...characters].sort(() => 0.5 - Math.random())
-        return shuffled.slice(0, Math.min(numToSelect, characters.length))
+        return shuffled(characters).slice(0, Math.min(numToSelect, characters.length))
       }
 
       return selectedCharacters
@@ -207,8 +212,7 @@ You will receive a list of available characters with their descriptions and the 
       console.error('Error selecting responding characters:', error)
       // Fall back to random selection
       const numToSelect = Math.floor(Math.random() * 3) + 1
-      const shuffled = [...characters].sort(() => 0.5 - Math.random())
-      return shuffled.slice(0, Math.min(numToSelect, characters.length))
+      return shuffled(characters).slice(0, Math.min(numToSelect, characters.length))
     }
   }
 }

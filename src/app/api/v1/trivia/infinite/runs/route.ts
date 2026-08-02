@@ -52,10 +52,11 @@ export async function POST(request: NextRequest) {
     const mode = body.mode === 'practice' ? 'practice' : 'scored';
 
     // Parse and validate customCategory — mutually exclusive with preset categories.
+    const MAX_CUSTOM_CATEGORY_LENGTH = 100
     let customCategory: string | null = null
     if (typeof body.customCategory === 'string') {
       const trimmed = body.customCategory.trim().toLowerCase()
-      if (trimmed.length >= 3) {
+      if (trimmed.length >= 3 && trimmed.length <= MAX_CUSTOM_CATEGORY_LENGTH) {
         customCategory = trimmed
       }
     }
