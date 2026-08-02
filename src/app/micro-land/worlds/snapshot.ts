@@ -128,7 +128,6 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
     flowPhase: w.flowPhase,
     dormant: w.dormant,
     nextCreatureId: w.nextCreatureId,
-    nextSeedRain: round(w.nextSeedRain),
     nextPlantSeed: round(w.nextPlantSeed),
     natives: [...w.natives],
     tiles: encodeTiles(w.tiles),
@@ -220,16 +219,15 @@ export function restoreSnapshot(w: WorldState, snap: WorldSnapshot): boolean {
   w.creatures = snap.creatures.filter(c => w.blueprints[c.blueprintId]).map(thaw)
   w.particles.length = 0
 
-  // A dangling id here would hand `undefined` to `isPlant` and break both
-  // safety nets — the soil's seed bank and animal seed rain — which is how a
-  // restored world would quietly stop being able to recover from a crash.
+  // A dangling id here would hand `undefined` to `isPlant` and break the soil's
+  // seed bank, which is how a restored world would quietly stop being able to
+  // grow its plants back.
   w.natives = snap.natives.filter(id => w.blueprints[id])
 
   w.seed = snap.seed
   w.elapsed = snap.elapsed
   w.flowPhase = snap.flowPhase
   w.dormant = snap.dormant
-  w.nextSeedRain = snap.nextSeedRain
   w.nextPlantSeed = snap.nextPlantSeed
   // Never below anything already alive: ids are handed out by increment, and a
   // counter that starts underneath the population would issue duplicates, which

@@ -35,7 +35,6 @@ import {
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   PLANT_SPREAD_COOLDOWN,
-  SEED_RAIN_INTERVAL,
   SPECIES_SOFT_CAP,
 } from '@/app/micro-land/domain/constants'
 
@@ -62,7 +61,6 @@ export const TUNING_DEFAULTS = {
   breedCooldown: BREED_COOLDOWN,
   mealValue: MEAL_VALUE,
   breedCost: BREED_COST,
-  seedRainInterval: SEED_RAIN_INTERVAL,
 
   gravity: GRAVITY,
 }
@@ -234,17 +232,6 @@ export const KNOBS: Knob[] = [
     step: 0.01,
   },
   {
-    key: 'seedRainInterval',
-    group: 'creatures',
-    label: 'Wait between comebacks',
-    help: 'How often a kind that has died out is allowed to wander back in — and only ever when there is something alive for it to eat.',
-    min: 1,
-    max: 120,
-    step: 1,
-    unit: 's',
-  },
-
-  {
     key: 'gravity',
     group: 'world',
     label: 'Pull downwards',
@@ -321,7 +308,7 @@ const STORAGE_KEY = 'micro-land:tuning:v1'
  * Only the differences are stored, never the whole set.
  *
  * A player who never touched a knob keeps getting whatever the game ships with,
- * including next month's rebalance. Writing all fifteen values would freeze the
+ * including next month's rebalance. Writing the whole set would freeze the
  * defaults of the day they first opened the panel into their browser forever.
  */
 export function saveTuning(): void {

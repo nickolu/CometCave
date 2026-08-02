@@ -29,7 +29,6 @@ import {
   boxLiquidFraction,
   boxViscosity,
   inBounds,
-  repopulate,
   seedNativePlants,
   setTile,
   settleOnGround,
@@ -280,9 +279,9 @@ export function tickCreatures(
     w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
-  // Plants first — everything else in the world is downstream of them.
+  // The only thing the world regrows on its own. Animals that die out stay
+  // dead — see `seedNativePlants`.
   seedNativePlants(w, rng)
-  repopulate(w, rng)
 
   tickParticles(w, dt, gravityScale)
 }

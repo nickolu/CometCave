@@ -40,9 +40,10 @@ falling sand at 20 Hz while creatures move over it at 60 Hz. Every creature is a
 plain object literal — pixels, physics, appetite, lifespan — and *nothing* about
 a creature is code, which is what lets a model invent one at runtime and drop it
 into a running world. The food chain is a single rule: you can eat something if
-you list one of its tags and it isn't bigger than you. Populations rise, crash,
-and are pulled back from zero by two safety nets (the ground's plant seed bank,
-and animal seed rain). Records — longest life, deepest bloodline, longest run
+you list one of its tags and it isn't bigger than you. Populations rise and
+crash, and the only thing pulled back from zero is the flora — the ground's
+plant seed bank, running slowly. An animal that dies out is gone until the
+player puts one back. Records — longest life, deepest bloodline, longest run
 with no extinction — persist in a "chronicle" that works with no account and
 merges into one when the player signs in. A world the player wants to come back
 to can also be kept by name on a "shelf" and reopened mid-simulation.
@@ -88,16 +89,22 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
    `enforceInvariants` holds the meal a fixed margin under the cost whichever of
    the two was dragged.
 
-7. **Plants have no upstream, so the ground carries their seed.** Plants only
-   come from plants, so a grazer boom that strips the last one is terminal.
-   `seedNativePlants` makes the *soil* push the plant population back toward
-   `NATIVE_PLANT_TARGET`, harder the further below it the world falls. It is
-   deliberately blind to whether anything is alive; the animal `repopulate` is
-   not, and only ever returns a species that has something to eat.
+7. **Native plants are the only thing that regrows.** Plants only come from
+   plants, so a grazer boom that strips the last one is terminal for everything
+   above it — the ground carries their seed instead. `seedNativePlants` makes
+   the *soil* push the plant population back toward `NATIVE_PLANT_TARGET`,
+   harder the further below it the world falls, and it is deliberately blind to
+   whether anything is alive. It is also deliberately slow (a batch every 30s,
+   3 sprouts at total bareness): it exists to get a stripped world off zero and
+   then let plants spread on their own, not to keep the meadow topped up.
+   Animals have no equivalent. There *was* an animal seed rain (`repopulate`);
+   it was removed because a species coming back four seconds after it died out
+   made extinction meaningless. An animal that dies out stays out until the
+   player places one.
 
 8. **Empty means empty.** `world.dormant` is set when the player clears the
-   world and suppresses both safety nets. Anything generative — painting,
-   placing, summoning, changing theme — clears it again.
+   world and suppresses the seed bank. Anything generative — painting, placing,
+   summoning, changing theme — clears it again.
 
 9. **Sprite size is not collision size.** `artSize(bp)` is what the creature
    looks like (sight, biting, drawing); `bodyBox(bp)` is what it collides with.
@@ -142,8 +149,15 @@ regressions, and a browser cannot substitute for it.
    headless and prints population over time, causes of death, and what ate what.
    Look for:
    - `✓ Still alive` at the end of every theme.
-   - No species marked `EXTINCT in every run`.
    - A low-water mark well above zero — an oscillation, not a flatline.
+   - **Known-failing since the animal seed rain was removed:** every animal is
+     currently marked `EXTINCT in every run` on all four themes, within 3–8
+     minutes, leaving a plant-only world. The seed rain had been restocking them
+     every four seconds, which hid the fact that no animal population is
+     self-sustaining at the current tuning — grazers starve with the meadow
+     pinned at its species caps, so the problem is reach and distribution rather
+     than a shortage of food. Until that is fixed, read this line as "no *new*
+     species went extinct", not as a pass.
    - Deaths attributed sensibly (`starved` dominating a grazer means the plants
      lost; `burned` dominating means the terrain is hostile).
    - `world still solid` not collapsing — diggers should tunnel, not delete.

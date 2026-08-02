@@ -90,7 +90,6 @@ export interface WorldSnapshot {
   flowPhase: number
   dormant: boolean
   nextCreatureId: number
-  nextSeedRain: number
   nextPlantSeed: number
   natives: string[]
   /** Run-length encoded: material, length, material, length, … See `snapshot.ts`. */

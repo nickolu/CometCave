@@ -1,5 +1,5 @@
 /** World construction, tile access, and spawning. */
-import { artSize, bodyBox, canEat } from '@/app/micro-land/domain/blueprint'
+import { artSize, bodyBox } from '@/app/micro-land/domain/blueprint'
 import { BUILTIN_CREATURES } from '@/app/micro-land/domain/config/creatures'
 import {
   AIR,
@@ -50,7 +50,6 @@ export function createWorld(seed = 1337): WorldState {
     seed,
     flowPhase: 0,
     natives: [],
-    nextSeedRain: 0,
     nextPlantSeed: 0,
     dormant: false,
   }
@@ -587,15 +586,21 @@ export function establishNativePlants(w: WorldState, rng: Rng): boolean {
 /**
  * The ground pushing its plant population back toward a living level.
  *
- * Runs on its own clock, separate from the animal seed rain, because the two
- * answer different questions. Seed rain asks "has a species died out and is
- * there food for it again"; this asks "is there less green here than this soil
- * can support" — and it keeps asking, which is the whole point. A meadow that
- * gets grazed to nothing is a meadow that grows back.
+ * This is the *only* thing in the game that brings a species back. Animals used
+ * to wander back in too, on a four-second clock, and it made the world feel like
+ * it was being restocked rather than lived in: a kind you had watched go extinct
+ * was back before you had finished reading the notice. Nothing does that now.
+ * Lose a creature and it is gone until you place another one.
  *
- * Deliberately blind to whether anything is alive. Plants having no upstream is
- * exactly the problem being solved; requiring a survivor would leave a stripped
- * world just as dead as before.
+ * Plants keep their seed bank because they are the one thing with no upstream —
+ * plants only come from plants, so a grazer boom that strips the last one is
+ * terminal for everything above it. The soil holding the seed is what makes a
+ * meadow renewable instead of merely long-lived.
+ *
+ * Deliberately blind to whether anything is alive, and deliberately slow. The
+ * rate is a trickle rather than a refill (see PLANT_SEED_INTERVAL): green
+ * creeping back over minutes reads as the land recovering, where a fast one read
+ * as the game undoing what just happened.
  */
 export function seedNativePlants(w: WorldState, rng: Rng): void {
   if (w.elapsed < w.nextPlantSeed) return
@@ -633,57 +638,6 @@ export function seedNativePlants(w: WorldState, rng: Rng): void {
   for (let i = 0; i < batch; i++) {
     const bp = w.blueprints[pool[i % pool.length]]
     if (bp) spawnSomewhereSensible(w, bp, rng)
-  }
-}
-
-/**
- * Let the world heal itself — the animal half.
- *
- * Populations here are small enough that an oscillation eventually touches zero,
- * and zero is absorbing: hoppers only come from hoppers. Without this, every
- * world converges on the same dead end — a field of whatever happened to be last
- * standing — and the only cure is a restart.
- *
- * Real habitats recover because the frame we're watching isn't the whole world:
- * animals wander over the hill. This is that edge, and it obeys two rules that
- * keep it honest:
- *   - Nothing returns to an empty world. Pressing Empty means empty.
- *   - A predator only returns when there is something alive for it to eat, so
- *     this can never conjure a species straight back into starving to death.
- *
- * Plants are not handled here. They have no upstream at all, so the ground
- * carries their seed instead — see `seedNativePlants`.
- */
-export function repopulate(w: WorldState, rng: Rng): void {
-  if (w.elapsed < w.nextSeedRain) return
-  w.nextSeedRain = w.elapsed + TUNING.seedRainInterval
-  if (w.dormant || w.creatures.length === 0 || w.natives.length === 0) return
-
-  const counts: Record<string, number> = {}
-  for (const c of w.creatures) {
-    counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
-  }
-
-  // Any native that has died out and now has something to eat again.
-  // Plants count here too: one plant species thriving is not a reason for the
-  // others to stay extinct, and a grazer too small to eat the survivor depends
-  // on the little ones coming back.
-  const candidates = w.natives.filter(id => {
-    if (counts[id]) return false
-    const bp = w.blueprints[id]
-    if (!bp) return false
-    if (bp.move.kind === 'root' || bp.diet.eats.length === 0) return true
-    return w.creatures.some(c => {
-      const other = w.blueprints[c.blueprintId]
-      return other ? canEat(bp, other) : false
-    })
-  })
-  if (candidates.length === 0) return
-
-  const bp = w.blueprints[candidates[Math.floor(rng() * candidates.length)]]
-  if (bp) {
-    spawnSomewhereSensible(w, bp, rng)
-    spawnSomewhereSensible(w, bp, rng)
   }
 }
 

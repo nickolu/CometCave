@@ -114,16 +114,14 @@ export const MEAL_VALUE = 0.42
 export const BREED_COST = 0.55
 
 /**
- * Seed rain — animals.
+ * Native plants — the ground's own seed bank, and the only regrowth there is.
  *
- * A native that has died out comes back once there is something alive for it to
- * eat again. It only fires while something is still alive, so pressing Empty
- * leaves the world empty.
- */
-export const SEED_RAIN_INTERVAL = 4
-
-/**
- * Native plants — the ground's own seed bank.
+ * Animals had a seed bank too once: any native that had died out wandered back
+ * in every four seconds as long as something was alive for it to eat. It kept
+ * every world populated and it made extinction meaningless — a kind you had
+ * watched starve was back before the notice finished scrolling, and the world
+ * read as a stocked aquarium rather than somewhere things happen. It is gone.
+ * Animals that die out stay out until the player places one.
  *
  * Plants are the only thing in the world with no upstream: a grazer boom strips
  * the last one and then nothing can ever bring it back, because plants only come
@@ -142,16 +140,29 @@ export const SEED_RAIN_INTERVAL = 4
  * trickle would just pin every world at MAX_PLANTS and turn it into a carpet.
  */
 export const NATIVE_PLANT_TARGET = Math.round(45 * WIDTH_SCALE)
-export const PLANT_SEED_INTERVAL = 3
+/**
+ * How long the ground waits between seedings.
+ *
+ * Slow on purpose — 30s, up from 3s. At three seconds the soil was doing the
+ * work the plants are supposed to do: a grazed patch filled back in while you
+ * were still watching it be grazed, so nothing the animals did to the meadow
+ * ever showed. Thirty seconds makes the seed bank a floor under a crash rather
+ * than a groundskeeper. Recovery still happens, because plants that exist
+ * spread on their own (PLANT_MATURITY + PLANT_SPREAD_COOLDOWN, ~15s per
+ * doubling) — all the ground has to do is get the count off zero and then stay
+ * out of the way.
+ */
+export const PLANT_SEED_INTERVAL = 30
 /**
  * Most plants a single seeding may place, when the world is at zero.
  *
- * Scaled along with the target, not left alone. The interval is a wall-clock
- * rate, so a batch that doesn't grow with the world turns "a meadow can come
- * back" into "a meadow comes back three times slower" — long enough that the
- * grazers waiting on it starve again before it arrives.
+ * One per screen of land, scaled up here rather than left as a bare number, so
+ * a three-screen world gets three sprouts spread across it instead of three
+ * screens sharing one. Small on purpose: the ground is starting a meadow, not
+ * planting one. Anywhere near the target this rounds down to a single sprout
+ * every thirty seconds, which is what the trickle is meant to feel like.
  */
-export const PLANT_SEED_BATCH = Math.round(3 * WIDTH_SCALE)
+export const PLANT_SEED_BATCH = Math.round(1 * WIDTH_SCALE)
 /**
  * How many species the ground picks when it establishes its natives.
  *
