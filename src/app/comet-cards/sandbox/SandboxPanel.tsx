@@ -434,6 +434,7 @@ export function SandboxPanel() {
         <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div className="flex items-center gap-2">
             <input
+              aria-label="Search jokers"
               placeholder="Search jokers…"
               style={INPUT_BASE}
               value={jokerSearch}

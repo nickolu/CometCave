@@ -1,6 +1,7 @@
 'use server'
 
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config'
 import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
@@ -34,20 +35,28 @@ function cleanCharacterResponse(response: string, characterName: string): string
   return cleanedResponse
 }
 
+const RequestSchema = z.object({
+  character: z.object({
+    id: z.string().max(200),
+    name: z.string().max(200),
+    description: z.string().max(1000).optional(),
+  }),
+  chatMessages: z.array(z.object({
+    character: z.object({
+      id: z.string().max(200),
+      name: z.string().max(200),
+    }),
+    message: z.string().max(2000),
+  })).max(100),
+})
+
 export async function POST(request: Request) {
   try {
-    const { character, chatMessages } = await request.json()
-
-    if (!character) {
-      return NextResponse.json({ error: 'Invalid request: character is required' }, { status: 400 })
+    const parseResult = RequestSchema.safeParse(await request.json())
+    if (!parseResult.success) {
+      return NextResponse.json({ error: parseResult.error.errors[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
-
-    if (!chatMessages || !Array.isArray(chatMessages)) {
-      return NextResponse.json(
-        { error: 'Invalid request: chatMessages is required and must be an array' },
-        { status: 400 }
-      )
-    }
+    const { character, chatMessages } = parseResult.data
 
     let response
 
