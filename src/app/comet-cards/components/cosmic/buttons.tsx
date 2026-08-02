@@ -106,6 +106,7 @@ export function SortPill({
       type="button"
       className="cc-btn"
       onClick={onClick}
+      aria-pressed={active ?? false}
       style={{
         background: 'transparent',
         border: 'none',
