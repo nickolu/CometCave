@@ -15,6 +15,7 @@ const MOOD_TEXT: Record<string, string> = {
   flee: 'Running away!',
   eat: 'Eating',
   rest: 'Resting',
+  mate: 'Looking for a partner',
 }
 
 /**

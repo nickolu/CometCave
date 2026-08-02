@@ -92,6 +92,29 @@ export const BREATH_SECONDS = 9
 export const BREED_COOLDOWN = 12
 
 /**
+ * How close two animals of the same kind have to be to have a baby, in tiles.
+ *
+ * An animal needs a willing partner — one of its own kind, grown, off cooldown
+ * and as well fed as it is — and this is the last gap they have to close. It is
+ * *not* how far they can see each other from: finding a mate rides on the
+ * ordinary sense pass, so a hopper spots one anywhere inside its 20 tiles of
+ * sight and then walks over. This is only the distance at which the walking
+ * stops being necessary.
+ *
+ * Six tiles is a body-length or three apart — close enough that the pair is
+ * visibly together when the baby appears, far enough that two walkers steering
+ * at each other actually converge instead of jittering past one another. Making
+ * it much tighter reads as broken: you watch two well-fed hoppers stand next to
+ * each other and nothing happens.
+ *
+ * The real cost of this whole mechanic is paid here. A species down to its last
+ * individual can no longer recover, and a species scattered thinly across three
+ * screens breeds far more slowly than the same headcount in one meadow. That is
+ * the intended shape — it is also why this is a knob.
+ */
+export const MATE_RADIUS = 6
+
+/**
  * Plants play by different rules, and they have to.
  *
  * A grazer empties its stomach every ~15s, so a dozen of them strip the map far

@@ -25,6 +25,7 @@ import {
   BREED_COOLDOWN,
   BREED_COST,
   GRAVITY,
+  MATE_RADIUS,
   MAX_CREATURES,
   MAX_PLANTS,
   MEAL_VALUE,
@@ -59,6 +60,7 @@ export const TUNING_DEFAULTS = {
   maxCreatures: MAX_CREATURES,
   speciesSoftCap: SPECIES_SOFT_CAP,
   breedCooldown: BREED_COOLDOWN,
+  mateRadius: MATE_RADIUS,
   mealValue: MEAL_VALUE,
   breedCost: BREED_COST,
 
@@ -212,6 +214,16 @@ export const KNOBS: Knob[] = [
     max: 120,
     step: 1,
     unit: 's',
+  },
+  {
+    key: 'mateRadius',
+    group: 'creatures',
+    label: 'How close a pair has to get',
+    help: 'An animal needs a well-fed partner of its own kind to have a baby, and this is how near the two have to be. They spot each other from as far as they can see and walk over; turn this up and they settle for standing roughly nearby, which makes a thinly spread species much more likely to survive.',
+    min: 2,
+    max: 40,
+    step: 1,
+    unit: 'tiles',
   },
   {
     key: 'mealValue',
