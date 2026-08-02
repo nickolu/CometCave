@@ -228,17 +228,20 @@ export default function AvatarMakerPage() {
   const convertToPng = (file: File): Promise<File> => {
     return new Promise((resolve, reject) => {
       const img = new window.Image()
+      const objectUrl = URL.createObjectURL(file)
       img.onload = () => {
         const canvas = document.createElement('canvas')
         canvas.width = img.width
         canvas.height = img.height
         const ctx = canvas.getContext('2d')
         if (!ctx) {
+          URL.revokeObjectURL(objectUrl)
           reject(new Error('Canvas not supported'))
           return
         }
         ctx.drawImage(img, 0, 0)
         canvas.toBlob(blob => {
+          URL.revokeObjectURL(objectUrl)
           if (!blob) {
             reject(new Error('Failed to convert image'))
             return
@@ -249,8 +252,11 @@ export default function AvatarMakerPage() {
           resolve(pngFile)
         }, 'image/png')
       }
-      img.onerror = () => reject(new Error('Failed to load image'))
-      img.src = URL.createObjectURL(file)
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl)
+        reject(new Error('Failed to load image'))
+      }
+      img.src = objectUrl
     })
   }
 
@@ -277,8 +283,10 @@ export default function AvatarMakerPage() {
 
       // Create a fully transparent mask of same dimensions
       const img = new window.Image()
-      img.src = URL.createObjectURL(uploadFile)
+      const maskObjectUrl = URL.createObjectURL(uploadFile)
+      img.src = maskObjectUrl
       await new Promise(resolve => (img.onload = resolve))
+      URL.revokeObjectURL(maskObjectUrl)
       const maskFile = createTransparentMask(img.width, img.height)
 
       const formData = new FormData()
