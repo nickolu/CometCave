@@ -3,24 +3,6 @@ import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-const CastVoteRequestSchema = z.object({
-  voter: z.object({
-    id: z.string(),
-    name: z.string().max(200),
-    description: z.string().max(1000),
-    modelConfig: z.object({
-      model: z.string(),
-      temperature: z.number(),
-      maxTokens: z.number(),
-    }),
-  }),
-  criteria: z.object({
-    question: z.string().max(1000),
-    options: z.array(z.string().max(500)).min(1).max(20),
-  }),
-  instance: z.number().optional(),
-})
-
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
@@ -38,14 +20,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const parseResult = CastVoteRequestSchema.safeParse(await request.json())
-    if (!parseResult.success) {
+    const { voter, criteria, instance } = await request.json()
+
+    if (!criteria?.options || !Array.isArray(criteria.options) || criteria.options.length === 0) {
       return NextResponse.json(
-        { error: parseResult.error.errors[0]?.message ?? 'Invalid request' },
+        { error: 'criteria.options must be a non-empty array' },
         { status: 400 }
       )
     }
-    const { voter, criteria, instance = 0 } = parseResult.data
 
     // Create dynamic schema based on voting criteria
     const voteSchema = z.object({
