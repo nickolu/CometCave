@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { DailyReward } from '@/app/tap-tap-adventure/config/dailyRewards'
 import { ClaimResult } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface DailyRewardPopupProps {
   streak: number
@@ -24,12 +25,10 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
     return () => { if (dismissTimerRef.current != null) clearTimeout(dismissTimerRef.current) }
   }, [])
 
-  useEffect(() => {
-    requestAnimationFrame(() => setIsVisible(true))
-  }, [])
+  useDialogFocus(dialogRef)
 
   useEffect(() => {
-    dialogRef.current?.focus()
+    requestAnimationFrame(() => setIsVisible(true))
   }, [])
 
   useEffect(() => {

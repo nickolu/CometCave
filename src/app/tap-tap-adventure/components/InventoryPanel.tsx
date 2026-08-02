@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 import { List } from '@/app/tap-tap-adventure/components/ui/list'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
@@ -36,6 +37,8 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
   const [rarityFilter, setRarityFilter] = useState<string>('all')
   const [sortBy, setSortBy] = useState<'default' | 'name' | 'type' | 'value' | 'rarity'>('default')
   const [detailItem, setDetailItem] = useState<Item | null>(null)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -395,6 +398,7 @@ export function InventoryPanel({ inventory }: InventoryPanelProps) {
       </div>
       {detailItem && (
         <div
+          ref={dialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Item details"

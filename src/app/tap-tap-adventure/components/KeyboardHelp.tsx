@@ -1,5 +1,8 @@
 'use client'
 
+import { useRef } from 'react'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+
 interface ShortcutGroup {
   title: string
   shortcuts: { key: string; description: string }[]
@@ -37,10 +40,14 @@ interface KeyboardHelpProps {
 }
 
 export function KeyboardHelp({ onClose }: KeyboardHelpProps) {
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="keyboard-help-title"

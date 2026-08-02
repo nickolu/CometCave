@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
 interface QuestCelebrationProps {
   quest: TimedQuest
@@ -12,6 +13,9 @@ interface QuestCelebrationProps {
 
 export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
   const [isVisible, setIsVisible] = useState(false)
+
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useDialogFocus(dialogRef)
 
   const claimTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
@@ -30,6 +34,7 @@ export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Quest complete"
