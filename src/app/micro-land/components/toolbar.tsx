@@ -134,7 +134,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
   )
   const [group, setGroup] = useState<CreatureGroup>('plants')
   /**
-   * Tidy mode: while it is on, tapping a creature in "Yours" removes it.
+   * Edit mode: while it is on, tapping a creature in "Yours" removes it.
    *
    * A mode rather than a permanent ✕ on every chip. This row is what a thumb
    * reaches for constantly during play, and a delete control living there full
@@ -143,7 +143,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
    * button: a ✕ nested inside the chip button would be invalid HTML and a tap
    * target far too small for the hands this is built for.
    */
-  const [tidying, setTidying] = useState(false)
+  const [editing, setEditing] = useState(false)
 
   // Jump to "Yours" the moment a summon is asked for, and again when it lands,
   // so the thing you just invented — and the slot holding its place until then —
@@ -156,7 +156,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
     if (summonedCount > lastSummoned.current || pendingCount > lastPending.current) {
       setGroup('yours')
       // Arriving here because something new was made must never arrive armed.
-      setTidying(false)
+      setEditing(false)
     }
     lastSummoned.current = summonedCount
     lastPending.current = pendingCount
@@ -167,7 +167,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
   const shown = filtered.get(active) ?? []
 
   /**
-   * Tidying is only ever a thing in "Yours".
+   * Edit mode is only ever a thing in "Yours".
    *
    * Derived rather than cleaned up in an effect, so the armed state can never
    * outlive the conditions for it even for one render: switching tab, emptying
@@ -175,8 +175,8 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
    * on the way out of the tab, so coming back later never finds a row that
    * silently deletes on tap.
    */
-  const canTidy = active === 'yours' && shown.length > 0
-  const tidyOn = tidying && canTidy
+  const canEdit = active === 'yours' && shown.length > 0
+  const editOn = editing && canEdit
 
   /**
    * What the folded drawer still says is in your hand.
@@ -534,7 +534,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
 
           <CreatureFilterBar filter={filter} setFilter={setFilter} options={options} />
 
-          {/* The tidy toggle sits beside the tabs but outside the tablist — it is
+          {/* The edit toggle sits beside the tabs but outside the tablist — it is
           not a tab, and a stray child in there confuses assistive tech. */}
           <div className="-mx-1 flex items-center gap-1 px-1">
             <div className="flex gap-1 overflow-x-auto" role="tablist" aria-label="Creature kinds">
@@ -560,7 +560,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
                     aria-selected={selected}
                     onClick={() => {
                       setGroup(tab.id)
-                      setTidying(false)
+                      setEditing(false)
                     }}
                     style={{
                       fontFamily: 'var(--cc-font-mono)',
@@ -595,16 +595,16 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
               })}
             </div>
 
-            {canTidy && (
+            {canEdit && (
               <button
                 type="button"
                 className="cc-btn ml-auto shrink-0"
-                onClick={() => setTidying(v => !v)}
-                aria-pressed={tidyOn}
+                onClick={() => setEditing(v => !v)}
+                aria-pressed={editOn}
                 title={
-                  tidyOn
-                    ? 'Done tidying — tapping a creature places it again'
-                    : 'Tidy up — tap a creature to remove it'
+                  editOn
+                    ? 'Done — tapping a creature places it again'
+                    : 'Edit — tap a creature to remove it'
                 }
                 style={{
                   fontFamily: 'var(--cc-font-mono)',
@@ -614,15 +614,15 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
                   padding: '5px 9px',
                   minHeight: 28,
                   borderRadius: 999,
-                  border: `1px solid ${tidyOn ? 'var(--cc-pink)' : 'var(--cc-mint-line)'}`,
-                  background: tidyOn
+                  border: `1px solid ${editOn ? 'var(--cc-pink)' : 'var(--cc-mint-line)'}`,
+                  background: editOn
                     ? 'var(--cc-pink-soft, rgba(255,122,184,0.14))'
                     : 'transparent',
-                  color: tidyOn ? 'var(--cc-pink)' : 'var(--cc-text-muted)',
+                  color: editOn ? 'var(--cc-pink)' : 'var(--cc-text-muted)',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {tidyOn ? 'Done' : 'Tidy'}
+                {editOn ? 'Done' : 'Edit'}
               </button>
             )}
           </div>
@@ -698,9 +698,9 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
             )}
             {shown.map(bp => {
               const selected = tool.kind === 'creature' && tool.blueprintId === bp.id
-              // Built-ins can't be removed even while tidying — they come from
+              // Built-ins can't be removed even in edit mode — they come from
               // config, so deleting one would just bring it back on reload.
-              const removable = tidyOn && bp.summoned
+              const removable = editOn && bp.summoned
               return (
                 <button
                   key={bp.id}
@@ -715,19 +715,19 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
                   aria-label={removable ? `Remove ${bp.name}` : undefined}
                   title={removable ? `Remove ${bp.name}` : bp.blurb}
                   style={{
-                    ...swatchStyle(selected && !tidyOn),
+                    ...swatchStyle(selected && !editOn),
                     minWidth: 62,
                     position: 'relative',
                     borderColor: removable
                       ? 'var(--cc-pink)'
-                      : selected && !tidyOn
+                      : selected && !editOn
                         ? 'var(--cc-mint)'
                         : bp.summoned
                           ? 'var(--cc-pink-border)'
                           : 'var(--cc-mint-line)',
-                    // A built-in during tidy mode is inert; say so rather than
+                    // A built-in during edit mode is inert; say so rather than
                     // letting it look tappable and do nothing.
-                    opacity: tidyOn && !bp.summoned ? 0.35 : 1,
+                    opacity: editOn && !bp.summoned ? 0.35 : 1,
                   }}
                 >
                   <span

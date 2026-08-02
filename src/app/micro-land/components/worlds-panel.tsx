@@ -183,7 +183,7 @@ export function WorldsPanel({
           </div>
           {full && (
             <p style={{ fontSize: 11, color: 'var(--cc-gold)' }}>
-              The shelf holds {MAX_SAVED_WORLDS}. Let one go to make room.
+              The shelf holds {MAX_SAVED_WORLDS}. Delete one to make room.
             </p>
           )}
           {shelf.error && (
@@ -254,7 +254,7 @@ export function WorldsPanel({
                           color: 'var(--cc-pink)',
                         }}
                       >
-                        Really
+                        Delete
                       </button>
                       <button
                         type="button"
@@ -262,7 +262,7 @@ export function WorldsPanel({
                         onClick={() => setConfirming(null)}
                         style={buttonBase}
                       >
-                        No
+                        Cancel
                       </button>
                     </div>
                   ) : (
@@ -285,10 +285,10 @@ export function WorldsPanel({
                         type="button"
                         className="cc-btn"
                         onClick={() => setConfirming(world.id)}
-                        aria-label={`Let go of ${world.name}`}
+                        aria-label={`Delete ${world.name}`}
                         style={buttonBase}
                       >
-                        Let go
+                        Delete
                       </button>
                     </div>
                   )}
