@@ -17,7 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, type KeyboardEvent, useEffect, useState } from 'react'
 
 import { useCharacterGenerator } from '@/app/chat-room-of-infinity/api/hooks'
 import { useStore } from '@/app/chat-room-of-infinity/store'
@@ -138,7 +138,7 @@ export default function UserSelector() {
               }}
               onClick={() => handleCharacterSelect(character.id)}
               tabIndex={0}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCharacterSelect(character.id) } }}
+              onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCharacterSelect(character.id) } }}
             >
               <ListItemAvatar>
                 <Avatar>{(character.name?.[0] ?? '?').toUpperCase()}</Avatar>
