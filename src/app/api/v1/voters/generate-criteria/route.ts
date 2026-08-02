@@ -25,7 +25,7 @@ const RequestSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Get API key from environment variable or request header
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    let apiKey = process.env.OPENAI_API_KEY
     const headerApiKey = request.headers.get('x-openai-api-key')
 
     if (headerApiKey) {
