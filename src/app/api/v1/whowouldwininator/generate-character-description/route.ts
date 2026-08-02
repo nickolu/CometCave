@@ -16,9 +16,6 @@ export async function POST(request: Request) {
     if (!parseResult.success) {
       return NextResponse.json({ error: parseResult.error.errors[0]?.message ?? 'Invalid request' }, { status: 400 })
     }
-    if (name.length > 200) {
-      return NextResponse.json({ error: 'name must be 200 characters or fewer.' }, { status: 400 })
-    }
 
     const { name } = parseResult.data
 
