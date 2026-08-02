@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
@@ -22,6 +22,7 @@ export function SpoilerCard({
 }: SpoilerCardProps) {
   const [revealed, setRevealed] = useState(userHasSeen)
   const [showConfirm, setShowConfirm] = useState(false)
+  const dialogRef = useRef<HTMLDivElement>(null)
 
   const handleRevealClick = () => {
     setShowConfirm(true)
@@ -36,6 +37,19 @@ export function SpoilerCard({
   const handleCancel = () => {
     setShowConfirm(false)
   }
+
+  useEffect(() => {
+    if (!showConfirm) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') handleCancel()
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [showConfirm])
+
+  useEffect(() => {
+    if (showConfirm) dialogRef.current?.focus()
+  }, [showConfirm])
 
   return (
     <>
@@ -68,10 +82,12 @@ export function SpoilerCard({
       {showConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label="Confirm Reveal"
-            className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4"
+            tabIndex={-1}
+            className="bg-surface-container-high rounded-ds-lg p-6 max-w-sm mx-4 shadow-hero flex flex-col gap-4 outline-none"
             onClick={e => e.stopPropagation()}
           >
             <p className="text-on-surface text-sm">
