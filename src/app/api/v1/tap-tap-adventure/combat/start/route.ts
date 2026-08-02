@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error starting combat', err)
     return NextResponse.json(
-      { error: 'Failed to start combat', details: (err as Error).message },
+      { error: 'Failed to start combat' },
       { status: 500 }
     )
   }
