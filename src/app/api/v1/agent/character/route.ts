@@ -39,7 +39,7 @@ const RequestSchema = z.object({
   character: z.object({
     id: z.string().max(200),
     name: z.string().max(200),
-    description: z.string().max(1000).optional(),
+    description: z.string().max(1000).default(''),
   }),
   chatMessages: z.array(z.object({
     character: z.object({
