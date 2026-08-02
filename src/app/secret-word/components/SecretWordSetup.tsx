@@ -131,8 +131,9 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-on-surface-variant mb-2">Your Name</label>
+                <label htmlFor="player-name" className="block text-sm font-medium text-on-surface-variant mb-2">Your Name</label>
                 <Input
+                  id="player-name"
                   type="text"
                   value={playerName}
                   onChange={e => setPlayerName(e.target.value)}
@@ -142,11 +143,12 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-on-surface-variant mb-2">
+                <label htmlFor="player-secret-word" className="block text-sm font-medium text-on-surface-variant mb-2">
                   Your Secret Word
                 </label>
                 <div className="flex gap-2">
                   <Input
+                    id="player-secret-word"
                     type="text"
                     value={playerWord}
                     onChange={handleInputChange}

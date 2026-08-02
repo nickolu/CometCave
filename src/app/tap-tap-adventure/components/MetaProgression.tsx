@@ -95,7 +95,7 @@ export default function MetaProgression({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gray-900/95 overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-gray-900/95 overflow-y-auto" role="dialog" aria-modal="true" aria-label="Eternal upgrades">
       <div className="max-w-2xl mx-auto px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
