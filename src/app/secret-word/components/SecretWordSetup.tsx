@@ -1,7 +1,7 @@
 'use client'
 
 import { Loader2 } from 'lucide-react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useGenerateWord, useScoreWord } from '@/app/secret-word/api/hooks'
 import { ScoreWordResponse } from '@/app/secret-word/api/types'
@@ -63,6 +63,8 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
     }
   }
 
+  useEffect(() => () => { clearTimeout(wordScoreTimeout.current ?? undefined) }, [])
+
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       // replace spaces with empty string
@@ -76,11 +78,6 @@ export function SecretWordSetup({ onSetupComplete, isLoading = false }: SecretWo
           scoreWord({ word: value.trim() })
         }
       }, 1000)
-      return () => {
-        if (wordScoreTimeout.current) {
-          clearTimeout(wordScoreTimeout.current)
-        }
-      }
     },
     [scoreWord]
   )
