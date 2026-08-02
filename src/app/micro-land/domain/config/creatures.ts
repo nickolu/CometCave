@@ -210,7 +210,10 @@ const HOPPER = builtin('hopper', {
     faceMotion: true,
   },
   body: { mass: 1, bounce: 0.2, drag: 0.4, buoyancy: 0.85, immuneTo: [] },
-  move: { kind: 'walk', speed: 5, jump: 12, restlessness: 0.35 },
+  // The one the blurb has always promised. It bounds rather than runs, which is
+  // also its whole defence: a Stalker is faster over the ground and would catch
+  // it every time otherwise.
+  move: { kind: 'walk', speed: 5, jump: 12, hop: 1, restlessness: 0.35 },
   diet: {
     eats: ['plant'],
     fears: [],
@@ -1455,7 +1458,9 @@ const UNICYCLE_CLOWN = builtin('unicycle-clown', {
     faceMotion: true,
   },
   body: { mass: 1, bounce: 0.35, drag: 0.82, buoyancy: 0.95, immuneTo: [] },
-  move: { kind: 'walk', speed: 6, jump: 7, restlessness: 0.6 },
+  // Hopping on one wheel, because a clown on a unicycle that simply walked
+  // about would be the least funny thing in the world.
+  move: { kind: 'walk', speed: 6, jump: 7, hop: 0.55, restlessness: 0.6 },
   diet: {
     eats: ['plant'],
     fears: [],
