@@ -96,6 +96,7 @@ export const LineControl = ({
       <div
         onClick={isStatic ? undefined : () => toggleLine()}
         role={isStatic ? undefined : 'button'}
+        aria-label={isStatic ? undefined : 'Toggle line — solid or broken'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
       >
@@ -104,6 +105,7 @@ export const LineControl = ({
       <div
         onClick={isStatic ? undefined : () => toggleHasChanges()}
         role={isStatic ? undefined : 'button'}
+        aria-label={isStatic ? undefined : 'Toggle changing line'}
         tabIndex={isStatic ? undefined : 0}
         onKeyDown={isStatic ? undefined : e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}
       >
