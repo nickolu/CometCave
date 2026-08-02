@@ -148,6 +148,28 @@ export const PLANT_SEED_BATCH = Math.round(3 * WIDTH_SCALE)
 export const NATIVE_PLANT_SPECIES = 3
 
 /**
+ * How often a seed is dropped from the sky rather than from a random height.
+ *
+ * Not a taste setting — this is the difference between a meadow and a world
+ * that looks bare while its plant counter reads full. Every fertile surface in
+ * a cross-section world is a candidate for a seed, and the overwhelming
+ * majority of them are cave floors: the sky holds nothing, the outdoor surface
+ * is one row per column, and the rock below it is a honeycomb. Sampling a point
+ * in that volume uniformly put 95% of the flora underground. Measured on earth
+ * over ten minutes: 554 of 585 plants buried, one sunleaf left on the surface
+ * of the entire world, grazers starving at more than twice the rate they were
+ * being hunted, and the ground's own seed bank switched off the whole time
+ * because the *global* plant count was sitting on its ceiling.
+ *
+ * Short of 1 on purpose. Caves keeping some flora is what makes a glowvine
+ * worth finding down there, and it is the only way anything grows in a world
+ * with no outdoor surface at all — a sealed station, a cavern the player
+ * painted shut. One seed in six is enough to green a cave system slowly
+ * without taking the meadow's share of MAX_PLANTS back off it.
+ */
+export const SURFACE_SEEDING_BIAS = 0.84
+
+/**
  * Carrying capacity for a single animal species.
  *
  * Without predator pressure a grazer grows until it hits the global population
