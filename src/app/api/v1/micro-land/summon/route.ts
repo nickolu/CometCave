@@ -97,7 +97,8 @@ DRAWING
 - A very large creature collides with its middle rather than its whole outline, so wings, tails and long necks can hang over the edges. Draw the shape you want; you do not have to keep it compact.
 
 DRAWING THE LAND
-- The world is a grid 224 tiles wide and 132 tall. You draw it as a small map — about 40 characters across and 24 rows down — which is scaled up and roughened, so draw big shapes and let the detail happen.
+- The world is a grid 672 tiles wide and 132 tall — a long, wide stretch of land that the player scrolls across. You draw it as a map about 120 characters across and 24 rows down, which is scaled up and roughened, so draw big shapes and let the detail happen.
+- Because it is wide, give it a JOURNEY: different country at each end and something to find in between. A shoreline that becomes cliffs that become a cave system beats the same hill drawn 120 times.
 - The top row is the top of the sky; the bottom row is the very bottom of the world. "." is empty air.
 - KEEP THE GROUND LOW. The surface — the first row that is mostly solid — should sit about 30-50% of the way up from the bottom, so at least half the map is open air. A horizon two-thirds up the page looks right on paper and plays badly: everything worth watching happens above the ground, and a world that is mostly dirt leaves the creatures nowhere to live. On a 24-row map that means roughly 13-16 rows of sky before the land starts.
 - Depth below the surface is only interesting where it is hollow. A solid slab of stone ten rows thick is wasted world — put caves, pockets, water or a lava seam in it, or make it thinner.

@@ -6,7 +6,7 @@
  * up already living there. Switching themes rebuilds the tile grid; summoned
  * creatures survive the change.
  */
-import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
+import { WIDTH_SCALE, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { type Rng, fbm, makeNoise2D } from '@/app/micro-land/domain/sim/prng'
 import type { MaterialId } from '@/app/micro-land/domain/types'
 
@@ -28,6 +28,18 @@ export interface Theme {
 }
 
 const M = MATERIAL_INDEX
+
+/**
+ * "This many per screen" → "this many across the whole world".
+ *
+ * Every scattered feature below — ponds, geodes, lava falls — was a count
+ * chosen by eye against one screen of land. Left alone in a world three screens
+ * wide they don't spread out, they thin out: two ponds in a world this long
+ * means most of it has no fresh water at all.
+ */
+function across(n: number): number {
+  return Math.round(n * WIDTH_SCALE)
+}
 
 function fill(tiles: Uint8Array, id: MaterialId) {
   tiles.fill(M[id])
@@ -195,7 +207,7 @@ const EARTH: Theme = {
 
     // A shallow pond or two on the surface, with mud round the rim — the one
     // place on the map where the ground is both wet and fertile.
-    const ponds = 2 + Math.floor(rng() * 2)
+    const ponds = across(2) + Math.floor(rng() * across(2))
     for (let p = 0; p < ponds; p++) {
       const cx = Math.floor(rng() * WORLD_W)
       const w = 8 + Math.floor(rng() * 14)
@@ -249,10 +261,16 @@ const STATION: Theme = {
     }
     const rooms: Box[] = []
 
+    // Each level of recursion doubles the room count, so widening the station
+    // needs *more depth*, not a bigger number — at the old limit of 4 the same
+    // sixteen rooms would simply have been stretched to three times the size,
+    // and a station made of enormous empty halls stops reading as a station.
+    const maxDepth = 4 + Math.round(Math.log2(WIDTH_SCALE))
+
     function split(box: Box, depth: number) {
       const w = box.x1 - box.x0
       const h = box.y1 - box.y0
-      if (depth > 4 || (w < 26 && h < 20) || rooms.length > 24) {
+      if (depth > maxDepth || (w < 26 && h < 20) || rooms.length > across(24)) {
         rooms.push(box)
         return
       }
@@ -373,7 +391,7 @@ const TIDEPOOL: Theme = {
     }
 
     // Scattered tidepools sitting on top of the shelves.
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < across(14); i++) {
       const cx = Math.floor(rng() * WORLD_W)
       let y = 0
       while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
@@ -386,7 +404,7 @@ const TIDEPOOL: Theme = {
     }
 
     // Shells and old bones worked into the sand, and a few gems in the bedrock.
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < across(10); i++) {
       const cx = Math.floor(rng() * WORLD_W)
       const cy = Math.floor(WORLD_H * (0.7 + rng() * 0.28))
       blob(tiles, cx, cy, 2 + Math.floor(rng() * 3), rng() < 0.6 ? 'bone' : 'gem', rng, [
@@ -449,7 +467,7 @@ const VOLCANIC: Theme = {
     }
 
     // Lava falls spilling down from the surface.
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < across(4); i++) {
       const cx = 12 + Math.floor(rng() * (WORLD_W - 24))
       let y = 0
       while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
@@ -461,7 +479,7 @@ const VOLCANIC: Theme = {
 
     // Crystal geodes and gem seams growing in the cooled rock, plus the bones
     // of whatever didn't get out in time.
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < across(16); i++) {
       const cx = Math.floor(rng() * WORLD_W)
       const cy = Math.floor(WORLD_H * (0.4 + rng() * 0.45))
       const roll = rng()
@@ -471,7 +489,7 @@ const VOLCANIC: Theme = {
 
     // A couple of acid pools sitting in the ash. They eat their way down and
     // then they're gone, which is exactly what makes them safe to leave here.
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < across(2); i++) {
       const cx = Math.floor(rng() * WORLD_W)
       let y = 0
       while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++

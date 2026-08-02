@@ -22,8 +22,8 @@ import {
   rememberSpecies,
   updateChronicle,
 } from './chronicle/chronicle'
-import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { artSize, bodyBox, sanitizeBlueprint } from './domain/blueprint'
+import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
 import {
   ELDER_MIN_SECONDS,
@@ -86,6 +86,27 @@ function readMilestones(): EarnedMilestone[] {
   }))
 }
 
+/** Held-key and held-button pan speed, world tiles per second. */
+const PAN_SPEED = 115
+
+/** One wheel notch or one arrow-button tap, in world tiles. */
+const PAN_STEP = 34
+
+/**
+ * How close to the edge you can drag something before the world starts sliding.
+ *
+ * Expressed as a fraction of the view rather than a tile count so it behaves the
+ * same on a phone showing 224 tiles and a monitor showing 400.
+ */
+const EDGE_BAND = 0.12
+const EDGE_SPEED = 90
+
+/** How hard the camera chases the creature the inspector is watching. */
+const FOLLOW_SPEED = 90
+
+/** Drag further than this and a tap was really a pan. CSS pixels. */
+const TAP_SLOP = 6
+
 export class GameInstance {
   private canvas: HTMLCanvasElement
   private renderer: Renderer
@@ -134,6 +155,30 @@ export class GameInstance {
   private lastPlaceAt = 0
   private resizeObserver: ResizeObserver | null = null
 
+  // --- camera state ---
+  /** Every pointer currently down, so a second finger can be noticed. */
+  private pointers = new Map<number, number>()
+  /** Client X where a drag-pan started, and the camera position it started at. */
+  private panAnchorX = 0
+  private panAnchorCam = 0
+  private panning = false
+  /** -1, 0 or 1 — an arrow key or arrow button being held down. */
+  private panHeld = 0
+  /** Direction keys currently held, so releasing one of two doesn't stop both. */
+  private keysDown = new Set<string>()
+  /** A look-mode tap waiting to see whether it turns into a pan. */
+  private pendingInspect: { id: number | null } | null = null
+  /** The pointer went down on the minimap, so it belongs to the minimap. */
+  private scrubbingMap = false
+  /**
+   * Whether the camera is still chasing the inspected creature.
+   *
+   * Cleared the moment the player pans by hand: following is a convenience, and
+   * a camera that drags itself back after you deliberately looked somewhere else
+   * is not a convenience.
+   */
+  private following = false
+
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas
     this.renderer = new Renderer(canvas)
@@ -175,6 +220,7 @@ export class GameInstance {
     const apply = () => {
       const rect = parent.getBoundingClientRect()
       this.renderer.resize(rect.width, rect.height)
+      useMicroLand.getState().setCanPan(!this.renderer.fitsOnScreen)
     }
     apply()
     this.resizeObserver = new ResizeObserver(apply)
@@ -218,7 +264,54 @@ export class GameInstance {
     // Keep the grabbed creature glued to the finger even while paused.
     if (this.grabbed) this.grabbed.vx = this.grabbed.vy = 0
 
+    // Panning runs off wall-clock rather than the sim clock, so the camera
+    // answers at the same speed whether the world is paused or on fast-forward.
+    this.updateCamera(delta / 1000)
+
     this.renderer.render(this.world, theme, this.inspectedId, this.elderId)
+  }
+
+  /**
+   * Move the camera for anything that isn't a direct drag.
+   *
+   * Held keys and held buttons, carrying a creature past the edge, and chasing
+   * whatever the inspector is watching. Drag-panning is absolute and lives in
+   * the pointer handler; everything here is per-second and belongs on a clock.
+   */
+  private updateCamera(dt: number): void {
+    if (this.panHeld !== 0) {
+      this.following = false
+      this.renderer.panBy(this.panHeld * PAN_SPEED * dt)
+    }
+
+    // Carry a creature to the edge and the world comes with it — otherwise
+    // there is no way to move something from one end of the world to the other.
+    if (this.grabbed && this.pointerDown && !this.panning) {
+      const view = this.renderer.viewWidth
+      const cam = this.renderer.cameraX
+      const held = this.grabbed.x
+      let dir = 0
+      if (held < cam + view * EDGE_BAND) dir = -1
+      else if (held > cam + view * (1 - EDGE_BAND)) dir = 1
+
+      if (dir !== 0) {
+        this.renderer.panBy(dir * EDGE_SPEED * dt)
+        // The creature is positioned from the pointer, and the pointer isn't
+        // moving — so without dragging it along by the same amount it would slip
+        // out of the edge band on the first frame and the scroll would stop dead.
+        const moved = this.renderer.cameraX - cam
+        const bp = this.world.blueprints[this.grabbed.blueprintId]
+        const bw = bp ? artSize(bp).w : 0
+        this.grabbed.x = Math.max(0, Math.min(this.world.width - bw, held + moved))
+      }
+    }
+
+    if (this.following && this.inspectedId !== null) {
+      const c = this.world.creatures.find((x) => x.id === this.inspectedId)
+      if (c) {
+        this.renderer.keepInView(c.x, this.renderer.viewWidth * 0.22, FOLLOW_SPEED * dt)
+      }
+    }
   }
 
   private step(gravity: number, events: SimEvent[]): void {
@@ -548,6 +641,7 @@ export class GameInstance {
     if (!c) {
       // It died while we were watching. Let go rather than freezing a corpse.
       this.inspectedId = null
+    this.following = false
       store.setInspected(null)
       return
     }
@@ -609,6 +703,7 @@ export class GameInstance {
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
+    this.following = false
     }
     this.renderer.markTilesDirty()
     useMicroLand.getState().setSummonedLand(terrain.name)
@@ -626,6 +721,7 @@ export class GameInstance {
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
+    this.following = false
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -637,6 +733,7 @@ export class GameInstance {
     clearCreatures(this.world)
     this.knownSpecies.clear()
     this.inspectedId = null
+    this.following = false
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
     this.beginLand()
@@ -651,6 +748,7 @@ export class GameInstance {
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
+    this.following = false
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -660,6 +758,7 @@ export class GameInstance {
     clearCreatures(this.world)
     this.knownSpecies.clear()
     this.inspectedId = null
+    this.following = false
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
     this.beginLand()
@@ -674,6 +773,7 @@ export class GameInstance {
     this.world.dormant = true
     this.knownSpecies.clear()
     this.inspectedId = null
+    this.following = false
     // Emptying the world is an extinction of everything, so the streak goes with
     // it — but silently, since the player did it on purpose.
     this.beginLand()
@@ -707,18 +807,89 @@ export class GameInstance {
   // Input
   // -------------------------------------------------------------------------
 
+  // --- camera, driven from the UI ------------------------------------------
+
+  /** Start or stop a held pan. Used by the on-screen arrows. */
+  holdPan(direction: -1 | 0 | 1): void {
+    this.panHeld = direction
+    if (direction !== 0) this.following = false
+  }
+
+  /** One tap's worth of pan, for a click that never becomes a hold. */
+  nudgePan(direction: -1 | 1): void {
+    this.following = false
+    this.renderer.panBy(direction * PAN_STEP)
+  }
+
+  // --- pointer --------------------------------------------------------------
+
+  private beginPan(clientX: number): void {
+    this.panning = true
+    this.following = false
+    this.panAnchorX = clientX
+    this.panAnchorCam = this.renderer.cameraX
+  }
+
+  /** Midpoint of every finger down, so a two-finger pan doesn't pivot. */
+  private pointerCenterX(): number {
+    let sum = 0
+    for (const x of this.pointers.values()) sum += x
+    return this.pointers.size > 0 ? sum / this.pointers.size : 0
+  }
+
+  /** Let go of whatever the first finger had started, without acting on it. */
+  private cancelPointerAction(): void {
+    if (this.grabbed) {
+      this.grabbed.vx = 0
+      this.grabbed.vy = 0
+      this.grabbed = null
+      this.grabTrail = []
+    }
+    this.pendingInspect = null
+  }
+
   private onPointerDown = (e: PointerEvent) => {
+    this.pointers.set(e.pointerId, e.clientX)
+
+    // A second finger always means "move the world", whatever the first one had
+    // started doing. Two fingers on a canvas is a pan everywhere else on a
+    // phone, and the alternative — painting from both — is nobody's intent.
+    if (this.pointers.size === 2) {
+      this.cancelPointerAction()
+      this.beginPan(this.pointerCenterX())
+      return
+    }
+    if (this.pointers.size > 2) {
+      this.reanchorPan()
+      return
+    }
     if (!e.isPrimary) return
+
     this.canvas.setPointerCapture(e.pointerId)
+    this.canvas.focus({ preventScroll: true })
     this.pointerDown = true
+
+    // The minimap is painted on the world canvas, so it has to be given the
+    // chance to claim a tap before the tap is allowed to dig a hole. The flag
+    // has to outlive the tap, too: without it the next pointermove would fall
+    // straight through to the paint tool and carve a trench under the map.
+    const jump = this.renderer.minimapHit(e.clientX, e.clientY)
+    if (jump !== null) {
+      this.scrubbingMap = true
+      this.following = false
+      this.renderer.centerOn(jump)
+      return
+    }
 
     const p = this.renderer.screenToWorld(e.clientX, e.clientY)
     const hit = this.creatureAt(p.x, p.y)
 
     if (useMicroLand.getState().tool.kind === 'inspect') {
-      // Tapping nothing clears the selection, which is how you close the panel.
-      this.inspectedId = hit ? hit.id : null
-      this.pushInspected()
+      // Look mode has nothing to paint, so a drag is free to mean "pan" — the
+      // one place a single finger can move the world without ambiguity. The
+      // selection is resolved on release, so a pan doesn't also deselect.
+      this.pendingInspect = { id: hit ? hit.id : null }
+      this.beginPan(e.clientX)
       return
     }
 
@@ -734,7 +905,28 @@ export class GameInstance {
   }
 
   private onPointerMove = (e: PointerEvent) => {
+    if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, e.clientX)
+
+    if (this.panning) {
+      const from = this.pointers.size >= 2 ? this.pointerCenterX() : e.clientX
+      const dx = from - this.panAnchorX
+      // A tap that has turned into a drag is no longer a tap.
+      if (this.pendingInspect && Math.abs(dx) > TAP_SLOP) this.pendingInspect = null
+      this.renderer.panToLeft(
+        this.panAnchorCam - dx * this.renderer.tilesPerClientPixel()
+      )
+      return
+    }
+
     if (!this.pointerDown || !e.isPrimary) return
+
+    // Drag along the map and the world follows — the fastest way to cross it.
+    if (this.scrubbingMap) {
+      const jump = this.renderer.minimapHit(e.clientX, e.clientY)
+      if (jump !== null) this.renderer.centerOn(jump)
+      return
+    }
+
     const p = this.renderer.screenToWorld(e.clientX, e.clientY)
 
     if (this.grabbed) {
@@ -761,8 +953,23 @@ export class GameInstance {
   }
 
   private onPointerUp = (e: PointerEvent) => {
+    this.pointers.delete(e.pointerId)
+    if (this.panning && this.pointers.size === 0) this.panning = false
+    else this.reanchorPan()
+
     if (!e.isPrimary) return
     this.pointerDown = false
+    this.scrubbingMap = false
+
+    // A look-mode tap that never travelled far enough to be a pan.
+    if (this.pendingInspect) {
+      this.inspectedId = this.pendingInspect.id
+      // Following a creature you deliberately picked out is the point of
+      // watching one; following "nothing" would just freeze the camera.
+      this.following = this.pendingInspect.id !== null
+      this.pendingInspect = null
+      this.pushInspected()
+    }
 
     if (this.grabbed) {
       // Throw: velocity from how fast the pointer was moving as it let go.
@@ -844,11 +1051,83 @@ export class GameInstance {
     return null
   }
 
+  /** Fingers came or went mid-pan — take a fresh reading so it doesn't jump. */
+  private reanchorPan(): void {
+    if (!this.panning || this.pointers.size === 0) return
+    this.panAnchorX = this.pointerCenterX()
+    this.panAnchorCam = this.renderer.cameraX
+  }
+
+  /**
+   * A wheel or trackpad scrolls the world sideways.
+   *
+   * Vertical scroll is folded in as well as horizontal: there is nothing above
+   * or below to scroll to, and a mouse with one wheel is still the most common
+   * way anyone will touch this.
+   */
+  private onWheel = (e: WheelEvent) => {
+    const raw = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+    if (raw === 0) return
+    e.preventDefault()
+    this.following = false
+    // deltaMode: 0 pixels, 1 lines, 2 pages.
+    const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1
+    const tiles = raw * unit * 0.25
+    this.renderer.panBy(Math.max(-PAN_STEP, Math.min(PAN_STEP, tiles)))
+  }
+
+  /** Which way, if any, does this key point? */
+  private static keyDirection(key: string): -1 | 0 | 1 {
+    if (key === 'ArrowLeft' || key === 'a' || key === 'A') return -1
+    if (key === 'ArrowRight' || key === 'd' || key === 'D') return 1
+    return 0
+  }
+
+  private onKeyDown = (e: KeyboardEvent) => {
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+
+    if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault()
+      this.following = false
+      this.renderer.panToLeft(e.key === 'Home' ? 0 : this.world.width)
+      return
+    }
+
+    const dir = GameInstance.keyDirection(e.key)
+    if (dir === 0) return
+    e.preventDefault()
+    this.keysDown.add(e.key)
+    this.panHeld = dir
+    this.following = false
+  }
+
+  private onKeyUp = (e: KeyboardEvent) => {
+    this.keysDown.delete(e.key)
+    // Holding both arrows and releasing one should leave you moving the other
+    // way, not stop dead.
+    let dir: -1 | 0 | 1 = 0
+    for (const key of this.keysDown) {
+      const d = GameInstance.keyDirection(key)
+      if (d !== 0) dir = d
+    }
+    this.panHeld = dir
+  }
+
+  /** A canvas that lost focus can't hear a keyup, so it must not stay stuck. */
+  private onBlur = () => {
+    this.keysDown.clear()
+    this.panHeld = 0
+  }
+
   private attachInput(): void {
     this.canvas.addEventListener('pointerdown', this.onPointerDown)
     this.canvas.addEventListener('pointermove', this.onPointerMove)
     this.canvas.addEventListener('pointerup', this.onPointerUp)
     this.canvas.addEventListener('pointercancel', this.onPointerUp)
+    this.canvas.addEventListener('wheel', this.onWheel, { passive: false })
+    this.canvas.addEventListener('keydown', this.onKeyDown)
+    this.canvas.addEventListener('keyup', this.onKeyUp)
+    this.canvas.addEventListener('blur', this.onBlur)
   }
 
   private detachInput(): void {
@@ -856,5 +1135,9 @@ export class GameInstance {
     this.canvas.removeEventListener('pointermove', this.onPointerMove)
     this.canvas.removeEventListener('pointerup', this.onPointerUp)
     this.canvas.removeEventListener('pointercancel', this.onPointerUp)
+    this.canvas.removeEventListener('wheel', this.onWheel)
+    this.canvas.removeEventListener('keydown', this.onKeyDown)
+    this.canvas.removeEventListener('keyup', this.onKeyUp)
+    this.canvas.removeEventListener('blur', this.onBlur)
   }
 }

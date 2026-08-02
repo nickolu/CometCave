@@ -150,6 +150,13 @@ interface MicroLandState {
    */
   archive: SpeciesRecord[]
   milestones: EarnedMilestone[]
+  /**
+   * Whether the world is wider than the view.
+   *
+   * Almost always true, but an ultrawide display can fit all 672 tiles at once,
+   * and scroll buttons that visibly do nothing are worse than no buttons.
+   */
+  canPan: boolean
 
   notices: Notice[]
 
@@ -173,6 +180,7 @@ interface MicroLandState {
   setRecords: (records: RecordsView) => void
   setArchive: (archive: SpeciesRecord[]) => void
   setMilestones: (milestones: EarnedMilestone[]) => void
+  setCanPan: (canPan: boolean) => void
   notify: (text: string) => void
   dismissNotice: (id: number) => void
 }
@@ -200,6 +208,7 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   pendingSummons: [],
   guideOpen: false,
   inspected: null,
+  canPan: true,
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -232,6 +241,7 @@ export const useMicroLand = create<MicroLandState>((set) => ({
   setRecords: (records) => set({ records }),
   setArchive: (archive) => set({ archive }),
   setMilestones: (milestones) => set({ milestones }),
+  setCanPan: (canPan) => set({ canPan }),
 
   notify: (text) =>
     set((s) => ({

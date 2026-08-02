@@ -81,6 +81,48 @@ export interface SimEvent {
 
 let tickCount = 0
 
+/**
+ * The population sorted left to right, reused between ticks.
+ *
+ * `look` used to walk the entire population to find the handful of things within
+ * an 18-tile line of sight. That was tolerable when the world was one screen
+ * wide, and stops being tolerable at three: the population cap scales with the
+ * area, so the all-pairs cost scales with its *square* while the number of
+ * creatures actually near you doesn't change at all.
+ *
+ * Sorting by x and walking only the slice within reach makes the cost track the
+ * local crowd instead of the headcount. The array is nearly sorted every tick —
+ * nothing moves far in 1/60th of a second — which is the case sort is fastest
+ * at, and it is kept around rather than rebuilt so a busy world isn't handing
+ * the collector a thousand-element array sixty times a second.
+ */
+const byX: Creature[] = []
+
+/**
+ * Slack either side of the sight window, in tiles.
+ *
+ * Sorting is on the sprite's left edge but sight is measured from its centre,
+ * so a wide creature's edge can sit well outside the window its centre falls in.
+ * Covers the widest sprite plus a tick's worth of drift since the sort.
+ */
+const SIGHT_PAD = 20
+
+function compareX(a: Creature, b: Creature): number {
+  return a.x - b.x
+}
+
+/** First index whose x is not less than `x`. The array must be sorted. */
+function lowerBound(list: Creature[], x: number): number {
+  let lo = 0
+  let hi = list.length
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1
+    if (list[mid].x < x) lo = mid + 1
+    else hi = mid
+  }
+  return lo
+}
+
 export function tickCreatures(
   w: WorldState,
   dt: number,
@@ -116,6 +158,11 @@ export function tickCreatures(
   for (const c of creatures) {
     if (w.blueprints[c.blueprintId]?.aura) helpers.push(c)
   }
+
+  // Rebuilt in place, then sorted, once for every creature that looks this tick.
+  byX.length = creatures.length
+  for (let i = 0; i < creatures.length; i++) byX[i] = creatures[i]
+  byX.sort(compareX)
 
   for (const c of creatures) {
     if (dead.has(c.id)) continue
@@ -272,7 +319,13 @@ function look(
   let prey: Creature | null = null
   let preyDist = Infinity
 
-  for (const other of w.creatures) {
+  // Only the creatures whose left edge falls in the sight window can possibly
+  // be in range; everything beyond the window is skipped without being touched.
+  const reach = bp.senses.sight + SIGHT_PAD
+  const last = cx + reach
+  for (let i = lowerBound(byX, cx - reach); i < byX.length; i++) {
+    const other = byX[i]
+    if (other.x > last) break
     if (other.id === c.id || dead.has(other.id)) continue
     const obp = w.blueprints[other.blueprintId]
     if (!obp) continue

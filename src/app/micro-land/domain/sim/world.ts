@@ -21,6 +21,7 @@ import {
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   SEED_RAIN_INTERVAL,
+  WIDTH_SCALE,
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
@@ -488,7 +489,14 @@ export function spawnSomewhereSensible(
   return spawnCreature(w, bp, spot.x, spot.y)
 }
 
-/** Seed a theme's resident population. */
+/**
+ * Seed a theme's resident population.
+ *
+ * Starter counts are written per screen of land, and scaled up here rather than
+ * in each theme so the numbers stay readable as what they are: 34 sunleaf is a
+ * meadow, and it should still be a meadow in a world three times the size
+ * instead of a thin scattering the player has to go looking for.
+ */
 export function seedStarters(w: WorldState, themeId: string, rng: Rng): void {
   const theme = THEME_BY_ID[themeId]
   if (!theme) return
@@ -497,7 +505,8 @@ export function seedStarters(w: WorldState, themeId: string, rng: Rng): void {
     const bp = w.blueprints[entry.id]
     if (!bp) continue
     if (!w.natives.includes(bp.id)) w.natives.push(bp.id)
-    for (let i = 0; i < entry.count; i++) spawnSomewhereSensible(w, bp, rng)
+    const count = Math.round(entry.count * WIDTH_SCALE)
+    for (let i = 0; i < count; i++) spawnSomewhereSensible(w, bp, rng)
   }
 }
 
