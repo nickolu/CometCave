@@ -51,6 +51,10 @@ export async function POST(request: Request) {
 
     const { revisionPrompt, currentLayout, storyConfig } = await request.json()
 
+    if (revisionPrompt && revisionPrompt.length > 1000) {
+      return NextResponse.json({ error: 'revisionPrompt must be 1000 characters or fewer.' }, { status: 400 })
+    }
+
     if (!revisionPrompt || !currentLayout) {
       return NextResponse.json(
         { error: 'revisionPrompt and currentLayout are required' },
