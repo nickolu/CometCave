@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-30",
+  "categoryId": 9,
+  "categoryName": "General Knowledge",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-30-0",
+      "question": "Which of the following is not the host of a program on NPR?",
+      "options": [
+        "Terry Gross",
+        "Ira Glass",
+        "Peter Sagal",
+        "Ben Shapiro"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Ben Shapiro"
+    },
+    {
+      "id": "opentdb-2026-07-30-1",
+      "question": "What is the name of the antagonist group in Danganronpa Another Episode: Ultra Despair Girls?",
+      "options": [
+        "The Monokubs",
+        "Warriors of Despair",
+        "The Ultimate Despair",
+        "Warriors of Hope"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Warriors of Hope"
+    },
+    {
+      "id": "opentdb-2026-07-30-2",
+      "question": "Area 51 is located in which US state?",
+      "options": [
+        "New Mexico",
+        "Utah",
+        "Arizona",
+        "Nevada"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Nevada"
+    },
+    {
+      "id": "opentdb-2026-07-30-3",
+      "question": "Out of these four buildings, which one is the tallest, with a height of 1,776 ft (541.3 m)?",
+      "options": [
+        "Willis Tower, United States",
+        "Jin Mao Tower, China",
+        "Taipei 101, Taiwan",
+        "One World Trade Center, United States"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "One World Trade Center, United States"
+    },
+    {
+      "id": "opentdb-2026-07-30-4",
+      "question": "What name represents the letter \"M\" in the NATO phonetic alphabet?",
+      "options": [
+        "Mark",
+        "Max",
+        "Matthew",
+        "Mike"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Mike"
+    },
+    {
+      "id": "opentdb-2026-07-30-5",
+      "question": "What is the romanized Arabic word for \"moon\"?",
+      "options": [
+        "Najma",
+        "Shams",
+        "Kawkab",
+        "Qamar"
+      ],
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Qamar"
+    },
+    {
+      "id": "ai-2026-07-30-6",
+      "question": "Which Roman leader introduced the first calendar leap year in 46 B.C.?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Julius Caesar",
+      "explanation": "Julius Caesar introduced the leap-year system in 46 B.C. as part of his reform of the Roman calendar, now known as the Julian calendar. The extra day every four years was designed to keep the calendar aligned with Earth's solar year. This system was later refined into the Gregorian calendar we use today."
+    },
+    {
+      "id": "ai-2026-07-30-7",
+      "question": "According to which U.S. health agency do smiling for the first time, waving \"bye bye,\" and taking a first step count as baby developmental milestones?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "CDC",
+      "explanation": "The CDC (Centers for Disease Control and Prevention) tracks developmental milestones to help parents and doctors monitor a child's growth and health. These early milestones — like a first smile, waving, and first steps — are key indicators that a baby is developing typically. The CDC provides milestone checklists for ages ranging from 2 months all the way to 5 years."
+    },
+    {
+      "id": "ai-2026-07-30-8",
+      "question": "The \"Manchester syntax\" is a user-friendly, frame-based compact syntax designed for working with what type of formal knowledge representation structures used in semantic web technologies?",
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "OWL 2 ontologies",
+      "explanation": "Manchester syntax was developed as a human-readable, compact way to write OWL 2 ontologies, which are formal representations of knowledge used in semantic web technologies. Unlike other OWL syntaxes, it organizes information in a frame-based style rather than an axiom-based approach, making it more intuitive for ontology engineers. It is widely supported in tools like the Protégé ontology editor."
+    },
+    {
+      "id": "ai-2026-07-30-9",
+      "question": "In prosody, a trochee is described as the mirror opposite of which metrical foot, differing in that it leads with a stressed syllable rather than an unstressed one?",
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "iamb",
+      "explanation": "An iamb consists of an unstressed syllable followed by a stressed one (da-DUM), while a trochee reverses this pattern to stressed-then-unstressed (DUM-da). These two feet are among the most fundamental building blocks of English verse, with iambic pentameter being the dominant meter in Shakespeare and much of English poetry."
+    }
+  ]
+}

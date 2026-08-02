@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     const finalEnemy: CombatEnemy = isBossEncounter ? scaleBossForParty(enemy, partySize) : enemy
 
     // Generate a stable combat ID first so we can use it for seeding
-    const combatId = `combat-${Date.now()}-${Math.floor(Math.random() * 10000)}`
+    const combatId = crypto.randomUUID()
 
     // Generate additional enemies for non-boss fights with party members
     let additionalEnemies: CombatEnemy[] | undefined
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error starting combat', err)
     return NextResponse.json(
-      { error: 'Failed to start combat', details: (err as Error).message },
+      { error: 'Failed to start combat' },
       { status: 500 }
     )
   }

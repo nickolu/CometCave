@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-05",
+  "categoryId": 32,
+  "categoryName": "Entertainment: Cartoon & Animations",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-05-0",
+      "question": "In the show \"Steven Universe\", who are the main two employees of The Big Donut?",
+      "options": [
+        "Erik and Julie",
+        "Bob and May",
+        "Steven and James",
+        "Sadie and Lars"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Sadie and Lars"
+    },
+    {
+      "id": "opentdb-2026-07-05-1",
+      "question": "In the 1993 Disney animated series \"Bonkers\", what is the name of Bonker's second partner?",
+      "options": [
+        "Eddie Valiant",
+        "Dr. Ludwig von Drake",
+        "Dick Tracy",
+        "Miranda Wright"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Miranda Wright"
+    },
+    {
+      "id": "opentdb-2026-07-05-2",
+      "question": "In \"Avatar: The Last Airbender\", which element does Aang begin to learn after being defrosted?",
+      "options": [
+        "Air",
+        "Fire",
+        "Earth",
+        "Water"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Water"
+    },
+    {
+      "id": "opentdb-2026-07-05-3",
+      "question": "Which episode from The Amazing World Of Gumball won the Childrens Choice Award at the British Animation Awards in 2016?",
+      "options": [
+        "The Limit",
+        "The Gripes",
+        "The Kids",
+        "The Shell"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "The Shell"
+    },
+    {
+      "id": "opentdb-2026-07-05-4",
+      "question": "Which Hanna-Barbera cartoon character travelled with a canine companion named Beegle Beagle?",
+      "options": [
+        "Boss Gator",
+        "Yogi Bear",
+        "Wally Gator",
+        "Grape Ape"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Grape Ape"
+    },
+    {
+      "id": "opentdb-2026-07-05-5",
+      "question": "In the \"Star Wars\" universe, what species is Grand Admiral Thrawn?",
+      "options": [
+        "Gungans",
+        "Pantorans",
+        "Twi'lek",
+        "Chiss"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "opentdb",
+      "correctAnswer": "Chiss"
+    },
+    {
+      "id": "ai-2026-07-05-6",
+      "question": "What is the name of the rare dragon that Hiccup befriends in How to Train Your Dragon?",
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Toothless",
+      "explanation": "Toothless is a Night Fury, one of the rarest and most feared dragon species in the How to Train Your Dragon franchise. Hiccup's unlikely bond with Toothless forms the heart of the story, challenging the Viking tradition of hunting dragons. The duo's friendship ultimately brings peace between Vikings and dragons."
+    },
+    {
+      "id": "ai-2026-07-05-7",
+      "question": "On which kids' TV network did the animated show Phineas and Ferb become one of the most successful franchises?",
+      "difficulty": "easy",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Disney Channel",
+      "explanation": "Phineas and Ferb, which premiered in 2007, became one of Disney Channel's most beloved and successful animated franchises, running for four seasons. The show follows two stepbrothers who embark on elaborate summer adventures, and it spawned movies, merchandise, and a revival series."
+    },
+    {
+      "id": "ai-2026-07-05-8",
+      "question": "Which DreamWorks animated film, released in October 2011, is set roughly ten years after the events of Shrek Forever After?",
+      "difficulty": "medium",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Puss in Boots",
+      "explanation": "Puss in Boots was released on October 28, 2011, as a spin-off of the Shrek franchise, with its story taking place approximately ten years after the events of Shrek Forever After. The film follows the swashbuckling feline voiced by Antonio Banderas on his own adventure involving the legendary magic beans. It was a box-office hit, earning over $550 million worldwide."
+    },
+    {
+      "id": "ai-2026-07-05-9",
+      "question": "Which 1952 short film is widely regarded as one of the most iconic examples of the animation technique known as pixilation?",
+      "difficulty": "hard",
+      "category": "Entertainment: Cartoon & Animations",
+      "source": "ai",
+      "correctAnswer": "Neighbours",
+      "explanation": "Neighbours (1952), directed by Norman McLaren for the National Film Board of Canada, is a landmark work in the use of pixilation — a technique where live actors are treated frame-by-frame like stop-motion puppets. The film won the Academy Award for Best Documentary Short Subject and remains a celebrated example of experimental animation."
+    }
+  ]
+}

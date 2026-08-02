@@ -32,7 +32,7 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
         <span className="text-sm font-bold text-amber-400">
           📬 Mailbox {unreadCount > 0 && <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full ml-1">{unreadCount}</span>}
         </span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose}>✕</button>
+        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close mailbox">✕</button>
       </div>
 
       {composing ? (
@@ -79,6 +79,7 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
                   placeholder="Write your message..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
+                  aria-label="Message"
                 />
                 <div className="text-[10px] text-slate-600 text-right">{messageText.length}/200</div>
               </div>
