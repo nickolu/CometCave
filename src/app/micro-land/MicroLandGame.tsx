@@ -7,6 +7,7 @@ import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
 import { Inspector } from '@/app/micro-land/components/inspector'
 import { Notices } from '@/app/micro-land/components/notices'
+import { PanControls } from '@/app/micro-land/components/pan-controls'
 import { SummonPanel } from '@/app/micro-land/components/summon-panel'
 import { Toolbar } from '@/app/micro-land/components/toolbar'
 import { THEME_BY_ID } from '@/app/micro-land/domain/config/themes'
@@ -81,6 +82,14 @@ export function MicroLandGame() {
     return gameRef.current?.nameElder(name) ?? false
   }, [])
 
+  const handleHoldPan = useCallback((direction: -1 | 0 | 1) => {
+    gameRef.current?.holdPan(direction)
+  }, [])
+
+  const handleNudgePan = useCallback((direction: -1 | 1) => {
+    gameRef.current?.nudgePan(direction)
+  }, [])
+
   const handleApplyTerrain = useCallback((raw: unknown, keepCreatures: boolean) => {
     const game = gameRef.current
     if (!game) return null
@@ -95,10 +104,14 @@ export function MicroLandGame() {
       <div className="relative min-h-0 flex-1">
         <canvas
           ref={canvasRef}
-          className="absolute inset-0 block h-full w-full touch-none"
+          // Focusable so the arrow keys reach it. The world is wider than the
+          // screen, and a keyboard has to be able to get to the rest of it.
+          tabIndex={0}
+          className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
           style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
-          aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it."
+          aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world."
         />
+        <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
         <Notices />
         <Inspector onName={handleNameElder} />
       </div>

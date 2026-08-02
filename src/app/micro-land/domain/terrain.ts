@@ -22,7 +22,14 @@ import type { Theme } from './config/themes'
 import type { MaterialId } from './types'
 
 const MAP_MIN = 6
-const MAP_MAX_COLS = 96
+/**
+ * Wide enough for a model to draw the whole world at once.
+ *
+ * A world 672 tiles across wants roughly 120 map columns to keep its cells
+ * square. This sits well above that so a model that draws generously gets its
+ * detail scaled down rather than chopped off at the right-hand edge.
+ */
+const MAP_MAX_COLS = 200
 const MAP_MAX_ROWS = 48
 const MAX_LEGEND = 14
 
@@ -90,7 +97,7 @@ export const TerrainSchema = z.object({
   map: z
     .array(z.string())
     .describe(
-      'The world drawn as rows of characters, top row = sky, bottom row = the very bottom of the world. Aim for about 40 characters wide and 24 rows tall; every row must be the same length. Use "." for empty air. This gets scaled up and roughened, so draw the big shapes — hills, caves, a shoreline, a lava layer — and let the detail happen on its own.'
+      'The world drawn as rows of characters, top row = sky, bottom row = the very bottom of the world. The world is WIDE — aim for about 120 characters across and 24 rows tall; every row must be the same length. Use "." for empty air. This gets scaled up and roughened, so draw the big shapes — hills, caves, a shoreline, a lava layer — and let the detail happen on its own. Vary it from one end to the other: it is a long stretch of land, not one scene repeated.'
     ),
 })
 
@@ -240,6 +247,14 @@ export function fitGroundLevel(map: string[], rng: Rng): string[] {
  * The sample point is nudged by a little fbm noise before it's floored, which
  * is what turns the map's straight cell edges into ragged, natural-looking
  * boundaries. Without it a 40x24 map upscaled 5x reads as obvious blocks.
+ *
+ * Horizontal scale is *not* simply "stretch the map to fit". The world is five
+ * times wider than it is tall, so stretching a 40-column map across it makes
+ * every cell three times wider than it is deep — hills become plateaus, caves
+ * become tunnels, and the whole thing reads as a smear. Instead a cell is kept
+ * square, and a map too narrow to reach the far edge is repeated, mirrored, so
+ * the seams line up and the land simply carries on. A model that draws the full
+ * ~120 columns never repeats at all.
  */
 export function paintTerrain(
   tiles: Uint8Array,
@@ -252,17 +267,31 @@ export function paintTerrain(
   const cols = map[0].length
   const noise = makeNoise2D(Math.floor(rng() * 1e9))
 
-  const scaleX = cols / WORLD_W
   const scaleY = rows / WORLD_H
+  // How many columns a map would need to cross the world with square cells.
+  const squareCols = WORLD_W * scaleY
+  const repeats = cols < squareCols - 0.5
+  // A map drawn *wider* than that is squeezed to fit instead of repeated. There
+  // is no third option — the rows have to span the world's full height, which
+  // fixes the vertical scale — and squeezing is much the gentler failure: it
+  // makes hills steeper, where the old stretch made them into plateaus.
+  const scaleX = repeats ? scaleY : cols / WORLD_W
+  // Out and back again, so the joins are reflections rather than hard cuts.
+  const period = cols * 2
+
   // Roughen by about half a map cell, in world tiles.
-  const wobble = Math.max(1, Math.min(WORLD_W / cols, WORLD_H / rows) * 0.65)
+  const wobble = Math.max(1, Math.min(1 / scaleX, 1 / scaleY) * 0.65)
 
   for (let y = 0; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
       const nx = (fbm(noise, x * 0.09, y * 0.09, 2) - 0.5) * 2 * wobble
       const ny = (fbm(noise, x * 0.09 + 31.7, y * 0.09 - 12.3, 2) - 0.5) * 2 * wobble
 
-      const cx = Math.floor((x + nx) * scaleX)
+      let cx = Math.floor((x + nx) * scaleX)
+      if (repeats) {
+        const p = ((cx % period) + period) % period
+        cx = p < cols ? p : period - 1 - p
+      }
       const cy = Math.floor((y + ny) * scaleY)
       const row = map[Math.max(0, Math.min(rows - 1, cy))]
       const ch = row[Math.max(0, Math.min(cols - 1, cx))] ?? '.'

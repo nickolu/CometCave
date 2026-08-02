@@ -1,8 +1,37 @@
 /** World tuning. One place to change the feel of everything. */
 
-/** World size in tiles. Everything is drawn at 1 pixel per tile, then scaled up. */
-export const WORLD_W = 224
+/**
+ * World size in tiles. Everything is drawn at 1 pixel per tile, then scaled up.
+ *
+ * The world is three screens wide and one screen tall. It used to be exactly one
+ * screen of each, and the old width lives on as VIEW_W below — that is the part
+ * that matters, because the terrarium is only legible at a certain number of
+ * tiles across. A creature is 4-28 tiles; fit 672 of them into a phone and the
+ * whole world is smaller than the sprite you are trying to look at.
+ */
+export const WORLD_W = 672
 export const WORLD_H = 132
+
+/**
+ * How much world the camera shows at once, in tiles.
+ *
+ * This is the *zoom*, not a viewport size: the renderer sizes a tile so that
+ * VIEW_W of them span the canvas, which is exactly the scale the world had back
+ * when it was 224 wide and fully visible. A wide display gets to see more than
+ * VIEW_W tiles (height runs out first), a phone sees exactly this many. Either
+ * way a hopper is the same size it has always been.
+ */
+export const VIEW_W = 224
+
+/**
+ * How many times wider than one screen the world is.
+ *
+ * Counts tuned for a single screen — how many ponds, how many starting hoppers,
+ * how many of a species the land can carry — are all densities wearing an
+ * absolute number's clothing. Multiplying them by this is what stops a world
+ * three times the size from feeling three times as empty.
+ */
+export const WIDTH_SCALE = WORLD_W / VIEW_W
 
 /** Fixed simulation step. */
 export const TICK_MS = 1000 / 60
@@ -17,8 +46,15 @@ export const GRAVITY = 34
 /** Terminal fall speed, tiles/second. Stops tunnelling through thin floors. */
 export const MAX_FALL = 46
 
-/** Hard population ceiling. Past this, nothing new is born (summoning still works). */
-export const MAX_CREATURES = 340
+/**
+ * Hard population ceiling. Past this, nothing new is born (summoning still works).
+ *
+ * Scaled with the world rather than left alone, because this ceiling binds well
+ * before the per-species caps do — leaving it at a single screen's worth would
+ * have made a three-screen world one third as densely populated, which is the
+ * opposite of what a bigger world is for.
+ */
+export const MAX_CREATURES = Math.round(340 * WIDTH_SCALE)
 
 /**
  * Hard ceiling on plants, so they can't blanket the world.
@@ -34,7 +70,7 @@ export const MAX_CREATURES = 340
  * else's, and a crowded world was starving its grazers rather than feeding more
  * of them.
  */
-export const MAX_PLANTS = 195
+export const MAX_PLANTS = Math.round(195 * WIDTH_SCALE)
 
 /** Seconds a drowning creature survives underwater. */
 export const BREATH_SECONDS = 9
@@ -92,10 +128,17 @@ export const SEED_RAIN_INTERVAL = 4
  * the harder the seed comes in. That asymmetry is deliberate — a constant
  * trickle would just pin every world at MAX_PLANTS and turn it into a carpet.
  */
-export const NATIVE_PLANT_TARGET = 45
+export const NATIVE_PLANT_TARGET = Math.round(45 * WIDTH_SCALE)
 export const PLANT_SEED_INTERVAL = 3
-/** Most plants a single seeding may place, when the world is at zero. */
-export const PLANT_SEED_BATCH = 3
+/**
+ * Most plants a single seeding may place, when the world is at zero.
+ *
+ * Scaled along with the target, not left alone. The interval is a wall-clock
+ * rate, so a batch that doesn't grow with the world turns "a meadow can come
+ * back" into "a meadow comes back three times slower" — long enough that the
+ * grazers waiting on it starve again before it arrives.
+ */
+export const PLANT_SEED_BATCH = Math.round(3 * WIDTH_SCALE)
 /**
  * How many species the ground picks when it establishes its natives.
  *
@@ -112,7 +155,7 @@ export const NATIVE_PLANT_SPECIES = 3
  * species starves at once. This is the environment saying "there is only so much
  * room here" and is what turns a terminal crash into an oscillation.
  */
-export const SPECIES_SOFT_CAP = 70
+export const SPECIES_SOFT_CAP = Math.round(70 * WIDTH_SCALE)
 
 /**
  * Carrying capacity for a single *plant* species.
@@ -122,12 +165,12 @@ export const SPECIES_SOFT_CAP = 70
  * a monoculture — which then starves out every grazer too small to eat it.
  * Keeping this well under MAX_PLANTS is what leaves room for a mixed meadow.
  */
-export const PLANT_SPECIES_CAP = 46
+export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
 
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9
 
-export const MAX_PARTICLES = 400
+export const MAX_PARTICLES = Math.round(400 * WIDTH_SCALE)
 
 // ---------------------------------------------------------------------------
 // Records
