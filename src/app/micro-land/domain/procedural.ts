@@ -108,6 +108,8 @@ const SHAPES: Record<string, Shape> = {
 interface Read {
   kind: LocomotionKind
   shape: keyof typeof SHAPES
+  /** Springiness for walkers — see `CreatureMove.hop`. */
+  hop: number
   eats: string[]
   tags: string[]
   size: number
@@ -155,6 +157,18 @@ function readPrompt(prompt: string): Read {
     kind = 'walk'
     shape = 'bug'
   }
+
+  // Springiness rides on top of the body plan rather than replacing it, so a
+  // "hopping mushroom" is still rooted and a frog is still a walker. This is the
+  // fallback creature — the one a child gets when the summon fails — and asking
+  // for a frog and being handed something that plods is the moment they notice
+  // nobody was really listening. Matching on 'hop' as a substring picks up
+  // grasshopper and hopper along the way, which is the intent.
+  const hop = has('frog', 'toad', 'rabbit', 'bunny', 'hare', 'kangaroo', 'flea', 'hop', 'bounce')
+    ? 1
+    : has('cricket', 'locust', 'spring', 'jump', 'leap')
+      ? 0.6
+      : 0
 
   // Diet. An explicit "eats ..." clause wins; otherwise anything that sounds
   // toothy eats meat and the rest graze.
@@ -219,6 +233,7 @@ function readPrompt(prompt: string): Read {
   return {
     kind,
     shape,
+    hop,
     eats,
     tags,
     size,
@@ -275,6 +290,7 @@ export function proceduralCreature(prompt: string): CreatureBlueprint {
         kind: read.kind,
         speed: read.kind === 'root' ? 0 : 3 + (seed % 5),
         jump: 9,
+        hop: read.hop,
         restlessness: 0.3,
       },
       diet: {

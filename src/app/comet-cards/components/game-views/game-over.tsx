@@ -50,6 +50,7 @@ async function copyToClipboard(text: string) {
 export function GameOverView() {
   const { game } = useGameState()
   const [hasCopied, setHasCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const { addRun, todayRun } = useRunHistory()
   const reducedMotion = useReducedMotion()
 
@@ -58,6 +59,7 @@ export function GameOverView() {
   const didWin = roundsCompleted >= totalRounds
   const isPractice = todayRun !== null
 
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
   const hasSaved = useRef(false)
   useEffect(() => {
     if (hasSaved.current || isPractice) return
@@ -101,8 +103,9 @@ export function GameOverView() {
     }
     try {
       await copyToClipboard(shareText)
+      clearTimeout(copiedTimerRef.current)
       setHasCopied(true)
-      window.setTimeout(() => setHasCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setHasCopied(false), 2000)
     } catch {
       window.prompt('Copy your score report:', shareText)
     }

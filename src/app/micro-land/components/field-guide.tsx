@@ -1,7 +1,7 @@
 'use client'
 
 import type { SpeciesRecord } from '@/app/micro-land/chronicle/types'
-import { MOVE_WORDS, canEat } from '@/app/micro-land/domain/blueprint'
+import { canEat, moveWord } from '@/app/micro-land/domain/blueprint'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand } from '@/app/micro-land/store'
@@ -294,7 +294,7 @@ function GuideEntry({
             lineHeight: 1.6,
           }}
         >
-          Size {bp.size} · {MOVE_WORDS[bp.move.kind] ?? bp.move.kind}
+          Size {bp.size} · {moveWord(bp)}
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
           {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}
