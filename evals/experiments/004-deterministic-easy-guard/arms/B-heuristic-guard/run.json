@@ -1,0 +1,404 @@
+{
+  "timestamp": "2026-05-18T06:35:16.786Z",
+  "appVersion": "b8a9cb14e9a70716dbdff97998a9bf20e87e1cf8",
+  "judgeModel": "gpt-4o",
+  "config": {
+    "cells": 51,
+    "trialsPerCell": 5,
+    "totalJobs": 255,
+    "concurrency": 2,
+    "smoke": false
+  },
+  "totals": {
+    "generated": 255,
+    "generationFailed": 0,
+    "judgeFailed": 0
+  },
+  "cost": {
+    "totalUsd": 5.120095999999999,
+    "perTrialUsd": 0.02007880784313725,
+    "byStage": {
+      "facts": 0.30816000000000016,
+      "factPicker": 0.12574500000000002,
+      "construct": 2.779997999999999,
+      "review": 0.49791700000000005,
+      "judge": 1.1145700000000012,
+      "repair": 0.29370599999999997
+    },
+    "byModel": {
+      "sonar": 0.30816000000000016,
+      "claude-haiku-4-5-20251001": 0.6236619999999998,
+      "claude-sonnet-4-6": 3.0737039999999984,
+      "gpt-4o": 1.1145700000000012
+    },
+    "unknownModels": []
+  },
+  "overall": {
+    "total": 255,
+    "scored": 255,
+    "score3": 668,
+    "score2": 22,
+    "score1": 75,
+    "shipPct": 71.37254901960785,
+    "factualMean": 2.8,
+    "difficultyMean": 2.8627450980392157,
+    "concisionMean": 2.6627450980392156
+  },
+  "byDifficulty": {
+    "easy": {
+      "total": 85,
+      "scored": 85,
+      "score3": 210,
+      "score2": 14,
+      "score1": 31,
+      "shipPct": 63.529411764705884,
+      "factualMean": 2.9647058823529413,
+      "difficultyMean": 2.6470588235294117,
+      "concisionMean": 2.4941176470588236
+    },
+    "medium": {
+      "total": 85,
+      "scored": 85,
+      "score3": 233,
+      "score2": 3,
+      "score1": 19,
+      "shipPct": 78.82352941176471,
+      "factualMean": 2.7176470588235295,
+      "difficultyMean": 3,
+      "concisionMean": 2.8
+    },
+    "hard": {
+      "total": 85,
+      "scored": 85,
+      "score3": 225,
+      "score2": 5,
+      "score1": 25,
+      "shipPct": 71.76470588235294,
+      "factualMean": 2.7176470588235295,
+      "difficultyMean": 2.9411764705882355,
+      "concisionMean": 2.6941176470588237
+    }
+  },
+  "byCategory": {
+    "General Knowledge": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 1,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 3,
+      "concisionMean": 2.8666666666666667
+    },
+    "Film": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 1,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6
+    },
+    "Science & Nature": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 3,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.4
+    },
+    "Geography": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 0,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 3,
+      "concisionMean": 2.466666666666667
+    },
+    "History": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 1,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8,
+      "difficultyMean": 3,
+      "concisionMean": 2.6
+    },
+    "Music": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 1,
+      "score1": 4,
+      "shipPct": 73.33333333333333,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6666666666666665
+    },
+    "Television": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 0,
+      "score1": 9,
+      "shipPct": 53.333333333333336,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.7333333333333334
+    },
+    "Video Games": {
+      "total": 15,
+      "scored": 15,
+      "score3": 38,
+      "score2": 4,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 3,
+      "difficultyMean": 2.6,
+      "concisionMean": 2.7333333333333334
+    },
+    "Sports": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 2,
+      "score1": 3,
+      "shipPct": 80,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.6666666666666665
+    },
+    "Mythology": {
+      "total": 15,
+      "scored": 15,
+      "score3": 42,
+      "score2": 1,
+      "score1": 2,
+      "shipPct": 86.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 3,
+      "concisionMean": 2.8666666666666667
+    },
+    "Books": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.8666666666666667
+    },
+    "Computers": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 4,
+      "score1": 2,
+      "shipPct": 80,
+      "factualMean": 2.933333333333333,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.8
+    },
+    "Animals": {
+      "total": 15,
+      "scored": 15,
+      "score3": 40,
+      "score2": 0,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    },
+    "Politics": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 0,
+      "score1": 6,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.7333333333333334,
+      "concisionMean": 2.6
+    },
+    "Art": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8666666666666667,
+      "difficultyMean": 2.933333333333333,
+      "concisionMean": 2.466666666666667
+    },
+    "Vehicles": {
+      "total": 15,
+      "scored": 15,
+      "score3": 36,
+      "score2": 3,
+      "score1": 6,
+      "shipPct": 60,
+      "factualMean": 2.466666666666667,
+      "difficultyMean": 2.8,
+      "concisionMean": 2.7333333333333334
+    },
+    "Cartoons & Animation": {
+      "total": 15,
+      "scored": 15,
+      "score3": 39,
+      "score2": 1,
+      "score1": 5,
+      "shipPct": 66.66666666666667,
+      "factualMean": 2.8,
+      "difficultyMean": 2.8666666666666667,
+      "concisionMean": 2.6
+    }
+  },
+  "worst": [
+    {
+      "category": "Television",
+      "difficulty": "easy",
+      "question": "According to the scientific concept behind the TV show \"The Big Bang Theory,\" the universe began as what before stretching and expanding?",
+      "correctAnswer": "single point",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer 'single point' accurately reflects the scientific concept of the universe beginning from a singularity, as described in the Big Bang Theory.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The answer 'single point' is not a common household term and requires specific scientific knowledge, making it unsuitable for an easy difficulty level.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks clues by referencing both the scientific concept and the TV show, making the answer trivial for anyone familiar with either.",
+      "sourceUrl": "https://spaceplace.nasa.gov/big-bang/"
+    },
+    {
+      "category": "Television",
+      "difficulty": "hard",
+      "question": "Which Hulu comedy series, set in middle school, was created by and stars its two lead actresses as fictionalized versions of their younger selves?",
+      "correctAnswer": "Maya Erskine and Anna Konkle",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer should be 'PEN15,' not the names of the creators and stars.",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as 'hard' because the answer requires naming the show 'PEN15,' not the creators, which is more medium difficulty.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear route to the answer without redundant clues, focusing on the unique premise of the series.",
+      "sourceUrl": "https://tvtropes.org/pmwiki/pmwiki.php/Series/Pen15"
+    },
+    {
+      "category": "Politics",
+      "difficulty": "hard",
+      "question": "Adopted by the UN General Assembly in 1948, which landmark document was the first to consolidate, in a single text, the fundamental rights and freedoms belonging to all people regardless of nationality?",
+      "correctAnswer": "world's first comprehensive statement of universal human rights",
+      "factualScore": 1,
+      "factualRationale": "The stated correct answer is not a specific document but rather a description, whereas the correct answer should be 'The Universal Declaration of Human Rights.'",
+      "difficultyScore": 1,
+      "difficultyRationale": "The question is mismatched as 'Universal Declaration of Human Rights' is a well-known document, making it more suitable for a medium difficulty level.",
+      "concisionScore": 3,
+      "concisionRationale": "The question is concise, providing necessary context without redundant clues, as the year and UN adoption are essential to identify the document.",
+      "sourceUrl": "https://www.ungeneva.org/en/news-media/news/2024/12/101192/human-rights-day-5-key-things-know"
+    },
+    {
+      "category": "Vehicles",
+      "difficulty": "medium",
+      "question": "Which concept vehicle featured gullwing doors, swiveling front seats, and a rear-mounted turbine engine capable of running on multiple fuel types?",
+      "correctAnswer": "NX-21",
+      "factualScore": 1,
+      "factualRationale": "The NX-21 is not a well-documented concept vehicle with the described features, casting doubt on the accuracy of the stated correct answer.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The NX-21 is a concept vehicle that is not widely known, making it a suitable medium difficulty question for someone with a casual interest in vehicles.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple specific features (gullwing doors, swiveling seats, rear-mounted turbine engine) that collectively trivialize the answer.",
+      "sourceUrl": "https://www.nissan-global.com/EN/STORIES/RELEASES/the-creative-journey-of-design/"
+    },
+    {
+      "category": "Film",
+      "difficulty": "easy",
+      "question": "In which 1973 con-artist film did Paul Newman and Robert Redford co-star together?",
+      "correctAnswer": "The Sting",
+      "factualScore": 3,
+      "factualRationale": "The film 'The Sting' was released in 1973 and starred Paul Newman and Robert Redford, making the stated correct answer accurate.",
+      "difficultyScore": 2,
+      "difficultyRationale": "While 'The Sting' is a well-known film, it may not be immediately recognizable to those without a specific interest in classic films, making it borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The combination of the year, genre, and the specific pairing of Paul Newman and Robert Redford makes the answer obvious, as each clue independently points to 'The Sting.'",
+      "sourceUrl": "https://www.bfi.org.uk/lists/paul-newman-10-essential-films"
+    },
+    {
+      "category": "Sports",
+      "difficulty": "medium",
+      "question": "Michael Jordan scored just 5 points in the NBA Three-Point Contest, setting the all-time low — but which German-born NBA forward later matched that record, tying Jordan for the lowest score in contest history?",
+      "correctAnswer": "Detlef Schrempf",
+      "factualScore": 1,
+      "factualRationale": "Detlef Schrempf never participated in the NBA Three-Point Contest, making the stated correct answer factually incorrect.",
+      "difficultyScore": 3,
+      "difficultyRationale": "Detlef Schrempf is a well-known player among NBA fans but not a household name, fitting the medium difficulty for casual sports followers.",
+      "concisionScore": 2,
+      "concisionRationale": "The question includes both 'German-born' and 'NBA forward,' either of which alone could lead to the answer, making it slightly easier than intended.",
+      "sourceUrl": "https://www.youtube.com/watch?v=zbdkBeDOuD8"
+    },
+    {
+      "category": "Mythology",
+      "difficulty": "medium",
+      "question": "In Japanese mythology, which fox-associated kami's long history of worship became deeply entangled with Soto Zen Buddhism in a syncretic tradition that scholars describe as both symbiotic and exorcistic?",
+      "correctAnswer": "Inari",
+      "factualScore": 2,
+      "factualRationale": "While Inari is indeed associated with foxes and has a syncretic relationship with Buddhism, the specific entanglement with Soto Zen Buddhism is not widely recognized, making the framing potentially misleading.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because it involves specific knowledge of Japanese mythology and its syncretism with Buddhism, which is beyond common knowledge but accessible to those with a casual interest in mythology.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues, such as 'fox-associated kami' and 'entangled with Soto Zen Buddhism,' both of which independently lead to Inari, trivializing the answer.",
+      "sourceUrl": "http://www.shin-ibs.edu/documents/pwj-new/new10/03Heine.pdf"
+    },
+    {
+      "category": "Art",
+      "difficulty": "easy",
+      "question": "Which British artist is celebrated for pushing watercolor painting to new heights through hundreds of historical, topographical, and mythological works?",
+      "correctAnswer": "J. M. W. Turner",
+      "factualScore": 3,
+      "factualRationale": "J. M. W. Turner is widely recognized for his significant contributions to watercolor painting, making the stated answer correct.",
+      "difficultyScore": 2,
+      "difficultyRationale": "J. M. W. Turner is a well-known artist but may not be a household name for those without an interest in art, making this question borderline between easy and medium.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues—British artist, watercolor innovation, and diverse subject matter—that collectively trivialize the answer.",
+      "sourceUrl": "https://en.wikipedia.org/wiki/Watercolor_painting"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "easy",
+      "question": "Which popular quiz show challenges contestants to answer increasingly difficult questions for a top prize of one million dollars?",
+      "correctAnswer": "Who Wants to Be a Millionaire?",
+      "factualScore": 3,
+      "factualRationale": "The stated correct answer is accurate as 'Who Wants to Be a Millionaire?' is a well-known quiz show where contestants answer questions for a top prize of one million dollars.",
+      "difficultyScore": 3,
+      "difficultyRationale": "'Who Wants to Be a Millionaire?' is a well-known quiz show and fits the easy difficulty tier as a household name.",
+      "concisionScore": 1,
+      "concisionRationale": "The question stacks multiple clues—'popular quiz show,' 'increasingly difficult questions,' and 'top prize of one million dollars'—each of which independently identifies the answer.",
+      "sourceUrl": "https://www.thenewworkday.com/p/million-dollar-questions"
+    },
+    {
+      "category": "General Knowledge",
+      "difficulty": "medium",
+      "question": "What word, whose modern meaning describes abbreviations like \"FBI\" or \"NASA\" that are read letter by letter, once referred to the much older practice of signing published works only with one's initials to conceal the author's identity?",
+      "correctAnswer": "initialism",
+      "factualScore": 1,
+      "factualRationale": "The term 'initialism' does not historically refer to the practice of authors signing works with initials; it specifically refers to abbreviations pronounced letter by letter.",
+      "difficultyScore": 3,
+      "difficultyRationale": "The question is well-calibrated as medium because 'initialism' is not common knowledge but accessible to those with a casual interest in language or publishing.",
+      "concisionScore": 3,
+      "concisionRationale": "The question provides a single, clear route to the answer without redundant clues, focusing on the modern and historical meanings of 'initialism.'",
+      "sourceUrl": "https://www.dailywritingtips.com/acronym-vs-initialism/"
+    }
+  ],
+  "generationFailures": []
+}

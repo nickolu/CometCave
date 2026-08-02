@@ -106,6 +106,7 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
         <input
           type="text"
           placeholder="Search enemies..."
+          aria-label="Search enemies"
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full bg-[#161723] border border-[#2a2b3f] rounded px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"

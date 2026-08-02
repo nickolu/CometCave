@@ -51,6 +51,16 @@ export async function POST(request: Request) {
 
     const { caption1, caption2, storyDirectionPrompt, storyConfig: rawStoryConfig } = await request.json()
 
+    if (caption1 && caption1.length > 500) {
+      return NextResponse.json({ error: 'caption1 must be 500 characters or fewer.' }, { status: 400 })
+    }
+    if (caption2 && caption2.length > 500) {
+      return NextResponse.json({ error: 'caption2 must be 500 characters or fewer.' }, { status: 400 })
+    }
+    if (storyDirectionPrompt && storyDirectionPrompt.length > 1000) {
+      return NextResponse.json({ error: 'storyDirectionPrompt must be 1000 characters or fewer.' }, { status: 400 })
+    }
+
     if (!rawStoryConfig || typeof rawStoryConfig !== 'object' || Array.isArray(rawStoryConfig)) {
       return NextResponse.json({ error: 'storyConfig is required' }, { status: 400 })
     }

@@ -25,6 +25,12 @@ export async function POST(request: Request) {
     if (!prompt) {
       return NextResponse.json({ error: 'prompt is required' }, { status: 400 })
     }
+    if (prompt.length > 1000) {
+      return NextResponse.json({ error: 'prompt must be 1000 characters or fewer.' }, { status: 400 })
+    }
+    if (storyContext && storyContext.length > 2000) {
+      return NextResponse.json({ error: 'storyContext must be 2000 characters or fewer.' }, { status: 400 })
+    }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
 

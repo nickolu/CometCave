@@ -34,7 +34,7 @@ function HpBar({ current, max, label, color }: { current: number; max: number; l
         <span className="text-slate-300">{label}</span>
         <span className={color}>{current}/{max} HP</span>
       </div>
-      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-700 rounded-full overflow-hidden" role="progressbar" aria-valuenow={current} aria-valuemin={0} aria-valuemax={max} aria-label={label}>
         <div
           className={`h-full ${barColor} rounded-full transition-all duration-300`}
           style={{ width: `${pct}%` }}
@@ -53,7 +53,7 @@ function ManaBar({ current, max }: { current: number; max: number }) {
         <span className="text-slate-300">MP</span>
         <span className="text-blue-400">{current}/{max} MP</span>
       </div>
-      <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+      <div className="h-2 bg-slate-700 rounded-full overflow-hidden" role="progressbar" aria-valuenow={current} aria-valuemin={0} aria-valuemax={max} aria-label="Mana">
         <div
           className="h-full bg-blue-500 rounded-full transition-all duration-300"
           style={{ width: `${pct}%` }}
