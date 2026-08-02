@@ -156,7 +156,7 @@ export const useStore = create<Store>()(
             messages: [
               ...(state.chat.messages || []),
               {
-                id: Math.random().toString(36).substring(7),
+                id: crypto.randomUUID(),
                 character: {
                   id: 'user',
                   name: 'You',
@@ -178,7 +178,7 @@ export const useStore = create<Store>()(
             messages: [
               ...(state.chat.messages || []),
               {
-                id: Math.random().toString(36).substring(7),
+                id: crypto.randomUUID(),
                 character,
                 message,
                 timestamp: Date.now(),
@@ -284,7 +284,7 @@ export const useStore = create<Store>()(
       saveCustomCharacter: () =>
         set(state => {
           const character: Character = {
-            id: Math.random().toString(36).substring(7),
+            id: crypto.randomUUID(),
             name: state.customCharacterForm.name,
             description: state.customCharacterForm.description,
           }
