@@ -212,7 +212,7 @@ const HOPPER = builtin('hopper', {
     faceMotion: true,
   },
   body: { mass: 1, bounce: 0.2, drag: 0.4, buoyancy: 0.85, immuneTo: [] },
-  move: { kind: 'walk', speed: 5, jump: 12, restlessness: 0.35 },
+  move: { kind: 'walk', speed: 5, jump: 12, hop: 1, restlessness: 0.35 },
   diet: {
     eats: ['plant'],
     fears: [],
