@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useTriviaUser } from '@/app/trivia/hooks/useTriviaUser'
 import { ChunkyButton } from '@/components/ui/chunky-button'
@@ -49,6 +49,9 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
 
   const currentUid = user?.uid ?? null
   const authName = user ? triviaDisplayName || user.email || null : null
@@ -101,8 +104,9 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
 
     try {
       await navigator.clipboard.writeText(shareText)
+      clearTimeout(copiedTimerRef.current)
       setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000)
     } catch {
       // fallback
     }
