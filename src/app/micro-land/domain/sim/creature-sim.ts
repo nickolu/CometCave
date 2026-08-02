@@ -8,7 +8,7 @@
  * The sense pass (who can I eat, who is about to eat me) is O(n²), so it runs
  * at 10Hz with creatures staggered across ticks rather than every frame.
  */
-import { artSize, bodyBox, canEat, fears } from '@/app/micro-land/domain/blueprint'
+import { artSize, bodyBox, canEat, fears, isPlantLike } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
@@ -99,6 +99,84 @@ const SIGHT_PAD = 20
 
 function compareX(a: Creature, b: Creature): number {
   return a.x - b.x
+}
+
+/**
+ * How old something has to be before it can make another of itself.
+ *
+ * Plants get a flat few seconds; everything else gets a fifth of its own
+ * lifespan, so a mayfly and a dragon are both "grown" at the same point in
+ * their own story rather than at the same wall-clock moment.
+ */
+function breedingAge(bp: CreatureBlueprint): number {
+  return bp.move.kind === 'root' ? TUNING.plantMaturity : bp.diet.lifespanSeconds * 0.2
+}
+
+/**
+ * Whether this thing has to find a partner at all.
+ *
+ * Deliberately a *different* question from `move.kind === 'root'`, which is what
+ * the breeding block uses for the plant economics — no hunger cost, plant
+ * cooldowns, plant caps — and which must keep meaning exactly what it always
+ * meant. Rooted-ness is about how a thing pays for a child. This is about
+ * whether it needs anyone else to have one, and the honest answer is "not if it
+ * photosynthesises", however it happens to get around.
+ *
+ * The harness is what taught this. Skybloom is a flower that never landed: it
+ * has `tags: ['plant']`, eats nothing, and *flies*. Told to find a partner it
+ * went from a steady 65 to extinct in every run on earth, because it also has
+ * two tiles of sight and therefore cannot see another one of itself, ever. It
+ * was not a balance problem — it was a flower being asked to court.
+ */
+function needsPartner(bp: CreatureBlueprint): boolean {
+  return !isPlantLike(bp)
+}
+
+/**
+ * Everything about *one* creature that has to be true before it can breed.
+ *
+ * Split out because it is now asked twice about two different animals: once by
+ * the creature itself, and once about the partner it is standing next to.
+ * "Both of them have to be well fed" is exactly this predicate holding on each,
+ * so it must be a single definition — two copies would drift, and the way they
+ * would drift is one animal quietly breeding off a partner that is starving.
+ *
+ * Deliberately says nothing about the world: caps, crowding and whether there is
+ * anywhere to put a baby are the caller's business, because they are questions
+ * about the population rather than about this animal.
+ */
+function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
+  return c.breedCooldown <= 0 && 1 - c.hunger >= bp.diet.breedAt && c.ageSeconds > breedingAge(bp)
+}
+
+/**
+ * The partner this creature is standing close enough to breed with, if any.
+ *
+ * Reads the target the sense pass already picked rather than searching again.
+ * That is what keeps the mechanic affordable: pairing is decided at 10Hz inside
+ * a loop that was already walking the neighbours, and all this has to do every
+ * tick is confirm the two are still willing and have finally closed the gap.
+ *
+ * Re-checks readiness instead of trusting the target because up to six ticks
+ * have passed since it was chosen — long enough to have bred with something
+ * else, been eaten, or gone hungry on the walk over.
+ */
+function findMate(
+  w: WorldState,
+  c: Creature,
+  bp: CreatureBlueprint,
+  dead: Set<number>
+): Creature | null {
+  if (c.mood !== 'mate' || c.targetId === null) return null
+  const other = findCreature(w, c.targetId)
+  if (!other || dead.has(other.id)) return null
+  // Same species means same sprite, so top-left distance is centre distance and
+  // there is no need to ask `artSize` about either of them.
+  if (other.blueprintId !== c.blueprintId) return null
+  if (!readyToBreed(other, bp)) return null
+  const dx = other.x - c.x
+  const dy = other.y - c.y
+  return dx * dx + dy * dy <= TUNING.mateRadius * TUNING.mateRadius ? other : null
 }
 
 /** First index whose x is not less than `x`. The array must be sorted. */
@@ -240,37 +318,67 @@ export function tickCreatures(
     if (bp.aura?.converts) applyConversion(w, c, bp, bw, bh, dt, rng)
 
     // --- breeding -------------------------------------------------------
-    const fullness = 1 - c.hunger
     const isPlant = bp.move.kind === 'root'
-    // Plants photosynthesise: spreading costs them nothing. Charging them the
-    // usual hunger cost would sterilise them permanently — their hungerRate is
-    // 0, so the debt could never be paid back and each plant would breed twice
-    // in its entire life.
-    const maturity = isPlant ? TUNING.plantMaturity : bp.diet.lifespanSeconds * 0.2
     if (
-      c.breedCooldown <= 0 &&
-      fullness >= bp.diet.breedAt &&
-      c.ageSeconds > maturity &&
+      readyToBreed(c, bp) &&
       creatures.length < TUNING.maxCreatures &&
       !(isPlant && plantsAlive >= TUNING.maxPlants) &&
       (speciesCount[bp.id] ?? 0) < (isPlant ? TUNING.plantSpeciesCap : TUNING.speciesSoftCap)
     ) {
-      const child = reproduce(w, c, bp, bw, bh, rng)
-      if (child) {
-        // Set here rather than inside `reproduce`, which returns through two
-        // different paths and would need the parent threaded into both.
-        child.generation = c.generation + 1
-        c.children++
-        if (isPlant) plantsAlive++
-        else c.hunger = Math.min(1, c.hunger + TUNING.breedCost)
-        speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-        // A pollinator nearby shortens the wait before the next one.
-        const help = auraBoost(w, c, bp, bw, bh, helpers)
-        c.breedCooldown = (isPlant ? TUNING.plantSpreadCooldown : TUNING.breedCooldown) / help
-        events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
-      } else {
-        // Nowhere to put it — wait a bit before trying again.
-        c.breedCooldown = 3
+      /**
+       * An animal needs a partner; a plant does not.
+       *
+       * Plants spread rather than breed, and the asymmetry is not squeamishness
+       * — it is what keeps a stripped world recoverable. The ground's seed bank
+       * puts as few as three sprouts back across three screens of bare soil, and
+       * if each of those needed a neighbour of its own kind within a few tiles
+       * they would stand there sterile forever. Plants are the one rung of the
+       * food chain with nothing above it to restock it, so they are the one rung
+       * that is allowed to make more of itself alone.
+       */
+      const wantsMate = needsPartner(bp)
+      const mate = wantsMate ? findMate(w, c, bp, dead) : null
+      if (!wantsMate || mate) {
+        // Born between the two of them, which is the whole point of having made
+        // them walk to each other.
+        const ox = mate ? (c.x + mate.x) / 2 : c.x
+        const oy = mate ? (c.y + mate.y) / 2 : c.y
+        const child = reproduce(w, bp, ox, oy, bw, bh, rng)
+        if (child) {
+          // Set here rather than inside `reproduce`, which returns through two
+          // different paths and would need both parents threaded into each. The
+          // deeper of the two lines is the one the child inherits — generation
+          // counts ancestry, so a bloodline shouldn't get shallower by marrying
+          // into a newer one.
+          child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+          c.children++
+          speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
+          if (isPlant) {
+            plantsAlive++
+            // Plants photosynthesise: spreading costs them nothing. Charging
+            // them the usual hunger cost would sterilise them permanently —
+            // their hungerRate is 0, so the debt could never be paid back and
+            // each plant would breed twice in its entire life.
+            c.breedCooldown = TUNING.plantSpreadCooldown / auraBoost(w, c, bp, bw, bh, helpers)
+          } else {
+            // Both of them paid to be here, so both of them pay for it. Charging
+            // only the one whose turn it happened to be would make a baby cost a
+            // pair half of what it used to cost a single animal, which is a
+            // *cheapening* of breeding dressed up as a restriction.
+            payForChild(w, c, bp, bw, bh, helpers)
+            if (mate) {
+              mate.children++
+              payForChild(w, mate, bp, bw, bh, helpers)
+            }
+          }
+          events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
+        } else {
+          // Nowhere to put it — wait a bit before trying again. The partner
+          // waits too, or it spends the next tick re-finding a creature that is
+          // now on cooldown and failing at exactly the same spot.
+          c.breedCooldown = 3
+          if (mate) mate.breedCooldown = 3
+        }
       }
     }
   }
@@ -304,10 +412,26 @@ function look(
   const cy = c.y + bh / 2
   const hungry = c.hunger > 0.3
 
+  /**
+   * Whether it is worth noticing its own kind this pass.
+   *
+   * Mate-finding is folded into the sense pass rather than given a search of its
+   * own, because this loop is already walking every neighbour inside the sight
+   * window and the answer costs one more comparison per neighbour. A separate
+   * pass would have re-paid the whole binary-search-and-scan for a question that
+   * was already open.
+   *
+   * Plants are excluded — they spread alone, so a partner is nothing to them
+   * but a reason to stop wandering.
+   */
+  const seeking = needsPartner(bp) && readyToBreed(c, bp)
+
   let threat: Creature | null = null
   let threatDist = Infinity
   let prey: Creature | null = null
   let preyDist = Infinity
+  let mate: Creature | null = null
+  let mateDist = Infinity
 
   // Only the creatures whose left edge falls in the sight window can possibly
   // be in range; everything beyond the window is skipped without being touched.
@@ -330,6 +454,17 @@ function look(
       if (d2 < threatDist) {
         threatDist = d2
         threat = other
+      }
+      continue
+    }
+
+    // Its own kind. Nothing eats its own kind — `canEat` refuses a matching
+    // blueprint id outright — so a creature that gets here can only ever be a
+    // partner, and there is no case below worth falling through to.
+    if (other.blueprintId === c.blueprintId) {
+      if (seeking && readyToBreed(other, obp) && d2 < mateDist) {
+        mateDist = d2
+        mate = other
       }
       continue
     }
@@ -367,6 +502,12 @@ function look(
   } else if (prey) {
     c.mood = 'hunt'
     c.targetId = prey.id
+  } else if (mate) {
+    // Below hunting, above wandering. A creature well fed enough to breed is by
+    // definition not hungry enough to have picked prey, so in practice these two
+    // almost never compete — but where they do, dinner comes first.
+    c.mood = 'mate'
+    c.targetId = mate.id
   } else {
     c.mood = c.hunger > 0.75 ? 'hunt' : 'wander'
     c.targetId = null
@@ -396,6 +537,35 @@ function devour(
     x: victim.x,
     y: victim.y,
   })
+}
+
+/**
+ * What one animal gives up for a child it just had a share in.
+ *
+ * Called once per parent. Both are charged the same, and each is asked about
+ * helpers separately: a pollinator standing over one of them but not the other
+ * genuinely only helps the one it is standing over, and averaging that away
+ * would make the aura's radius mean nothing.
+ *
+ * Clearing the target matters more than it looks. Both are on cooldown now, so
+ * neither can breed — but steering runs every tick while the sense pass only
+ * re-decides every sixth, and without this the pair spends those ticks still
+ * walking determinedly towards each other for no reason anyone can see.
+ */
+function payForChild(
+  w: WorldState,
+  parent: Creature,
+  bp: CreatureBlueprint,
+  bw: number,
+  bh: number,
+  helpers: Creature[]
+): void {
+  parent.hunger = Math.min(1, parent.hunger + TUNING.breedCost)
+  parent.breedCooldown = TUNING.breedCooldown / auraBoost(w, parent, bp, bw, bh, helpers)
+  if (parent.mood === 'mate') {
+    parent.mood = 'wander'
+    parent.targetId = null
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -816,10 +986,18 @@ function findCreature(w: WorldState, id: number): Creature | null {
 // Reproduction and death
 // ---------------------------------------------------------------------------
 
+/**
+ * Put a child somewhere it can survive, near `ox`/`oy`.
+ *
+ * Takes a point rather than a parent because a child now has two of them and the
+ * point it is born at is the midpoint between them; a plant, which still spreads
+ * alone, passes its own corner.
+ */
 function reproduce(
   w: WorldState,
-  parent: Creature,
   bp: CreatureBlueprint,
+  ox: number,
+  oy: number,
   bw: number,
   bh: number,
   rng: Rng
@@ -829,8 +1007,8 @@ function reproduce(
   const body = bodyBox(bp)
 
   for (let attempt = 0; attempt < 12; attempt++) {
-    const x = parent.x + (rng() * 2 - 1) * spread
-    const y = parent.y + (rng() * 2 - 1) * (isPlant ? 6 : spread)
+    const x = ox + (rng() * 2 - 1) * spread
+    const y = oy + (rng() * 2 - 1) * (isPlant ? 6 : spread)
     const cx = Math.max(0, Math.min(WORLD_W - bw, x))
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
 

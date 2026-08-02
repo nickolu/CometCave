@@ -27,7 +27,7 @@ import type { Creature, CreatureMood, WorldState } from '@/app/micro-land/domain
 
 import type { SavedCreature, WorldSnapshot } from './types'
 
-const MOODS: CreatureMood[] = ['wander', 'hunt', 'flee', 'eat', 'rest']
+const MOODS: CreatureMood[] = ['wander', 'hunt', 'flee', 'eat', 'rest', 'mate']
 
 /** Two decimals is a hundredth of a tile — far finer than a pixel can show. */
 function round(n: number): number {

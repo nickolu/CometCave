@@ -39,7 +39,7 @@ const RequestSchema = z.object({
   character: z.object({
     id: z.string().max(200),
     name: z.string().max(200),
-    description: z.string().max(1000).optional(),
+    description: z.string().max(1000).default(''),
   }),
   chatMessages: z.array(z.object({
     character: z.object({
@@ -74,7 +74,7 @@ export async function POST(request: Request) {
         const aiService = AIServiceFactory.create('openai', config)
 
         // Generate character response using OpenAI
-        const rawResponse = await aiService.generateCharacterResponse(character, aiMessages)
+        const rawResponse = await aiService.generateCharacterResponse({ ...character, description: character.description ?? '' }, aiMessages)
 
         // Post-process to remove any character name prefixes
         // Check for common patterns like "Character Name:" or "Character Name -"

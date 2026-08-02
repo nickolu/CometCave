@@ -283,7 +283,7 @@ export interface CreatureBlueprint {
 // Live world state
 // ---------------------------------------------------------------------------
 
-export type CreatureMood = 'wander' | 'hunt' | 'flee' | 'eat' | 'rest'
+export type CreatureMood = 'wander' | 'hunt' | 'flee' | 'eat' | 'rest' | 'mate'
 
 /** One living thing in the world. */
 export interface Creature {

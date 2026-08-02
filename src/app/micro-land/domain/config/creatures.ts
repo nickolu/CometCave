@@ -201,18 +201,17 @@ const HOPPER = builtin('hopper', {
   size: 2,
   tags: ['meat', 'bug'],
   art: {
-    palette: { b: '#63c15a', d: '#2f7a34', e: '#ffffff' },
+    palette: { a: '#63c15a', b: '#2f7a34', c: '#ffffff', d: '#1b1b26' },
     frames: [
-      ['..bb..', '.bbbbe', 'bbbbbb', '.d..d.', 'd....d'],
-      ['..bb..', '.bbbbe', 'bbbbbb', '.dd.d.', '..d..d'],
+      ['..aa..', '.aaaac', 'aaaaaa', '.b..b.', 'b....b'],
+      ['..aa..', '.aaaac', 'aaaaaa', '.bb.b.', '..b.bd'],
+      ['..aa..', '.aaaac', 'aaaaaa', '.b..b.', 'b....b'],
+      ['..aa..', '.aaaaa', 'aaaaaa', '.bb.b.', '..b..b'],
     ],
     frameMs: 150,
     faceMotion: true,
   },
   body: { mass: 1, bounce: 0.2, drag: 0.4, buoyancy: 0.85, immuneTo: [] },
-  // The one the blurb has always promised. It bounds rather than runs, which is
-  // also its whole defence: a Stalker is faster over the ground and would catch
-  // it every time otherwise.
   move: { kind: 'walk', speed: 5, jump: 12, hop: 1, restlessness: 0.35 },
   diet: {
     eats: ['plant'],
@@ -225,7 +224,7 @@ const HOPPER = builtin('hopper', {
   senses: { sight: 20 },
   habitat: { needs: null, drowns: true },
   dig: { through: [], speed: 1 },
-  death: { becomes: null, particleColor: '#63c15a', particleCount: 6 },
+  death: { becomes: null, particleColor: '#63c15a', particleCount: 8 },
   aura: null,
   glow: 0,
 })

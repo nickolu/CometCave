@@ -154,13 +154,19 @@ export function Hud({
         className="cc-btn"
         onClick={() => setWorldsOpen(true)}
         style={{ ...chipBase, ...(activeWorldId ? activeChip : {}) }}
+        // The chip highlight says 'saved' visually; the label stopped saying it
+        // when this became a noun, so the state has to reach a screen reader
+        // some other way than the colour.
+        aria-label={
+          activeWorldId ? 'Worlds — this world is saved' : 'Worlds — this world is not saved'
+        }
         title={
           activeWorldId
-            ? 'This world is kept — everything you do here is saved'
-            : 'Keep this world, or open one you kept'
+            ? 'This world is saved — everything you do here is written back on its own'
+            : 'Save this world, or open one you saved'
         }
       >
-        {activeWorldId ? 'Kept' : 'Keep'}
+        Worlds
       </button>
 
       <div className="flex items-center gap-1" role="group" aria-label="Speed">
