@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
 import { CATEGORY_META } from '@/lib/trivia/categories'
@@ -14,6 +14,15 @@ interface Props {
 
 export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | undefined>(undefined)
+  const dialogRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    dialogRef.current?.focus()
+  }, [])
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') onCancel()
+  }
 
   // Only hide the rules explanation if the user has seen it before
   const rulesSeen = typeof window !== 'undefined'
@@ -38,10 +47,13 @@ export function InfiniteRulesModal({ defaultMode, onContinue, onCancel }: Props)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="infinite-rules-title"
-        className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero flex flex-col gap-4 max-h-[90vh] overflow-y-auto"
+        tabIndex={-1}
+        onKeyDown={handleKeyDown}
+        className="bg-surface-container-high rounded-ds-lg p-6 max-w-md w-full shadow-hero flex flex-col gap-4 max-h-[90vh] overflow-y-auto outline-none"
       >
         <div>
           <h2 id="infinite-rules-title" className="text-on-surface text-xl font-bold mb-1">Infinite Trivia</h2>
