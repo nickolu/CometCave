@@ -20,6 +20,7 @@ interface ChatState {
   isTyping: boolean
   charactersRespondToEachOther: boolean
   remainingCharacterMessages: number
+  consecutiveCharacterResponses: number
 }
 
 export interface Store {
@@ -55,16 +56,6 @@ export interface Store {
   toggleCustomCharacterForm: () => void
   updateCustomCharacterForm: (updates: Partial<CustomCharacterFormState>) => void
   saveCustomCharacter: () => void
-}
-
-interface ChatState {
-  messages: ChatMessage[]
-  characters: Character[]
-  typingCharacters: Character[]
-  isTyping: boolean
-  charactersRespondToEachOther: boolean
-  remainingCharacterMessages: number
-  consecutiveCharacterResponses: number
 }
 
 export const useStore = create<Store>()(
