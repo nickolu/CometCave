@@ -26,6 +26,16 @@ service cloud.firestore {
 
       // Comet Cards sandbox — owner-only, accessed via /api/v1/comet-cards/sandbox/*
       match /cometCardsSandbox/{docId} { allow read, write: if false; }
+
+      // Micro Land records — the species archive (including every creature the
+      // player drew or summoned), land records and milestones. Owner-only,
+      // accessed via /api/v1/micro-land/chronicle.
+      match /microLand/{docId} { allow read, write: if false; }
+
+      // Micro Land saved worlds — one document per world the player kept, each
+      // holding a whole terrarium mid-simulation. Owner-only, accessed via
+      // /api/v1/micro-land/worlds.
+      match /microLandWorlds/{docId} { allow read, write: if false; }
     }
 
     // Nicknames uniqueness index — server only

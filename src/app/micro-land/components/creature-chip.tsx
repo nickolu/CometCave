@@ -63,7 +63,7 @@ export function CreaturePortrait({
       focusable="false"
       style={{ display: 'block', overflow: 'visible' }}
     >
-      {toRuns(blueprint).map((run) => (
+      {toRuns(blueprint).map(run => (
         <rect
           key={`${run.y}-${run.x}`}
           x={run.x}

@@ -58,48 +58,48 @@ type Shape = (b: string, d: string, e: string) => string[][]
 
 const SHAPES: Record<string, Shape> = {
   blob: (b, d, e) => [
-    ['.bbbb.', 'bbbbbb', `bbb${e}bb`, 'bbbbbb', '.dddd.'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-    ['.bbbb.', 'bbbbbb', `bbb${e}bb`, 'bbbbbb', '.d..d.'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-  ],
-  bug: (b, d, e) => [
-    ['.bbbb.', `bbbbb${e}`, 'bbbbbb', 'd.dd.d'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-    ['.bbbb.', `bbbbb${e}`, 'bbbbbb', '.dd.d.'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-  ],
-  fish: (b, d, e) => [
-    ['d.bbbb.', `dbbbbb${e}`, 'dbbbbbb', 'd.bbbb.'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-    ['..bbbb.', `.bbbbb${e}`, 'dbbbbbb', 'd.bbbb.'].map((r) => r.replace(/b/g, b).replace(/d/g, d)),
-  ],
-  winged: (b, d, e) => [
-    ['b.....b', 'bb...bb', '.bbbbb.', `..bb${e}..`, '..ddd..'].map((r) =>
+    ['.bbbb.', 'bbbbbb', `bbb${e}bb`, 'bbbbbb', '.dddd.'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
-    ['.......', '.b...b.', 'bbbbbbb', `b.bb${e}.b`, '..ddd..'].map((r) =>
+    ['.bbbb.', 'bbbbbb', `bbb${e}bb`, 'bbbbbb', '.d..d.'].map(r =>
+      r.replace(/b/g, b).replace(/d/g, d)
+    ),
+  ],
+  bug: (b, d, e) => [
+    ['.bbbb.', `bbbbb${e}`, 'bbbbbb', 'd.dd.d'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
+    ['.bbbb.', `bbbbb${e}`, 'bbbbbb', '.dd.d.'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
+  ],
+  fish: (b, d, e) => [
+    ['d.bbbb.', `dbbbbb${e}`, 'dbbbbbb', 'd.bbbb.'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
+    ['..bbbb.', `.bbbbb${e}`, 'dbbbbbb', 'd.bbbb.'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
+  ],
+  winged: (b, d, e) => [
+    ['b.....b', 'bb...bb', '.bbbbb.', `..bb${e}..`, '..ddd..'].map(r =>
+      r.replace(/b/g, b).replace(/d/g, d)
+    ),
+    ['.......', '.b...b.', 'bbbbbbb', `b.bb${e}.b`, '..ddd..'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
   ],
   beast: (b, d, e) => [
-    ['..bbbb..', `.bbbbbb${e}`, 'bbbbbbbb', '.dd..dd.', '.d....d.', '.d....d.'].map((r) =>
+    ['..bbbb..', `.bbbbbb${e}`, 'bbbbbbbb', '.dd..dd.', '.d....d.', '.d....d.'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
-    ['..bbbb..', `.bbbbbb${e}`, 'bbbbbbbb', '.dd..dd.', '.d....d.', '..d..d..'].map((r) =>
+    ['..bbbb..', `.bbbbbb${e}`, 'bbbbbbbb', '.dd..dd.', '.d....d.', '..d..d..'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
   ],
   plant: (b, d, e) => [
-    ['..b..', `.b${e}b.`, '..d..', '.bd..', '..d..', '..d..'].map((r) =>
+    ['..b..', `.b${e}b.`, '..d..', '.bd..', '..d..', '..d..'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
-    ['..b..', `.b${e}b.`, '..d..', '..db.', '..d..', '..d..'].map((r) =>
+    ['..b..', `.b${e}b.`, '..d..', '..db.', '..d..', '..d..'].map(r =>
       r.replace(/b/g, b).replace(/d/g, d)
     ),
   ],
   orb: (b, d, e) => [
-    ['.bbb.', `bb${e}bb`, 'bbbbb', 'bbbbb', '.bbb.'].map((r) =>
-      r.replace(/b/g, b).replace(/d/g, d)
-    ),
-    ['.ddd.', `db${e}bd`, 'dbbbd', 'dbbbd', '.ddd.'].map((r) =>
-      r.replace(/b/g, b).replace(/d/g, d)
-    ),
+    ['.bbb.', `bb${e}bb`, 'bbbbb', 'bbbbb', '.bbb.'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
+    ['.ddd.', `db${e}bd`, 'dbbbd', 'dbbbd', '.ddd.'].map(r => r.replace(/b/g, b).replace(/d/g, d)),
   ],
 }
 
@@ -127,8 +127,8 @@ function readPrompt(prompt: string): Read {
   const t = eatsMatch ? lower.slice(0, eatsMatch.index) : lower
   const food = eatsMatch ? lower.slice((eatsMatch.index ?? 0) + eatsMatch[0].length) : ''
 
-  const has = (...words: string[]) => words.some((word) => t.includes(word))
-  const foodHas = (...words: string[]) => words.some((word) => food.includes(word))
+  const has = (...words: string[]) => words.some(word => t.includes(word))
+  const foodHas = (...words: string[]) => words.some(word => food.includes(word))
 
   let kind: LocomotionKind = 'walk'
   let shape: keyof typeof SHAPES = 'blob'
@@ -159,13 +159,37 @@ function readPrompt(prompt: string): Read {
   // Diet. An explicit "eats ..." clause wins; otherwise anything that sounds
   // toothy eats meat and the rest graze.
   const eatsMeat = foodHas('meat', 'bug', 'fish', 'bird', 'animal', 'creature', 'flesh')
-  const eatsPlant = foodHas('plant', 'moss', 'leaf', 'leaves', 'grass', 'fungus', 'mushroom', 'algae', 'kelp', 'seed', 'fruit')
+  const eatsPlant = foodHas(
+    'plant',
+    'moss',
+    'leaf',
+    'leaves',
+    'grass',
+    'fungus',
+    'mushroom',
+    'algae',
+    'kelp',
+    'seed',
+    'fruit'
+  )
   const predator =
     eatsMeat ||
     (!eatsPlant &&
       has(
-        'predator', 'hunt', 'carnivore', 'fangs', 'teeth', 'claws', 'fierce',
-        'shark', 'wolf', 'lion', 'tiger', 'monster', 'dragon', 'spider'
+        'predator',
+        'hunt',
+        'carnivore',
+        'fangs',
+        'teeth',
+        'claws',
+        'fierce',
+        'shark',
+        'wolf',
+        'lion',
+        'tiger',
+        'monster',
+        'dragon',
+        'spider'
       ))
   const eats = kind === 'root' ? [] : predator ? ['meat'] : ['plant']
 
@@ -174,8 +198,7 @@ function readPrompt(prompt: string): Read {
   if (has('big', 'large', 'giant', 'huge', 'massive', 'enormous', 'king')) size = 5
 
   const fireproof = has('fire', 'flame', 'lava', 'magma', 'ember', 'cinder', 'molten', 'volcano')
-  const glow =
-    has('glow', 'light', 'lumin', 'shine', 'star', 'neon', 'spark', 'ghost') ? 0.7 : 0
+  const glow = has('glow', 'light', 'lumin', 'shine', 'star', 'neon', 'spark', 'ghost') ? 0.7 : 0
 
   let hue: number | null = null
   for (const [word, h] of Object.entries(COLOR_WORDS)) {
@@ -211,7 +234,7 @@ function titleCase(input: string): string {
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 3)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
     .join(' ')
 }
 
@@ -227,8 +250,7 @@ export function proceduralCreature(prompt: string): CreatureBlueprint {
 
   const frames = SHAPES[read.shape]('b', 'd', 'e')
 
-  const name =
-    titleCase(prompt.replace(/[^a-zA-Z ]/g, '').trim()) || 'Mystery Thing'
+  const name = titleCase(prompt.replace(/[^a-zA-Z ]/g, '').trim()) || 'Mystery Thing'
 
   return sanitizeBlueprint(
     {

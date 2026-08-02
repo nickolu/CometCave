@@ -50,14 +50,7 @@ function set(tiles: Uint8Array, x: number, y: number, id: MaterialId) {
   tiles[y * WORLD_W + x] = M[id]
 }
 
-function rect(
-  tiles: Uint8Array,
-  x0: number,
-  y0: number,
-  x1: number,
-  y1: number,
-  id: MaterialId
-) {
+function rect(tiles: Uint8Array, x0: number, y0: number, x1: number, y1: number, id: MaterialId) {
   for (let y = Math.max(0, y0); y <= Math.min(WORLD_H - 1, y1); y++) {
     for (let x = Math.max(0, x0); x <= Math.min(WORLD_W - 1, x1); x++) {
       tiles[y * WORLD_W + x] = M[id]
@@ -78,7 +71,7 @@ function tileAt(tiles: Uint8Array, x: number, y: number): number {
  * exist yet while the column is still being written.
  */
 function mossify(tiles: Uint8Array, rng: Rng, chance: number, on: MaterialId[]) {
-  const allowed = new Set(on.map((id) => M[id]))
+  const allowed = new Set(on.map(id => M[id]))
   for (let y = 1; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
       const here = tileAt(tiles, x, y)
@@ -99,7 +92,7 @@ function blob(
   rng: Rng,
   into: MaterialId[]
 ) {
-  const allowed = new Set(into.map((m) => M[m]))
+  const allowed = new Set(into.map(m => M[m]))
   for (let y = cy - radius; y <= cy + radius; y++) {
     for (let x = cx - radius; x <= cx + radius; x++) {
       const d = Math.hypot(x - cx, y - cy)
@@ -120,7 +113,7 @@ const EMPTY: Theme = {
   gloom: 0.1,
   gravity: 1,
   starters: [],
-  build: (tiles) => fill(tiles, 'air'),
+  build: tiles => fill(tiles, 'air'),
 }
 
 const EARTH: Theme = {
@@ -287,10 +280,7 @@ const STATION: Theme = {
     }
 
     const margin = 12
-    split(
-      { x0: margin, y0: 10, x1: WORLD_W - margin, y1: WORLD_H - 10 },
-      0
-    )
+    split({ x0: margin, y0: 10, x1: WORLD_W - margin, y1: WORLD_H - 10 }, 0)
 
     for (const room of rooms) {
       // Skip a few rooms entirely — a station with holes in it reads as broken.
@@ -298,8 +288,7 @@ const STATION: Theme = {
       // Different decks were built by different people. Rusted iron reads as
       // the old part of the station, marble as the part somebody cared about.
       const shellRoll = rng()
-      const shell: MaterialId =
-        shellRoll < 0.18 ? 'iron' : shellRoll < 0.26 ? 'marble' : 'metal'
+      const shell: MaterialId = shellRoll < 0.18 ? 'iron' : shellRoll < 0.26 ? 'marble' : 'metal'
       rect(tiles, room.x0, room.y0, room.x1, room.y1, shell)
       rect(tiles, room.x0 + 2, room.y0 + 2, room.x1 - 2, room.y1 - 2, 'air')
 
@@ -504,8 +493,6 @@ const VOLCANIC: Theme = {
 
 export const THEMES: Theme[] = [EMPTY, EARTH, STATION, TIDEPOOL, VOLCANIC]
 
-export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(
-  THEMES.map((t) => [t.id, t])
-)
+export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(THEMES.map(t => [t.id, t]))
 
 export const DEFAULT_THEME = 'empty'

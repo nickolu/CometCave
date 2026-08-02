@@ -13,20 +13,18 @@ import {
 } from '@/app/micro-land/domain/config/materials'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
-  MAX_CREATURES,
-  MAX_PLANTS,
-  NATIVE_PLANT_SPECIES,
-  NATIVE_PLANT_TARGET,
-  PLANT_SEED_BATCH,
-  PLANT_SEED_INTERVAL,
-  PLANT_SPECIES_CAP,
-  SEED_RAIN_INTERVAL,
   SURFACE_SEEDING_BIAS,
   WIDTH_SCALE,
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import type { Creature, CreatureBlueprint, MaterialId, WorldState } from '@/app/micro-land/domain/types'
+import { TUNING } from '@/app/micro-land/domain/tuning'
+import type {
+  Creature,
+  CreatureBlueprint,
+  MaterialId,
+  WorldState,
+} from '@/app/micro-land/domain/types'
 
 import { type Rng, makeRng } from './prng'
 
@@ -106,13 +104,7 @@ export function setTile(w: WorldState, x: number, y: number, mat: number): void 
  * Does a box of tiles overlap anything solid?
  * Used for both movement collision and finding somewhere to put a creature.
  */
-export function boxHitsSolid(
-  w: WorldState,
-  x: number,
-  y: number,
-  bw: number,
-  bh: number
-): boolean {
+export function boxHitsSolid(w: WorldState, x: number, y: number, bw: number, bh: number): boolean {
   const x0 = Math.floor(x)
   const y0 = Math.floor(y)
   const x1 = Math.floor(x + bw - 0.001)
@@ -249,13 +241,7 @@ export function boxDrownFraction(
  * The thickest tile wins rather than the average: one foot in the sap should
  * hold you, not be diluted by the nine tiles of clear air around it.
  */
-export function boxViscosity(
-  w: WorldState,
-  x: number,
-  y: number,
-  bw: number,
-  bh: number
-): number {
+export function boxViscosity(w: WorldState, x: number, y: number, bw: number, bh: number): number {
   const x0 = Math.floor(x)
   const y0 = Math.floor(y)
   const x1 = Math.floor(x + bw - 0.001)
@@ -354,7 +340,7 @@ export function spawnCreature(
   x: number,
   y: number
 ): Creature | null {
-  if (w.creatures.length >= MAX_CREATURES) return null
+  if (w.creatures.length >= TUNING.maxCreatures) return null
   if (!w.blueprints[bp.id]) w.blueprints[bp.id] = bp
 
   const creature: Creature = {
@@ -411,8 +397,7 @@ export function findSpawnSpot(
   // Somewhere to stand is judged on the solid core, not the drawing. A dragon
   // that needed a clear 28-tile box to exist would almost never find one, and
   // every summon would silently fall back to "drop it wherever".
-  const fits = (x: number, y: number) =>
-    !boxHitsSolid(w, x + body.dx, y + body.dy, body.w, body.h)
+  const fits = (x: number, y: number) => !boxHitsSolid(w, x + body.dx, y + body.dy, body.w, body.h)
 
   for (let attempt = 0; attempt < 120; attempt++) {
     let x: number
@@ -551,7 +536,7 @@ function isPlant(bp: CreatureBlueprint | undefined): boolean {
 
 /** Native species that are plants. Empty until the ground has decided. */
 function nativePlantIds(w: WorldState): string[] {
-  return w.natives.filter((id) => isPlant(w.blueprints[id]))
+  return w.natives.filter(id => isPlant(w.blueprints[id]))
 }
 
 /** Is there anywhere in this world a plant could put roots down? */
@@ -595,7 +580,7 @@ export function establishNativePlants(w: WorldState, rng: Rng): boolean {
     const j = Math.floor(rng() * (i + 1))
     ;[viable[i], viable[j]] = [viable[j], viable[i]]
   }
-  for (const id of viable.slice(0, NATIVE_PLANT_SPECIES)) w.natives.push(id)
+  for (const id of viable.slice(0, TUNING.nativePlantSpecies)) w.natives.push(id)
   return true
 }
 
@@ -614,7 +599,7 @@ export function establishNativePlants(w: WorldState, rng: Rng): boolean {
  */
 export function seedNativePlants(w: WorldState, rng: Rng): void {
   if (w.elapsed < w.nextPlantSeed) return
-  w.nextPlantSeed = w.elapsed + PLANT_SEED_INTERVAL
+  w.nextPlantSeed = w.elapsed + TUNING.plantSeedInterval
   if (w.dormant) return
   if (!establishNativePlants(w, rng)) return
 
@@ -626,22 +611,22 @@ export function seedNativePlants(w: WorldState, rng: Rng): void {
     plants++
   }
 
-  const deficit = NATIVE_PLANT_TARGET - plants
+  const deficit = TUNING.nativePlantTarget - plants
   if (deficit <= 0) return
-  if (plants >= MAX_PLANTS || w.creatures.length >= MAX_CREATURES) return
+  if (plants >= TUNING.maxPlants || w.creatures.length >= TUNING.maxCreatures) return
 
   // Scale the seeding to how bare the world is: a nearly-full meadow gets one
   // sprout, a stripped one gets the full batch. Recovery from a crash is fast
   // without the ground quietly out-growing the grazers the rest of the time.
   const batch = Math.min(
-    PLANT_SEED_BATCH,
-    Math.max(1, Math.ceil((deficit / NATIVE_PLANT_TARGET) * PLANT_SEED_BATCH))
+    TUNING.plantSeedBatch,
+    Math.max(1, Math.ceil((deficit / TUNING.nativePlantTarget) * TUNING.plantSeedBatch))
   )
 
   // Rarest first, so the ground refills the species the grazers actually
   // emptied instead of piling more onto whichever one is already winning.
   const pool = nativePlantIds(w)
-    .filter((id) => (counts[id] ?? 0) < PLANT_SPECIES_CAP)
+    .filter(id => (counts[id] ?? 0) < TUNING.plantSpeciesCap)
     .sort((a, b) => (counts[a] ?? 0) - (counts[b] ?? 0))
   if (pool.length === 0) return
 
@@ -671,7 +656,7 @@ export function seedNativePlants(w: WorldState, rng: Rng): void {
  */
 export function repopulate(w: WorldState, rng: Rng): void {
   if (w.elapsed < w.nextSeedRain) return
-  w.nextSeedRain = w.elapsed + SEED_RAIN_INTERVAL
+  w.nextSeedRain = w.elapsed + TUNING.seedRainInterval
   if (w.dormant || w.creatures.length === 0 || w.natives.length === 0) return
 
   const counts: Record<string, number> = {}
@@ -683,12 +668,12 @@ export function repopulate(w: WorldState, rng: Rng): void {
   // Plants count here too: one plant species thriving is not a reason for the
   // others to stay extinct, and a grazer too small to eat the survivor depends
   // on the little ones coming back.
-  const candidates = w.natives.filter((id) => {
+  const candidates = w.natives.filter(id => {
     if (counts[id]) return false
     const bp = w.blueprints[id]
     if (!bp) return false
     if (bp.move.kind === 'root' || bp.diet.eats.length === 0) return true
-    return w.creatures.some((c) => {
+    return w.creatures.some(c => {
       const other = w.blueprints[c.blueprintId]
       return other ? canEat(bp, other) : false
     })

@@ -15,23 +15,21 @@ import { SUMMONED_THEME_ID } from '@/app/micro-land/store'
 import {
   archivedSpecies,
   claimMilestone,
+  flushChronicle,
+  forgetSpecies,
   landId,
   landRecord,
   noteSpeciesLife,
   readChronicle,
   rememberSpecies,
+  restoreSpeciesRecord,
   updateChronicle,
 } from './chronicle/chronicle'
-import { artSize, bodyBox, sanitizeBlueprint } from './domain/blueprint'
+import { artSize, bodyBox, reserveSummonIds, sanitizeBlueprint } from './domain/blueprint'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
-import {
-  ELDER_MIN_SECONDS,
-  MAX_CREATURES,
-  TICK_S,
-  TILE_TICK_EVERY,
-} from './domain/constants'
-import { type SimEvent, tickCreatures } from './domain/sim/creature-sim'
+import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY } from './domain/constants'
+import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creature-sim'
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
 import {
@@ -48,13 +46,13 @@ import {
   spawnCreature,
   spawnSomewhereSensible,
 } from './domain/sim/world'
+import { TUNING } from './domain/tuning'
 import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
-import {
-  type EarnedMilestone,
-  type PopulationEntry,
-  useMicroLand,
-} from './store'
+import { type EarnedMilestone, type PopulationEntry, useMicroLand } from './store'
+import { releaseActiveWorld, touchActiveWorld } from './worlds/shelf'
+import { restoreSnapshot, snapshotWorld } from './worlds/snapshot'
+import { WORLD_SAVE_VERSION, type WorldSave } from './worlds/types'
 
 import type { SpeciesRecord } from './chronicle/types'
 import type { Creature, CreatureBlueprint, WorldState } from './domain/types'
@@ -79,7 +77,7 @@ const MAX_CATCHUP_MS = 250
  */
 function readMilestones(): EarnedMilestone[] {
   const earned = readChronicle().milestones
-  return MILESTONES.filter((m) => earned[m.id]).map((m) => ({
+  return MILESTONES.filter(m => earned[m.id]).map(m => ({
     id: m.id,
     text: m.text,
     at: earned[m.id],
@@ -137,8 +135,7 @@ export class GameInstance {
    * has already been filtered out of the world, so there is nothing left to read
    * its age or its name off by then.
    */
-  private elderSnapshot: { name: string | null; species: string; seconds: number } | null =
-    null
+  private elderSnapshot: { name: string | null; species: string; seconds: number } | null = null
   /** World-clock time the current no-extinction streak began. */
   private steadySince = 0
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
@@ -151,6 +148,14 @@ export class GameInstance {
   private inspectedId: number | null = null
   /** Terrain the player summoned, standing in for a built-in theme. */
   private summonedTheme: Theme | null = null
+  /**
+   * The terrain that theme was built from.
+   *
+   * Kept alongside it because a `Theme` carries a `build` function and functions
+   * do not survive JSON — this is the half of a summoned land that can be
+   * shelved, and `terrainToTheme` rebuilds the rest of it on the way back in.
+   */
+  private summonedTerrain: SanitizedTerrain | null = null
   private grabTrail: { x: number; y: number; t: number }[] = []
   private lastPlaceAt = 0
   private resizeObserver: ResizeObserver | null = null
@@ -184,6 +189,7 @@ export class GameInstance {
     this.renderer = new Renderer(canvas)
     this.world = createWorld(Date.now() & 0xffff)
 
+    this.restoreArchivedCreatures()
     this.syncBlueprintsToStore()
     this.setTheme(useMicroLand.getState().themeId || DEFAULT_THEME)
     this.attachInput()
@@ -307,7 +313,7 @@ export class GameInstance {
     }
 
     if (this.following && this.inspectedId !== null) {
-      const c = this.world.creatures.find((x) => x.id === this.inspectedId)
+      const c = this.world.creatures.find(x => x.id === this.inspectedId)
       if (c) {
         this.renderer.keepInView(c.x, this.renderer.viewWidth * 0.22, FOLLOW_SPEED * dt)
       }
@@ -354,16 +360,14 @@ export class GameInstance {
       if (!bp) continue
       // Was that the last one? Only interesting for species we'd seen alive.
       if (!this.knownSpecies.has(bp.id)) continue
-      const stillAlive = this.world.creatures.some((c) => c.blueprintId === bp.id)
+      const stillAlive = this.world.creatures.some(c => c.blueprintId === bp.id)
       if (stillAlive) continue
       this.knownSpecies.delete(bp.id)
       // An extinction is exactly what the steady streak measures the absence of
       // — it is the moment the world has to bail the player out via seed rain.
       this.breakSteadyStreak()
       notify(
-        event.kind === 'starved'
-          ? `The last ${bp.name} starved.`
-          : `The last ${bp.name} was eaten.`
+        event.kind === 'starved' ? `The last ${bp.name} starved.` : `The last ${bp.name} was eaten.`
       )
     }
   }
@@ -396,12 +400,15 @@ export class GameInstance {
 
     for (const entry of population) this.knownSpecies.add(entry.blueprintId)
 
-    useMicroLand
-      .getState()
-      .setStats(population, this.world.creatures.length, this.world.elapsed)
+    useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
 
     this.updateRecords(population)
     this.pushInspected()
+
+    // A running world is different every tick, so there is no cheaper signal
+    // than "time passed" to hang the autosave on. The shelf debounces it hard
+    // and does nothing at all when no shelved world is open.
+    touchActiveWorld()
   }
 
   // -------------------------------------------------------------------------
@@ -422,7 +429,7 @@ export class GameInstance {
 
     // The elder is gone if it isn't in the world any more. Checked before the
     // new elder is chosen so the eulogy names the right creature.
-    if (this.elderId !== null && !w.creatures.some((c) => c.id === this.elderId)) {
+    if (this.elderId !== null && !w.creatures.some(c => c.id === this.elderId)) {
       this.mourn()
     }
 
@@ -457,11 +464,7 @@ export class GameInstance {
     updateChronicle(() => {
       // --- longevity ---------------------------------------------------
       const best = record.elder?.seconds ?? 0
-      if (
-        oldest &&
-        oldest.ageSeconds >= ELDER_MIN_SECONDS &&
-        oldest.ageSeconds > best
-      ) {
+      if (oldest && oldest.ageSeconds >= ELDER_MIN_SECONDS && oldest.ageSeconds > best) {
         const bp = w.blueprints[oldest.blueprintId]
         if (bp) {
           const crowning = this.elderId !== oldest.id
@@ -491,7 +494,7 @@ export class GameInstance {
       // --- bloodline ----------------------------------------------------
       if (deepest > record.generations) {
         record.generations = deepest
-        const line = w.creatures.find((c) => c.generation === deepest)
+        const line = w.creatures.find(c => c.generation === deepest)
         const bp = line ? w.blueprints[line.blueprintId] : undefined
         record.generationsBlueprintId = bp?.id ?? null
         record.generationsSpeciesName = bp?.name ?? null
@@ -553,7 +556,7 @@ export class GameInstance {
   nameElder(name: string): boolean {
     const trimmed = name.trim().slice(0, 24)
     if (!trimmed || this.elderId === null) return false
-    const c = this.world.creatures.find((x) => x.id === this.elderId)
+    const c = this.world.creatures.find(x => x.id === this.elderId)
     if (!c) return false
     c.name = trimmed
     if (this.elderSnapshot) this.elderSnapshot.name = trimmed
@@ -573,7 +576,7 @@ export class GameInstance {
     const full = {
       ...context,
       archived: archive.length,
-      summonedArchived: archive.filter((s) => s.blueprint.summoned).length,
+      summonedArchived: archive.filter(s => s.blueprint.summoned).length,
     }
     const now = Date.now()
     const store = useMicroLand.getState()
@@ -617,10 +620,7 @@ export class GameInstance {
    */
   private beginLand(): void {
     this.breakSteadyStreak()
-    this.currentLand = landId(
-      useMicroLand.getState().themeId,
-      useMicroLand.getState().summonedLand
-    )
+    this.currentLand = landId(useMicroLand.getState().themeId, useMicroLand.getState().summonedLand)
     this.steadySince = this.world.elapsed
     // A cleared world has no elder; do this quietly rather than eulogizing a
     // creature the player deliberately removed.
@@ -637,11 +637,11 @@ export class GameInstance {
       return
     }
 
-    const c = this.world.creatures.find((x) => x.id === this.inspectedId)
+    const c = this.world.creatures.find(x => x.id === this.inspectedId)
     if (!c) {
       // It died while we were watching. Let go rather than freezing a corpse.
       this.inspectedId = null
-    this.following = false
+      this.following = false
       store.setInspected(null)
       return
     }
@@ -650,9 +650,8 @@ export class GameInstance {
     if (!bp) return
     const { w: bw, h: bh } = artSize(bp)
 
-    const target = c.targetId !== null
-      ? this.world.creatures.find((x) => x.id === c.targetId)
-      : undefined
+    const target =
+      c.targetId !== null ? this.world.creatures.find(x => x.id === c.targetId) : undefined
     const targetBp = target ? this.world.blueprints[target.blueprintId] : undefined
 
     store.setInspected({
@@ -681,6 +680,116 @@ export class GameInstance {
     useMicroLand.getState().setBlueprints(Object.values(this.world.blueprints))
   }
 
+  /**
+   * Put previously summoned creatures back on the shelf.
+   *
+   * The chronicle has archived their blueprints in full since it was written —
+   * that is the stated point of `SpeciesRecord.blueprint` — but nothing ever
+   * read them back into the roster, so `createWorld` seeded only the built-ins
+   * and a creature invented yesterday was missing from the toolbar today. It
+   * still appeared in the field guide, which made the loss look like a display
+   * bug rather than a missing restore.
+   *
+   * Only the roster is restored, never the population. The land is deliberately
+   * forgetful — "you are not keeping a save file, you are keeping a logbook" —
+   * and spawning yesterday's creatures into today's world would break both that
+   * and the empty-by-default start. What comes back is the *ability* to place
+   * them.
+   *
+   * Safe to call before `initChronicle` resolves, in which case the archive is
+   * simply empty; `MicroLandGame` already sequences the load first.
+   */
+  /**
+   * Re-read the archive into the roster after it has changed underneath us.
+   *
+   * Signing in merges an account's chronicle into the live one *after* the world
+   * was built, so a player opening Micro Land on a new device would see their
+   * creatures land in the field guide but not in the toolbar until they
+   * reloaded. Cheap enough to just re-run: `registerBlueprint` overwrites by id.
+   */
+  refreshRoster(): void {
+    this.restoreArchivedCreatures()
+    this.syncBlueprintsToStore()
+  }
+
+  /**
+   * Remove a summoned species from the world and from the records.
+   *
+   * Everything alive bursts in its own death colour rather than blinking out —
+   * the particle burst is the one already used when a creature dies, so "gone"
+   * looks like something that happened rather than a rendering glitch.
+   *
+   * Returns the archived record, which is the entire undo. Null means there was
+   * nothing to remove, or the caller aimed at a built-in: those are config, not
+   * records, and would simply reappear on the next load.
+   */
+  removeSpecies(blueprintId: string): SpeciesRecord | null {
+    const bp = this.world.blueprints[blueprintId]
+    if (!bp?.summoned) return null
+
+    const w = this.world
+    for (const c of w.creatures) {
+      if (c.blueprintId !== blueprintId) continue
+      const { w: aw, h: ah } = artSize(bp)
+      emitParticles(w, c.x + aw / 2, c.y + ah / 2, bp.death.particleColor, bp.death.particleCount)
+    }
+    w.creatures = w.creatures.filter(c => c.blueprintId !== blueprintId)
+
+    delete w.blueprints[blueprintId]
+    /**
+     * `natives` must lose it too.
+     *
+     * `registerBlueprint` pushes every species onto that list, and both safety
+     * nets read `w.blueprints[id]` straight off it — `nativePlants` to decide
+     * what the soil can re-seed, `repopulate` to pick who comes back. Leaving a
+     * dangling id there hands `undefined` to `isPlant` and breaks the two
+     * mechanisms that stop the world flatlining, which would look nothing like
+     * a deletion bug when it eventually surfaced.
+     */
+    w.natives = w.natives.filter(id => id !== blueprintId)
+
+    // The player may have had it selected, or been watching one of them.
+    const state = useMicroLand.getState()
+    if (state.tool.kind === 'creature' && state.tool.blueprintId === blueprintId) {
+      state.setTool({ kind: 'inspect' })
+    }
+    if (!w.creatures.some(c => c.id === this.inspectedId)) {
+      this.inspectedId = null
+      this.following = false
+      state.setInspected(null)
+    }
+
+    const record = forgetSpecies(blueprintId)
+    this.syncBlueprintsToStore()
+    this.pushStats()
+    // Straight to storage rather than on the debounce: a deletion the player
+    // then closes the tab on must not come back.
+    void flushChronicle()
+
+    return record ?? { blueprint: bp, firstSeen: Date.now(), lastSeen: Date.now(), longestLife: 0 }
+  }
+
+  /** Put a removed species back on the shelf. Undo for `removeSpecies`. */
+  restoreSpecies(record: SpeciesRecord): void {
+    restoreSpeciesRecord(record)
+    registerBlueprint(this.world, record.blueprint)
+    this.syncBlueprintsToStore()
+    void flushChronicle()
+  }
+
+  private restoreArchivedCreatures(): void {
+    const restored = archivedSpecies()
+      .filter(record => record.blueprint.summoned)
+      .map(record => record.blueprint)
+
+    for (const bp of restored) registerBlueprint(this.world, bp)
+
+    // Ids carry a counter that resets with the page. Without this, the first
+    // creature summoned after a reload would be handed an id a restored one is
+    // already using, and would silently overwrite it in the roster.
+    reserveSummonIds(restored.map(bp => bp.id))
+  }
+
   // -------------------------------------------------------------------------
   // World commands (called from the UI)
   // -------------------------------------------------------------------------
@@ -696,14 +805,19 @@ export class GameInstance {
    * Living creatures are kept — the ground changes underneath them.
    */
   applyTerrain(raw: unknown, opts: { keepCreatures?: boolean } = {}): SanitizedTerrain {
+    // The land is about to be something else, so this is no longer the world the
+    // player shelved. Let go of it rather than letting the next autosave
+    // overwrite a saved world with the one that replaced it.
+    releaseActiveWorld()
     const terrain = sanitizeTerrain(raw)
+    this.summonedTerrain = terrain
     this.summonedTheme = terrainToTheme(terrain, MATERIAL_INDEX)
     applyThemeObject(this.world, this.summonedTheme)
     if (!opts.keepCreatures) {
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
-    this.following = false
+      this.following = false
     }
     this.renderer.markTilesDirty()
     useMicroLand.getState().setSummonedLand(terrain.name)
@@ -716,12 +830,15 @@ export class GameInstance {
   }
 
   setTheme(themeId: string): void {
+    // Same reasoning as `applyTerrain`: a new theme is a new land, not a change
+    // to the shelved one. `adoptSave` re-claims it immediately afterwards.
+    releaseActiveWorld()
     if (themeId === SUMMONED_THEME_ID && this.summonedTheme) {
       applyThemeObject(this.world, this.summonedTheme)
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
-    this.following = false
+      this.following = false
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -742,13 +859,16 @@ export class GameInstance {
 
   /** Rebuild the terrain with a new seed, keeping the theme. */
   reshuffle(): void {
+    // Reshape rebuilds the terrain from a new seed — the shelved world is gone
+    // from the screen, and must not be gone from the shelf as well.
+    releaseActiveWorld()
     const themeId = useMicroLand.getState().themeId
     if (themeId === SUMMONED_THEME_ID && this.summonedTheme) {
       applyThemeObject(this.world, this.summonedTheme)
       clearCreatures(this.world)
       this.knownSpecies.clear()
       this.inspectedId = null
-    this.following = false
+      this.following = false
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -792,7 +912,7 @@ export class GameInstance {
 
     let placed = 0
     for (let i = 0; i < count; i++) {
-      if (this.world.creatures.length >= MAX_CREATURES) break
+      if (this.world.creatures.length >= TUNING.maxCreatures) break
       if (spawnSomewhereSensible(this.world, bp, this.rng)) placed++
     }
     this.pushStats()
@@ -801,6 +921,116 @@ export class GameInstance {
 
   getWorld(): WorldState {
     return this.world
+  }
+
+  // -------------------------------------------------------------------------
+  // The shelf
+  // -------------------------------------------------------------------------
+
+  /**
+   * Freeze the world as it stands, under a given identity.
+   *
+   * The identity comes from the caller rather than from here because the game
+   * instance has no opinion about which shelf slot it is: a first save mints an
+   * id and takes the name the player typed, and every autosave afterwards passes
+   * the same three back in. Everything else — the land, its inhabitants, where
+   * the record-keeper was standing, where the camera was pointing — is read off
+   * the running world.
+   */
+  toSave(identity: { id: string; name: string; createdAt: number }): WorldSave {
+    return {
+      version: WORLD_SAVE_VERSION,
+      id: identity.id,
+      name: identity.name,
+      createdAt: identity.createdAt,
+      updatedAt: Date.now(),
+      themeId: useMicroLand.getState().themeId,
+      terrain: this.summonedTerrain,
+      camX: Math.round(this.renderer.cameraX),
+      land: {
+        landId: this.currentLand,
+        steadySince: this.steadySince,
+        elderId: this.elderId,
+      },
+      world: snapshotWorld(this.world),
+    }
+  }
+
+  /**
+   * Drop the player into a shelved world, mid-breath.
+   *
+   * The order here is load-bearing. The store's theme is set *first*, which the
+   * subscription in `MicroLandGame` turns into a `setTheme` call and a freshly
+   * generated land — wasted work that is nonetheless the simplest correct thing,
+   * because it leaves every piece of theme state (sky, gloom, gravity, the world
+   * picker) consistent before the saved tiles are written over the top of it.
+   * The alternative was a re-entrancy flag threaded through the store, to save
+   * about ten milliseconds once per world opened.
+   *
+   * Records survive the move intact: the outgoing world banks its streak on the
+   * way out, and the saved one restores the streak it was in the middle of, so
+   * neither is lost and neither is inflated. Nothing here can lower a
+   * high-water mark (invariant 11) — `steadySince` is a live clock, not a record.
+   *
+   * Returns false if the save could not be decoded, having changed nothing the
+   * player can see except the theme they asked for.
+   */
+  adoptSave(save: WorldSave): boolean {
+    const store = useMicroLand.getState()
+
+    if (save.terrain) {
+      this.summonedTerrain = save.terrain
+      this.summonedTheme = terrainToTheme(save.terrain, MATERIAL_INDEX)
+      store.setSummonedLand(save.terrain.name)
+      store.setTheme(SUMMONED_THEME_ID)
+    } else {
+      // The previous summoned land is deliberately left in place. It is still
+      // an entry in the world picker, and `summonedTheme` and `summonedTerrain`
+      // have to stay in step — clearing only one of them would leave a land the
+      // player can still select but that can no longer be shelved.
+      store.setTheme(save.themeId)
+    }
+    // `setTheme` above may not have fired the subscription — the theme can
+    // already be the right one — so bank the outgoing streak here rather than
+    // relying on the rebuild to have done it.
+    this.breakSteadyStreak()
+
+    if (!restoreSnapshot(this.world, save.world)) return false
+
+    this.currentLand = save.land.landId
+    // Clamped because `steadySince` is a point on the world clock and a save
+    // claiming one in this world's future would report a negative streak.
+    this.steadySince = Math.min(save.land.steadySince, this.world.elapsed)
+
+    // The elder's halo comes back only if the creature wearing it did. The
+    // eulogy needs its own copy of the details, because by the time it is spoken
+    // the creature has already been filtered out of the world.
+    const elder =
+      save.land.elderId === null
+        ? undefined
+        : this.world.creatures.find(c => c.id === save.land.elderId)
+    this.elderId = elder?.id ?? null
+    this.elderSnapshot = elder
+      ? {
+          name: elder.name,
+          species: this.world.blueprints[elder.blueprintId]?.name ?? 'creature',
+          seconds: elder.ageSeconds,
+        }
+      : null
+
+    // Seeded from what is actually alive, so opening a world does not announce
+    // the extinction of everything that was in the land it replaced.
+    this.knownSpecies = new Set(this.world.creatures.map(c => c.blueprintId))
+    this.inspectedId = null
+    this.following = false
+    store.setInspected(null)
+
+    this.renderer.panToLeft(save.camX)
+    this.renderer.markTilesDirty()
+    this.syncBlueprintsToStore()
+    this.publishRecords()
+    this.pushStats()
+    return true
   }
 
   // -------------------------------------------------------------------------
@@ -912,9 +1142,7 @@ export class GameInstance {
       const dx = from - this.panAnchorX
       // A tap that has turned into a drag is no longer a tap.
       if (this.pendingInspect && Math.abs(dx) > TAP_SLOP) this.pendingInspect = null
-      this.renderer.panToLeft(
-        this.panAnchorCam - dx * this.renderer.tilesPerClientPixel()
-      )
+      this.renderer.panToLeft(this.panAnchorCam - dx * this.renderer.tilesPerClientPixel())
       return
     }
 
@@ -933,14 +1161,8 @@ export class GameInstance {
       const bp = this.world.blueprints[this.grabbed.blueprintId]
       if (bp) {
         const { w, h } = artSize(bp)
-        this.grabbed.x = Math.max(
-          0,
-          Math.min(this.world.width - w, p.x - w / 2)
-        )
-        this.grabbed.y = Math.max(
-          0,
-          Math.min(this.world.height - h, p.y - h / 2)
-        )
+        this.grabbed.x = Math.max(0, Math.min(this.world.width - w, p.x - w / 2))
+        this.grabbed.y = Math.max(0, Math.min(this.world.height - h, p.y - h / 2))
         this.grabbed.vx = 0
         this.grabbed.vy = 0
       }
@@ -1001,7 +1223,7 @@ export class GameInstance {
       const bp = this.world.blueprints[tool.blueprintId]
       if (!bp) return
       this.world.dormant = false
-      if (this.world.creatures.length >= MAX_CREATURES) {
+      if (this.world.creatures.length >= TUNING.maxCreatures) {
         state.notify('The world is full. Something has to go.')
         return
       }
@@ -1039,12 +1261,7 @@ export class GameInstance {
       const { w, h } = artSize(bp)
       // A little slack so small creatures are still grabbable on a phone.
       const pad = Math.max(0, 3 - Math.min(w, h) / 2)
-      if (
-        x >= c.x - pad &&
-        x <= c.x + w + pad &&
-        y >= c.y - pad &&
-        y <= c.y + h + pad
-      ) {
+      if (x >= c.x - pad && x <= c.x + w + pad && y >= c.y - pad && y <= c.y + h + pad) {
         return c
       }
     }

@@ -71,9 +71,7 @@ export const TerrainSchema = z.object({
       top: hexColor.describe('Color at the very top of the background.'),
       bottom: hexColor.describe('Color at the very bottom of the background.'),
     })
-    .describe(
-      'The empty background behind the world, seen wherever there are no tiles.'
-    ),
+    .describe('The empty background behind the world, seen wherever there are no tiles.'),
   gloom: z
     .number()
     .describe(
@@ -157,12 +155,9 @@ export function sanitizeTerrain(raw: unknown): SanitizedTerrain {
       ...Array(11).fill('ssssssssssssssssssssssssssssssssssssssss'),
     ]
   } else {
-    const width = Math.min(
-      MAP_MAX_COLS,
-      Math.max(MAP_MIN, Math.max(...rawMap.map((r) => r.length)))
-    )
+    const width = Math.min(MAP_MAX_COLS, Math.max(MAP_MIN, Math.max(...rawMap.map(r => r.length))))
     const known = new Set(Object.keys(legend))
-    map = rawMap.map((row) => {
+    map = rawMap.map(row => {
       let line = ''
       for (let x = 0; x < width; x++) {
         const ch = row[x] ?? '.'
@@ -323,5 +318,5 @@ export function terrainToTheme(
 export function hasFertileGround(terrain: SanitizedTerrain): boolean {
   // Read off the materials themselves rather than a copy of the list, so a new
   // fertile material is never fertile for plants but invisible to this check.
-  return Object.values(terrain.legend).some((m) => MATERIALS[m]?.fertile)
+  return Object.values(terrain.legend).some(m => MATERIALS[m]?.fertile)
 }

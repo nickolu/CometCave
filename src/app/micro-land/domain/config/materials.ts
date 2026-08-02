@@ -204,8 +204,8 @@ export function tintedId(base: TintableMaterialId, tint: TintId): MaterialId {
   return `${base}-${tint}`
 }
 
-const TINT_MATERIALS: Material[] = TINTABLE.flatMap((base) =>
-  TINTS.map((tint) => {
+const TINT_MATERIALS: Material[] = TINTABLE.flatMap(base =>
+  TINTS.map(tint => {
     const source = BASE_MATERIALS[base]
     const id = tintedId(base, tint.id)
     return {
@@ -225,25 +225,22 @@ const TINT_MATERIALS: Material[] = TINTABLE.flatMap((base) =>
 function mix(a: string, b: string, t: number): string {
   const pa = parseInt(a.slice(1), 16)
   const pb = parseInt(b.slice(1), 16)
-  const out = [16, 8, 0].map((shift) => {
+  const out = [16, 8, 0].map(shift => {
     const ca = (pa >> shift) & 255
     const cb = (pb >> shift) & 255
     return Math.round(ca + (cb - ca) * t)
   })
-  return `#${out.map((c) => c.toString(16).padStart(2, '0')).join('')}`
+  return `#${out.map(c => c.toString(16).padStart(2, '0')).join('')}`
 }
 
 // ---------------------------------------------------------------------------
 
 /** Every material in the world, base colors first, then every tint. */
-export const MATERIAL_IDS: MaterialId[] = [
-  ...BASE_MATERIAL_IDS,
-  ...TINT_MATERIALS.map((m) => m.id),
-]
+export const MATERIAL_IDS: MaterialId[] = [...BASE_MATERIAL_IDS, ...TINT_MATERIALS.map(m => m.id)]
 
 export const MATERIALS: Record<MaterialId, Material> = {
   ...BASE_MATERIALS,
-  ...Object.fromEntries(TINT_MATERIALS.map((m) => [m.id, m])),
+  ...Object.fromEntries(TINT_MATERIALS.map(m => [m.id, m])),
 } as Record<MaterialId, Material>
 
 /** Numeric index of each material, for the tile grid. */
@@ -255,7 +252,7 @@ export const MATERIAL_INDEX: Record<MaterialId, number> = MATERIAL_IDS.reduce(
   {} as Record<MaterialId, number>
 )
 
-export const MATERIAL_BY_INDEX: Material[] = MATERIAL_IDS.map((id) => MATERIALS[id])
+export const MATERIAL_BY_INDEX: Material[] = MATERIAL_IDS.map(id => MATERIALS[id])
 
 export const AIR = MATERIAL_INDEX.air
 
@@ -293,29 +290,21 @@ export const PAINTABLE: BaseMaterialId[] = [
 ]
 
 /** Precomputed flags, indexed the same way as the tile grid (hot path). */
-export const IS_SOLID: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.solid ? 1 : 0))
-)
-export const IS_LIQUID: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.liquid ? 1 : 0))
-)
-export const IS_POWDER: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.powder ? 1 : 0))
-)
-export const IS_DEADLY: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.deadly ? 1 : 0))
-)
+export const IS_SOLID: Uint8Array = new Uint8Array(MATERIAL_BY_INDEX.map(m => (m.solid ? 1 : 0)))
+export const IS_LIQUID: Uint8Array = new Uint8Array(MATERIAL_BY_INDEX.map(m => (m.liquid ? 1 : 0)))
+export const IS_POWDER: Uint8Array = new Uint8Array(MATERIAL_BY_INDEX.map(m => (m.powder ? 1 : 0)))
+export const IS_DEADLY: Uint8Array = new Uint8Array(MATERIAL_BY_INDEX.map(m => (m.deadly ? 1 : 0)))
 export const IS_FERTILE: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.fertile ? 1 : 0))
+  MATERIAL_BY_INDEX.map(m => (m.fertile ? 1 : 0))
 )
 /** Liquids you can actually drown in — sap is thick, but you can breathe in it. */
 export const IS_DROWNING: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.liquid && !m.breathable ? 1 : 0))
+  MATERIAL_BY_INDEX.map(m => (m.liquid && !m.breathable ? 1 : 0))
 )
 export const IS_ACID_PROOF: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.acidProof ? 1 : 0))
+  MATERIAL_BY_INDEX.map(m => (m.acidProof ? 1 : 0))
 )
 /** How much each material slows things moving through it, 0..255. */
 export const VISCOSITY: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => Math.round(m.viscous * 255))
+  MATERIAL_BY_INDEX.map(m => Math.round(m.viscous * 255))
 )

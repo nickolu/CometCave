@@ -157,7 +157,7 @@ export class Renderer {
     this.mapCtx = this.mapCanvas.getContext('2d')!
     this.mapImage = this.mapCtx.createImageData(MW, MH)
 
-    this.materialRgb = MATERIAL_BY_INDEX.map((m) => hexToRgb(m.color))
+    this.materialRgb = MATERIAL_BY_INDEX.map(m => hexToRgb(m.color))
   }
 
   /** Call whenever tiles change — painting, theme swap, lava setting solid. */
@@ -522,14 +522,9 @@ export class Renderer {
       // many things happen to be alive.
       if (c.x + sprites.width < vx || c.x > vx + vw) continue
       const frameCount = sprites.frames.length
-      const frame =
-        frameCount === 1
-          ? 0
-          : Math.floor(c.animMs / sprites.frameMs) % frameCount
+      const frame = frameCount === 1 ? 0 : Math.floor(c.animMs / sprites.frameMs) % frameCount
       const source =
-        c.facing === -1 && bp.art.faceMotion
-          ? sprites.flipped[frame]
-          : sprites.frames[frame]
+        c.facing === -1 && bp.art.faceMotion ? sprites.flipped[frame] : sprites.frames[frame]
 
       const x = Math.round(c.x)
       const y = Math.round(c.y)
@@ -554,7 +549,7 @@ export class Renderer {
    * it knows lives behind a tap.
    */
   private drawElder(w: WorldState, id: number): void {
-    const c = w.creatures.find((x) => x.id === id)
+    const c = w.creatures.find(x => x.id === id)
     if (!c) return
     const bp = w.blueprints[c.blueprintId]
     if (!bp) return
@@ -580,19 +575,14 @@ export class Renderer {
     const steps = Math.max(12, Math.round(rx * 6))
     for (let i = 0; i < steps; i++) {
       const t = (i / steps) * Math.PI * 2
-      ctx.fillRect(
-        Math.round(cx + Math.cos(t) * rx),
-        Math.round(cy + Math.sin(t) * ry),
-        1,
-        1
-      )
+      ctx.fillRect(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry), 1, 1)
     }
     ctx.globalAlpha = 1
   }
 
   /** Ring around the creature the inspector is watching. */
   private drawHighlight(w: WorldState, id: number): void {
-    const c = w.creatures.find((x) => x.id === id)
+    const c = w.creatures.find(x => x.id === id)
     if (!c) return
     const bp = w.blueprints[c.blueprintId]
     if (!bp) return

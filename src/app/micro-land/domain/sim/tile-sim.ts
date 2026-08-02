@@ -30,9 +30,7 @@ const ACID = MATERIAL_INDEX.acid
 const SAP = MATERIAL_INDEX.sap
 
 /** Anything that turns to water next to lava — ice, snow. */
-const MELTS: Uint8Array = new Uint8Array(
-  MATERIAL_BY_INDEX.map((m) => (m.melts ? 1 : 0))
-)
+const MELTS: Uint8Array = new Uint8Array(MATERIAL_BY_INDEX.map(m => (m.melts ? 1 : 0)))
 
 /**
  * Chance an acid tile eats its neighbour on a pass it is allowed to act, 0..1.
@@ -248,13 +246,7 @@ function quench(tiles: Uint8Array, x: number, y: number, at: number): boolean {
  *
  * Returns true if the tile was used up.
  */
-function corrode(
-  tiles: Uint8Array,
-  x: number,
-  y: number,
-  at: number,
-  phase: number
-): boolean {
+function corrode(tiles: Uint8Array, x: number, y: number, at: number, phase: number): boolean {
   if (hash3(x, y, phase) > ACID_BITE) return false
 
   // Below first, then the sides, then up — acid works downward like it should.

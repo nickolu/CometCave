@@ -48,15 +48,7 @@ export type BaseMaterialId =
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
-  | 'red'
-  | 'orange'
-  | 'yellow'
-  | 'green'
-  | 'blue'
-  | 'purple'
-  | 'pink'
-  | 'white'
-  | 'black'
+  'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'white' | 'black'
 
 /** Materials that come in colors. */
 export type TintableMaterialId = 'plastic' | 'crystal' | 'gem' | 'cloud'

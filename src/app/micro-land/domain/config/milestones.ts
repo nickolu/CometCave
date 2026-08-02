@@ -46,60 +46,60 @@ export const MILESTONES: Milestone[] = [
   {
     id: 'first-elder',
     text: 'Something here has grown old.',
-    reached: (c) => c.oldestSeconds >= 60,
+    reached: c => c.oldestSeconds >= 60,
   },
   {
     id: 'many-kinds',
     text: 'Eight kinds sharing one land.',
-    reached: (c) => c.speciesAlive >= 8,
+    reached: c => c.speciesAlive >= 8,
   },
   {
     id: 'steady-3m',
     text: 'Three minutes, and nothing has died out.',
-    reached: (c) => c.steadySeconds >= 180,
+    reached: c => c.steadySeconds >= 180,
   },
   {
     id: 'gen-5',
     text: 'A family line five deep.',
-    reached: (c) => c.generations >= 5,
+    reached: c => c.generations >= 5,
   },
   {
     id: 'guide-12',
     text: 'Twelve kinds recorded in the field guide.',
-    reached: (c) => c.archived >= 12,
+    reached: c => c.archived >= 12,
   },
   {
     id: 'elder-5m',
     text: 'One creature has lived five whole minutes.',
-    reached: (c) => c.oldestSeconds >= 300,
+    reached: c => c.oldestSeconds >= 300,
   },
   {
     id: 'summoned-5',
     text: 'Five creatures of your own invention, remembered.',
-    reached: (c) => c.summonedArchived >= 5,
+    reached: c => c.summonedArchived >= 5,
   },
   {
     id: 'crowded',
     text: 'Two hundred and fifty living things at once.',
-    reached: (c) => c.total >= 250,
+    reached: c => c.total >= 250,
   },
   {
     id: 'steady-10m',
     text: 'Ten minutes steady. This web holds.',
-    reached: (c) => c.steadySeconds >= 600,
+    reached: c => c.steadySeconds >= 600,
   },
   {
     id: 'gen-12',
     text: 'Twelve generations. None of the first are left.',
-    reached: (c) => c.generations >= 12,
+    reached: c => c.generations >= 12,
   },
   {
     id: 'guide-30',
     text: 'Thirty kinds. The field guide is getting heavy.',
-    reached: (c) => c.archived >= 30,
+    reached: c => c.archived >= 30,
   },
 ]
 
 export const MILESTONE_BY_ID: Record<string, Milestone> = Object.fromEntries(
-  MILESTONES.map((m) => [m.id, m])
+  MILESTONES.map(m => [m.id, m])
 )

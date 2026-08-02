@@ -63,19 +63,13 @@ const CORE_SLOPE = 0.4
  */
 const materialEnum = z.enum([...BASE_MATERIAL_IDS] as [MaterialId, ...MaterialId[]])
 
-const hexColor = z
-  .string()
-  .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #ff8800')
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #ff8800')
 
 export const BlueprintSchema = z.object({
-  name: z
-    .string()
-    .describe('Short display name, 1-3 words. Title Case. No emoji.'),
+  name: z.string().describe('Short display name, 1-3 words. Title Case. No emoji.'),
   blurb: z
     .string()
-    .describe(
-      'One short sentence describing the creature, written for a curious kid. No emoji.'
-    ),
+    .describe('One short sentence describing the creature, written for a curious kid. No emoji.'),
   size: z
     .number()
     .describe(
@@ -98,9 +92,7 @@ export const BlueprintSchema = z.object({
         .describe(
           'Animation frames. Each frame is an array of equal-length row strings; each character is a palette key or "." for transparent. At least 3 wide and tall, at most 28 wide and 24 tall. SCALE THE DRAWING TO THE "size" FIELD: size 1 is 3-5 wide, size 3 about 9, size 6 is 20-28 wide. A size 6 dragon drawn 9 wide looks like an insect. Give 2 frames so it animates — make frame 2 a small change (a step, a blink, a wing beat), not a completely different drawing. Draw the creature FACING RIGHT.'
         ),
-      frameMs: z
-        .number()
-        .describe('Milliseconds each frame is shown. 90-400. Faster = twitchier.'),
+      frameMs: z.number().describe('Milliseconds each frame is shown. 90-400. Faster = twitchier.'),
       faceMotion: z
         .boolean()
         .describe(
@@ -110,16 +102,10 @@ export const BlueprintSchema = z.object({
     .describe('How the creature looks and animates, as pixel art.'),
   body: z
     .object({
-      mass: z
-        .number()
-        .describe('Gravity multiplier. 0.2 = feather, 1 = normal, 3 = boulder.'),
+      mass: z.number().describe('Gravity multiplier. 0.2 = feather, 1 = normal, 3 = boulder.'),
       bounce: z.number().describe('Bounciness on impact, 0 = thud, 0.8 = rubber ball.'),
-      drag: z
-        .number()
-        .describe('Fraction of speed kept each second, 0.05-0.99. Low = sluggish.'),
-      buoyancy: z
-        .number()
-        .describe('Above 1 floats in water, below 1 sinks. 1 = neutral.'),
+      drag: z.number().describe('Fraction of speed kept each second, 0.05-0.99. Low = sluggish.'),
+      buoyancy: z.number().describe('Above 1 floats in water, below 1 sinks. 1 = neutral.'),
       immuneTo: z
         .array(materialEnum)
         .describe(
@@ -156,22 +142,16 @@ export const BlueprintSchema = z.object({
       hungerRate: z
         .number()
         .describe('How fast it gets hungry, 0-0.2 per second. 0.03 is typical.'),
-      starveSeconds: z
-        .number()
-        .describe('How long it survives once starving, 5-120 seconds.'),
+      starveSeconds: z.number().describe('How long it survives once starving, 5-120 seconds.'),
       breedAt: z
         .number()
         .describe('How full it must be to reproduce, 0-1. Around 0.75 is typical.'),
-      lifespanSeconds: z
-        .number()
-        .describe('Dies of old age after this long, 20-900 seconds.'),
+      lifespanSeconds: z.number().describe('Dies of old age after this long, 20-900 seconds.'),
     })
     .describe('Hunger, hunting and reproduction — this is what drives the food chain.'),
   senses: z
     .object({
-      sight: z
-        .number()
-        .describe('How far it spots food and danger, in tiles. 4-50.'),
+      sight: z.number().describe('How far it spots food and danger, in tiles. 4-50.'),
     })
     .describe('Perception.'),
   habitat: z
@@ -218,9 +198,7 @@ export const BlueprintSchema = z.object({
         .describe(
           'Tags of creatures that breed faster near this one. ["plant"] makes a pollinator. Use [] for no effect.'
         ),
-      boost: z
-        .number()
-        .describe('How much faster they breed, 1 to 4. 1 means no help.'),
+      boost: z.number().describe('How much faster they breed, 1 to 4. 1 means no help.'),
       converts: z
         .object({
           from: materialEnum.describe('The material it changes.'),
@@ -230,17 +208,13 @@ export const BlueprintSchema = z.object({
         .describe(
           'Ground it slowly improves as it goes, e.g. {"from":"stone","to":"dirt"} for a worm that makes soil. Null for almost everything.'
         ),
-      convertRate: z
-        .number()
-        .describe('Tiles changed per second, 0.05-1. Keep it slow.'),
+      convertRate: z.number().describe('Tiles changed per second, 0.05-1. Keep it slow.'),
     })
     .nullable()
     .describe(
       'A special ability that changes the world around it — pollinating, or turning one material into another. Use null unless the description specifically calls for a helper creature; ordinary animals have no aura.'
     ),
-  glow: z
-    .number()
-    .describe('Light it casts into dark places, 0-1. 0 for most creatures.'),
+  glow: z.number().describe('Light it casts into dark places, 0-1. 0 for most creatures.'),
 })
 
 export type RawBlueprint = z.infer<typeof BlueprintSchema>
@@ -258,9 +232,7 @@ export const SceneSchema = z.object({
   creatures: z
     .array(
       BlueprintSchema.extend({
-        count: z
-          .number()
-          .describe('How many of this creature to place in the world, 1-40.'),
+        count: z.number().describe('How many of this creature to place in the world, 1-40.'),
       })
     )
     .describe(
@@ -287,8 +259,13 @@ function cleanTags(input: unknown, fallback: string[]): string[] {
   if (!Array.isArray(input)) return fallback
   const out = input
     .filter((t): t is string => typeof t === 'string')
-    .map((t) => t.trim().toLowerCase().replace(/[^a-z-]/g, ''))
-    .filter((t) => t.length > 0 && t.length <= 16)
+    .map(t =>
+      t
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z-]/g, '')
+    )
+    .filter(t => t.length > 0 && t.length <= 16)
   return Array.from(new Set(out)).slice(0, 6)
 }
 
@@ -302,9 +279,7 @@ function cleanMaterials(input: unknown): MaterialId[] {
 
 function cleanMaterial(input: unknown): MaterialId | null {
   if (typeof input !== 'string') return null
-  return (MATERIAL_IDS as readonly string[]).includes(input)
-    ? (input as MaterialId)
-    : null
+  return (MATERIAL_IDS as readonly string[]).includes(input) ? (input as MaterialId) : null
 }
 
 /**
@@ -417,7 +392,7 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
    * Only runs when the art is over the cap, so anything already in range keeps
    * its padding — and therefore its collision box — exactly as drawn.
    */
-  const rawWidth = Math.max(...frames.map((f) => Math.max(...f.map((r) => r.length))))
+  const rawWidth = Math.max(...frames.map(f => Math.max(...f.map(r => r.length))))
   if (rawWidth > ART_MAX_W) {
     let first = Infinity
     let last = -1
@@ -433,29 +408,21 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
     if (last >= first) {
       const inkWidth = last - first + 1
       // Centre the window on the ink when even the trimmed drawing overflows.
-      const start =
-        inkWidth <= ART_MAX_W
-          ? first
-          : first + Math.floor((inkWidth - ART_MAX_W) / 2)
-      frames = frames.map((rows) => rows.map((row) => row.slice(start, start + ART_MAX_W)))
+      const start = inkWidth <= ART_MAX_W ? first : first + Math.floor((inkWidth - ART_MAX_W) / 2)
+      frames = frames.map(rows => rows.map(row => row.slice(start, start + ART_MAX_W)))
     }
   }
 
   // Every frame must share one width and height, or animation would jitter.
   const width = clamp(
-    Math.max(...frames.map((f) => Math.max(...f.map((r) => r.length)))),
+    Math.max(...frames.map(f => Math.max(...f.map(r => r.length)))),
     ART_MIN,
     ART_MAX_W,
     4
   )
-  const height = clamp(
-    Math.max(...frames.map((f) => f.length)),
-    ART_MIN,
-    ART_MAX_H,
-    4
-  )
+  const height = clamp(Math.max(...frames.map(f => f.length)), ART_MIN, ART_MAX_H, 4)
 
-  const normalized = frames.map((rows) => {
+  const normalized = frames.map(rows => {
     const out: string[] = []
     for (let y = 0; y < height; y++) {
       const row = rows[y] ?? ''
@@ -470,7 +437,7 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
   })
 
   // An all-transparent sprite is an invisible creature — give it a body.
-  const anyOpaque = normalized.some((f) => f.some((r) => /[^.]/.test(r)))
+  const anyOpaque = normalized.some(f => f.some(r => /[^.]/.test(r)))
   if (!anyOpaque) {
     const key = Object.keys(palette)[0]
     const mid = Math.floor(height / 2)
@@ -486,6 +453,27 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
 }
 
 let summonCounter = 0
+
+/**
+ * Move the id counter past ids that already exist.
+ *
+ * Ids look like `summon:cinder-wyrm:3`, and the counter is module state that
+ * resets with the page. That was harmless while summoned creatures evaporated
+ * on refresh, but restoring them from the chronicle brings old ids back into a
+ * world whose counter has restarted at zero — so the next creature summoned
+ * would be handed `summon:cinder-wyrm:1` again and quietly replace the restored
+ * one in `world.blueprints`, taking its art and its place in the food chain
+ * with it.
+ *
+ * Only the trailing counter matters; the slug does not, because the counter is
+ * global rather than per-name.
+ */
+export function reserveSummonIds(ids: string[]): void {
+  for (const id of ids) {
+    const n = Number(id.slice(id.lastIndexOf(':') + 1))
+    if (Number.isFinite(n) && n > summonCounter) summonCounter = n
+  }
+}
 
 /**
  * Turn arbitrary model output into a blueprint the world can run.
@@ -505,12 +493,13 @@ export function sanitizeBlueprint(
   const dig = (b.dig ?? {}) as Record<string, unknown>
 
   const name =
-    typeof b.name === 'string' && b.name.trim().length > 0
-      ? b.name.trim().slice(0, 32)
-      : 'Whatsit'
+    typeof b.name === 'string' && b.name.trim().length > 0 ? b.name.trim().slice(0, 32) : 'Whatsit'
 
   const prefix = opts.idPrefix ?? 'summon'
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+  const slug = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
   const id = `${prefix}:${slug || 'creature'}:${++summonCounter}`
 
   const kindRaw = typeof move.kind === 'string' ? move.kind : 'walk'
@@ -525,7 +514,7 @@ export function sanitizeBlueprint(
 
   // Keep exactly one "what am I made of" tag so the food chain always resolves.
   let tags = cleanTags(b.tags, ['meat'])
-  if (!tags.some((t) => t === 'plant' || t === 'meat' || t === 'mineral')) {
+  if (!tags.some(t => t === 'plant' || t === 'meat' || t === 'mineral')) {
     tags = [kind === 'root' ? 'plant' : 'meat', ...tags].slice(0, 6)
   }
 
@@ -573,7 +562,7 @@ export function sanitizeBlueprint(
     dig: {
       // Liquids aren't walls — letting them be "dug" would delete oceans.
       through: cleanMaterials(dig.through).filter(
-        (m) => m !== 'air' && IS_LIQUID[MATERIAL_INDEX[m]] !== 1
+        m => m !== 'air' && IS_LIQUID[MATERIAL_INDEX[m]] !== 1
       ),
       speed: clamp(dig.speed, 0.05, 8, 1),
     },
@@ -604,20 +593,14 @@ export function sanitizeBlueprint(
 export function canEat(hunter: CreatureBlueprint, prey: CreatureBlueprint): boolean {
   if (hunter.id === prey.id) return false
   if (prey.size > hunter.size) return false
-  return hunter.diet.eats.some((tag) => prey.tags.includes(tag))
+  return hunter.diet.eats.some(tag => prey.tags.includes(tag))
 }
 
 // ---------------------------------------------------------------------------
 // Grouping
 // ---------------------------------------------------------------------------
 
-export type CreatureGroup =
-  | 'yours'
-  | 'plants'
-  | 'grazers'
-  | 'hunters'
-  | 'giants'
-  | 'helpers'
+export type CreatureGroup = 'yours' | 'plants' | 'grazers' | 'hunters' | 'giants' | 'helpers'
 
 /** Tab order, and the labels the player sees. Plain words, not taxonomy. */
 export const CREATURE_GROUPS: { id: CreatureGroup; label: string }[] = [
@@ -647,21 +630,18 @@ function isPlantLike(bp: CreatureBlueprint): boolean {
  * `roster` is every creature in the world; a hunter is defined as something
  * that can actually eat one of them, which is the same rule the simulation uses.
  */
-export function creatureGroup(
-  bp: CreatureBlueprint,
-  roster: CreatureBlueprint[]
-): CreatureGroup {
+export function creatureGroup(bp: CreatureBlueprint, roster: CreatureBlueprint[]): CreatureGroup {
   if (bp.summoned) return 'yours'
   if (isPlantLike(bp)) return 'plants'
   if (bp.size >= 5) return 'giants'
   if (bp.aura) return 'helpers'
-  if (roster.some((other) => canEat(bp, other) && !isPlantLike(other))) return 'hunters'
+  if (roster.some(other => canEat(bp, other) && !isPlantLike(other))) return 'hunters'
   return 'grazers'
 }
 
 /** True if `prey` should run from `hunter`. */
 export function fears(prey: CreatureBlueprint, hunter: CreatureBlueprint): boolean {
-  if (prey.diet.fears.some((tag) => hunter.tags.includes(tag))) return true
+  if (prey.diet.fears.some(tag => hunter.tags.includes(tag))) return true
   return canEat(hunter, prey)
 }
 

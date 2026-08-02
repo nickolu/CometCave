@@ -492,7 +492,6 @@ const RUSTBOT = builtin('rustbot', {
   glow: 0.2,
 })
 
-
 const DELVER = builtin('delver', {
   name: 'Delver',
   blurb: 'A blind digger that chews its own tunnels through soil and stone.',
@@ -1078,11 +1077,22 @@ const CRYSTAL_SNAIL = builtin('crystal-snail', {
 
 const DRAGON = builtin('dragon', {
   name: 'Emberwing Elder',
-  blurb: 'An ancient dragon with wings as wide as a barn, whose scales still glow with the fire inside it.',
+  blurb:
+    'An ancient dragon with wings as wide as a barn, whose scales still glow with the fire inside it.',
   size: 6,
   tags: ['meat', 'dragon', 'fire'],
   art: {
-    palette: { 'k': '#180806', 'd': '#7d1f14', 'r': '#c0392b', 'o': '#e8792f', 'y': '#ffc247', 'e': '#fff3c0', 'w': '#ffeccc', 'm': '#9c3320', 'v': '#5e1a10' },
+    palette: {
+      k: '#180806',
+      d: '#7d1f14',
+      r: '#c0392b',
+      o: '#e8792f',
+      y: '#ffc247',
+      e: '#fff3c0',
+      w: '#ffeccc',
+      m: '#9c3320',
+      v: '#5e1a10',
+    },
     frames: [
       [
         '..kk......................',
@@ -1132,7 +1142,13 @@ const DRAGON = builtin('dragon', {
     frameMs: 300,
     faceMotion: true,
   },
-  body: { mass: 3, bounce: 0.05, drag: 0.82, buoyancy: 0.7, immuneTo: ['lava', 'ash', 'obsidian', 'stone'] },
+  body: {
+    mass: 3,
+    bounce: 0.05,
+    drag: 0.82,
+    buoyancy: 0.7,
+    immuneTo: ['lava', 'ash', 'obsidian', 'stone'],
+  },
   move: { kind: 'fly', speed: 4.5, jump: 0, restlessness: 0.12 },
   diet: {
     eats: ['meat'],
@@ -1146,7 +1162,13 @@ const DRAGON = builtin('dragon', {
   habitat: { needs: null, drowns: true },
   dig: { through: ['ash', 'obsidian', 'stone'], speed: 0.6 },
   death: { becomes: 'ash', particleColor: '#ff8a1e', particleCount: 30 },
-  aura: {"radius":10,"helps":[],"boost":1,"converts":{"from":"ice","to":"water"},"convertRate":0.3},
+  aura: {
+    radius: 10,
+    helps: [],
+    boost: 1,
+    converts: { from: 'ice', to: 'water' },
+    convertRate: 0.3,
+  },
   glow: 0.6,
 })
 
@@ -1156,7 +1178,15 @@ const TREX = builtin('trex', {
   size: 6,
   tags: ['meat', 'dinosaur', 'beast'],
   art: {
-    palette: { 'k': '#14200f', 'd': '#2c4620', 'g': '#4e7a35', 'l': '#7aa84c', 'e': '#ffd23f', 'w': '#f2f0e4', 'r': '#8e3b3b' },
+    palette: {
+      k: '#14200f',
+      d: '#2c4620',
+      g: '#4e7a35',
+      l: '#7aa84c',
+      e: '#ffd23f',
+      w: '#f2f0e4',
+      r: '#8e3b3b',
+    },
     frames: [
       [
         '................kkkkkk..',
@@ -1222,11 +1252,21 @@ const TREX = builtin('trex', {
 
 const TOWER_FOLK = builtin('tower-folk', {
   name: 'Tall Tim Twosome',
-  blurb: 'Two friends who travel everywhere as one very tall person, with the top one keeping watch far ahead.',
+  blurb:
+    'Two friends who travel everywhere as one very tall person, with the top one keeping watch far ahead.',
   size: 5,
   tags: ['meat', 'walker'],
   art: {
-    palette: { 's': '#f0c39a', 'k': '#d69a70', 'c': '#3f6fbf', 'b': '#2b4c8c', 'r': '#c8443c', 'h': '#4a3327', 'e': '#20242c', 'y': '#ffe9a8' },
+    palette: {
+      s: '#f0c39a',
+      k: '#d69a70',
+      c: '#3f6fbf',
+      b: '#2b4c8c',
+      r: '#c8443c',
+      h: '#4a3327',
+      e: '#20242c',
+      y: '#ffe9a8',
+    },
     frames: [
       [
         '......yyy.....',
@@ -1304,11 +1344,21 @@ const TOWER_FOLK = builtin('tower-folk', {
 
 const UNICYCLE_CLOWN = builtin('unicycle-clown', {
   name: 'Wobble Clown',
-  blurb: 'A cheerful circus clown who balances on a squeaky one-wheeled cycle and never quite stops wobbling.',
+  blurb:
+    'A cheerful circus clown who balances on a squeaky one-wheeled cycle and never quite stops wobbling.',
   size: 4,
   tags: ['meat', 'clown', 'rider'],
   art: {
-    palette: { 'r': '#e83b3b', 'w': '#fff4f0', 'y': '#ffd23f', 'b': '#3b6ee8', 's': '#f6c6a8', 'k': '#2a2438', 'g': '#8a8fa8', 'o': '#ff8a3d' },
+    palette: {
+      r: '#e83b3b',
+      w: '#fff4f0',
+      y: '#ffd23f',
+      b: '#3b6ee8',
+      s: '#f6c6a8',
+      k: '#2a2438',
+      g: '#8a8fa8',
+      o: '#ff8a3d',
+    },
     frames: [
       [
         '......rrr.......',
@@ -1416,5 +1466,5 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(
-  BUILTIN_CREATURES.map((c) => [c.id, c])
+  BUILTIN_CREATURES.map(c => [c.id, c])
 )

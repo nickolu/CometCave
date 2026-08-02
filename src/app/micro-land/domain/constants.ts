@@ -1,4 +1,17 @@
-/** World tuning. One place to change the feel of everything. */
+/**
+ * World tuning. One place to change the feel of everything.
+ *
+ * Some of these are *defaults* rather than values: the ecosystem numbers — plant
+ * seeding, population caps, breeding, gravity — are re-exported through
+ * `tuning.ts` as a mutable `TUNING` object that the options panel can move while
+ * the world runs, and the simulation reads that object rather than the constant.
+ * The comments here are still the reasoning for where each one starts; if you
+ * change one, change it here, and check whether `tuning.ts` gives it a slider
+ * range that still contains the new value.
+ *
+ * If you add a use of one of those constants directly in simulation code, the
+ * panel will silently stop working for it. Read it off `TUNING` instead.
+ */
 
 /**
  * World size in tiles. Everything is drawn at 1 pixel per tile, then scaled up.

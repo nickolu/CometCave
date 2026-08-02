@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { ChronicleBackend } from '@/app/micro-land/chronicle/backend'
 import {
+  adoptAccount,
   archivedSpecies,
   claimMilestone,
   flushChronicle,
+  forgetSpecies,
   initChronicle,
   landId,
   landRecord,
@@ -12,6 +14,7 @@ import {
   noteSpeciesLife,
   readChronicle,
   rememberSpecies,
+  restoreSpeciesRecord,
   setBackend,
   updateChronicle,
 } from '@/app/micro-land/chronicle/chronicle'
@@ -21,6 +24,7 @@ import {
   emptyLandRecord,
 } from '@/app/micro-land/chronicle/types'
 import type { ChronicleData } from '@/app/micro-land/chronicle/types'
+import { reserveSummonIds, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 
 /**
@@ -65,9 +69,7 @@ describe('landId', () => {
   })
 
   it('gives a summoned land its own key, so records follow the name', () => {
-    expect(landId('summoned', 'The Drowned Cathedral')).toBe(
-      'summoned:the-drowned-cathedral'
-    )
+    expect(landId('summoned', 'The Drowned Cathedral')).toBe('summoned:the-drowned-cathedral')
   })
 
   it('falls back to the theme when a name slugs down to nothing', () => {
@@ -140,11 +142,11 @@ describe('the species archive', () => {
     // One past the cap, oldest first, so the first summoned one is the victim.
     for (let i = 0; i < 81; i++) rememberSpecies(bp(`summoned-${i}`, true), 100 + i)
 
-    const ids = new Set(archivedSpecies().map((s) => s.blueprint.id))
+    const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
     expect(ids.has('builtin-hopper')).toBe(true)
     expect(ids.has('summoned-0')).toBe(false)
     expect(ids.has('summoned-80')).toBe(true)
-    expect(archivedSpecies().filter((s) => s.blueprint.summoned)).toHaveLength(80)
+    expect(archivedSpecies().filter(s => s.blueprint.summoned)).toHaveLength(80)
   })
 })
 
@@ -153,6 +155,210 @@ describe('milestones', () => {
     expect(claimMilestone('first-elder', 5000)).toBe(true)
     expect(claimMilestone('first-elder', 9000)).toBe(false)
     expect(readChronicle().milestones['first-elder']).toBe(5000)
+  })
+})
+
+describe('adoptAccount', () => {
+  /** Records set locally before the account was known must survive the move. */
+  it('keeps what was played anonymously and what the account already knew', async () => {
+    await loadWith(null)
+    rememberSpecies(bp('drawn-by-hand', true), 500)
+    landRecord('tidepool').steadySeconds = 60
+
+    const stored = emptyChronicle()
+    stored.species['from-the-phone'] = {
+      blueprint: bp('from-the-phone', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 90,
+    }
+    stored.lands.tidepool = { ...emptyLandRecord(), steadySeconds: 200 }
+
+    const account = memoryBackend(stored)
+    await adoptAccount(account.backend)
+
+    const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
+    expect(ids.has('drawn-by-hand')).toBe(true)
+    expect(ids.has('from-the-phone')).toBe(true)
+    // High-water marks, so the better of the two wins with no prompt.
+    expect(landRecord('tidepool').steadySeconds).toBe(200)
+  })
+
+  it('writes the merged result straight back, so the account gains the new creature', async () => {
+    await loadWith(null)
+    rememberSpecies(bp('drawn-by-hand', true), 500)
+
+    const account = memoryBackend(emptyChronicle())
+    await adoptAccount(account.backend)
+
+    expect(Object.keys(account.state.saved?.species ?? {})).toContain('drawn-by-hand')
+  })
+
+  it('writes back even when the account has nothing stored yet', async () => {
+    await loadWith(null)
+    rememberSpecies(bp('first-ever', true), 10)
+
+    const account = memoryBackend(null)
+    await adoptAccount(account.backend)
+
+    expect(account.state.saved).not.toBeNull()
+    expect(Object.keys(account.state.saved?.species ?? {})).toContain('first-ever')
+  })
+
+  it('sends later records to the account rather than the device', async () => {
+    const local = await loadWith(null)
+    const account = memoryBackend(null)
+    await adoptAccount(account.backend)
+
+    rememberSpecies(bp('after-sign-in', true), 900)
+    await flushChronicle()
+
+    expect(Object.keys(account.state.saved?.species ?? {})).toContain('after-sign-in')
+    // The local backend was only ever written by the pre-adoption flush.
+    expect(Object.keys(local.state.saved?.species ?? {})).not.toContain('after-sign-in')
+  })
+
+  it('ignores a stored chronicle from an unknown version', async () => {
+    await loadWith(null)
+    rememberSpecies(bp('drawn-by-hand', true), 500)
+
+    const stored = { ...emptyChronicle(), version: CHRONICLE_VERSION + 99 }
+    stored.species.garbage = {
+      blueprint: bp('garbage', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 0,
+    }
+
+    await adoptAccount(memoryBackend(stored).backend)
+
+    const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
+    expect(ids.has('garbage')).toBe(false)
+    // The player's own session is not collateral damage.
+    expect(ids.has('drawn-by-hand')).toBe(true)
+  })
+
+  it('does nothing when asked to adopt the backend already in use', async () => {
+    const mem = memoryBackend(null)
+    setBackend(mem.backend)
+    await initChronicle()
+    await adoptAccount(mem.backend)
+    expect(mem.state.saved).toBeNull()
+  })
+
+  /**
+   * The race this guards: the game calls `initChronicle` on mount and auth
+   * resolves a moment later, so both can be in flight at once. If the local read
+   * lands after the merge, it overwrites the merged chronicle with its own half
+   * and the account's creatures vanish for that session.
+   */
+  it('waits for a load already in flight instead of racing it', async () => {
+    const stored = emptyChronicle()
+    stored.species['on-the-device'] = {
+      blueprint: bp('on-the-device', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 0,
+    }
+
+    let release: () => void = () => {}
+    const gate = new Promise<void>(resolve => {
+      release = resolve
+    })
+    setBackend({
+      async load() {
+        await gate
+        return stored
+      },
+      async save() {},
+    })
+
+    const accountData = emptyChronicle()
+    accountData.species['in-the-account'] = {
+      blueprint: bp('in-the-account', true),
+      firstSeen: 1,
+      lastSeen: 2,
+      longestLife: 0,
+    }
+
+    const init = initChronicle()
+    const adopt = adoptAccount(memoryBackend(accountData).backend)
+    release()
+    await Promise.all([init, adopt])
+
+    const ids = new Set(archivedSpecies().map(s => s.blueprint.id))
+    expect(ids.has('on-the-device')).toBe(true)
+    expect(ids.has('in-the-account')).toBe(true)
+  })
+})
+
+describe('forgetting a species', () => {
+  it('removes it from the archive and hands back the record for undo', () => {
+    rememberSpecies(bp('wyrm', true), 1000)
+    noteSpeciesLife('wyrm', 42)
+
+    const record = forgetSpecies('wyrm')
+    expect(record?.blueprint.id).toBe('wyrm')
+    expect(archivedSpecies()).toHaveLength(0)
+
+    // The history is the part a blueprint alone cannot rebuild.
+    expect(record?.firstSeen).toBe(1000)
+    expect(record?.longestLife).toBe(42)
+  })
+
+  it('returns null for a species it never knew, so undo has nothing to offer', () => {
+    expect(forgetSpecies('never-existed')).toBeNull()
+  })
+
+  it('restores the record exactly, not a creature discovered just now', () => {
+    rememberSpecies(bp('wyrm', true), 1000)
+    noteSpeciesLife('wyrm', 42)
+    const record = forgetSpecies('wyrm')
+
+    restoreSpeciesRecord(record as NonNullable<typeof record>)
+    const back = archivedSpecies()[0]
+    expect(back.firstSeen).toBe(1000)
+    expect(back.longestLife).toBe(42)
+  })
+
+  it('writes the deletion through, so it does not come back on reload', async () => {
+    const mem = await loadWith(null)
+    rememberSpecies(bp('wyrm', true), 1000)
+    await flushChronicle()
+    expect(Object.keys(mem.state.saved?.species ?? {})).toContain('wyrm')
+
+    forgetSpecies('wyrm')
+    await flushChronicle()
+    expect(Object.keys(mem.state.saved?.species ?? {})).not.toContain('wyrm')
+  })
+})
+
+describe('summon id reservation', () => {
+  /**
+   * The bug: summoned ids carry a counter that resets with the page, so after a
+   * reload restored a creature as `summon:wyrm:1`, the next creature summoned
+   * was handed the same id and silently replaced it in the roster.
+   */
+  it('never reissues an id a restored creature is already using', () => {
+    const restored = sanitizeBlueprint({ name: 'Wyrm' }, { summoned: true })
+    reserveSummonIds([restored.id])
+    const fresh = sanitizeBlueprint({ name: 'Wyrm' }, { summoned: true })
+    expect(fresh.id).not.toBe(restored.id)
+  })
+
+  it('clears the whole archive, not just the highest-numbered name', () => {
+    const ids = ['summon:a:41', 'summon:b:7', 'summon:c:12']
+    reserveSummonIds(ids)
+    const fresh = sanitizeBlueprint({ name: 'D' }, { summoned: true })
+    expect(ids).not.toContain(fresh.id)
+    expect(Number(fresh.id.slice(fresh.id.lastIndexOf(':') + 1))).toBeGreaterThan(41)
+  })
+
+  it('ignores ids with no trailing counter instead of resetting', () => {
+    reserveSummonIds(['builtin-hopper', 'summon:x:nonsense'])
+    const before = sanitizeBlueprint({ name: 'E' }, { summoned: true })
+    const after = sanitizeBlueprint({ name: 'E' }, { summoned: true })
+    expect(after.id).not.toBe(before.id)
   })
 })
 

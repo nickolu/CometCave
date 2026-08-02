@@ -67,7 +67,7 @@ export function getSprites(bp: CreatureBlueprint): SpriteSet {
   const existing = cache.get(bp.id)
   if (existing) return existing
 
-  const frames = bp.art.frames.map((rows) => rasterize(bp, rows))
+  const frames = bp.art.frames.map(rows => rasterize(bp, rows))
   const set: SpriteSet = {
     width: frames[0].width,
     height: frames[0].height,

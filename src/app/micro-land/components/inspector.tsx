@@ -82,9 +82,9 @@ const meterLabel: React.CSSProperties = {
  * including who eats it, which is derived from `canEat` rather than authored.
  */
 export function Inspector({ onName }: { onName: (name: string) => boolean }) {
-  const inspected = useMicroLand((s) => s.inspected)
-  const blueprints = useMicroLand((s) => s.blueprints)
-  const setTool = useMicroLand((s) => s.setTool)
+  const inspected = useMicroLand(s => s.inspected)
+  const blueprints = useMicroLand(s => s.blueprints)
+  const setTool = useMicroLand(s => s.setTool)
 
   /**
    * The half-typed name, tagged with who it is for.
@@ -100,17 +100,14 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
   const naming = pending?.id === inspected.id
   const draft = naming ? pending.text : ''
 
-  const bp = blueprints.find((b) => b.id === inspected.blueprintId)
+  const bp = blueprints.find(b => b.id === inspected.blueprintId)
   if (!bp) return null
 
-  const eats = blueprints.filter((other) => canEat(bp, other))
-  const eatenBy = blueprints.filter((other) => canEat(other, bp))
+  const eats = blueprints.filter(other => canEat(bp, other))
+  const eatenBy = blueprints.filter(other => canEat(other, bp))
 
   const fullness = 1 - inspected.hunger
-  const lifeLeft = Math.max(
-    0,
-    1 - inspected.ageSeconds / Math.max(1, inspected.lifespanSeconds)
-  )
+  const lifeLeft = Math.max(0, 1 - inspected.ageSeconds / Math.max(1, inspected.lifespanSeconds))
 
   const trouble =
     inspected.starving > 0
@@ -159,7 +156,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           onClick={() => setTool({ kind: 'inspect' })}
           aria-label="Stop inspecting"
           style={{ minWidth: 28, minHeight: 28, color: 'var(--cc-text-muted)', fontSize: 12 }}
-          onPointerDown={(e) => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
         >
           ✕
         </button>
@@ -194,7 +191,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
             {inspected.name ? null : naming ? (
               <form
                 className="flex gap-1.5"
-                onSubmit={(e) => {
+                onSubmit={e => {
                   e.preventDefault()
                   if (onName(draft)) setPending(null)
                 }}
@@ -206,7 +203,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                   id="micro-land-elder-name"
                   autoFocus
                   value={draft}
-                  onChange={(e) => setPending({ id: inspected.id, text: e.target.value })}
+                  onChange={e => setPending({ id: inspected.id, text: e.target.value })}
                   maxLength={24}
                   placeholder="Call it something"
                   className="min-w-0 flex-1 rounded px-2 py-1"
@@ -218,7 +215,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                   }}
                   // The canvas grabs creatures on pointerdown; without this,
                   // tapping the field throws whatever is underneath it.
-                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerDown={e => e.stopPropagation()}
                 />
                 <button
                   type="submit"
@@ -234,7 +231,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                     border: '1px solid rgba(252, 211, 77, 0.35)',
                     opacity: draft.trim().length === 0 ? 0.4 : 1,
                   }}
-                  onPointerDown={(e) => e.stopPropagation()}
+                  onPointerDown={e => e.stopPropagation()}
                 >
                   Name
                 </button>
@@ -253,7 +250,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                   color: 'var(--cc-gold)',
                   border: '1px solid rgba(252, 211, 77, 0.35)',
                 }}
-                onPointerDown={(e) => e.stopPropagation()}
+                onPointerDown={e => e.stopPropagation()}
               >
                 Give it a name
               </button>
@@ -322,11 +319,9 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.55 }}>
-          <strong style={{ fontWeight: 600, color: 'var(--cc-text-default)' }}>
-            Eats:
-          </strong>{' '}
+          <strong style={{ fontWeight: 600, color: 'var(--cc-text-default)' }}>Eats:</strong>{' '}
           {eats.length > 0
-            ? eats.map((e) => e.name).join(', ')
+            ? eats.map(e => e.name).join(', ')
             : bp.move.kind === 'root'
               ? 'sunlight'
               : 'nothing here'}
@@ -334,7 +329,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           <strong style={{ fontWeight: 600, color: 'var(--cc-text-default)' }}>
             Eaten by:
           </strong>{' '}
-          {eatenBy.length > 0 ? eatenBy.map((e) => e.name).join(', ') : 'nothing here'}
+          {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
         </div>
       </div>
     </div>

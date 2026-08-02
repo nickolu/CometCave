@@ -11,6 +11,12 @@
  *   npx tsx scripts/micro-land-sim.ts                       # earth, 300s
  *   npx tsx scripts/micro-land-sim.ts --theme tidepool --seconds 600
  *   npx tsx scripts/micro-land-sim.ts --runs 5              # average of 5 seeds
+ *   npx tsx scripts/micro-land-sim.ts --set nativePlantTarget=60 --set maxPlants=300
+ *
+ * `--set` moves the same knobs the in-game settings panel moves, which is what
+ * makes a value found by dragging a slider testable: drag until the world looks
+ * right, then run the ten-minute ecosystem check on that number before it
+ * becomes the default.
  */
 import { THEMES, THEME_BY_ID } from '@/app/micro-land/domain/config/themes'
 import { TICK_S } from '@/app/micro-land/domain/constants'
@@ -23,6 +29,13 @@ import {
   createWorld,
   seedStarters,
 } from '@/app/micro-land/domain/sim/world'
+import {
+  TUNING,
+  TUNING_DEFAULTS,
+  type TuningKey,
+  changedKnobs,
+  setTuning,
+} from '@/app/micro-land/domain/tuning'
 
 function arg(name: string, fallback: string): string {
   const i = process.argv.indexOf(`--${name}`)
@@ -35,8 +48,29 @@ const runs = Number(arg('runs', '1'))
 const quiet = process.argv.includes('--quiet')
 
 if (!THEME_BY_ID[themeId]) {
-  console.error(`Unknown theme "${themeId}". Try: ${THEMES.map((t) => t.id).join(', ')}`)
+  console.error(`Unknown theme "${themeId}". Try: ${THEMES.map(t => t.id).join(', ')}`)
   process.exit(1)
+}
+
+for (let i = 0; i < process.argv.length; i++) {
+  if (process.argv[i] !== '--set') continue
+  const [key, raw] = (process.argv[i + 1] ?? '').split('=')
+  if (!(key in TUNING_DEFAULTS) || !Number.isFinite(Number(raw))) {
+    console.error(
+      `Bad --set "${process.argv[i + 1] ?? ''}". Knobs: ${Object.keys(TUNING_DEFAULTS).join(', ')}`
+    )
+    process.exit(1)
+  }
+  setTuning({ [key as TuningKey]: Number(raw) })
+}
+
+// Printed rather than assumed. A run whose numbers were quietly moved is worth
+// nothing as a before-and-after unless the header says what moved.
+const tuned = changedKnobs()
+if (tuned.length > 0 && !quiet) {
+  console.log(
+    `tuning: ${tuned.map(k => `${k}=${TUNING[k]} (was ${TUNING_DEFAULTS[k]})`).join(', ')}`
+  )
 }
 
 interface RunResult {
@@ -107,8 +141,7 @@ function runOnce(seed: number): RunResult {
 
     if (!quiet && sampleEvery > 0 && tick % sampleEvery === 0) {
       console.log(
-        `t=${Math.round(world.elapsed)}s`.padEnd(7) +
-          format(countByBlueprint(world), world)
+        `t=${Math.round(world.elapsed)}s`.padEnd(7) + format(countByBlueprint(world), world)
       )
     }
   }
@@ -120,7 +153,7 @@ function runOnce(seed: number): RunResult {
   const dug = world.creatures.reduce((a, c) => a + c.tilesDug, 0)
 
   const survivors = countByBlueprint(world)
-  const extinctions = [...seeded].filter((id) => !survivors[id])
+  const extinctions = [...seeded].filter(id => !survivors[id])
 
   return {
     survivors,
@@ -153,10 +186,15 @@ for (const r of results) {
 }
 
 for (const id of [...allSpecies].sort()) {
-  const counts = results.map((r) => r.survivors[id] ?? 0)
+  const counts = results.map(r => r.survivors[id] ?? 0)
   const avg = counts.reduce((a, b) => a + b, 0) / runs
-  const extinctIn = results.filter((r) => r.extinctions.includes(id)).length
-  const flag = extinctIn === runs ? '  ← EXTINCT in every run' : extinctIn > 0 ? `  ← extinct in ${extinctIn}/${runs}` : ''
+  const extinctIn = results.filter(r => r.extinctions.includes(id)).length
+  const flag =
+    extinctIn === runs
+      ? '  ← EXTINCT in every run'
+      : extinctIn > 0
+        ? `  ← extinct in ${extinctIn}/${runs}`
+        : ''
 
   // Aggregate causes of death so a collapse can be attributed, not guessed at.
   const causes: Record<string, number> = {}
