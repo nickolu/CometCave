@@ -8,6 +8,14 @@ import {
   creatureGroup,
 } from '@/app/micro-land/domain/blueprint'
 import { MATERIALS, PAINTABLE, TINTS, tintedId } from '@/app/micro-land/domain/config/materials'
+import {
+  type CreatureFilter,
+  EMPTY_FILTER,
+  describeFilter,
+  filterOptions,
+  isFilterActive,
+  matchesFilter,
+} from '@/app/micro-land/domain/creature-filter'
 import type {
   CreatureBlueprint,
   MaterialId,
@@ -16,6 +24,7 @@ import type {
 import { type Tool, useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
+import { CreatureFilterBar } from './creature-filter'
 import { SparkleIcon } from './sparkle-icon'
 import { SummonSand } from './summon-sand'
 
@@ -93,6 +102,29 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
     return out
   }, [blueprints])
 
+  /**
+   * The roster filter, applied across every tab at once.
+   *
+   * Deliberately *not* folded into `grouped`: which tabs exist, and where a
+   * creature files, are questions about the world and must keep the same answer
+   * whatever the filter is asking. A tab strip that reshuffled itself on every
+   * chip tap would move the thing under your thumb between deciding to tap it
+   * and tapping it — so the tabs hold still and only their counts move.
+   */
+  const [filter, setFilter] = useState<CreatureFilter>(EMPTY_FILTER)
+  const filtering = isFilterActive(filter)
+  const options = useMemo(() => filterOptions(blueprints), [blueprints])
+  const filtered = useMemo(() => {
+    if (!filtering) return grouped
+    const out = new Map<CreatureGroup, typeof blueprints>()
+    for (const [key, list] of grouped)
+      out.set(
+        key,
+        list.filter(bp => matchesFilter(bp, filter))
+      )
+    return out
+  }, [grouped, filter, filtering])
+
   // A summon still in flight is enough to stand "Yours" up on its own. The
   // waiting slot lives in that tab and nowhere else, so filtering the tab out
   // while it was empty hid the loading state on the one summon that most needs
@@ -132,7 +164,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
 
   // Whatever tab is showing has to exist — "Yours" disappears on a fresh world.
   const active = tabs.some(t => t.id === group) ? group : (tabs[0]?.id ?? 'plants')
-  const shown = grouped.get(active) ?? []
+  const shown = filtered.get(active) ?? []
 
   /**
    * Tidying is only ever a thing in "Yours".
@@ -500,6 +532,8 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
             </span>
           </div>
 
+          <CreatureFilterBar filter={filter} setFilter={setFilter} options={options} />
+
           {/* The tidy toggle sits beside the tabs but outside the tablist — it is
           not a tab, and a stray child in there confuses assistive tech. */}
           <div className="-mx-1 flex items-center gap-1 px-1">
@@ -507,9 +541,16 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
               {tabs.map(tab => {
                 const selected = tab.id === active
                 // Ones on their way count too, so the number moves the instant you ask
-                // rather than staying at zero for the length of a generation.
+                // rather than staying at zero for the length of a generation. They are
+                // counted against the filter as well: a summon has no blueprint yet, so
+                // there is nothing to match it on, and dropping it from the count would
+                // read as "nothing here" while something is visibly being made.
                 const count =
-                  (grouped.get(tab.id)?.length ?? 0) + (tab.id === 'yours' ? pending.length : 0)
+                  (filtered.get(tab.id)?.length ?? 0) + (tab.id === 'yours' ? pending.length : 0)
+                // A tab the filter has emptied is dimmed rather than removed — it is
+                // still worth knowing the category exists and that your filter is what
+                // emptied it, and it stays tappable so the empty state can explain.
+                const emptied = filtering && count === 0
                 return (
                   <button
                     key={tab.id}
@@ -543,6 +584,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
                         : tab.id === 'yours'
                           ? 'var(--cc-pink)'
                           : 'var(--cc-text-muted)',
+                      opacity: emptied && !selected ? 0.4 : 1,
                       whiteSpace: 'nowrap',
                     }}
                   >
@@ -618,6 +660,42 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
                   <span style={{ ...swatchLabel, color: 'var(--cc-pink)' }}>Making…</span>
                 </div>
               ))}
+            {/* An emptied drawer says who emptied it and hands back the way out. A
+            blank panel would read as a broken game, and the filter that did it
+            may be three taps up the screen and collapsed. */}
+            {filtering && shown.length === 0 && !(active === 'yours' && pending.length > 0) && (
+              <div className="flex flex-col gap-1.5 py-1.5" style={{ minWidth: 0 }}>
+                <span
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    color: 'var(--cc-text-muted)',
+                  }}
+                >
+                  Nothing in here matches — {describeFilter(filter)}.
+                </span>
+                <button
+                  type="button"
+                  className="cc-btn self-start"
+                  onClick={() => setFilter(EMPTY_FILTER)}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    padding: '5px 9px',
+                    minHeight: 28,
+                    borderRadius: 999,
+                    border: '1px solid var(--cc-mint-line)',
+                    background: 'transparent',
+                    color: 'var(--cc-text-muted)',
+                  }}
+                >
+                  Show everything
+                </button>
+              </div>
+            )}
             {shown.map(bp => {
               const selected = tool.kind === 'creature' && tool.blueprintId === bp.id
               // Built-ins can't be removed even while tidying — they come from
