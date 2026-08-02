@@ -10,6 +10,7 @@ export type TriviaFooterTarget =
   | 'infinite-leaderboard'
   | 'library'
   | 'calendar'
+  | 'wrong-answers'
 
 interface TriviaFooterProps {
   // The view that's currently rendering this footer. Used to suppress
@@ -26,6 +27,7 @@ const LINKS: { key: TriviaFooterTarget; label: string; href: string }[] = [
   { key: 'infinite-leaderboard', label: 'Infinite Ranks', href: '/trivia/leaderboard?tab=infinite' },
   { key: 'library', label: 'Question Library', href: '/trivia/library' },
   { key: 'calendar', label: 'Calendar', href: '/trivia/calendar' },
+  { key: 'wrong-answers', label: 'Wrong Answers', href: '/trivia/wrong-answers' },
 ]
 
 export function TriviaFooter({ current }: TriviaFooterProps) {
