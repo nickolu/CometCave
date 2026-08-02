@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error processing combat action', err)
     return NextResponse.json(
-      { error: 'Failed to process combat action', details: (err as Error).message },
+      { error: 'Failed to process combat action' },
       { status: 500 }
     )
   }

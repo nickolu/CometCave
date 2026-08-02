@@ -239,6 +239,7 @@ export function NPCDialoguePanel({
             type="text"
             className="flex-1 bg-[#161723] border border-[#2a2b3f] rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-600 disabled:opacity-50"
             placeholder="Type your response..."
+            aria-label="Type your response"
             value={playerInput}
             onChange={e => setPlayerInput(e.target.value)}
             onKeyDown={handleKeyDown}

@@ -514,7 +514,18 @@ function emitHudUpdate(sim: SimulationState) {
     if (b) selectedBuilding = { id: b.id, typeId: b.typeId, ownerId: b.ownerId, hp: b.hp, maxHp: b.maxHp, spawnTypeOverride: b.spawnTypeOverride }
   }
 
-  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
+  const playerBuildings = Object.values(sim.buildings)
+    .filter(b => b.ownerId === 'player' && b.typeId !== 'turret')
+    .sort((a, b) => {
+      const order: Record<string, number> = { base: 0, outpost: 1, scoutPost: 2, heavyForge: 3 }
+      return (order[a.typeId] ?? 9) - (order[b.typeId] ?? 9)
+    })
+    .map(b => {
+      const btype = BUILDING_TYPES[b.typeId]
+      return { id: b.id, typeId: b.typeId, name: btype?.name ?? b.typeId, hp: b.hp, maxHp: btype?.maxHp ?? 100 }
+    })
+
+  sim.events.push({ type: 'HUD_UPDATE', data: { players: data, attackedBuildingIds, captureInfo, selectedSpeckCount: sim.selectedSpeckIds.size, selectedComposition, spawnRates, minimap, waveCountdown: sim.waveCountdown, waveInProgress: sim.waveInProgress, waveNumber: sim.waveNumber, baseUnderThreat, enemyAdvanceDetected, selectedBuilding, playerBuildings, turretBudget: sim.turretBudget, buildModeEnabled: sim.isSurvival === true, survivalTimeRemaining: sim.isSurvival ? sim.survivalTimeRemaining : null } })
 }
 
 function pruneCommandGroups(sim: SimulationState) {

@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-06",
+  "categoryId": 9,
+  "categoryName": "General Knowledge",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-06-0",
+      "question": "Which of these fast-food chains is NOT mainly known to sell pizza?",
+      "options": [
+        "Domino's",
+        "Little Caesars",
+        "Papa John's",
+        "Wendy's"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Wendy's"
+    },
+    {
+      "id": "opentdb-2026-07-06-1",
+      "question": "Which language is most widely spoken in Switzerland?",
+      "options": [
+        "French",
+        "Swiss",
+        "Italian",
+        "German"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "German"
+    },
+    {
+      "id": "opentdb-2026-07-06-2",
+      "question": "What is the shortest month of the year?",
+      "options": [
+        "April",
+        "September",
+        "December",
+        "February"
+      ],
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "February"
+    },
+    {
+      "id": "opentdb-2026-07-06-3",
+      "question": "Which mountain has the highest peak in Africa?",
+      "options": [
+        "Mount Stanley, DR Congo/Uganda",
+        "Mount Speke, Uganda",
+        "Mount Kenya, Kenya",
+        "Mount Kilimanjaro, Tanzania"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Mount Kilimanjaro, Tanzania"
+    },
+    {
+      "id": "opentdb-2026-07-06-4",
+      "question": "When was the Declaration of Independence approved by the Second Continental Congress?",
+      "options": [
+        "June 4, 1776",
+        "July 2, 1776",
+        "May 4, 1776",
+        "July 4, 1776"
+      ],
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "July 4, 1776"
+    },
+    {
+      "id": "opentdb-2026-07-06-5",
+      "question": "What is the romanized Korean word for \"heart\"?",
+      "options": [
+        "Aejeong",
+        "Segseu",
+        "Jeongsin",
+        "Simjang"
+      ],
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "opentdb",
+      "correctAnswer": "Simjang"
+    },
+    {
+      "id": "ai-2026-07-06-6",
+      "question": "What is the term for a sentence that contains every letter of the English alphabet at least once?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "pangram",
+      "explanation": "A pangram is a sentence that uses every letter of the English alphabet at least once. The most famous example is \"The quick brown fox jumps over the lazy dog,\" which has been used to test typewriters and keyboards for centuries. Pangrams are also used in font displays to showcase all letters of the alphabet."
+    },
+    {
+      "id": "ai-2026-07-06-7",
+      "question": "The word \"alphabet\" gets its name from the first two letters of which ancient language's writing system?",
+      "difficulty": "easy",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "Greek",
+      "explanation": "The word \"alphabet\" is derived from \"alpha\" and \"beta,\" the names of the first two letters in the Greek alphabet. This naming convention reflects how foundational the Greek writing system was to Western literacy and language. Many modern alphabets, including the Latin alphabet used in English, trace their roots back to the Greek alphabet."
+    },
+    {
+      "id": "ai-2026-07-06-8",
+      "question": "Which government department's acronym was reverse-engineered to match an internet meme of a Shiba Inu dog and a Elon Musk-promoted meme coin?",
+      "difficulty": "medium",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "DOGE",
+      "explanation": "DOGE — the Department of Government Efficiency — is a backronym, meaning the abbreviation came first (borrowed from the Dogecoin/Shiba Inu meme) and the full name was crafted to fit it afterward. Elon Musk, a longtime promoter of Dogecoin, was appointed to lead the department, making the playful acronym a deliberate nod to internet meme culture. Backronyms are common in branding but relatively rare in official government naming."
+    },
+    {
+      "id": "ai-2026-07-06-9",
+      "question": "What is the Greek word, meaning \"running foot,\" from which the metrical term for a stressed-unstressed syllable pair ultimately derives?",
+      "difficulty": "hard",
+      "category": "General Knowledge",
+      "source": "ai",
+      "correctAnswer": "trokhaios",
+      "explanation": "The word \"trochee\" traces back through French and Latin (trochaeus) to the ancient Greek trokhaios, meaning \"running foot\" — a vivid image for the quick, forward-tumbling rhythm of the strong-weak stress pattern. The trochee is a common metrical foot in poetry, famously used in works like Longfellow's \"The Song of Hiawatha.\""
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-18",
+  "categoryId": 21,
+  "categoryName": "Sports",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-18-0",
+      "question": "Who won the 2015 Formula 1 World Championship?",
+      "options": [
+        "Nico Rosberg",
+        "Sebastian Vettel",
+        "Jenson Button",
+        "Lewis Hamilton"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Lewis Hamilton"
+    },
+    {
+      "id": "opentdb-2026-07-18-1",
+      "question": "Which player holds the NHL record of 2,857 points?",
+      "options": [
+        "Mario Lemieux ",
+        "Gordie Howe",
+        "Sidney Crosby",
+        "Wayne Gretzky"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Wayne Gretzky"
+    },
+    {
+      "id": "opentdb-2026-07-18-2",
+      "question": "Which of these NHL teams originally played in Atlanta?",
+      "options": [
+        "Minnesota Wild",
+        "Vancouver Canucks",
+        "St. Louis Blues",
+        "Calgary Flames"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Calgary Flames"
+    },
+    {
+      "id": "opentdb-2026-07-18-3",
+      "question": "Who has played the most tournaments on the Brazilian national soccer team?",
+      "options": [
+        "Ronaldo",
+        "Roberto Carlos",
+        "Kaká",
+        "Cafu"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Cafu"
+    },
+    {
+      "id": "opentdb-2026-07-18-4",
+      "question": "Which NBA player has the most games played over the course of their career?",
+      "options": [
+        "Kareem Abdul-Jabbar",
+        "Kevin Garnett",
+        "Kobe Bryant",
+        "Robert Parish"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Robert Parish"
+    },
+    {
+      "id": "opentdb-2026-07-18-5",
+      "question": "What team did England beat in the semi-final stage to win in the 1966 World Cup final?",
+      "options": [
+        "West Germany",
+        "Soviet Union",
+        "Brazil",
+        "Portugal"
+      ],
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Portugal"
+    },
+    {
+      "id": "ai-2026-07-18-6",
+      "question": "In sports, what does the abbreviation \"MVP\" stand for?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Most Valuable Player",
+      "explanation": "MVP stands for \"Most Valuable Player,\" an honor awarded to the athlete judged to have had the greatest impact on their team's success during a game, season, or tournament. The award is common across major sports leagues like the NFL, NBA, MLB, and NHL, as well as international competitions. Winning an MVP is considered one of the highest individual honors in sports."
+    },
+    {
+      "id": "ai-2026-07-18-7",
+      "question": "What group of sports, which includes artistic, rhythmic, and trampoline disciplines, is specifically defined by physical exercises requiring balance, strength, flexibility, agility, coordination, artistry, and endurance?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Gymnastics",
+      "explanation": "Gymnastics is a broad group of sports built around physical exercises that demand balance, strength, flexibility, agility, coordination, artistry, and endurance. It encompasses well-known disciplines such as artistic gymnastics, rhythmic gymnastics, and trampoline. Gymnastics is one of the oldest sports, with roots in ancient Greece, and has been a staple of the modern Olympic Games since their inception in 1896."
+    },
+    {
+      "id": "ai-2026-07-18-8",
+      "question": "According to Wikipedia's overtime overview, in which team sport does play continue uninterrupted into double overtime — with no fresh restart — until one team scores enough to be up by two goals?",
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Netball",
+      "explanation": "In netball, if teams remain tied after the initial overtime period, play flows seamlessly into double overtime without any stoppage or restart, continuing until one side holds a two-goal advantage. This \"sudden two-goal\" continuation rule is a distinctive feature of netball's tiebreaking format. Netball is widely played in Commonwealth nations such as Australia, New Zealand, England, and across the Caribbean."
+    },
+    {
+      "id": "ai-2026-07-18-9",
+      "question": "In football officiating, what fundamental limitation of VAR means the technology is still unable to eliminate every incorrect decision?",
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "margin for error",
+      "explanation": "VAR (Video Assistant Referee) was introduced to reduce human error in football, but it operates within a margin for error, meaning some borderline calls — particularly in offside decisions — remain inherently subjective or imprecise. This limitation has fueled ongoing debate about whether VAR truly delivers the accuracy and fairness it promised. Critics argue that the margin for error, combined with lengthy review delays, undermines the technology's core justification."
+    }
+  ]
+}

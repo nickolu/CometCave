@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-29",
+  "categoryId": 26,
+  "categoryName": "Celebrities",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-29-0",
+      "question": "Named after a character he played in a 1969 film, what is the name of the ski resort in Utah that Robert Redford bought in 1968?",
+      "options": [
+        "Woodward",
+        "Booker",
+        "Turner",
+        "Sundance"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Sundance"
+    },
+    {
+      "id": "opentdb-2026-06-29-1",
+      "question": "What was the cause of Marilyn Monroes suicide?",
+      "options": [
+        "House Fire",
+        "Gunshot",
+        "Knife Attack",
+        "Drug Overdose"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Drug Overdose"
+    },
+    {
+      "id": "opentdb-2026-06-29-2",
+      "question": "Neil Hamburger is played by which comedian?",
+      "options": [
+        "Nathan Fielder",
+        "Tim Heidecker",
+        "Todd Glass",
+        "Gregg Turkington"
+      ],
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Gregg Turkington"
+    },
+    {
+      "id": "opentdb-2026-06-29-3",
+      "question": "Paul McCartney has always used his middle name. What is his real first name? ",
+      "options": [
+        "Jack",
+        "Justin",
+        "John",
+        "James"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "James"
+    },
+    {
+      "id": "opentdb-2026-06-29-4",
+      "question": "Which American celebrity died in 1977 playing golf in La Moraleja, Madrid?",
+      "options": [
+        "Charlie Chaplin",
+        "Groucho Marx",
+        "Elvis Presley",
+        "Bing Crosby"
+      ],
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Bing Crosby"
+    },
+    {
+      "id": "opentdb-2026-06-29-5",
+      "question": "Which school in Surrey, England did Steve Backshall attend?",
+      "options": [
+        "Tomlinscote School",
+        "Lyndhurst School",
+        "Kings International College",
+        "Collingwood College"
+      ],
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "opentdb",
+      "correctAnswer": "Collingwood College"
+    },
+    {
+      "id": "ai-2026-06-29-6",
+      "question": "Which breed of dog became one of the most recognizable symbols of Queen Elizabeth II's public image?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "corgis",
+      "explanation": "Queen Elizabeth II owned more than 30 corgis over her lifetime, making the breed inseparable from her public persona. Her love of corgis began in 1933 when her father, King George VI, brought home the family's first corgi, Dookie. The Queen's devotion to the breed was so well known that corgis appeared alongside her in official portraits and even in her 2012 Olympic sketch with James Bond."
+    },
+    {
+      "id": "ai-2026-06-29-7",
+      "question": "Which Argentine soccer superstar is listed among the world's most famous athletes on Biography.com?",
+      "difficulty": "easy",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "Lionel Messi",
+      "explanation": "Lionel Messi, widely regarded as one of the greatest footballers of all time, is featured on Biography.com alongside other globally recognized sports stars. The Argentine forward won multiple FIFA World Player of the Year awards and led Argentina to the 2022 FIFA World Cup title. His career achievements with FC Barcelona and later Paris Saint-Germain and Inter Miami have cemented his legendary status worldwide."
+    },
+    {
+      "id": "ai-2026-06-29-8",
+      "question": "For which mainstream media outlet did Twitch streamer Hasan Piker work as a columnist?",
+      "difficulty": "medium",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "HuffPost",
+      "explanation": "Hasan Piker, known for his progressive political commentary on Twitch, also contributed as a columnist for HuffPost, giving him a mainstream media writing credential. This adds an interesting layer to his career beyond streaming, showing his reach into traditional journalism. HuffPost is one of the most widely read online news outlets in the United States."
+    },
+    {
+      "id": "ai-2026-06-29-9",
+      "question": "Which 2002 film featuring Ben Affleck centers on a man who enlists a stranger to help him win over his crush, only for the stranger to fall for her instead?",
+      "difficulty": "hard",
+      "category": "Celebrities",
+      "source": "ai",
+      "correctAnswer": "The Third Wheel",
+      "explanation": "The Third Wheel (2002) is a romantic comedy in which Ben Affleck plays a man who accidentally involves a homeless stranger in his romantic plans, with unexpected consequences. The film is considered a deep cut in Affleck's filmography, having received a limited release. It also features Affleck's then-partner Jennifer Lopez in a cameo."
+    }
+  ]
+}

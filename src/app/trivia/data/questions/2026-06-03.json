@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-03",
+  "categoryId": 24,
+  "categoryName": "Politics",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-03-0",
+      "question": "How many people are in the U.S. House of Representatives?",
+      "options": [
+        "260",
+        "50",
+        "415",
+        "435"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "435"
+    },
+    {
+      "id": "opentdb-2026-06-03-1",
+      "question": "Who was the 45th President of the United States?",
+      "options": [
+        "Bill Clinton",
+        "George Bush",
+        "Barack Obama",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-06-03-2",
+      "question": "Whose 2016 presidential campaign slogan was \"Make America Great Again\"?",
+      "options": [
+        "Marco Rubio",
+        "Bernie Sanders",
+        "Ted Cruz",
+        "Donald Trump"
+      ],
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Donald Trump"
+    },
+    {
+      "id": "opentdb-2026-06-03-3",
+      "question": "The Watergate Scandal occured in what year?",
+      "options": [
+        "1974",
+        "1971",
+        "1973",
+        "1972"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "1972"
+    },
+    {
+      "id": "opentdb-2026-06-03-4",
+      "question": "Which city is the seat of government of the Netherlands?",
+      "options": [
+        "Amsterdam",
+        "Rotterdam",
+        "Utrecht",
+        "The Hague"
+      ],
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "The Hague"
+    },
+    {
+      "id": "opentdb-2026-06-03-5",
+      "question": "Which major bank's collapse was notable as one of the causes of the Financal Crisis of 2008?",
+      "options": [
+        "HSBC",
+        "Lloyds",
+        "Barclays",
+        "Lehman Brothers"
+      ],
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "opentdb",
+      "correctAnswer": "Lehman Brothers"
+    },
+    {
+      "id": "ai-2026-06-03-6",
+      "question": "Which court, made up of one chief justice and eight associate justices, is the highest in the United States?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Supreme Court",
+      "explanation": "The U.S. Supreme Court consists of nine justices total: one chief justice and eight associate justices. This composition has been set at nine since the Judiciary Act of 1869, though Congress has the power to change the number. The Court serves as the final arbiter of federal law and the Constitution."
+    },
+    {
+      "id": "ai-2026-06-03-7",
+      "question": "Which landmark Supreme Court case declared public school segregation unconstitutional?",
+      "difficulty": "easy",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Brown v. Board of Education",
+      "explanation": "Brown v. Board of Education (1954) was a unanimous Supreme Court decision that overturned the \"separate but equal\" doctrine established by Plessy v. Ferguson. The ruling declared that racial segregation in public schools violated the Equal Protection Clause of the 14th Amendment, becoming a cornerstone of the Civil Rights Movement."
+    },
+    {
+      "id": "ai-2026-06-03-8",
+      "question": "Which article of the Nuclear Non-Proliferation Treaty grants member states the right to develop and use nuclear energy for peaceful purposes?",
+      "difficulty": "medium",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "Article IV",
+      "explanation": "Article IV of the NPT is often called the \"inalienable right\" clause, affirming that all member states may pursue peaceful nuclear energy programs. However, this right comes with the condition that states remain compliant with the treaty's non-proliferation obligations, creating an ongoing tension between energy access and weapons prevention."
+    },
+    {
+      "id": "ai-2026-06-03-9",
+      "question": "Which Chatham House researcher is known for arguing that kleptocracies rely on cross-border networks of non-state actors to help authoritarian elites consolidate power and wealth?",
+      "difficulty": "hard",
+      "category": "Politics",
+      "source": "ai",
+      "correctAnswer": "John Heathershaw",
+      "explanation": "John Heathershaw, a professor at the University of Exeter and a leading Chatham House researcher, has been instrumental in developing the academic framework around kleptocracy and transnational authoritarian networks. His work highlights how illicit financial flows, enablers such as lawyers and accountants, and offshore structures allow corrupt elites to entrench their rule across borders. This research has significantly influenced policy debates on tackling \"kleptocracy enablers\" in Western democracies."
+    }
+  ]
+}

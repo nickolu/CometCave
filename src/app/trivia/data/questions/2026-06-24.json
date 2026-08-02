@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-24",
+  "categoryId": 21,
+  "categoryName": "Sports",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-24-0",
+      "question": "Which of these NHL teams originally played in Atlanta?",
+      "options": [
+        "St. Louis Blues",
+        "Minnesota Wild",
+        "Vancouver Canucks",
+        "Calgary Flames"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Calgary Flames"
+    },
+    {
+      "id": "opentdb-2026-06-24-1",
+      "question": "Who won the UEFA Champions League in 2017?",
+      "options": [
+        "Atletico Madrid",
+        "Juventus F.C.",
+        "AS Monaco FC",
+        "Real Madrid C.F."
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Real Madrid C.F."
+    },
+    {
+      "id": "opentdb-2026-06-24-2",
+      "question": "\"Stadium of Light\" is the home stadium for which soccer team?",
+      "options": [
+        "Paris Saints-Germain",
+        "Manchester United",
+        "Barcelona FC",
+        "Sunderland FC"
+      ],
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Sunderland FC"
+    },
+    {
+      "id": "opentdb-2026-06-24-3",
+      "question": "Which soccer team won the Copa América 2015 Championship ?",
+      "options": [
+        "Argentina",
+        "Brazil",
+        "Paraguay",
+        "Chile"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Chile"
+    },
+    {
+      "id": "opentdb-2026-06-24-4",
+      "question": "Edson Arantes do Nascimento is the full name of which legendary football player?",
+      "options": [
+        "Romário",
+        "Zico",
+        "Ronaldinho",
+        "Pelé"
+      ],
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "Pelé"
+    },
+    {
+      "id": "opentdb-2026-06-24-5",
+      "question": "Which of these European cities was the first to host the modern Summer Olympic Games three times?",
+      "options": [
+        "Athens",
+        "Rome",
+        "Paris",
+        "London"
+      ],
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "opentdb",
+      "correctAnswer": "London"
+    },
+    {
+      "id": "ai-2026-06-24-6",
+      "question": "Which MLB team has won more World Series titles than any other, with 26 championships?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "New York Yankees",
+      "explanation": "The New York Yankees are the most successful franchise in World Series history, having won 26 titles. Their dynasty runs include legendary eras led by Babe Ruth, Joe DiMaggio, Mickey Mantle, and Derek Jeter. Their closest rivals, the St. Louis Cardinals, have won 11 titles — less than half of the Yankees' total."
+    },
+    {
+      "id": "ai-2026-06-24-7",
+      "question": "Which tournament did Lionel Messi lead Argentina to victory in, ending the country's 36-year title drought?",
+      "difficulty": "easy",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "2022 World Cup",
+      "explanation": "Lionel Messi finally captured the one major trophy that had eluded him, leading Argentina to victory at the 2022 FIFA World Cup in Qatar. It was Argentina's first World Cup title since 1986. Messi was awarded the Golden Ball as the tournament's best player."
+    },
+    {
+      "id": "ai-2026-06-24-8",
+      "question": "Which WNBA franchise has been part of the league since its inaugural 1997 season and is based in New York City?",
+      "difficulty": "medium",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "New York Liberty",
+      "explanation": "The New York Liberty are one of the WNBA's original eight founding teams, having competed in every season since the league launched in 1997. As one of the league's most storied franchises, the Liberty play their home games at Barclays Center in Brooklyn. Their longevity makes them one of the cornerstones of women's professional basketball in the United States."
+    },
+    {
+      "id": "ai-2026-06-24-9",
+      "question": "Which football analysis channel's discussion of VAR argues that the technology's slowness is particularly disruptive due to the sport's continuous nature?",
+      "difficulty": "hard",
+      "category": "Sports",
+      "source": "ai",
+      "correctAnswer": "Tifo Football",
+      "explanation": "Tifo Football is a well-regarded YouTube channel known for its in-depth tactical and analytical breakdowns of football topics. In their discussion of VAR, they highlight that unlike sports with natural stoppages, football's free-flowing nature makes lengthy video review delays feel especially jarring to players and fans alike. This criticism remains one of the most common arguments against VAR's implementation across top leagues."
+    }
+  ]
+}

@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('Error selling item', err)
     return NextResponse.json(
-      { error: 'Failed to sell item', details: (err as Error).message },
+      { error: 'Failed to sell item' },
       { status: 500 }
     )
   }

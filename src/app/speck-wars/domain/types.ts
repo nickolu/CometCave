@@ -153,6 +153,7 @@ export interface HudData {
   buildModeEnabled: boolean
   enemyAdvanceDetected: boolean
   selectedBuilding: { id: string; typeId: string; ownerId: string; hp: number; maxHp: number; spawnTypeOverride?: string } | null
+  playerBuildings: Array<{ id: string; typeId: string; name: string; hp: number; maxHp: number }>
   minimap: {
     specks: { x: number; y: number; ownerId: string }[]
     buildings: { id: string; x: number; y: number; ownerId: string; typeId: string }[]

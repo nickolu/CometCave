@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-07",
+  "categoryId": 10,
+  "categoryName": "Entertainment: Books",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-07-0",
+      "question": "Under what pseudonym did Stephen King publish five novels between 1977 and 1984?",
+      "options": [
+        "Mark Twain",
+        "Lewis Carroll",
+        "J. D. Robb",
+        "Richard Bachman"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Richard Bachman"
+    },
+    {
+      "id": "opentdb-2026-07-07-1",
+      "question": "In what Harry Potter book was a Horcrux first encountered?",
+      "options": [
+        "The Goblet of Fire",
+        "The Deathly Hallows",
+        "The Half-Blood Prince",
+        "The Chamber of Secrets"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "The Chamber of Secrets"
+    },
+    {
+      "id": "opentdb-2026-07-07-2",
+      "question": "Which is NOT a book in the Harry Potter Series?",
+      "options": [
+        "The Chamber of Secrets",
+        "The Deathly Hallows",
+        "The Prisoner of Azkaban",
+        "The House Elf"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "The House Elf"
+    },
+    {
+      "id": "opentdb-2026-07-07-3",
+      "question": "What is the name of Eragon's dragon in \"Eragon\"?",
+      "options": [
+        "Thorn",
+        "Arya",
+        "Glaedr",
+        "Saphira"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Saphira"
+    },
+    {
+      "id": "opentdb-2026-07-07-4",
+      "question": "Who wrote the children's story \"The Little Match Girl\"?",
+      "options": [
+        "Charles Dickens",
+        "Lewis Carroll",
+        "Oscar Wilde",
+        "Hans Christian Andersen"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Hans Christian Andersen"
+    },
+    {
+      "id": "opentdb-2026-07-07-5",
+      "question": "In the Magic: The Gathering universe, which plane does the Homelands expansion take place in?",
+      "options": [
+        "Llanowar",
+        "Tazeem",
+        "Bant",
+        "Ulgrotha"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "opentdb",
+      "correctAnswer": "Ulgrotha"
+    },
+    {
+      "id": "ai-2026-07-07-6",
+      "question": "Which dystopian novel by Ray Bradbury features a society where books are banned and burned?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Fahrenheit 451",
+      "explanation": "Fahrenheit 451, published in 1953, is Ray Bradbury's most celebrated novel, depicting a future America where \"firemen\" burn books rather than extinguish fires. The title refers to the temperature at which paper supposedly ignites. It remains a landmark of dystopian literature and is widely taught in schools."
+    },
+    {
+      "id": "ai-2026-07-07-7",
+      "question": "In Harper Lee's classic novel, what does the title bird symbolize — such that killing one represents the destruction of innocence?",
+      "difficulty": "easy",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "mockingbird",
+      "explanation": "In Harper Lee's To Kill a Mockingbird, the titular bird is used as a symbol of innocence and goodness. Characters like Tom Robinson and Boo Radley are considered symbolic versions of this bird — harmless beings who are nonetheless harmed by society. The novel won the Pulitzer Prize in 1961 and remains one of the most widely read books in American literature."
+    },
+    {
+      "id": "ai-2026-07-07-8",
+      "question": "Which Doris Lessing novel is described as her most experimental work and a study of a woman's psyche and life situation?",
+      "difficulty": "medium",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "The Golden Notebook",
+      "explanation": "The Golden Notebook (1962) is widely regarded as Doris Lessing's most ambitious and experimental novel, using a fragmented structure of notebooks to explore the inner life of its protagonist, Anna Wulf. It became a landmark text in feminist literature, though Lessing herself had mixed feelings about it being reduced to a feminist manifesto. Lessing went on to win the Nobel Prize in Literature in 2007."
+    },
+    {
+      "id": "ai-2026-07-07-9",
+      "question": "Which author originally released The Martian as a self-published blog serial before it became a debut novel in 2011?",
+      "difficulty": "hard",
+      "category": "Entertainment: Books",
+      "source": "ai",
+      "correctAnswer": "Andy Weir",
+      "explanation": "Andy Weir posted The Martian chapter by chapter on his personal blog, where it gained a devoted following before he self-published it as an e-book in 2011. Its viral success caught the attention of publishers, leading to a traditional print deal and eventually a major Hollywood film adaptation starring Matt Damon in 2015."
+    }
+  ]
+}

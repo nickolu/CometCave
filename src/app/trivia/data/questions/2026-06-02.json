@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-02",
+  "categoryId": 23,
+  "categoryName": "History",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-02-0",
+      "question": "What was the first sport to have been played on the moon?",
+      "options": [
+        "Football",
+        "Soccer",
+        "Tennis",
+        "Golf"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Golf"
+    },
+    {
+      "id": "opentdb-2026-06-02-1",
+      "question": "Which modern country is known as \"The Graveyard of Empires\"?",
+      "options": [
+        "China",
+        "Iraq",
+        "Russia",
+        "Afghanistan"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Afghanistan"
+    },
+    {
+      "id": "opentdb-2026-06-02-2",
+      "question": "Who discovered Penicillin?",
+      "options": [
+        "Marie Curie",
+        "Alfred Nobel",
+        "Louis Pasteur",
+        "Alexander Flemming"
+      ],
+      "difficulty": "easy",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Alexander Flemming"
+    },
+    {
+      "id": "opentdb-2026-06-02-3",
+      "question": "What year was the Italian firearms manufacturer Beretta founded?",
+      "options": [
+        "1776",
+        "1923",
+        "1998",
+        "1526"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "1526"
+    },
+    {
+      "id": "opentdb-2026-06-02-4",
+      "question": "Who was the first wife of King Henry VIII?",
+      "options": [
+        "Jane Seymour",
+        "Anne of Cleves",
+        "Anne Boleyn",
+        "Catherine of Aragon"
+      ],
+      "difficulty": "medium",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "Catherine of Aragon"
+    },
+    {
+      "id": "opentdb-2026-06-02-5",
+      "question": "When was the \"Siege of Leningrad\" lifted during World War II?",
+      "options": [
+        "November 1943",
+        "March 1944",
+        "September 1943",
+        "January 1944"
+      ],
+      "difficulty": "hard",
+      "category": "History",
+      "source": "opentdb",
+      "correctAnswer": "January 1944"
+    },
+    {
+      "id": "ai-2026-06-02-6",
+      "question": "The 1979 revolution that established an Islamic Republic under Ayatollah Khomeini was driven in part by opposition to whose autocracy, Western interference, and sociopolitical repression?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "the shah",
+      "explanation": "The Iranian Revolution of 1979 was fueled by widespread opposition to Mohammad Reza Shah Pahlavi's authoritarian rule, Western (particularly American) interference in the country's affairs, and brutal sociopolitical repression. The revolution ultimately overthrew the shah and led to the establishment of an Islamic Republic under Ayatollah Khomeini. It remains one of the most significant political upheavals of the 20th century."
+    },
+    {
+      "id": "ai-2026-06-02-7",
+      "question": "Which Nazi concentration camp was the largest established during World War II and also served as an extermination center using gas chambers?",
+      "difficulty": "easy",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Auschwitz",
+      "explanation": "Auschwitz, located in occupied Poland, was the largest concentration camp network established by Nazi Germany and served as the deadliest extermination site of the Holocaust. It is estimated that over 1.1 million people, the vast majority of them Jewish, were killed there. Today it stands as a UNESCO World Heritage Site and a powerful symbol of the horrors of genocide."
+    },
+    {
+      "id": "ai-2026-06-02-8",
+      "question": "Which landmark Supreme Court case upheld a Louisiana law allowing \"equal but separate accommodations for the white and colored races,\" becoming the legal foundation of the \"separate but equal\" doctrine, according to the National Archives?",
+      "difficulty": "medium",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Plessy v. Ferguson",
+      "explanation": "Plessy v. Ferguson (1896) upheld a Louisiana law requiring \"equal but separate accommodations for the white and colored races,\" cementing the \"separate but equal\" doctrine as the legal backbone of racial segregation in the United States. The National Archives documents this ruling as the foundation of that doctrine. It stood for nearly 60 years until it was overturned by Brown v. Board of Education in 1954."
+    },
+    {
+      "id": "ai-2026-06-02-9",
+      "question": "Which medieval chronicler, present on the First Crusade, documented that starving crusaders resorted to cannibalism during the Siege of Marra?",
+      "difficulty": "hard",
+      "category": "History",
+      "source": "ai",
+      "correctAnswer": "Fulcher of Chartres",
+      "explanation": "Fulcher of Chartres was a priest and eyewitness chronicler who accompanied the First Crusade and recorded its events in his \"Historia Hierosolymitana.\" His account of the Siege of Ma'arra (1098) is one of the most disturbing primary sources from the Crusades, describing how desperate crusaders boiled and ate the bodies of the dead. The incident remains one of the most notorious episodes of the entire crusading movement."
+    }
+  ]
+}
