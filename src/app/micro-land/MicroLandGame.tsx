@@ -136,6 +136,11 @@ export function MicroLandGame() {
    * token refresh and would otherwise re-adopt every hour. The ref guards the
    * remount case, where the effect re-runs with a uid already adopted.
    */
+  // Whether the tool drawer was left folded away. Its own effect rather than a
+  // line in the one above: it is a preference about the screen, not about the
+  // world, and it has nothing to do with getting the first tick out on time.
+  useEffect(() => useMicroLand.getState().hydrateToolbar(), [])
+
   // Storage state into the store, so any panel can render it like other state.
   useEffect(() => onSaveState(useMicroLand.getState().setSaveState), [])
   useEffect(() => onShelf(useMicroLand.getState().setShelf), [])

@@ -168,6 +168,15 @@ interface MicroLandState {
   guideOpen: boolean
   settingsOpen: boolean
   /**
+   * Whether the tool drawer along the bottom is unrolled.
+   *
+   * On a phone the drawer is most of the screen, and the world it is there to
+   * change is the part you came to watch. Folding it away leaves the tool
+   * already in hand still armed, so tapping to place goes on working — you lose
+   * the picker, not the game.
+   */
+  toolbarOpen: boolean
+  /**
    * A copy of the live tuning knobs, kept only so React can draw the sliders.
    *
    * The simulation reads the mutable `TUNING` object directly and never looks at
@@ -238,6 +247,8 @@ interface MicroLandState {
   setBuilderOpen: (open: boolean) => void
   setGuideOpen: (open: boolean) => void
   setSettingsOpen: (open: boolean) => void
+  /** Roll the tool drawer up or down. Remembered for the next visit. */
+  setToolbarOpen: (open: boolean) => void
   /** Move one knob. Takes effect on the very next tick and is remembered. */
   setTuningKnob: (key: TuningKey, value: number) => void
   /** Put every knob back to what the game shipped with. */
@@ -251,6 +262,15 @@ interface MicroLandState {
    * mismatch waiting to happen.
    */
   hydrateTuning: () => void
+  /**
+   * Pull the remembered drawer state out of storage.
+   *
+   * Separate from the initial value for the same reason as `hydrateTuning`: this
+   * store is built during the server render too, and a `localStorage` read there
+   * answers differently than the browser will. The drawer starts unrolled on
+   * both sides and folds itself on the client if that is how it was left.
+   */
+  hydrateToolbar: () => void
   setInspected: (snapshot: Inspected | null) => void
   setRecords: (records: RecordsView) => void
   setArchive: (archive: SpeciesRecord[]) => void
@@ -265,6 +285,32 @@ interface MicroLandState {
 
 let noticeId = 0
 let pendingId = 0
+
+const TOOLBAR_KEY = 'micro-land:toolbar:v1'
+
+/**
+ * Remember whether the drawer was left folded away.
+ *
+ * Both halves swallow everything: `localStorage` *throws on read as well as on
+ * write* in private-mode Safari, and a drawer that cannot remember its state is
+ * a far smaller loss than a game that will not start.
+ */
+function storeToolbarOpen(open: boolean): void {
+  try {
+    if (open) localStorage.removeItem(TOOLBAR_KEY)
+    else localStorage.setItem(TOOLBAR_KEY, 'closed')
+  } catch {
+    // Nothing to do; the drawer just starts unrolled next time.
+  }
+}
+
+function readToolbarOpen(): boolean {
+  try {
+    return localStorage.getItem(TOOLBAR_KEY) !== 'closed'
+  } catch {
+    return true
+  }
+}
 
 export const useMicroLand = create<MicroLandState>(set => ({
   themeId: DEFAULT_THEME,
@@ -287,6 +333,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   builderOpen: false,
   guideOpen: false,
   settingsOpen: false,
+  toolbarOpen: true,
   tuning: { ...TUNING },
   inspected: null,
   canPan: true,
@@ -322,6 +369,11 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBuilderOpen: builderOpen => set({ builderOpen }),
   setGuideOpen: guideOpen => set({ guideOpen }),
   setSettingsOpen: settingsOpen => set({ settingsOpen }),
+  setToolbarOpen: toolbarOpen => {
+    storeToolbarOpen(toolbarOpen)
+    set({ toolbarOpen })
+  },
+  hydrateToolbar: () => set({ toolbarOpen: readToolbarOpen() }),
 
   // Every one of these writes the mutable object first and mirrors it after,
   // never the other way round: `setTuning` clamps and can hold one knob against
