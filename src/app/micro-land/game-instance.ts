@@ -25,7 +25,13 @@ import {
   restoreSpeciesRecord,
   updateChronicle,
 } from './chronicle/chronicle'
-import { artSize, bodyBox, reserveSummonIds, sanitizeBlueprint } from './domain/blueprint'
+import {
+  artSize,
+  bodyBox,
+  forgetBodyBox,
+  reserveSummonIds,
+  sanitizeBlueprint,
+} from './domain/blueprint'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
 import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY } from './domain/constants'
@@ -49,6 +55,7 @@ import {
 import { TUNING } from './domain/tuning'
 import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
+import { forgetSprites } from './rendering/sprite-cache'
 import { type EarnedMilestone, type PopulationEntry, useMicroLand } from './store'
 import { releaseActiveWorld, touchActiveWorld } from './worlds/shelf'
 import { restoreSnapshot, snapshotWorld } from './worlds/snapshot'
@@ -59,6 +66,9 @@ import type { Creature, CreatureBlueprint, WorldState } from './domain/types'
 
 /** How often the UI gets a fresh population summary. */
 const STATS_EVERY_MS = 300
+
+/** How many to put out when an edited species has nobody left alive to change. */
+const REVISE_PLACE_COUNT = 4
 
 /** Placing creatures by dragging shouldn't fire once per frame. */
 const PLACE_THROTTLE_MS = 130
@@ -917,6 +927,96 @@ export class GameInstance {
     }
     this.pushStats()
     return { blueprint: bp, placed }
+  }
+
+  /**
+   * Change a species that already exists, rather than inventing another one.
+   *
+   * `introduce` was the only door into the roster, and it always mints a fresh
+   * id — so opening a Hopper in the builder, moving four pixels and saving gave
+   * you a *second* Hopper standing next to the first. That is right when the
+   * player wants a variation and wrong when they meant to fix their own
+   * creature, so the two are now separate verbs.
+   *
+   * Keeping the id is the whole point: every creature already alive belongs to
+   * this species, the chronicle's records are filed under it, and the food
+   * chain resolves through it. They all follow the edit for free, because
+   * nothing in the simulation holds a blueprint — it holds an id and looks it
+   * up. What is *not* free is the two caches that assumed art never changes
+   * under an id; both are dropped here, and forgetting either one is invisible
+   * until something is drawn at one size and collides at another.
+   *
+   * Anything alive whose body just grew may find itself overlapping rock. That
+   * needs no repair: `integrate` snaps a downward-moving box out of the tile it
+   * is inside, so gravity walks it back out over the next few ticks, which
+   * reads as the creature shrugging itself loose.
+   *
+   * Returns null if the species is gone — the player can have deleted it from
+   * the toolbar while the builder was open — and otherwise how many individuals
+   * the edit caught, so the caller can tell "every Hopper just changed" from
+   * "there were no Hoppers to change".
+   */
+  reviseSpecies(
+    blueprintId: string,
+    raw: unknown
+  ): { blueprint: CreatureBlueprint; living: number } | null {
+    const existing = this.world.blueprints[blueprintId]
+    if (!existing) return null
+
+    /**
+     * The sanitizer mints an id and we throw it away, exactly as `builtin()`
+     * does. Harmless — the summon counter only ever climbs, so no id it hands
+     * out later can collide with one already in use.
+     *
+     * `summoned` is carried over rather than re-derived. It decides whether the
+     * chronicle archives this creature at all, and a built-in that started
+     * claiming to be summoned would get written into the player's records and
+     * restored on top of the real roster entry on the next load.
+     */
+    const next: CreatureBlueprint = {
+      ...sanitizeBlueprint(raw, { summoned: existing.summoned }),
+      id: blueprintId,
+      summoned: existing.summoned,
+    }
+
+    forgetBodyBox(blueprintId)
+    forgetSprites(blueprintId)
+
+    this.world.dormant = false
+    registerBlueprint(this.world, next)
+
+    // Built-ins are config and are rebuilt from source on every load; writing
+    // one into the archive would shadow it forever with a stale copy.
+    if (next.summoned) rememberSpecies(next, Date.now())
+
+    /**
+     * Put a few out if the edit had nothing to land on.
+     *
+     * Saving is meant to be the moment the change becomes real, and a species
+     * with no individuals alive gives back an empty screen — which reads as the
+     * save having failed rather than as there being nothing to update. The
+     * player can already place them by hand; this only spares them having to
+     * work out that they need to.
+     */
+    let living = this.world.creatures.reduce(
+      (n, c) => (c.blueprintId === blueprintId ? n + 1 : n),
+      0
+    )
+    if (living === 0) {
+      for (let i = 0; i < REVISE_PLACE_COUNT; i++) {
+        if (this.world.creatures.length >= TUNING.maxCreatures) break
+        if (spawnSomewhereSensible(this.world, next, this.rng)) living++
+      }
+    }
+
+    this.syncBlueprintsToStore()
+    this.pushStats()
+    // Straight to storage rather than on the debounce, for the same reason a
+    // deletion is: an edit the player then closes the tab on must not come back
+    // as the drawing they replaced.
+    void flushChronicle()
+
+    return { blueprint: next, living }
   }
 
   getWorld(): WorldState {

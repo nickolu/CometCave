@@ -79,6 +79,18 @@ export function getSprites(bp: CreatureBlueprint): SpriteSet {
   return set
 }
 
+/**
+ * Drop one blueprint's sprites, because its art changed underneath its id.
+ *
+ * The cache assumes an id names a fixed drawing, which held for as long as the
+ * only way to change a creature was to invent a new one. Editing in place
+ * breaks that: without this, a repainted Hopper keeps showing its old colours
+ * for the rest of the session, and the edit looks like it never saved.
+ */
+export function forgetSprites(id: string): void {
+  cache.delete(id)
+}
+
 export function clearSpriteCache(): void {
   cache.clear()
 }
