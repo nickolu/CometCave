@@ -64,6 +64,35 @@ function tileAt(tiles: Uint8Array, x: number, y: number): number {
 }
 
 /**
+ * The first row of anything at all in this column — `WORLD_H` for open sky.
+ *
+ * Every feature that sits *on the ground* rather than at a fixed height needs
+ * this, and each generator that wanted one used to spell the same scan out by
+ * hand. Read it before carving the column, not after: the scan stops at the
+ * first solid thing, so a column you have already hollowed answers with the
+ * floor of the hole.
+ */
+function surfaceY(tiles: Uint8Array, x: number): number {
+  let y = 0
+  while (y < WORLD_H && tiles[y * WORLD_W + x] === M.air) y++
+  return y
+}
+
+/** A wall of one material with the inside knocked out. Rooms, towers, houses. */
+function hollow(
+  tiles: Uint8Array,
+  x0: number,
+  y0: number,
+  x1: number,
+  y1: number,
+  wall: MaterialId,
+  thickness = 1
+) {
+  rect(tiles, x0, y0, x1, y1, wall)
+  rect(tiles, x0 + thickness, y0 + thickness, x1 - thickness, y1 - thickness, 'air')
+}
+
+/**
  * Creep moss over any bare rock with open space above it.
  *
  * Run as a pass over the finished grid rather than inside the generator loop,
@@ -207,8 +236,7 @@ const EARTH: Theme = {
       for (let x = cx - w; x <= cx + w; x++) {
         if (x < 0 || x >= WORLD_W) continue
         // Find the surface at this column, then scoop a bowl into it.
-        let surface = 0
-        while (surface < WORLD_H && tiles[surface * WORLD_W + x] === M.air) surface++
+        const surface = surfaceY(tiles, x)
         const t = 1 - Math.abs(x - cx) / (w + 1)
         const depth = Math.floor(t * 5)
         for (let d = 0; d < depth; d++) set(tiles, x, surface + d, 'water')
@@ -382,8 +410,7 @@ const TIDEPOOL: Theme = {
     // Scattered tidepools sitting on top of the shelves.
     for (let i = 0; i < across(14); i++) {
       const cx = Math.floor(rng() * WORLD_W)
-      let y = 0
-      while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
+      const y = surfaceY(tiles, cx)
       if (y >= waterLine || y >= WORLD_H - 2) continue
       const w = 2 + Math.floor(rng() * 5)
       for (let x = cx - w; x <= cx + w; x++) {
@@ -458,8 +485,7 @@ const VOLCANIC: Theme = {
     // Lava falls spilling down from the surface.
     for (let i = 0; i < across(4); i++) {
       const cx = 12 + Math.floor(rng() * (WORLD_W - 24))
-      let y = 0
-      while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
+      const y = surfaceY(tiles, cx)
       const w = 1 + Math.floor(rng() * 2)
       for (let d = 0; d < 18; d++) {
         for (let x = cx - w; x <= cx + w; x++) set(tiles, x, y + d, 'lava')
@@ -480,8 +506,7 @@ const VOLCANIC: Theme = {
     // then they're gone, which is exactly what makes them safe to leave here.
     for (let i = 0; i < across(2); i++) {
       const cx = Math.floor(rng() * WORLD_W)
-      let y = 0
-      while (y < WORLD_H && tiles[y * WORLD_W + cx] === M.air) y++
+      const y = surfaceY(tiles, cx)
       const w = 2 + Math.floor(rng() * 3)
       for (let x = cx - w; x <= cx + w; x++) {
         const t = 1 - Math.abs(x - cx) / (w + 1)
@@ -491,7 +516,910 @@ const VOLCANIC: Theme = {
   },
 }
 
-export const THEMES: Theme[] = [EMPTY, EARTH, STATION, TIDEPOOL, VOLCANIC]
+const SKYLANDS: Theme = {
+  id: 'skylands',
+  name: 'Sky Islands',
+  blurb: 'Meadows floating in open air, a sea of cloud, and the old ground below.',
+  sky: ['#a9dcff', '#4f7bc4'],
+  gloom: 0.16,
+  // Thin air. Slower falling is what turns walking off an island into a journey
+  // instead of a full stop — the cloud sea does the rest of the catching.
+  gravity: 0.8,
+  starters: [
+    { id: 'sunleaf', count: 24 },
+    { id: 'bramble', count: 8 },
+    { id: 'glowvine', count: 6 },
+    { id: 'frostcap', count: 4 },
+    { id: 'skybloom', count: 9 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 8 },
+    { id: 'dustbee', count: 7 },
+    { id: 'glimmer-moth', count: 6 },
+    { id: 'hopper', count: 6 },
+    { id: 'drifter-jelly', count: 4 },
+    { id: 'woolly', count: 3 },
+    { id: 'delver', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const cloudNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    /**
+     * The floor of the world, and it has to be a living one.
+     *
+     * Nothing dies of a fall here — creatures are clamped to the bottom row
+     * rather than leaving the world — so an empty sky underneath would slowly
+     * fill up with everything that ever slipped off an edge, standing in a bare
+     * gutter with nothing to eat. Real soil down there turns the drop into
+     * somewhere you arrive instead of somewhere you are stored.
+     */
+    const underTop = Math.floor(WORLD_H * 0.84)
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(groundNoise, x * 0.03, 4.5, 3)
+      const surface = underTop + Math.floor((h - 0.5) * 10)
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = y - surface
+        set(tiles, x, y, depth === 0 ? 'grass' : depth < 5 ? 'dirt' : 'stone')
+      }
+    }
+
+    // Flat-topped, deep-keeled — the shape a floating island has to have to read
+    // as floating rather than as a lump someone forgot to attach to anything.
+    const island = (cx: number, halfW: number, cy: number, keel: number) => {
+      let top = cy
+      for (let dx = -halfW; dx <= halfW; dx++) {
+        // A gentle wander rather than a ruler-straight lawn, clamped so the
+        // wander can never turn the meadow into a staircase.
+        if (rng() < 0.16) top += rng() < 0.5 ? -1 : 1
+        top = Math.max(cy - 2, Math.min(cy + 2, top))
+
+        const t = 1 - Math.abs(dx) / (halfW + 1)
+        const deep = Math.round(keel * Math.pow(t, 0.75) * (0.7 + rng() * 0.6))
+        if (deep < 1) continue
+        set(tiles, cx + dx, top, 'grass')
+        for (let d = 1; d <= deep; d++) set(tiles, cx + dx, top + d, d < 4 ? 'dirt' : 'stone')
+      }
+    }
+
+    const count = across(9)
+    for (let i = 0; i < count; i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.1 + rng() * 0.4))
+      const halfW = 8 + Math.floor(rng() * 14)
+      island(cx, halfW, cy, 6 + Math.floor(rng() * 10))
+
+      // A pool on the bigger islands. Without one there is no water anywhere
+      // above the cloud line, and half the roster is shut out of the sky.
+      if (halfW > 13 && rng() < 0.6) {
+        const pw = 3 + Math.floor(rng() * 4)
+        const px = cx + Math.floor((rng() - 0.5) * (halfW - pw) * 1.4)
+        for (let x = px - pw; x <= px + pw; x++) {
+          const top = surfaceY(tiles, x)
+          if (top >= WORLD_H) continue
+          const t = 1 - Math.abs(x - px) / (pw + 1)
+          for (let d = 0; d < Math.floor(t * 5); d++) set(tiles, x, top + d, 'water')
+        }
+      }
+      // What the island grew around.
+      if (rng() < 0.5) {
+        blob(tiles, cx, cy + 4 + Math.floor(rng() * 4), 2 + Math.floor(rng() * 2), 'crystal', rng, [
+          'stone',
+          'dirt',
+        ])
+      }
+    }
+
+    /**
+     * The cloud sea, thickest through its middle so it reads as a layer with a
+     * top and a bottom rather than as fog filling the lower half of the screen.
+     *
+     * Only ever written into air, so it drapes around the islands instead of
+     * eating their keels.
+     */
+    const cloudTop = Math.floor(WORLD_H * 0.58)
+    const cloudBottom = underTop - 9
+    for (let y = cloudTop; y < cloudBottom; y++) {
+      const t = (y - cloudTop) / Math.max(1, cloudBottom - cloudTop)
+      const density = 0.4 + Math.sin(t * Math.PI) * 0.32
+      for (let x = 0; x < WORLD_W; x++) {
+        if (tileAt(tiles, x, y) !== M.air) continue
+        if (fbm(cloudNoise, x * 0.05, y * 0.11, 2) < density) set(tiles, x, y, 'cloud')
+      }
+    }
+
+    mossify(tiles, rng, 0.3, ['stone', 'dirt'])
+  },
+}
+
+const DUNES: Theme = {
+  id: 'dunes',
+  name: 'Dune Sea',
+  blurb: 'Sand as far as you can see, ruins underneath, and water only where you dig.',
+  sky: ['#f7d79a', '#c0603a'],
+  gloom: 0.12,
+  gravity: 1,
+  starters: [
+    { id: 'sunleaf', count: 16 },
+    { id: 'bramble', count: 10 },
+    { id: 'sporecap', count: 6 },
+    { id: 'glowvine', count: 4 },
+    { id: 'kelp', count: 8 },
+    { id: 'skybloom', count: 4 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 7 },
+    { id: 'dustbee', count: 6 },
+    { id: 'hopper', count: 6 },
+    { id: 'loamworm', count: 5 },
+    { id: 'delver', count: 4 },
+    { id: 'ember-grub', count: 4 },
+    { id: 'finling', count: 6 },
+    { id: 'crystal-snail', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const seamNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const tableNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.36)
+    // Where the rock stops being dry. Everything interesting in this world is
+    // the question of how far down that is.
+    const waterTable = Math.floor(WORLD_H * 0.82)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      /**
+       * A long, low swell rather than dunes with sharp crests.
+       *
+       * Sand is a powder and slides down any slope with air at the bottom of
+       * it, so a field of steep dunes flattens itself within a minute of the
+       * world starting and takes its silhouette with it. Keeping the surface
+       * gentle is what makes the settling look like weather instead of like
+       * the world falling over.
+       */
+      const h = fbm(surfaceNoise, x * 0.018, 7.5, 3)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 16)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        const depth = d / (WORLD_H - surface)
+        /**
+         * Sand nearly all the way down, and it stays put.
+         *
+         * Buried powder never moves — a sand tile only falls when what is
+         * under or diagonally under it isn't solid — so a deep body of sand is
+         * as stable as rock and only the exposed skin drifts. A thin blanket
+         * over bedrock was the first attempt and it reads, from any distance,
+         * as a grey world with a tan crust: this has to be a *sea* of sand for
+         * the name on the picker to be telling the truth.
+         */
+        let mat: MaterialId = depth < 0.62 ? 'sand' : 'stone'
+        // Rock shelves the sand has drifted up against, so the sea has
+        // something in it besides sand.
+        if (mat === 'sand' && d > 6 && seamNoise(x * 0.05, y * 0.085) > 0.8) mat = 'stone'
+        // The water table: porous rock down here, and the pockets join up into
+        // something a well can reach.
+        if (y > waterTable && tableNoise(x * 0.06, y * 0.14) > 0.42) mat = 'water'
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Ruins, buried to whatever depth the sand has had time to bury them to.
+    // Few and large: a dozen small ones scattered evenly read as picture frames
+    // hung on the rock rather than as something that was here first.
+    for (let i = 0; i < across(1.5); i++) {
+      const cx = 24 + Math.floor(rng() * (WORLD_W - 60))
+      const cy = Math.floor(WORLD_H * (0.42 + rng() * 0.16))
+      const w = 14 + Math.floor(rng() * 16)
+      const h = 8 + Math.floor(rng() * 7)
+      // Bone rather than marble: white marble against this much tan reads as a
+      // picture frame, and bone is fertile, so the hall gets to grow something.
+      hollow(tiles, cx, cy, cx + w, cy + h, 'bone', 2)
+      if (rng() < 0.5) rect(tiles, cx + 4, cy + h - 3, cx + 7, cy + h - 3, 'gold')
+      // Pillars, so the inside is a hall and not a crate.
+      for (let px = cx + 5; px < cx + w - 4; px += 7) {
+        rect(tiles, px, cy + 2, px + 1, cy + h - 3, 'bone')
+      }
+    }
+
+    /**
+     * Sinkholes — a shaft from the open desert down to the water.
+     *
+     * This is the whole reason the water table is drawn as a band instead of a
+     * few scattered pockets: a shaft that opens onto it drains into a standing
+     * pool at the bottom, so the cross-section shows why anything survives out
+     * here rather than just asserting that it does.
+     *
+     * Rocked before it is hollowed, and that is not decoration. A shaft cut
+     * straight through sand has powder on both walls with open air beside it,
+     * which is the one arrangement powder does not tolerate — the hole pours
+     * itself shut in seconds and seals the water away again. The lining follows
+     * the shaft rather than boxing it in: a full-width slab of rock around each
+     * hole reads as a wall someone built in the middle of a desert.
+     */
+    for (let i = 0; i < across(1); i++) {
+      const cx = 24 + Math.floor(rng() * (WORLD_W - 48))
+      const half = 4 + Math.floor(rng() * 4)
+      // Wide at the top, narrow at the bottom — a collapse cone. A shaft of
+      // constant width is a pipe, and a pipe is the one thing in a desert that
+      // announces somebody drew it.
+      const mouth = surfaceY(tiles, cx)
+      for (let y = mouth; y < waterTable + 6; y++) {
+        const t = Math.min(1, (y - mouth) / (waterTable - mouth))
+        const hw = Math.max(1, Math.round(half * (1.7 - t)))
+        for (let d = 1; d <= 3; d++) {
+          set(tiles, cx - hw - d, y, 'stone')
+          set(tiles, cx + hw + d, y, 'stone')
+        }
+        // Damp walls near the bottom. The one green thing for a long way in
+        // either direction, and the only fertile ground down the hole.
+        if (y > waterTable - 16 && y < waterTable) {
+          if (rng() < 0.7) set(tiles, cx - hw - 1, y, 'moss')
+          if (rng() < 0.7) set(tiles, cx + hw + 1, y, 'moss')
+        }
+        for (let x = cx - hw; x <= cx + hw; x++) set(tiles, x, y, 'air')
+      }
+    }
+
+    /**
+     * Oases: a rock basin with water in it and a green rim.
+     *
+     * The basin is the whole trick. A bowl scooped straight out of the dunes
+     * fills itself back in within a minute — powder sinks through liquid, so
+     * every grain on the rim slides into the pool until there is no pool. Rock
+     * first, water second, and the oasis is still there ten minutes later.
+     */
+    for (let i = 0; i < across(2); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const w = 10 + Math.floor(rng() * 12)
+      // Bone rather than stone for the basin: a grey bowl this size is the
+      // loudest thing on the screen, and bone is fertile, so the shore it makes
+      // is somewhere a root can take hold.
+      for (let x = cx - w - 4; x <= cx + w + 4; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        const t = 1 - Math.abs(x - cx) / (w + 5)
+        const top = surfaceY(tiles, x)
+        for (let d = 0; d < Math.floor(t * 14); d++) set(tiles, x, top + d, 'bone')
+      }
+      for (let x = cx - w; x <= cx + w; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const depth = Math.floor(t * 9)
+        const top = surfaceY(tiles, x)
+        for (let d = 0; d < depth; d++) set(tiles, x, top + d, 'water')
+        if (depth > 0) set(tiles, x, top + depth, 'mud')
+      }
+      // A green shore, and something with roots standing on it — an oasis is a
+      // canopy as much as it is a shoreline.
+      for (const side of [-1, 1]) {
+        const px = cx + side * (w + 2)
+        const top = surfaceY(tiles, px)
+        if (top >= WORLD_H - 4) continue
+        rect(tiles, px - 2, top, px + 2, top, 'grass')
+        const trunk = 7 + Math.floor(rng() * 6)
+        rect(tiles, px, top - trunk, px + 1, top - 1, 'wood')
+        rect(tiles, px - 3, top - trunk - 2, px + 4, top - trunk - 1, 'moss')
+      }
+    }
+
+    // Glass where lightning found the sand, and gems where the rock kept some.
+    for (let i = 0; i < across(3); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.55 + rng() * 0.28))
+      const roll = rng()
+      const id: MaterialId = roll < 0.4 ? 'glass' : roll < 0.75 ? 'gem' : 'bone'
+      blob(tiles, cx, cy, 2 + Math.floor(rng() * 3), id, rng, ['stone', 'sand'])
+    }
+  },
+}
+
+const WINTER: Theme = {
+  id: 'winter',
+  name: 'Winter Wonderland',
+  blurb: 'Deep snow over blue ice, frozen ponds, and caves that never thaw.',
+  sky: ['#e3f1ff', '#8ba7cd'],
+  gloom: 0.18,
+  gravity: 1,
+  starters: [
+    { id: 'frostcap', count: 22 },
+    { id: 'sunleaf', count: 12 },
+    { id: 'glowvine', count: 6 },
+    { id: 'bramble', count: 6 },
+    { id: 'sporecap', count: 5 },
+    { id: 'skybloom', count: 4 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 7 },
+    { id: 'dustbee', count: 5 },
+    { id: 'glimmer-moth', count: 5 },
+    { id: 'hopper', count: 5 },
+    { id: 'woolly', count: 6 },
+    { id: 'driftmole', count: 5 },
+    { id: 'delver', count: 3 },
+    { id: 'crystal-snail', count: 3 },
+    { id: 'wisp', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'rimeclaw', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const veinNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.34)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      // `fbm` only spans about 0.2–0.72, so the multiplier buys roughly half
+      // its face value in tiles: this is an eighteen-tile range, not thirty.
+      const h = fbm(surfaceNoise, x * 0.03, 2.5, 3)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 34)
+      // Where the glacier gives out and rock begins. A constant would draw a
+      // ruler-straight seam from one end of the world to the other.
+      const iceFloor = 0.42 + fbm(surfaceNoise, x * 0.012, 30.5, 2) * 0.2
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        const depth = d / (WORLD_H - surface)
+        /**
+         * Snow on ice on rock, and the ice goes down half the world.
+         *
+         * Snow is a powder and drifts off the steep faces into the hollows the
+         * moment the world starts, so the ice beneath is what actually keeps
+         * the hills white instead of grey by the second minute. A dozen rows of
+         * it was not enough — from any distance that reads as a frosted lid on
+         * an ordinary stone world. This is a glacier with rock under it.
+         */
+        let mat: MaterialId = d < 5 ? 'snow' : depth < iceFloor ? 'ice' : 'stone'
+
+        // Caves, cut through the ice as much as the rock — glacier caves, so
+        // they show blue rather than black.
+        if (depth < 0.86 && d > 6) {
+          const c = fbm(caveNoise, x * 0.065, y * 0.095, 3)
+          if (c > 0.63) mat = 'air'
+        }
+        // Sparingly. At the thresholds this started on, the rock came out
+        // flecked pink and cyan from end to end and read as static.
+        if (mat === 'stone') {
+          const v = veinNoise(x * 0.17, y * 0.17)
+          if (depth > 0.6 && v > 0.95) mat = 'crystal'
+          else if (depth > 0.5 && v < 0.035) mat = 'bone'
+          else if (depth > 0.55 && v > 0.93 && v <= 0.95) mat = 'gem'
+        }
+        set(tiles, x, y, mat)
+      }
+    }
+
+    /**
+     * Frozen ponds: water with a lid of ice over it.
+     *
+     * The lid is the point. Open water in a snowfield freezes over in a child's
+     * mental model of winter, and mechanically it means the fish have somewhere
+     * that isn't also somewhere a walker can fall into.
+     */
+    for (let i = 0; i < across(3); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const w = 7 + Math.floor(rng() * 12)
+      for (let x = cx - w; x <= cx + w; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        const surface = surfaceY(tiles, x)
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const depth = Math.floor(t * 8)
+        if (depth < 3) continue
+        for (let d = 0; d < depth; d++) set(tiles, x, surface + d, 'water')
+        set(tiles, x, surface, 'ice')
+        set(tiles, x, surface + 1, 'ice')
+      }
+    }
+
+    // Bare winter trees. Wood is fertile, so these are also the only thing
+    // holding green above the snowline once the drifts have moved.
+    for (let i = 0; i < across(7); i++) {
+      const cx = 4 + Math.floor(rng() * (WORLD_W - 8))
+      const top = surfaceY(tiles, cx)
+      if (top >= WORLD_H - 4) continue
+      const trunk = 6 + Math.floor(rng() * 9)
+      rect(tiles, cx, top - trunk, cx + 1, top, 'wood')
+      for (let b = 0; b < 3; b++) {
+        const by = top - trunk + 2 + b * 3
+        const side = rng() < 0.5 ? -1 : 1
+        const reach = 2 + Math.floor(rng() * 3)
+        rect(
+          tiles,
+          Math.min(cx, cx + side * reach),
+          by,
+          Math.max(cx, cx + side * reach),
+          by,
+          'wood'
+        )
+      }
+      rect(tiles, cx - 2, top - trunk - 2, cx + 3, top - trunk - 1, 'snow')
+    }
+
+    mossify(tiles, rng, 0.16, ['stone', 'wood'])
+  },
+}
+
+const PEAKS: Theme = {
+  id: 'peaks',
+  name: 'Tall Peaks',
+  blurb: 'Stone spires above the clouds, green ledges, and a valley a long way down.',
+  sky: ['#67a6e6', '#122448'],
+  gloom: 0.26,
+  gravity: 1,
+  starters: [
+    { id: 'sunleaf', count: 22 },
+    { id: 'frostcap', count: 10 },
+    { id: 'bramble', count: 8 },
+    { id: 'glowvine', count: 6 },
+    { id: 'skybloom', count: 6 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 8 },
+    { id: 'dustbee', count: 6 },
+    { id: 'glimmer-moth', count: 5 },
+    { id: 'hopper', count: 6 },
+    { id: 'woolly', count: 5 },
+    { id: 'delver', count: 4 },
+    { id: 'driftmole', count: 3 },
+    { id: 'wisp', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 3 },
+    { id: 'rimeclaw', count: 1 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const floorNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const cloudNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const valley = Math.floor(WORLD_H * 0.84)
+    // Above this, rock goes white. It sits above both cloud bands, so the snow
+    // line is a thing you look *up* at from inside the weather.
+    const snowLine = Math.floor(WORLD_H * 0.28)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(floorNoise, x * 0.04, 1.5, 3)
+      const surface = valley + Math.floor((h - 0.5) * 8)
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        set(tiles, x, y, d === 0 ? 'grass' : d < 4 ? 'dirt' : 'stone')
+      }
+    }
+
+    for (let i = 0; i < across(5); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const top = Math.floor(WORLD_H * (0.06 + rng() * 0.36))
+      const baseHalf = 9 + Math.floor(rng() * 12)
+      const base = surfaceY(tiles, cx)
+      if (base >= WORLD_H) continue
+
+      for (let y = top; y < base; y++) {
+        const t = (y - top) / Math.max(1, base - top)
+        // The exponent is what stops these reading as chimneys: a spire has to
+        // flare out near the bottom and taper on the way up.
+        const half = Math.round(baseHalf * Math.pow(t, 1.25))
+        // Stop before it narrows to a single column. A one-tile needle a third
+        // of the world tall is an aerial, not a mountain — the first pass had a
+        // skyline of them.
+        if (half < 2) continue
+        for (let x = cx - half; x <= cx + half; x++) {
+          // Snow on the flanks, and right through the cross-section wherever
+          // the peak is too narrow to have flanks. Outer-edge-only at every
+          // width leaves a white outline drawn around grey rock instead of a
+          // cap sitting on it.
+          const outer = half <= 4 || Math.abs(x - cx) >= half - 2
+          set(tiles, x, y, y < snowLine && outer ? 'snow' : 'stone')
+        }
+      }
+
+      /**
+       * Ledges.
+       *
+       * Without these a spire is scenery: plants need fertile ground and the
+       * only fertile ground would be the valley floor, so every living thing
+       * would end up at the bottom and the height would be decoration. A shelf
+       * of grass halfway up is what puts a food chain in the air.
+       */
+      const ledges = 2 + Math.floor(rng() * 3)
+      for (let l = 0; l < ledges; l++) {
+        const span = Math.max(1, base - top - 8)
+        const ly = top + 5 + Math.floor(rng() * span)
+        // A short spire has no room between its tip and the valley, and the
+        // clamped span above will happily put the shelf below the mountain —
+        // a strip of grass buried in the valley floor.
+        if (ly >= base - 3) continue
+        const t = (ly - top) / Math.max(1, base - top)
+        const half = Math.max(2, Math.round(baseHalf * Math.pow(t, 1.25)))
+        const side = rng() < 0.5 ? -1 : 1
+        const reach = 4 + Math.floor(rng() * 6)
+        const edge = cx + side * half
+        const x0 = Math.min(edge, edge + side * reach)
+        const x1 = Math.max(edge, edge + side * reach)
+        rect(tiles, x0, ly, x1, ly, 'grass')
+        rect(tiles, x0, ly + 1, x1, ly + 2, 'dirt')
+      }
+    }
+
+    /**
+     * Two bands of cloud between the peaks.
+     *
+     * Cloud isn't solid, so these are not platforms — you sink through them
+     * slowly. That is exactly what they are for: in a world this vertical they
+     * are the difference between a mis-step off a ledge and a lost creature.
+     */
+    for (const band of [0.34, 0.56]) {
+      const cy = Math.floor(WORLD_H * band)
+      for (let y = cy - 5; y <= cy + 5; y++) {
+        const t = 1 - Math.abs(y - cy) / 6
+        for (let x = 0; x < WORLD_W; x++) {
+          if (tileAt(tiles, x, y) !== M.air) continue
+          if (fbm(cloudNoise, x * 0.04, y * 0.13 + band * 10, 2) < 0.32 + t * 0.3) {
+            set(tiles, x, y, 'cloud')
+          }
+        }
+      }
+    }
+
+    for (let i = 0; i < across(8); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.55 + rng() * 0.4))
+      const roll = rng()
+      const id: MaterialId = roll < 0.4 ? 'crystal' : roll < 0.7 ? 'gem' : 'gold'
+      blob(tiles, cx, cy, 2 + Math.floor(rng() * 3), id, rng, ['stone', 'dirt'])
+    }
+
+    mossify(tiles, rng, 0.32, ['stone', 'dirt'])
+  },
+}
+
+const CASTLE: Theme = {
+  id: 'castle',
+  name: 'Castle Town',
+  blurb: 'A keep, a moat, houses with gardens — and something with wings above it.',
+  sky: ['#93bce0', '#363d68'],
+  gloom: 0.3,
+  gravity: 1,
+  starters: [
+    { id: 'sunleaf', count: 24 },
+    { id: 'bramble', count: 10 },
+    { id: 'glowvine', count: 6 },
+    { id: 'sporecap', count: 5 },
+    { id: 'kelp', count: 6 },
+    { id: 'skybloom', count: 4 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 6 },
+    { id: 'dustbee', count: 6 },
+    { id: 'glimmer-moth', count: 4 },
+    { id: 'hopper', count: 8 },
+    { id: 'finling', count: 6 },
+    { id: 'woolly', count: 4 },
+    { id: 'delver', count: 3 },
+    { id: 'loamworm', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'tower-folk', count: 4 },
+    { id: 'sunhawk', count: 1 },
+    { id: 'dragon', count: 1 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    // Flatter than any other land here, on purpose: people build on the level,
+    // and rolling hills would leave every house half-buried on one side.
+    const groundLine = Math.floor(WORLD_H * 0.52)
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(groundNoise, x * 0.02, 3.5, 2)
+      const surface = groundLine + Math.floor((h - 0.5) * 6)
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        const depth = d / (WORLD_H - surface)
+        let mat: MaterialId = d === 0 ? 'grass' : d < 6 ? 'dirt' : 'stone'
+        // Rare. At the thresholds this started on, the bedrock came out
+        // confettied from end to end and the treasure stopped reading as
+        // treasure.
+        if (mat === 'stone') {
+          const o = oreNoise(x * 0.15, y * 0.15)
+          if (depth > 0.6 && o > 0.965) mat = 'gold'
+          else if (depth > 0.45 && o < 0.03) mat = 'bone'
+          else if (depth > 0.5 && o > 0.945 && o <= 0.965) mat = 'gem'
+        }
+        set(tiles, x, y, mat)
+      }
+    }
+
+    const mid = Math.floor(WORLD_W / 2)
+    const keepHalf = 24
+    const keepX0 = mid - keepHalf
+    const keepX1 = mid + keepHalf
+    const gy = surfaceY(tiles, mid)
+    const keepTop = gy - 34
+
+    hollow(tiles, keepX0, keepTop, keepX1, gy + 2, 'marble', 2)
+    // Floors every eight rows, each with a gap in it. A sealed tower is a solid
+    // block with a shell drawn on it as far as anything living is concerned —
+    // the gaps are what make the inside somewhere you can actually get to.
+    for (let fy = keepTop + 8; fy < gy - 2; fy += 8) {
+      rect(tiles, keepX0 + 2, fy, keepX1 - 2, fy, 'wood')
+      const gap = keepX0 + 4 + Math.floor(rng() * (keepHalf * 2 - 12))
+      rect(tiles, gap, fy, gap + 3, fy, 'air')
+    }
+    // A spine wall down the middle, so each floor is two rooms. Without it the
+    // cutaway is one enormous hall with shelves in it, which reads as scaffold
+    // rather than as somewhere anybody lives.
+    rect(tiles, mid - 1, keepTop + 2, mid, gy, 'marble')
+    for (let fy = keepTop + 10; fy < gy; fy += 8) {
+      rect(tiles, mid - 1, fy - 4, mid, fy - 1, 'air')
+    }
+    // Towers at both corners, and battlements: blocks with gaps between them,
+    // because a flat parapet reads as an unfinished wall.
+    for (const tx of [keepX0, keepX1 - 9]) {
+      hollow(tiles, tx, keepTop - 12, tx + 9, keepTop + 4, 'marble', 2)
+      for (let x = tx; x <= tx + 9; x += 3) {
+        rect(tiles, x, keepTop - 15, x + 1, keepTop - 13, 'marble')
+      }
+    }
+    for (let wy = keepTop + 6; wy < gy - 8; wy += 8) {
+      rect(tiles, keepX0, wy, keepX0 + 1, wy + 2, 'glass')
+      rect(tiles, keepX1 - 1, wy, keepX1, wy + 2, 'glass')
+    }
+    /**
+     * A gate in each side wall, at ground level.
+     *
+     * Seen edge-on, a keep's door has to go through the *wall* — carving the
+     * middle of the floor only moves air around inside a box that is still
+     * sealed. Sealed is the failure here: plants would seed inside, grazers
+     * would breed inside, and the whole thing would run as a separate little
+     * world in a jar while the town outside never met any of it.
+     */
+    for (const gx of [keepX0, keepX1 - 1]) {
+      rect(tiles, gx, gy - 8, gx + 1, gy, 'air')
+      rect(tiles, gx, gy - 9, gx + 1, gy - 9, 'wood')
+    }
+    // Banners, painted onto the wall face rather than hung off it — a strip of
+    // plastic floating beside a tower is a bug, not a flag. Colour is doing
+    // real work here: a town of grey stone and white marble reads as a ruin.
+    rect(tiles, keepX0, gy - 24, keepX0 + 1, gy - 14, 'plastic-red')
+    rect(tiles, keepX1 - 1, gy - 24, keepX1, gy - 14, 'plastic-blue')
+    // The vault, and the reason anything ever digs under a castle.
+    hollow(tiles, mid - 10, gy + 14, mid + 10, gy + 26, 'iron')
+    rect(tiles, mid - 7, gy + 22, mid + 7, gy + 24, 'gold')
+
+    // The moat, one trench on each side. Carve first, then fill — and read each
+    // column's surface before carving it, or the second pass finds the floor of
+    // the hole the first one made.
+    for (const side of [-1, 1]) {
+      const mx = mid + side * (keepHalf + 24)
+      const half = 14
+      for (let x = mx - half; x <= mx + half; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        const top = surfaceY(tiles, x)
+        if (top >= WORLD_H - 4) continue
+        const t = 1 - Math.abs(x - mx) / (half + 1)
+        const depth = 4 + Math.floor(t * 14)
+        for (let d = 0; d <= depth; d++) set(tiles, x, top + d, 'air')
+        for (let d = 2; d < depth; d++) set(tiles, x, top + d, 'water')
+        set(tiles, x, top + depth, 'mud')
+      }
+    }
+
+    /**
+     * Cellars, and a tunnel joining them.
+     *
+     * Half this world is the ground under the town, and without these it is a
+     * single grey slab with ore freckles in it. It is also the only thing down
+     * there for a Delver or a Loamworm to find, which is the difference between
+     * digging being a mechanic and digging being a way to pass the time.
+     */
+    const cellarY = groundLine + 20
+    rect(tiles, 24, cellarY + 2, WORLD_W - 24, cellarY + 4, 'air')
+    for (let i = 0; i < across(3); i++) {
+      const cx = 40 + Math.floor(rng() * (WORLD_W - 90))
+      const w = 16 + Math.floor(rng() * 20)
+      const h = 10 + Math.floor(rng() * 6)
+      hollow(tiles, cx, cellarY - h + 4, cx + w, cellarY + 5, rng() < 0.5 ? 'wood' : 'stone', 2)
+      rect(tiles, cx, cellarY + 2, cx + w, cellarY + 4, 'air')
+      if (rng() < 0.5) rect(tiles, cx + 3, cellarY + 1, cx + 7, cellarY + 1, 'gold')
+      // A damp floor, so something can actually grow down here.
+      rect(tiles, cx + 2, cellarY + 5, cx + w - 2, cellarY + 5, 'mud')
+    }
+
+    const house = (hx: number) => {
+      const w = 10 + Math.floor(rng() * 10)
+      const h = 9 + Math.floor(rng() * 7)
+      const top = surfaceY(tiles, hx)
+      // Anything this far below the town's ground line is the moat, or a hollow
+      // something else already made. Houses do not get built in holes.
+      if (top >= WORLD_H - 6 || top > groundLine + 8) return
+
+      hollow(tiles, hx, top - h, hx + w, top - 1, rng() < 0.35 ? 'marble' : 'stone')
+      rect(
+        tiles,
+        hx + 1,
+        top - Math.floor(h * 0.45),
+        hx + w - 1,
+        top - Math.floor(h * 0.45),
+        'wood'
+      )
+      rect(tiles, hx - 1, top - h - 2, hx + w + 1, top - h - 1, 'wood')
+      rect(tiles, hx + 2, top - 5, hx + 3, top - 1, 'air')
+      rect(tiles, hx + w - 4, top - h + 2, hx + w - 3, top - h + 3, 'glass')
+      if (rng() < 0.6) {
+        const flag: MaterialId = rng() < 0.5 ? 'plastic-red' : 'plastic-yellow'
+        const fx = hx + Math.floor(w / 2)
+        rect(tiles, fx, top - h - 1, fx, top - h + 4, flag)
+      }
+      // A garden beside it. The town has to feed itself, and moss and dirt are
+      // the difference between a set and a place with a food chain in it.
+      rect(tiles, hx + w + 2, top, hx + w + 8, top, 'moss')
+      rect(tiles, hx + w + 2, top + 1, hx + w + 8, top + 3, 'dirt')
+    }
+
+    /**
+     * One lot at a time, evenly spaced with a jitter inside each.
+     *
+     * Scattering houses at random across the width gives you three in a heap
+     * and then a hundred empty tiles, which reads as ruins rather than as a
+     * street. The jitter is what keeps it from reading as a spreadsheet.
+     */
+    const lots = across(6)
+    const stride = WORLD_W / lots
+    for (let i = 0; i < lots; i++) {
+      const hx = Math.floor(i * stride + 4 + rng() * stride * 0.3)
+      if (Math.abs(hx - mid) < keepHalf + 42) continue
+      house(hx)
+    }
+
+    mossify(tiles, rng, 0.2, ['stone', 'dirt'])
+  },
+}
+
+const CANDY: Theme = {
+  id: 'candy',
+  name: 'Candy Parade',
+  blurb: 'Layer-cake hills, caramel rivers, rock candy, and clouds you could eat.',
+  sky: ['#ffdcee', '#ff9dc4'],
+  gloom: 0.1,
+  // A shade less pull than everywhere else, so a parade bounces. Small enough
+  // that nothing about the food chain changes; large enough to feel.
+  gravity: 0.85,
+  starters: [
+    { id: 'sunleaf', count: 22 },
+    { id: 'bramble', count: 8 },
+    { id: 'sporecap', count: 8 },
+    { id: 'glowvine', count: 6 },
+    { id: 'skybloom', count: 6 },
+    { id: 'frostcap', count: 4 },
+    { id: 'mite', count: 8 },
+    { id: 'mote', count: 8 },
+    { id: 'dustbee', count: 7 },
+    { id: 'glimmer-moth', count: 6 },
+    { id: 'hopper', count: 7 },
+    { id: 'palecrawler', count: 4 },
+    { id: 'drifter-jelly', count: 5 },
+    { id: 'wisp', count: 4 },
+    { id: 'woolly', count: 3 },
+    { id: 'unicycle-clown', count: 3 },
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 1 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const seamNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const flossNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.36)
+    const STRIPES: MaterialId[] = [
+      'plastic-pink',
+      'plastic-white',
+      'plastic-yellow',
+      'plastic-purple',
+    ]
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(surfaceNoise, x * 0.028, 6.5, 3)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 20)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        /**
+         * Icing, then biscuit, then cake in bands.
+         *
+         * The first two are not decoration. Nothing in the sweet-shop half of
+         * the material table is fertile — not plastic, not crystal, not gem,
+         * not cloud, not sap — so a world built only out of those is a
+         * beautiful one where no plant can root, nothing eats, and every
+         * creature is dead inside two minutes. Icing is snow and biscuit is
+         * wood; together with the sugar seams below they are the only reason
+         * this land has a food chain at all.
+         */
+        let mat: MaterialId
+        if (d < 2) mat = 'snow'
+        else if (d < 6) mat = 'wood'
+        else mat = STRIPES[Math.floor((d - 6) / 5) % STRIPES.length]
+
+        if (d >= 6 && seamNoise(x * 0.1, y * 0.1) > 0.85) mat = 'sand'
+        if (d >= 12 && seamNoise(x * 0.24, y * 0.24) < 0.055) {
+          mat = rng() < 0.5 ? 'gem-green' : 'gem-purple'
+        }
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Caramel. Sap is a liquid you can breathe in and it barely flows, so these
+    // stay put and stay survivable — a river of anything else this thick would
+    // be a drowning hazard dressed as a treat.
+    for (let i = 0; i < across(3); i++) {
+      const cx = 14 + Math.floor(rng() * (WORLD_W - 28))
+      const w = 4 + Math.floor(rng() * 5)
+      for (let x = cx - w; x <= cx + w; x++) {
+        if (x < 0 || x >= WORLD_W) continue
+        const top = surfaceY(tiles, x)
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const depth = Math.floor(t * 8)
+        for (let d = 0; d < depth; d++) set(tiles, x, top + d, 'sap')
+      }
+    }
+
+    // Rock candy, growing up out of the cake.
+    const ROCK_CANDY: MaterialId[] = [
+      'crystal-pink',
+      'crystal-blue',
+      'crystal-purple',
+      'crystal-green',
+    ]
+    for (let i = 0; i < across(6); i++) {
+      const cx = 4 + Math.floor(rng() * (WORLD_W - 8))
+      const base = surfaceY(tiles, cx)
+      if (base >= WORLD_H) continue
+      const h = 6 + Math.floor(rng() * 13)
+      const id = ROCK_CANDY[Math.floor(rng() * ROCK_CANDY.length)]
+      for (let d = 0; d < h; d++) {
+        const half = Math.max(0, Math.round((1 - d / h) * 2.5))
+        rect(tiles, cx - half, base - d - 1, cx + half, base - d - 1, id)
+      }
+    }
+
+    /**
+     * Candyfloss, kept well above the hilltops so it stays weather rather than
+     * a lid over the whole world.
+     *
+     * Broad and low-frequency on purpose. Finer noise here produced a haze of
+     * single pink tiles across the sky — at one tile per world tile that isn't
+     * cloud, it's static. Each puff also commits to one colour, because
+     * choosing per tile speckles the two together into one mauve smear.
+     */
+    for (let y = 3; y < skyDepth - 8; y++) {
+      for (let x = 0; x < WORLD_W; x++) {
+        if (tileAt(tiles, x, y) !== M.air) continue
+        if (fbm(flossNoise, x * 0.022, y * 0.07, 2) > 0.6) {
+          set(tiles, x, y, fbm(flossNoise, x * 0.008, 40.5, 1) > 0.5 ? 'cloud-pink' : 'cloud-white')
+        }
+      }
+    }
+  },
+}
+
+/**
+ * Order is the order of the picker, and it is a reading order: nothing, then
+ * the world most like ours, then the ones that bend it further and further.
+ */
+export const THEMES: Theme[] = [
+  EMPTY,
+  EARTH,
+  PEAKS,
+  WINTER,
+  DUNES,
+  TIDEPOOL,
+  SKYLANDS,
+  VOLCANIC,
+  CASTLE,
+  STATION,
+  CANDY,
+]
 
 export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(THEMES.map(t => [t.id, t]))
 
