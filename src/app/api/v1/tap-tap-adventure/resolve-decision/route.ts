@@ -1247,7 +1247,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(response)
   } catch (err) {
     return NextResponse.json(
-      { error: 'Invalid request', details: (err as Error).message },
+      { error: 'Invalid request' },
       { status: 400 }
     )
   }
