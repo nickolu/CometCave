@@ -196,6 +196,9 @@ export function tickCreatures(
     ) {
       const child = reproduce(w, c, bp, bw, bh, rng)
       if (child) {
+        // Set here rather than inside `reproduce`, which returns through two
+        // different paths and would need the parent threaded into both.
+        child.generation = c.generation + 1
         c.children++
         if (isPlant) plantsAlive++
         else c.hunger = Math.min(1, c.hunger + BREED_COST)

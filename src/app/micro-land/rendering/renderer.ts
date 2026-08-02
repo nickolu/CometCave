@@ -124,7 +124,12 @@ export class Renderer {
     }
   }
 
-  render(w: WorldState, theme: Theme, highlightId: number | null = null): void {
+  render(
+    w: WorldState,
+    theme: Theme,
+    highlightId: number | null = null,
+    elderId: number | null = null
+  ): void {
     if (this.tilesDirty) {
       this.buildTiles(w)
       this.tilesDirty = false
@@ -146,7 +151,9 @@ export class Renderer {
     this.drawCreatures(w)
     this.drawParticles(w)
     wctx.drawImage(this.shadowCanvas, 0, 0)
-    // Drawn after the shadow so the selection stays legible in a dark cave.
+    // Both drawn after the shadow so they stay legible in a dark cave. The halo
+    // goes first so the selection brackets sit on top when you inspect an elder.
+    if (elderId !== null) this.drawElder(w, elderId)
     if (highlightId !== null) this.drawHighlight(w, highlightId)
 
     // One scaled blit. Nearest-neighbour keeps the pixels crisp.
@@ -337,6 +344,52 @@ export class Renderer {
       ctx.drawImage(source, x, y)
       ctx.globalAlpha = 1
     }
+  }
+
+  /**
+   * Halo over the oldest thing that has ever lived here.
+   *
+   * A ring rather than a crown: at six pixels wide a crown is three pixels of
+   * mush sitting on the creature's head, while an ellipse floating clear of the
+   * sprite reads as a halo at any size and never hides the animal wearing it.
+   * This is the only mark the record system puts on the world — everything else
+   * it knows lives behind a tap.
+   */
+  private drawElder(w: WorldState, id: number): void {
+    const c = w.creatures.find((x) => x.id === id)
+    if (!c) return
+    const bp = w.blueprints[c.blueprintId]
+    if (!bp) return
+    const rows = bp.art.frames[0]
+    const bw = rows[0].length
+
+    const ctx = this.wctx
+    const cx = Math.round(c.x) + bw / 2
+    // Two pixels of clear air above the sprite, so it reads as floating rather
+    // than as part of the creature.
+    const cy = Math.round(c.y) - 3
+    const rx = Math.max(2, Math.min(6, bw / 2))
+    const ry = Math.max(1, rx * 0.42)
+
+    // Slower than the selection pulse — this is meant to be noticed, not to
+    // demand attention while you're doing something else.
+    ctx.fillStyle = '#fcd34d'
+    ctx.globalAlpha = 0.62 + 0.28 * Math.sin(w.elapsed * 2.6)
+
+    // Plotted point by point instead of ctx.ellipse: a stroked path at this
+    // scale antialiases into a grey smudge, and the whole world is nearest
+    // neighbour. Step is tied to the radius so small halos don't come out dotted.
+    const steps = Math.max(12, Math.round(rx * 6))
+    for (let i = 0; i < steps; i++) {
+      const t = (i / steps) * Math.PI * 2
+      ctx.fillRect(
+        Math.round(cx + Math.cos(t) * rx),
+        Math.round(cy + Math.sin(t) * ry),
+        1,
+        1
+      )
+    }
+    ctx.globalAlpha = 1
   }
 
   /** Ring around the creature the inspector is watching. */

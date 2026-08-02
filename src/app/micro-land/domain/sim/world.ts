@@ -296,6 +296,9 @@ export function spawnCreature(
     children: 0,
     digProgress: 0,
     tilesDug: 0,
+    // Founder of its line until `reproduce` says otherwise.
+    generation: 1,
+    name: null,
   }
   w.creatures.push(creature)
   return creature

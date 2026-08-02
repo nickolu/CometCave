@@ -12,9 +12,25 @@ import {
 } from '@/app/micro-land/domain/terrain'
 import { SUMMONED_THEME_ID } from '@/app/micro-land/store'
 
+import {
+  archivedSpecies,
+  claimMilestone,
+  landId,
+  landRecord,
+  noteSpeciesLife,
+  readChronicle,
+  rememberSpecies,
+  updateChronicle,
+} from './chronicle/chronicle'
 import { artSize, sanitizeBlueprint } from './domain/blueprint'
+import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
-import { MAX_CREATURES, TICK_S, TILE_TICK_EVERY } from './domain/constants'
+import {
+  ELDER_MIN_SECONDS,
+  MAX_CREATURES,
+  TICK_S,
+  TILE_TICK_EVERY,
+} from './domain/constants'
 import { type SimEvent, tickCreatures } from './domain/sim/creature-sim'
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
@@ -32,9 +48,15 @@ import {
   spawnCreature,
   spawnSomewhereSensible,
 } from './domain/sim/world'
+import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
-import { type PopulationEntry, useMicroLand } from './store'
+import {
+  type EarnedMilestone,
+  type PopulationEntry,
+  useMicroLand,
+} from './store'
 
+import type { SpeciesRecord } from './chronicle/types'
 import type { Creature, CreatureBlueprint, WorldState } from './domain/types'
 
 /** How often the UI gets a fresh population summary. */
@@ -48,6 +70,21 @@ const HUNT_NOTICE_GAP = 7
 
 /** Simulation can't catch up on more than this much time at once. */
 const MAX_CATCHUP_MS = 250
+
+/**
+ * Milestones already earned, in the order the config lists them.
+ *
+ * Ordered by the config rather than by when they were reached so the field
+ * guide reads as a ladder — the ones still ahead of you sit in a stable place.
+ */
+function readMilestones(): EarnedMilestone[] {
+  const earned = readChronicle().milestones
+  return MILESTONES.filter((m) => earned[m.id]).map((m) => ({
+    id: m.id,
+    text: m.text,
+    at: earned[m.id],
+  }))
+}
 
 export class GameInstance {
   private canvas: HTMLCanvasElement
@@ -66,6 +103,25 @@ export class GameInstance {
   private knownSpecies = new Set<string>()
   /** World-clock time of the last hunt notice, so kills don't spam the screen. */
   private lastHuntNotice = -HUNT_NOTICE_GAP
+
+  // --- records ---
+  /** Which land's records are being written to. See `landId()`. */
+  private currentLand = DEFAULT_THEME
+  /** The creature currently holding the longevity record, if one is alive. */
+  private elderId: number | null = null
+  /**
+   * Enough of the elder to eulogize it.
+   *
+   * Kept alongside the id because the announcement happens *after* the creature
+   * has already been filtered out of the world, so there is nothing left to read
+   * its age or its name off by then.
+   */
+  private elderSnapshot: { name: string | null; species: string; seconds: number } | null =
+    null
+  /** World-clock time the current no-extinction streak began. */
+  private steadySince = 0
+  /** Archive size at the last push, so the guide is only re-sent when it grows. */
+  private lastArchiveSize = -1
 
   // --- pointer state ---
   private pointerDown = false
@@ -162,7 +218,7 @@ export class GameInstance {
     // Keep the grabbed creature glued to the finger even while paused.
     if (this.grabbed) this.grabbed.vx = this.grabbed.vy = 0
 
-    this.renderer.render(this.world, theme, this.inspectedId)
+    this.renderer.render(this.world, theme, this.inspectedId, this.elderId)
   }
 
   private step(gravity: number, events: SimEvent[]): void {
@@ -208,12 +264,31 @@ export class GameInstance {
       const stillAlive = this.world.creatures.some((c) => c.blueprintId === bp.id)
       if (stillAlive) continue
       this.knownSpecies.delete(bp.id)
+      // An extinction is exactly what the steady streak measures the absence of
+      // — it is the moment the world has to bail the player out via seed rain.
+      this.breakSteadyStreak()
       notify(
         event.kind === 'starved'
           ? `The last ${bp.name} starved.`
           : `The last ${bp.name} was eaten.`
       )
     }
+  }
+
+  /**
+   * End the current no-extinction streak, banking it if it was the best.
+   *
+   * Banked before the reset rather than only at the end of a session, because
+   * most sessions end with the tab closing rather than with anything tidy.
+   */
+  private breakSteadyStreak(): void {
+    const run = this.world.elapsed - this.steadySince
+    this.steadySince = this.world.elapsed
+    if (run <= 0) return
+    updateChronicle(() => {
+      const record = landRecord(this.currentLand)
+      if (run > record.steadySeconds) record.steadySeconds = run
+    })
   }
 
   private pushStats(): void {
@@ -232,7 +307,233 @@ export class GameInstance {
       .getState()
       .setStats(population, this.world.creatures.length, this.world.elapsed)
 
+    this.updateRecords(population)
     this.pushInspected()
+  }
+
+  // -------------------------------------------------------------------------
+  // Records
+  // -------------------------------------------------------------------------
+
+  /**
+   * Keep the chronicle up to date and push a read-out to the UI.
+   *
+   * Runs on the stats tick — a few times a second, not per frame. Records are
+   * high-water marks, so sampling is fine: a creature cannot get younger between
+   * ticks, and the worst case is a record set a fraction of a second late.
+   */
+  private updateRecords(population: PopulationEntry[]): void {
+    const w = this.world
+    const now = Date.now()
+    const store = useMicroLand.getState()
+
+    // The elder is gone if it isn't in the world any more. Checked before the
+    // new elder is chosen so the eulogy names the right creature.
+    if (this.elderId !== null && !w.creatures.some((c) => c.id === this.elderId)) {
+      this.mourn()
+    }
+
+    let oldest: Creature | null = null
+    let deepest = 0
+    // Oldest *per species*, not just overall: the guide reports a longest life
+    // for every kind, and only ever noting the single oldest creature would
+    // leave every species but one permanently blank.
+    const eldestOf = new Map<string, number>()
+    for (const c of w.creatures) {
+      if (!oldest || c.ageSeconds > oldest.ageSeconds) oldest = c
+      if (c.generation > deepest) deepest = c.generation
+      const best = eldestOf.get(c.blueprintId)
+      if (best === undefined || c.ageSeconds > best) {
+        eldestOf.set(c.blueprintId, c.ageSeconds)
+      }
+    }
+
+    // Every species on screen goes into the guide, and takes its blueprint with
+    // it — this is what stops a summoned creature dying with the tab.
+    for (const entry of population) {
+      const bp = w.blueprints[entry.blueprintId]
+      if (bp) rememberSpecies(bp, now)
+    }
+    for (const [blueprintId, seconds] of eldestOf) {
+      noteSpeciesLife(blueprintId, seconds)
+    }
+
+    const record = landRecord(this.currentLand)
+    const steadySeconds = w.elapsed - this.steadySince
+
+    updateChronicle(() => {
+      // --- longevity ---------------------------------------------------
+      const best = record.elder?.seconds ?? 0
+      if (
+        oldest &&
+        oldest.ageSeconds >= ELDER_MIN_SECONDS &&
+        oldest.ageSeconds > best
+      ) {
+        const bp = w.blueprints[oldest.blueprintId]
+        if (bp) {
+          const crowning = this.elderId !== oldest.id
+          this.elderId = oldest.id
+          // Rewritten every tick while the elder lives, so the record tracks it
+          // upward and freezes at whatever age it finally reached. `at` is the
+          // exception — it marks when the record was *taken*, so it survives the
+          // rewrites rather than creeping forward with them.
+          record.elder = {
+            seconds: oldest.ageSeconds,
+            blueprintId: bp.id,
+            speciesName: bp.name,
+            name: oldest.name,
+            at: crowning ? now : (record.elder?.at ?? now),
+          }
+          this.elderSnapshot = {
+            name: oldest.name,
+            species: bp.name,
+            seconds: oldest.ageSeconds,
+          }
+          if (crowning) {
+            store.notify(`A ${bp.name} has outlived everything this land remembers.`)
+          }
+        }
+      }
+
+      // --- bloodline ----------------------------------------------------
+      if (deepest > record.generations) {
+        record.generations = deepest
+        const line = w.creatures.find((c) => c.generation === deepest)
+        const bp = line ? w.blueprints[line.blueprintId] : undefined
+        record.generationsBlueprintId = bp?.id ?? null
+        record.generationsSpeciesName = bp?.name ?? null
+      }
+
+      // --- stability ----------------------------------------------------
+      // Banked live rather than only when the streak breaks, so a session that
+      // ends by closing the tab still keeps the run it was in the middle of.
+      if (steadySeconds > record.steadySeconds) record.steadySeconds = steadySeconds
+    })
+
+    store.setRecords({
+      elder: record.elder,
+      bestSteadySeconds: record.steadySeconds,
+      bestGenerations: record.generations,
+      bestGenerationsSpeciesName: record.generationsSpeciesName,
+      steadySeconds,
+      deepestGeneration: deepest,
+    })
+
+    // Sorted once and shared: both of these want the same list, and it is
+    // rebuilt on every stats tick.
+    const archive = archivedSpecies()
+
+    this.checkMilestones(archive, {
+      elapsed: w.elapsed,
+      steadySeconds,
+      oldestSeconds: oldest?.ageSeconds ?? 0,
+      generations: deepest,
+      speciesAlive: population.length,
+      total: w.creatures.length,
+    })
+
+    this.syncArchive(archive)
+  }
+
+  /** Announce the elder's death, then stand down the halo. */
+  private mourn(): void {
+    const gone = this.elderSnapshot
+    this.elderId = null
+    this.elderSnapshot = null
+    if (!gone) return
+    const age = formatDuration(gone.seconds)
+    useMicroLand
+      .getState()
+      .notify(
+        gone.name
+          ? `${gone.name} died at ${age}. Nothing here has lived longer.`
+          : `The oldest ${gone.species} died at ${age}.`
+      )
+  }
+
+  /**
+   * Give the record-holder a name.
+   *
+   * Only the elder can be named, which is the point — a name is the reward for
+   * the record, not a labelling tool. Returns false if the moment has passed.
+   */
+  nameElder(name: string): boolean {
+    const trimmed = name.trim().slice(0, 24)
+    if (!trimmed || this.elderId === null) return false
+    const c = this.world.creatures.find((x) => x.id === this.elderId)
+    if (!c) return false
+    c.name = trimmed
+    if (this.elderSnapshot) this.elderSnapshot.name = trimmed
+    updateChronicle(() => {
+      const record = landRecord(this.currentLand)
+      if (record.elder) record.elder.name = trimmed
+    })
+    this.pushStats()
+    return true
+  }
+
+  /** Fire any milestone that just became true. Each one fires once, ever. */
+  private checkMilestones(
+    archive: SpeciesRecord[],
+    context: Omit<MilestoneContext, 'archived' | 'summonedArchived'>
+  ): void {
+    const full = {
+      ...context,
+      archived: archive.length,
+      summonedArchived: archive.filter((s) => s.blueprint.summoned).length,
+    }
+    const now = Date.now()
+    const store = useMicroLand.getState()
+    let fired = false
+    for (const milestone of MILESTONES) {
+      if (!milestone.reached(full)) continue
+      if (!claimMilestone(milestone.id, now)) continue
+      store.notify(milestone.text)
+      fired = true
+    }
+    if (fired) this.pushMilestones()
+  }
+
+  /**
+   * Push everything the chronicle already knew into the UI.
+   *
+   * Called once after the chronicle loads, so a returning player's field guide
+   * is populated before the first creature has drawn breath in this session.
+   */
+  publishRecords(): void {
+    this.lastArchiveSize = -1
+    this.syncArchive(archivedSpecies())
+    this.pushMilestones()
+  }
+
+  /** Re-send the guide's archive, but only when it has actually changed. */
+  private syncArchive(archive: SpeciesRecord[]): void {
+    if (archive.length === this.lastArchiveSize) return
+    this.lastArchiveSize = archive.length
+    useMicroLand.getState().setArchive(archive)
+  }
+
+  private pushMilestones(): void {
+    const earned = readMilestones()
+    useMicroLand.getState().setMilestones(earned)
+  }
+
+  /**
+   * Point the recorder at whichever land is now on screen, banking the run that
+   * was in progress. Called whenever the world is replaced under the player.
+   */
+  private beginLand(): void {
+    this.breakSteadyStreak()
+    this.currentLand = landId(
+      useMicroLand.getState().themeId,
+      useMicroLand.getState().summonedLand
+    )
+    this.steadySince = this.world.elapsed
+    // A cleared world has no elder; do this quietly rather than eulogizing a
+    // creature the player deliberately removed.
+    this.elderId = null
+    this.elderSnapshot = null
+    this.lastArchiveSize = -1
   }
 
   /** Copy the watched creature's live state out for the inspector panel. */
@@ -276,6 +577,9 @@ export class GameInstance {
       inWater: boxLiquidFraction(this.world, c.x, c.y, bw, bh) > 0.3,
       grounded: c.grounded,
       targetName: targetBp?.name ?? null,
+      generation: c.generation,
+      name: c.name,
+      isElder: c.id === this.elderId,
     })
   }
 
@@ -309,6 +613,9 @@ export class GameInstance {
     this.renderer.markTilesDirty()
     useMicroLand.getState().setSummonedLand(terrain.name)
     useMicroLand.getState().setTheme(SUMMONED_THEME_ID)
+    // After the store knows the land's name — `beginLand` derives the record key
+    // from it, and a summoned land files its records under its own name.
+    this.beginLand()
     this.pushStats()
     return terrain
   }
@@ -320,6 +627,7 @@ export class GameInstance {
       this.knownSpecies.clear()
       this.inspectedId = null
       this.renderer.markTilesDirty()
+      this.beginLand()
       this.pushStats()
       return
     }
@@ -331,6 +639,7 @@ export class GameInstance {
     this.inspectedId = null
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
+    this.beginLand()
     this.pushStats()
   }
 
@@ -343,6 +652,7 @@ export class GameInstance {
       this.knownSpecies.clear()
       this.inspectedId = null
       this.renderer.markTilesDirty()
+      this.beginLand()
       this.pushStats()
       return
     }
@@ -352,6 +662,7 @@ export class GameInstance {
     this.inspectedId = null
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
+    this.beginLand()
     this.pushStats()
   }
 
@@ -363,6 +674,9 @@ export class GameInstance {
     this.world.dormant = true
     this.knownSpecies.clear()
     this.inspectedId = null
+    // Emptying the world is an extinction of everything, so the streak goes with
+    // it — but silently, since the player did it on purpose.
+    this.beginLand()
     this.pushStats()
   }
 

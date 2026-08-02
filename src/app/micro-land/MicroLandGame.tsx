@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 
+import { flushChronicle, initChronicle } from '@/app/micro-land/chronicle/chronicle'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
 import { Inspector } from '@/app/micro-land/components/inspector'
@@ -29,21 +30,36 @@ export function MicroLandGame() {
       useMicroLand.getState().setTheme(requested)
     }
 
-    const game = new GameInstance(canvas)
-    gameRef.current = game
-    game.start()
+    let game: GameInstance | null = null
+    let unsubscribe: (() => void) | null = null
+    let cancelled = false
 
-    // Theme changes are driven straight off the store rather than a second
-    // effect — the instance already seeded its own theme when it was built, and
-    // a dependency-driven effect would rebuild the world on every remount.
-    const unsubscribe = useMicroLand.subscribe((state, previous) => {
-      if (state.themeId !== previous.themeId) game.setTheme(state.themeId)
+    // The chronicle is read *before* the world exists. Building the instance
+    // first would let a stats tick write records into a chronicle that is about
+    // to be replaced by the stored one, quietly losing them.
+    void initChronicle().then(() => {
+      if (cancelled) return
+      game = new GameInstance(canvas)
+      gameRef.current = game
+      game.publishRecords()
+      game.start()
+
+      // Theme changes are driven straight off the store rather than a second
+      // effect — the instance already seeded its own theme when it was built,
+      // and a dependency-driven effect would rebuild the world on every remount.
+      unsubscribe = useMicroLand.subscribe((state, previous) => {
+        if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
+      })
     })
 
     return () => {
-      unsubscribe()
-      game.destroy()
+      cancelled = true
+      unsubscribe?.()
+      game?.destroy()
       gameRef.current = null
+      // Leaving for another game in the cave is a normal way to end a session,
+      // and it isn't covered by the page-hide handler.
+      void flushChronicle()
     }
   }, [])
 
@@ -59,6 +75,10 @@ export function MicroLandGame() {
 
   const handleIntroduce = useCallback((raw: unknown, count: number) => {
     return gameRef.current?.introduce(raw, count) ?? null
+  }, [])
+
+  const handleNameElder = useCallback((name: string) => {
+    return gameRef.current?.nameElder(name) ?? false
   }, [])
 
   const handleApplyTerrain = useCallback((raw: unknown, keepCreatures: boolean) => {
@@ -80,7 +100,7 @@ export function MicroLandGame() {
           aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it."
         />
         <Notices />
-        <Inspector />
+        <Inspector onName={handleNameElder} />
       </div>
 
       <Toolbar />

@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+
 import { canEat } from '@/app/micro-land/domain/blueprint'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -79,12 +81,24 @@ const meterLabel: React.CSSProperties = {
  * creature summoned a moment ago reports exactly as completely as a built-in —
  * including who eats it, which is derived from `canEat` rather than authored.
  */
-export function Inspector() {
+export function Inspector({ onName }: { onName: (name: string) => boolean }) {
   const inspected = useMicroLand((s) => s.inspected)
   const blueprints = useMicroLand((s) => s.blueprints)
   const setTool = useMicroLand((s) => s.setTool)
 
+  /**
+   * The half-typed name, tagged with who it is for.
+   *
+   * Keyed by creature id rather than reset in an effect: tapping a second
+   * creature mid-type has to abandon the name, and deriving that from the id
+   * makes it true on the same render instead of one render later.
+   */
+  const [pending, setPending] = useState<{ id: number; text: string } | null>(null)
+
   if (!inspected) return null
+
+  const naming = pending?.id === inspected.id
+  const draft = naming ? pending.text : ''
 
   const bp = blueprints.find((b) => b.id === inspected.blueprintId)
   if (!bp) return null
@@ -133,10 +147,10 @@ export function Inspector() {
               color: 'var(--cc-mint)',
             }}
           >
-            {bp.name}
+            {inspected.name ?? bp.name}
           </div>
           <div style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.4 }}>
-            {bp.blurb}
+            {inspected.name ? bp.name : bp.blurb}
           </div>
         </div>
         <button
@@ -152,6 +166,101 @@ export function Inspector() {
       </div>
 
       <div className="flex flex-col gap-2.5 p-3">
+        {/*
+          The elder band is the only thing in this panel that isn't a fact about
+          the creature — it's the game acknowledging one. It appears for exactly
+          one creature at a time and nowhere else in the UI.
+        */}
+        {inspected.isElder && (
+          <div
+            className="flex flex-col gap-1.5 rounded px-2.5 py-2"
+            style={{
+              background: 'rgba(252, 211, 77, 0.08)',
+              border: '1px solid rgba(252, 211, 77, 0.35)',
+            }}
+          >
+            <div
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                color: 'var(--cc-gold)',
+              }}
+            >
+              ✦ Oldest this land remembers
+            </div>
+
+            {inspected.name ? null : naming ? (
+              <form
+                className="flex gap-1.5"
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (onName(draft)) setPending(null)
+                }}
+              >
+                <label className="sr-only" htmlFor="micro-land-elder-name">
+                  Name this creature
+                </label>
+                <input
+                  id="micro-land-elder-name"
+                  autoFocus
+                  value={draft}
+                  onChange={(e) => setPending({ id: inspected.id, text: e.target.value })}
+                  maxLength={24}
+                  placeholder="Call it something"
+                  className="min-w-0 flex-1 rounded px-2 py-1"
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--cc-text-default)',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid var(--cc-mint-line)',
+                  }}
+                  // The canvas grabs creatures on pointerdown; without this,
+                  // tapping the field throws whatever is underneath it.
+                  onPointerDown={(e) => e.stopPropagation()}
+                />
+                <button
+                  type="submit"
+                  className="cc-btn"
+                  disabled={draft.trim().length === 0}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 10,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '4px 8px',
+                    color: 'var(--cc-gold)',
+                    border: '1px solid rgba(252, 211, 77, 0.35)',
+                    opacity: draft.trim().length === 0 ? 0.4 : 1,
+                  }}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  Name
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="cc-btn self-start"
+                onClick={() => setPending({ id: inspected.id, text: '' })}
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 10,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  padding: '4px 8px',
+                  color: 'var(--cc-gold)',
+                  border: '1px solid rgba(252, 211, 77, 0.35)',
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                Give it a name
+              </button>
+            )}
+          </div>
+        )}
+
         <div
           style={{
             fontFamily: 'var(--cc-font-mono)',
@@ -186,6 +295,14 @@ export function Inspector() {
           <Stat label="Babies" value={String(inspected.children)} />
           <Stat label="Size" value={String(bp.size)} />
           <Stat label="Speed" value={inspected.speed.toFixed(1)} />
+          {/*
+            Hidden at generation 1, which is every creature you place by hand.
+            It appears the first time you're looking at something that was *born*
+            here, which is the only point at which the number means anything.
+          */}
+          {inspected.generation > 1 && (
+            <Stat label="Generation" value={String(inspected.generation)} />
+          )}
           {bp.dig.through.length > 0 && (
             <Stat label="Tiles dug" value={String(inspected.tilesDug)} />
           )}
