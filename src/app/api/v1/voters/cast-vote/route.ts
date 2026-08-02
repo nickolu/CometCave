@@ -22,6 +22,13 @@ export async function POST(request: NextRequest) {
 
     const { voter, criteria, instance } = await request.json()
 
+    if (!criteria?.options || !Array.isArray(criteria.options) || criteria.options.length === 0) {
+      return NextResponse.json(
+        { error: 'criteria.options must be a non-empty array' },
+        { status: 400 }
+      )
+    }
+
     // Create dynamic schema based on voting criteria
     const voteSchema = z.object({
       choice: z.enum(criteria.options as [string, ...string[]]),

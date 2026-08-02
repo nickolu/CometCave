@@ -12,7 +12,12 @@ import {
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
   MAX_CREATURES,
-  PLANT_FLOOR,
+  MAX_PLANTS,
+  NATIVE_PLANT_SPECIES,
+  NATIVE_PLANT_TARGET,
+  PLANT_SEED_BATCH,
+  PLANT_SEED_INTERVAL,
+  PLANT_SPECIES_CAP,
   SEED_RAIN_INTERVAL,
   WORLD_H,
   WORLD_W,
@@ -44,6 +49,8 @@ export function createWorld(seed = 1337): WorldState {
     flowPhase: 0,
     natives: [],
     nextSeedRain: 0,
+    nextPlantSeed: 0,
+    dormant: false,
   }
 }
 
@@ -218,6 +225,7 @@ export function applyThemeObject(w: WorldState, theme: Theme, seed?: number): vo
   theme.build(w.tiles, rng)
   for (let i = 0; i < w.grain.length; i++) w.grain[i] = Math.floor(rng() * 256)
   w.particles.length = 0
+  w.dormant = false
 }
 
 /** Paint a filled circle of material. This is the player's brush. */
@@ -229,6 +237,9 @@ export function paintCircle(
   mat: MaterialId
 ): void {
   const value = MATERIAL_INDEX[mat]
+  // Painting is the player building something, which is the opposite of asking
+  // for an empty world — so the ground is allowed to grow again.
+  w.dormant = false
   const r2 = radius * radius
   const x0 = Math.floor(cx - radius)
   const x1 = Math.ceil(cx + radius)
@@ -294,18 +305,21 @@ export function spawnCreature(
 }
 
 /**
- * Find somewhere this creature could actually survive and put it there.
+ * Find somewhere this creature could actually survive.
  *
  * Plants want fertile ground under them, fish want water, walkers want a floor.
- * Tries random spots and falls back to the requested position so a summon never
- * silently does nothing.
+ * Returns the sprite's top-left corner, or null if nowhere in this world suits.
+ *
+ * Split out from `spawnSomewhereSensible` so the same search can answer "could
+ * this species live here at all?" without actually creating anything — which is
+ * how the ground decides which plants are native to it.
  */
-export function spawnSomewhereSensible(
+export function findSpawnSpot(
   w: WorldState,
   bp: CreatureBlueprint,
   rng: Rng,
   near?: { x: number; y: number; radius: number }
-): Creature | null {
+): { x: number; y: number } | null {
   const { w: bw, h: bh } = artSize(bp)
   const wantsLiquid = bp.move.kind === 'swim' || bp.habitat.needs?.includes('water')
   const isPlant = bp.move.kind === 'root'
@@ -352,20 +366,33 @@ export function spawnSomewhereSensible(
       }
     }
 
-    return spawnCreature(w, bp, x, y)
+    return { x, y }
   }
 
   // Nowhere ideal. Drop it wherever the player asked and let physics sort it out.
   if (near && !boxHitsSolid(w, near.x, near.y, bw, bh)) {
-    return spawnCreature(w, bp, near.x - bw / 2, near.y - bh / 2)
+    return { x: near.x - bw / 2, y: near.y - bh / 2 }
   }
   return null
+}
+
+/** Find somewhere this creature could survive and put it there. */
+export function spawnSomewhereSensible(
+  w: WorldState,
+  bp: CreatureBlueprint,
+  rng: Rng,
+  near?: { x: number; y: number; radius: number }
+): Creature | null {
+  const spot = findSpawnSpot(w, bp, rng, near)
+  if (!spot) return null
+  return spawnCreature(w, bp, spot.x, spot.y)
 }
 
 /** Seed a theme's resident population. */
 export function seedStarters(w: WorldState, themeId: string, rng: Rng): void {
   const theme = THEME_BY_ID[themeId]
   if (!theme) return
+  w.dormant = false
   for (const entry of theme.starters) {
     const bp = w.blueprints[entry.id]
     if (!bp) continue
@@ -379,44 +406,145 @@ export function clearCreatures(w: WorldState): void {
   w.particles.length = 0
 }
 
+// ---------------------------------------------------------------------------
+// Native plants — the ground's seed bank
+// ---------------------------------------------------------------------------
+
+function isPlant(bp: CreatureBlueprint | undefined): boolean {
+  return bp?.move.kind === 'root'
+}
+
+/** Native species that are plants. Empty until the ground has decided. */
+function nativePlantIds(w: WorldState): string[] {
+  return w.natives.filter((id) => isPlant(w.blueprints[id]))
+}
+
+/** Is there anywhere in this world a plant could put roots down? */
+function hasFertileGround(w: WorldState): boolean {
+  for (let i = 0; i < w.tiles.length; i++) {
+    if (IS_FERTILE[w.tiles[i]] === 1) return true
+  }
+  return false
+}
+
 /**
- * Let the world heal itself.
+ * Decide which plants belong to this world, once, the first time it has soil.
  *
- * Populations here are small enough that an oscillation eventually touches zero,
- * and zero is absorbing: plants only come from plants, hoppers only from
- * hoppers. Without this, every world converges on the same dead end — a field of
- * whatever happened to be last standing — and the only cure is a restart.
+ * A theme hands its flora over through `starters`, so this is really for the
+ * worlds nobody wrote: an Empty canvas the player paints grass onto, terrain
+ * that came back from a summon, stone a Loamworm has been patiently turning
+ * into dirt. Those worlds have ground and no reason for anything to grow on it.
  *
- * Real habitats recover because the frame we're watching isn't the whole world:
- * seed blows in, animals wander over the hill. This is that edge, and it obeys
- * two rules that keep it honest:
- *   - Nothing returns to an empty world. Pressing Empty means empty.
- *   - A predator only returns when there is something alive for it to eat, so
- *     this can never conjure a species straight back into starving to death.
+ * Which species is settled by asking the world rather than by a lookup table —
+ * a candidate is native if `findSpawnSpot` can actually place it. Kelp rules
+ * itself out of a world with no water without anyone having to say so, and a
+ * summoned material nobody has thought about yet still gets an honest answer.
+ *
+ * Picks a few of the viable species rather than all of them, so a pond and a
+ * meadow don't grow the same flora.
  */
-export function repopulate(w: WorldState, rng: Rng): void {
-  if (w.elapsed < w.nextSeedRain) return
-  w.nextSeedRain = w.elapsed + SEED_RAIN_INTERVAL
-  if (w.creatures.length === 0 || w.natives.length === 0) return
+export function establishNativePlants(w: WorldState, rng: Rng): boolean {
+  if (nativePlantIds(w).length > 0) return true
+  if (!hasFertileGround(w)) return false
+
+  const viable: string[] = []
+  for (const bp of Object.values(w.blueprints)) {
+    if (!isPlant(bp)) continue
+    if (findSpawnSpot(w, bp, rng)) viable.push(bp.id)
+  }
+  if (viable.length === 0) return false
+
+  // Fisher–Yates over a copy, so the pick is drawn from the world's own RNG and
+  // stays reproducible for the headless harness.
+  for (let i = viable.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[viable[i], viable[j]] = [viable[j], viable[i]]
+  }
+  for (const id of viable.slice(0, NATIVE_PLANT_SPECIES)) w.natives.push(id)
+  return true
+}
+
+/**
+ * The ground pushing its plant population back toward a living level.
+ *
+ * Runs on its own clock, separate from the animal seed rain, because the two
+ * answer different questions. Seed rain asks "has a species died out and is
+ * there food for it again"; this asks "is there less green here than this soil
+ * can support" — and it keeps asking, which is the whole point. A meadow that
+ * gets grazed to nothing is a meadow that grows back.
+ *
+ * Deliberately blind to whether anything is alive. Plants having no upstream is
+ * exactly the problem being solved; requiring a survivor would leave a stripped
+ * world just as dead as before.
+ */
+export function seedNativePlants(w: WorldState, rng: Rng): void {
+  if (w.elapsed < w.nextPlantSeed) return
+  w.nextPlantSeed = w.elapsed + PLANT_SEED_INTERVAL
+  if (w.dormant) return
+  if (!establishNativePlants(w, rng)) return
 
   const counts: Record<string, number> = {}
   let plants = 0
   for (const c of w.creatures) {
+    if (!isPlant(w.blueprints[c.blueprintId])) continue
     counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
-    if (w.blueprints[c.blueprintId]?.move.kind === 'root') plants++
+    plants++
   }
 
-  // Plants first — everything else is downstream of them.
-  if (plants < PLANT_FLOOR) {
-    const plantIds = w.natives.filter((id) => w.blueprints[id]?.move.kind === 'root')
-    if (plantIds.length > 0) {
-      const bp = w.blueprints[plantIds[Math.floor(rng() * plantIds.length)]]
-      if (bp) spawnSomewhereSensible(w, bp, rng)
-      return
-    }
+  const deficit = NATIVE_PLANT_TARGET - plants
+  if (deficit <= 0) return
+  if (plants >= MAX_PLANTS || w.creatures.length >= MAX_CREATURES) return
+
+  // Scale the seeding to how bare the world is: a nearly-full meadow gets one
+  // sprout, a stripped one gets the full batch. Recovery from a crash is fast
+  // without the ground quietly out-growing the grazers the rest of the time.
+  const batch = Math.min(
+    PLANT_SEED_BATCH,
+    Math.max(1, Math.ceil((deficit / NATIVE_PLANT_TARGET) * PLANT_SEED_BATCH))
+  )
+
+  // Rarest first, so the ground refills the species the grazers actually
+  // emptied instead of piling more onto whichever one is already winning.
+  const pool = nativePlantIds(w)
+    .filter((id) => (counts[id] ?? 0) < PLANT_SPECIES_CAP)
+    .sort((a, b) => (counts[a] ?? 0) - (counts[b] ?? 0))
+  if (pool.length === 0) return
+
+  for (let i = 0; i < batch; i++) {
+    const bp = w.blueprints[pool[i % pool.length]]
+    if (bp) spawnSomewhereSensible(w, bp, rng)
+  }
+}
+
+/**
+ * Let the world heal itself — the animal half.
+ *
+ * Populations here are small enough that an oscillation eventually touches zero,
+ * and zero is absorbing: hoppers only come from hoppers. Without this, every
+ * world converges on the same dead end — a field of whatever happened to be last
+ * standing — and the only cure is a restart.
+ *
+ * Real habitats recover because the frame we're watching isn't the whole world:
+ * animals wander over the hill. This is that edge, and it obeys two rules that
+ * keep it honest:
+ *   - Nothing returns to an empty world. Pressing Empty means empty.
+ *   - A predator only returns when there is something alive for it to eat, so
+ *     this can never conjure a species straight back into starving to death.
+ *
+ * Plants are not handled here. They have no upstream at all, so the ground
+ * carries their seed instead — see `seedNativePlants`.
+ */
+export function repopulate(w: WorldState, rng: Rng): void {
+  if (w.elapsed < w.nextSeedRain) return
+  w.nextSeedRain = w.elapsed + SEED_RAIN_INTERVAL
+  if (w.dormant || w.creatures.length === 0 || w.natives.length === 0) return
+
+  const counts: Record<string, number> = {}
+  for (const c of w.creatures) {
+    counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
   }
 
-  // Then any native that has died out and now has something to eat again.
+  // Any native that has died out and now has something to eat again.
   // Plants count here too: one plant species thriving is not a reason for the
   // others to stay extinct, and a grazer too small to eat the survivor depends
   // on the little ones coming back.

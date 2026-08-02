@@ -119,7 +119,7 @@ export function useValidations() {
       try {
         const token = await user.getIdToken()
         if (cancelled) return
-        await fetch(ENDPOINT, {
+        const res = await fetch(ENDPOINT, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -127,6 +127,9 @@ export function useValidations() {
           },
           body: JSON.stringify({ state }),
         })
+        if (!res.ok) {
+          console.error('[sandbox] failed to persist validations: HTTP', res.status)
+        }
       } catch (err) {
         console.error('[sandbox] failed to persist validations:', err)
       }

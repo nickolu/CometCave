@@ -298,6 +298,10 @@ export const useStore = create<Store>()(
               ...state.userList,
               characters: [...state.userList.characters, character],
             },
+            chat: {
+              ...state.chat,
+              characters: [...state.chat.characters, character],
+            },
           }
         }),
     }),

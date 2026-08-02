@@ -79,10 +79,20 @@ export const LineControl = ({
 }) => {
   return (
     <div className="flex gap-2">
-      <div onClick={() => toggleLine()}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => toggleLine()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleLine() } }}
+      >
         <DynamicLine type={lineData?.type} />
       </div>
-      <div onClick={() => toggleHasChanges()}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => toggleHasChanges()}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleHasChanges() } }}
+      >
         <InteractiveChangeMarker hasChanges={Boolean(lineData?.hasChanges)} />
       </div>
     </div>

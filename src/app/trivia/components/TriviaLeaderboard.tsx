@@ -54,21 +54,26 @@ export function TriviaLeaderboard({ onBack }: { onBack: () => void }) {
   const authName = user ? triviaDisplayName || user.email || null : null
 
   useEffect(() => {
+    const controller = new AbortController()
     async function load() {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/trivia/leaderboard?period=${period}`)
+        const res = await fetch(`/api/v1/trivia/leaderboard?period=${period}`, {
+          signal: controller.signal,
+        })
         if (!res.ok) throw new Error('Failed to load leaderboard')
         const json = await res.json()
         setData(json)
-      } catch {
+      } catch (err) {
+        if ((err as Error)?.name === 'AbortError') return
         setError('Failed to load leaderboard.')
       } finally {
         setLoading(false)
       }
     }
     load()
+    return () => controller.abort()
   }, [period])
 
   const handleShareLeaderboard = async () => {

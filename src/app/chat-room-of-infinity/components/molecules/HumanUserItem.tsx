@@ -25,7 +25,7 @@ export default function HumanUserItem() {
         }}
       >
         <ListItemAvatar>
-          <Avatar>{humanUser.name[0]}</Avatar>
+          <Avatar>{humanUser.name?.[0] ?? '?'}</Avatar>
         </ListItemAvatar>
         <ListItemText primary={humanUser.name} />
         <Tooltip title={humanUser.status}>

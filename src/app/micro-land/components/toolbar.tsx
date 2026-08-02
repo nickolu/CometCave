@@ -4,6 +4,8 @@ import { MATERIALS, PAINTABLE } from '@/app/micro-land/domain/config/materials'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
+import { SparkleIcon } from './sparkle-icon'
+import { SummonSand } from './summon-sand'
 
 const BRUSHES = [2, 4, 8, 14]
 
@@ -22,6 +24,7 @@ export function Toolbar() {
   const brush = useMicroLand((s) => s.brush)
   const setBrush = useMicroLand((s) => s.setBrush)
   const blueprints = useMicroLand((s) => s.blueprints)
+  const pending = useMicroLand((s) => s.pendingSummons)
   const setSummonOpen = useMicroLand((s) => s.setSummonOpen)
 
   const paintingSelected = tool.kind === 'material' || tool.kind === 'erase'
@@ -145,9 +148,13 @@ export function Toolbar() {
             border: '1px solid var(--cc-mint)',
             color: 'var(--cc-on-mint)',
             boxShadow: 'var(--cc-mint-glow)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
           }}
         >
-          ✦ Summon
+          <SparkleIcon size={12} />
+          Generate
         </button>
         <button
           type="button"
@@ -190,6 +197,28 @@ export function Toolbar() {
       </div>
 
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+        {/* Creatures still on their way hold their place at the front of the
+            strip, right where the finished one lands. */}
+        {pending.map((p) => (
+          <div
+            key={p.id}
+            className="shrink-0"
+            title={`Making “${p.prompt}”`}
+            aria-label={`Making ${p.prompt}`}
+            style={{
+              ...swatchStyle(false),
+              minWidth: 62,
+              borderStyle: 'dashed',
+              borderColor: 'var(--cc-pink-border)',
+            }}
+          >
+            <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
+              <SummonSand size={34} />
+            </span>
+            <span style={{ ...swatchLabel, color: 'var(--cc-pink)' }}>Making…</span>
+          </div>
+        ))}
+
         {ordered.map((bp) => {
           const selected = tool.kind === 'creature' && tool.blueprintId === bp.id
           return (

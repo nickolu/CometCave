@@ -36,6 +36,7 @@ import {
   boxLiquidFraction,
   inBounds,
   repopulate,
+  seedNativePlants,
   setTile,
   settleOnGround,
   solidAt,
@@ -215,6 +216,8 @@ export function tickCreatures(
     w.creatures = creatures.filter((c) => !dead.has(c.id))
   }
 
+  // Plants first — everything else in the world is downstream of them.
+  seedNativePlants(w, rng)
   repopulate(w, rng)
 
   tickParticles(w, dt, gravityScale)

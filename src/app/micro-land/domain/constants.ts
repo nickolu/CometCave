@@ -60,19 +60,44 @@ export const MEAL_VALUE = 0.42
 export const BREED_COST = 0.55
 
 /**
- * Seed rain.
+ * Seed rain — animals.
  *
- * Left alone, a grazer boom strips the last plant and then starves — and a
- * world at zero plants can never come back, because plants only come from other
- * plants. Real meadows recover because seed blows in from outside the meadow;
- * this is that, and it is the difference between a world that breathes and a
- * world you have to restart.
- *
- * It only fires while something is still alive, so pressing Empty leaves the
- * world empty.
+ * A native that has died out comes back once there is something alive for it to
+ * eat again. It only fires while something is still alive, so pressing Empty
+ * leaves the world empty.
  */
-export const PLANT_FLOOR = 6
 export const SEED_RAIN_INTERVAL = 4
+
+/**
+ * Native plants — the ground's own seed bank.
+ *
+ * Plants are the only thing in the world with no upstream: a grazer boom strips
+ * the last one and then nothing can ever bring it back, because plants only come
+ * from plants. Everything downstream starves and the world is a restart.
+ *
+ * So the *ground* holds the seed instead of the plants. The first time a world
+ * has soil in it, whichever species could live on that soil become its natives
+ * (see `establishNativePlants`), and from then on that soil keeps pushing the
+ * plant population back toward `NATIVE_PLANT_TARGET`. A meadow can be grazed
+ * flat and still come back, which is what makes a population renewable rather
+ * than merely long-lived.
+ *
+ * The target is a floor, not a quota. Well above it the ground does nothing at
+ * all and plants spread the ordinary way; the further below it the world falls,
+ * the harder the seed comes in. That asymmetry is deliberate — a constant
+ * trickle would just pin every world at MAX_PLANTS and turn it into a carpet.
+ */
+export const NATIVE_PLANT_TARGET = 45
+export const PLANT_SEED_INTERVAL = 3
+/** Most plants a single seeding may place, when the world is at zero. */
+export const PLANT_SEED_BATCH = 3
+/**
+ * How many species the ground picks when it establishes its natives.
+ *
+ * Fewer than are viable, on purpose: two worlds painted with the same soil
+ * should not grow the same flora.
+ */
+export const NATIVE_PLANT_SPECIES = 3
 
 /**
  * Carrying capacity for a single animal species.

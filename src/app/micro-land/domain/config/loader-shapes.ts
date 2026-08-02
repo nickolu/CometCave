@@ -134,3 +134,12 @@ export const LOADER_TERRAIN_SHAPES: LoaderShape[] = [
     ],
   },
 ]
+
+/**
+ * The grains that pour into a slot while one creature is being summoned.
+ *
+ * Not a shape — the slot-sized wait never assembles into anything, it just
+ * piles up and washes out. Asset data, same as the palettes above, which is
+ * why the colors are literal.
+ */
+export const SUMMON_SAND_COLORS = ['#5eead4', '#2dd4bf', '#7dd3fc']

@@ -668,6 +668,10 @@ export class GameInstance {
 
   clearLife(): void {
     clearCreatures(this.world)
+    // Native plants grow back out of the soil on their own, so on any world with
+    // ground in it "empty" would last about three seconds without this. Anything
+    // the player does next — painting, placing, summoning — wakes it back up.
+    this.world.dormant = true
     this.knownSpecies.clear()
     this.inspectedId = null
     // Emptying the world is an extinction of everything, so the streak goes with
@@ -682,6 +686,7 @@ export class GameInstance {
    */
   introduce(raw: unknown, count: number): { blueprint: CreatureBlueprint; placed: number } {
     const bp = sanitizeBlueprint(raw, { summoned: true })
+    this.world.dormant = false
     registerBlueprint(this.world, bp)
     this.syncBlueprintsToStore()
 
@@ -788,6 +793,7 @@ export class GameInstance {
       this.lastPlaceAt = now
       const bp = this.world.blueprints[tool.blueprintId]
       if (!bp) return
+      this.world.dormant = false
       if (this.world.creatures.length >= MAX_CREATURES) {
         state.notify('The world is full. Something has to go.')
         return

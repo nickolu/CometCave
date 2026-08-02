@@ -161,7 +161,7 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
   }, [])
 
   // Load questions (requires auth token)
-  async function loadQuestions(replace: boolean) {
+  async function loadQuestions(replace: boolean, signal?: AbortSignal) {
     setBrowseLoading(true)
     setBrowseError(null)
     try {
@@ -180,6 +180,7 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
 
       const res = await fetch(`/api/v1/trivia/questions?${params.toString()}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal,
       })
       if (!res.ok) throw new Error('Failed to load questions')
       const json: BrowseResponse = await res.json()
@@ -187,7 +188,8 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
       setQuestions((prev) => (replace ? json.questions : [...prev, ...json.questions]))
       setNextCursor(json.nextCursor)
       setHasLoaded(true)
-    } catch {
+    } catch (err) {
+      if ((err as Error)?.name === 'AbortError') return
       setBrowseError('Failed to load questions.')
     } finally {
       setBrowseLoading(false)
@@ -213,7 +215,9 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
     // Custom view with no resolved label hasn't picked a topic yet;
     // wait for the default-selection effect to populate it.
     if (view.kind === 'custom' && !activeCategory) return
-    void loadQuestions(true)
+    const controller = new AbortController()
+    void loadQuestions(true, controller.signal)
+    return () => controller.abort()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, sort, activeCategory, difficulty, mineLocked, view.kind])
 
