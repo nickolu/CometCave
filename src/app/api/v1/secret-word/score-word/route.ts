@@ -14,7 +14,7 @@ const WordFrequencySchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Resolve OpenAI API key – prefer header over env for per-request overrides
-    let apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+    let apiKey = process.env.OPENAI_API_KEY
     const headerApiKey = request.headers.get('x-openai-api-key')
     if (headerApiKey) {
       apiKey = headerApiKey

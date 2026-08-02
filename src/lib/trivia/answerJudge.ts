@@ -16,7 +16,7 @@ export async function judgeAnswer(question: string, correctAnswer: string, userA
     return false
   }
 
-  const apiKey = process.env.NEXT_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
   if (!apiKey) throw new Error('OpenAI API key not configured')
 
   const openaiClient = createOpenAI({ apiKey })
