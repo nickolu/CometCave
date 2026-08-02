@@ -21,6 +21,7 @@ import {
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   SEED_RAIN_INTERVAL,
+  SURFACE_SEEDING_BIAS,
   WIDTH_SCALE,
   WORLD_H,
   WORLD_W,
@@ -416,11 +417,32 @@ export function findSpawnSpot(
   for (let attempt = 0; attempt < 120; attempt++) {
     let x: number
     let y: number
+    /**
+     * Dropped from the sky rather than from a random height, so the seed lands
+     * on the *outdoor* surface of its column instead of the first cave floor it
+     * happens to fall past.
+     *
+     * A random point in the world volume is overwhelmingly a point underground:
+     * the sky is empty, the surface is one row, and everything below it is a
+     * honeycomb of caves whose floors are all fertile. Sampling y uniformly and
+     * settling from there put 554 of 585 plants in caves nobody can see, left
+     * one sunleaf on the entire surface of the world, and starved every grazer
+     * standing on it — while the headline plant count read as a world at its
+     * ceiling. See SURFACE_SEEDING_BIAS for why some seeds still fall short.
+     */
+    let fromSky = false
     if (near) {
       const a = rng() * Math.PI * 2
       const r = rng() * near.radius
       x = near.x + Math.cos(a) * r
       y = near.y + Math.sin(a) * r
+    } else if (isPlant && !wantsLiquid && rng() < SURFACE_SEEDING_BIAS) {
+      // Water plants are excluded because the checks below judge the spot
+      // *before* it settles: kelp asked about an empty sky reads as beached and
+      // rejects all 120 attempts, which would quietly wipe kelp out of tidepool.
+      x = rng() * (WORLD_W - bw)
+      y = 0
+      fromSky = true
     } else {
       x = rng() * (WORLD_W - bw)
       y = rng() * (WORLD_H - bh)
@@ -444,6 +466,10 @@ export function findSpawnSpot(
       // a random point in open sky a usable spawn instead of a wasted attempt.
       const settled = settleOnGround(w, x + body.dx, y + body.dy, body.w, body.h, {
         requireFertile: isPlant,
+        // A seed let go at the top of the sky has the whole world to fall
+        // through. The default 64 stops half way down and would leave every
+        // deep valley barren for no reason the player could ever work out.
+        maxDrop: fromSky ? WORLD_H : undefined,
       })
       if (settled === null) continue
       // `settled` is the core's resting top edge; the sprite hangs above it.
