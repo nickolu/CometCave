@@ -225,6 +225,9 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, on
       {detailFor && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-surface-dim/80 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Question detail"
           onClick={() => setDetailFor(null)}
         >
           <div
