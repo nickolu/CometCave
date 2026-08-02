@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSafetyCheck } from '@/app/chat-room-of-infinity/api/hooks'
 import { useStore } from '@/app/chat-room-of-infinity/store'
@@ -19,6 +19,9 @@ export function useChatInput({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const userTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const shakeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => { clearTimeout(shakeTimerRef.current) }, [])
   const sendMessage = useStore(state => state.sendMessage)
   const safetyCheck = useSafetyCheck()
 
@@ -53,7 +56,8 @@ export function useChatInput({
         setError(result.reason)
         const inputEl = document.getElementById('chat-input')
         inputEl?.classList.add('shake')
-        setTimeout(() => inputEl?.classList.remove('shake'), 500)
+        clearTimeout(shakeTimerRef.current)
+        shakeTimerRef.current = setTimeout(() => inputEl?.classList.remove('shake'), 500)
       }
     } catch {
       setError('Failed to check message safety')

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useCharacterResponse, useConversationManager } from '@/app/chat-room-of-infinity/api/hooks'
 import { useStore } from '@/app/chat-room-of-infinity/store'
@@ -11,6 +11,9 @@ const PROCESSING_RESET_DELAY_MS = 500
 export function useCharacterResponses() {
   const [isProcessingResponse, setIsProcessingResponse] = useState(false)
   const lastMessageIdRef = useRef<string | null>(null)
+  const processingResetTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  useEffect(() => () => { clearTimeout(processingResetTimerRef.current) }, [])
   const activeResponsesRef = useRef<{ [key: string]: boolean }>({})
   const responseQueueRef = useRef<Array<{ character: Character; message: string }>>([])
   const isProcessingQueueRef = useRef<boolean>(false)
@@ -121,7 +124,8 @@ export function useCharacterResponses() {
           processResponseQueue(chatMessages)
         }
       } finally {
-        setTimeout(() => setIsProcessingResponse(false), PROCESSING_RESET_DELAY_MS)
+        clearTimeout(processingResetTimerRef.current)
+        processingResetTimerRef.current = setTimeout(() => setIsProcessingResponse(false), PROCESSING_RESET_DELAY_MS)
       }
     },
     [

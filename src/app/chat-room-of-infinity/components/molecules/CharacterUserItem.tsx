@@ -18,7 +18,7 @@ export default function CharacterUserItem({ character }: Props) {
   return (
     <UserListItem
       secondaryAction={
-        <IconButton edge="end" onClick={() => removeCharacter(character.id)}>
+        <IconButton edge="end" aria-label="Remove character" onClick={() => removeCharacter(character.id)}>
           <Close />
         </IconButton>
       }
