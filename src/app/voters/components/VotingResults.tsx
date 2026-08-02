@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bar,
   BarChart,
@@ -29,6 +29,7 @@ interface VotingResultsProps {
 export default function VotingResults({ votes, voters, criteria, onRestart }: VotingResultsProps) {
   const [groupSummaries, setGroupSummaries] = useState<Record<string, string>>({})
   const [loadingSummaries, setLoadingSummaries] = useState<string[]>([])
+  const failedSummariesRef = useRef(new Set<string>())
 
   const generateSummaryMutation = useGenerateSummary()
 
@@ -76,7 +77,10 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
 
       const groupsNeedingSummary = Object.entries(results.groupResults).filter(
         ([groupName, groupData]) =>
-          groupData.total > 5 && !groupSummaries[groupName] && !loadingSummaries.includes(groupName)
+          groupData.total > 5 &&
+          !groupSummaries[groupName] &&
+          !loadingSummaries.includes(groupName) &&
+          !failedSummariesRef.current.has(groupName)
       )
 
       if (groupsNeedingSummary.length === 0) return
@@ -97,6 +101,8 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
             },
             onError: error => {
               console.error(`Error generating summary for ${groupName}:`, error)
+              // Track as failed so the effect doesn't retry infinitely
+              failedSummariesRef.current.add(groupName)
               setLoadingSummaries(prev => prev.filter(name => name !== groupName))
             },
           }
@@ -105,7 +111,8 @@ export default function VotingResults({ votes, voters, criteria, onRestart }: Vo
     }
 
     generateSummariesForLargeGroups()
-  }, [results.groupResults, criteria, groupSummaries, loadingSummaries, generateSummaryMutation])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results.groupResults, criteria, groupSummaries])
 
   const chartData = Object.entries(results.distribution).map(([option, count]) => ({
     option,
