@@ -16,13 +16,14 @@ interface SecretWordChatProps {
 export function SecretWordChat({
   gameState,
   onSendMessage,
-  isAIThinking: _isAIThinking = false,
+  isAIThinking = false,
   onRevealAIWord,
 }: SecretWordChatProps) {
   const [messageInput, setMessageInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const currentPlayer = gameState.players[gameState.currentTurn]
+  const isAITurn = gameState.currentTurn === 'ai' || isAIThinking
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -84,7 +85,7 @@ export function SecretWordChat({
             ))
           )}
           <div ref={messagesEndRef} />
-          {_isAIThinking && <p className="text-center text-on-surface-variant text-sm">AI is thinking</p>}
+          {isAIThinking && <p className="text-center text-on-surface-variant text-sm">AI is thinking</p>}
         </div>
       </div>
 
@@ -97,10 +98,12 @@ export function SecretWordChat({
             onKeyPress={handleKeyPress}
             placeholder={`${currentPlayer.name}, type your message...`}
             className="bg-surface-container-highest border-outline-variant text-on-surface flex-1"
+            disabled={isAITurn}
+            aria-label="Type your message"
           />
           <ChunkyButton
             onClick={handleSend}
-            disabled={!messageInput.trim()}
+            disabled={!messageInput.trim() || isAITurn}
             className="bg-surface-variant text-on-surface hover:bg-surface-variant/90"
           >
             Send
