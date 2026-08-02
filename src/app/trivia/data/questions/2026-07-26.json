@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-26",
+  "categoryId": 29,
+  "categoryName": "Entertainment: Comics",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-26-0",
+      "question": "Which planet did Superman come from?",
+      "options": [
+        "Avalon",
+        "Starhaven",
+        "Xolnar",
+        "Krypton"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Krypton"
+    },
+    {
+      "id": "opentdb-2026-07-26-1",
+      "question": "In Black Hammer, what city did the heroes save from the Anti-God?",
+      "options": [
+        "Mega-City One",
+        "Rockwood",
+        "Star City",
+        "Spiral City"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Spiral City"
+    },
+    {
+      "id": "opentdb-2026-07-26-2",
+      "question": "In \"Homestuck\" what is Dave Strider's guardian?",
+      "options": [
+        "Becquerel",
+        "Doc Scratch",
+        "Halley",
+        "Bro"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Bro"
+    },
+    {
+      "id": "opentdb-2026-07-26-3",
+      "question": "Who was the first American Vampire (Scott Snyder's American Vampire)?",
+      "options": [
+        "Pearl Jones",
+        "James \"Jim\" Book",
+        "Hattie Hargrove",
+        "Skinner Sweet"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Skinner Sweet"
+    },
+    {
+      "id": "opentdb-2026-07-26-4",
+      "question": "Which of these game-based comics were published in 2011 by DC Comics?",
+      "options": [
+        "Prototype",
+        "Kane & Lynch",
+        "Left 4 Dead: The Sacrifice",
+        "Infamous"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "Infamous"
+    },
+    {
+      "id": "opentdb-2026-07-26-5",
+      "question": "In what year did the first \"The Walking Dead\" comic come out?",
+      "options": [
+        "2001",
+        "1999",
+        "2006",
+        "2003"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "opentdb",
+      "correctAnswer": "2003"
+    },
+    {
+      "id": "ai-2026-07-26-6",
+      "question": "What is the name of Thor's enchanted hammer in Marvel Comics?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Mjolnir",
+      "explanation": "Mjolnir is Thor's legendary enchanted hammer and one of his most iconic symbols in Marvel Comics. In the mythology and comics alike, it can only be wielded by those deemed worthy. The hammer has appeared prominently in the Marvel Cinematic Universe films, making it widely recognizable to mainstream audiences."
+    },
+    {
+      "id": "ai-2026-07-26-7",
+      "question": "In the graphic novel \"The Killing Joke,\" which DC villain is given a tragic backstory as a failed comedian who suffered \"one bad day\"?",
+      "difficulty": "easy",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "the Joker",
+      "explanation": "Alan Moore's \"Batman: The Killing Joke\" (1988) presents one of the most famous origin stories in comics, portraying the Joker as an ordinary family man and struggling comedian driven to madness after a single catastrophic day. The story explores the idea that anyone could become a villain given the right circumstances. It remains one of the most influential and controversial Batman stories ever told."
+    },
+    {
+      "id": "ai-2026-07-26-8",
+      "question": "Which DC Comics series debut issue deliberately mirrors the panel layout of *Crisis on Infinite Earths* #1 on its very first page?",
+      "difficulty": "medium",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Infinite Crisis #1",
+      "explanation": "The first page of *Infinite Crisis* #1 (2005) was intentionally designed to echo the panel layout of *Crisis on Infinite Earths* #1 (1985), paying homage to the landmark crossover event it was continuing. This visual callback was writer Geoff Johns and artist Phil Jimenez's way of signaling that *Infinite Crisis* was a direct spiritual sequel to the original *Crisis*."
+    },
+    {
+      "id": "ai-2026-07-26-9",
+      "question": "According to a CBR piece framing fan expectations of more content as \"coping with the ending,\" what is the specific chapter number of Chainsaw Man that the publication says will most probably never exist?",
+      "difficulty": "hard",
+      "category": "Entertainment: Comics",
+      "source": "ai",
+      "correctAnswer": "Chapter 233",
+      "explanation": "A CBR article discussing the conclusion of Chainsaw Man argued that Chapter 233 will most probably never exist, implying the series has reached its true ending with Chapter 232. The piece framed any fan expectation of further chapters as a form of coping with the manga's conclusion. This reflects the ongoing debate among fans about whether Tatsuki Fujimoto's series has definitively wrapped up."
+    }
+  ]
+}

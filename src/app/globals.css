@@ -375,6 +375,13 @@ body {
 
   --cc-gold: #ffd166;
 
+  /* Micro Land's creature builder: the "nothing here" checkerboard behind a
+     drawing, and the grid over it. Dark and low-contrast on purpose — the
+     drawing has to be the only thing with any colour in it. */
+  --cc-checker-a: #171a22;
+  --cc-checker-b: #1e222c;
+  --cc-checker-grid: rgba(255, 255, 255, 0.07);
+
   --cc-on-mint: #031a16;
   --cc-modal-bg-from: #0a1f1c;
   --cc-modal-bg-to: #050d0e;

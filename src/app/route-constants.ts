@@ -14,4 +14,5 @@ export const ROUTE_CONSTANTS = {
   STORYBOOK_FACTORY: '/storybook-factory',
   SPECK_WARS: '/speck-wars',
   DISNEYLAND_HUNT: '/disneyland-hunt',
+  MICRO_LAND: '/micro-land',
 }

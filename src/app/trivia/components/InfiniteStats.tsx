@@ -98,7 +98,7 @@ export function InfiniteStats() {
   const [runsLoading, setRunsLoading] = useState(true)
   const [rebuilding, setRebuilding] = useState(false)
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (signal?: AbortSignal) => {
     if (!user) {
       setLoading(false)
       return
@@ -107,11 +107,13 @@ export function InfiniteStats() {
       const token = await user.getIdToken()
       const res = await fetch('/api/v1/trivia/stats/me', {
         headers: { Authorization: `Bearer ${token}` },
+        signal,
       })
       if (res.ok) {
         setStats(await res.json())
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') return
       // silent
     } finally {
       setLoading(false)
@@ -119,10 +121,13 @@ export function InfiniteStats() {
   }, [user])
 
   useEffect(() => {
-    fetchStats()
+    const controller = new AbortController()
+    fetchStats(controller.signal)
+    return () => controller.abort()
   }, [fetchStats])
 
   useEffect(() => {
+    const controller = new AbortController()
     async function loadRuns() {
       if (!user) {
         setRunsLoading(false)
@@ -132,18 +137,21 @@ export function InfiniteStats() {
         const token = await user.getIdToken()
         const res = await fetch('/api/v1/trivia/infinite/runs?limit=20', {
           headers: { Authorization: `Bearer ${token}` },
+          signal: controller.signal,
         })
         if (res.ok) {
           const data = await res.json()
           setRuns(data.runs ?? [])
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') return
         // silent
       } finally {
         setRunsLoading(false)
       }
     }
     loadRuns()
+    return () => controller.abort()
   }, [user])
 
   if (loading) {

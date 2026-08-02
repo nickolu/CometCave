@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
 import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
@@ -21,8 +21,6 @@ const MOUNT_RARITY_COLORS: Record<string, string> = {
 export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalProps) {
   const [inputValue, setInputValue] = useState('')
 
-  if (!isOpen) return null
-
   const handleConfirm = () => {
     const trimmed = inputValue.trim()
     onConfirm(trimmed.length > 0 ? trimmed : undefined)
@@ -34,10 +32,24 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
     setInputValue('')
   }
 
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onConfirm(undefined)
+        setInputValue('')
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [isOpen, onConfirm])
+
+  if (!isOpen) return null
+
   const rarityColor = MOUNT_RARITY_COLORS[mount.rarity] ?? 'border-slate-400 text-slate-300'
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Name your mount" className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60" onClick={handleSkip} />
 
@@ -75,6 +87,7 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
         {/* Name input */}
         <input
           type="text"
+          aria-label="Mount name (optional)"
           value={inputValue}
           onChange={e => setInputValue(e.target.value.slice(0, 30))}
           placeholder="Enter a name... (optional)"

@@ -123,6 +123,16 @@
       "indexes": [
         { "order": "ASCENDING", "queryScope": "COLLECTION" }
       ]
+    },
+    {
+      "collectionGroup": "microLand",
+      "fieldPath": "blob",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "microLandWorlds",
+      "fieldPath": "blob",
+      "indexes": []
     }
   ]
 }

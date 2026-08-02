@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-15",
+  "categoryId": 18,
+  "categoryName": "Science: Computers",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-15-0",
+      "question": "The programming language 'Swift' was created to replace what other programming language?",
+      "options": [
+        "C#",
+        "Ruby",
+        "C++",
+        "Objective-C"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Objective-C"
+    },
+    {
+      "id": "opentdb-2026-07-15-1",
+      "question": "How many kilobytes in one gigabyte (in decimal)?",
+      "options": [
+        "1000",
+        "1048576",
+        "1024",
+        "1000000"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "1000000"
+    },
+    {
+      "id": "opentdb-2026-07-15-2",
+      "question": "What amount of bits commonly equals one byte?",
+      "options": [
+        "2",
+        "64",
+        "1",
+        "8"
+      ],
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "8"
+    },
+    {
+      "id": "opentdb-2026-07-15-3",
+      "question": "In programming, the ternary operator is mostly defined with what symbol(s)?",
+      "options": [
+        "??",
+        "?",
+        "if then",
+        "?:"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "?:"
+    },
+    {
+      "id": "opentdb-2026-07-15-4",
+      "question": "What is the name of the default theme that is installed with Windows XP?",
+      "options": [
+        "Neptune",
+        "Bliss",
+        "Whistler",
+        "Luna"
+      ],
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Luna"
+    },
+    {
+      "id": "opentdb-2026-07-15-5",
+      "question": "Dutch computer scientist Mark Overmars is known for creating which game development engine?",
+      "options": [
+        "Stencyl",
+        "Construct",
+        "Torque 2D",
+        "Game Maker"
+      ],
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "opentdb",
+      "correctAnswer": "Game Maker"
+    },
+    {
+      "id": "ai-2026-07-15-6",
+      "question": "What global network emerged from ARPANET and the development of TCP/IP?",
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Internet",
+      "explanation": "The Internet grew out of ARPANET, a U.S. Defense Department project from the late 1960s, and was formalized through the adoption of the TCP/IP protocol suite in the 1980s. It has since become the world's largest computer network, connecting billions of devices globally. Its development is considered one of the most transformative technological achievements in history."
+    },
+    {
+      "id": "ai-2026-07-15-7",
+      "question": "Which JavaScript library is widely used to build user interfaces for single-page applications?",
+      "difficulty": "easy",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "React",
+      "explanation": "React is an open-source JavaScript library developed by Facebook (now Meta) that makes it easy to build dynamic, component-based user interfaces. It is one of the most popular front-end tools in modern web development, powering countless single-page applications. Its virtual DOM approach helps efficiently update and render the right components when data changes."
+    },
+    {
+      "id": "ai-2026-07-15-8",
+      "question": "In regex, what feature allows the engine to match characters without consuming them, leaving its position in the string unchanged after the check?",
+      "difficulty": "medium",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "lookarounds",
+      "explanation": "Lookarounds (including lookaheads and lookbehinds) are zero-width assertions in regular expressions — they test whether a pattern exists at a position without advancing the engine's cursor. This makes them powerful for conditional matching, such as requiring a word to be followed by (or preceded by) another pattern without including that pattern in the actual match."
+    },
+    {
+      "id": "ai-2026-07-15-9",
+      "question": "By the end of 2012, which browser had overtaken both Internet Explorer and Firefox to claim the top spot as the world's most used browser?",
+      "difficulty": "hard",
+      "category": "Science: Computers",
+      "source": "ai",
+      "correctAnswer": "Google Chrome",
+      "explanation": "By late 2012, Google Chrome had surpassed both Internet Explorer and Firefox in global market share, a remarkable rise given that Chrome had only launched in 2008. Its speed, simplicity, and tight integration with Google services fueled its rapid adoption. Chrome has maintained its dominant position ever since, holding well over 60% of the browser market in subsequent years."
+    }
+  ]
+}

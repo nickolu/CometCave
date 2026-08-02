@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-15",
+  "categoryId": 12,
+  "categoryName": "Entertainment: Music",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-15-0",
+      "question": "In what year was Avril Lavigne's first studio album, \"Let Go\", released?",
+      "options": [
+        "2001",
+        "2005",
+        "2004",
+        "2002"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "2002"
+    },
+    {
+      "id": "opentdb-2026-06-15-1",
+      "question": "How many strings are there on a cello?",
+      "options": [
+        "5",
+        "6",
+        "8",
+        "4"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "4"
+    },
+    {
+      "id": "opentdb-2026-06-15-2",
+      "question": "\"Hallelujah\" is a song written by which Canadian recording artist?",
+      "options": [
+        "Kory Lefkowits",
+        "Ryan Letourneau ",
+        "Justin Bieber ",
+        "Leonard Cohen"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Leonard Cohen"
+    },
+    {
+      "id": "opentdb-2026-06-15-3",
+      "question": "What was George Michael's chart-topping 1987 debut studio album?",
+      "options": [
+        "Songs from the Last Century",
+        "Patience",
+        "Older",
+        "Faith"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Faith"
+    },
+    {
+      "id": "opentdb-2026-06-15-4",
+      "question": "What is the first track on Kanye West's 808s & Heartbreak?",
+      "options": [
+        "Welcome to Heartbreak",
+        "Street Lights",
+        "Heartless",
+        "Say You Will"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "Say You Will"
+    },
+    {
+      "id": "opentdb-2026-06-15-5",
+      "question": "When did the rapper Eazy-E die?",
+      "options": [
+        "February 14, 1993",
+        "October 21, 1994",
+        "July 11, 1992",
+        "March 26, 1995"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Music",
+      "source": "opentdb",
+      "correctAnswer": "March 26, 1995"
+    },
+    {
+      "id": "ai-2026-06-15-6",
+      "question": "Which Nirvana album features the hit single \"Smells Like Teen Spirit\"?",
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "Nevermind",
+      "explanation": "Nevermind, released in 1991, was Nirvana's breakthrough second studio album that helped launch grunge into the mainstream. Its lead single \"Smells Like Teen Spirit\" became an anthem for a generation and one of the most iconic rock songs of all time."
+    },
+    {
+      "id": "ai-2026-06-15-7",
+      "question": "In songwriting, what term describes the most memorable part of a song that is typically a blend of melody and lyrics?",
+      "difficulty": "easy",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "hook",
+      "explanation": "A hook is considered the capstone of a well-crafted song, designed to grab the listener's attention and stick in their memory. It's usually a combination of melody and lyrics working together, making it the most catchy and repeatable part of a track. Famous examples include the repeated chorus lines in countless pop hits."
+    },
+    {
+      "id": "ai-2026-06-15-8",
+      "question": "In the music production world, what technology — also used in self-driving cars and voice assistants — is being adopted to automate tedious mixing and mastering tasks, freeing sound engineers to focus on the artistic and creative side of making music?",
+      "difficulty": "medium",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "artificial intelligence",
+      "explanation": "Artificial intelligence and its subset, machine learning, are increasingly being applied in music production to handle repetitive tasks like noise reduction, mixing adjustments, and mastering. This automation allows sound engineers to dedicate more mental energy to the creative and artistic aspects of music-making. The integration of AI into music tools is rapidly reshaping the role of the audio engineer in the entertainment industry."
+    },
+    {
+      "id": "ai-2026-06-15-9",
+      "question": "Which U.S. city is widely credited as the birthplace of sludge metal, largely because its local bands chose to collaborate on a shared sound rather than compete for heaviness?",
+      "difficulty": "hard",
+      "category": "Entertainment: Music",
+      "source": "ai",
+      "correctAnswer": "New Orleans",
+      "explanation": "New Orleans is considered the cradle of sludge metal, a genre blending doom metal's slow tempos with hardcore punk's aggression. What made the scene unique was its cooperative spirit — bands like Eyehategod, Crowbar, and Down built a unified sonic identity together rather than trying to out-heavy one another. This communal approach gave the \"NOLA metal\" sound its distinctive, cohesive character."
+    }
+  ]
+}

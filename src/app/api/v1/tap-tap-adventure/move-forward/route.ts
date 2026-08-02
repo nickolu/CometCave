@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const parseResult = MoveForwardRequestSchema.safeParse(body)
     if (!parseResult.success) {
       return NextResponse.json(
-        { error: 'Invalid request', details: parseResult.error },
+        { error: 'Invalid request' },
         { status: 400 }
       ) // error object, not MoveForwardResponse
     }

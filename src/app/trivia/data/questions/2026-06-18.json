@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-18",
+  "categoryId": 15,
+  "categoryName": "Entertainment: Video Games",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-18-0",
+      "question": "In Pokemon Red & Blue, what is the name of HM05?",
+      "options": [
+        "Strength",
+        "Fly",
+        "Cut",
+        "Flash"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Flash"
+    },
+    {
+      "id": "opentdb-2026-06-18-1",
+      "question": "What's the Team Fortress 2 Scout's city of origin?",
+      "options": [
+        "Sydney",
+        "Detroit",
+        "New York",
+        "Boston"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Boston"
+    },
+    {
+      "id": "opentdb-2026-06-18-2",
+      "question": "In World of Warcraft's Mists of Pandaria expansion, What was the level cap?",
+      "options": [
+        "85",
+        "80",
+        "75",
+        "90"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "90"
+    },
+    {
+      "id": "opentdb-2026-06-18-3",
+      "question": "Killing Floor started as a mod for which Unreal Engine 2 game?",
+      "options": [
+        "Unreal Tournament 3",
+        "Postal",
+        "Deus Ex: Invisible War",
+        "Unreal Tournament 2004"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Unreal Tournament 2004"
+    },
+    {
+      "id": "opentdb-2026-06-18-4",
+      "question": "What Sims console game featured the Black Eyed Peas in the game?",
+      "options": [
+        "The Sims",
+        "The Sims: Bustin Out",
+        "The Sims 2",
+        "The Urbz: Sims In The City"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "The Urbz: Sims In The City"
+    },
+    {
+      "id": "opentdb-2026-06-18-5",
+      "question": "What was the name of Sonic the Hedgehog's original human girlfriend?",
+      "options": [
+        "Celeste",
+        "Nina",
+        "Sierra",
+        "Madonna"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "opentdb",
+      "correctAnswer": "Madonna"
+    },
+    {
+      "id": "ai-2026-06-18-6",
+      "question": "Which sports game was bundled with the Wii console at its 2006 launch?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Wii Sports",
+      "explanation": "Wii Sports launched alongside the Nintendo Wii in 2006 and became one of the best-selling video games of all time. It introduced motion controls to a mainstream audience through fun, accessible mini-games like tennis, bowling, and boxing. In many regions, it was packed in with the console, making it a defining part of the Wii experience."
+    },
+    {
+      "id": "ai-2026-06-18-7",
+      "question": "Which vehicular soccer video game is a well-known example of crossplay between consoles and PC?",
+      "difficulty": "easy",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Rocket League",
+      "explanation": "Rocket League, developed by Psyonix, is one of the most prominent examples of a game supporting crossplay across multiple platforms, including PlayStation, Xbox, Nintendo Switch, and PC. It became free-to-play in 2020 after Epic Games acquired Psyonix, further expanding its cross-platform player base. Its crossplay support helped popularize the feature across the gaming industry."
+    },
+    {
+      "id": "ai-2026-06-18-8",
+      "question": "What was the name of the light gun peripheral released by Nintendo for the SNES?",
+      "difficulty": "medium",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Super Scope",
+      "explanation": "The Super Scope was Nintendo's bazooka-style light gun accessory for the Super Nintendo Entertainment System, released in 1992. It was one of several console-specific light gun peripherals of its era, following in the footsteps of the NES Zapper. Despite its impressive design, it saw limited software support and required six AA batteries to power its infrared sensor."
+    },
+    {
+      "id": "ai-2026-06-18-9",
+      "question": "Which Nintendo development division, responsible for first-party titles, is internally organized into eleven distinct groups?",
+      "difficulty": "hard",
+      "category": "Entertainment: Video Games",
+      "source": "ai",
+      "correctAnswer": "Nintendo EPD",
+      "explanation": "Nintendo EPD (Entertainment Planning & Development) was formed in 2015 through the merger of Nintendo EAD and Nintendo SPD. It is Nintendo's primary internal studio for developing flagship first-party games and is uniquely structured into eleven separate production groups, each handling different projects and franchises."
+    }
+  ]
+}

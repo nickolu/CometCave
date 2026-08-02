@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-23",
+  "categoryId": 20,
+  "categoryName": "Mythology",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-23-0",
+      "question": "Who was the King of Gods in Ancient Greek mythology?",
+      "options": [
+        "Hermes",
+        "Poseidon",
+        "Apollo",
+        "Zeus"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Zeus"
+    },
+    {
+      "id": "opentdb-2026-06-23-1",
+      "question": "In Greek mythology, who is the god of wine?",
+      "options": [
+        "Demeter",
+        "Apollo",
+        "Hephaestus",
+        "Dionysus"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Dionysus"
+    },
+    {
+      "id": "opentdb-2026-06-23-2",
+      "question": "What mythology did the god \"Apollo\" come from?",
+      "options": [
+        "Roman and Spanish",
+        "Greek, Roman and Norse",
+        "Greek and Chinese",
+        "Greek and Roman"
+      ],
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Greek and Roman"
+    },
+    {
+      "id": "opentdb-2026-06-23-3",
+      "question": "The Norse god Odin has two pet crows named \"Huginn\" and \"Muninn\".  What do their names mean?",
+      "options": [
+        "Power & Peace",
+        "War & Learning",
+        "Sleeping & Waking",
+        "Thought & Memory"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Thought & Memory"
+    },
+    {
+      "id": "opentdb-2026-06-23-4",
+      "question": "In African mythology, Anansi is a trickster and storyteller who takes the shape of which animal?",
+      "options": [
+        "Wild dog",
+        "Crocodile",
+        "Monkey",
+        "Spider"
+      ],
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Spider"
+    },
+    {
+      "id": "opentdb-2026-06-23-5",
+      "question": "Who did Hippomenes defeat in a footrace?",
+      "options": [
+        "Theseus",
+        "Jason",
+        "Peleus",
+        "Atalanta"
+      ],
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "opentdb",
+      "correctAnswer": "Atalanta"
+    },
+    {
+      "id": "ai-2026-06-23-6",
+      "question": "In the myth of Pandora's box, which one thing remained inside the container after all the evils escaped?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Hope",
+      "explanation": "In the Greek myth, Pandora opens a container (often depicted as a box or jar) releasing all manner of evils into the world, but Hope remains trapped inside. This detail is often interpreted as a bittersweet gift — humanity suffers misfortune, yet always retains the capacity for hope. The story comes from Hesiod's \"Works and Days.\""
+    },
+    {
+      "id": "ai-2026-06-23-7",
+      "question": "In Egyptian mythology, which god ruled over the afterlife, agriculture, and resurrection?",
+      "difficulty": "easy",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Osiris",
+      "explanation": "Osiris was one of the most important gods in ancient Egyptian religion, serving as the deity of fertility, agriculture, the afterlife, the dead, resurrection, life, and vegetation. He was often depicted as a green-skinned god with a pharaoh's beard, symbolizing rebirth and eternal life. His myth, involving his murder by Set and resurrection by Isis, became central to Egyptian beliefs about death and the afterlife."
+    },
+    {
+      "id": "ai-2026-06-23-8",
+      "question": "In Greek mythology, what did Perseus wield as a weapon that could turn onlookers to stone?",
+      "difficulty": "medium",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Medusa's head",
+      "explanation": "After slaying Medusa, Perseus kept her severed head and used it strategically in battle, as anyone who gazed upon it was instantly petrified. He famously used it against the sea monster Cetus to rescue Andromeda, and later against his enemy Polydectes. The head was eventually given to Athena, who placed it on her aegis."
+    },
+    {
+      "id": "ai-2026-06-23-9",
+      "question": "In Norse mythology, which creature serves as the sole messenger between the eagle atop Yggdrasil and the serpent Níðhöggr gnawing at its roots?",
+      "difficulty": "hard",
+      "category": "Mythology",
+      "source": "ai",
+      "correctAnswer": "Ratatoskr",
+      "explanation": "Ratatoskr is a squirrel in Norse mythology who endlessly scurries up and down the world-tree Yggdrasil, carrying messages — often described as insults and provocations — between the unnamed eagle perched at the crown and the dragon/serpent Níðhöggr below. Some scholars interpret Ratatoskr's role as deliberately stirring conflict between the two, keeping cosmic tensions alive. The name is often translated as \"drill-tooth\" or \"gnaw-tooth\" in Old Norse."
+    }
+  ]
+}

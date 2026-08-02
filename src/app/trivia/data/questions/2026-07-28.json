@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-28",
+  "categoryId": 31,
+  "categoryName": "Entertainment: Japanese Anime & Manga",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-28-0",
+      "question": "What is the name of the stuffed lion in Bleach?",
+      "options": [
+        "Urdiu",
+        "Chad",
+        "Jo",
+        "Kon"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Kon"
+    },
+    {
+      "id": "opentdb-2026-07-28-1",
+      "question": "In \"The Melancholy of Haruhi Suzumiya\" series, the SOS Brigade club leader is unknowingly treated as a(n) __ by her peers.",
+      "options": [
+        "Alien",
+        "Time Traveler",
+        "Esper",
+        "God"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "God"
+    },
+    {
+      "id": "opentdb-2026-07-28-2",
+      "question": "What year did \"Attack on Titan\" first air?",
+      "options": [
+        "2014",
+        "2012",
+        "2015",
+        "2013"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "2013"
+    },
+    {
+      "id": "opentdb-2026-07-28-3",
+      "question": "What is the name of the protagonist of the 2017 anime \"Land of the Lustrous\"?",
+      "options": [
+        "Watermelon Tourmaline",
+        "Padparadscha",
+        "Cinnabar",
+        "Phosphophyllite"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Phosphophyllite"
+    },
+    {
+      "id": "opentdb-2026-07-28-4",
+      "question": "In \"Toriko\", which of the following foods is knowingly compatible with Toriko?",
+      "options": [
+        "Alpacookie",
+        "Parmesansho Fruit",
+        "Mors Oil",
+        "Poison Potato"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Poison Potato"
+    },
+    {
+      "id": "opentdb-2026-07-28-5",
+      "question": "Which animation studio animated \"Hidamari Sketch\"?",
+      "options": [
+        "Trigger",
+        "Kyoto Animation",
+        "Production I.G",
+        "Shaft"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "opentdb",
+      "correctAnswer": "Shaft"
+    },
+    {
+      "id": "ai-2026-07-28-6",
+      "question": "Which iconic 1988 anime film was based on Katsuhiro Otomo's manga of the same name?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Akira",
+      "explanation": "AKIRA (1988), directed by Katsuhiro Otomo himself, was adapted from his serialized manga that ran in Young Magazine from 1982 to 1990. The film is widely regarded as a landmark in anime history, helping to bring Japanese animation to international audiences. Its cyberpunk setting in a dystopian Neo-Tokyo remains hugely influential in both anime and Western science fiction."
+    },
+    {
+      "id": "ai-2026-07-28-7",
+      "question": "Which shonen anime series featuring Goku and his allies is widely considered one of the most popular in the world?",
+      "difficulty": "easy",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Dragon Ball",
+      "explanation": "Dragon Ball, created by Akira Toriyama, is one of the most iconic and beloved shonen anime franchises ever made. It follows Goku from childhood through epic battles against increasingly powerful foes, inspiring countless other anime and manga series. Its influence on the genre is so profound that many creators cite it as a primary inspiration."
+    },
+    {
+      "id": "ai-2026-07-28-8",
+      "question": "Before being renamed Production I.G, what was the original name of the anime studio formed from the initials of its founders and the name of studio Tatsunoko?",
+      "difficulty": "medium",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "I.G Tatsunoko",
+      "explanation": "Production I.G was originally founded as I.G Tatsunoko, a joint venture name combining the initials of founders Mitsuhisa Ishikawa and Takayuki Goto with their parent studio, Tatsunoko Production. The studio later rebranded to Production I.G, under which it became renowned for works like Ghost in the Shell and the animated sequences in Kill Bill."
+    },
+    {
+      "id": "ai-2026-07-28-9",
+      "question": "Studio Trigger's debut original short film in 2013, which later spawned a sequel called The Enchanted Parade and a full TV anime series, was the studio's production of which magical-school franchise?",
+      "difficulty": "hard",
+      "category": "Entertainment: Japanese Anime & Manga",
+      "source": "ai",
+      "correctAnswer": "Little Witch Academia",
+      "explanation": "Little Witch Academia began as a short film produced by Studio Trigger in 2013 as part of the Anime Mirai project, showcasing a young witch named Atsuko \"Akko\" Kagari at a magical academy. Its popularity led to a crowdfunded sequel, The Enchanted Parade (2015), and eventually a full 25-episode TV anime series in 2017. It remains one of Studio Trigger's most beloved original properties."
+    }
+  ]
+}
