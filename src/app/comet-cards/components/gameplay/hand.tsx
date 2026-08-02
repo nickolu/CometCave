@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 import { AnimatePresence, motion } from 'framer-motion'
 
@@ -83,10 +83,24 @@ export const Hand = ({ sortKey = 'value' }: { sortKey?: HandSortKey } = {}) => {
 
   const containerRef = useRef<HTMLDivElement>(null)
   const focusedIndexRef = useRef(0)
+  const prevLengthRef = useRef(sortedCards.length)
 
   if (focusedIndexRef.current >= sortedCards.length) {
     focusedIndexRef.current = Math.max(0, sortedCards.length - 1)
   }
+
+  useEffect(() => {
+    const prevLength = prevLengthRef.current
+    prevLengthRef.current = sortedCards.length
+    if (sortedCards.length >= prevLength || sortedCards.length === 0) return
+    const timer = setTimeout(() => {
+      const container = containerRef.current
+      if (!container) return
+      const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>('button.bc-card'))
+      buttons[focusedIndexRef.current]?.focus()
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [sortedCards.length])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
