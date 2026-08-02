@@ -282,4 +282,14 @@ export interface WorldState {
   natives: string[]
   /** Next world-clock time at which repopulation may fire. */
   nextSeedRain: number
+  /** Next world-clock time at which the ground may seed native plants. */
+  nextPlantSeed: number
+  /**
+   * True while the player has deliberately emptied the world.
+   *
+   * Native plants otherwise grow back out of the soil forever, which would make
+   * Empty impossible to hold on any world that has ground in it. Anything
+   * generative — painting, placing, summoning, changing theme — wakes it again.
+   */
+  dormant: boolean
 }
