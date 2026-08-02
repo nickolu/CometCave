@@ -376,6 +376,10 @@ async function hydrateNicknames(uids: string[]): Promise<Map<string, string>> {
   return map
 }
 
+function isCustomRun(run: RunDoc): boolean {
+  return typeof run.customCategory === 'string' && run.customCategory.length > 0
+}
+
 // Keeps only the first entry per uid. Inputs must already be sorted so that
 // each player's best run appears before their lesser ones.
 function dedupeByUid<T extends { uid: string }>(entries: T[]): T[] {
@@ -416,7 +420,7 @@ export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderb
       categoryFilters: run.categoryFilters ?? [],
       customCategory: run.customCategory ?? null,
     }
-  })
+  }).filter(e => !e.customCategory)
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
   return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
     .slice(0, limit)
@@ -448,7 +452,73 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
       categoryFilters: run.categoryFilters ?? [],
       customCategory: run.customCategory ?? null,
     }
-  })
+  }).filter(e => !e.customCategory)
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
+    .slice(0, limit)
+    .map((e) => ({
+      ...e,
+      displayName: nicknames.get(e.uid) as string,
+    }))
+}
+
+export async function getCustomTopByScore(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('score', 'desc')
+    .limit(limit * 20)  // overfetch more since custom runs are sparse
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return {
+      uid,
+      score: run.score,
+      longestStreak: run.longestStreak,
+      questionsAnswered: run.answers?.length ?? 0,
+      date: run.endedAt,
+      categoryFilters: run.categoryFilters ?? [],
+      customCategory: run.customCategory ?? null,
+    }
+  }).filter(e => e.customCategory)  // only custom runs
+
+  const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
+  return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
+    .slice(0, limit)
+    .map((e) => ({
+      ...e,
+      displayName: nicknames.get(e.uid) as string,
+    }))
+}
+
+export async function getCustomTopByStreak(limit = 20): Promise<InfiniteLeaderboardEntry[]> {
+  const db = getFirestoreDb()
+  const snap = await db
+    .collectionGroup('triviaInfinite')
+    .where('mode', '==', 'scored')
+    .where('endedAt', '!=', null)
+    .orderBy('longestStreak', 'desc')
+    .limit(limit * 20)
+    .get()
+
+  const entries = snap.docs.map((d) => {
+    const run = d.data() as RunDoc
+    const uid = d.ref.parent.parent?.id ?? ''
+    return {
+      uid,
+      score: run.score,
+      longestStreak: run.longestStreak,
+      questionsAnswered: run.answers?.length ?? 0,
+      date: run.endedAt,
+      categoryFilters: run.categoryFilters ?? [],
+      customCategory: run.customCategory ?? null,
+    }
+  }).filter(e => e.customCategory)  // only custom runs
+
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
   return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
     .slice(0, limit)
