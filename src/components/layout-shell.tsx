@@ -6,6 +6,7 @@ import type { ReactNode } from 'react'
 
 const IMMERSIVE_ROUTES = [
   ROUTE_CONSTANTS.COMET_CARDS,
+  ROUTE_CONSTANTS.MICRO_LAND,
   `${ROUTE_CONSTANTS.SPECK_WARS}/play`,
   `${ROUTE_CONSTANTS.SPECK_WARS}/skirmish`,
 ]
