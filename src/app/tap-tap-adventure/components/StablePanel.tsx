@@ -145,7 +145,7 @@ export function StablePanel({ character, onClose }: StablePanelProps) {
     <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
       <div className="flex justify-between items-center">
         <span className="text-sm font-bold text-amber-400">Town Stable</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose}>x</button>
+        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close stable">x</button>
       </div>
 
       <div className="text-[10px] text-slate-400">
