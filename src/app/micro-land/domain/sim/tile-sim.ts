@@ -7,8 +7,10 @@
  * that just fell from being processed again in the same pass (which would make
  * everything drop at light speed).
  *
- * Scan direction alternates each pass — without that, liquids visibly drift
- * left forever.
+ * Scan direction alternates each pass — without that, powders visibly drift
+ * left forever. Liquids used to take their direction from the same alternation
+ * and it turned out to be why they piled into mounds instead of levelling; they
+ * now pick a side per tile instead. See `stepLiquid`.
  */
 import {
   IS_ACID_PROOF,
@@ -24,7 +26,6 @@ import type { WorldState } from '@/app/micro-land/domain/types'
 const AIR = MATERIAL_INDEX.air
 const WATER = MATERIAL_INDEX.water
 const LAVA = MATERIAL_INDEX.lava
-const STONE = MATERIAL_INDEX.stone
 const OBSIDIAN = MATERIAL_INDEX.obsidian
 const ACID = MATERIAL_INDEX.acid
 const SAP = MATERIAL_INDEX.sap
@@ -43,8 +44,29 @@ const ACID_BITE = 0.22
 /** Reused across passes — the grid never changes size. */
 const moved = new Uint8Array(WORLD_W * WORLD_H)
 
-/** How far a liquid can slide sideways in one pass looking for a way down. */
-const FLOW_REACH = 4
+/**
+ * How far along its own row a liquid looks for ground that sits lower than the
+ * ground it is on.
+ *
+ * This is the number that decides how flat a body of liquid ends up, because a
+ * slope it cannot see across is a slope it never drains: whatever this is set
+ * to, a surface can come to rest holding a one-tile step every `FLOW_SEARCH`
+ * columns. At 32 the residual tilt across a whole pond is under a pixel of
+ * screen. Only tiles with air beside them ever get this far — anything with
+ * liquid on both sides stops on the first cell — so the cost is per column of
+ * shoreline, not per tile of water.
+ */
+const FLOW_SEARCH = 32
+
+/**
+ * How far it may actually travel in one pass, however far it looked.
+ *
+ * Searching far and moving far are different things: 32 tiles in one 20 Hz step
+ * is a jump cut, and a stream reads as flowing only if you can watch it get
+ * there. It always moves *towards* somewhere it can fall, so a partial step
+ * leaves the destination nearer than before and the next pass carries on.
+ */
+const FLOW_STEP = 8
 
 export function tickTiles(w: WorldState): void {
   moved.fill(0)
@@ -98,7 +120,7 @@ export function tickTiles(w: WorldState): void {
       if (isPowder) {
         stepPowder(tiles, x, y, at, leftToRight)
       } else {
-        stepLiquid(tiles, x, y, at, mat, leftToRight)
+        stepLiquid(tiles, x, y, at, mat, phase)
       }
     }
   }
@@ -162,13 +184,43 @@ function stepPowder(
   }
 }
 
+/**
+ * Distance to the nearest cell this way whose own floor sits lower than ours —
+ * somewhere this tile could fall from — or 0 if there is none within reach.
+ * Stops at the first thing that isn't air, so liquid never flows through a wall
+ * to reach a hole behind it.
+ *
+ * `tiles[nx, y + 1] === AIR` is doing more work than it looks. Read as a
+ * question about surfaces it says "is the surface over there at least two tiles
+ * below the one I am standing on", and that threshold of two is the whole
+ * reason liquid ever comes to rest. Moving a tile onto a surface exactly one
+ * lower would only swap which of the two is higher, so a rule that accepted it
+ * would leave every surface tile with somewhere to go forever, and a puddle
+ * would random-walk out into a dotted line of loose pixels instead of sitting
+ * there being a puddle.
+ *
+ * Comparing surfaces rather than depths is also what lets a pond with a lumpy
+ * floor come out flat on top: it is the top of the water that has to level, not
+ * the amount of it stacked over each part of the bed.
+ */
+function seekDrop(tiles: Uint8Array, x: number, y: number, dir: number): number {
+  if (y + 1 >= WORLD_H) return 0
+  for (let step = 1; step <= FLOW_SEARCH; step++) {
+    const nx = x + dir * step
+    if (nx < 0 || nx >= WORLD_W) return 0
+    if (tiles[cell(nx, y)] !== AIR) return 0
+    if (tiles[cell(nx, y + 1)] === AIR) return step
+  }
+  return 0
+}
+
 function stepLiquid(
   tiles: Uint8Array,
   x: number,
   y: number,
   at: number,
   mat: number,
-  leftToRight: boolean
+  phase: number
 ): void {
   if (y + 1 < WORLD_H) {
     const below = cell(x, y + 1)
@@ -183,7 +235,17 @@ function stepLiquid(
     }
   }
 
-  const first = leftToRight ? -1 : 1
+  /**
+   * Which way this tile leans when both sides are equally good.
+   *
+   * This used to be the pass's scan direction, which meant every liquid tile in
+   * the world leaned the same way on one pass and all of them leaned back on
+   * the next. A pile would rock symmetrically in place forever — hundreds of
+   * tiles moving every pass, the shape never changing. Hashing the tile makes
+   * neighbours disagree, so a slope drains instead of sloshing.
+   */
+  const first = hash3(x, y, phase) < 0.5 ? -1 : 1
+
   for (const dir of [first, -first]) {
     const nx = x + dir
     if (nx < 0 || nx >= WORLD_W || y + 1 >= WORLD_H) continue
@@ -194,22 +256,26 @@ function stepLiquid(
     }
   }
 
-  // Can't go down anywhere — spread sideways so the surface levels out. Reach
-  // further than one tile per pass or puddles take forever to settle.
-  for (const dir of [first, -first]) {
-    for (let step = 1; step <= FLOW_REACH; step++) {
-      const nx = x + dir * step
-      if (nx < 0 || nx >= WORLD_W) break
-      const side = cell(nx, y)
-      if (tiles[side] !== AIR) break
-      // Prefer a spot that has somewhere to fall from.
-      const under = y + 1 < WORLD_H ? tiles[cell(nx, y + 1)] : STONE
-      if (under === AIR || step === FLOW_REACH) {
-        swap(tiles, at, side)
-        return
-      }
-    }
+  // Can't fall from here, so run along the surface towards somewhere that can,
+  // taking the nearer of the two sides.
+  //
+  // The old rule hopped a fixed distance sideways whether or not the landing
+  // spot was any lower, and that is what built the mounds: it left the tile
+  // standing on top of the pile it came from, exactly one tile beyond the reach
+  // of the real drop-off, so every level of the pile grew a terrace that held
+  // the water above it up. Moving only towards lower ground cannot do that.
+  const near = seekDrop(tiles, x, y, first)
+  const far = seekDrop(tiles, x, y, -first)
+  if (near > 0 && (far === 0 || near <= far)) {
+    swap(tiles, at, cell(x + first * Math.min(near, FLOW_STEP), y))
+    return
   }
+  if (far > 0) {
+    swap(tiles, at, cell(x - first * Math.min(far, FLOW_STEP), y))
+  }
+  // Nothing lower in either direction: this surface is already level, so the
+  // tile stays exactly where it is. Liquid that has finished settling stops
+  // moving, which is what keeps a pond looking like a pond.
 }
 
 /** Lava touching water: lava sets to obsidian, the water boils away. */
