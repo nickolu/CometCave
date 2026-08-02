@@ -47,7 +47,7 @@ function bp(over: {
       buoyancy: 0.8,
       immuneTo: (over.immuneTo ?? []) as CreatureBlueprint['body']['immuneTo'],
     },
-    move: { kind: over.kind ?? 'walk', speed: 3, jump: 0, restlessness: 0.2 },
+    move: { kind: over.kind ?? 'walk', speed: 3, jump: 0, hop: 0, restlessness: 0.2 },
     diet: {
       eats: [],
       fears: [],

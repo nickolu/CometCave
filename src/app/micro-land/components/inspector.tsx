@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { canEat } from '@/app/micro-land/domain/blueprint'
+import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
@@ -32,6 +33,12 @@ const KIND_TEXT: Record<string, string> = {
   crawl: 'Climbs walls and ceilings',
   drift: 'Floats along',
   root: 'Rooted to the spot',
+}
+
+/** A springy walker is a hopper first — it is the thing you notice about it. */
+function moveText(bp: CreatureBlueprint): string {
+  if (bp.move.kind === 'walk' && bp.move.hop >= 0.25) return 'Hops along the ground'
+  return KIND_TEXT[bp.move.kind] ?? bp.move.kind
 }
 
 function Meter({
@@ -306,7 +313,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.55 }}>
-          {KIND_TEXT[bp.move.kind] ?? bp.move.kind}
+          {moveText(bp)}
           {bp.body.immuneTo.length > 0 && ' · fireproof'}
           {bp.glow > 0 && ' · glows'}
           {inspected.inWater && ' · in water'}
