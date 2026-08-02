@@ -690,3 +690,16 @@ export function bodyBox(bp: CreatureBlueprint): BodyBox {
   bodyBoxCache.set(bp.id, box)
   return box
 }
+
+/**
+ * Forget one creature's collision box, because its art changed under its id.
+ *
+ * Same broken assumption as the sprite cache, with worse consequences. A stale
+ * sprite is a creature that looks wrong; a stale body box is a creature that is
+ * *drawn* at its new size while terrain collision, drowning and spawn-fitting
+ * all still answer for the old one — so a hand-drawn wing gets to overlap solid
+ * rock, and shrinking a creature leaves it wedged in a hole it no longer fills.
+ */
+export function forgetBodyBox(id: string): void {
+  bodyBoxCache.delete(id)
+}
