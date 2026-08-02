@@ -38,6 +38,8 @@ export function HUD() {
   const [longPressRing, setLongPressRing] = useState<{ x: number; y: number } | null>(null)
   const [tapRippleState, setTapRippleState] = useState<{ x: number; y: number; key: number } | null>(null)
   const tapRippleKeyRef = useRef(0)
+  const minimapIsDraggingRef = useRef(false)
+  const minimapDidDragRef = useRef(false)
   const isTouchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -456,8 +458,25 @@ export function HUD() {
               </button>
             )}
             <svg width={MINIMAP_SIZE} height={MINIMAP_SIZE} style={{ display: 'block' }}
-              aria-label="Minimap — click to set rally point"
+              aria-label="Minimap — click or drag to pan camera"
+              onMouseDown={() => {
+                minimapIsDraggingRef.current = true
+                minimapDidDragRef.current = false
+              }}
+              onMouseMove={(e) => {
+                if (!minimapIsDraggingRef.current || !gameActions?.panCamera) return
+                minimapDidDragRef.current = true
+                const rect = e.currentTarget.getBoundingClientRect()
+                const px = e.clientX - rect.left
+                const py = e.clientY - rect.top
+                const worldX = (px / MINIMAP_SIZE) * 3000
+                const worldY = (py / MINIMAP_SIZE) * 3000
+                gameActions.panCamera(worldX, worldY)
+              }}
+              onMouseUp={() => { minimapIsDraggingRef.current = false }}
+              onMouseLeave={() => { minimapIsDraggingRef.current = false }}
               onClick={(e) => {
+                if (minimapDidDragRef.current) return  // suppress click after drag
                 const rect = e.currentTarget.getBoundingClientRect()
                 const px = e.clientX - rect.left
                 const py = e.clientY - rect.top
@@ -474,24 +493,13 @@ export function HUD() {
                   gameActions?.selectBuilding?.(nearBuilding.id)
                   return
                 }
-                if (!gameActions?.commandAt) return
-                const worldX = (px / MINIMAP_SIZE) * 3000
-                const worldY = (py / MINIMAP_SIZE) * 3000
-                // Same meaning as a click on the world: rally the selected building's production,
-                // or move the current selection. Never commands specks that weren't selected.
-                gameActions.commandAt(worldX, worldY)
-                if (minimapExpanded) setMinimapExpanded(false)
-              }}
-              onContextMenu={(e) => {
-                e.preventDefault()
                 if (!gameActions?.panCamera) return
-                const rect = e.currentTarget.getBoundingClientRect()
-                const px = e.clientX - rect.left
-                const py = e.clientY - rect.top
                 const worldX = (px / MINIMAP_SIZE) * 3000
                 const worldY = (py / MINIMAP_SIZE) * 3000
                 gameActions.panCamera(worldX, worldY)
+                if (minimapExpanded) setMinimapExpanded(false)
               }}
+              onContextMenu={(e) => { e.preventDefault() }}
               onTouchEnd={(e) => {
                 e.preventDefault()
                 if (!gameActions?.panCamera) return
@@ -919,7 +927,7 @@ export function HUD() {
               <span>S — stop · H — hold position</span><span>C — center on base</span>
               <span>N — advance (repeat within 3s to cycle) · D — defend base</span><span>B — rush enemy base</span>
               <span>V — snap to recent kills</span><span>1/2/3 — set spawn type (click building first)</span>
-              <span>Minimap — left-click to rally</span><span>X — cycle speed (1×/2×/4×)</span>
+              <span>Minimap — click/drag to pan</span><span>X — cycle speed (1×/2×/4×)</span>
               <span>? — this help</span><span>G — guard: rally to nearest friendly outpost</span>
               <span style={{ color: 'rgba(160,220,255,0.7)', gridColumn: '1/-1' }}>Base regen: 0.5 HP/s · Outpost regen: 2 HP/s (when not under attack)</span>
               <span style={{ gridColumn: '1/-1', borderTop: '1px solid rgba(255,255,255,0.08)', paddingTop: 8, marginTop: 2, color: 'rgba(255,215,0,0.5)', fontSize: 11 }}>
