@@ -1412,7 +1412,7 @@ export const useGameStore = create<GameStore>()(
 
             // Record run history for retirement
             const retirementEntry: RunHistoryEntry = {
-              id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+              id: crypto.randomUUID(),
               characterName: characterSnapshot.name,
               characterClass: characterSnapshot.class,
               level: characterSnapshot.level,
