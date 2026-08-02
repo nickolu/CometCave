@@ -59,12 +59,13 @@ export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (re
 
   // Fetch questions on mount
   useEffect(() => {
+    const controller = new AbortController()
     async function fetchQuestions() {
       try {
         const url = gameDate === getTodayPST()
           ? '/api/v1/trivia/daily'
           : `/api/v1/trivia/daily?date=${gameDate}`
-        const res = await fetch(url)
+        const res = await fetch(url, { signal: controller.signal })
         if (!res.ok) throw new Error('Failed to fetch questions')
         const data = await res.json()
         setQuestions(data.questions)
@@ -75,10 +76,12 @@ export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (re
           setPhase('playing')
         }
       } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') return
         setError('Failed to load questions. Please try again.')
       }
     }
     fetchQuestions()
+    return () => controller.abort()
   }, [gameDate])
 
   // Timer logic
