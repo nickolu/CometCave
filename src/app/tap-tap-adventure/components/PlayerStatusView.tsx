@@ -206,7 +206,7 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Character status">
       {/* Fixed header with close button */}
       <div className="shrink-0 bg-[#1a1b2e] border-b border-slate-700/50 px-4 py-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-white">Character Status</h2>
