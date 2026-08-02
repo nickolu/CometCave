@@ -351,6 +351,8 @@ export interface InfiniteLeaderboardEntry {
   longestStreak: number
   questionsAnswered: number
   date: FirebaseFirestore.Timestamp | null
+  categoryFilters: number[]
+  customCategory: string | null
 }
 
 // Drops anonymous players (CLAUDE.md "Anonymous-first, sign-up as reward":
@@ -405,7 +407,15 @@ export async function getInfiniteTopByScore(limit = 20): Promise<InfiniteLeaderb
   const entries = snap.docs.map((d) => {
     const run = d.data() as RunDoc
     const uid = d.ref.parent.parent?.id ?? ''
-    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+    return {
+      uid,
+      score: run.score,
+      longestStreak: run.longestStreak,
+      questionsAnswered: run.answers?.length ?? 0,
+      date: run.endedAt,
+      categoryFilters: run.categoryFilters ?? [],
+      customCategory: run.customCategory ?? null,
+    }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
   return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
@@ -429,7 +439,15 @@ export async function getInfiniteTopByStreak(limit = 20): Promise<InfiniteLeader
   const entries = snap.docs.map((d) => {
     const run = d.data() as RunDoc
     const uid = d.ref.parent.parent?.id ?? ''
-    return { uid, score: run.score, longestStreak: run.longestStreak, questionsAnswered: run.answers?.length ?? 0, date: run.endedAt }
+    return {
+      uid,
+      score: run.score,
+      longestStreak: run.longestStreak,
+      questionsAnswered: run.answers?.length ?? 0,
+      date: run.endedAt,
+      categoryFilters: run.categoryFilters ?? [],
+      customCategory: run.customCategory ?? null,
+    }
   })
   const nicknames = await hydrateNicknames(entries.map((e) => e.uid))
   return dedupeByUid(entries.filter((e) => !!nicknames.get(e.uid)))
