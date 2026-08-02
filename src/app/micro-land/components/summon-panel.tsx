@@ -32,6 +32,27 @@ const TERRAIN_IDEAS = [
   'a swamp full of little pools',
 ]
 
+/** Creatures allowed in flight at once. */
+const MAX_PENDING = 3
+
+async function requestGenerate(
+  mode: 'creature' | 'scene' | 'terrain',
+  prompt: string,
+  signal: AbortSignal
+) {
+  const response = await fetch('/api/v1/micro-land/summon', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode, prompt }),
+    signal,
+  })
+  if (!response.ok) {
+    const detail = (await response.json().catch(() => null)) as { error?: string } | null
+    throw new Error(detail?.error ?? 'That did not come through. Try again.')
+  }
+  return response.json()
+}
+
 type Introduce = (
   raw: unknown,
   count: number
@@ -59,16 +80,38 @@ export function SummonPanel({
   const setError = useMicroLand(s => s.setSummonError)
   const setTool = useMicroLand(s => s.setTool)
   const notify = useMicroLand(s => s.notify)
+  const pending = useMicroLand(s => s.pendingSummons)
+  const addPending = useMicroLand(s => s.addPendingSummon)
+  const removePending = useMicroLand(s => s.removePendingSummon)
 
   const [text, setText] = useState('')
   const [made, setMade] = useState<CreatureBlueprint[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
-  /** Live while a generation is in flight, so the player can call it off. */
+  /** Whatever opened the panel, so closing it hands focus back. */
+  const openerRef = useRef<HTMLElement | null>(null)
+  /** Live while a world-building generation is in flight, so it can be called off. */
   const abortRef = useRef<AbortController | null>(null)
+  /**
+   * Creatures the player has walked away from. They outlive the panel being
+   * closed — that's the point — so they get their own handles, and the modal's
+   * close and Escape paths never touch them.
+   */
+  const backgroundRef = useRef<Set<AbortController>>(new Set())
 
   useEffect(() => {
     if (open && !busy) inputRef.current?.focus()
   }, [open, busy])
+
+  // A creature closes the panel out from under the player, so keyboard focus
+  // has to go back where it came from rather than to the top of the page.
+  useEffect(() => {
+    if (open) {
+      openerRef.current = document.activeElement as HTMLElement | null
+      return
+    }
+    openerRef.current?.focus()
+    openerRef.current = null
+  }, [open])
 
   useEffect(() => {
     if (!open) return
@@ -83,15 +126,77 @@ export function SummonPanel({
 
   // Nothing is left half-applied by an abort: the world is only touched after
   // the response has fully arrived.
-  useEffect(() => () => abortRef.current?.abort(), [])
+  useEffect(() => {
+    const background = backgroundRef.current
+    return () => {
+      abortRef.current?.abort()
+      for (const controller of background) controller.abort()
+    }
+  }, [])
 
   if (!open) return null
 
   const ideas = mode === 'scene' ? SCENE_IDEAS : mode === 'terrain' ? TERRAIN_IDEAS : CREATURE_IDEAS
 
+  /**
+   * One creature, made without holding the game hostage.
+   *
+   * A world or a land replaces everything the player is looking at, so those
+   * are worth waiting on. A single creature isn't: it just turns up in the
+   * strip when it's ready. So the panel gets out of the way immediately, an
+   * empty slot carries the wait, and the player keeps digging.
+   */
+  function generateInBackground(prompt: string) {
+    const pendingId = addPending(prompt)
+    const controller = new AbortController()
+    backgroundRef.current.add(controller)
+
+    // If the player has picked up a different tool while waiting, leave it in
+    // their hand. `tool` only ever changes identity through setTool, so this is
+    // an exact "have they touched it since they asked".
+    const toolAtLaunch = useMicroLand.getState().tool
+
+    void (async () => {
+      try {
+        const data = await requestGenerate('creature', prompt, controller.signal)
+        const result = data.blueprint ? onIntroduce(data.blueprint, 5) : null
+        if (!result) {
+          notify('Nothing came through. Try describing it a different way.')
+          return
+        }
+        if (useMicroLand.getState().tool === toolAtLaunch) {
+          setTool({ kind: 'creature', blueprintId: result.blueprint.id })
+        }
+        notify(`${result.blueprint.name} joins the world.`)
+      } catch (err) {
+        // Leaving the page isn't a failure worth shouting about.
+        if (err instanceof DOMException && err.name === 'AbortError') return
+        notify(err instanceof Error ? err.message : 'That did not come through. Try again.')
+      } finally {
+        backgroundRef.current.delete(controller)
+        removePending(pendingId)
+      }
+    })()
+
+    setText('')
+    setError(null)
+    setMade([])
+    setOpen(false)
+    notify(`“${prompt}” is on its way. Keep playing — it turns up in the creature bar.`)
+  }
+
   async function generate() {
     const prompt = text.trim()
     if (prompt.length < 2 || busy) return
+
+    if (mode === 'creature') {
+      if (pending.length >= MAX_PENDING) {
+        setError('There are already some on their way. Wait for one to land.')
+        return
+      }
+      generateInBackground(prompt)
+      return
+    }
 
     setBusy(true)
     setError(null)
@@ -101,18 +206,7 @@ export function SummonPanel({
     abortRef.current = controller
 
     try {
-      const response = await fetch('/api/v1/micro-land/summon', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mode, prompt }),
-        signal: controller.signal,
-      })
-      if (!response.ok) {
-        const detail = (await response.json().catch(() => null)) as { error?: string } | null
-        throw new Error(detail?.error ?? 'That did not come through. Try again.')
-      }
-
-      const data = await response.json()
+      const data = await requestGenerate(mode, prompt, controller.signal)
       const created: CreatureBlueprint[] = []
 
       if (data.mode === 'terrain') {
@@ -147,12 +241,6 @@ export function SummonPanel({
           if (result) created.push(result.blueprint)
         }
         if (typeof data.note === 'string' && data.note) notify(data.note)
-      } else if (data.blueprint) {
-        const result = onIntroduce(data.blueprint, 5)
-        if (result) {
-          created.push(result.blueprint)
-          notify(`${result.blueprint.name} joins the world.`)
-        }
       }
 
       if (created.length === 0) {
@@ -263,7 +351,7 @@ export function SummonPanel({
 
             <p style={{ fontSize: 13, color: 'var(--cc-text-muted)', lineHeight: 1.5 }}>
               {mode === 'creature'
-                ? 'Describe something. It will be drawn, given a body, and dropped into the world.'
+                ? 'Describe something. It will be drawn, given a body, and dropped into the world. Keep playing while it is made — it turns up in the creature bar.'
                 : mode === 'terrain'
                   ? 'Describe a place. The ground, caves and water get rebuilt to match. Creatures already here are cleared out.'
                   : 'Describe a place with things living in it. You get the land AND the creatures, built to suit each other.'}
@@ -315,6 +403,14 @@ export function SummonPanel({
             {error && (
               <p style={{ fontSize: 13, color: 'var(--cc-pink)' }} role="alert">
                 {error}
+              </p>
+            )}
+
+            {pending.length > 0 && (
+              <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
+                {pending.length === 1
+                  ? 'One creature is still on its way.'
+                  : `${pending.length} creatures are still on their way.`}
               </p>
             )}
 
