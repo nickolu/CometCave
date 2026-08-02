@@ -9,7 +9,7 @@ import { getIsSpectralCardPlayable } from '@/app/comet-cards/domain/shop/utils'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { Button } from '@/components/ui/button'
-import { motion, useReducedMotion } from 'framer-motion'
+import { type Variants, motion, useReducedMotion } from 'framer-motion'
 import { useEffect } from 'react'
 
 const containerVariants = {
@@ -17,7 +17,7 @@ const containerVariants = {
   visible: { transition: { staggerChildren: 0.1 } },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 24, scale: 0.85 },
   visible: {
     opacity: 1,

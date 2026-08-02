@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 
-import { motion, useReducedMotion } from 'framer-motion'
+import { type Variants, motion, useReducedMotion } from 'framer-motion'
 
 import { BlindCard } from '@/app/comet-cards/components/blind-selection/blind-card'
 import {
@@ -24,7 +24,7 @@ const containerVariants = {
   visible: { transition: { staggerChildren: 0.08 } },
 }
 
-const itemVariants = {
+const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20, scale: 0.95 },
   visible: {
     opacity: 1,
