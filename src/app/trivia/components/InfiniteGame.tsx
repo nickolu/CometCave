@@ -112,16 +112,18 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   // Detect streak bonus life — compare lives before and after answering.
   // Skip when a flag bonus just granted the extra life (flagBonusRef).
   useEffect(() => {
+    let t: ReturnType<typeof setTimeout> | undefined
     if (state.phase === 'answered' && state.lastAnswer?.correct && prevLivesRef.current !== null) {
       if (state.livesRemaining > prevLivesRef.current && !flagBonusRef.current) {
         setBonusLifeToast(`🔥 ${state.lastAnswer.currentStreak}-streak! +1 Bonus Life`)
-        setTimeout(() => setBonusLifeToast(null), 3000)
+        t = setTimeout(() => setBonusLifeToast(null), 3000)
       }
       flagBonusRef.current = false
     }
     if (state.phase === 'playing' || state.phase === 'answered') {
       prevLivesRef.current = state.livesRemaining
     }
+    return () => clearTimeout(t)
   }, [state.phase, state.livesRemaining, state.lastAnswer])
 
   // Show medal toast when an answer crosses a tier line. Track the question
@@ -140,7 +142,8 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
       : earned.tier === 'platinum' ? '🏅'
       : '💎'
     setMedalToast(`${tierEmoji} ${earned.label} — ${earned.categoryName}`)
-    setTimeout(() => setMedalToast(null), 4000)
+    const t = setTimeout(() => setMedalToast(null), 4000)
+    return () => clearTimeout(t)
   }, [state.phase, state.lastAnswer, state.answers])
 
   const handlePlayAgain = useCallback(() => {
