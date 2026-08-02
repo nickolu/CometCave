@@ -85,7 +85,7 @@ export function SecretWordChat({
             ))
           )}
           <div ref={messagesEndRef} />
-          {_isAIThinking && <p className="text-center text-on-surface-variant text-sm">AI is thinking</p>}
+          {isAIThinking && <p className="text-center text-on-surface-variant text-sm">AI is thinking</p>}
         </div>
       </div>
 
