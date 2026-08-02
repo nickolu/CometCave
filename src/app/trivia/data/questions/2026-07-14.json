@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-14",
+  "categoryId": 17,
+  "categoryName": "Science & Nature",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-14-0",
+      "question": "What is the primary addictive substance found in tobacco?",
+      "options": [
+        "Ephedrine",
+        "Glaucine",
+        "Cathinone",
+        "Nicotine"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Nicotine"
+    },
+    {
+      "id": "opentdb-2026-07-14-1",
+      "question": "What is the speed of light in a vacuum?",
+      "options": [
+        "308,215,043 m/s",
+        "751,665,014,151 m/s",
+        "50,461 m/s",
+        "299,792,458 m/s"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "299,792,458 m/s"
+    },
+    {
+      "id": "opentdb-2026-07-14-2",
+      "question": " What is the chemical symbol for Helium?",
+      "options": [
+        "H",
+        "Hs",
+        "Hg",
+        "He"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "He"
+    },
+    {
+      "id": "opentdb-2026-07-14-3",
+      "question": "Where did the dog breed \"Chihuahua\" originate?",
+      "options": [
+        "Spain",
+        "Russia",
+        "France",
+        "Mexico"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Mexico"
+    },
+    {
+      "id": "opentdb-2026-07-14-4",
+      "question": "What is the atomic number of the element Strontium?",
+      "options": [
+        "73",
+        "47",
+        "11",
+        "38"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "38"
+    },
+    {
+      "id": "opentdb-2026-07-14-5",
+      "question": "In physics, conservation of energy and conservation of momentum are both consequences of which of the following?",
+      "options": [
+        "Bell's Theorem",
+        "Wick's Theorem",
+        "Carnot's Theorem",
+        "Noether's Theorem"
+      ],
+      "difficulty": "hard",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Noether's Theorem"
+    },
+    {
+      "id": "ai-2026-07-14-6",
+      "question": "Which prestigious science award is given annually in the field of Physiology or Medicine?",
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Nobel Prize",
+      "explanation": "The Nobel Prize in Physiology or Medicine is one of the five original prizes established in Alfred Nobel's will, first awarded in 1901. It recognizes groundbreaking discoveries in life sciences and medicine, with past winners including Alexander Fleming for penicillin and James Watson and Francis Crick for the structure of DNA."
+    },
+    {
+      "id": "ai-2026-07-14-7",
+      "question": "According to which scientific theory are cells the basic units of all living tissues?",
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "cell theory",
+      "explanation": "Cell theory is one of the foundational principles of biology, establishing that all living things are made of cells and that cells are the basic structural and functional units of life. It was developed in the 19th century, largely through the work of scientists like Matthias Schleiden, Theodor Schwann, and Rudolf Virchow. A third key tenet states that all cells arise from pre-existing cells."
+    },
+    {
+      "id": "ai-2026-07-14-8",
+      "question": "Which type of galaxy is characterized by a flat, rotating disk of stars, gas, and dust surrounding a central bulge of older stars?",
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "spiral galaxy",
+      "explanation": "Spiral galaxies, like our own Milky Way, feature a distinctive flat, rotating disk with spiral arms made of stars, gas, and dust, along with a dense central bulge populated by older stars. The spiral arms are regions of active star formation, while the central bulge tends to host more ancient, redder stars. They are one of the most common and recognizable galaxy types in the observable universe."
+    },
+    {
+      "id": "ai-2026-07-14-9",
+      "question": "Which engineer, while working on a magnetron, discovered the heating potential of microwave radiation after noticing a chocolate bar in his pocket had melted — and then confirmed the effect using popcorn?",
+      "difficulty": "hard",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Percy Spencer",
+      "explanation": "Percy Spencer was a self-taught Raytheon engineer who made this accidental discovery around 1945, leading directly to the invention of the microwave oven. His follow-up experiments included popcorn and a nearly explosive test with an egg. The first commercial microwave oven, the \"Radarange,\" stood nearly 6 feet tall and weighed 750 pounds."
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-16",
+  "categoryId": 13,
+  "categoryName": "Entertainment: Musicals & Theatres",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-16-0",
+      "question": "What is Jean ValJean's first prisoner number?",
+      "options": [
+        "9430",
+        "32769",
+        "1729",
+        "24601"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "24601"
+    },
+    {
+      "id": "opentdb-2026-06-16-1",
+      "question": "In Shakespeare's play Julius Caesar, Caesar's last words were...",
+      "options": [
+        "Iacta alea est!",
+        "Vidi, vini, vici.",
+        "Aegri somnia vana.",
+        "Et tu, Brute? "
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Et tu, Brute? "
+    },
+    {
+      "id": "opentdb-2026-06-16-2",
+      "question": "Who wrote the award winning musical \"In The Heights\"?",
+      "options": [
+        "Steven Sondheim",
+        "John Phillips Sousa",
+        "Francis Scott Key",
+        "Lin-Manuel Miranda"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Lin-Manuel Miranda"
+    },
+    {
+      "id": "opentdb-2026-06-16-3",
+      "question": "What play is the quote \"Hell is other people\" from?",
+      "options": [
+        "The Devil and the Good Lord",
+        "The Flies",
+        "The Condemned of Altona",
+        "No Exit"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "No Exit"
+    },
+    {
+      "id": "opentdb-2026-06-16-4",
+      "question": "In which Shakespeare play does the character Marcellus say, \"Something is rotten in the state of Denmark\"?",
+      "options": [
+        "Macbeth",
+        "Twelfth Night",
+        "King Lear",
+        "Hamlet"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Hamlet"
+    },
+    {
+      "id": "opentdb-2026-06-16-5",
+      "question": "In Macbeth, the eyes of what animals were used in the Witches' cauldron?",
+      "options": [
+        "Humans",
+        "Squids",
+        "Sharks",
+        "Newts"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "opentdb",
+      "correctAnswer": "Newts"
+    },
+    {
+      "id": "ai-2026-06-16-6",
+      "question": "Which Andrew Lloyd Webber musical is described as the most successful British musical in history?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "The Phantom of the Opera",
+      "explanation": "The Phantom of the Opera, which opened in London's West End in 1986, holds the record as the most successful British musical in history. It became the longest-running show in Broadway history and has been performed in over 183 cities across 41 countries worldwide."
+    },
+    {
+      "id": "ai-2026-06-16-7",
+      "question": "Which beloved classical ballet, featuring the story of a princess transformed into a swan, is considered one of Tchaikovsky's best-known stage works and was the first ballet he ever composed?",
+      "difficulty": "easy",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Swan Lake",
+      "explanation": "Swan Lake, composed by Tchaikovsky in 1875–1876, was his first ballet and went on to become one of the most celebrated works in the classical repertoire. Despite a disappointing premiere at the Bolshoi Theatre in 1877, it was later revived to great acclaim and is now a timeless symbol of classical ballet. Its sweeping score and iconic imagery of swans have made it one of Tchaikovsky's best-known stage works."
+    },
+    {
+      "id": "ai-2026-06-16-8",
+      "question": "Which George Etherege play is known for exploring themes of vanity and social maneuvering?",
+      "difficulty": "medium",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "The Man of Mode",
+      "explanation": "George Etherege's The Man of Mode (1676) is considered one of the finest examples of Restoration comedy, celebrated for its sharp wit and satirical portrayal of fashionable London society. Its central character, Dorimant, is often seen as the archetypal Restoration rake, navigating a world of romantic intrigue and social performance. The play remains a touchstone in the study of 17th-century English theatre."
+    },
+    {
+      "id": "ai-2026-06-16-9",
+      "question": "Which scriptural text, referenced in the title of a Tony Award-winning musical, has scholars identified as containing song-like poetry and parallelism suggesting its world includes actual singing?",
+      "difficulty": "hard",
+      "category": "Entertainment: Musicals & Theatres",
+      "source": "ai",
+      "correctAnswer": "Book of Mormon",
+      "explanation": "Scholars of Latter-day Saint scripture have long noted that the Book of Mormon contains extensive poetic structures, including chiasmus and parallelism, which suggest its ancient authors composed portions as song-like verse. This literary depth became a rich ironic backdrop for the Tony Award-winning musical, where the title's sacred text is juxtaposed with irreverent comedy. The musical's title directly references this scripture, lending a layered meaning to its many musical numbers."
+    }
+  ]
+}

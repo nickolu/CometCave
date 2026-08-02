@@ -1,0 +1,127 @@
+{
+  "date": "2026-06-20",
+  "categoryId": 17,
+  "categoryName": "Science & Nature",
+  "questions": [
+    {
+      "id": "opentdb-2026-06-20-0",
+      "question": "How many laws of thermodynamics are there?",
+      "options": [
+        "Two",
+        "Five",
+        "Three",
+        "Four"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Four"
+    },
+    {
+      "id": "opentdb-2026-06-20-1",
+      "question": "Which type of rock is created by intense heat AND pressure?",
+      "options": [
+        "Sedimentary",
+        "Diamond",
+        "Igneous",
+        "Metamorphic"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Metamorphic"
+    },
+    {
+      "id": "opentdb-2026-06-20-2",
+      "question": "How many planets are there in the Solar System?",
+      "options": [
+        "9",
+        "10",
+        "11",
+        "8"
+      ],
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "8"
+    },
+    {
+      "id": "opentdb-2026-06-20-3",
+      "question": "What is the largest living organism currently known to man?",
+      "options": [
+        "Redwood Tree",
+        "The Coral Reef",
+        "Blue Whale",
+        "Honey Fungus"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Honey Fungus"
+    },
+    {
+      "id": "opentdb-2026-06-20-4",
+      "question": "In Psychology, which need appears highest in the \"Maslow's hierarchy of needs\" pyramid?",
+      "options": [
+        "Love",
+        "Safety",
+        "Physiological",
+        "Esteem"
+      ],
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Esteem"
+    },
+    {
+      "id": "opentdb-2026-06-20-5",
+      "question": "Where is the Gluteus Maximus muscle located?",
+      "options": [
+        "Arm",
+        "Torso",
+        "Head",
+        "Butt"
+      ],
+      "difficulty": "hard",
+      "category": "Science & Nature",
+      "source": "opentdb",
+      "correctAnswer": "Butt"
+    },
+    {
+      "id": "ai-2026-06-20-6",
+      "question": "What is the process by which green plants use sunlight, water, and carbon dioxide to produce their own food?",
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "photosynthesis",
+      "explanation": "Photosynthesis is a fundamental biological process where green plants convert sunlight, water, and carbon dioxide into glucose and oxygen. It is the foundation of most food chains on Earth, as it produces the energy that sustains nearly all life. The oxygen released as a byproduct is what makes our atmosphere breathable."
+    },
+    {
+      "id": "ai-2026-06-20-7",
+      "question": "What is the name of the scientific law stating that every object with mass attracts every other object with mass, with the force weakening as distance increases?",
+      "difficulty": "easy",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Newton's law of gravitation",
+      "explanation": "Newton's law of gravitation, formulated by Isaac Newton in 1687, describes how every mass in the universe attracts every other mass. The gravitational force between two objects decreases with the square of the distance between them — a relationship known as an inverse-square law."
+    },
+    {
+      "id": "ai-2026-06-20-8",
+      "question": "In particle physics, what type of accelerator uses two moving beams and particle bunches of roughly 10^11 particles to generate large numbers of collisions?",
+      "difficulty": "medium",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "collider",
+      "explanation": "A collider accelerates two beams of particles toward each other, and each bunch within those beams can contain around 100 billion (10^11) particles, maximizing the chances of collisions occurring. This design is far more efficient than firing a beam at a stationary target, since the effective collision energy is much higher. Famous examples include CERN's Large Hadron Collider (LHC)."
+    },
+    {
+      "id": "ai-2026-06-20-9",
+      "question": "Which inventor accidentally stumbled upon the process of vulcanization while experimenting with India rubber recipes, transforming rubber into a weatherproof material?",
+      "difficulty": "hard",
+      "category": "Science & Nature",
+      "source": "ai",
+      "correctAnswer": "Charles Goodyear",
+      "explanation": "Charles Goodyear discovered vulcanization accidentally in the 1840s when he dropped a rubber-sulfur mixture on a hot stove and found it remained flexible and durable despite temperature changes. His process revolutionized the rubber industry, making it viable for widespread commercial use. Despite his landmark discovery, Goodyear died deeply in debt, though the Goodyear Tire and Rubber Company was later named in his honor."
+    }
+  ]
+}

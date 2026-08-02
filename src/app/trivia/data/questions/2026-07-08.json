@@ -1,0 +1,127 @@
+{
+  "date": "2026-07-08",
+  "categoryId": 11,
+  "categoryName": "Entertainment: Film",
+  "questions": [
+    {
+      "id": "opentdb-2026-07-08-0",
+      "question": "In the 1992 film \"Army of Darkness\", what name does Ash give to his double-barreled shotgun?",
+      "options": [
+        "Bloomstick",
+        "Blastbranch",
+        "2-Pump Chump",
+        "Boomstick"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Boomstick"
+    },
+    {
+      "id": "opentdb-2026-07-08-1",
+      "question": "Which of the following is not the name of a \"Bond Girl\"? ",
+      "options": [
+        "Mary Goodnight",
+        "Wai Lin",
+        "Pam Bouvier",
+        "Vanessa Kensington"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Vanessa Kensington"
+    },
+    {
+      "id": "opentdb-2026-07-08-2",
+      "question": "For the film \"Raiders of The Lost Ark\", what was Harrison Ford sick with during the filming of the Cairo chase?",
+      "options": [
+        "Constipation",
+        "Acid Reflux ",
+        "Anemia",
+        "Dysentery"
+      ],
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Dysentery"
+    },
+    {
+      "id": "opentdb-2026-07-08-3",
+      "question": "According to the Star Wars lore, what is Han Solo's home planet?",
+      "options": [
+        "Naboo",
+        "Coruscant",
+        "Tatooine",
+        "Corellia"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Corellia"
+    },
+    {
+      "id": "opentdb-2026-07-08-4",
+      "question": "What does TIE stand for in reference to the TIE Fighter in \"Star Wars\"?",
+      "options": [
+        "Twin Iron Engine",
+        "Twin Inception Engine",
+        "Twin Intercepter Engine",
+        "Twin Ion Engine"
+      ],
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Twin Ion Engine"
+    },
+    {
+      "id": "opentdb-2026-07-08-5",
+      "question": "In the film \"Harry Potter and the Order of The Phoenix\", why was Harry Potter's scream, after Sirius Black died, muted?",
+      "options": [
+        "Too Harsh",
+        "Too Violent",
+        "Too Loud",
+        "Too Agonizing"
+      ],
+      "difficulty": "hard",
+      "category": "Entertainment: Film",
+      "source": "opentdb",
+      "correctAnswer": "Too Agonizing"
+    },
+    {
+      "id": "ai-2026-07-08-6",
+      "question": "Which James Cameron sci-fi film is widely credited with helping solidify the sci-fi-horror-action genre that the original Alien helped launch?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "Aliens",
+      "explanation": "Aliens (1986), James Cameron's sequel to Ridley Scott's Alien, shifted the tone from pure horror to action-horror, helping define a hybrid genre that blends science fiction, horror, and action. The film is celebrated for its intense pacing, strong ensemble cast, and Sigourney Weaver's iconic performance as Ripley. It remains one of the most acclaimed sequels in cinema history."
+    },
+    {
+      "id": "ai-2026-07-08-7",
+      "question": "What term describes a film, TV show, or play that recreates a specific period in history through period-accurate clothing and settings?",
+      "difficulty": "easy",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "costume drama",
+      "explanation": "A costume drama is a genre of film, TV show, or play that aims to authentically recreate a specific era in history, often featuring elaborate period-accurate costumes and sets. Famous examples include Downton Abbey, Pride & Prejudice, and Braveheart. The genre is popular for transporting audiences to different historical periods."
+    },
+    {
+      "id": "ai-2026-07-08-8",
+      "question": "What is the name of the French novel, written by Boileau and Narcejac, that served as the basis for Alfred Hitchcock's Vertigo?",
+      "difficulty": "medium",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "D'Entre les Morts",
+      "explanation": "Hitchcock's 1958 psychological thriller Vertigo was adapted from the 1954 French novel D'Entre les Morts (meaning \"Between Deaths\"), written by the duo Pierre Boileau and Thomas Narcejac. The pair reportedly wrote the novel specifically hoping Hitchcock would adapt it, having narrowly missed selling him their previous work, which became Les Diaboliques."
+    },
+    {
+      "id": "ai-2026-07-08-9",
+      "question": "What French cinematic movement, known for horror films that push into grotesque, transgressive territory and frequently center on sexually oriented acts of mutilation and violence, shares its name with a term coined by critic James Quandt?",
+      "difficulty": "hard",
+      "category": "Entertainment: Film",
+      "source": "ai",
+      "correctAnswer": "The New French Extremity",
+      "explanation": "The New French Extremity is a label coined by critic James Quandt in a 2004 Artforum essay to describe a wave of provocative French films from the late 1990s and 2000s. Directors like Gaspar Noé, Catherine Breillat, and Alexandre Aja are associated with the movement, which deliberately challenges audience limits through graphic depictions of sex and violence. Films such as \"Irréversible,\" \"Martyrs,\" and \"À ma sœur!\" are considered key works of the movement."
+    }
+  ]
+}
