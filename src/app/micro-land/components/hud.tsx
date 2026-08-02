@@ -237,7 +237,7 @@ export function Hud({
           }}
           title="Remove every living thing"
         >
-          Empty
+          Clear all
         </button>
       </div>
     </header>

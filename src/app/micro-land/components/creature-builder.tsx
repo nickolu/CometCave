@@ -85,8 +85,8 @@ type PaintTool = 'draw' | 'fill' | 'erase' | 'pick'
 const TOOLS: { id: PaintTool; label: string; glyph: string }[] = [
   { id: 'draw', label: 'Draw', glyph: '✎' },
   { id: 'fill', label: 'Fill', glyph: '▨' },
-  { id: 'erase', label: 'Rub out', glyph: '⌫' },
-  { id: 'pick', label: 'Copy colour', glyph: '⊙' },
+  { id: 'erase', label: 'Erase', glyph: '⌫' },
+  { id: 'pick', label: 'Pick colour', glyph: '⊙' },
 ]
 
 /** Undo depth. Deep enough to walk back a bad idea, shallow enough to be free. */
@@ -872,7 +872,7 @@ export function CreatureBuilder({
                   style={primaryButton(empty || saving)}
                 >
                   <SparkleIcon size={13} />
-                  {saving ? 'Writing…' : 'Save to roster'}
+                  {saving ? 'Saving…' : 'Save to roster'}
                 </button>
               ) : (
                 <button
@@ -919,7 +919,7 @@ export function CreatureBuilder({
                 }}
                 style={{ ...ghostButton, minHeight: 36 }}
               >
-                ← Start again
+                ← Back
               </button>
             </div>
           </div>

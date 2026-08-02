@@ -240,7 +240,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                   }}
                   onPointerDown={e => e.stopPropagation()}
                 >
-                  Name
+                  Save
                 </button>
               </form>
             ) : (
@@ -259,7 +259,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                 }}
                 onPointerDown={e => e.stopPropagation()}
               >
-                Give it a name
+                Add name
               </button>
             )}
           </div>
