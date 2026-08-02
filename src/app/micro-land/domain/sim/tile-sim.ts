@@ -2,14 +2,22 @@
  * Falling-sand tile physics.
  *
  * One bottom-up pass per step: powders pile, liquids flow and level out, lava
- * quenches into obsidian where it meets water, ice melts near heat. A `moved`
- * bitmask stops a tile that just fell from being processed again in the same
- * pass (which would make everything drop at light speed).
+ * quenches into obsidian where it meets water, ice and snow melt near heat,
+ * acid eats through whatever it is sitting on. A `moved` bitmask stops a tile
+ * that just fell from being processed again in the same pass (which would make
+ * everything drop at light speed).
  *
  * Scan direction alternates each pass — without that, liquids visibly drift
  * left forever.
  */
-import { IS_LIQUID, IS_POWDER, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import {
+  IS_ACID_PROOF,
+  IS_LIQUID,
+  IS_POWDER,
+  IS_SOLID,
+  MATERIAL_BY_INDEX,
+  MATERIAL_INDEX,
+} from '@/app/micro-land/domain/config/materials'
 import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import type { WorldState } from '@/app/micro-land/domain/types'
 
@@ -18,7 +26,21 @@ const WATER = MATERIAL_INDEX.water
 const LAVA = MATERIAL_INDEX.lava
 const STONE = MATERIAL_INDEX.stone
 const OBSIDIAN = MATERIAL_INDEX.obsidian
-const ICE = MATERIAL_INDEX.ice
+const ACID = MATERIAL_INDEX.acid
+const SAP = MATERIAL_INDEX.sap
+
+/** Anything that turns to water next to lava — ice, snow. */
+const MELTS: Uint8Array = new Uint8Array(
+  MATERIAL_BY_INDEX.map((m) => (m.melts ? 1 : 0))
+)
+
+/**
+ * Chance an acid tile eats its neighbour on a pass it is allowed to act, 0..1.
+ *
+ * Low on purpose. Acid that dissolves instantly just deletes terrain; acid that
+ * takes a few seconds to chew through a wall is something you watch.
+ */
+const ACID_BITE = 0.22
 
 /** Reused across passes — the grid never changes size. */
 const moved = new Uint8Array(WORLD_W * WORLD_H)
@@ -30,9 +52,12 @@ export function tickTiles(w: WorldState): void {
   moved.fill(0)
   const tiles = w.tiles
   w.flowPhase++
-  const leftToRight = (w.flowPhase & 1) === 0
+  const phase = w.flowPhase
+  const leftToRight = (phase & 1) === 0
   // Lava is viscous: it only gets to move on every other pass.
-  const lavaMoves = (w.flowPhase & 1) === 0
+  const lavaMoves = (phase & 1) === 0
+  // Sap is far thicker than lava — it creeps.
+  const sapMoves = (phase & 7) === 0
 
   for (let y = WORLD_H - 1; y >= 0; y--) {
     const rowStart = y * WORLD_W
@@ -44,9 +69,15 @@ export function tickTiles(w: WorldState): void {
       const mat = tiles[at]
       if (mat === AIR) continue
 
-      if (mat === ICE) {
-        if (touchesHeat(tiles, x, y)) tiles[at] = WATER
-        continue
+      if (MELTS[mat] === 1) {
+        if (touchesHeat(tiles, x, y)) {
+          tiles[at] = WATER
+          continue
+        }
+        // Ice is a wall and has nothing else to do this pass. Snow is a powder,
+        // so it still has to fall — this used to `continue` for both, and snow
+        // hung in mid-air wherever it was painted.
+        if (IS_POWDER[mat] !== 1) continue
       }
 
       const isPowder = IS_POWDER[mat] === 1
@@ -59,6 +90,13 @@ export function tickTiles(w: WorldState): void {
         if (!lavaMoves) continue
       }
 
+      if (mat === ACID) {
+        // Eating a wall uses the acid up, so there's nothing left to move.
+        if (corrode(tiles, x, y, at, phase)) continue
+      }
+
+      if (mat === SAP && !sapMoves) continue
+
       if (isPowder) {
         stepPowder(tiles, x, y, at, leftToRight)
       } else {
@@ -68,13 +106,26 @@ export function tickTiles(w: WorldState): void {
   }
 }
 
+/**
+ * Cheap deterministic noise from a tile and the pass number.
+ *
+ * The tile sim has no RNG of its own and shouldn't gain one — it has to give
+ * the same result for the same world on every machine, including the headless
+ * harness. Hashing the coordinates gets randomness without any state.
+ */
+function hash3(x: number, y: number, z: number): number {
+  let h = (x * 374761393 + y * 668265263 + z * 2147483647) | 0
+  h = (h ^ (h >>> 13)) * 1274126177
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296
+}
+
 function cell(x: number, y: number): number {
   return y * WORLD_W + x
 }
 
 function passableForPowder(mat: number): boolean {
-  // Powders sink through air and liquid alike.
-  return mat === AIR || IS_LIQUID[mat] === 1
+  // Powders sink through anything that isn't a wall — air, liquid, cloud alike.
+  return IS_SOLID[mat] !== 1
 }
 
 function swap(tiles: Uint8Array, a: number, b: number): void {
@@ -184,6 +235,48 @@ function quench(tiles: Uint8Array, x: number, y: number, at: number): boolean {
     moved[at] = 1
   }
   return found
+}
+
+/**
+ * Acid eating whatever it's resting against.
+ *
+ * The acid tile is spent by the bite, which is the whole reason this is safe to
+ * ship: a puddle can only dissolve as many tiles as it has drops, so acid digs a
+ * hole and then it's gone. Without that it would quietly erase the world while
+ * nobody was looking. Glass, obsidian, marble, plastic, gold, crystal, gem and
+ * lava shrug it off, so there is always something to build a container out of.
+ *
+ * Returns true if the tile was used up.
+ */
+function corrode(
+  tiles: Uint8Array,
+  x: number,
+  y: number,
+  at: number,
+  phase: number
+): boolean {
+  if (hash3(x, y, phase) > ACID_BITE) return false
+
+  // Below first, then the sides, then up — acid works downward like it should.
+  for (const [dx, dy] of [
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+  ]) {
+    const nx = x + dx
+    const ny = y + dy
+    if (nx < 0 || ny < 0 || nx >= WORLD_W || ny >= WORLD_H) continue
+    const n = cell(nx, ny)
+    const target = tiles[n]
+    if (IS_SOLID[target] !== 1 || IS_ACID_PROOF[target] === 1) continue
+    tiles[n] = AIR
+    tiles[at] = AIR
+    moved[n] = 1
+    moved[at] = 1
+    return true
+  }
+  return false
 }
 
 function touchesHeat(tiles: Uint8Array, x: number, y: number): boolean {

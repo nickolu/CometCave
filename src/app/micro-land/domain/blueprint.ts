@@ -13,18 +13,55 @@
  */
 import { z } from 'zod'
 
-import { MATERIAL_IDS } from './config/materials'
+import { BASE_MATERIAL_IDS, IS_LIQUID, MATERIAL_IDS, MATERIAL_INDEX } from './config/materials'
 import { TerrainSchema } from './terrain'
 
-import type { CreatureBlueprint, MaterialId } from './types'
+import type { CreatureAura, CreatureBlueprint, MaterialId } from './types'
 
 export const ART_MIN = 3
-export const ART_MAX = 14
+/**
+ * Sprite bounds, in world tiles.
+ *
+ * Wider than tall, because the things that want to be big are long: dragons,
+ * wyrms, whales, a tyrannosaur's tail. 28 is an eighth of the world's width,
+ * which is the point at which a creature reads as a landmark rather than an
+ * animal — go much past that and it can only exist in open sky.
+ *
+ * These were one shared 14 for a long time, and 14 is small enough that the
+ * model would draw a leviathan at exactly the same scale as a beetle.
+ */
+export const ART_MAX_W = 28
+export const ART_MAX_H = 24
 export const MAX_FRAMES = 4
-export const MAX_PALETTE = 10
+/** A 28x24 monster has room for shading a 6x6 bug never did. */
+export const MAX_PALETTE = 12
 
-// z.enum wants a mutable tuple; MATERIAL_IDS is `as const`.
-const materialEnum = z.enum([...MATERIAL_IDS] as [MaterialId, ...MaterialId[]])
+/**
+ * Size of a creature's *solid core*, beyond which the sprite stops counting as
+ * a wall.
+ *
+ * A creature collides with its whole drawing, which is correct right up until
+ * the drawing is mostly wings. A 28-wide dragon would need a 28-wide gap to
+ * walk through and would wedge in the first cave it tried to enter — so past
+ * this threshold, extra sprite is only 40% solid. Wingtips, tails and long
+ * necks pass through rock; the body itself still doesn't.
+ *
+ * Set deliberately above the largest built-in creature (Grumblestone, 10x7) so
+ * every creature that existed before this rule behaves exactly as it did.
+ */
+const CORE_W = 12
+const CORE_H = 10
+const CORE_SLOPE = 0.4
+
+/**
+ * Only the base materials are offered to the model.
+ *
+ * The tints ('plastic-red', 'crystal-blue' …) are a painting affordance, not
+ * vocabulary — putting all of them in the enum would quadruple the schema and
+ * invite a creature that digs through mauve plastic but not blue. Tints are
+ * still *accepted* by the sanitizer, since they're perfectly valid materials.
+ */
+const materialEnum = z.enum([...BASE_MATERIAL_IDS] as [MaterialId, ...MaterialId[]])
 
 const hexColor = z
   .string()
@@ -59,7 +96,7 @@ export const BlueprintSchema = z.object({
       frames: z
         .array(z.array(z.string()))
         .describe(
-          'Animation frames. Each frame is an array of equal-length row strings; each character is a palette key or "." for transparent. Between 3 and 14 characters wide and tall. Give 2 frames so it animates — make frame 2 a small change (a step, a blink, a wing beat), not a completely different drawing. Draw the creature FACING RIGHT.'
+          'Animation frames. Each frame is an array of equal-length row strings; each character is a palette key or "." for transparent. At least 3 wide and tall, at most 28 wide and 24 tall. SCALE THE DRAWING TO THE "size" FIELD: size 1 is 3-5 wide, size 3 about 9, size 6 is 20-28 wide. A size 6 dragon drawn 9 wide looks like an insect. Give 2 frames so it animates — make frame 2 a small change (a step, a blink, a wing beat), not a completely different drawing. Draw the creature FACING RIGHT.'
         ),
       frameMs: z
         .number()
@@ -173,6 +210,34 @@ export const BlueprintSchema = z.object({
       particleCount: z.number().describe('How many particles, 0-30.'),
     })
     .describe('What happens when it dies.'),
+  aura: z
+    .object({
+      radius: z.number().describe('How far the effect reaches, in tiles. 5-30.'),
+      helps: z
+        .array(z.string())
+        .describe(
+          'Tags of creatures that breed faster near this one. ["plant"] makes a pollinator. Use [] for no effect.'
+        ),
+      boost: z
+        .number()
+        .describe('How much faster they breed, 1 to 4. 1 means no help.'),
+      converts: z
+        .object({
+          from: materialEnum.describe('The material it changes.'),
+          to: materialEnum.describe('What that material becomes.'),
+        })
+        .nullable()
+        .describe(
+          'Ground it slowly improves as it goes, e.g. {"from":"stone","to":"dirt"} for a worm that makes soil. Null for almost everything.'
+        ),
+      convertRate: z
+        .number()
+        .describe('Tiles changed per second, 0.05-1. Keep it slow.'),
+    })
+    .nullable()
+    .describe(
+      'A special ability that changes the world around it — pollinating, or turning one material into another. Use null unless the description specifically calls for a helper creature; ordinary animals have no aura.'
+    ),
   glow: z
     .number()
     .describe('Light it casts into dark places, 0-1. 0 for most creatures.'),
@@ -235,6 +300,47 @@ function cleanMaterials(input: unknown): MaterialId[] {
   )
 }
 
+function cleanMaterial(input: unknown): MaterialId | null {
+  if (typeof input !== 'string') return null
+  return (MATERIAL_IDS as readonly string[]).includes(input)
+    ? (input as MaterialId)
+    : null
+}
+
+/**
+ * An aura is optional and easy to get subtly wrong, so anything that doesn't
+ * resolve to a real effect collapses back to null — a creature with a broken
+ * aura is just a creature.
+ */
+function cleanAura(raw: unknown): CreatureAura | null {
+  if (!raw || typeof raw !== 'object') return null
+  const a = raw as Record<string, unknown>
+
+  const helps = cleanTags(a.helps, [])
+  const boost = clamp(a.boost, 1, 4, 1)
+
+  let converts: CreatureAura['converts'] = null
+  const rawConverts = a.converts
+  if (rawConverts && typeof rawConverts === 'object') {
+    const from = cleanMaterial((rawConverts as Record<string, unknown>).from)
+    const to = cleanMaterial((rawConverts as Record<string, unknown>).to)
+    // Converting air into rock would let a creature wall the world in, and
+    // converting something into itself is a no-op that still costs a tile scan.
+    if (from && to && from !== to && from !== 'air') converts = { from, to }
+  }
+
+  const doesSomething = (helps.length > 0 && boost > 1) || converts !== null
+  if (!doesSomething) return null
+
+  return {
+    radius: clamp(a.radius, 2, 40, 12),
+    helps,
+    boost,
+    converts,
+    convertRate: clamp(a.convertRate, 0.01, 2, 0.2),
+  }
+}
+
 /**
  * Coerce whatever the model drew into a rectangular, in-bounds sprite.
  *
@@ -243,12 +349,31 @@ function cleanMaterials(input: unknown): MaterialId[] {
  * is much better than an error message. If nothing usable survives, the caller
  * gets a visible fallback blob instead of an invisible creature.
  */
+/**
+ * Unwrap a value the model handed back as a JSON string instead of an object.
+ *
+ * It does this occasionally on the deeply nested fields — `art` comes through as
+ * `"{\"palette\":...}"` — and the difference is invisible until the creature
+ * arrives as a featureless blob, because every field inside reads as missing and
+ * quietly falls back. One `JSON.parse` is the whole fix.
+ */
+function unwrapJson(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  const text = value.trim()
+  if (!text.startsWith('{') && !text.startsWith('[')) return value
+  try {
+    return JSON.parse(text)
+  } catch {
+    return value
+  }
+}
+
 function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['art'] {
-  const art = (raw ?? {}) as Record<string, unknown>
+  const art = (unwrapJson(raw) ?? {}) as Record<string, unknown>
 
   // Palette: single-char keys → hex colors. '.' is reserved for transparent.
   const palette: Record<string, string> = {}
-  const rawPalette = (art.palette ?? {}) as Record<string, unknown>
+  const rawPalette = (unwrapJson(art.palette) ?? {}) as Record<string, unknown>
   if (rawPalette && typeof rawPalette === 'object') {
     for (const [key, value] of Object.entries(rawPalette)) {
       if (key.length !== 1 || key === '.') continue
@@ -262,11 +387,13 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
   const known = new Set(Object.keys(palette))
 
   // Frames: drop anything non-string, normalize each row to the modal width.
-  const rawFrames = Array.isArray(art.frames) ? art.frames : []
+  const unwrappedFrames = unwrapJson(art.frames)
+  const rawFrames = Array.isArray(unwrappedFrames) ? unwrappedFrames : []
   let frames: string[][] = []
-  for (const frame of rawFrames.slice(0, MAX_FRAMES)) {
+  for (const raw of rawFrames.slice(0, MAX_FRAMES)) {
+    const frame = unwrapJson(raw)
     if (!Array.isArray(frame)) continue
-    const rows = frame.filter((r): r is string => typeof r === 'string').slice(0, ART_MAX)
+    const rows = frame.filter((r): r is string => typeof r === 'string').slice(0, ART_MAX_H)
     if (rows.length === 0) continue
     frames.push(rows)
   }
@@ -277,17 +404,54 @@ function sanitizeArt(raw: unknown, fallbackColor: string): CreatureBlueprint['ar
     frames = [[`.${key}${key}.`, `${key}${key}${key}${key}`, `.${key}${key}.`]]
   }
 
+  /**
+   * Oversize art: slide the window onto where the drawing actually is.
+   *
+   * Rows wider than the cap used to be truncated with `row.slice(0, MAX)`,
+   * keeping the leftmost columns. Creatures are drawn facing right, so on a
+   * 44-wide dragon that throws away the head and keeps the tail — the one crop
+   * guaranteed to destroy it. Trimming blank columns first usually gets it
+   * under the cap on its own, since overshoot is mostly empty margin; if it is
+   * still too wide the window centres on the ink instead of the origin.
+   *
+   * Only runs when the art is over the cap, so anything already in range keeps
+   * its padding — and therefore its collision box — exactly as drawn.
+   */
+  const rawWidth = Math.max(...frames.map((f) => Math.max(...f.map((r) => r.length))))
+  if (rawWidth > ART_MAX_W) {
+    let first = Infinity
+    let last = -1
+    for (const rows of frames) {
+      for (const row of rows) {
+        for (let x = 0; x < row.length; x++) {
+          if (row[x] === '.' || !known.has(row[x])) continue
+          if (x < first) first = x
+          if (x > last) last = x
+        }
+      }
+    }
+    if (last >= first) {
+      const inkWidth = last - first + 1
+      // Centre the window on the ink when even the trimmed drawing overflows.
+      const start =
+        inkWidth <= ART_MAX_W
+          ? first
+          : first + Math.floor((inkWidth - ART_MAX_W) / 2)
+      frames = frames.map((rows) => rows.map((row) => row.slice(start, start + ART_MAX_W)))
+    }
+  }
+
   // Every frame must share one width and height, or animation would jitter.
   const width = clamp(
     Math.max(...frames.map((f) => Math.max(...f.map((r) => r.length)))),
     ART_MIN,
-    ART_MAX,
+    ART_MAX_W,
     4
   )
   const height = clamp(
     Math.max(...frames.map((f) => f.length)),
     ART_MIN,
-    ART_MAX,
+    ART_MAX_H,
     4
   )
 
@@ -409,7 +573,7 @@ export function sanitizeBlueprint(
     dig: {
       // Liquids aren't walls — letting them be "dug" would delete oceans.
       through: cleanMaterials(dig.through).filter(
-        (m) => m !== 'water' && m !== 'lava' && m !== 'air'
+        (m) => m !== 'air' && IS_LIQUID[MATERIAL_INDEX[m]] !== 1
       ),
       speed: clamp(dig.speed, 0.05, 8, 1),
     },
@@ -422,6 +586,7 @@ export function sanitizeBlueprint(
       particleColor,
       particleCount: Math.round(clamp(death.particleCount, 0, 30, 6)),
     },
+    aura: cleanAura(b.aura),
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
   }
@@ -442,6 +607,58 @@ export function canEat(hunter: CreatureBlueprint, prey: CreatureBlueprint): bool
   return hunter.diet.eats.some((tag) => prey.tags.includes(tag))
 }
 
+// ---------------------------------------------------------------------------
+// Grouping
+// ---------------------------------------------------------------------------
+
+export type CreatureGroup =
+  | 'yours'
+  | 'plants'
+  | 'grazers'
+  | 'hunters'
+  | 'giants'
+  | 'helpers'
+
+/** Tab order, and the labels the player sees. Plain words, not taxonomy. */
+export const CREATURE_GROUPS: { id: CreatureGroup; label: string }[] = [
+  { id: 'yours', label: 'Yours' },
+  { id: 'plants', label: 'Plants' },
+  { id: 'grazers', label: 'Plant Eaters' },
+  { id: 'hunters', label: 'Hunters' },
+  { id: 'giants', label: 'Giants' },
+  { id: 'helpers', label: 'Helpers' },
+]
+
+/** Anything that photosynthesises rather than hunts — moss, coral, a sky flower. */
+function isPlantLike(bp: CreatureBlueprint): boolean {
+  return bp.move.kind === 'root' || (bp.diet.eats.length === 0 && bp.tags.includes('plant'))
+}
+
+/**
+ * Which drawer of the creature menu this belongs in.
+ *
+ * Worked out from the blueprint rather than a hand-kept list, for the same
+ * reason the field guide derives its "eats / eaten by": a creature summoned
+ * thirty seconds ago has to file itself correctly, and a list in the UI would
+ * silently drop every one of them into "other". The one exception is `yours`,
+ * which wins over everything — after you summon a dragon you want to find the
+ * dragon, not go hunting for which category it landed in.
+ *
+ * `roster` is every creature in the world; a hunter is defined as something
+ * that can actually eat one of them, which is the same rule the simulation uses.
+ */
+export function creatureGroup(
+  bp: CreatureBlueprint,
+  roster: CreatureBlueprint[]
+): CreatureGroup {
+  if (bp.summoned) return 'yours'
+  if (isPlantLike(bp)) return 'plants'
+  if (bp.size >= 5) return 'giants'
+  if (bp.aura) return 'helpers'
+  if (roster.some((other) => canEat(bp, other) && !isPlantLike(other))) return 'hunters'
+  return 'grazers'
+}
+
 /** True if `prey` should run from `hunter`. */
 export function fears(prey: CreatureBlueprint, hunter: CreatureBlueprint): boolean {
   if (prey.diet.fears.some((tag) => hunter.tags.includes(tag))) return true
@@ -452,4 +669,44 @@ export function fears(prey: CreatureBlueprint, hunter: CreatureBlueprint): boole
 export function artSize(bp: CreatureBlueprint): { w: number; h: number } {
   const frame = bp.art.frames[0]
   return { w: frame[0].length, h: frame.length }
+}
+
+/** The part of a sprite that actually collides, offset from its top-left. */
+export interface BodyBox {
+  dx: number
+  dy: number
+  w: number
+  h: number
+}
+
+const bodyBoxCache = new Map<string, BodyBox>()
+
+/**
+ * The solid core of a creature — what terrain collision and drowning use.
+ *
+ * For anything up to CORE_W x CORE_H this is just the sprite, so every creature
+ * that shipped before big monsters existed is untouched. Past that, each extra
+ * tile of drawing only counts 40% solid.
+ *
+ * The core sits centred horizontally and flush with the *bottom* of the sprite.
+ * Bottom-aligned matters: the inset has to come off the top, where the wings,
+ * horns and long neck are, or a walker's drawn feet would sink into the floor
+ * while its actual box rested a few tiles higher.
+ */
+export function bodyBox(bp: CreatureBlueprint): BodyBox {
+  const cached = bodyBoxCache.get(bp.id)
+  if (cached) return cached
+
+  const { w, h } = artSize(bp)
+  const cw = w <= CORE_W ? w : CORE_W + (w - CORE_W) * CORE_SLOPE
+  const ch = h <= CORE_H ? h : CORE_H + (h - CORE_H) * CORE_SLOPE
+
+  const box: BodyBox = {
+    dx: (w - cw) / 2,
+    dy: h - ch,
+    w: cw,
+    h: ch,
+  }
+  bodyBoxCache.set(bp.id, box)
+  return box
 }

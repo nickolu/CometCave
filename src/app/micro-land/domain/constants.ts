@@ -28,8 +28,13 @@ export const MAX_CREATURES = 340
  * more plants than grazers is over the cap on frame one and can never spread,
  * so the meadow only ever shrinks — and after a crash, a world of nothing but
  * plants is permanently at 100% and can never regrow either.
+ *
+ * Raised from 150 when the roster grew to seven plant species: the ceiling is
+ * shared, so every species added to a world takes its share out of everything
+ * else's, and a crowded world was starving its grazers rather than feeding more
+ * of them.
  */
-export const MAX_PLANTS = 150
+export const MAX_PLANTS = 195
 
 /** Seconds a drowning creature survives underwater. */
 export const BREATH_SECONDS = 9
@@ -117,7 +122,7 @@ export const SPECIES_SOFT_CAP = 70
  * a monoculture — which then starves out every grazer too small to eat it.
  * Keeping this well under MAX_PLANTS is what leaves room for a mixed meadow.
  */
-export const PLANT_SPECIES_CAP = 55
+export const PLANT_SPECIES_CAP = 46
 
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9

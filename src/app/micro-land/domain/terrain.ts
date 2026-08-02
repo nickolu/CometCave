@@ -14,7 +14,7 @@
  */
 import { z } from 'zod'
 
-import { MATERIAL_IDS } from './config/materials'
+import { BASE_MATERIAL_IDS, MATERIALS, MATERIAL_IDS } from './config/materials'
 import { WORLD_H, WORLD_W } from './constants'
 import { type Rng, fbm, makeNoise2D } from './sim/prng'
 
@@ -26,7 +26,34 @@ const MAP_MAX_COLS = 96
 const MAP_MAX_ROWS = 48
 const MAX_LEGEND = 14
 
-const materialEnum = z.enum([...MATERIAL_IDS] as [MaterialId, ...MaterialId[]])
+/**
+ * Where the ground should sit, as a share of the world's height.
+ *
+ * Models draw a horizon the way you would on paper — two thirds of the way up,
+ * with a strip of sky above it — and the result is a world that is mostly dirt.
+ * But almost everything a player comes to watch happens *above* the surface:
+ * things walking, flying, hunting, falling. Earth below the surface is only
+ * interesting where it's hollow. So the surface belongs low, and the air above
+ * it is the part worth spending the world's height on.
+ *
+ * Around 0.4, spread so it usually lands between 0.3 and 0.5 and sometimes
+ * doesn't — a world that always has its horizon in the same place stops reading
+ * as a place and starts reading as a template.
+ */
+const GROUND_TARGET = 0.4
+const GROUND_SPREAD = 0.52
+const GROUND_MIN = 0.18
+const GROUND_MAX = 0.62
+
+/** A row counts as ground once this much of it is solid. */
+const GROUND_ROW_FILL = 0.5
+
+/** Ceiling on rows after padding, so an extreme roll can't squash the land flat. */
+const MAX_PADDED_ROWS = 100
+
+// Base materials only — tints are something the player paints, not vocabulary
+// the model needs. See the same note in `blueprint.ts`.
+const materialEnum = z.enum([...BASE_MATERIAL_IDS] as [MaterialId, ...MaterialId[]])
 
 const hexColor = z.string().describe('A hex color like #7fc4e8.')
 
@@ -150,6 +177,64 @@ export function sanitizeTerrain(raw: unknown): SanitizedTerrain {
 }
 
 /**
+ * The first row that is mostly solid — the top of the land.
+ *
+ * Deliberately not "the highest non-air tile in each column": that finds the tip
+ * of a lone mountain, a cloud, or a floating island and calls it the ground,
+ * which would shove a perfectly good world into the basement. A row only counts
+ * once it is half earth, which is the row a creature would actually walk on.
+ *
+ * Returns -1 when nothing qualifies — a world of floating islands has no ground
+ * level to speak of, and the honest answer there is to leave it alone.
+ */
+function groundRow(map: string[]): number {
+  const cols = map[0].length
+  const needed = cols * GROUND_ROW_FILL
+  for (let y = 0; y < map.length; y++) {
+    let solid = 0
+    for (let x = 0; x < cols; x++) if (map[y][x] !== '.') solid++
+    if (solid >= needed) return y
+  }
+  return -1
+}
+
+/**
+ * Slide the ground down (or up) until the surface sits at a sensible height.
+ *
+ * The map is stretched to the world's height whatever its row count, so adding
+ * empty rows on top is all it takes: the land keeps every cave, seam and pool
+ * the model drew and simply occupies less of the world. Trimming works the same
+ * way in reverse, and only ever removes rows that are entirely air, so nothing
+ * drawn is ever cut off.
+ */
+export function fitGroundLevel(map: string[], rng: Rng): string[] {
+  const top = groundRow(map)
+  if (top < 0) return map
+
+  const rows = map.length
+  // Three rolls averaged: a hump around GROUND_TARGET rather than a flat band,
+  // so the usual world is ordinary and the occasional one is a canyon or a plain.
+  const roll = (rng() + rng() + rng()) / 3
+  const target = Math.min(
+    GROUND_MAX,
+    Math.max(GROUND_MIN, GROUND_TARGET + (roll - 0.5) * GROUND_SPREAD)
+  )
+
+  const depth = rows - top
+  const wanted = Math.min(MAX_PADDED_ROWS, Math.round(depth / target))
+  const sky = '.'.repeat(map[0].length)
+
+  if (wanted > rows) return [...Array<string>(wanted - rows).fill(sky), ...map]
+
+  // Raising the ground means eating into the sky, and only into empty sky —
+  // a mountain peak or a floating island sits above `top` and must survive.
+  let empty = 0
+  while (empty < top && /^\.*$/.test(map[empty])) empty++
+  const trim = Math.min(rows - wanted, empty)
+  return trim > 0 ? map.slice(trim) : map
+}
+
+/**
  * Paint the coarse map into the tile grid.
  *
  * The sample point is nudged by a little fbm noise before it's floored, which
@@ -162,8 +247,9 @@ export function paintTerrain(
   rng: Rng,
   materialIndex: Record<MaterialId, number>
 ): void {
-  const rows = terrain.map.length
-  const cols = terrain.map[0].length
+  const map = fitGroundLevel(terrain.map, rng)
+  const rows = map.length
+  const cols = map[0].length
   const noise = makeNoise2D(Math.floor(rng() * 1e9))
 
   const scaleX = cols / WORLD_W
@@ -178,7 +264,7 @@ export function paintTerrain(
 
       const cx = Math.floor((x + nx) * scaleX)
       const cy = Math.floor((y + ny) * scaleY)
-      const row = terrain.map[Math.max(0, Math.min(rows - 1, cy))]
+      const row = map[Math.max(0, Math.min(rows - 1, cy))]
       const ch = row[Math.max(0, Math.min(cols - 1, cx))] ?? '.'
       const material = terrain.legend[ch]
       tiles[y * WORLD_W + x] = material ? materialIndex[material] : 0
@@ -206,6 +292,7 @@ export function terrainToTheme(
 
 /** True if anything can take root here — no fertile tile means no food chain. */
 export function hasFertileGround(terrain: SanitizedTerrain): boolean {
-  const fertile = new Set<MaterialId>(['dirt', 'grass', 'sand', 'ash', 'wood'])
-  return Object.values(terrain.legend).some((m) => fertile.has(m))
+  // Read off the materials themselves rather than a copy of the list, so a new
+  // fertile material is never fertile for plants but invisible to this check.
+  return Object.values(terrain.legend).some((m) => MATERIALS[m]?.fertile)
 }

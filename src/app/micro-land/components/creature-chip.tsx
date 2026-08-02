@@ -14,8 +14,8 @@ interface Run {
  *
  * SVG rather than a canvas so portraits need no DOM APIs and no post-mount
  * effect — they render on the server and in the first paint. Horizontal runs of
- * the same color collapse into one rect, which keeps a 14-wide sprite at a
- * dozen or so nodes instead of two hundred.
+ * the same color collapse into one rect, which matters more now that a sprite
+ * can be 28x24: a dragon is a few dozen nodes this way and 672 without.
  */
 function toRuns(blueprint: CreatureBlueprint): Run[] {
   const rows = blueprint.art.frames[0]

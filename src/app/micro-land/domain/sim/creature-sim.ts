@@ -8,7 +8,8 @@
  * The sense pass (who can I eat, who is about to eat me) is O(n²), so it runs
  * at 10Hz with creatures staggered across ticks rather than every frame.
  */
-import { artSize, canEat, fears } from '@/app/micro-land/domain/blueprint'
+import { artSize, bodyBox, canEat, fears } from '@/app/micro-land/domain/blueprint'
+import type { BodyBox } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
@@ -32,8 +33,10 @@ import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/d
 
 import {
   boxDeadlyMaterial,
+  boxDrownFraction,
   boxHitsSolid,
   boxLiquidFraction,
+  boxViscosity,
   inBounds,
   repopulate,
   seedNativePlants,
@@ -106,6 +109,14 @@ export function tickCreatures(
     speciesCount[c.blueprintId] = (speciesCount[c.blueprintId] ?? 0) + 1
   }
 
+  // Helpers — bees, worms, anything with an aura. Gathered once per tick
+  // because the breeding check below asks "is one of these near me", and there
+  // are normally none at all.
+  const helpers: Creature[] = []
+  for (const c of creatures) {
+    if (w.blueprints[c.blueprintId]?.aura) helpers.push(c)
+  }
+
   for (const c of creatures) {
     if (dead.has(c.id)) continue
     const bp = w.blueprints[c.blueprintId]
@@ -114,7 +125,11 @@ export function tickCreatures(
       continue
     }
 
+    // `bw`/`bh` are what the creature *looks* like — used for sight, biting and
+    // anything the player can see. `body` is what it collides with. For all but
+    // the largest creatures the two are identical.
     const { w: bw, h: bh } = artSize(bp)
+    const body = bodyBox(bp)
 
     c.ageSeconds += dt
     c.animMs += dt * 1000
@@ -139,8 +154,10 @@ export function tickCreatures(
     }
 
     // --- environment ----------------------------------------------------
-    const wet = boxLiquidFraction(w, c.x, c.y, bw, bh)
-    const deadlyMat = boxDeadlyMaterial(w, c.x, c.y, bw, bh)
+    const px = c.x + body.dx
+    const py = c.y + body.dy
+    const wet = boxLiquidFraction(w, px, py, body.w, body.h)
+    const deadlyMat = boxDeadlyMaterial(w, px, py, body.w, body.h)
     if (deadlyMat !== null) {
       const immune = bp.body.immuneTo.some((m) => MATERIAL_INDEX[m] === deadlyMat)
       if (!immune) {
@@ -155,7 +172,11 @@ export function tickCreatures(
       const needsWater = bp.habitat.needs.includes('water')
       if (needsWater && wet < 0.25) inTrouble = true
     }
-    if (bp.habitat.drowns && wet > 0.7) inTrouble = true
+    // Drowning asks specifically about water, not "any liquid" — sap holds you
+    // fast but you can still breathe in it.
+    if (bp.habitat.drowns && boxDrownFraction(w, px, py, body.w, body.h) > 0.7) {
+      inTrouble = true
+    }
 
     if (inTrouble) {
       c.distress += dt
@@ -177,6 +198,9 @@ export function tickCreatures(
       steer(w, c, bp, dt, rng)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
     }
+
+    // --- what it does to the world around it -----------------------------
+    if (bp.aura?.converts) applyConversion(w, c, bp, bw, bh, dt, rng)
 
     // --- breeding -------------------------------------------------------
     const fullness = 1 - c.hunger
@@ -203,7 +227,9 @@ export function tickCreatures(
         if (isPlant) plantsAlive++
         else c.hunger = Math.min(1, c.hunger + BREED_COST)
         speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-        c.breedCooldown = isPlant ? PLANT_SPREAD_COOLDOWN : BREED_COOLDOWN
+        // A pollinator nearby shortens the wait before the next one.
+        const help = auraBoost(w, c, bp, bw, bh, helpers)
+        c.breedCooldown = (isPlant ? PLANT_SPREAD_COOLDOWN : BREED_COOLDOWN) / help
         events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
       } else {
         // Nowhere to put it — wait a bit before trying again.
@@ -331,6 +357,86 @@ function devour(
 }
 
 // ---------------------------------------------------------------------------
+// Auras — creatures that change the world instead of only living in it
+// ---------------------------------------------------------------------------
+
+/**
+ * How much faster this creature breeds thanks to helpers standing nearby.
+ *
+ * Returns 1 when nothing is helping, which is the overwhelmingly common case —
+ * hence the early exit on an empty helper list, so a world with no bees in it
+ * pays nothing for the feature.
+ */
+function auraBoost(
+  w: WorldState,
+  c: Creature,
+  bp: CreatureBlueprint,
+  bw: number,
+  bh: number,
+  helpers: Creature[]
+): number {
+  if (helpers.length === 0) return 1
+  const cx = c.x + bw / 2
+  const cy = c.y + bh / 2
+
+  let best = 1
+  for (const helper of helpers) {
+    if (helper.id === c.id) continue
+    const aura = w.blueprints[helper.blueprintId]?.aura
+    if (!aura || aura.helps.length === 0) continue
+    if (!aura.helps.some((tag) => bp.tags.includes(tag))) continue
+
+    const hbp = w.blueprints[helper.blueprintId]
+    if (!hbp) continue
+    const { w: hw, h: hh } = artSize(hbp)
+    const dx = helper.x + hw / 2 - cx
+    const dy = helper.y + hh / 2 - cy
+    if (dx * dx + dy * dy > aura.radius * aura.radius) continue
+    // Best helper wins rather than stacking — twenty bees in one flowerbed
+    // shouldn't make it breed twenty times as fast.
+    if (aura.boost > best) best = aura.boost
+  }
+  return best
+}
+
+/**
+ * Slowly turn the ground into something else — a worm making soil out of rock.
+ *
+ * Only one tile at a time, and only tiles that already match `from`, so this
+ * enriches a world rather than rewriting it. A single loamworm takes minutes to
+ * make a visible patch, which is the point: you notice it after you stop
+ * watching it.
+ */
+function applyConversion(
+  w: WorldState,
+  c: Creature,
+  bp: CreatureBlueprint,
+  bw: number,
+  bh: number,
+  dt: number,
+  rng: Rng
+): void {
+  const aura = bp.aura
+  if (!aura?.converts) return
+  if (rng() > aura.convertRate * dt) return
+
+  const from = MATERIAL_INDEX[aura.converts.from]
+  const to = MATERIAL_INDEX[aura.converts.to]
+  if (from === undefined || to === undefined) return
+
+  const cx = c.x + bw / 2
+  const cy = c.y + bh / 2
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const tx = Math.floor(cx + (rng() * 2 - 1) * aura.radius)
+    const ty = Math.floor(cy + (rng() * 2 - 1) * aura.radius)
+    if (!inBounds(tx, ty)) continue
+    if (tileAt(w, tx, ty) !== from) continue
+    setTile(w, tx, ty, to)
+    return
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Steering
 // ---------------------------------------------------------------------------
 
@@ -342,6 +448,7 @@ function steer(
   rng: Rng
 ): void {
   const { w: bw, h: bh } = artSize(bp)
+  const body = bodyBox(bp)
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2
 
@@ -384,9 +491,15 @@ function steer(
       if (digger && c.grounded && c.hunger < 0.4 && rng() < 0.6 * dt) {
         c.vy = 6
       }
-      // Jump when there's a wall in the way, or the target is overhead.
+      // Jump when there's a wall in the way, or the target is overhead. Probed
+      // from the solid core, not the wingtip — a dragon shouldn't try to hop
+      // over a pebble its wing is drawn across.
       const ahead = Math.sign(c.vx) || c.facing
-      const blocked = solidAt(w, Math.floor(cx + ahead * (bw / 2 + 1)), Math.floor(cy))
+      const blocked = solidAt(
+        w,
+        Math.floor(c.x + body.dx + body.w / 2 + ahead * (body.w / 2 + 1)),
+        Math.floor(c.y + body.dy + body.h / 2)
+      )
       const wantsUp = wantY < -0.4
       if (c.grounded && (blocked || (wantsUp && rng() < 0.08))) {
         c.vy = -bp.move.jump
@@ -419,7 +532,7 @@ function steer(
     }
     case 'crawl': {
       // Sticks to any surface, so it moves in 2D but only along walls.
-      const touching = touchesSurface(w, c, bw, bh)
+      const touching = touchesSurface(w, c, body)
       if (touching) {
         c.vx += wantX * accel * dt
         c.vy += wantY * accel * dt
@@ -444,11 +557,11 @@ function steer(
   }
 }
 
-function touchesSurface(w: WorldState, c: Creature, bw: number, bh: number): boolean {
-  const x0 = Math.floor(c.x) - 1
-  const x1 = Math.floor(c.x + bw - 0.001) + 1
-  const y0 = Math.floor(c.y) - 1
-  const y1 = Math.floor(c.y + bh - 0.001) + 1
+function touchesSurface(w: WorldState, c: Creature, body: BodyBox): boolean {
+  const x0 = Math.floor(c.x + body.dx) - 1
+  const x1 = Math.floor(c.x + body.dx + body.w - 0.001) + 1
+  const y0 = Math.floor(c.y + body.dy) - 1
+  const y1 = Math.floor(c.y + body.dy + body.h - 0.001) + 1
   for (let x = x0; x <= x1; x++) {
     if (solidAt(w, x, y0) || solidAt(w, x, y1)) return true
   }
@@ -473,8 +586,15 @@ function integrate(
   gravityScale: number
 ): void {
   const kind = bp.move.kind
+  const body = bodyBox(bp)
   const inLiquid = wet > 0.3
-  const weightless = kind === 'fly' || (kind === 'crawl' && touchesSurface(w, c, bw, bh))
+  const weightless = kind === 'fly' || (kind === 'crawl' && touchesSurface(w, c, body))
+
+  // Cloud and sap: not walls, but not nothing either. A high viscosity holds
+  // you up against gravity and bleeds off whatever speed you arrived with, so
+  // you sink through a cloud instead of dropping through it.
+  const goo = boxViscosity(w, c.x + body.dx, c.y + body.dy, body.w, body.h)
+  const inGoo = goo > 0.05
 
   if (!weightless) {
     let g = GRAVITY * bp.body.mass * gravityScale
@@ -483,14 +603,16 @@ function integrate(
       g *= 1 - bp.body.buoyancy
     }
     if (kind === 'drift') g *= 0.35
+    if (inGoo) g *= 1 - goo * 0.85
     c.vy += g * dt
   }
 
   // Drag. `body.drag` is the fraction of speed kept per second.
-  const dragBase = inLiquid ? bp.body.drag * 0.45 : bp.body.drag
+  let dragBase = inLiquid ? bp.body.drag * 0.45 : bp.body.drag
+  if (inGoo) dragBase *= 1 - goo * 0.75
   const keep = Math.pow(Math.max(0.001, dragBase), dt)
   c.vx *= keep
-  if (weightless || inLiquid || kind === 'drift') c.vy *= keep
+  if (weightless || inLiquid || inGoo || kind === 'drift') c.vy *= keep
 
   c.vy = Math.max(-MAX_FALL, Math.min(MAX_FALL, c.vy))
   c.vx = Math.max(-MAX_FALL, Math.min(MAX_FALL, c.vx))
@@ -498,19 +620,40 @@ function integrate(
   const canStepUp = kind === 'walk'
   const digger = bp.dig.through.length > 0
 
+  // Everything below works in *core* coordinates and converts back at the end.
+  // `c.x`/`c.y` are the sprite's top-left; the core sits at `+ body.dx/dy`, so
+  // snapping the sprite against a tile directly would wedge a big creature by
+  // however far its wings stick out.
+  const ox = body.dx
+  const oy = body.dy
+
   // --- horizontal ---
   const nx = c.x + c.vx * dt
-  if (!boxHitsSolid(w, nx, c.y, bw, bh)) {
+
+  // Walk up a ledge without needing to jump. How high a ledge depends on how
+  // long your legs are: one tile per five of body height. Everything that
+  // existed before big creatures did is under ten tiles tall, so they all still
+  // get exactly the one tile they always had — but a tyrannosaur steps over a
+  // boulder instead of wedging against it, which is what it was doing.
+  const maxStep = canStepUp ? Math.max(1, Math.floor(body.h / 5)) : 0
+  let step = -1
+  for (let s = 0; s <= maxStep; s++) {
+    if (!boxHitsSolid(w, nx + ox, c.y + oy - s, body.w, body.h)) {
+      step = s
+      break
+    }
+  }
+
+  if (step >= 0) {
     c.x = nx
-  } else if (canStepUp && !boxHitsSolid(w, nx, c.y - 1, bw, bh)) {
-    // Walk up a single-tile ledge without needing to jump.
-    c.x = nx
-    c.y -= 1
-  } else if (digger && chewThrough(w, c, bp, nx, c.y, bw, bh, dt)) {
+    c.y -= step
+  } else if (digger && chewThrough(w, c, bp, nx + ox, c.y + oy, body.w, body.h, dt)) {
     // Held against the rock while it works. The tunnel opens next tick.
     c.vx *= 0.2
   } else {
-    c.x = c.vx > 0 ? Math.floor(nx + bw - 0.001) - bw : Math.floor(nx) + 1
+    const bx = nx + ox
+    c.x =
+      (c.vx > 0 ? Math.floor(bx + body.w - 0.001) - body.w : Math.floor(bx) + 1) - ox
     c.vx = -c.vx * bp.body.bounce
     c.drift = -c.drift
     c.facing = (c.facing === 1 ? -1 : 1) as 1 | -1
@@ -519,19 +662,20 @@ function integrate(
   // --- vertical ---
   c.grounded = false
   const ny = c.y + c.vy * dt
-  if (!boxHitsSolid(w, c.x, ny, bw, bh)) {
+  if (!boxHitsSolid(w, c.x + ox, ny + oy, body.w, body.h)) {
     c.y = ny
-  } else if (digger && chewThrough(w, c, bp, c.x, ny, bw, bh, dt)) {
+  } else if (digger && chewThrough(w, c, bp, c.x + ox, ny + oy, body.w, body.h, dt)) {
     c.vy *= 0.2
     // A digger resting on rock it is actively burrowing into still counts as
     // standing on something, or a walker would never get the jump to push down.
     if (c.vy > 0) c.grounded = true
   } else {
+    const by = ny + oy
     if (c.vy > 0) {
-      c.y = Math.floor(ny + bh - 0.001) - bh
+      c.y = Math.floor(by + body.h - 0.001) - body.h - oy
       c.grounded = true
     } else {
-      c.y = Math.floor(ny) + 1
+      c.y = Math.floor(by) + 1 - oy
     }
     c.vy = Math.abs(c.vy) > 4 ? -c.vy * bp.body.bounce : 0
   }
@@ -619,6 +763,7 @@ function reproduce(
 ): Creature | null {
   const isPlant = bp.move.kind === 'root'
   const spread = isPlant ? 14 : 5
+  const body = bodyBox(bp)
 
   for (let attempt = 0; attempt < 12; attempt++) {
     const x = parent.x + (rng() * 2 - 1) * spread
@@ -626,8 +771,11 @@ function reproduce(
     const cx = Math.max(0, Math.min(WORLD_W - bw, x))
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
 
-    if (boxHitsSolid(w, cx, cy, bw, bh)) continue
-    if (boxDeadlyMaterial(w, cx, cy, bw, bh) !== null && bp.body.immuneTo.length === 0) {
+    if (boxHitsSolid(w, cx + body.dx, cy + body.dy, body.w, body.h)) continue
+    if (
+      boxDeadlyMaterial(w, cx + body.dx, cy + body.dy, body.w, body.h) !== null &&
+      bp.body.immuneTo.length === 0
+    ) {
       continue
     }
 
@@ -635,15 +783,16 @@ function reproduce(
       // A seedling settles onto the first fertile ground below the spot we
       // picked. Same trap as spawning: the tile under a box is
       // `floor(y + bh - 0.001) + 1`, so `settleOnGround` owns that arithmetic.
-      const settled = settleOnGround(w, cx, cy, bw, bh, {
+      const settled = settleOnGround(w, cx + body.dx, cy + body.dy, body.w, body.h, {
         requireFertile: true,
         maxDrop: 10,
       })
       if (settled === null) continue
-      return spawnCreature(w, bp, cx, settled)
+      // `settled` is where the core came to rest; the sprite sits above it.
+      return spawnCreature(w, bp, cx, settled - body.dy)
     }
 
-    const wet = boxLiquidFraction(w, cx, cy, bw, bh)
+    const wet = boxLiquidFraction(w, cx + body.dx, cy + body.dy, body.w, body.h)
     const needsWater = bp.move.kind === 'swim' || !!bp.habitat.needs?.includes('water')
     if (needsWater && wet < 0.5) continue
     if (!needsWater && bp.habitat.drowns && wet > 0.5) continue

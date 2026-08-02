@@ -1,6 +1,19 @@
 'use client'
 
-import { MATERIALS, PAINTABLE } from '@/app/micro-land/domain/config/materials'
+import { useEffect, useMemo, useRef, useState } from 'react'
+
+import {
+  CREATURE_GROUPS,
+  type CreatureGroup,
+  creatureGroup,
+} from '@/app/micro-land/domain/blueprint'
+import {
+  MATERIALS,
+  PAINTABLE,
+  TINTS,
+  tintedId,
+} from '@/app/micro-land/domain/config/materials'
+import type { MaterialId, TintableMaterialId } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
@@ -8,6 +21,20 @@ import { SparkleIcon } from './sparkle-icon'
 import { SummonSand } from './summon-sand'
 
 const BRUSHES = [2, 4, 8, 14]
+
+/**
+ * Which tintable family, if any, the current material belongs to.
+ *
+ * Covers both the plain material ('crystal') and one of its colors
+ * ('crystal-blue'), so picking a color keeps the color strip open on the
+ * family you're painting with instead of collapsing it out from under you.
+ */
+function tintFamily(id: MaterialId): TintableMaterialId | null {
+  const material = MATERIALS[id]
+  if (!material) return null
+  if (material.tintable) return id as TintableMaterialId
+  return material.tintOf
+}
 
 const label: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -28,12 +55,38 @@ export function Toolbar() {
   const setSummonOpen = useMicroLand((s) => s.setSummonOpen)
 
   const paintingSelected = tool.kind === 'material' || tool.kind === 'erase'
+  const family = tool.kind === 'material' ? tintFamily(tool.material) : null
 
-  // Summoned creatures first — you just made them, you want to place them.
-  const ordered = [...blueprints].sort((a, b) => {
-    if (!!a.summoned === !!b.summoned) return a.name.localeCompare(b.name)
-    return a.summoned ? -1 : 1
-  })
+  // One flat scrolling row stopped working somewhere around fifteen creatures
+  // and there are more than thirty now. Grouped and wrapped instead: you see a
+  // whole category at once rather than swiping past everything you don't want.
+  const grouped = useMemo(() => {
+    const out = new Map<CreatureGroup, typeof blueprints>()
+    for (const bp of blueprints) {
+      const key = creatureGroup(bp, blueprints)
+      const list = out.get(key)
+      if (list) list.push(bp)
+      else out.set(key, [bp])
+    }
+    for (const list of out.values()) list.sort((a, b) => a.name.localeCompare(b.name))
+    return out
+  }, [blueprints])
+
+  const tabs = CREATURE_GROUPS.filter((g) => (grouped.get(g.id)?.length ?? 0) > 0)
+  const [group, setGroup] = useState<CreatureGroup>('plants')
+
+  // Jump to "Yours" the moment a summon lands, so the thing you just invented
+  // is under your thumb instead of behind a tab you have to go and find.
+  const summonedCount = blueprints.filter((bp) => bp.summoned).length
+  const lastSummoned = useRef(summonedCount)
+  useEffect(() => {
+    if (summonedCount > lastSummoned.current) setGroup('yours')
+    lastSummoned.current = summonedCount
+  }, [summonedCount])
+
+  // Whatever tab is showing has to exist — "Yours" disappears on a fresh world.
+  const active = tabs.some((t) => t.id === group) ? group : (tabs[0]?.id ?? 'plants')
+  const shown = grouped.get(active) ?? []
 
   return (
     <footer
@@ -100,20 +153,27 @@ export function Toolbar() {
         </button>
 
         {PAINTABLE.map((id) => {
-          const material = MATERIALS[id]
-          const selected = tool.kind === 'material' && tool.material === id
+          // A tintable swatch shows whichever color of itself is in hand, so
+          // the palette reflects what the brush will actually paint.
+          const inHand =
+            family === id && tool.kind === 'material' ? tool.material : id
+          const material = MATERIALS[inHand]
+          const selected =
+            tool.kind === 'material' && (tool.material === id || family === id)
           return (
             <button
               key={id}
               type="button"
               className="cc-btn shrink-0"
-              onClick={() => setTool({ kind: 'material', material: id })}
+              onClick={() => setTool({ kind: 'material', material: inHand })}
               aria-pressed={selected}
               style={swatchStyle(selected)}
             >
               <span
                 aria-hidden
                 style={{
+                  position: 'relative',
+                  display: 'block',
                   width: 22,
                   height: 22,
                   borderRadius: 3,
@@ -121,12 +181,78 @@ export function Toolbar() {
                   boxShadow:
                     material.glow > 0 ? `0 0 10px ${material.color}` : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
                 }}
-              />
-              <span style={swatchLabel}>{material.name}</span>
+              >
+                {MATERIALS[id].tintable && (
+                  // A corner notch marks the ones that come in colors.
+                  <span
+                    style={{
+                      position: 'absolute',
+                      right: 1,
+                      bottom: 1,
+                      width: 0,
+                      height: 0,
+                      borderLeft: '6px solid transparent',
+                      borderBottom: '6px solid rgba(255,255,255,0.75)',
+                    }}
+                  />
+                )}
+              </span>
+              <span style={swatchLabel}>{MATERIALS[id].name}</span>
             </button>
           )
         })}
       </div>
+
+      {family && (
+        <div
+          className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1"
+          role="group"
+          aria-label={`${MATERIALS[family].name} colour`}
+        >
+          <span style={{ ...label, paddingLeft: 4 }}>Colour</span>
+          {[
+            { id: family as MaterialId, name: MATERIALS[family].name },
+            ...TINTS.map((t) => ({
+              id: tintedId(family, t.id),
+              name: t.name,
+            })),
+          ].map(({ id, name }) => {
+            const selected = tool.kind === 'material' && tool.material === id
+            return (
+              <button
+                key={id}
+                type="button"
+                className="cc-btn shrink-0"
+                onClick={() => setTool({ kind: 'material', material: id })}
+                aria-pressed={selected}
+                aria-label={name}
+                title={name}
+                style={{
+                  width: 30,
+                  height: 30,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: 999,
+                  border: `2px solid ${selected ? 'var(--cc-mint)' : 'transparent'}`,
+                  background: 'transparent',
+                }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    display: 'block',
+                    width: 20,
+                    height: 20,
+                    borderRadius: 999,
+                    background: MATERIALS[id].color,
+                    boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.35)',
+                  }}
+                />
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       {/* --- creatures --- */}
       <div className="flex items-center gap-2">
@@ -196,10 +322,65 @@ export function Toolbar() {
         </span>
       </div>
 
-      <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-        {/* Creatures still on their way hold their place at the front of the
+{/* Creatures still on their way hold their place at the front of the
             strip, right where the finished one lands. */}
-        {pending.map((p) => (
+        
+      <div
+        className="-mx-1 flex gap-1 overflow-x-auto px-1"
+        role="tablist"
+        aria-label="Creature kinds"
+      >
+        {tabs.map((tab) => {
+          const selected = tab.id === active
+          const count = grouped.get(tab.id)?.length ?? 0
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              className="cc-btn shrink-0"
+              aria-selected={selected}
+              onClick={() => setGroup(tab.id)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                fontWeight: selected ? 700 : 400,
+                padding: '5px 9px',
+                minHeight: 28,
+                borderRadius: 999,
+                border: `1px solid ${
+                  selected
+                    ? 'var(--cc-mint)'
+                    : tab.id === 'yours'
+                      ? 'var(--cc-pink-border)'
+                      : 'var(--cc-mint-line)'
+                }`,
+                background: selected ? 'var(--cc-mint-soft)' : 'transparent',
+                color: selected
+                  ? 'var(--cc-mint)'
+                  : tab.id === 'yours'
+                    ? 'var(--cc-pink)'
+                    : 'var(--cc-text-muted)',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {tab.label}
+              <span style={{ opacity: 0.55, marginLeft: 5 }}>{count}</span>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Wrapped, not a scrolling row — a whole group is visible at once. The
+          cap only bites on "Yours" after a long session of summoning. */}
+      <div
+        role="tabpanel"
+        className="-mx-1 flex flex-wrap gap-1.5 overflow-y-auto px-1 pb-1"
+        style={{ maxHeight: '24vh' }}
+      >
+        { group === 'yours' && pending.map((p) => (
           <div
             key={p.id}
             className="shrink-0"
@@ -218,8 +399,7 @@ export function Toolbar() {
             <span style={{ ...swatchLabel, color: 'var(--cc-pink)' }}>Making…</span>
           </div>
         ))}
-
-        {ordered.map((bp) => {
+        {shown.map((bp) => {
           const selected = tool.kind === 'creature' && tool.blueprintId === bp.id
           return (
             <button

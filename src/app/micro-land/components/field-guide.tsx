@@ -173,63 +173,7 @@ export function FieldGuide() {
         )}
 
         <ul className="flex flex-col">
-          {ordered.map((bp) => {
-            const eats = blueprints.filter((other) => canEat(bp, other))
-            const eatenBy = blueprints.filter((other) => canEat(other, bp))
-            const alive = counts.get(bp.id) ?? 0
-
-            return (
-              <li
-                key={bp.id}
-                className="flex gap-3 px-4 py-3"
-                style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
-              >
-                <div className="shrink-0 pt-0.5">
-                  <CreaturePortrait blueprint={bp} size={40} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span
-                      style={{
-                        fontFamily: 'var(--cc-font-mono)',
-                        fontSize: 12,
-                        letterSpacing: 1.4,
-                        textTransform: 'uppercase',
-                        color: alive > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                      }}
-                    >
-                      {bp.name}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: 'var(--cc-font-mono)',
-                        fontSize: 10,
-                        color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
-                      }}
-                    >
-                      {alive > 0 ? `${alive} alive` : 'none left'}
-                    </span>
-                    {bp.summoned && (
-                      <span
-                        className="inline-flex items-center gap-1"
-                        style={{
-                          fontFamily: 'var(--cc-font-mono)',
-                          fontSize: 9,
-                          letterSpacing: 1.2,
-                          textTransform: 'uppercase',
-                          padding: '2px 6px',
-                          borderRadius: 999,
-                          color: 'var(--cc-pink)',
-                          border: '1px solid var(--cc-pink-border)',
-                        }}
-                      >
-                        <SparkleIcon size={9} />
-                        Generated
-                      </span>
-                    )}
-                  </div>
-                </div>
-                    
+          {ordered.map((bp) => (
             <GuideEntry
               key={bp.id}
               bp={bp}
@@ -338,6 +282,7 @@ function GuideEntry({
           </span>
           {bp.summoned && (
             <span
+              className="inline-flex items-center gap-1"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -349,7 +294,8 @@ function GuideEntry({
                 border: '1px solid var(--cc-pink-border)',
               }}
             >
-              Summoned
+              <SparkleIcon size={9} />
+              Generated
             </span>
           )}
         </div>
@@ -371,6 +317,21 @@ function GuideEntry({
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
           {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}
+          {bp.aura && (
+            <>
+              <br />
+              <strong style={{ fontWeight: 600 }}>Helps:</strong>{' '}
+              {[
+                bp.aura.helps.length > 0 &&
+                  bp.aura.boost > 1 &&
+                  `${bp.aura.helps.join(' and ')} nearby grow back faster`,
+                bp.aura.converts &&
+                  `turns ${bp.aura.converts.from} into ${bp.aura.converts.to}`,
+              ]
+                .filter(Boolean)
+                .join(' · ')}
+            </>
+          )}
           <br />
           <strong style={{ fontWeight: 600 }}>Eats:</strong>{' '}
           {eats.length > 0

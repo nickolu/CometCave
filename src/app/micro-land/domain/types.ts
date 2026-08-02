@@ -9,8 +9,16 @@
  * into a running world with no new rendering or behavior code.
  */
 
-/** Tile materials. The world is a grid of these. */
-export type MaterialId =
+/**
+ * Tile materials. The world is a grid of these.
+ *
+ * `BaseMaterialId` is the vocabulary — the list a person (or the summoning
+ * model) thinks in. A handful of those are *tintable*: the player can paint them
+ * in any of `TintId`'s colors, and each color is its own entry in the tile grid
+ * (`'plastic-red'`, `'crystal-blue'`). Tints are pure recolors — they inherit
+ * every physical property from the material they came from.
+ */
+export type BaseMaterialId =
   | 'air'
   | 'dirt'
   | 'grass'
@@ -24,6 +32,36 @@ export type MaterialId =
   | 'ash'
   | 'obsidian'
   | 'wood'
+  | 'snow'
+  | 'mud'
+  | 'moss'
+  | 'crystal'
+  | 'gem'
+  | 'gold'
+  | 'bone'
+  | 'iron'
+  | 'marble'
+  | 'plastic'
+  | 'cloud'
+  | 'sap'
+  | 'acid'
+
+/** The colors a tintable material can be painted in. */
+export type TintId =
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'white'
+  | 'black'
+
+/** Materials that come in colors. */
+export type TintableMaterialId = 'plastic' | 'crystal' | 'gem' | 'cloud'
+
+export type MaterialId = BaseMaterialId | `${TintableMaterialId}-${TintId}`
 
 export interface Material {
   id: MaterialId
@@ -44,6 +82,25 @@ export interface Material {
   glow: number
   /** Plants can only root on these. */
   fertile: boolean
+  /**
+   * How much this gums up anything moving through it, 0..1.
+   *
+   * Only means anything for stuff you can be *inside* — cloud and sap. 0 is
+   * open air; 0.9 is wading through treacle.
+   */
+  viscous: number
+  /** A liquid you can still breathe in, so it never drowns anything. */
+  breathable: boolean
+  /** Turns to water next to lava. */
+  melts: boolean
+  /** Eats through neighbouring solids, using itself up as it goes. */
+  corrosive: boolean
+  /** Corrosive materials can't touch this. */
+  acidProof: boolean
+  /** The player can paint this in any tint. Set on the base material only. */
+  tintable: boolean
+  /** For a tint variant, the material it is a recolor of. */
+  tintOf: TintableMaterialId | null
 }
 
 // ---------------------------------------------------------------------------
@@ -157,6 +214,26 @@ export interface CreatureDig {
   speed: number
 }
 
+/**
+ * A creature that changes the world around it rather than just living in it.
+ *
+ * This is how a bee is different from a moth. Both fly and eat plants; only one
+ * of them makes the meadow grow faster. Kept as data like everything else, so a
+ * summoned creature can be a helper too.
+ */
+export interface CreatureAura {
+  /** How far the effect reaches, in tiles. */
+  radius: number
+  /** Creatures carrying any of these tags breed faster nearby. */
+  helps: string[]
+  /** How much faster. 1 = no help, 3 = three times as fast. */
+  boost: number
+  /** Ground it slowly changes as it goes, e.g. stone into dirt. */
+  converts: { from: MaterialId; to: MaterialId } | null
+  /** Conversions per second, at most. Low reads as patient work. */
+  convertRate: number
+}
+
 export interface CreatureDeath {
   /** Leaves this material behind on the tile where it died. */
   becomes: MaterialId | null
@@ -192,6 +269,8 @@ export interface CreatureBlueprint {
   habitat: CreatureHabitat
   dig: CreatureDig
   death: CreatureDeath
+  /** What it does to its surroundings, or null for the vast majority. */
+  aura: CreatureAura | null
   /** Light it casts into dark areas, 0..1. */
   glow: number
   /** True for anything the player summoned, so we can badge it in the UI. */

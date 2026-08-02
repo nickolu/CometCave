@@ -22,8 +22,8 @@ import {
   rememberSpecies,
   updateChronicle,
 } from './chronicle/chronicle'
-import { artSize, sanitizeBlueprint } from './domain/blueprint'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
+import { artSize, bodyBox, sanitizeBlueprint } from './domain/blueprint'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
 import {
   ELDER_MIN_SECONDS,
@@ -799,9 +799,12 @@ export class GameInstance {
         return
       }
       const { w, h } = artSize(bp)
+      const body = bodyBox(bp)
       const px = Math.max(0, Math.min(this.world.width - w, x - w / 2))
       const py = Math.max(0, Math.min(this.world.height - h, y - h / 2))
-      if (boxHitsSolid(this.world, px, py, w, h)) {
+      // Only the solid core has to be clear — tapping a spot where a dragon's
+      // wingtip overlaps a hill should still place the dragon.
+      if (boxHitsSolid(this.world, px + body.dx, py + body.dy, body.w, body.h)) {
         // Tapped inside rock — find the nearest breathing room instead.
         spawnSomewhereSensible(this.world, bp, this.rng, { x, y, radius: 10 })
       } else {

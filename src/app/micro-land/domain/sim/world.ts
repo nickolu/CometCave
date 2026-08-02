@@ -1,13 +1,15 @@
 /** World construction, tile access, and spawning. */
-import { artSize, canEat } from '@/app/micro-land/domain/blueprint'
+import { artSize, bodyBox, canEat } from '@/app/micro-land/domain/blueprint'
 import { BUILTIN_CREATURES } from '@/app/micro-land/domain/config/creatures'
 import {
   AIR,
   IS_DEADLY,
+  IS_DROWNING,
   IS_FERTILE,
   IS_LIQUID,
   IS_SOLID,
   MATERIAL_INDEX,
+  VISCOSITY,
 } from '@/app/micro-land/domain/config/materials'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
@@ -145,24 +147,45 @@ export function settleOnGround(
   const maxDrop = opts.maxDrop ?? 64
   const x0 = Math.floor(x)
   const x1 = Math.floor(x + bw - 0.001)
+  const startTop = Math.floor(y)
+  const limit = Math.min(WORLD_H - 1, startTop + maxDrop + Math.ceil(bh))
 
-  for (let top = Math.floor(y); top <= Math.floor(y) + maxDrop; top++) {
-    if (top + bh > WORLD_H) return null
-    const groundRow = top + bh
-
-    let footing = false
-    for (let tx = x0; tx <= x1; tx++) {
-      if (!solidAt(w, tx, groundRow)) continue
-      footing = opts.requireFertile ? fertileAt(w, tx, groundRow) : true
-      if (footing) break
+  /**
+   * The *highest* solid tile anywhere under the footprint.
+   *
+   * This used to take the first footing found in any column, walking the box
+   * down until some column had ground beneath it. For a 4-wide bug that is the
+   * same answer. For an 18-wide dinosaur on a hillside it lands the box at the
+   * height of the lowest column, which buries its uphill half in the slope —
+   * the fit check then fails and nothing that big could ever be placed at all.
+   * Resting on the highest ground under the footprint is what "standing on a
+   * hill" actually means.
+   */
+  let ground = Infinity
+  let fertileGround = false
+  for (let tx = x0; tx <= x1; tx++) {
+    for (let ty = startTop; ty <= limit; ty++) {
+      if (!solidAt(w, tx, ty)) continue
+      if (ty < ground) {
+        ground = ty
+        fertileGround = fertileAt(w, tx, ty)
+      } else if (ty === ground && fertileAt(w, tx, ty)) {
+        fertileGround = true
+      }
+      break
     }
-    if (!footing) continue
-
-    // Found a floor. It only counts if the body itself fits above it.
-    if (boxHitsSolid(w, x, top, bw, bh)) return null
-    return top
   }
-  return null
+  if (ground === Infinity) return null
+  if (opts.requireFertile && !fertileGround) return null
+
+  // The tile *below* a box at `top` is `floor(top + bh - 0.001) + 1`, not
+  // `floor(top + bh)` — those differ for every non-integer top, and the naive
+  // version asks about a row the box is already standing in. Sitting the box
+  // exactly `bh` above the ground row is what makes that arithmetic come out.
+  const top = ground - bh
+  if (top < 0) return null
+  if (boxHitsSolid(w, x, top, bw, bh)) return null
+  return top
 }
 
 /** Fraction of a creature's box that's sitting in liquid, 0..1. */
@@ -186,6 +209,64 @@ export function boxLiquidFraction(
     }
   }
   return total === 0 ? 0 : wet / total
+}
+
+/**
+ * Fraction of the box sitting in something it could drown in, 0..1.
+ *
+ * Deliberately not the same as `boxLiquidFraction`. Sap is a liquid for every
+ * physical purpose — it's buoyant, it drags, things sink into it — but it isn't
+ * water, and a creature stuck in tree sap is stuck, not drowning.
+ */
+export function boxDrownFraction(
+  w: WorldState,
+  x: number,
+  y: number,
+  bw: number,
+  bh: number
+): number {
+  const x0 = Math.floor(x)
+  const y0 = Math.floor(y)
+  const x1 = Math.floor(x + bw - 0.001)
+  const y1 = Math.floor(y + bh - 0.001)
+  let submerged = 0
+  let total = 0
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      total++
+      if (!inBounds(tx, ty)) continue
+      if (IS_DROWNING[w.tiles[ty * WORLD_W + tx]] === 1) submerged++
+    }
+  }
+  return total === 0 ? 0 : submerged / total
+}
+
+/**
+ * How gummed-up the creature's box is, 0..1.
+ *
+ * The thickest tile wins rather than the average: one foot in the sap should
+ * hold you, not be diluted by the nine tiles of clear air around it.
+ */
+export function boxViscosity(
+  w: WorldState,
+  x: number,
+  y: number,
+  bw: number,
+  bh: number
+): number {
+  const x0 = Math.floor(x)
+  const y0 = Math.floor(y)
+  const x1 = Math.floor(x + bw - 0.001)
+  const y1 = Math.floor(y + bh - 0.001)
+  let worst = 0
+  for (let ty = y0; ty <= y1; ty++) {
+    for (let tx = x0; tx <= x1; tx++) {
+      if (!inBounds(tx, ty)) continue
+      const v = VISCOSITY[w.tiles[ty * WORLD_W + tx]]
+      if (v > worst) worst = v
+    }
+  }
+  return worst / 255
 }
 
 /** The first deadly material the creature's box is touching, if any. */
@@ -321,8 +402,15 @@ export function findSpawnSpot(
   near?: { x: number; y: number; radius: number }
 ): { x: number; y: number } | null {
   const { w: bw, h: bh } = artSize(bp)
+  const body = bodyBox(bp)
   const wantsLiquid = bp.move.kind === 'swim' || bp.habitat.needs?.includes('water')
   const isPlant = bp.move.kind === 'root'
+
+  // Somewhere to stand is judged on the solid core, not the drawing. A dragon
+  // that needed a clear 28-tile box to exist would almost never find one, and
+  // every summon would silently fall back to "drop it wherever".
+  const fits = (x: number, y: number) =>
+    !boxHitsSolid(w, x + body.dx, y + body.dy, body.w, body.h)
 
   for (let attempt = 0; attempt < 120; attempt++) {
     let x: number
@@ -339,12 +427,12 @@ export function findSpawnSpot(
     x = Math.max(0, Math.min(WORLD_W - bw, x))
     y = Math.max(0, Math.min(WORLD_H - bh, y))
 
-    if (boxHitsSolid(w, x, y, bw, bh)) continue
+    if (!fits(x, y)) continue
 
-    const wet = boxLiquidFraction(w, x, y, bw, bh)
+    const wet = boxLiquidFraction(w, x + body.dx, y + body.dy, body.w, body.h)
     if (wantsLiquid && wet < 0.6) continue
     if (!wantsLiquid && bp.habitat.drowns && wet > 0.3) continue
-    if (boxDeadlyMaterial(w, x, y, bw, bh) !== null) {
+    if (boxDeadlyMaterial(w, x + body.dx, y + body.dy, body.w, body.h) !== null) {
       const immune = bp.body.immuneTo.length > 0
       if (!immune) continue
     }
@@ -353,13 +441,21 @@ export function findSpawnSpot(
       // Fall from wherever we landed onto the first floor beneath it. Scanning
       // down rather than demanding a floor at exactly this height is what makes
       // a random point in open sky a usable spawn instead of a wasted attempt.
-      const settled = settleOnGround(w, x, y, bw, bh, { requireFertile: isPlant })
+      const settled = settleOnGround(w, x + body.dx, y + body.dy, body.w, body.h, {
+        requireFertile: isPlant,
+      })
       if (settled === null) continue
-      y = settled
+      // `settled` is the core's resting top edge; the sprite hangs above it.
+      y = settled - body.dy
       // Re-check the surroundings at the resting spot, not where we aimed.
-      if (bp.habitat.drowns && boxLiquidFraction(w, x, y, bw, bh) > 0.3) continue
       if (
-        boxDeadlyMaterial(w, x, y, bw, bh) !== null &&
+        bp.habitat.drowns &&
+        boxLiquidFraction(w, x + body.dx, y + body.dy, body.w, body.h) > 0.3
+      ) {
+        continue
+      }
+      if (
+        boxDeadlyMaterial(w, x + body.dx, y + body.dy, body.w, body.h) !== null &&
         bp.body.immuneTo.length === 0
       ) {
         continue
@@ -370,7 +466,11 @@ export function findSpawnSpot(
   }
 
   // Nowhere ideal. Drop it wherever the player asked and let physics sort it out.
-  if (near && !boxHitsSolid(w, near.x, near.y, bw, bh)) {
+  // Resolved from a stash conflict: keep this function returning a spot (the
+  // caller does the spawning now), but test the fit against the solid core
+  // rather than the whole sprite — a dragon's wingtips overlapping a hill must
+  // not be the reason a summon lands nowhere.
+  if (near && fits(near.x - bw / 2, near.y - bh / 2)) {
     return { x: near.x - bw / 2, y: near.y - bh / 2 }
   }
   return null
