@@ -13,7 +13,7 @@ import type { MedalTier } from '@/lib/trivia/medals'
 import { SignInBanner } from './SignInCTA'
 import { TriviaFooter } from './TriviaFooter'
 
-type Sort = 'score' | 'streak' | 'allCategories'
+type Sort = 'score' | 'streak' | 'allCategories' | 'custom'
 
 interface OverallEntry {
   uid: string
@@ -52,7 +52,14 @@ interface AllCategoriesResponse {
   notice?: string
 }
 
-type LeaderboardResponse = OverallResponse | AllCategoriesResponse
+interface CustomResponse {
+  sort: 'custom'
+  customSort: 'score' | 'streak'
+  entries: OverallEntry[]
+  notice?: string
+}
+
+type LeaderboardResponse = OverallResponse | AllCategoriesResponse | CustomResponse
 
 const TIER_EMOJI: Record<MedalTier, string> = {
   none: '',
@@ -74,6 +81,7 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
   const { user } = useAuth()
   const { displayName: triviaDisplayName } = useTriviaUser()
   const [sort, setSort] = useState<Sort>('score')
+  const [customSort, setCustomSort] = useState<'score' | 'streak'>('score')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<LeaderboardResponse | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -140,7 +148,10 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       setLoading(true)
       setError(null)
       try {
-        const res = await fetch(`/api/v1/trivia/infinite/leaderboard?sort=${sort}`, { signal: controller.signal })
+        const url = sort === 'custom'
+          ? `/api/v1/trivia/infinite/leaderboard?sort=${sort}&customSort=${customSort}`
+          : `/api/v1/trivia/infinite/leaderboard?sort=${sort}`
+        const res = await fetch(url, { signal: controller.signal })
         if (!res.ok) throw new Error('Failed to load leaderboard')
         const json = (await res.json()) as LeaderboardResponse
         setData(json)
@@ -153,7 +164,7 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
     }
     load()
     return () => controller.abort()
-  }, [sort])
+  }, [sort, customSort])
 
   const renderContent = () => {
     if (!data) return null
@@ -198,6 +209,58 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
               })}
             </div>
           ))}
+        </div>
+      )
+    }
+
+    if (data.sort === 'custom') {
+      return (
+        <div className="flex flex-col gap-3">
+          <div className="flex gap-2">
+            {(['score', 'streak'] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setCustomSort(s)}
+                className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+                  customSort === s
+                    ? 'bg-ds-tertiary text-on-tertiary border-ds-tertiary'
+                    : 'bg-transparent text-on-surface/60 border-outline-variant hover:border-outline'
+                }`}
+              >
+                {s === 'score' ? 'Score' : 'Streak'}
+              </button>
+            ))}
+          </div>
+          {data.entries.length === 0 ? (
+            <div className="text-center text-on-surface/50 py-8 px-4">
+              {data.notice ?? 'No custom runs yet. Be the first!'}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {data.entries.map((entry, i) => {
+                const primary = customSort === 'score'
+                  ? `${entry.score.toLocaleString()} pts`
+                  : `${entry.longestStreak} streak`
+                const secondary = entry.customCategory
+                  ? customSort === 'score'
+                    ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs · ${entry.customCategory}`
+                    : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs · ${entry.customCategory}`
+                  : customSort === 'score'
+                    ? `${entry.longestStreak} streak · ${entry.questionsAnswered} Qs`
+                    : `${entry.score.toLocaleString()} pts · ${entry.questionsAnswered} Qs`
+                return (
+                  <LeaderboardRow
+                    key={`${entry.uid}-${i}`}
+                    rank={i + 1}
+                    name={entry.displayName || 'Unknown'}
+                    primary={primary}
+                    secondary={secondary}
+                    isCurrentUser={!!currentUid && entry.uid === currentUid}
+                  />
+                )
+              })}
+            </div>
+          )}
         </div>
       )
     }
@@ -254,14 +317,14 @@ export function InfiniteLeaderboard({ onBack }: { onBack: () => void }) {
       )}
 
       {/* Sort tabs */}
-      <div className="grid grid-cols-3 gap-2">
-        {(['score', 'streak', 'allCategories'] as Sort[]).map((s) => (
+      <div className="grid grid-cols-4 gap-2">
+        {(['score', 'streak', 'allCategories', 'custom'] as Sort[]).map((s) => (
           <ChunkyButton
             key={s}
             variant={sort === s ? 'primary' : 'secondary'}
             onClick={() => setSort(s)}
           >
-            {s === 'score' ? 'Top Score' : s === 'streak' ? 'Top Streak' : 'By Category'}
+            {s === 'score' ? 'Top Score' : s === 'streak' ? 'Top Streak' : s === 'allCategories' ? 'By Category' : 'Custom'}
           </ChunkyButton>
         ))}
       </div>

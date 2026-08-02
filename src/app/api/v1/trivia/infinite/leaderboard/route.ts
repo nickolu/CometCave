@@ -5,7 +5,12 @@ import {
   getInfiniteLeaderboardAllCategories,
   getInfiniteTopByCategory,
 } from '@/lib/trivia/categoryMedals'
-import { getInfiniteTopByScore, getInfiniteTopByStreak } from '@/lib/trivia/infiniteRuns'
+import {
+  getCustomTopByScore,
+  getCustomTopByStreak,
+  getInfiniteTopByScore,
+  getInfiniteTopByStreak,
+} from '@/lib/trivia/infiniteRuns'
 
 export async function GET(request: NextRequest) {
   const sort = request.nextUrl.searchParams.get('sort') || 'score'
@@ -40,8 +45,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ sort: 'allCategories', sections })
     }
 
+    if (sort === 'custom') {
+      const customSort = request.nextUrl.searchParams.get('customSort') ?? 'score'
+      const entries = customSort === 'streak'
+        ? await getCustomTopByStreak(20)
+        : await getCustomTopByScore(20)
+      return NextResponse.json({ sort: 'custom', customSort, entries })
+    }
+
     return NextResponse.json(
-      { error: 'Invalid sort. Use score, streak, category, or allCategories.' },
+      { error: 'Invalid sort. Use score, streak, category, allCategories, or custom.' },
       { status: 400 }
     )
   } catch (error: unknown) {
