@@ -21,11 +21,11 @@ const DialogueRequestSchema = z.object({
   characterClass: z.string(),
   characterLevel: z.number(),
   characterCharisma: z.number().optional(),
-  message: z.string().optional(),
+  message: z.string().max(500).optional(),
   conversationHistory: z.array(z.object({
     role: z.enum(['user', 'assistant']),
-    content: z.string(),
-  })).optional(),
+    content: z.string().max(2000),
+  })).max(50).optional(),
   disposition: z.number().optional(),
   exchangeCount: z.number().optional(),
 })

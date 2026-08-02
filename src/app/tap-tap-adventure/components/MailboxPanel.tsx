@@ -79,6 +79,7 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
                   placeholder="Write your message..."
                   value={messageText}
                   onChange={(e) => setMessageText(e.target.value)}
+                  aria-label="Message"
                 />
                 <div className="text-[10px] text-slate-600 text-right">{messageText.length}/200</div>
               </div>
