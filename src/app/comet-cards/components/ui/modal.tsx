@@ -27,6 +27,7 @@ export function Modal({
     <div
       role="dialog"
       aria-modal="true"
+      aria-label={title ?? eyebrow ?? 'Dialog'}
       onClick={onClose}
       className="cosmic-cards fixed inset-0 z-50 flex items-center justify-center"
       style={{
