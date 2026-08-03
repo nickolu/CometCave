@@ -11,12 +11,19 @@
  * creatures), blurred and composited as a darkness layer *after* sprites, so
  * creatures are dimmed by the same shadows as the terrain.
  *
- * The world is wider than the screen, so there is a camera. It only moves
- * horizontally and it only ever sits on whole tiles: a camera at x = 12.4 would
- * resample every tile in the world onto a half-pixel and undo the one thing this
- * renderer exists to protect. Every per-frame pass below — tiles, light, shadow,
- * sprites — is clipped to the visible column range, which is what keeps a world
- * three times the size costing about what one screen used to.
+ * The world is wider than the screen, so there is a camera, and it only ever
+ * sits on whole tiles: a camera at x = 12.4 would resample every tile in the
+ * world onto a half-pixel and undo the one thing this renderer exists to
+ * protect. Every per-frame pass below — tiles, light, shadow, sprites — is
+ * clipped to the visible column range, which is what keeps a world three times
+ * the size costing about what one screen used to.
+ *
+ * Zoom moves the size of a tile, never the size of the backbuffer: the world is
+ * always composed at one pixel per tile and the zoom lives entirely in the final
+ * blit, so pushing in costs nothing and pulling out to the whole world costs
+ * only the wider column range. Pushed in far enough the world no longer fits
+ * top to bottom, which is the only reason there is a vertical camera at all —
+ * it is pinned to 0 and does nothing until the rows stop fitting.
  */
 import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
@@ -60,6 +67,23 @@ const MH = Math.ceil(WORLD_H / MAP_SCALE)
 
 /** Frames between minimap refreshes. It's a thumbnail; 5Hz is more than enough. */
 const MAP_REFRESH_FRAMES = 12
+
+/**
+ * How far in the camera can push, as a multiple of the default framing.
+ *
+ * 3× puts roughly 75 tiles across a phone, which is about a dozen body lengths
+ * of a mid-sized creature — close enough to watch one eat without losing the
+ * ground it is standing on. Past that the pixels are large enough that the art
+ * stops reading as a creature and starts reading as squares.
+ */
+const ZOOM_MAX = 3
+
+/** One press of + or −. Five or six presses cross the whole range. */
+export const ZOOM_STEP = 1.5
+
+function clamp(value: number, low: number, high: number): number {
+  return Math.max(low, Math.min(high, value))
+}
 
 interface Rgb {
   r: number
@@ -121,12 +145,28 @@ export class Renderer {
   private offsetY = 0
 
   /**
+   * Display pixels per tile at zoom 1 — the default framing, VIEW_W across.
+   *
+   * Zoom is expressed as a multiple of this rather than as an absolute tile size
+   * so that 1× means the same thing on every display: exactly the framing the
+   * game has always had, whatever the screen happens to be.
+   */
+  private baseScale = 1
+  private zoom = 1
+  /** Pulled back far enough to see the whole world. Depends on the display. */
+  private minZoom = 1
+
+  /**
    * Left edge of the view in world tiles. Kept fractional so a slow pan can
    * accumulate, but always floored before anything is drawn from it.
    */
   private camX = 0
+  /** Top edge, same rules. Stays 0 unless zoom has made the world too tall. */
+  private camY = 0
   /** How many world tiles the display is wide at the current scale. */
   private viewTiles = VIEW_W
+  /** How many world rows the display is tall at the current scale. */
+  private viewRows = WORLD_H
 
   constructor(display: HTMLCanvasElement) {
     this.display = display
@@ -172,14 +212,29 @@ export class Renderer {
     this.display.style.width = `${cssWidth}px`
     this.display.style.height = `${cssHeight}px`
 
-    // Zoom is fixed by VIEW_W, not by the whole world: a tile is sized so that
-    // one screen's worth spans the canvas, exactly as it did when the world was
-    // one screen wide. Whatever extra height allows, you simply get to see.
-    const fit = Math.min(this.display.width / VIEW_W, this.display.height / WORLD_H)
-    this.scale = fit
-    this.viewTiles = Math.min(WORLD_W, this.display.width / fit)
-    this.offsetX = Math.floor((this.display.width - this.viewTiles * fit) / 2)
-    this.offsetY = Math.floor((this.display.height - WORLD_H * fit) / 2)
+    // The resting zoom is fixed by VIEW_W, not by the whole world: a tile is
+    // sized so that one screen's worth spans the canvas, exactly as it did when
+    // the world was one screen wide. Whatever extra height allows, you simply
+    // get to see.
+    this.baseScale = Math.min(this.display.width / VIEW_W, this.display.height / WORLD_H)
+    // Far enough out to hold all 672 columns, and never past 1× — on a display
+    // wide enough to show the whole world already there is nothing to pull back
+    // to, and a zoom-out button that magnified would be a lie.
+    this.minZoom = Math.min(1, this.display.width / WORLD_W / this.baseScale)
+    this.applyZoom()
+  }
+
+  /** Re-derive everything that depends on the zoom. Always ends clamped. */
+  private applyZoom(): void {
+    this.zoom = clamp(this.zoom, this.minZoom, ZOOM_MAX)
+    const scale = this.baseScale * this.zoom
+    this.scale = scale
+    // Capped at the world: pulled all the way out there is letterboxing rather
+    // than a view that claims to extend past the edge of everything there is.
+    this.viewTiles = Math.min(WORLD_W, this.display.width / scale)
+    this.viewRows = Math.min(WORLD_H, this.display.height / scale)
+    this.offsetX = Math.floor((this.display.width - this.viewTiles * scale) / 2)
+    this.offsetY = Math.floor((this.display.height - this.viewRows * scale) / 2)
     this.clampCam()
   }
 
@@ -192,18 +247,46 @@ export class Renderer {
     return this.camX
   }
 
+  /** Top edge of the view, in world rows. */
+  get cameraY(): number {
+    return this.camY
+  }
+
   /** How much world is on screen right now, in tiles. */
   get viewWidth(): number {
     return this.viewTiles
   }
 
-  /** True when the whole world already fits — nothing to scroll to. */
-  get fitsOnScreen(): boolean {
-    return this.viewTiles >= WORLD_W
+  /** How much world is on screen right now, in rows. */
+  get viewHeight(): number {
+    return this.viewRows
   }
 
-  panBy(tiles: number): void {
+  /** True when the whole world already fits — nothing to scroll to. */
+  get fitsOnScreen(): boolean {
+    return this.viewTiles >= WORLD_W && this.viewRows >= WORLD_H
+  }
+
+  /** Whether there is any world above or below to scroll to. */
+  get canPanVertically(): boolean {
+    return this.viewRows < WORLD_H
+  }
+
+  get zoomLevel(): number {
+    return this.zoom
+  }
+
+  get canZoomIn(): boolean {
+    return this.zoom < ZOOM_MAX - 1e-6
+  }
+
+  get canZoomOut(): boolean {
+    return this.zoom > this.minZoom + 1e-6
+  }
+
+  panBy(tiles: number, rows = 0): void {
     this.camX += tiles
+    this.camY += rows
     this.clampCam()
   }
 
@@ -213,10 +296,79 @@ export class Renderer {
     this.clampCam()
   }
 
-  /** Put this world column in the middle of the view. */
-  centerOn(worldX: number): void {
-    this.camX = worldX - this.viewTiles / 2
+  /** Put this world point at the top-left corner. Absolute, for drag-panning. */
+  panTo(tile: number, row: number): void {
+    this.camX = tile
+    this.camY = row
     this.clampCam()
+  }
+
+  /** Put this world column — and optionally this row — in the middle of the view. */
+  centerOn(worldX: number, worldY?: number): void {
+    this.camX = worldX - this.viewTiles / 2
+    if (worldY !== undefined) this.camY = worldY - this.viewRows / 2
+    this.clampCam()
+  }
+
+  // -------------------------------------------------------------------------
+  // Zoom
+  // -------------------------------------------------------------------------
+
+  /**
+   * Change the zoom, holding one point of the world still under the screen.
+   *
+   * Without an anchor the middle of the view is what stays put, which is what a
+   * button press wants. With one — the pointer, or the midpoint between two
+   * fingers — the tile you started the gesture on is the tile you end it on,
+   * which is the whole difference between pinching a map and fighting one.
+   *
+   * Returns whether the zoom actually moved, so a caller can tell a press that
+   * did something from one that hit the end of the range.
+   */
+  setZoom(next: number, anchor?: { clientX: number; clientY: number }): boolean {
+    const target = clamp(next, this.minZoom, ZOOM_MAX)
+    if (Math.abs(target - this.zoom) < 1e-6) return false
+
+    if (!anchor) {
+      const midX = this.camX + this.viewTiles / 2
+      const midY = this.camY + this.viewRows / 2
+      this.zoom = target
+      this.applyZoom()
+      this.centerOn(midX, midY)
+      return true
+    }
+
+    // Measured off the fractional camera rather than `screenToWorld`, which
+    // floors: a pinch is a stream of tiny changes, and quantising the anchor to
+    // whole tiles at every step is what makes a zoom gesture crawl sideways.
+    const rect = this.display.getBoundingClientRect()
+    const dpr = rect.width === 0 ? 1 : this.display.width / rect.width
+    const px = (anchor.clientX - rect.left) * dpr
+    const py = (anchor.clientY - rect.top) * dpr
+    const worldX = this.camX + (px - this.offsetX) / this.scale
+    const worldY = this.camY + (py - this.offsetY) / this.scale
+
+    this.zoom = target
+    this.applyZoom()
+
+    this.camX = worldX - (px - this.offsetX) / this.scale
+    this.camY = worldY - (py - this.offsetY) / this.scale
+    this.clampCam()
+    return true
+  }
+
+  /** One notch of the +/− ladder. */
+  zoomByStep(direction: 1 | -1, anchor?: { clientX: number; clientY: number }): boolean {
+    const next = direction === 1 ? this.zoom * ZOOM_STEP : this.zoom / ZOOM_STEP
+    // 1× is the framing the game was built around, so a ladder that steps over
+    // it can never be landed on again without a lucky screen width. Anything
+    // that crosses it stops there first.
+    const snapped = (this.zoom - 1) * (next - 1) < 0 ? 1 : next
+    return this.setZoom(snapped, anchor)
+  }
+
+  resetZoom(): boolean {
+    return this.setZoom(1)
   }
 
   /**
@@ -232,12 +384,26 @@ export class Renderer {
     else if (worldX > right) this.panBy(Math.min(maxTiles, worldX - right))
   }
 
+  /** The same, up and down. A no-op while the world still fits vertically. */
+  keepInViewY(worldY: number, margin: number, maxRows: number): void {
+    if (!this.canPanVertically) return
+    const top = this.camY + margin
+    const bottom = this.camY + this.viewRows - margin
+    if (worldY < top) this.panBy(0, Math.max(-maxRows, worldY - top))
+    else if (worldY > bottom) this.panBy(0, Math.min(maxRows, worldY - bottom))
+  }
+
   private clampCam(): void {
-    this.camX = Math.max(0, Math.min(WORLD_W - this.viewTiles, this.camX))
+    // `max(0, …)` on the limit as well as the value: pulled out far enough that
+    // the world is letterboxed, `WORLD_W - viewTiles` is negative and the naive
+    // clamp would pin the camera to a negative column.
+    this.camX = clamp(this.camX, 0, Math.max(0, WORLD_W - this.viewTiles))
+    this.camY = clamp(this.camY, 0, Math.max(0, WORLD_H - this.viewRows))
   }
 
   /**
-   * How many world tiles one CSS pixel of horizontal drag is worth.
+   * How many world tiles one CSS pixel of drag is worth. Same either axis —
+   * tiles are square and the scale is uniform.
    *
    * Drag-panning can't be built out of `screenToWorld` differences: that already
    * has the camera folded into it, so moving the camera moves the answer and the
@@ -254,6 +420,11 @@ export class Renderer {
     return Math.floor(this.camX)
   }
 
+  /** Whole-tile top edge. Same reason as `viewLeft`. */
+  private viewTop(): number {
+    return Math.floor(this.camY)
+  }
+
   /** Display pixel → world tile. Used by every pointer interaction. */
   screenToWorld(clientX: number, clientY: number): { x: number; y: number } {
     const rect = this.display.getBoundingClientRect()
@@ -262,18 +433,23 @@ export class Renderer {
     const py = (clientY - rect.top) * dpr
     return {
       x: this.viewLeft() + (px - this.offsetX) / this.scale,
-      y: (py - this.offsetY) / this.scale,
+      y: this.viewTop() + (py - this.offsetY) / this.scale,
     }
   }
 
   /**
    * Was this tap on the minimap, and if so where in the world does it point?
    *
-   * Returns the world column to centre on, or null if the tap missed. The
+   * Returns the world point to centre on, or null if the tap missed. The
    * minimap is the only part of the world canvas that isn't the world, so it
    * has to be asked about before a tap is allowed to paint anything.
+   *
+   * The row comes back as well as the column because zoomed in there is a
+   * vertical camera to aim, and the thumbnail shows the whole height — tapping
+   * a cave near the bottom of it and arriving at the surface would be a map
+   * that answers a question you didn't ask.
    */
-  minimapHit(clientX: number, clientY: number): number | null {
+  minimapHit(clientX: number, clientY: number): { x: number; y: number } | null {
     const m = this.mapRect
     if (m.w <= 0) return null
     const rect = this.display.getBoundingClientRect()
@@ -281,7 +457,7 @@ export class Renderer {
     const px = (clientX - rect.left) * dpr
     const py = (clientY - rect.top) * dpr
     if (px < m.x || px > m.x + m.w || py < m.y || py > m.y + m.h) return null
-    return ((px - m.x) / m.w) * WORLD_W
+    return { x: ((px - m.x) / m.w) * WORLD_W, y: ((py - m.y) / m.h) * WORLD_H }
   }
 
   // -------------------------------------------------------------------------
@@ -326,13 +502,13 @@ export class Renderer {
     ctx.drawImage(
       this.world,
       vx,
-      0,
+      this.viewTop(),
       this.viewTiles,
-      WORLD_H,
+      this.viewRows,
       this.offsetX,
       this.offsetY,
       this.viewTiles * this.scale,
-      WORLD_H * this.scale
+      this.viewRows * this.scale
     )
 
     this.drawMinimap(w, theme, vx)
@@ -673,17 +849,19 @@ export class Renderer {
     ctx.drawImage(this.mapCanvas, 0, 0, MW, MH, x, y, width, height)
     ctx.globalAlpha = 1
 
-    // The view, marked. Kept at least a couple of pixels wide so it can't
-    // vanish on a narrow screen.
+    // The view, marked. Kept at least a couple of pixels each way so it can't
+    // vanish on a narrow screen — or, zoomed right in, collapse to a line.
     const vxPx = x + Math.round((vx / WORLD_W) * width)
     const vwPx = Math.max(3, Math.round((this.viewTiles / WORLD_W) * width))
+    const vyPx = y + Math.round((this.viewTop() / WORLD_H) * height)
+    const vhPx = Math.max(3, Math.round((this.viewRows / WORLD_H) * height))
     ctx.strokeStyle = '#5eead4'
     ctx.lineWidth = Math.max(1, Math.round(width / 220))
     ctx.strokeRect(
       vxPx + ctx.lineWidth / 2,
-      y + ctx.lineWidth / 2,
+      vyPx + ctx.lineWidth / 2,
       Math.min(vwPx, width - (vxPx - x)) - ctx.lineWidth,
-      height - ctx.lineWidth
+      Math.min(vhPx, height - (vyPx - y)) - ctx.lineWidth
     )
 
     ctx.strokeStyle = 'rgba(94, 234, 212, 0.35)'

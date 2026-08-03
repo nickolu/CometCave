@@ -19,6 +19,7 @@ import { SettingsPanel } from '@/app/micro-land/components/settings-panel'
 import { SummonPanel } from '@/app/micro-land/components/summon-panel'
 import { Toolbar } from '@/app/micro-land/components/toolbar'
 import { WorldsPanel } from '@/app/micro-land/components/worlds-panel'
+import { ZoomControls } from '@/app/micro-land/components/zoom-controls'
 import { THEME_BY_ID } from '@/app/micro-land/domain/config/themes'
 import { hasFertileGround } from '@/app/micro-land/domain/terrain'
 import { GameInstance } from '@/app/micro-land/game-instance'
@@ -292,6 +293,10 @@ export function MicroLandGame() {
     gameRef.current?.nudgePan(direction)
   }, [])
 
+  const handleZoom = useCallback((direction: 1 | -1) => {
+    gameRef.current?.zoomByStep(direction)
+  }, [])
+
   const handleApplyTerrain = useCallback((raw: unknown, keepCreatures: boolean) => {
     const game = gameRef.current
     if (!game) return null
@@ -311,9 +316,10 @@ export function MicroLandGame() {
           tabIndex={0}
           className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
           style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
-          aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world."
+          aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world, plus and minus move closer and further away."
         />
         <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
+        <ZoomControls onZoom={handleZoom} />
         <Notices />
         <Inspector onName={handleNameElder} />
       </div>

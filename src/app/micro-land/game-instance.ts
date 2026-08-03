@@ -127,6 +127,16 @@ const FOLLOW_SPEED = 90
 /** Drag further than this and a tap was really a pan. CSS pixels. */
 const TAP_SLOP = 6
 
+/**
+ * How much zoom one notch of a ctrl-wheel is worth.
+ *
+ * A trackpad pinch on macOS arrives as a wheel event with `ctrlKey` set and a
+ * delta of a few pixels per frame, so this has to be gentle enough that a pinch
+ * is smooth; a mouse wheel sends one large delta per notch and gets a whole step
+ * out of the same number.
+ */
+const WHEEL_ZOOM_RATE = 0.0125
+
 export class GameInstance {
   private canvas: HTMLCanvasElement
   private renderer: Renderer
@@ -193,14 +203,33 @@ export class GameInstance {
   private resizeObserver: ResizeObserver | null = null
 
   // --- camera state ---
-  /** Every pointer currently down, so a second finger can be noticed. */
-  private pointers = new Map<number, number>()
-  /** Client X where a drag-pan started, and the camera position it started at. */
+  /**
+   * Every pointer currently down, so a second finger can be noticed.
+   *
+   * Both coordinates, not just the column: a pinch needs the distance between
+   * two fingers, and zoomed in there is somewhere to pan vertically to.
+   */
+  private pointers = new Map<number, { x: number; y: number }>()
+  /** Where a drag-pan started, and the camera position it started at. */
   private panAnchorX = 0
+  private panAnchorY = 0
   private panAnchorCam = 0
+  private panAnchorCamY = 0
   private panning = false
+  /**
+   * The two-finger gesture in progress, if there is one.
+   *
+   * Pinching is tracked as a change since the *last* move rather than since the
+   * gesture began, unlike the one-finger drag: a pinch is a zoom and a pan at
+   * once, and an absolute anchor for each would have them fighting over the same
+   * camera every frame. Incremental, they compose — zoom about the midpoint,
+   * then slide by however far the midpoint itself travelled.
+   */
+  private pinch: { dist: number; x: number; y: number } | null = null
   /** -1, 0 or 1 — an arrow key or arrow button being held down. */
   private panHeld = 0
+  /** The same, vertically. Only reachable by keyboard, and only when zoomed in. */
+  private panHeldY = 0
   /** Direction keys currently held, so releasing one of two doesn't stop both. */
   private keysDown = new Set<string>()
   /** A look-mode tap waiting to see whether it turns into a pan. */
@@ -258,7 +287,7 @@ export class GameInstance {
     const apply = () => {
       const rect = parent.getBoundingClientRect()
       this.renderer.resize(rect.width, rect.height)
-      useMicroLand.getState().setCanPan(!this.renderer.fitsOnScreen)
+      this.pushCamera()
     }
     apply()
     this.resizeObserver = new ResizeObserver(apply)
@@ -317,9 +346,9 @@ export class GameInstance {
    * the pointer handler; everything here is per-second and belongs on a clock.
    */
   private updateCamera(dt: number): void {
-    if (this.panHeld !== 0) {
+    if (this.panHeld !== 0 || this.panHeldY !== 0) {
       this.following = false
-      this.renderer.panBy(this.panHeld * PAN_SPEED * dt)
+      this.renderer.panBy(this.panHeld * PAN_SPEED * dt, this.panHeldY * PAN_SPEED * dt)
     }
 
     // Carry a creature to the edge and the world comes with it — otherwise
@@ -332,15 +361,29 @@ export class GameInstance {
       if (held < cam + view * EDGE_BAND) dir = -1
       else if (held > cam + view * (1 - EDGE_BAND)) dir = 1
 
-      if (dir !== 0) {
-        this.renderer.panBy(dir * EDGE_SPEED * dt)
+      // The same band top and bottom, but only once zoom has put world off
+      // screen that way — otherwise dragging something down to the floor, which
+      // is a completely normal thing to do, would try to scroll after it.
+      const rows = this.renderer.viewHeight
+      const camY = this.renderer.cameraY
+      const heldY = this.grabbed.y
+      let dirY = 0
+      if (this.renderer.canPanVertically) {
+        if (heldY < camY + rows * EDGE_BAND) dirY = -1
+        else if (heldY > camY + rows * (1 - EDGE_BAND)) dirY = 1
+      }
+
+      if (dir !== 0 || dirY !== 0) {
+        this.renderer.panBy(dir * EDGE_SPEED * dt, dirY * EDGE_SPEED * dt)
         // The creature is positioned from the pointer, and the pointer isn't
         // moving — so without dragging it along by the same amount it would slip
         // out of the edge band on the first frame and the scroll would stop dead.
         const moved = this.renderer.cameraX - cam
+        const movedY = this.renderer.cameraY - camY
         const bp = this.world.blueprints[this.grabbed.blueprintId]
-        const bw = bp ? artSize(bp).w : 0
-        this.grabbed.x = Math.max(0, Math.min(this.world.width - bw, held + moved))
+        const art = bp ? artSize(bp) : { w: 0, h: 0 }
+        this.grabbed.x = Math.max(0, Math.min(this.world.width - art.w, held + moved))
+        this.grabbed.y = Math.max(0, Math.min(this.world.height - art.h, heldY + movedY))
       }
     }
 
@@ -348,6 +391,7 @@ export class GameInstance {
       const c = this.world.creatures.find(x => x.id === this.inspectedId)
       if (c) {
         this.renderer.keepInView(c.x, this.renderer.viewWidth * 0.22, FOLLOW_SPEED * dt)
+        this.renderer.keepInViewY(c.y, this.renderer.viewHeight * 0.22, FOLLOW_SPEED * dt)
       }
     }
   }
@@ -1253,20 +1297,74 @@ export class GameInstance {
     this.renderer.panBy(direction * PAN_STEP)
   }
 
+  /** One press of the on-screen + or −, or of the + / − keys. */
+  zoomByStep(direction: 1 | -1): void {
+    if (this.renderer.zoomByStep(direction)) this.pushCamera()
+  }
+
+  /** Back to the framing the world opens at. */
+  resetZoom(): void {
+    if (this.renderer.resetZoom()) this.pushCamera()
+  }
+
+  /**
+   * Tell the UI what the camera can currently do.
+   *
+   * Only on change rather than every frame: these drive whether buttons are on
+   * screen and whether they look pressable, and none of them move on their own.
+   */
+  private pushCamera(): void {
+    const store = useMicroLand.getState()
+    const canPan = !this.renderer.fitsOnScreen
+    const canZoomIn = this.renderer.canZoomIn
+    const canZoomOut = this.renderer.canZoomOut
+    // Guarded rather than set unconditionally: a pinch calls this on every
+    // pointermove, and each `set` walks every subscriber in the tree to tell
+    // them nothing changed.
+    if (canPan !== store.canPan) store.setCanPan(canPan)
+    if (canZoomIn !== store.canZoomIn || canZoomOut !== store.canZoomOut) {
+      store.setZoomState(canZoomIn, canZoomOut)
+    }
+  }
+
   // --- pointer --------------------------------------------------------------
 
-  private beginPan(clientX: number): void {
+  private beginPan(clientX: number, clientY: number): void {
     this.panning = true
     this.following = false
     this.panAnchorX = clientX
+    this.panAnchorY = clientY
     this.panAnchorCam = this.renderer.cameraX
+    this.panAnchorCamY = this.renderer.cameraY
   }
 
   /** Midpoint of every finger down, so a two-finger pan doesn't pivot. */
-  private pointerCenterX(): number {
-    let sum = 0
-    for (const x of this.pointers.values()) sum += x
-    return this.pointers.size > 0 ? sum / this.pointers.size : 0
+  private pointerCenter(): { x: number; y: number } {
+    let sumX = 0
+    let sumY = 0
+    for (const p of this.pointers.values()) {
+      sumX += p.x
+      sumY += p.y
+    }
+    const n = Math.max(1, this.pointers.size)
+    return { x: sumX / n, y: sumY / n }
+  }
+
+  /** How far apart the two fingers of a pinch are. Zero if there aren't two. */
+  private pinchDistance(): number {
+    const points = [...this.pointers.values()]
+    if (points.length < 2) return 0
+    const dx = points[0].x - points[1].x
+    const dy = points[0].y - points[1].y
+    return Math.hypot(dx, dy)
+  }
+
+  /** Take a fresh reading of the pinch, so adding a finger doesn't jump. */
+  private beginPinch(): void {
+    this.panning = false
+    this.following = false
+    const center = this.pointerCenter()
+    this.pinch = { dist: this.pinchDistance(), x: center.x, y: center.y }
   }
 
   /** Let go of whatever the first finger had started, without acting on it. */
@@ -1281,18 +1379,18 @@ export class GameInstance {
   }
 
   private onPointerDown = (e: PointerEvent) => {
-    this.pointers.set(e.pointerId, e.clientX)
+    this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
     // A second finger always means "move the world", whatever the first one had
-    // started doing. Two fingers on a canvas is a pan everywhere else on a
-    // phone, and the alternative — painting from both — is nobody's intent.
+    // started doing. Two fingers on a canvas is a pinch-and-pan everywhere else
+    // on a phone, and the alternative — painting from both — is nobody's intent.
     if (this.pointers.size === 2) {
       this.cancelPointerAction()
-      this.beginPan(this.pointerCenterX())
+      this.beginPinch()
       return
     }
     if (this.pointers.size > 2) {
-      this.reanchorPan()
+      this.beginPinch()
       return
     }
     if (!e.isPrimary) return
@@ -1309,7 +1407,7 @@ export class GameInstance {
     if (jump !== null) {
       this.scrubbingMap = true
       this.following = false
-      this.renderer.centerOn(jump)
+      this.renderer.centerOn(jump.x, jump.y)
       return
     }
 
@@ -1321,7 +1419,7 @@ export class GameInstance {
       // one place a single finger can move the world without ambiguity. The
       // selection is resolved on release, so a pan doesn't also deselect.
       this.pendingInspect = { id: hit ? hit.id : null }
-      this.beginPan(e.clientX)
+      this.beginPan(e.clientX, e.clientY)
       return
     }
 
@@ -1337,14 +1435,43 @@ export class GameInstance {
   }
 
   private onPointerMove = (e: PointerEvent) => {
-    if (this.pointers.has(e.pointerId)) this.pointers.set(e.pointerId, e.clientX)
+    if (this.pointers.has(e.pointerId))
+      this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+    // Two fingers: zoom about the point between them, then slide by however far
+    // that point moved. Both are read against the previous move rather than the
+    // start of the gesture — see `pinch`.
+    if (this.pinch && this.pointers.size >= 2) {
+      const dist = this.pinchDistance()
+      const center = this.pointerCenter()
+      if (dist > 0 && this.pinch.dist > 0) {
+        const ratio = dist / this.pinch.dist
+        // A fraction of a pixel of finger tremor is not a zoom, and feeding it
+        // back into the camera every frame reads as the world breathing.
+        if (Math.abs(ratio - 1) > 0.002) {
+          this.renderer.setZoom(this.renderer.zoomLevel * ratio, {
+            clientX: center.x,
+            clientY: center.y,
+          })
+          this.pushCamera()
+        }
+      }
+      const perPixel = this.renderer.tilesPerClientPixel()
+      this.renderer.panBy(
+        -(center.x - this.pinch.x) * perPixel,
+        -(center.y - this.pinch.y) * perPixel
+      )
+      this.pinch = { dist, x: center.x, y: center.y }
+      return
+    }
 
     if (this.panning) {
-      const from = this.pointers.size >= 2 ? this.pointerCenterX() : e.clientX
-      const dx = from - this.panAnchorX
+      const dx = e.clientX - this.panAnchorX
+      const dy = e.clientY - this.panAnchorY
       // A tap that has turned into a drag is no longer a tap.
-      if (this.pendingInspect && Math.abs(dx) > TAP_SLOP) this.pendingInspect = null
-      this.renderer.panToLeft(this.panAnchorCam - dx * this.renderer.tilesPerClientPixel())
+      if (this.pendingInspect && Math.hypot(dx, dy) > TAP_SLOP) this.pendingInspect = null
+      const perPixel = this.renderer.tilesPerClientPixel()
+      this.renderer.panTo(this.panAnchorCam - dx * perPixel, this.panAnchorCamY - dy * perPixel)
       return
     }
 
@@ -1353,7 +1480,7 @@ export class GameInstance {
     // Drag along the map and the world follows — the fastest way to cross it.
     if (this.scrubbingMap) {
       const jump = this.renderer.minimapHit(e.clientX, e.clientY)
-      if (jump !== null) this.renderer.centerOn(jump)
+      if (jump !== null) this.renderer.centerOn(jump.x, jump.y)
       return
     }
 
@@ -1378,8 +1505,24 @@ export class GameInstance {
 
   private onPointerUp = (e: PointerEvent) => {
     this.pointers.delete(e.pointerId)
-    if (this.panning && this.pointers.size === 0) this.panning = false
-    else this.reanchorPan()
+
+    if (this.pinch) {
+      if (this.pointers.size >= 2) {
+        // Still a pinch, one finger lighter. Re-read it or the next move counts
+        // the jump in the midpoint as a pan.
+        this.beginPinch()
+      } else {
+        this.pinch = null
+        // One finger left over from a two-finger gesture keeps moving the world
+        // rather than suddenly starting to paint with it.
+        const last = [...this.pointers.values()][0]
+        if (last) this.beginPan(last.x, last.y)
+      }
+    } else if (this.panning && this.pointers.size === 0) {
+      this.panning = false
+    } else {
+      this.reanchorPan()
+    }
 
     if (!e.isPrimary) return
     this.pointerDown = false
@@ -1473,26 +1616,62 @@ export class GameInstance {
   /** Fingers came or went mid-pan — take a fresh reading so it doesn't jump. */
   private reanchorPan(): void {
     if (!this.panning || this.pointers.size === 0) return
-    this.panAnchorX = this.pointerCenterX()
+    const center = this.pointerCenter()
+    this.panAnchorX = center.x
+    this.panAnchorY = center.y
     this.panAnchorCam = this.renderer.cameraX
+    this.panAnchorCamY = this.renderer.cameraY
   }
 
   /**
-   * A wheel or trackpad scrolls the world sideways.
+   * A wheel or trackpad moves the world; held with ctrl or ⌘, it zooms it.
    *
-   * Vertical scroll is folded in as well as horizontal: there is nothing above
-   * or below to scroll to, and a mouse with one wheel is still the most common
-   * way anyone will touch this.
+   * The ctrl half is not a keyboard shortcut anyone has to know — a trackpad
+   * pinch on macOS *is* a ctrl-wheel, so this is how a laptop pinches. Plain
+   * scrolling stays a pan, which is the thing you do far more often.
+   *
+   * Panning folds vertical scroll into horizontal while the world fits top to
+   * bottom, because a mouse with one wheel is still the most common way anyone
+   * will touch this and there would otherwise be nowhere for it to go. Zoomed in
+   * far enough that there *is* somewhere, the two axes separate.
    */
   private onWheel = (e: WheelEvent) => {
-    const raw = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
-    if (raw === 0) return
-    e.preventDefault()
-    this.following = false
     // deltaMode: 0 pixels, 1 lines, 2 pages.
     const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1
-    const tiles = raw * unit * 0.25
-    this.renderer.panBy(Math.max(-PAN_STEP, Math.min(PAN_STEP, tiles)))
+
+    if (e.ctrlKey || e.metaKey) {
+      if (e.deltaY === 0) return
+      e.preventDefault()
+      this.following = false
+      // Exponential so a notch is worth the same proportion of the zoom at
+      // either end of the range — linear steps crawl when close in and lurch
+      // when far out.
+      const factor = Math.exp(-e.deltaY * unit * WHEEL_ZOOM_RATE)
+      this.renderer.setZoom(this.renderer.zoomLevel * factor, {
+        clientX: e.clientX,
+        clientY: e.clientY,
+      })
+      this.pushCamera()
+      return
+    }
+
+    // Shift-wheel is the web's horizontal scroll. Most platforms hand it over
+    // already turned into `deltaX`; the ones that don't are why this is here,
+    // and it is the only way a mouse with a single wheel can cross a world nine
+    // screens wide once zoom has claimed the vertical axis.
+    const sideways = e.shiftKey && e.deltaX === 0
+    const splitAxes = this.renderer.canPanVertically && !sideways
+    const rawX = splitAxes
+      ? e.deltaX
+      : Math.abs(e.deltaX) > Math.abs(e.deltaY)
+        ? e.deltaX
+        : e.deltaY
+    const rawY = splitAxes ? e.deltaY : 0
+    if (rawX === 0 && rawY === 0) return
+    e.preventDefault()
+    this.following = false
+    const step = (raw: number) => Math.max(-PAN_STEP, Math.min(PAN_STEP, raw * unit * 0.25))
+    this.renderer.panBy(step(rawX), step(rawY))
   }
 
   /** Which way, if any, does this key point? */
@@ -1502,8 +1681,32 @@ export class GameInstance {
     return 0
   }
 
+  /** The same, up and down. Only reaches anything once zoom has made room. */
+  private static keyDirectionY(key: string): -1 | 0 | 1 {
+    if (key === 'ArrowUp' || key === 'w' || key === 'W') return -1
+    if (key === 'ArrowDown' || key === 's' || key === 'S') return 1
+    return 0
+  }
+
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return
+
+    // `=` is the unshifted key `+` lives on, and nobody holds shift to zoom in.
+    if (e.key === '+' || e.key === '=') {
+      e.preventDefault()
+      this.zoomByStep(1)
+      return
+    }
+    if (e.key === '-' || e.key === '_') {
+      e.preventDefault()
+      this.zoomByStep(-1)
+      return
+    }
+    if (e.key === '0') {
+      e.preventDefault()
+      this.resetZoom()
+      return
+    }
 
     if (e.key === 'Home' || e.key === 'End') {
       e.preventDefault()
@@ -1513,10 +1716,15 @@ export class GameInstance {
     }
 
     const dir = GameInstance.keyDirection(e.key)
-    if (dir === 0) return
+    // Ignored outright rather than held at zero while the world fits top to
+    // bottom: a key that silently stops the camera following something, and
+    // then moves nothing, is worse than a key that does nothing at all.
+    const dirY = this.renderer.canPanVertically ? GameInstance.keyDirectionY(e.key) : 0
+    if (dir === 0 && dirY === 0) return
     e.preventDefault()
     this.keysDown.add(e.key)
-    this.panHeld = dir
+    if (dir !== 0) this.panHeld = dir
+    if (dirY !== 0) this.panHeldY = dirY
     this.following = false
   }
 
@@ -1525,17 +1733,22 @@ export class GameInstance {
     // Holding both arrows and releasing one should leave you moving the other
     // way, not stop dead.
     let dir: -1 | 0 | 1 = 0
+    let dirY: -1 | 0 | 1 = 0
     for (const key of this.keysDown) {
       const d = GameInstance.keyDirection(key)
       if (d !== 0) dir = d
+      const dy = GameInstance.keyDirectionY(key)
+      if (dy !== 0) dirY = dy
     }
     this.panHeld = dir
+    this.panHeldY = dirY
   }
 
   /** A canvas that lost focus can't hear a keyup, so it must not stay stuck. */
   private onBlur = () => {
     this.keysDown.clear()
     this.panHeld = 0
+    this.panHeldY = 0
   }
 
   private attachInput(): void {

@@ -219,12 +219,22 @@ interface MicroLandState {
   archive: SpeciesRecord[]
   milestones: EarnedMilestone[]
   /**
-   * Whether the world is wider than the view.
+   * Whether there is any world off screen to scroll to.
    *
    * Almost always true, but an ultrawide display can fit all 672 tiles at once,
-   * and scroll buttons that visibly do nothing are worse than no buttons.
+   * and so can any display once the player has zoomed all the way out. Scroll
+   * buttons that visibly do nothing are worse than no buttons.
    */
   canPan: boolean
+  /**
+   * Whether the zoom has anywhere left to go in each direction.
+   *
+   * Both ends are reachable — a couple of presses of − on a wide monitor is the
+   * whole world — so the buttons have to be able to say so rather than going
+   * quietly dead under a finger.
+   */
+  canZoomIn: boolean
+  canZoomOut: boolean
 
   notices: Notice[]
 
@@ -296,6 +306,7 @@ interface MicroLandState {
   setArchive: (archive: SpeciesRecord[]) => void
   setMilestones: (milestones: EarnedMilestone[]) => void
   setCanPan: (canPan: boolean) => void
+  setZoomState: (canZoomIn: boolean, canZoomOut: boolean) => void
   setSaveState: (state: SaveState) => void
   setShelf: (shelf: ShelfState) => void
   setWorldsOpen: (open: boolean) => void
@@ -357,6 +368,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   tuning: { ...TUNING },
   inspected: null,
   canPan: true,
+  canZoomIn: true,
+  canZoomOut: true,
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -417,6 +430,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setArchive: archive => set({ archive }),
   setMilestones: milestones => set({ milestones }),
   setCanPan: canPan => set({ canPan }),
+  setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
