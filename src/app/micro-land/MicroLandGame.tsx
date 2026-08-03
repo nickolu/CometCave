@@ -305,7 +305,7 @@ export function MicroLandGame() {
   }, [])
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden">
+    <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
       <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} />
 
       <div className="relative min-h-0 flex-1">
