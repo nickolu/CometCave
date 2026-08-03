@@ -174,6 +174,36 @@ export const BREED_COOLDOWN = 12
 export const MATE_RADIUS = 6
 
 /**
+ * How far a child's heritable traits may fall from its parents'.
+ *
+ * Every creature carries a handful of numbers of its own — how fast it is, how
+ * far it sees, how long it lives, what colour it is — as multipliers on its
+ * species' blueprint. A child takes the midpoint of its two parents and then
+ * moves by up to this much in either direction. That is the entire mutation
+ * mechanic; the world's existing pressures (predators, starvation, drowning) do
+ * the selecting for free.
+ *
+ * This number carries *all* of the variation, which is why it is as large as it
+ * is. Founders are deliberately identical — every creature placed by hand, and
+ * every plant the ground seeds, is exactly 1.0 on everything — so a new world
+ * starts with no variance at all and every difference you ever see was
+ * manufactured here, one birth at a time.
+ *
+ * Blending halves the spread each generation while this puts some back, so a
+ * population settles at a standard deviation of about `drift * sqrt(2/3)` —
+ * 0.10 at 0.12. That is the number to reason with: it is roughly how far apart
+ * two siblings are, and therefore how much raw material selection has to work
+ * on in any one generation. At 0.04 the drift is real but takes a hundred
+ * generations to see, which is longer than any world survives. At 0.12 a line
+ * under steady pressure visibly separates from its founders in about ten.
+ *
+ * Zero is a legitimate setting and turns inheritance off entirely: every
+ * creature is then exactly its blueprint, which is how the game behaved before
+ * any of this existed.
+ */
+export const TRAIT_DRIFT = 0.12
+
+/**
  * Plants play by different rules, and they have to.
  *
  * A grazer empties its stomach every ~15s, so a dozen of them strip the map far

@@ -86,6 +86,21 @@ interface RunResult {
   solidFraction: number
   /** Tiles tunnelled through by creatures still alive at the end. */
   dug: number
+  /**
+   * blueprintId → what its survivors inherited, averaged.
+   *
+   * The only way to tell whether mutation is doing anything. Traits start at
+   * exactly 1.0 for everything the world places, so any species whose average
+   * has moved off 1.0 has been *selected* — the drift itself is symmetric and
+   * cancels out. A grazer under real predation should come out above 1 on speed;
+   * one that comes out at 1.00 after twenty generations means the pressure isn't
+   * reaching it, and the whole mechanic is decoration.
+   *
+   * `gen` is the check on the rest of the row: two generations of drift can't
+   * show anything, so a trait average is only worth reading next to how many
+   * generations produced it.
+   */
+  drift: Record<string, { speed: number; sight: number; lifespan: number; gen: number }>
 }
 
 function runOnce(seed: number): RunResult {
@@ -155,6 +170,25 @@ function runOnce(seed: number): RunResult {
   const survivors = countByBlueprint(world)
   const extinctions = [...seeded].filter(id => !survivors[id])
 
+  // Averaged over the survivors, which is the population selection actually
+  // produced — averaging over everything that ever lived would fold in exactly
+  // the individuals the world rejected and pull the answer back toward 1.
+  const drift: RunResult['drift'] = {}
+  for (const c of world.creatures) {
+    const d = (drift[c.blueprintId] ??= { speed: 0, sight: 0, lifespan: 0, gen: 0 })
+    d.speed += c.traits.speed
+    d.sight += c.traits.sight
+    d.lifespan += c.traits.lifespan
+    d.gen += c.generation
+  }
+  for (const [id, d] of Object.entries(drift)) {
+    const n = survivors[id] || 1
+    d.speed /= n
+    d.sight /= n
+    d.lifespan /= n
+    d.gen /= n
+  }
+
   return {
     survivors,
     extinctions,
@@ -164,6 +198,7 @@ function runOnce(seed: number): RunResult {
     meals,
     solidFraction: solidLeft / world.tiles.length,
     dug,
+    drift,
   }
 }
 
@@ -220,6 +255,22 @@ for (const id of [...allSpecies].sort()) {
     console.log(
       `  ${''.padEnd(16)} ate: ${Math.round(plants / runs)} plants, ` +
         `${Math.round(animals / runs)} animals`
+    )
+  }
+
+  // Only runs that still had one of these at the end have anything to say about
+  // what it inherited, so the average is over those rather than over `runs` —
+  // otherwise a species that thrived in two runs and died in three reads as
+  // having drifted 40% less than it did.
+  const drifted = results.map(r => r.drift[id]).filter(Boolean)
+  if (drifted.length > 0) {
+    const mean = (pick: (d: NonNullable<(typeof drifted)[number]>) => number) =>
+      drifted.reduce((a, d) => a + pick(d), 0) / drifted.length
+    console.log(
+      `  ${''.padEnd(16)} drift: speed ${mean(d => d.speed).toFixed(2)}  ` +
+        `sight ${mean(d => d.sight).toFixed(2)}  ` +
+        `life ${mean(d => d.lifespan).toFixed(2)}  ` +
+        `(gen ${mean(d => d.gen).toFixed(1)})`
     )
   }
 }

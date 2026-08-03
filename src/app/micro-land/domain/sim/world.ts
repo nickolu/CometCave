@@ -18,6 +18,7 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
+import { neutralTraits } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type {
   Creature,
@@ -364,8 +365,15 @@ export function spawnCreature(
     children: 0,
     digProgress: 0,
     tilesDug: 0,
-    // Founder of its line until `reproduce` says otherwise.
+    // Founder of its line until `reproduce` says otherwise — and, being a
+    // founder, exactly its species. Every creature this function makes is one
+    // the world put there rather than one that was born: placed by hand, seeded
+    // by the ground, dropped in by a theme. Inheritance is applied by the
+    // breeding block afterwards, so this is also what makes a species that died
+    // out and was placed again start over from the blueprint rather than from
+    // wherever its last line had drifted to.
     generation: 1,
+    traits: neutralTraits(),
     name: null,
   }
   w.creatures.push(creature)

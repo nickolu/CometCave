@@ -3,6 +3,7 @@
 import { useState } from 'react'
 
 import { canEat } from '@/app/micro-land/domain/blueprint'
+import { notableTraits, traitPhrases } from '@/app/micro-land/domain/traits'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -34,6 +35,20 @@ const KIND_TEXT: Record<string, string> = {
   crawl: 'Climbs walls and ceilings',
   drift: 'Floats along',
   root: 'Rooted to the spot',
+}
+
+/**
+ * Join phrases the way a person would: "quick, sharp-eyed and long-lived".
+ *
+ * Capitalised at the front because it stands on its own line as a sentence
+ * rather than following anything.
+ */
+function sentence(parts: string[]): string {
+  const joined =
+    parts.length <= 1
+      ? parts.join('')
+      : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+  return joined.charAt(0).toUpperCase() + joined.slice(1)
 }
 
 /** A springy walker is a hopper first — it is the thing you notice about it. */
@@ -116,6 +131,18 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
 
   const fullness = 1 - inspected.hunger
   const lifeLeft = Math.max(0, 1 - inspected.ageSeconds / Math.max(1, inspected.lifespanSeconds))
+
+  /**
+   * What this one inherited, said twice.
+   *
+   * The sentence is the point and the numbers are the footnote — a player should
+   * be able to learn that their hoppers are getting faster without ever reading
+   * a multiplier. Both are empty for anything placed by hand, which is every
+   * creature at generation 1, so a fresh world's panel looks exactly as it
+   * always did.
+   */
+  const phrases = traitPhrases(inspected.traits)
+  const traits = notableTraits(inspected.traits)
 
   const trouble =
     inspected.starving > 0
@@ -283,6 +310,23 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           )}
         </div>
 
+        {/*
+          Sits directly under the mood, above the meters, because it is the one
+          line on this panel that is about *this* creature rather than about its
+          kind — everything below is true of every hopper alive.
+        */}
+        {phrases.length > 0 && (
+          <div
+            style={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: 'var(--cc-gold)',
+            }}
+          >
+            {sentence(phrases)}
+          </div>
+        )}
+
         <Meter
           label="Full"
           value={fullness}
@@ -308,6 +352,15 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           {inspected.generation > 1 && (
             <Stat label="Generation" value={String(inspected.generation)} />
           )}
+          {/*
+            The evidence under the sentence above. Only the traits that earned a
+            phrase are listed, and only as a ratio against the species — "1.24×"
+            says what "quicker than most" means without the panel having to
+            explain what a hopper's speed is in tiles per second.
+          */}
+          {traits.map(t => (
+            <Stat key={t.label} label={t.label} value={`${t.value.toFixed(2)}×`} />
+          ))}
           {bp.dig.through.length > 0 && (
             <Stat label="Tiles dug" value={String(inspected.tilesDug)} />
           )}

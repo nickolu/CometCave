@@ -53,6 +53,7 @@ import {
   spawnCreature,
   spawnSomewhereSensible,
 } from './domain/sim/world'
+import { lifespanOf } from './domain/traits'
 import { TUNING } from './domain/tuning'
 import {
   type Creature,
@@ -812,7 +813,10 @@ export class GameInstance {
       mood: c.mood,
       hunger: c.hunger,
       ageSeconds: c.ageSeconds,
-      lifespanSeconds: bp.diet.lifespanSeconds,
+      // This one's lifespan, not its species' — a long-lived creature showing a
+      // "life left" meter drawn against the blueprint would sit at empty for the
+      // whole of the extra life its line earned it.
+      lifespanSeconds: lifespanOf(c, bp),
       mealsEaten: c.mealsEaten,
       children: c.children,
       tilesDug: c.tilesDug,
@@ -823,6 +827,10 @@ export class GameInstance {
       grounded: c.grounded,
       targetName: targetBp?.name ?? null,
       generation: c.generation,
+      // Copied, like everything else here. Traits are replaced wholesale rather
+      // than mutated, so the reference would in fact be safe today — but that is
+      // a fact about `inherit`, and this panel shouldn't depend on it.
+      traits: { ...c.traits },
       name: c.name,
       isElder: c.id === this.elderId,
     })

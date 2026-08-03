@@ -307,6 +307,45 @@ export const LIFE_KINDS: LifeKind[] = ['plant', 'animal']
 
 export type CreatureMood = 'wander' | 'hunt' | 'flee' | 'eat' | 'rest' | 'mate'
 
+/**
+ * The small part of a creature that is its own rather than its species'.
+ *
+ * A blueprint is shared by every creature that has it — one object, in
+ * `WorldState.blueprints`, read by all of them. That is the premise the whole
+ * game rests on and it is not up for negotiation, so heritable variation cannot
+ * live in the blueprint. It lives here instead: per-creature numbers applied
+ * *on top of* the species, passed from parents to children with a nudge.
+ *
+ * Everything here is deliberately a modifier rather than a value. A hopper's
+ * speed is still the hopper's speed; this says whether this particular hopper is
+ * a little quicker than its parents were. It also means a trait can never make a
+ * creature into something the blueprint didn't describe — the food chain (size
+ * and tags) and the economics of eating (`hungerRate`, `breedAt`) are not in
+ * here on purpose, because those are what the ecosystem was balanced against.
+ *
+ * See `domain/traits.ts` for how these are inherited and what reads them.
+ */
+export interface Traits {
+  /** Multiplier on `move.speed`. */
+  speed: number
+  /** Multiplier on `senses.sight`. */
+  sight: number
+  /** Multiplier on `diet.lifespanSeconds` — and so on breeding age with it. */
+  lifespan: number
+  /** Hue rotation applied to the whole palette, in degrees. Wraps. */
+  hue: number
+  /**
+   * Multiplier on the palette's lightness.
+   *
+   * Carried alongside `hue` because hue rotation does nothing whatsoever to a
+   * grey: a species drawn in white and charcoal would drift for a thousand
+   * generations and never once look different. Clamped far tighter than the
+   * others — a line that drifted to twice its lightness would be a white smear
+   * against the sky, and one at half would vanish into the dark.
+   */
+  shade: number
+}
+
 /** One living thing in the world. */
 export interface Creature {
   id: number
@@ -355,6 +394,13 @@ export interface Creature {
    * can dwindle to a single individual and its line keeps its depth.
    */
   generation: number
+  /**
+   * What this one inherited, as multipliers on its species.
+   *
+   * Neutral for anything that wasn't born here, which is what makes a species
+   * that dies out and is placed again genuinely start over rather than resume.
+   */
+  traits: Traits
   /**
    * What the player called it.
    *
