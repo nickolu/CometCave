@@ -121,7 +121,11 @@ export const BlueprintSchema = z.object({
           'walk = ground animal that can jump. fly = free movement through air. swim = only moves in water, helpless on land. crawl = clings to walls and ceilings. drift = floats and bobs. root = never moves (plants, coral, eggs, mushrooms).'
         ),
       speed: z.number().describe('Top speed in tiles per second, 0.5-14.'),
-      jump: z.number().describe('Jump strength for walkers, 0-20. Ignored otherwise.'),
+      jump: z
+        .number()
+        .describe(
+          'Jump strength for walkers, 0-20. Roughly a third of a tile of height per point, so 3 barely clears a kerb, 6 clears a boulder, 12 is a spring-loaded leap over a wall. Ignored otherwise.'
+        ),
       hop: z
         .number()
         .describe(
