@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { CHRONICLE_VERSION, emptyChronicle } from '@/app/micro-land/chronicle/types'
+import {
+  CHRONICLE_VERSION,
+  emptyChronicle,
+  emptyLandRecord,
+} from '@/app/micro-land/chronicle/types'
 import type { ChronicleData, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import {
   MAX_CHRONICLE_BYTES,
@@ -141,7 +145,7 @@ describe('fitChronicle', () => {
   it('never sheds land records or milestones to make room', () => {
     const data = emptyChronicle()
     data.lands.tidepool = {
-      elder: null,
+      ...emptyLandRecord(),
       steadySeconds: 900,
       generations: 4,
       generationsBlueprintId: 'crab',

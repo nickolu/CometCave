@@ -23,7 +23,7 @@ import {
   emptyChronicle,
   emptyLandRecord,
 } from '@/app/micro-land/chronicle/types'
-import type { ChronicleData } from '@/app/micro-land/chronicle/types'
+import type { ChronicleData, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { reserveSummonIds, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import {
@@ -560,5 +560,183 @@ describe('mergeChronicles', () => {
     const merged = mergeChronicles(a, b)
     expect(merged.lands.tidepool.steadySeconds).toBe(30)
     expect(merged.lands.volcanic.steadySeconds).toBe(70)
+  })
+
+  it('merges each column on its own, so both devices keep what they held', () => {
+    // The phone watched a hopper line get deep; the laptop grew old kelp.
+    // Neither record should knock the other out on the way in.
+    const a = emptyChronicle()
+    a.lands.tidepool = {
+      ...emptyLandRecord(),
+      byKind: { plant: kelp(400, 9), animal: hopper(0, 0) },
+    }
+    const b = emptyChronicle()
+    b.lands.tidepool = {
+      ...emptyLandRecord(),
+      byKind: { plant: kelp(20, 2), animal: hopper(90, 6) },
+    }
+
+    const merged = mergeChronicles(a, b).lands.tidepool
+    expect(merged.byKind.plant.elder?.seconds).toBe(400)
+    expect(merged.byKind.plant.generations).toBe(9)
+    expect(merged.byKind.animal.elder?.seconds).toBe(90)
+    expect(merged.byKind.animal.generations).toBe(6)
+  })
+
+  it('survives a side whose land record predates the split', () => {
+    // `mergeChronicles` is exported and is handed records that never went
+    // through `migrate` — it must not read `byKind` off a record without one.
+    const a = emptyChronicle()
+    const old = { ...emptyLandRecord(), steadySeconds: 30 }
+    delete (old as Partial<typeof old>).byKind
+    a.lands.tidepool = old
+    const b = emptyChronicle()
+    b.lands.tidepool = {
+      ...emptyLandRecord(),
+      byKind: { plant: kelp(0, 0), animal: hopper(75, 4) },
+    }
+
+    const merged = mergeChronicles(a, b).lands.tidepool
+    expect(merged.steadySeconds).toBe(30)
+    expect(merged.byKind.animal.generations).toBe(4)
+  })
+})
+
+/**
+ * Blueprint stubs that can actually be classified.
+ *
+ * `bp()` above is deliberately hollow, which is the right stub for everything
+ * that only reads a name — but `lifeKind` reaches into `move`, `diet` and
+ * `tags`, so anything testing the plant/animal split needs those present. The
+ * hollow one still earns its keep here: it stands in for a species the archive
+ * can no longer identify.
+ */
+function plantBp(id: string): CreatureBlueprint {
+  return {
+    id,
+    name: id,
+    move: { kind: 'root' },
+    diet: { eats: [] },
+    tags: [],
+  } as unknown as CreatureBlueprint
+}
+
+function animalBp(id: string): CreatureBlueprint {
+  return {
+    id,
+    name: id,
+    move: { kind: 'walk' },
+    diet: { eats: ['plant'] },
+    tags: ['meat'],
+  } as unknown as CreatureBlueprint
+}
+
+function archived(blueprint: CreatureBlueprint): SpeciesRecord {
+  return { blueprint, firstSeen: 1, lastSeen: 2, longestLife: 0 }
+}
+
+function kelp(seconds: number, generations: number) {
+  return column('kelp', 'Kelp', seconds, generations)
+}
+
+function hopper(seconds: number, generations: number) {
+  return column('hopper', 'Hopper', seconds, generations)
+}
+
+function column(id: string, name: string, seconds: number, generations: number) {
+  return {
+    elder: seconds > 0 ? { seconds, blueprintId: id, speciesName: name, name: null, at: 1 } : null,
+    generations,
+    generationsBlueprintId: generations > 0 ? id : null,
+    generationsSpeciesName: generations > 0 ? name : null,
+  }
+}
+
+/** A land record as it was written before `byKind` existed. */
+function preSplitLand(elderId: string, seconds: number, lineId: string, generations: number) {
+  const record = {
+    ...emptyLandRecord(),
+    elder: { seconds, blueprintId: elderId, speciesName: elderId, name: null, at: 1 },
+    generations,
+    generationsBlueprintId: lineId,
+    generationsSpeciesName: lineId,
+  }
+  delete (record as Partial<typeof record>).byKind
+  return record
+}
+
+describe('the plant/animal split', () => {
+  it('files a pre-split record into the column its holder belongs to', async () => {
+    // Both old records were set by kelp, which is where a returning player
+    // should still find them — not wiped, and not sitting under Animals.
+    const stored = emptyChronicle()
+    stored.species.kelp = archived(plantBp('kelp'))
+    stored.lands.tidepool = preSplitLand('kelp', 400, 'kelp', 9)
+    await loadWith(stored)
+
+    const record = landRecord('tidepool')
+    expect(record.byKind.plant.elder?.seconds).toBe(400)
+    expect(record.byKind.plant.generations).toBe(9)
+    expect(record.byKind.animal.elder).toBeNull()
+    expect(record.byKind.animal.generations).toBe(0)
+  })
+
+  it('splits a pre-split record whose two holders were different kinds', async () => {
+    const stored = emptyChronicle()
+    stored.species.kelp = archived(plantBp('kelp'))
+    stored.species.hopper = archived(animalBp('hopper'))
+    stored.lands.tidepool = preSplitLand('kelp', 400, 'hopper', 6)
+    await loadWith(stored)
+
+    const record = landRecord('tidepool')
+    expect(record.byKind.plant.elder?.seconds).toBe(400)
+    expect(record.byKind.plant.generations).toBe(0)
+    expect(record.byKind.animal.elder).toBeNull()
+    expect(record.byKind.animal.generations).toBe(6)
+  })
+
+  it('leaves both columns empty when the holder can no longer be identified', async () => {
+    // Pruned out of the archive, or deleted by the player. Guessing a column
+    // would park the record there forever, since records only move upward.
+    const stored = emptyChronicle()
+    stored.lands.tidepool = preSplitLand('ghost', 400, 'ghost', 9)
+    await loadWith(stored)
+
+    const record = landRecord('tidepool')
+    expect(record.byKind.plant.elder).toBeNull()
+    expect(record.byKind.animal.elder).toBeNull()
+    // The land-wide record it was filed from is untouched.
+    expect(record.elder?.seconds).toBe(400)
+    expect(record.generations).toBe(9)
+  })
+
+  it('does not classify off a half-written archive entry', async () => {
+    // `bp()` has no `move` and no `diet`. Reaching into those out of `migrate`
+    // would throw, and a chronicle that fails to parse must cost the player a
+    // record rather than the game.
+    const stored = emptyChronicle()
+    stored.species.kelp = archived(bp('kelp'))
+    stored.lands.tidepool = preSplitLand('kelp', 400, 'kelp', 9)
+    await loadWith(stored)
+
+    expect(landRecord('tidepool').byKind.plant.elder).toBeNull()
+    expect(landRecord('tidepool').elder?.seconds).toBe(400)
+  })
+
+  it('leaves an already-split record alone', async () => {
+    const stored = emptyChronicle()
+    stored.species.hopper = archived(animalBp('hopper'))
+    stored.lands.tidepool = {
+      ...emptyLandRecord(),
+      // The land-wide elder disagrees with both columns on purpose: a record
+      // that already has columns is the truth, not something to re-derive.
+      elder: { seconds: 400, blueprintId: 'kelp', speciesName: 'Kelp', name: null, at: 1 },
+      byKind: { plant: kelp(0, 0), animal: hopper(90, 6) },
+    }
+    await loadWith(stored)
+
+    const record = landRecord('tidepool')
+    expect(record.byKind.plant.elder).toBeNull()
+    expect(record.byKind.animal.elder?.seconds).toBe(90)
   })
 })

@@ -29,6 +29,7 @@ import {
   artSize,
   bodyBox,
   forgetBodyBox,
+  lifeKind,
   reserveSummonIds,
   sanitizeBlueprint,
 } from './domain/blueprint'
@@ -53,16 +54,27 @@ import {
   spawnSomewhereSensible,
 } from './domain/sim/world'
 import { TUNING } from './domain/tuning'
+import {
+  type Creature,
+  type CreatureBlueprint,
+  LIFE_KINDS,
+  type LifeKind,
+  type WorldState,
+} from './domain/types'
 import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
 import { forgetSprites } from './rendering/sprite-cache'
-import { type EarnedMilestone, type PopulationEntry, useMicroLand } from './store'
+import {
+  type EarnedMilestone,
+  type KindRecordsView,
+  type PopulationEntry,
+  useMicroLand,
+} from './store'
 import { releaseActiveWorld, touchActiveWorld } from './worlds/shelf'
 import { restoreSnapshot, snapshotWorld } from './worlds/snapshot'
 import { WORLD_SAVE_VERSION, type WorldSave } from './worlds/types'
 
 import type { SpeciesRecord } from './chronicle/types'
-import type { Creature, CreatureBlueprint, WorldState } from './domain/types'
 
 /** How often the UI gets a fresh population summary. */
 const STATS_EVERY_MS = 300
@@ -146,6 +158,16 @@ export class GameInstance {
    * its age or its name off by then.
    */
   private elderSnapshot: { name: string | null; species: string; seconds: number } | null = null
+  /**
+   * Who currently holds each column's longevity record.
+   *
+   * Only used to date the record: `at` marks when a record was *taken*, and the
+   * column is rewritten on every stats tick while its holder keeps ageing, so
+   * without knowing whether the holder changed the date would creep forward
+   * forever and no record would ever look old. Not a second crown — the halo,
+   * the eulogy and naming all still follow `elderId`, of which there is one.
+   */
+  private kindElderIds = new Map<LifeKind, number>()
   /** World-clock time the current no-extinction streak began. */
   private steadySince = 0
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
@@ -449,6 +471,12 @@ export class GameInstance {
     // for every kind, and only ever noting the single oldest creature would
     // leave every species but one permanently blank.
     const eldestOf = new Map<string, number>()
+    // And the same two figures per *column*, which is what stops the record
+    // book being a plant leaderboard — see `KindRecord`. Held as creatures
+    // rather than numbers because the record wants the holder's name and
+    // species too.
+    const oldestOfKind = new Map<LifeKind, Creature>()
+    const deepestOfKind = new Map<LifeKind, Creature>()
     for (const c of w.creatures) {
       if (!oldest || c.ageSeconds > oldest.ageSeconds) oldest = c
       if (c.generation > deepest) deepest = c.generation
@@ -456,6 +484,17 @@ export class GameInstance {
       if (best === undefined || c.ageSeconds > best) {
         eldestOf.set(c.blueprintId, c.ageSeconds)
       }
+
+      const bp = w.blueprints[c.blueprintId]
+      // A creature whose blueprint has gone is unclassifiable and unnameable, so
+      // it cannot hold a record either. It still counts toward the land-wide
+      // figures above, which need neither.
+      if (!bp) continue
+      const kind = lifeKind(bp)
+      const kindOldest = oldestOfKind.get(kind)
+      if (!kindOldest || c.ageSeconds > kindOldest.ageSeconds) oldestOfKind.set(kind, c)
+      const kindDeepest = deepestOfKind.get(kind)
+      if (!kindDeepest || c.generation > kindDeepest.generation) deepestOfKind.set(kind, c)
     }
 
     // Every species on screen goes into the guide, and takes its blueprint with
@@ -510,11 +549,58 @@ export class GameInstance {
         record.generationsSpeciesName = bp?.name ?? null
       }
 
+      // --- the same two, per column -------------------------------------
+      // No notice fires from in here. The land-wide record above already
+      // announces itself, and a second line every time an animal beats a
+      // record only animals are competing for would be constant early on,
+      // when generation 2 beats generation 1 and so does 3.
+      for (const kind of LIFE_KINDS) {
+        const column = record.byKind[kind]
+
+        const eldest = oldestOfKind.get(kind)
+        const bestHere = column.elder?.seconds ?? 0
+        if (eldest && eldest.ageSeconds >= ELDER_MIN_SECONDS && eldest.ageSeconds > bestHere) {
+          const bp = w.blueprints[eldest.blueprintId]
+          if (bp) {
+            const taking = this.kindElderIds.get(kind) !== eldest.id
+            this.kindElderIds.set(kind, eldest.id)
+            column.elder = {
+              seconds: eldest.ageSeconds,
+              blueprintId: bp.id,
+              speciesName: bp.name,
+              name: eldest.name,
+              at: taking ? now : (column.elder?.at ?? now),
+            }
+          }
+        }
+
+        const line = deepestOfKind.get(kind)
+        if (line && line.generation > column.generations) {
+          const bp = w.blueprints[line.blueprintId]
+          column.generations = line.generation
+          column.generationsBlueprintId = bp?.id ?? null
+          column.generationsSpeciesName = bp?.name ?? null
+        }
+      }
+
       // --- stability ----------------------------------------------------
       // Banked live rather than only when the streak breaks, so a session that
       // ends by closing the tab still keeps the run it was in the middle of.
       if (steadySeconds > record.steadySeconds) record.steadySeconds = steadySeconds
     })
+
+    // Copied out rather than handed over: `record` is the live chronicle object
+    // and the next stats tick mutates it in place, so passing it into the store
+    // would give React a value that changes without ever being re-set.
+    const byKind = {} as Record<LifeKind, KindRecordsView>
+    for (const kind of LIFE_KINDS) {
+      const column = record.byKind[kind]
+      byKind[kind] = {
+        elder: column.elder,
+        bestGenerations: column.generations,
+        bestGenerationsSpeciesName: column.generationsSpeciesName,
+      }
+    }
 
     store.setRecords({
       elder: record.elder,
@@ -523,6 +609,7 @@ export class GameInstance {
       bestGenerationsSpeciesName: record.generationsSpeciesName,
       steadySeconds,
       deepestGeneration: deepest,
+      byKind,
     })
 
     // Sorted once and shared: both of these want the same list, and it is
@@ -573,6 +660,14 @@ export class GameInstance {
     updateChronicle(() => {
       const record = landRecord(this.currentLand)
       if (record.elder) record.elder.name = trimmed
+      // The crowned creature is also holding its own column's record, near
+      // enough always. Written across so the guide doesn't show the name beside
+      // the land-wide line and the bare species name beside the split one.
+      for (const kind of LIFE_KINDS) {
+        if (this.kindElderIds.get(kind) !== c.id) continue
+        const column = record.byKind[kind]
+        if (column.elder) column.elder.name = trimmed
+      }
     })
     this.pushStats()
     return true
@@ -636,6 +731,9 @@ export class GameInstance {
     // creature the player deliberately removed.
     this.elderId = null
     this.elderSnapshot = null
+    // Creature ids are per-world, so holders carried across a land change would
+    // eventually collide with an unrelated creature and freeze a record's date.
+    this.kindElderIds.clear()
     this.lastArchiveSize = -1
   }
 
@@ -1116,6 +1214,11 @@ export class GameInstance {
           seconds: elder.ageSeconds,
         }
       : null
+    // Not saved, and doesn't need to be: it only decides whether a column's `at`
+    // date refreshes. Left empty, the first stats tick re-dates a record whose
+    // holder survived the reload, which is off by however long the world sat
+    // closed and self-corrects the moment anything beats it.
+    this.kindElderIds.clear()
 
     // Seeded from what is actually alive, so opening a world does not announce
     // the extinction of everything that was in the land it replaced.

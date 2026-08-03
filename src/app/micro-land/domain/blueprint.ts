@@ -16,7 +16,7 @@ import { z } from 'zod'
 import { BASE_MATERIAL_IDS, IS_LIQUID, MATERIAL_IDS, MATERIAL_INDEX } from './config/materials'
 import { TerrainSchema } from './terrain'
 
-import type { CreatureAura, CreatureBlueprint, LocomotionKind, MaterialId } from './types'
+import type { CreatureAura, CreatureBlueprint, LifeKind, LocomotionKind, MaterialId } from './types'
 
 export const ART_MIN = 3
 /**
@@ -669,6 +669,18 @@ export const CREATURE_GROUPS: { id: CreatureGroup; label: string }[] = [
 /** Anything that photosynthesises rather than hunts — moss, coral, a sky flower. */
 export function isPlantLike(bp: CreatureBlueprint): boolean {
   return bp.move.kind === 'root' || (bp.diet.eats.length === 0 && bp.tags.includes('plant'))
+}
+
+/**
+ * Which side of the record book a creature keeps its numbers in.
+ *
+ * The same `isPlantLike` the creature menu files by, said as the two-way split
+ * the chronicle uses, so a species can never be a plant in one place and an
+ * animal in the other. Derived rather than stored for the usual reason: a
+ * creature invented thirty seconds ago has to file itself.
+ */
+export function lifeKind(bp: CreatureBlueprint): LifeKind {
+  return isPlantLike(bp) ? 'plant' : 'animal'
 }
 
 /**

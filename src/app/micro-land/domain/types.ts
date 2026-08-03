@@ -48,7 +48,15 @@ export type BaseMaterialId =
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
-  'red' | 'orange' | 'yellow' | 'green' | 'blue' | 'purple' | 'pink' | 'white' | 'black'
+  | 'red'
+  | 'orange'
+  | 'yellow'
+  | 'green'
+  | 'blue'
+  | 'purple'
+  | 'pink'
+  | 'white'
+  | 'black'
 
 /** Materials that come in colors. */
 export type TintableMaterialId = 'plastic' | 'crystal' | 'gem' | 'cloud'
@@ -278,6 +286,20 @@ export interface CreatureBlueprint {
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
 }
+
+/**
+ * Which half of the food web something belongs to.
+ *
+ * Two buckets rather than the six `CREATURE_GROUPS`, and the reason is that a
+ * record is only worth holding if something is competing for it. Split six ways,
+ * a land with one hunter in it hands that hunter every hunter record forever and
+ * they stop meaning anything. Plant against animal is the one split where both
+ * sides are always crowded.
+ */
+export type LifeKind = 'plant' | 'animal'
+
+/** Display order wherever the two are shown side by side. Plants first. */
+export const LIFE_KINDS: LifeKind[] = ['plant', 'animal']
 
 // ---------------------------------------------------------------------------
 // Live world state
