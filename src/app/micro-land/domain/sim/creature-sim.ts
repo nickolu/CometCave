@@ -8,11 +8,22 @@
  * The sense pass (who can I eat, who is about to eat me) is O(n²), so it runs
  * at 10Hz with creatures staggered across ticks rather than every frame.
  */
-import { artSize, bodyBox, canEat, fears, isPlantLike } from '@/app/micro-land/domain/blueprint'
+import {
+  ART_MAX_W,
+  artSize,
+  bodyBox,
+  canEat,
+  fears,
+  isPlantLike,
+} from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
+  FORAGE_HUNGER,
+  GRAVITY,
+  HUNGER_REACH,
+  JUMP_TILES_PER_STRENGTH,
   MAX_FALL,
   MAX_PARTICLES,
   PARTICLE_LIFE,
@@ -29,6 +40,7 @@ import {
   boxLiquidFraction,
   boxViscosity,
   inBounds,
+  liquidAt,
   seedNativePlants,
   setTile,
   settleOnGround,
@@ -89,13 +101,21 @@ let tickCount = 0
 const byX: Creature[] = []
 
 /**
- * Slack either side of the sight window, in tiles.
+ * Slack on the sight window, in tiles — and it is not the same on both sides.
  *
- * Sorting is on the sprite's left edge but sight is measured from its centre,
- * so a wide creature's edge can sit well outside the window its centre falls in.
- * Covers the widest sprite plus a tick's worth of drift since the sort.
+ * Sorting is on the sprite's *left* edge while sight is measured between the
+ * two sprites' *nearest* edges, so the two bounds are asking different
+ * questions. To the right, a creature's left edge is the near edge, and half
+ * our own width is the whole correction. To the left, its left edge can be a
+ * full sprite-width further out than the edge that matters, so the widest
+ * sprite there could be has to be added on.
+ *
+ * Worth splitting rather than padding both sides by the larger figure: the pass
+ * is the hot loop of the whole simulation, and a symmetric pad made every
+ * creature walk an extra `ART_MAX_W` of neighbours to its right for nothing.
  */
-const SIGHT_PAD = 20
+const SIGHT_PAD_RIGHT = 0
+const SIGHT_PAD_LEFT = ART_MAX_W
 
 function compareX(a: Creature, b: Creature): number {
   return a.x - b.x
@@ -407,10 +427,25 @@ function look(
   dead: Set<number>,
   events: SimEvent[]
 ): void {
-  const sight2 = bp.senses.sight * bp.senses.sight
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2
   const hungry = c.hunger > 0.3
+
+  const sight = bp.senses.sight
+  const sight2 = sight * sight
+
+  /**
+   * How far it can find something to eat, which is not how far it can see.
+   *
+   * Ramps from plain sight at the moment it starts feeling hungry up to
+   * `1 + HUNGER_REACH` times that by the time it is nearly starving. Food only:
+   * `sight2` above still decides what counts as a threat, so getting hungry
+   * makes an animal bolder and further-ranging without also making it better at
+   * noticing what is stalking it.
+   */
+  const desperation = Math.max(0, Math.min(1, (c.hunger - 0.3) / 0.6))
+  const foodSight = sight * (1 + HUNGER_REACH * desperation)
+  const foodSight2 = foodSight * foodSight
 
   /**
    * Whether it is worth noticing its own kind this pass.
@@ -430,14 +465,19 @@ function look(
   let threatDist = Infinity
   let prey: Creature | null = null
   let preyDist = Infinity
+  let preyDir: 1 | -1 = 1
+  let preyCx = 0
+  let preyCy = 0
   let mate: Creature | null = null
   let mateDist = Infinity
 
-  // Only the creatures whose left edge falls in the sight window can possibly
-  // be in range; everything beyond the window is skipped without being touched.
-  const reach = bp.senses.sight + SIGHT_PAD
-  const last = cx + reach
-  for (let i = lowerBound(byX, cx - reach); i < byX.length; i++) {
+  // Only the creatures whose left edge falls in the window can possibly be in
+  // range; everything beyond it is skipped without being touched. Sized off the
+  // *food* reach, which is the larger of the two whenever the creature is hungry
+  // enough for it to matter — so a fed animal pays exactly what it always did.
+  const reach = Math.max(sight, foodSight) + bw / 2
+  const last = cx + reach + SIGHT_PAD_RIGHT
+  for (let i = lowerBound(byX, cx - reach - SIGHT_PAD_LEFT); i < byX.length; i++) {
     const other = byX[i]
     if (other.x > last) break
     if (other.id === c.id || dead.has(other.id)) continue
@@ -447,11 +487,25 @@ function look(
     const { w: ow, h: oh } = artSize(obp)
     const dx = other.x + ow / 2 - cx
     const dy = other.y + oh / 2 - cy
-    const d2 = dx * dx + dy * dy
-    if (d2 > sight2) continue
+
+    /**
+     * Distance between the two sprites' nearest edges, not between their
+     * centres — zero whenever they overlap.
+     *
+     * Centre-to-centre is the same mistake `BITE_PAD` was already written to
+     * avoid, one step earlier in the same function: it charges a creature for
+     * its own size *and* its neighbour's before either of them has moved. Kelp
+     * is six tiles tall, so a fish resting against one was carrying three tiles
+     * of made-up distance; a snail with fourteen tiles of sight standing on a
+     * Grumblestone could not see it at all. Anything that could be bitten is now
+     * guaranteed to be in range to be noticed, because a bite is a gap of zero.
+     */
+    const gapX = Math.max(0, Math.abs(dx) - (bw + ow) / 2)
+    const gapY = Math.max(0, Math.abs(dy) - (bh + oh) / 2)
+    const d2 = gapX * gapX + gapY * gapY
 
     if (fears(bp, obp)) {
-      if (d2 < threatDist) {
+      if (d2 <= sight2 && d2 < threatDist) {
         threatDist = d2
         threat = other
       }
@@ -462,17 +516,16 @@ function look(
     // blueprint id outright — so a creature that gets here can only ever be a
     // partner, and there is no case below worth falling through to.
     if (other.blueprintId === c.blueprintId) {
-      if (seeking && readyToBreed(other, obp) && d2 < mateDist) {
+      if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
       }
       continue
     }
 
-    if (hungry && canEat(bp, obp)) {
+    if (hungry && d2 <= foodSight2 && canEat(bp, obp)) {
       // Bodies touching? Eat now, don't bother pathing.
-      const touching =
-        Math.abs(dx) <= (bw + ow) / 2 + BITE_PAD && Math.abs(dy) <= (bh + oh) / 2 + BITE_PAD
+      const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
       if (touching) {
         devour(w, other, obp, dead, events)
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
@@ -492,6 +545,9 @@ function look(
       if (d2 < preyDist) {
         preyDist = d2
         prey = other
+        preyDir = dx >= 0 ? 1 : -1
+        preyCx = other.x + ow / 2
+        preyCy = other.y + oh / 2
       }
     }
   }
@@ -499,9 +555,28 @@ function look(
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
-  } else if (prey) {
+  } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
     c.mood = 'hunt'
     c.targetId = prey.id
+  } else if (prey) {
+    /**
+     * Smelled, not seen — food inside the hunger reach but past plain sight.
+     *
+     * A bearing to set off on, not a thing to lock onto. Locking on is what the
+     * first cut of this did, and it was worse than not finding the food at all:
+     * a Finling with sixty tiles of hunger reach picked kelp on the far side of
+     * a spit of sand and spent the rest of its short life pressed against the
+     * shore swimming at it, while the kelp in its own pool went unbitten. There
+     * is no pathfinding here and there should not be — a creature that cannot
+     * see a thing has no business knowing how to get to it.
+     *
+     * Handing it to `drift` means steering treats this as ordinary wandering,
+     * so the hazard check still applies and the animal will still turn at a
+     * wall. What it buys is a direction better than a coin flip.
+     */
+    c.mood = 'hunt'
+    c.targetId = null
+    c.drift = preyDir
   } else if (mate) {
     // Below hunting, above wandering. A creature well fed enough to breed is by
     // definition not hungry enough to have picked prey, so in practice these two
@@ -512,6 +587,48 @@ function look(
     c.mood = c.hunger > 0.75 ? 'hunt' : 'wander'
     c.targetId = null
   }
+}
+
+/**
+ * Is there a straight run between here and there that this creature could
+ * actually take?
+ *
+ * Only asked about food found past plain sight, and only about the one nearest
+ * thing, so it costs a couple of dozen tile reads per hungry creature per sense
+ * pass and nothing at all for a fed one.
+ *
+ * This is what decides whether smelling something distant becomes a target or
+ * only a bearing, and the split matters in both directions. A Glimmer Moth
+ * pointed at a flower forty tiles across open air should simply go to it — that
+ * is what having wings is. A Finling pointed at kelp on the far side of a sand
+ * bar should not, and when it did, it spent its life pressed against the shore
+ * while the kelp in its own pool went unbitten.
+ *
+ * Deliberately a straight line and deliberately coarse: it is a check on
+ * whether the animal is fooling itself, not a route. Sampling every couple of
+ * tiles will miss a one-tile gap in a wall, which is the right kind of wrong —
+ * the creature walks over, finds the wall, and turns like it would have anyway.
+ */
+function clearRun(
+  w: WorldState,
+  bp: CreatureBlueprint,
+  fromX: number,
+  fromY: number,
+  toX: number,
+  toY: number
+): boolean {
+  const needsWater = bp.move.kind === 'swim' || !!bp.habitat.needs?.includes('water')
+  const dx = toX - fromX
+  const dy = toY - fromY
+  const steps = Math.min(24, Math.max(2, Math.ceil(Math.hypot(dx, dy) / 2)))
+  for (let i = 1; i < steps; i++) {
+    const x = Math.floor(fromX + (dx * i) / steps)
+    const y = Math.floor(fromY + (dy * i) / steps)
+    if (solidAt(w, x, y)) return false
+    // Air is a wall to a fish, exactly as much as rock is.
+    if (needsWater && !liquidAt(w, x, y)) return false
+  }
+  return true
 }
 
 function devour(
@@ -652,6 +769,117 @@ function applyConversion(
 // Steering
 // ---------------------------------------------------------------------------
 
+/**
+ * How many tiles of ledge a walker's legs can take without jumping.
+ *
+ * One tile per five of body height. Everything that existed before big
+ * creatures did is under ten tall, so they all get exactly the one tile they
+ * always had — but a tyrannosaur steps over a boulder instead of wedging
+ * against it, which is what it was doing.
+ *
+ * Shared rather than restated because `steer` decides whether to jump and
+ * `integrate` decides whether the step actually happened, and the one thing
+ * that must never be true is that they disagree: a walker told it is not
+ * blocked, by collision that then blocks it, grinds against the tile forever.
+ */
+function stepHeight(body: BodyBox): number {
+  return Math.max(1, Math.floor(body.h / 5))
+}
+
+/**
+ * How far this creature would have to rise to get past whatever is directly
+ * ahead of it, in tiles. Zero means clear walking.
+ *
+ * Scans the one column past its leading edge from the top of the body down and
+ * measures from the *highest* solid tile in it, so an overhang at head height
+ * reads as impassable rather than as a one-tile ledge — which it is, for
+ * something trying to walk under it.
+ *
+ * This replaced a single lookup at mid-body height, and the single lookup was
+ * most of why creatures got stuck on small things. It could only see obstacles
+ * taller than half the creature, so anything from one tile up to half a body
+ * height was invisible to the jump decision and impassable to the legs at the
+ * same time. The taller the animal, the wider that dead band: a tyrannosaur
+ * could be stopped indefinitely by a six-tile rock it never knew was there.
+ */
+function riseAhead(w: WorldState, c: Creature, body: BodyBox, dir: number): number {
+  const col =
+    dir > 0 ? Math.floor(c.x + body.dx + body.w - 0.001) + 1 : Math.floor(c.x + body.dx) - 1
+  const top = Math.floor(c.y + body.dy)
+  const bottom = Math.floor(c.y + body.dy + body.h - 0.001)
+  for (let ty = top; ty <= bottom; ty++) {
+    if (solidAt(w, col, ty)) return bottom - ty + 1
+  }
+  return 0
+}
+
+/** Solid directly over its head. The sky is not a roof. */
+function roofed(w: WorldState, c: Creature, body: BodyBox): boolean {
+  const y = Math.floor(c.y + body.dy) - 1
+  if (y < 0) return false
+  const x1 = Math.floor(c.x + body.dx + body.w - 0.001)
+  for (let x = Math.floor(c.x + body.dx); x <= x1; x++) {
+    if (solidAt(w, x, y)) return true
+  }
+  return false
+}
+
+/**
+ * Is the way it is wandering somewhere it cannot survive?
+ *
+ * Two tiles ahead, no further. This is an animal noticing the heat off the lava
+ * or the edge of the water, not pathfinding — it has no idea what is past that,
+ * and giving it one would make the world stop feeling like animals in it.
+ *
+ * Asked only while wandering, which is what makes it affordable and also what
+ * makes it right: an animal *hunting* something should be allowed to take a
+ * risk for it, and one fleeing should be allowed to run somewhere stupid. This
+ * only governs where it drifts when it has nothing better to do.
+ *
+ * It earns its place off the committed-heading change above. Picking a
+ * direction and keeping it is a large improvement for anything that can go
+ * anywhere and a death sentence for anything that cannot: measured on tidepool,
+ * committed Finlings swam straight out of the pond and the habitat timer killed
+ * them in nine seconds, costing more fish than the wider search saved.
+ */
+function unliveableAhead(
+  w: WorldState,
+  c: Creature,
+  bp: CreatureBlueprint,
+  body: BodyBox,
+  dir: number
+): boolean {
+  const x = dir > 0 ? c.x + body.dx + body.w + 1 : c.x + body.dx - 2
+  const y = c.y + body.dy
+
+  const mat = boxDeadlyMaterial(w, x, y, 1, body.h)
+  if (mat !== null && !bp.body.immuneTo.some(m => MATERIAL_INDEX[m] === mat)) return true
+
+  // The same question, and the same threshold, that the environment check up in
+  // `tickCreatures` is about to kill it for getting wrong.
+  const needsWater = bp.move.kind === 'swim' || !!bp.habitat.needs?.includes('water')
+  if (needsWater && boxLiquidFraction(w, x, y, 1, body.h) < 0.25) return true
+
+  return false
+}
+
+/**
+ * Launch velocity for a creature that means to clear `move.jump` worth of
+ * height — see `JUMP_TILES_PER_STRENGTH` for why `jump` stopped being a
+ * velocity in the first place.
+ *
+ * Solved against base `GRAVITY` and the creature's own mass, and deliberately
+ * *not* against the theme's gravity multiplier. A leap is then worth the same
+ * number of tiles in every world the player builds, so a creature that clears
+ * its own garden wall on earth still clears it in a volcano — while the station
+ * at 0.35g sends the very same push nearly three times as high, which is the
+ * whole point of the station.
+ */
+function jumpSpeed(bp: CreatureBlueprint): number {
+  if (bp.move.jump <= 0) return 0
+  return Math.sqrt(2 * GRAVITY * bp.body.mass * bp.move.jump * JUMP_TILES_PER_STRENGTH)
+}
+
 function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rng: Rng): void {
   const { w: bw, h: bh } = artSize(bp)
   const body = bodyBox(bp)
@@ -672,9 +900,36 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     wantX = (dx / len) * sign
     wantY = (dy / len) * sign
   } else {
-    // Idle wander. `restlessness` is how often it changes its mind.
-    if (rng() < bp.move.restlessness * dt * 4) {
-      c.drift = rng() * 2 - 1
+    /**
+     * Nothing worth going to. Either mill about, or go looking.
+     *
+     * Idle wander re-rolls the heading at a rate set by `restlessness`, which is
+     * a random walk — and a random walk covers ground like the *square root* of
+     * time. That is the right shape for an animal browsing a patch it is already
+     * standing in and completely the wrong one for an animal that has to find
+     * the next patch, which is the situation every grazer in the harness died
+     * in: food a median of two to four sight-radii away, and a search pattern
+     * that mostly returned it to where it started.
+     *
+     * Past `FORAGE_HUNGER` the re-rolls slow to a fifth and the heading snaps to
+     * full magnitude, so it picks a way and commits. Committed travel covers
+     * ground linearly, which over the minute or so an animal has between full
+     * and dead is the difference between crossing twenty tiles and crossing two
+     * hundred. It still turns at walls and at the edge of the world — that is
+     * what keeps "commit" from meaning "walk into a corner and stay there".
+     */
+    const searching = c.hunger > FORAGE_HUNGER
+    if (rng() < bp.move.restlessness * dt * 4 * (searching ? 0.2 : 1)) {
+      c.drift = searching ? (rng() < 0.5 ? -1 : 1) : rng() * 2 - 1
+    } else if (searching && Math.abs(c.drift) < 1) {
+      // Got hungry mid-amble. Straighten up now rather than dawdling at a
+      // quarter speed until the next re-roll, which at this rate is a long way
+      // off — that wait was itself worth several seconds of starving.
+      c.drift = c.drift >= 0 ? 1 : -1
+    }
+    // Committing to a heading is only an improvement if the heading isn't fatal.
+    if (c.drift !== 0 && unliveableAhead(w, c, bp, body, c.drift > 0 ? 1 : -1)) {
+      c.drift = -c.drift
     }
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0
@@ -689,23 +944,50 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     case 'walk': {
       c.vx += wantX * accel * dt
       c.vx = clampMag(c.vx, speed)
-      // A burrower doesn't only dig when cornered — a well-fed one goes to
-      // ground and makes a warren. Only when well fed, or it would tunnel away
-      // from the food it needs and starve in the dark. How deep it gets is
-      // bounded by its own dig list: a Delver chews soil but not stone, so it
-      // hollows out the topsoil and stops there instead of reaching the lava.
-      if (digger && c.grounded && c.hunger < 0.4 && rng() < 0.6 * dt) {
-        c.vy = 6
+
+      /**
+       * A burrower goes to ground when it is fed, and comes back up when it is
+       * hungry.
+       *
+       * Downward was already here: a well-fed digger makes a warren, and only a
+       * well-fed one, or it would tunnel away from the food it needs and starve
+       * in the dark. How deep it gets is bounded by its own dig list — a Delver
+       * chews soil but not stone, so it hollows out the topsoil and stops there
+       * instead of reaching the lava.
+       *
+       * What was missing was the return trip. Sampling the harness at the moment
+       * of starving, a Delver had something edible inside its sight 81% of the
+       * time, a median of fourteen tiles away — because the food was on the
+       * surface and the Delver was under it. A tunnel dug on a full stomach was
+       * a one-way trip.
+       *
+       * Upward is re-asserted every tick rather than kicked once, because
+       * gravity is pulling the other way and it is being held against the roof
+       * that lets `chewThrough` accumulate progress and pop the tile. It costs
+       * one row of lookups per digger per tick and stops the instant there is
+       * open sky overhead, so a digger already on the surface pays nothing.
+       */
+      if (digger) {
+        if (c.grounded && c.hunger < 0.4 && rng() < 0.6 * dt) {
+          c.vy = 6
+        } else if (c.hunger > FORAGE_HUNGER && roofed(w, c, body)) {
+          c.vy = Math.min(c.vy, -Math.max(2, bp.dig.speed * 2))
+        }
       }
-      // Jump when there's a wall in the way, or the target is overhead. Probed
-      // from the solid core, not the wingtip — a dragon shouldn't try to hop
-      // over a pebble its wing is drawn across.
-      const ahead = Math.sign(c.vx) || c.facing
-      const blocked = solidAt(
-        w,
-        Math.floor(c.x + body.dx + body.w / 2 + ahead * (body.w / 2 + 1)),
-        Math.floor(c.y + body.dy + body.h / 2)
-      )
+
+      /**
+       * Jump when there's something in the way its legs can't take, or when the
+       * target is overhead.
+       *
+       * `ahead` is where it *wants* to go, not where it is going. Reading the
+       * sign of `c.vx` looked equivalent and was the opposite: a walker that has
+       * just hit a wall has had its velocity reversed by the bounce, so the very
+       * tick it most needs to jump, the probe is pointed back the way it came
+       * and reports clear ground. It would then accelerate into the wall again,
+       * bounce again, and check behind itself again, indefinitely.
+       */
+      const ahead = wantX !== 0 ? Math.sign(wantX) : c.facing
+      const blocked = riseAhead(w, c, body, ahead) > stepHeight(body)
       const wantsUp = wantY < -0.4
 
       /**
@@ -731,12 +1013,13 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       // — it can still steer in the air, but it cannot turn round on the spot
       // the way something running can.
       const going = Math.abs(wantX) > 0.15
+      const launch = jumpSpeed(bp)
       if (c.grounded && bp.move.hop > 0 && going && rng() < bp.move.hop * 6 * dt) {
         c.vx = Math.sign(wantX) * speed
-        c.vy = -bp.move.jump
+        c.vy = -launch
         c.grounded = false
       } else if (c.grounded && (blocked || rng() < urgency * dt)) {
-        c.vy = -bp.move.jump
+        c.vy = -launch
         c.grounded = false
       }
       break
@@ -864,12 +1147,10 @@ function integrate(
   // --- horizontal ---
   const nx = c.x + c.vx * dt
 
-  // Walk up a ledge without needing to jump. How high a ledge depends on how
-  // long your legs are: one tile per five of body height. Everything that
-  // existed before big creatures did is under ten tiles tall, so they all still
-  // get exactly the one tile they always had — but a tyrannosaur steps over a
-  // boulder instead of wedging against it, which is what it was doing.
-  const maxStep = canStepUp ? Math.max(1, Math.floor(body.h / 5)) : 0
+  // Walk up a ledge without needing to jump — see `stepHeight`, which `steer`
+  // reads too so the jump decision and the collision agree about what counts as
+  // a wall.
+  const maxStep = canStepUp ? stepHeight(body) : 0
   let step = -1
   for (let s = 0; s <= maxStep; s++) {
     if (!boxHitsSolid(w, nx + ox, c.y + oy - s, body.w, body.h)) {
@@ -888,8 +1169,20 @@ function integrate(
     const bx = nx + ox
     c.x = (c.vx > 0 ? Math.floor(bx + body.w - 0.001) - body.w : Math.floor(bx) + 1) - ox
     c.vx = -c.vx * bp.body.bounce
-    c.drift = -c.drift
-    c.facing = (c.facing === 1 ? -1 : 1) as 1 | -1
+    /**
+     * Give up on this direction only if it isn't already on its way over.
+     *
+     * `steer` runs before this, so on the tick a walker launches at a ledge it
+     * is still standing flat against it and the horizontal move still fails.
+     * Turning it round here undid the jump it had just decided on: it went up,
+     * came down facing the way it came, and walked back. Repeat forever, one
+     * bounce per approach, never once clearing the ledge. A creature with
+     * upward velocity has a plan — let it finish before ruling on it.
+     */
+    if (c.vy >= 0) {
+      c.drift = -c.drift
+      c.facing = (c.facing === 1 ? -1 : 1) as 1 | -1
+    }
   }
 
   // --- vertical ---

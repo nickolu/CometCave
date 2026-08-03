@@ -60,6 +60,65 @@ export const GRAVITY = 34
 export const MAX_FALL = 46
 
 /**
+ * Tiles of height one point of `move.jump` is worth.
+ *
+ * `jump` used to be a launch velocity, handed straight to `c.vy`, and at this
+ * gravity that made it very nearly a decoration. Apex is `v² / 2gm`, so a Mite
+ * on `jump: 6` rose 0.53 tiles, a Grumblestone on `jump: 5` rose 0.12, and a
+ * tyrannosaur rose 0.18 — all of them less than the single tile they could
+ * already step up without jumping at all. Every walker in the game except the
+ * Hopper was therefore stopped dead by a two-tile bump, which is exactly what a
+ * bump looks like after the sand has moved once.
+ *
+ * So `jump` now says how high the creature means to get and the launch velocity
+ * is solved for. It is read against `GRAVITY` and the creature's own mass but
+ * *not* against the theme's gravity multiplier, so a leap is worth the same
+ * number of tiles in every world the player builds — and the station, at 0.35g,
+ * still sends the same push nearly three times as high. Floatiness stays a
+ * property of the place rather than something each creature has to be tuned for.
+ *
+ * Calibrated so the roster reads the way it was written: Loamworm (3) barely
+ * clears a tile, most walkers (5-6) clear about two, hunters (9-10) clear three,
+ * and the Hopper (12) clears four and looks like it means it.
+ */
+export const JUMP_TILES_PER_STRENGTH = 0.33
+
+/**
+ * How much further a starving animal finds food than a fed one, as a multiple
+ * of its own sight.
+ *
+ * The harness is what forced this. Sampling every animal that was within a
+ * breath of starving and measuring the distance to the nearest thing it could
+ * have eaten: a Finling with 20 tiles of sight was a median of 47 tiles from
+ * the nearest kelp, a Crystal Snail with 14 was 55 tiles away, and a Woolly
+ * with 18 was 45 — with the meadow pinned at its species cap the whole time.
+ * Food was never scarce. It was over the horizon, and the horizon was a circle
+ * the animal could not enlarge no matter how badly it needed to.
+ *
+ * The multiplier ramps in with hunger and applies to food only. Fear is not
+ * improved by starving — a desperate animal is worse at noticing what is
+ * hunting it, not better — so threats keep plain `senses.sight`, which also
+ * means hunger genuinely trades safety for a meal rather than being free.
+ *
+ * Read it as smell rather than sight. Nothing in the renderer draws it, and a
+ * creature still has to walk the whole way, so what it actually buys is a
+ * direction to walk in instead of a coin flip.
+ */
+export const HUNGER_REACH = 2
+
+/**
+ * Hunger at which an animal stops browsing and starts searching.
+ *
+ * Below this it wanders the way it always did — `restlessness` re-rolls its
+ * heading, which mills it around a home patch. Above it, the re-rolls slow down
+ * and the heading goes to full tilt, so it strikes out in one direction and
+ * keeps going. A random walk covers ground like the square root of time and a
+ * committed one covers it linearly; over the minute an animal has between full
+ * and dead, that is the difference between crossing 20 tiles and crossing 200.
+ */
+export const FORAGE_HUNGER = 0.55
+
+/**
  * Hard population ceiling. Past this, nothing new is born (summoning still works).
  *
  * Scaled with the world rather than left alone, because this ceiling binds well
