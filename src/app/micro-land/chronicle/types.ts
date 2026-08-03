@@ -13,7 +13,7 @@
  * thing that should have to change is the backend (see `backend.ts`). Anything
  * that isn't serializable breaks that promise.
  */
-import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import type { CreatureBlueprint, LifeKind } from '@/app/micro-land/domain/types'
 
 /**
  * Bump only when a shape change would make an old chronicle *misread* rather
@@ -42,6 +42,25 @@ export interface ElderRecord {
 }
 
 /**
+ * The records one kind of life holds in one land.
+ *
+ * Split out because a single set of them is a plant leaderboard wearing a
+ * neutral label. A rooted thing is never chased, never has to find its next
+ * meal, and is restocked by the soil itself, so it outlives and out-breeds every
+ * animal in the world by an order of magnitude — "longest life" and "deepest
+ * family line" were being won by moss on every land, every session, and the
+ * animals the player actually watches could not compete for either. Two columns
+ * gives each half of the food web a record it can plausibly take.
+ */
+export interface KindRecord {
+  elder: ElderRecord | null
+  /** Deepest unbroken family line this kind has reached here, in generations. */
+  generations: number
+  generationsBlueprintId: string | null
+  generationsSpeciesName: string | null
+}
+
+/**
  * What one land remembers.
  *
  * Kept per land rather than globally because these numbers only mean something
@@ -49,6 +68,14 @@ export interface ElderRecord {
  * volcanic field are not the same achievement.
  */
 export interface LandRecord {
+  /**
+   * The single oldest thing this land has ever held, of any kind.
+   *
+   * Kept alongside `byKind` rather than replaced by it because this one is not
+   * only a statistic: it is what the crown is drawn on and what `nameElder`
+   * writes into, and there is one crown. The panel shows the split; the world
+   * shows this.
+   */
   elder: ElderRecord | null
   /** Longest stretch, in world-seconds, that passed without an extinction. */
   steadySeconds: number
@@ -56,6 +83,14 @@ export interface LandRecord {
   generations: number
   generationsBlueprintId: string | null
   generationsSpeciesName: string | null
+  /**
+   * The same records again, kept apart for plants and for animals.
+   *
+   * Added after version 1 shipped, which is why `normalizeLandRecord` exists —
+   * an old chronicle has no `byKind` at all, and every path that can produce a
+   * `LandRecord` runs it through there so nothing downstream has to ask.
+   */
+  byKind: Record<LifeKind, KindRecord>
 }
 
 /**
@@ -90,6 +125,15 @@ export function emptyChronicle(): ChronicleData {
   return { version: CHRONICLE_VERSION, lands: {}, species: {}, milestones: {} }
 }
 
+export function emptyKindRecord(): KindRecord {
+  return {
+    elder: null,
+    generations: 0,
+    generationsBlueprintId: null,
+    generationsSpeciesName: null,
+  }
+}
+
 export function emptyLandRecord(): LandRecord {
   return {
     elder: null,
@@ -97,5 +141,6 @@ export function emptyLandRecord(): LandRecord {
     generations: 0,
     generationsBlueprintId: null,
     generationsSpeciesName: null,
+    byKind: { plant: emptyKindRecord(), animal: emptyKindRecord() },
   }
 }

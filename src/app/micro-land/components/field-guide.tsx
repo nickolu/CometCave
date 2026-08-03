@@ -1,8 +1,8 @@
 'use client'
 
-import type { SpeciesRecord } from '@/app/micro-land/chronicle/types'
+import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, moveWord } from '@/app/micro-land/domain/blueprint'
-import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -23,6 +23,22 @@ const recordLabel: React.CSSProperties = {
   letterSpacing: 1.2,
   textTransform: 'uppercase',
   color: 'var(--cc-text-muted)',
+}
+
+/** The two column headings. Same treatment as a row label, but centred over its column. */
+const columnHeading: React.CSSProperties = {
+  ...recordLabel,
+  textAlign: 'left',
+  paddingBottom: 4,
+}
+
+const recordCell: React.CSSProperties = {
+  fontSize: 13,
+  verticalAlign: 'top',
+  paddingBottom: 8,
+  // The two columns are read against each other, so they get equal width
+  // regardless of which one happens to hold the longer species name.
+  width: '38%',
 }
 
 /**
@@ -113,20 +129,55 @@ export function FieldGuide() {
           >
             <h3 style={sectionHeading}>This land&rsquo;s records</h3>
 
-            {records.elder && (
-              <div className="flex flex-col gap-0.5">
-                <span style={recordLabel}>Longest life</span>
-                <span style={{ fontSize: 13, color: 'var(--cc-gold)' }}>
-                  {formatDuration(records.elder.seconds)}
-                  <span style={{ color: 'var(--cc-text-muted)' }}>
-                    {' — '}
-                    {records.elder.name
-                      ? `${records.elder.name}, a ${records.elder.speciesName}`
-                      : records.elder.speciesName}
-                  </span>
-                </span>
-              </div>
-            )}
+            {/*
+              Two columns rather than one list, because one list is a plant
+              leaderboard. Nothing rooted is ever chased or ever has to find a
+              meal, so moss out-lives and out-breeds every animal in the world by
+              an order of magnitude and took both records on every land, every
+              session — leaving the creatures the player actually watches move
+              with nothing to win. Both columns show at all times, empty ones
+              included: an Animals column that only appeared once an animal had
+              earned something would hide the very thing worth chasing.
+            */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+              <thead>
+                <tr>
+                  {/* Empty corner cell — the row labels below are the row headers. */}
+                  <td />
+                  <th scope="col" style={columnHeading}>
+                    Plants
+                  </th>
+                  <th scope="col" style={columnHeading}>
+                    Animals
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
+                    Longest life
+                  </th>
+                  {LIFE_KINDS.map(kind => (
+                    <td key={kind} style={recordCell}>
+                      <ElderCell elder={records.byKind[kind].elder} />
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
+                    Deepest family line
+                  </th>
+                  {LIFE_KINDS.map(kind => (
+                    <td key={kind} style={recordCell}>
+                      <LineCell
+                        generations={records.byKind[kind].bestGenerations}
+                        speciesName={records.byKind[kind].bestGenerationsSpeciesName}
+                      />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
 
             {records.bestSteadySeconds > 0 && (
               <div className="flex flex-col gap-0.5">
@@ -137,21 +188,6 @@ export function FieldGuide() {
                     records.steadySeconds > 0 && (
                       <span style={{ color: 'var(--cc-gold)' }}> — going now</span>
                     )}
-                </span>
-              </div>
-            )}
-
-            {records.bestGenerations > 1 && (
-              <div className="flex flex-col gap-0.5">
-                <span style={recordLabel}>Deepest family line</span>
-                <span style={{ fontSize: 13, color: 'var(--cc-text-default)' }}>
-                  {records.bestGenerations} generations
-                  {records.bestGenerationsSpeciesName && (
-                    <span style={{ color: 'var(--cc-text-muted)' }}>
-                      {' — '}
-                      {records.bestGenerationsSpeciesName}
-                    </span>
-                  )}
                 </span>
               </div>
             )}
@@ -218,6 +254,61 @@ export function FieldGuide() {
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * A column that has nothing in it yet.
+ *
+ * A dash rather than a blank cell, and rather than nothing at all: an empty cell
+ * reads as a rendering fault, whereas a dash reads as a record still going
+ * spare. It is also the only thing marking the state — never colour alone.
+ */
+function NoRecord() {
+  return (
+    <span style={{ color: 'var(--cc-text-muted)', opacity: 0.55 }}>
+      <span aria-hidden>—</span>
+      <span className="sr-only">none yet</span>
+    </span>
+  )
+}
+
+function ElderCell({ elder }: { elder: ElderRecord | null }) {
+  if (!elder) return <NoRecord />
+  return (
+    <>
+      <span style={{ color: 'var(--cc-gold)' }}>{formatDuration(elder.seconds)}</span>
+      {/* The holder on its own line: two columns of "4m 12s — a sky moss" on a
+          phone wraps into something unreadable, and the number is what is being
+          compared across the columns. */}
+      <br />
+      <span style={{ color: 'var(--cc-text-muted)', fontSize: 12 }}>
+        {elder.name ? `${elder.name}, a ${elder.speciesName}` : elder.speciesName}
+      </span>
+    </>
+  )
+}
+
+function LineCell({
+  generations,
+  speciesName,
+}: {
+  generations: number
+  speciesName: string | null
+}) {
+  // One generation is everything the player put there by hand, so it is not a
+  // family line yet and saying "1 generations" would suggest otherwise.
+  if (generations <= 1) return <NoRecord />
+  return (
+    <>
+      <span style={{ color: 'var(--cc-text-default)' }}>{generations} generations</span>
+      {speciesName && (
+        <>
+          <br />
+          <span style={{ color: 'var(--cc-text-muted)', fontSize: 12 }}>{speciesName}</span>
+        </>
+      )}
+    </>
   )
 }
 

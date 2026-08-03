@@ -8,16 +8,19 @@
  * page goes away. Losing the last couple of seconds of a record on a hard crash
  * is an acceptable trade; janking the frame loop is not.
  */
-import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import { lifeKind } from '@/app/micro-land/domain/blueprint'
+import { type CreatureBlueprint, LIFE_KINDS, type LifeKind } from '@/app/micro-land/domain/types'
 import { CHRONICLE_SYNC_KEY, readSyncMark, writeSyncMark } from '@/app/micro-land/sync-mark'
 
 import { type ChronicleBackend, INITIAL_DATA, localBackend } from './backend'
 import {
   CHRONICLE_VERSION,
   type ChronicleData,
+  type KindRecord,
   type LandRecord,
   type SpeciesRecord,
   emptyChronicle,
+  emptyKindRecord,
   emptyLandRecord,
 } from './types'
 
@@ -237,12 +240,74 @@ export async function initChronicle(): Promise<ChronicleData> {
 function migrate(stored: ChronicleData | null): ChronicleData {
   if (!stored || typeof stored !== 'object') return emptyChronicle()
   if (stored.version !== CHRONICLE_VERSION) return emptyChronicle()
+  const species = stored.species ?? {}
+  const lands: Record<string, LandRecord> = {}
+  for (const [id, record] of Object.entries(stored.lands ?? {})) {
+    if (record && typeof record === 'object') lands[id] = normalizeLandRecord(record, species)
+  }
   return {
     version: CHRONICLE_VERSION,
-    lands: stored.lands ?? {},
-    species: stored.species ?? {},
+    lands,
+    species,
     milestones: stored.milestones ?? {},
   }
+}
+
+/**
+ * Which side of the food web an archived species was on, if we can still tell.
+ *
+ * The blueprint here came out of storage, so it is only a `CreatureBlueprint` by
+ * assertion — `isPlantLike` reaches into `move`, `diet` and `tags`, and a
+ * half-written archive entry would throw out of `migrate`, which is the one
+ * thing `migrate` may never do. Anything that doesn't look like a blueprint is
+ * simply unclassifiable.
+ */
+function kindOfArchived(
+  blueprintId: string | null | undefined,
+  species: Record<string, SpeciesRecord>
+): LifeKind | null {
+  if (!blueprintId) return null
+  const bp = species[blueprintId]?.blueprint
+  if (!bp || typeof bp !== 'object') return null
+  if (!bp.move || !bp.diet || !Array.isArray(bp.diet.eats) || !Array.isArray(bp.tags)) return null
+  return lifeKind(bp)
+}
+
+/**
+ * Grow a stored land record into the current shape.
+ *
+ * `byKind` arrived after version 1 shipped, so every record written before it
+ * has to be given one. Filing the old land-wide records into a column rather
+ * than starting both columns empty is the point: a player returning to a
+ * fourteen-generation line they set last week should find it under Plants, not
+ * find it apparently wiped.
+ *
+ * A holder that can no longer be classified — pruned out of the archive, or
+ * deleted by the player — leaves the split empty instead of being guessed into a
+ * column. An empty column refills within a minute of play; a plant record parked
+ * under Animals is a lie that never expires, because records only ever move
+ * upward and nothing would beat it.
+ */
+function normalizeLandRecord(
+  record: LandRecord,
+  species: Record<string, SpeciesRecord>
+): LandRecord {
+  const filled: LandRecord = { ...emptyLandRecord(), ...record }
+  if (record.byKind?.plant && record.byKind?.animal) return filled
+
+  const byKind = { plant: emptyKindRecord(), animal: emptyKindRecord() }
+
+  const elderKind = kindOfArchived(record.elder?.blueprintId, species)
+  if (record.elder && elderKind) byKind[elderKind].elder = record.elder
+
+  const lineKind = kindOfArchived(record.generationsBlueprintId, species)
+  if (record.generations > 0 && lineKind) {
+    byKind[lineKind].generations = record.generations
+    byKind[lineKind].generationsBlueprintId = record.generationsBlueprintId
+    byKind[lineKind].generationsSpeciesName = record.generationsSpeciesName
+  }
+
+  return { ...filled, byKind }
 }
 
 export function readChronicle(): ChronicleData {
@@ -454,6 +519,17 @@ function pruneArchive(): void {
  * high-water marks, so "keep the larger" merges cleanly — no conflict, no
  * prompt. Milestones keep the earlier timestamp; a first is a first.
  */
+/** Keep the better of each record in one column. Same high-water-mark rule. */
+function mergeKindRecords(left: KindRecord, right: KindRecord): KindRecord {
+  const deeper = right.generations > left.generations ? right : left
+  return {
+    elder: (right.elder?.seconds ?? 0) > (left.elder?.seconds ?? 0) ? right.elder : left.elder,
+    generations: deeper.generations,
+    generationsBlueprintId: deeper.generationsBlueprintId,
+    generationsSpeciesName: deeper.generationsSpeciesName,
+  }
+}
+
 export function mergeChronicles(a: ChronicleData, b: ChronicleData): ChronicleData {
   const merged = emptyChronicle()
 
@@ -461,12 +537,24 @@ export function mergeChronicles(a: ChronicleData, b: ChronicleData): ChronicleDa
     const left = a.lands[id] ?? emptyLandRecord()
     const right = b.lands[id] ?? emptyLandRecord()
     const deeper = right.generations > left.generations ? right : left
+    // Each column merges on its own, so a phone that holds the animal record and
+    // a laptop that holds the plant one end up with both. `byKind` is defaulted
+    // per side rather than assumed present: `mergeChronicles` is exported and
+    // gets handed records that never went through `migrate`.
+    const byKind = {} as Record<LifeKind, KindRecord>
+    for (const kind of LIFE_KINDS) {
+      byKind[kind] = mergeKindRecords(
+        left.byKind?.[kind] ?? emptyKindRecord(),
+        right.byKind?.[kind] ?? emptyKindRecord()
+      )
+    }
     merged.lands[id] = {
       elder: (right.elder?.seconds ?? 0) > (left.elder?.seconds ?? 0) ? right.elder : left.elder,
       steadySeconds: Math.max(left.steadySeconds, right.steadySeconds),
       generations: deeper.generations,
       generationsBlueprintId: deeper.generationsBlueprintId,
       generationsSpeciesName: deeper.generationsSpeciesName,
+      byKind,
     }
   }
 

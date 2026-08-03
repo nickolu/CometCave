@@ -23,7 +23,7 @@ import {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { CreatureBlueprint, MaterialId } from './domain/types'
+import type { CreatureBlueprint, LifeKind, MaterialId } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
 
 /** Theme id standing for "the land the player summoned". */
@@ -69,6 +69,13 @@ export interface Inspected {
   isElder: boolean
 }
 
+/** One column of the guide's record book — see `KindRecord`. */
+export interface KindRecordsView {
+  elder: ElderRecord | null
+  bestGenerations: number
+  bestGenerationsSpeciesName: string | null
+}
+
 /**
  * Records for the land currently on screen, as the UI wants them.
  *
@@ -77,7 +84,7 @@ export interface Inspected {
  * come from two different places.
  */
 export interface RecordsView {
-  /** Best ever in this land. */
+  /** Best ever in this land, of any kind. Backs the crown, not the panel. */
   elder: ElderRecord | null
   bestSteadySeconds: number
   bestGenerations: number
@@ -85,6 +92,18 @@ export interface RecordsView {
   /** How this run is going. */
   steadySeconds: number
   deepestGeneration: number
+  /**
+   * The two records again, split plant against animal — what the guide shows.
+   *
+   * Flat copies rather than the chronicle's own objects: those are mutated in
+   * place several times a second, and a store value that changes without being
+   * re-set is one React will never re-render for.
+   */
+  byKind: Record<LifeKind, KindRecordsView>
+}
+
+function emptyKindRecords(): KindRecordsView {
+  return { elder: null, bestGenerations: 0, bestGenerationsSpeciesName: null }
 }
 
 export interface EarnedMilestone {
@@ -101,6 +120,7 @@ const EMPTY_RECORDS: RecordsView = {
   bestGenerationsSpeciesName: null,
   steadySeconds: 0,
   deepestGeneration: 0,
+  byKind: { plant: emptyKindRecords(), animal: emptyKindRecords() },
 }
 
 export interface PopulationEntry {
