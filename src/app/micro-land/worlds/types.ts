@@ -68,6 +68,16 @@ export interface SavedCreature {
   digProgress: number
   tilesDug: number
   generation: number
+  /**
+   * What this one inherited, or absent for a world saved before creatures
+   * inherited anything.
+   *
+   * Optional rather than required because an old save must thaw into neutral
+   * creatures, which is exactly what the sanitizer does with a missing value —
+   * and neutral is the right answer, not a lossy one: a world written before the
+   * mechanic existed genuinely had no drift in it.
+   */
+  traits?: { speed: number; sight: number; lifespan: number; hue: number; shade: number }
   name: string | null
 }
 

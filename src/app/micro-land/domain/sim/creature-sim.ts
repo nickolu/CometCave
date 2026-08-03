@@ -30,6 +30,7 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
+import { inherit, lifespanOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
@@ -127,9 +128,13 @@ function compareX(a: Creature, b: Creature): number {
  * Plants get a flat few seconds; everything else gets a fifth of its own
  * lifespan, so a mayfly and a dragon are both "grown" at the same point in
  * their own story rather than at the same wall-clock moment.
+ *
+ * A fifth of *this creature's* lifespan, not its species' — a short-lived line
+ * that matured on the species clock would die before it was ever allowed to
+ * breed. See `lifespanOf`.
  */
-function breedingAge(bp: CreatureBlueprint): number {
-  return bp.move.kind === 'root' ? TUNING.plantMaturity : bp.diet.lifespanSeconds * 0.2
+function breedingAge(c: Creature, bp: CreatureBlueprint): number {
+  return bp.move.kind === 'root' ? TUNING.plantMaturity : lifespanOf(c, bp) * 0.2
 }
 
 /**
@@ -166,7 +171,9 @@ function needsPartner(bp: CreatureBlueprint): boolean {
  * about the population rather than about this animal.
  */
 function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
-  return c.breedCooldown <= 0 && 1 - c.hunger >= bp.diet.breedAt && c.ageSeconds > breedingAge(bp)
+  return (
+    c.breedCooldown <= 0 && 1 - c.hunger >= bp.diet.breedAt && c.ageSeconds > breedingAge(c, bp)
+  )
 }
 
 /**
@@ -283,7 +290,7 @@ export function tickCreatures(
     }
 
     // --- old age --------------------------------------------------------
-    if (c.ageSeconds >= bp.diet.lifespanSeconds) {
+    if (c.ageSeconds >= lifespanOf(c, bp)) {
       kill(w, c, bp, dead, events, 'aged')
       continue
     }
@@ -371,6 +378,12 @@ export function tickCreatures(
           // counts ancestry, so a bloodline shouldn't get shallower by marrying
           // into a newer one.
           child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+          // Set here for the same reason as the generation above, and from the
+          // same two parents. `spawnCreature` gave the child its species'
+          // neutral values; this is the only place in the game that ever
+          // replaces them, which is what makes "born here" and "put here" two
+          // genuinely different things.
+          child.traits = inherit(c.traits, mate?.traits ?? null, rng)
           c.children++
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
           if (isPlant) {
@@ -431,7 +444,9 @@ function look(
   const cy = c.y + bh / 2
   const hungry = c.hunger > 0.3
 
-  const sight = bp.senses.sight
+  // This creature's sight, not its species' — everything downstream, including
+  // the foraging reach and the window the loop below walks, is measured off it.
+  const sight = sightOf(c, bp)
   const sight2 = sight * sight
 
   /**
@@ -936,7 +951,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     c.targetId = null
   }
 
-  const speed = bp.move.speed
+  const speed = speedOf(c, bp)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 

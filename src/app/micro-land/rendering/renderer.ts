@@ -28,6 +28,7 @@
 import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
+import { tintKey } from '@/app/micro-land/domain/traits'
 import type { WorldState } from '@/app/micro-land/domain/types'
 
 import { getSprites } from './sprite-cache'
@@ -692,7 +693,9 @@ export class Renderer {
     for (const c of w.creatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
-      const sprites = getSprites(bp)
+      // Its own colour, not its species'. `tintKey` quantizes, so a whole
+      // population that has drifted together shares one cached set.
+      const sprites = getSprites(bp, tintKey(c.traits))
       // Most of the population is off screen in a world this wide. Culling here
       // is what keeps the draw cost tied to what you can see rather than to how
       // many things happen to be alive.

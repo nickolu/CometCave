@@ -111,6 +111,46 @@ describe('freezing and thawing a world', () => {
     expect(first.name).toBe('Bramble')
   })
 
+  /**
+   * The failure this guards against is invisible: a reopened world would have
+   * all of its creatures, in the right places, at the right ages — and every
+   * line the player had grown would silently be back to its blueprint.
+   */
+  it('brings back what each creature inherited', () => {
+    const { w } = populatedWorld()
+    w.creatures[0].traits = { speed: 1.37, sight: 0.72, lifespan: 1.15, hue: 214, shade: 0.9 }
+
+    const fresh = createWorld(1)
+    restoreSnapshot(fresh, snapshotWorld(w))
+
+    const first = fresh.creatures[0]
+    expect(first.traits.speed).toBeCloseTo(1.37, 2)
+    expect(first.traits.sight).toBeCloseTo(0.72, 2)
+    expect(first.traits.lifespan).toBeCloseTo(1.15, 2)
+    expect(first.traits.hue).toBeCloseTo(214, 0)
+    expect(first.traits.shade).toBeCloseTo(0.9, 2)
+    // Untouched creatures stay exactly their species, which is what makes a
+    // placed creature and a born one different things.
+    expect(fresh.creatures[1].traits).toEqual({
+      speed: 1,
+      sight: 1,
+      lifespan: 1,
+      hue: 0,
+      shade: 1,
+    })
+  })
+
+  it('thaws a world saved before creatures inherited anything into neutral ones', () => {
+    const { w } = populatedWorld()
+    const snap = snapshotWorld(w)
+    for (const c of snap.creatures) delete c.traits
+
+    const fresh = createWorld(1)
+    expect(restoreSnapshot(fresh, snap)).toBe(true)
+    expect(fresh.creatures[0].traits.speed).toBe(1)
+    expect(fresh.creatures[0].traits.hue).toBe(0)
+  })
+
   it('carries the summoned species so the world can be opened anywhere', () => {
     const { w, bp } = populatedWorld()
     const snap = snapshotWorld(w)

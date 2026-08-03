@@ -23,7 +23,7 @@ import {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { CreatureBlueprint, LifeKind, MaterialId } from './domain/types'
+import type { CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
 
 /** Theme id standing for "the land the player summoned". */
@@ -63,6 +63,8 @@ export interface Inspected {
   targetName: string | null
   /** How far back its line goes; 1 means it was placed rather than born. */
   generation: number
+  /** What it inherited, as multipliers on its species. Neutral at generation 1. */
+  traits: Traits
   /** Player-given name, if this one earned the right to have one. */
   name: string | null
   /** True while this creature holds the land's longevity record. */

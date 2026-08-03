@@ -37,6 +37,7 @@ import {
   PLANT_SPECIES_CAP,
   PLANT_SPREAD_COOLDOWN,
   SPECIES_SOFT_CAP,
+  TRAIT_DRIFT,
 } from '@/app/micro-land/domain/constants'
 
 /**
@@ -63,6 +64,7 @@ export const TUNING_DEFAULTS = {
   mateRadius: MATE_RADIUS,
   mealValue: MEAL_VALUE,
   breedCost: BREED_COST,
+  traitDrift: TRAIT_DRIFT,
 
   gravity: GRAVITY,
 }
@@ -241,6 +243,15 @@ export const KNOBS: Knob[] = [
     help: 'How much of a full stomach having one uses up.',
     min: 0.1,
     max: 1,
+    step: 0.01,
+  },
+  {
+    key: 'traitDrift',
+    group: 'creatures',
+    label: 'How much a baby takes after its parents',
+    help: 'Every animal is a little faster or slower, sharper-eyed or blinder, longer or shorter lived than the two it came from, and a little different in colour. This is how big that step is. Turn it up and a family changes in front of you; set it to nothing and every creature is exactly its own kind forever. Nothing you place is ever affected — only things born here.',
+    min: 0,
+    max: 0.4,
     step: 0.01,
   },
   {

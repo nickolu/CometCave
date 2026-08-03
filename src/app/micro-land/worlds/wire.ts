@@ -20,6 +20,7 @@
 import { MATERIAL_IDS } from '@/app/micro-land/domain/config/materials'
 import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { sanitizeTerrain } from '@/app/micro-land/domain/terrain'
+import { SHADE_MAX, SHADE_MIN, TRAIT_MAX, TRAIT_MIN } from '@/app/micro-land/domain/traits'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 
 import {
@@ -130,6 +131,28 @@ function validRuns(runs: unknown, tileCount: number): number[] | null {
  * creature; one whose species has gone is dropped later, by the restore, which
  * is the only reason a creature is ever discarded.
  */
+/**
+ * Coerce stored inheritance back into the range the simulation was built for.
+ *
+ * Clamped to the same bounds `inherit` enforces rather than merely to something
+ * finite, because these numbers multiply the blueprint on hot paths that were
+ * tuned against it: a hand-edited save claiming a hopper is forty times its
+ * species' speed would move it across a tile faster than collision samples one.
+ * A save with no traits at all is a save written before any of this existed, and
+ * neutral is the honest answer for it.
+ */
+function cleanTraits(raw: unknown): SavedCreature['traits'] {
+  if (!isPlainObject(raw)) return undefined
+  return {
+    speed: clamp(raw.speed, TRAIT_MIN, TRAIT_MAX, 1),
+    sight: clamp(raw.sight, TRAIT_MIN, TRAIT_MAX, 1),
+    lifespan: clamp(raw.lifespan, TRAIT_MIN, TRAIT_MAX, 1),
+    // Wrapped rather than clamped — hue is an angle, and 370° is 10°, not 360°.
+    hue: ((clamp(raw.hue, -1e6, 1e6, 0) % 360) + 360) % 360,
+    shade: clamp(raw.shade, SHADE_MIN, SHADE_MAX, 1),
+  }
+}
+
 function cleanCreature(raw: unknown, index: number): SavedCreature | null {
   if (!isPlainObject(raw)) return null
   if (typeof raw.blueprintId !== 'string' || raw.blueprintId.length === 0) return null
@@ -158,6 +181,7 @@ function cleanCreature(raw: unknown, index: number): SavedCreature | null {
     digProgress: clamp(raw.digProgress, 0, 1, 0),
     tilesDug: Math.floor(clamp(raw.tilesDug, 0, 1e9, 0)),
     generation: Math.floor(clamp(raw.generation, 1, 1e6, 1)),
+    traits: cleanTraits(raw.traits),
     name: typeof raw.name === 'string' ? raw.name.slice(0, 32) : null,
   }
 }

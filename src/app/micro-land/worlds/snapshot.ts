@@ -23,6 +23,7 @@ import { reserveSummonIds } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_IDS } from '@/app/micro-land/domain/config/materials'
 import { makeRng } from '@/app/micro-land/domain/sim/prng'
 import { registerBlueprint } from '@/app/micro-land/domain/sim/world'
+import { neutralTraits } from '@/app/micro-land/domain/traits'
 import type { Creature, CreatureMood, WorldState } from '@/app/micro-land/domain/types'
 
 import type { SavedCreature, WorldSnapshot } from './types'
@@ -154,6 +155,17 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
       digProgress: round(c.digProgress),
       tilesDug: c.tilesDug,
       generation: c.generation,
+      // Stored, and it has to be. A reopened world whose creatures came back as
+      // their blueprints would quietly delete every line the player had grown —
+      // and it would look like nothing had happened, because the animals would
+      // all still be there.
+      traits: {
+        speed: round(c.traits.speed),
+        sight: round(c.traits.sight),
+        lifespan: round(c.traits.lifespan),
+        hue: Math.round(c.traits.hue),
+        shade: round(c.traits.shade),
+      },
       name: c.name,
     })),
     blueprints,
@@ -188,6 +200,7 @@ function thaw(saved: SavedCreature): Creature {
     digProgress: saved.digProgress,
     tilesDug: saved.tilesDug,
     generation: saved.generation,
+    traits: saved.traits ? { ...saved.traits } : neutralTraits(),
     name: saved.name,
   }
 }
