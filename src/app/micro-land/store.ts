@@ -201,6 +201,13 @@ interface MicroLandState {
   populationHistory: PopulationSnapshot[]
   /** Species that went extinct in this session, newest last. */
   extinctions: ExtinctionRecord[]
+  /**
+   * Observed predator → prey relationships in this world.
+   *
+   * Key = eater blueprintId, value = array of eaten blueprintIds (unique).
+   * Updated on every eat event (live prey and carcasses).
+   */
+  foodWeb: Record<string, string[]>
 
   summonOpen: boolean
   summonBusy: boolean
@@ -333,6 +340,8 @@ interface MicroLandState {
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
+  logEat: (eaterId: string, preyId: string) => void
+  clearFoodWeb: () => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
   setSummonMode: (mode: 'creature' | 'scene' | 'terrain') => void
@@ -425,6 +434,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   elapsed: 0,
   populationHistory: [],
   extinctions: [],
+  foodWeb: {},
 
   summonOpen: false,
   summonBusy: false,
@@ -465,7 +475,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrush: brush => set({ brush }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], foodWeb: {} }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -490,6 +500,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
     }),
   addExtinction: record => set(s => ({ extinctions: [...s.extinctions, record] })),
   clearExtinctions: () => set({ extinctions: [] }),
+  logEat: (eaterId, preyId) => set(s => {
+    const existing = s.foodWeb[eaterId] ?? []
+    if (existing.includes(preyId)) return {}
+    return { foodWeb: { ...s.foodWeb, [eaterId]: [...existing, preyId] } }
+  }),
+  clearFoodWeb: () => set({ foodWeb: {} }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
   setSummonMode: summonMode => set({ summonMode }),
