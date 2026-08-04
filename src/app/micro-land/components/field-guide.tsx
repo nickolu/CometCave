@@ -72,7 +72,10 @@ export function FieldGuide() {
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
+  const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
+  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
@@ -81,17 +84,14 @@ export function FieldGuide() {
     setHiddenPlantIds(prev => new Set([...prev, id]))
   }
 
-  function showAll() {
-    setHiddenPlantIds(new Set())
-  }
+  const [plantsHidden, setPlantsHidden] = useState(false)
 
   if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
   const genByBp = new Map(population.map(p => [p.blueprintId, p.maxGeneration]))
   const allOrdered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
-  const hiddenCount = [...allOrdered].filter(bp => hiddenPlantIds.has(bp.id)).length
-  const ordered = allOrdered.filter(bp => !hiddenPlantIds.has(bp.id))
+  const ordered = allOrdered.filter(bp => !plantsHidden || !isPlantLike(bp))
 
   // Species the player has met before that aren't in this world — the reason a
   // summoned creature no longer dies with the tab it was invented in.
@@ -137,6 +137,60 @@ export function FieldGuide() {
           >
             Field Guide
           </h2>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setPlantsHidden(h => !h)}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+            }}
+          >
+            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => { setWorkshopOpen(true) }}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: '1px solid var(--cc-panel-divider)',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            Workshop
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => { setChallengesOpen(true) }}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: '1px solid var(--cc-panel-divider)',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            Challenges
+          </button>
           <button
             type="button"
             className="cc-btn"
@@ -220,42 +274,91 @@ export function FieldGuide() {
           </section>
         )}
 
-        {hiddenCount > 0 && (
-          <div
-            className="flex items-center justify-between px-4 py-2"
-            style={{ borderBottom: '1px solid var(--cc-panel-divider)', background: 'var(--cc-modal-bg-from)' }}
-          >
-            <span
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              {hiddenCount} {hiddenCount === 1 ? 'plant' : 'plants'} hidden
-            </span>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={showAll}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '4px 8px',
-                minHeight: 28,
-                borderRadius: 4,
-                border: '1px solid var(--cc-mint-line)',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              Show all
-            </button>
-          </div>
+        {namedCreatures.length > 0 && (
+          <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+              Named · {namedCreatures.length}
+            </h3>
+            <ul className="flex flex-col">
+              {namedCreatures
+                .slice()
+                .sort((a, b) => {
+                  // Living first, then by age descending
+                  if (a.alive !== b.alive) return a.alive ? -1 : 1
+                  return b.ageSeconds - a.ageSeconds
+                })
+                .map((entry, i) => {
+                  const bp = blueprints.find(b => b.id === entry.blueprintId)
+                  return (
+                    <li
+                      key={entry.name + entry.blueprintId + i}
+                      className="flex gap-3 px-4 py-2.5"
+                      style={{
+                        borderBottom: '1px solid var(--cc-panel-divider)',
+                        opacity: entry.alive ? 1 : 0.7,
+                      }}
+                    >
+                      {bp && (
+                        <div className="shrink-0 pt-0.5">
+                          <CreaturePortrait blueprint={bp} size={30} />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            style={{
+                              fontFamily: 'var(--cc-font-mono)',
+                              fontSize: 12,
+                              letterSpacing: 1.4,
+                              textTransform: 'uppercase',
+                              color: entry.alive ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                            }}
+                          >
+                            {entry.name}
+                          </span>
+                          {!entry.alive && (
+                            <span
+                              style={{
+                                fontFamily: 'var(--cc-font-mono)',
+                                fontSize: 9,
+                                letterSpacing: 1,
+                                textTransform: 'uppercase',
+                                color: 'var(--cc-text-muted)',
+                                opacity: 0.6,
+                              }}
+                            >
+                              †
+                            </span>
+                          )}
+                        </div>
+                        {bp && (
+                          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
+                            {bp.name}
+                          </p>
+                        )}
+                        <p
+                          style={{
+                            fontFamily: 'var(--cc-font-mono)',
+                            fontSize: 10,
+                            color: 'var(--cc-text-muted)',
+                            opacity: 0.75,
+                            marginTop: 4,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {entry.alive ? 'alive · ' : ''}{formatDuration(entry.ageSeconds)}
+                          {entry.generation > 1 && ` · gen ${entry.generation}`}
+                          {entry.children > 0 && ` · ${entry.children} offspring`}
+                          {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                        </p>
+                      </div>
+                    </li>
+                  )
+                })}
+            </ul>
+          </section>
         )}
+
         <ul className="flex flex-col">
           {ordered.map(bp => (
             <GuideEntry
@@ -265,7 +368,6 @@ export function FieldGuide() {
               maxGeneration={genByBp.get(bp.id) ?? 1}
               blueprints={blueprints}
               onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
-              onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
               onCopyCode={() => {
                 const code = btoa(JSON.stringify(bp))
                 navigator.clipboard.writeText(code).catch(() => {})
@@ -556,7 +658,6 @@ function GuideEntry({
   alive,
   blueprints,
   maxGeneration,
-  onHide,
   onLocate,
   onCopyCode,
 }: {
@@ -564,7 +665,6 @@ function GuideEntry({
   alive: number
   blueprints: CreatureBlueprint[]
   maxGeneration: number
-  onHide?: () => void
   onLocate?: () => void
   onCopyCode?: () => void
 }) {
@@ -621,7 +721,7 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {(onLocate || onHide || onCopyCode) && (
+          {(onLocate || onCopyCode) && (
             <div className="flex shrink-0 items-center gap-1">
               {onCopyCode && (
                 <button
@@ -663,29 +763,6 @@ function GuideEntry({
                   }}
                 >
                   Find
-                </button>
-              )}
-              {onHide && (
-                <button
-                  type="button"
-                  className="cc-btn shrink-0"
-                  onClick={onHide}
-                  aria-label={`Hide ${bp.name} from field guide`}
-                  title="Hide from field guide (plant still lives in the world)"
-                  style={{
-                    fontFamily: 'var(--cc-font-mono)',
-                    fontSize: 9,
-                    letterSpacing: 1,
-                    textTransform: 'uppercase',
-                    padding: '3px 7px',
-                    minHeight: 24,
-                    borderRadius: 4,
-                    border: '1px solid var(--cc-mint-line)',
-                    color: 'var(--cc-text-muted)',
-                    opacity: 0.65,
-                  }}
-                >
-                  Hide
                 </button>
               )}
             </div>

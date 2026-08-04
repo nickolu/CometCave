@@ -331,9 +331,11 @@ export function tickCreatures(
 ): void {
   tickCount++
 
-  // Migration: worlds saved before carcasses were added won't have these fields.
+  // Migration: worlds saved before carcasses or tombstones were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.tombstones ??= []
+  w.nextTombstoneId ??= 1
   w.burrows ??= []
   w.scents ??= []
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
@@ -697,6 +699,22 @@ export function tickCreatures(
       plantsAlive++
       speciesCount[victimBp.id] = (speciesCount[victimBp.id] ?? 0) + 1
       events.push({ kind: 'born', blueprintId: victimBp.id, x: seedling.x, y: seedling.y })
+      // A few pollen motes drift upward where the grazer ate.
+      const pollenCount = 2 + Math.floor(rng() * 2)
+      for (let p = 0; p < pollenCount; p++) {
+        if (w.particles.length >= 600) break
+        const spread = (rng() - 0.5) * 6
+        const upward = 0.4 + rng() * 0.6
+        w.particles.push({
+          x: ev.x + spread,
+          y: ev.y - rng() * 2,
+          vx: spread * 0.15,
+          vy: -upward,
+          life: 2 + rng() * 2,
+          maxLife: 3,
+          color: '#fde68a',
+        })
+      }
     }
   }
 
@@ -2010,6 +2028,21 @@ function kill(
       y: c.y + bh / 2,
       decaySeconds: 15,
       blueprintId: c.blueprintId,
+    })
+  }
+  // Named creatures leave a tombstone that stays in the world. Placed outside
+  // the `root` guard so a named plant that burns still gets its headstone.
+  if (c.name !== null) {
+    w.tombstones.push({
+      id: w.nextTombstoneId++,
+      x: c.x + bw / 2,
+      y: c.y + bh / 2,
+      name: c.name,
+      blueprintId: c.blueprintId,
+      ageSeconds: c.ageSeconds,
+      generation: c.generation,
+      mealsEaten: c.mealsEaten,
+      children: c.children,
     })
   }
   emitParticles(w, c.x + bw / 2, c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)

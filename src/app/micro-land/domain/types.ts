@@ -592,6 +592,36 @@ export interface Carcass {
 }
 
 /**
+ * A permanent marker left where a named creature died.
+ *
+ * Unlike carcasses, tombstones never decay — they are a memorial, not a food
+ * source. Placed at death for any named creature regardless of species, so a
+ * named plant that burns still gets its headstone.
+ */
+export interface Tombstone {
+  id: number
+  x: number        // world tile x, creature centre at death
+  y: number        // world tile y, creature centre at death
+  name: string     // what the player called it
+  blueprintId: string
+  ageSeconds: number    // how long it lived
+  generation: number   // which generation
+  mealsEaten: number
+  children: number
+}
+
+/** A named creature — may be alive or dead. */
+export interface NamedCreatureEntry {
+  name: string
+  blueprintId: string
+  ageSeconds: number
+  generation: number
+  mealsEaten: number
+  children: number
+  alive: boolean
+}
+
+/**
  * A persistent den created by a burrowing creature.
  *
  * A creature with dig capability that rests long enough at a spot stakes that
@@ -664,6 +694,8 @@ export interface WorldState {
   creatures: Creature[]
   particles: Particle[]
   carcasses: Carcass[]
+  tombstones: Tombstone[]
+  nextTombstoneId: number
   burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]

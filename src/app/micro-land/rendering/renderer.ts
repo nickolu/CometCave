@@ -494,8 +494,10 @@ export class Renderer {
     wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
 
     this.drawCarcasses(w, vx, vw)
+    this.drawTombstones(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
+    this.drawPollinatorAuras(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
@@ -532,7 +534,8 @@ export class Renderer {
     )
 
     this.drawMinimap(w, theme, vx)
-    this.drawNameLabels(w, vx, vw)
+    this.drawNameLabels(w, vx, vw, elderId)
+    this.drawTombstoneLabels(w, vx, vw)
   }
 
   // -------------------------------------------------------------------------
@@ -721,6 +724,103 @@ export class Renderer {
     ctx.globalAlpha = 1
   }
 
+  /**
+   * Orbiting pollen motes around creatures with a plant-helping aura.
+   * Drawn on the world canvas so they scale with zoom like everything else.
+   */
+  private drawPollinatorAuras(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    for (const c of w.creatures) {
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp?.aura?.helps.includes('plant')) continue
+
+      const rows = bp.art.frames[0]
+      const bw = rows[0].length
+      const bh = rows.length
+      if (c.x + bw < vx || c.x > vx + vw) continue
+
+      const cx = c.x + bw / 2
+      const cy = c.y + bh / 2
+      const orbitR = Math.max(4, bw)
+
+      // 4 motes orbiting at different phase offsets
+      ctx.fillStyle = '#fde68a'
+      for (let i = 0; i < 4; i++) {
+        const angle = w.elapsed * 1.8 + i * (Math.PI / 2)
+        const mx = Math.round(cx + Math.cos(angle) * orbitR)
+        const my = Math.round(cy + Math.sin(angle) * orbitR * 0.5)
+        ctx.globalAlpha = 0.45 + 0.3 * Math.sin(w.elapsed * 3 + i)
+        ctx.fillRect(mx, my, 1, 1)
+      }
+      ctx.globalAlpha = 1
+    }
+  }
+
+  /**
+   * Pixel-art headstones where named creatures died.
+   *
+   * Drawn on the world canvas so they sit in the world at tile scale and get
+   * scaled up with everything else. Names are drawn separately on the display
+   * canvas so they stay legible at any zoom.
+   */
+  private drawTombstones(w: WorldState, vx: number, vw: number): void {
+    if (!w.tombstones || w.tombstones.length === 0) return
+    const ctx = this.wctx
+    ctx.fillStyle = '#9a8878'
+    ctx.globalAlpha = 0.9
+
+    for (const tomb of w.tombstones) {
+      const cx = Math.round(tomb.x)
+      const cy = Math.round(tomb.y)
+      if (cx + 2 < vx || cx - 2 > vx + vw) continue
+
+      // Headstone shape: 1-wide cap, then 3-wide body rising upward from centre.
+      //  .█.   cy-4
+      //  ███   cy-3
+      //  ███   cy-2
+      //  ███   cy-1
+      ctx.fillRect(cx, cy - 4, 1, 1)
+      ctx.fillRect(cx - 1, cy - 3, 3, 3)
+    }
+
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Name tags for tombstones, drawn on the display canvas so they stay
+   * legible regardless of zoom — same approach as drawNameLabels.
+   */
+  private drawTombstoneLabels(w: WorldState, vx: number, vw: number): void {
+    if (!w.tombstones || w.tombstones.length === 0) return
+
+    const ctx = this.ctx
+    const scale = this.scale
+    const offsetX = this.offsetX
+    const offsetY = this.offsetY
+    const viewTop = this.viewTop()
+
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    for (const tomb of w.tombstones) {
+      if (tomb.x + 2 < vx || tomb.x - 2 > vx + vw) continue
+
+      // Position: above the headstone top (cy-4 in world coords, then convert).
+      const dx = (tomb.x - vx) * scale + offsetX
+      const dy = (tomb.y - 5 - viewTop) * scale + offsetY
+
+      // Dim shadow + muted warm-gray text (more memorial than the white creature labels).
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.fillText(tomb.name, dx + 1, dy + 1)
+      ctx.fillStyle = 'rgba(200,185,165,0.85)'
+      ctx.fillText(tomb.name, dx, dy)
+    }
+
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+  }
+
   private drawEggs(w: WorldState, vx: number, vw: number): void {
     if (!w.eggs?.length) return
     const ctx = this.wctx
@@ -849,13 +949,9 @@ export class Renderer {
   }
 
   /**
-   * Halo over the oldest thing that has ever lived here.
+   * Glow around the oldest thing that has ever lived here.
    *
-   * A ring rather than a crown: at six pixels wide a crown is three pixels of
-   * mush sitting on the creature's head, while an ellipse floating clear of the
-   * sprite reads as a halo at any size and never hides the animal wearing it.
-   * This is the only mark the record system puts on the world — everything else
-   * it knows lives behind a tap.
+   * A ring of pixels wrapping the sprite rather than floating above it — a glow reads as vitality; a halo reads as dead.
    */
   private drawElder(w: WorldState, id: number): void {
     const c = w.creatures.find(x => x.id === id)
@@ -864,24 +960,22 @@ export class Renderer {
     if (!bp) return
     const rows = bp.art.frames[0]
     const bw = rows[0].length
+    const bh = rows.length
 
     const ctx = this.wctx
+    // Centre of the sprite body — glow wraps around it, not above it.
     const cx = Math.round(c.x) + bw / 2
-    // Two pixels of clear air above the sprite, so it reads as floating rather
-    // than as part of the creature.
-    const cy = Math.round(c.y) - 3
-    const rx = Math.max(2, Math.min(6, bw / 2))
-    const ry = Math.max(1, rx * 0.42)
+    const cy = Math.round(c.y) + bh / 2
 
-    // Slower than the selection pulse — this is meant to be noticed, not to
-    // demand attention while you're doing something else.
+    // 2px clearance outside the sprite bounds on each axis.
+    const rx = bw / 2 + 2
+    const ry = bh / 2 + 2
+
     ctx.fillStyle = '#fcd34d'
-    ctx.globalAlpha = 0.62 + 0.28 * Math.sin(w.elapsed * 2.6)
+    ctx.globalAlpha = 0.5 + 0.25 * Math.sin(w.elapsed * 2.6)
 
-    // Plotted point by point instead of ctx.ellipse: a stroked path at this
-    // scale antialiases into a grey smudge, and the whole world is nearest
-    // neighbour. Step is tied to the radius so small halos don't come out dotted.
-    const steps = Math.max(12, Math.round(rx * 6))
+    // Point-by-point so it stays sharp at pixel scale (no antialiasing).
+    const steps = Math.max(16, Math.round((rx + ry) * 4))
     for (let i = 0; i < steps; i++) {
       const t = (i / steps) * Math.PI * 2
       ctx.fillRect(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry), 1, 1)
@@ -1010,9 +1104,12 @@ export class Renderer {
    * regardless of zoom. Only named creatures get a tag, which keeps the world
    * uncluttered — a name is notable, not a default label.
    */
-  private drawNameLabels(w: WorldState, vx: number, vw: number): void {
-    const named = w.creatures.filter(c => c.name !== null)
-    if (named.length === 0) return
+  private drawNameLabels(w: WorldState, vx: number, vw: number, elderId: number | null): void {
+    const elder = elderId !== null ? w.creatures.find(x => x.id === elderId) ?? null : null
+    const namedCreatures = w.creatures.filter(c => c.name !== null)
+    const showUnnamed = elder !== null && elder.name === null
+
+    if (namedCreatures.length === 0 && !showUnnamed) return
 
     const ctx = this.ctx
     const scale = this.scale
@@ -1024,24 +1121,32 @@ export class Renderer {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
 
-    for (const c of named) {
+    for (const c of namedCreatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
-      // Cull off-screen.
       if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
 
       const rows = bp.art.frames[0]
       const bw = rows[0].length
-
-      // Centre of the sprite top edge, in display pixels.
       const dx = (c.x + bw / 2 - vx) * scale + offsetX
       const dy = (c.y - viewTop) * scale + offsetY - 3
 
-      // Shadow for legibility.
       ctx.fillStyle = 'rgba(0,0,0,0.7)'
       ctx.fillText(c.name!, dx + 1, dy + 1)
       ctx.fillStyle = '#ffffff'
       ctx.fillText(c.name!, dx, dy)
+    }
+
+    // Unnamed elder: dim placeholder so the player knows it can be named.
+    if (showUnnamed && elder) {
+      const bp = w.blueprints[elder.blueprintId]
+      if (bp && !(elder.x + bp.art.frames[0][0].length < vx || elder.x > vx + vw)) {
+        const bw = bp.art.frames[0][0].length
+        const dx = (elder.x + bw / 2 - vx) * scale + offsetX
+        const dy = (elder.y - viewTop) * scale + offsetY - 3
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'
+        ctx.fillText('unnamed', dx, dy)
+      }
     }
 
     ctx.textAlign = 'left'

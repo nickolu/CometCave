@@ -12,7 +12,6 @@ import {
 import { BlueprintWorkshop } from '@/app/micro-land/components/blueprint-workshop'
 import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
 import { SpeedRunOverlay } from '@/app/micro-land/components/speed-run-overlay'
-import { PopulationGraph } from '@/app/micro-land/components/population-graph'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
@@ -369,7 +368,6 @@ export function MicroLandGame() {
       <FieldGuide />
       <SettingsPanel />
       <ReplayBar />
-      <PopulationGraph />
     </div>
   )
 }

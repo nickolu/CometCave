@@ -46,6 +46,8 @@ export function createWorld(seed = 1337): WorldState {
     creatures: [],
     particles: [],
     carcasses: [],
+    tombstones: [],
+    nextTombstoneId: 1,
     burrows: [],
     nextCarcassId: 1,
     scents: [],
