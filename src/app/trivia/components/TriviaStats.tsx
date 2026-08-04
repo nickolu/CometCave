@@ -251,6 +251,15 @@ export function TriviaStats() {
             <div className="text-on-surface/50 text-xs mt-1">Avg / Game</div>
           </ChunkyCardContent>
         </ChunkyCard>
+
+        <ChunkyCard variant="surface-variant" className="col-span-2 bg-surface-container/80 border-outline-variant">
+          <ChunkyCardContent className="pt-5 pb-5 text-center">
+            <div className="text-3xl font-bold text-ds-tertiary">
+              {history.length > 0 ? bestScore.toLocaleString() : '—'}
+            </div>
+            <div className="text-on-surface/50 text-xs mt-1">Best Score</div>
+          </ChunkyCardContent>
+        </ChunkyCard>
       </div>
 
       {/* Streaks */}
@@ -276,6 +285,47 @@ export function TriviaStats() {
           <p className="text-on-surface/30 text-[10px] text-center mt-2">
             Streaks count same-day plays only. Retroactive games count toward other stats.
           </p>
+        </ChunkyCardContent>
+      </ChunkyCard>
+
+      {/* Personal Records */}
+      <ChunkyCard variant="surface-variant" className="bg-surface-container/80 border-outline-variant">
+        <ChunkyCardContent className="pt-5 pb-5">
+          <h3 className="text-on-surface/70 text-sm font-semibold mb-3 uppercase tracking-wide">
+            Personal Records
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">
+                {history.length > 0
+                  ? `${Math.max(...history.map(h => h.total > 0 ? Math.round((h.correct / h.total) * 100) : 0))}%`
+                  : '—'}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Best accuracy</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-tertiary">
+                {history.length > 0 ? bestScore.toLocaleString() : '—'}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Best score</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-on-surface">
+                {history.length > 0
+                  ? history.reduce((sum, h) => sum + h.total, 0).toLocaleString()
+                  : '—'}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Questions attempted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-ds-primary">
+                {history.length > 0
+                  ? history.reduce((sum, h) => sum + h.correct, 0).toLocaleString()
+                  : '—'}
+              </div>
+              <div className="text-on-surface/50 text-xs mt-1">Questions correct</div>
+            </div>
+          </div>
         </ChunkyCardContent>
       </ChunkyCard>
 

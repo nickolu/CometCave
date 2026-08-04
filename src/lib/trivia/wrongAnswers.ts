@@ -31,6 +31,7 @@ export async function recordWrongAnswer(
   const db = getFirestoreDb()
   await db.collection(COLLECTION).doc(questionId).set(
     {
+      totalCount: FieldValue.increment(1),
       answers: {
         [key]: {
           text: trimmed.slice(0, 200),
@@ -57,4 +58,51 @@ export async function getTopWrongAnswers(
   return Object.values(answers)
     .sort((a, b) => b.count - a.count)
     .slice(0, limit)
+}
+
+export interface GalleryEntry {
+  questionId: string
+  question: string
+  correctAnswer: string
+  topAnswers: WrongAnswerEntry[]
+  totalCount: number
+}
+
+export async function getWrongAnswersGallery(limit = 20): Promise<GalleryEntry[]> {
+  const db = getFirestoreDb()
+
+  // Fetch questions with the most wrong answer submissions
+  const snap = await db
+    .collection(COLLECTION)
+    .orderBy('totalCount', 'desc')
+    .limit(limit)
+    .get()
+
+  if (snap.empty) return []
+
+  // Batch-fetch question data from aiQuestions
+  const entries: GalleryEntry[] = []
+  await Promise.all(
+    snap.docs.map(async (doc) => {
+      const data = doc.data()
+      const qSnap = await db.doc(`aiQuestions/${doc.id}`).get()
+      if (!qSnap.exists || qSnap.data()?.status !== 'active') return
+      const qData = qSnap.data()!
+
+      const answers = data.answers as Record<string, { text: string; count: number }> | undefined
+      const topAnswers = answers
+        ? Object.values(answers).sort((a, b) => b.count - a.count).slice(0, 5)
+        : []
+
+      entries.push({
+        questionId: doc.id,
+        question: qData.question,
+        correctAnswer: qData.correctAnswer,
+        topAnswers,
+        totalCount: data.totalCount ?? 0,
+      })
+    })
+  )
+
+  return entries.sort((a, b) => b.totalCount - a.totalCount)
 }
