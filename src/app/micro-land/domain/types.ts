@@ -439,6 +439,15 @@ export interface Creature {
    * each tick and returns to 0 on its own — no antidote needed.
    */
   poisoned: number
+  /**
+   * Seconds of pack-hunting speed bonus remaining.
+   *
+   * Set by the sense pass when a same-species neighbour is also targeting the
+   * same prey. Grants a 1.2× speed multiplier while above zero; decays each
+   * tick. Only one sense-interval worth of time is granted at a time, so the
+   * bonus only persists as long as coordination continues.
+   */
+  packTimer: number
 }
 
 /**

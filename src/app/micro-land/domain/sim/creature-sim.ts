@@ -391,6 +391,8 @@ export function tickCreatures(
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+    if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
+    if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
 
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
@@ -800,6 +802,29 @@ function look(
     c.huntPassCount = 0
   }
 
+  // Pack hunting: scan for a same-species neighbour targeting the same prey.
+  // When found, both creatures share a brief speed bonus — coordinated attacks
+  // close faster and are harder to flee from.
+  if (prey !== null) {
+    const packReach = sight + bw / 2
+    const packLast = cx + packReach + SIGHT_PAD_RIGHT
+    let coordinating = false
+    for (let pi = lowerBound(byX, cx - packReach - SIGHT_PAD_LEFT); pi < byX.length; pi++) {
+      const pk = byX[pi]
+      if (pk.x > packLast) break
+      if (pk.id === c.id) continue
+      if (pk.blueprintId === c.blueprintId && pk.targetId === prey.id) {
+        coordinating = true
+        break
+      }
+    }
+    // Grant one sense-interval of bonus (plus a little buffer) so it persists
+    // until the next pass rather than dropping between ticks.
+    c.packTimer = coordinating ? (SENSE_EVERY / 60) * 2.5 : 0
+  } else {
+    c.packTimer = 0
+  }
+
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
@@ -1207,7 +1232,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   }
 
   // Poison from a toxic plant halves movement speed for its duration.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
