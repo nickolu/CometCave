@@ -99,16 +99,6 @@ function SlidersIcon() {
   )
 }
 
-function GraphIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true">
-      <polyline points="0,12 0,8 3,8 3,12" strokeWidth="0" />
-      <polyline points="4,12 4,4 7,4 7,12" strokeWidth="0" />
-      <polyline points="8,12 8,0 11,0 11,12" strokeWidth="0" />
-    </svg>
-  )
-}
-
 export function Hud({
   onReshuffle,
   onClearLife,
@@ -134,16 +124,10 @@ export function Hud({
   const settingsOpen = useMicroLand(s => s.settingsOpen)
   const setSettingsOpen = useMicroLand(s => s.setSettingsOpen)
   const tuning = useMicroLand(s => s.tuning)
-  const challengesOpen = useMicroLand(s => s.challengesOpen)
-  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
-  const workshopOpen = useMicroLand(s => s.workshopOpen)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
 
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
-  const graphOpen = useMicroLand(s => s.graphOpen)
-  const setGraphOpen = useMicroLand(s => s.setGraphOpen)
   const soundEnabled = useMicroLand(s => s.soundEnabled)
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
 
@@ -240,38 +224,6 @@ export function Hud({
         }
       >
         Worlds
-      </button>
-
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={() => setWorkshopOpen(!workshopOpen)}
-        style={{
-          ...chipBase,
-          ...(workshopOpen
-            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
-            : {}),
-        }}
-        aria-pressed={workshopOpen}
-        title="Blueprint Workshop — design a creature"
-      >
-        Workshop
-      </button>
-
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={() => setChallengesOpen(!challengesOpen)}
-        style={{
-          ...chipBase,
-          ...(challengeActive
-            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
-            : {}),
-        }}
-        aria-pressed={challengesOpen}
-        title="Choose a challenge"
-      >
-        Challenges
       </button>
 
       <div className="flex items-center gap-1" role="group" aria-label="Speed">
@@ -411,20 +363,6 @@ export function Hud({
           title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
         >
           <SlidersIcon />
-        </button>
-        <button
-          type="button"
-          className="cc-btn"
-          onClick={() => setGraphOpen(!graphOpen)}
-          style={{
-            ...chipBase,
-            padding: '7px 9px',
-            ...(graphOpen ? activeChip : {}),
-          }}
-          aria-pressed={graphOpen}
-          title="Population graph — species counts over time"
-        >
-          <GraphIcon />
         </button>
         <button
           type="button"

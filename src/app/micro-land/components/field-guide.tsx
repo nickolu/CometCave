@@ -73,6 +73,8 @@ export function FieldGuide() {
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
+  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
@@ -145,6 +147,42 @@ export function FieldGuide() {
             }}
           >
             {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => { setWorkshopOpen(true) }}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: '1px solid var(--cc-panel-divider)',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            Workshop
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => { setChallengesOpen(true) }}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: '1px solid var(--cc-panel-divider)',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            Challenges
           </button>
           <button
             type="button"
