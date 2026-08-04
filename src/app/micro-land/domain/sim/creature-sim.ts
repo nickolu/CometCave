@@ -179,6 +179,10 @@ export interface SimEvent {
   victimId?: string
   x: number
   y: number
+  /** Only set on death events: how long the creature lived. */
+  ageSeconds?: number
+  /** Only set on death events: how many children the creature had. */
+  children?: number
 }
 
 let tickCount = 0
@@ -1865,7 +1869,7 @@ function kill(
   if (bp.death.becomes) {
     setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])
   }
-  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y })
+  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children })
 }
 
 // ---------------------------------------------------------------------------
