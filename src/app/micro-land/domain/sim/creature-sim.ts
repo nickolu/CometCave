@@ -1431,6 +1431,29 @@ function unliveableAhead(
 }
 
 /**
+ * Whether moving in the normalised direction (dx, dy) would walk into a solid
+ * tile within the next step — the obstacle detector for the steering layer.
+ *
+ * Uses a short look-ahead along the *leading edge* of the body box rather than
+ * the centre, so the check fires before the collision engine would, giving the
+ * creature time to steer clear instead of bouncing. Only called for locomotion
+ * that cares about terrain (walk/crawl); flyers and swimmers skip it.
+ */
+function solidAhead(
+  w: WorldState,
+  c: Creature,
+  body: BodyBox,
+  dx: number,
+  dy: number
+): boolean {
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return false
+  const lookDist = 1.5
+  const tx = c.x + body.dx + (dx > 0 ? body.w : 0) + dx * lookDist
+  const ty = c.y + body.dy + (dy > 0 ? body.h / 2 : 0)
+  return boxHitsSolid(w, tx, ty, body.w * 0.6, body.h * 0.6)
+}
+
+/**
  * Launch velocity for a creature that means to clear `move.jump` worth of
  * height — see `JUMP_TILES_PER_STRENGTH` for why `jump` stopped being a
  * velocity in the first place.
@@ -1510,6 +1533,32 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0
     c.targetId = null
+  }
+
+  // Obstacle avoidance: walk and crawl locomotion steer around solid walls.
+  // Flyers and swimmers are free to move through/over terrain so skip this.
+  if ((bp.move.kind === 'walk' || bp.move.kind === 'crawl') && !bp.dig.through.length) {
+    const len = Math.hypot(wantX, wantY)
+    if (len > 0.01 && solidAhead(w, c, body, wantX / len, wantY / len)) {
+      const angle = Math.atan2(wantY, wantX)
+      const tries = [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]
+      let cleared = false
+      for (const delta of tries) {
+        const a = angle + delta
+        const tx = Math.cos(a)
+        const ty = Math.sin(a)
+        if (!solidAhead(w, c, body, tx, ty)) {
+          wantX = tx
+          wantY = ty
+          cleared = true
+          break
+        }
+      }
+      if (!cleared) {
+        wantX = 0
+        wantY = 0
+      }
+    }
   }
 
   // Poison from a toxic plant halves movement speed for its duration.
