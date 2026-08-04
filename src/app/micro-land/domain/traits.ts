@@ -78,6 +78,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   territorial: 0.5,
   size: 1,
   camouflage: 0.2,
+  toxicity: 0,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -125,7 +126,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -138,6 +139,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
     size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
     camouflage: clamp(mix('camouflage') + nudge(rng, drift), 0, 0.8),
+    toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
   }
 }
 
@@ -264,6 +266,7 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.size ?? 1) <= 1 - NOTABLE) phrases.push('smaller than most')
   if ((t.camouflage ?? 0.2) >= 0.3) phrases.push('hard to spot')
   else if ((t.camouflage ?? 0.2) <= 0.1) phrases.push('easy to spot')
+  if ((t.toxicity ?? 0) >= 0.4) phrases.push('venomous')
   return phrases
 }
 
