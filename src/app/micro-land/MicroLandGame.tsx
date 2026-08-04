@@ -110,7 +110,13 @@ export function MicroLandGame() {
           }
         }
         if (state.workshopSpawnRequest !== previous.workshopSpawnRequest && state.workshopSpawnRequest && game) {
-          game.workshopIntroduce(state.workshopSpawnRequest.blueprint, state.workshopSpawnRequest.traits)
+          // Deferred: workshopIntroduce triggers many sequential set() calls
+          // (setBlueprints, setStats, notify, clearWorkshopSpawnRequest…). Calling
+          // it synchronously inside a Zustand subscriber causes each of those to
+          // re-enter the subscriber before the previous call returns, rapidly
+          // exhausting React's nested-update limit.
+          const { blueprint, traits } = state.workshopSpawnRequest
+          queueMicrotask(() => game?.workshopIntroduce(blueprint, traits))
         }
       })
     })
