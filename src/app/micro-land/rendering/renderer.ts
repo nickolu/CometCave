@@ -29,6 +29,7 @@ import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
+import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { WorldState } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -501,6 +502,17 @@ export class Renderer {
     // goes first so the selection brackets sit on top when you inspect an elder.
     if (elderId !== null) this.drawElder(w, elderId)
     if (highlightId !== null) this.drawHighlight(w, highlightId)
+
+    // Day/night cycle: gradually darkens during the night phase.
+    if (TUNING.dayLengthSeconds > 0) {
+      const nightFactor = (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
+      if (nightFactor > 0.05) {
+        wctx.globalAlpha = Math.min(0.5, nightFactor * 0.55)
+        wctx.fillStyle = '#000a1f'
+        wctx.fillRect(vx, 0, vw, WORLD_H)
+        wctx.globalAlpha = 1
+      }
+    }
 
     // One scaled blit. Nearest-neighbour keeps the pixels crisp.
     const ctx = this.ctx
