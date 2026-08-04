@@ -67,6 +67,7 @@ import { Renderer } from './rendering/renderer'
 import { forgetSprites } from './rendering/sprite-cache'
 import {
   type EarnedMilestone,
+  type ExtinctionRecord,
   type KindRecordsView,
   type PopulationEntry,
   useMicroLand,
@@ -153,6 +154,8 @@ export class GameInstance {
 
   /** Species that existed last time we checked, for extinction notices. */
   private knownSpecies = new Set<string>()
+  /** World-clock time when each species was first observed alive in this world. */
+  private speciesFirstSeen = new Map<string, number>()
   /** World-clock time of the last hunt notice, so kills don't spam the screen. */
   private lastHuntNotice = -HUNT_NOTICE_GAP
 
@@ -463,6 +466,20 @@ export class GameInstance {
       const stillAlive = this.world.creatures.some(c => c.blueprintId === bp.id)
       if (stillAlive) continue
       this.knownSpecies.delete(bp.id)
+      // Record extinction in store for the field guide memorial.
+      {
+        const firstSeen = this.speciesFirstSeen.get(bp.id) ?? this.world.elapsed
+        useMicroLand.getState().addExtinction({
+          blueprintId: bp.id,
+          name: bp.name,
+          elapsed: this.world.elapsed,
+          livedFor: this.world.elapsed - firstSeen,
+          maxGeneration: this.world.creatures.reduce(
+            (max, c) => c.blueprintId === bp.id ? Math.max(max, c.generation) : max,
+            1
+          ),
+        })
+      }
       // An extinction is exactly what the steady streak measures the absence of
       // — it is the moment the world has to bail the player out via seed rain.
       this.breakSteadyStreak()
@@ -501,7 +518,12 @@ export class GameInstance {
       })
       .sort((a, b) => b.count - a.count)
 
-    for (const entry of population) this.knownSpecies.add(entry.blueprintId)
+    for (const entry of population) {
+      this.knownSpecies.add(entry.blueprintId)
+      if (!this.speciesFirstSeen.has(entry.blueprintId)) {
+        this.speciesFirstSeen.set(entry.blueprintId, this.world.elapsed)
+      }
+    }
 
     useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
 
@@ -1062,6 +1084,7 @@ export class GameInstance {
     if (!opts.keepCreatures) {
       clearCreatures(this.world)
       this.knownSpecies.clear()
+      this.speciesFirstSeen.clear()
       this.inspectedId = null
       this.following = false
     }
@@ -1083,6 +1106,7 @@ export class GameInstance {
       applyThemeObject(this.world, this.summonedTheme)
       clearCreatures(this.world)
       this.knownSpecies.clear()
+      this.speciesFirstSeen.clear()
       this.inspectedId = null
       this.following = false
       this.snapshotHistory = []
@@ -1097,6 +1121,7 @@ export class GameInstance {
     applyTheme(this.world, themeId)
     clearCreatures(this.world)
     this.knownSpecies.clear()
+    this.speciesFirstSeen.clear()
     this.inspectedId = null
     this.following = false
     this.snapshotHistory = []
@@ -1117,6 +1142,7 @@ export class GameInstance {
       applyThemeObject(this.world, this.summonedTheme)
       clearCreatures(this.world)
       this.knownSpecies.clear()
+      this.speciesFirstSeen.clear()
       this.inspectedId = null
       this.following = false
       this.snapshotHistory = []
@@ -1129,6 +1155,7 @@ export class GameInstance {
     applyTheme(this.world, themeId)
     clearCreatures(this.world)
     this.knownSpecies.clear()
+    this.speciesFirstSeen.clear()
     this.inspectedId = null
     this.following = false
     this.snapshotHistory = []
@@ -1146,6 +1173,7 @@ export class GameInstance {
     // the player does next — painting, placing, summoning — wakes it back up.
     this.world.dormant = true
     this.knownSpecies.clear()
+    this.speciesFirstSeen.clear()
     this.inspectedId = null
     this.following = false
     // Emptying the world is an extinction of everything, so the streak goes with
@@ -1375,9 +1403,11 @@ export class GameInstance {
     // Seeded from what is actually alive, so opening a world does not announce
     // the extinction of everything that was in the land it replaced.
     this.knownSpecies = new Set(this.world.creatures.map(c => c.blueprintId))
+    this.speciesFirstSeen.clear()
     this.inspectedId = null
     this.following = false
     store.setInspected(null)
+    store.clearExtinctions()
 
     this.renderer.panToLeft(save.camX)
     this.renderer.markTilesDirty()
