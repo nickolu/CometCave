@@ -67,6 +67,8 @@ export function FieldGuide() {
   const requestLocate = useMicroLand(s => s.requestLocate)
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
+  const trailsEnabled = useMicroLand(s => s.trailsEnabled)
+  const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -342,6 +344,27 @@ export function FieldGuide() {
                 {trait === 'lifespan' ? 'Life' : trait.charAt(0).toUpperCase() + trait.slice(1)}
               </button>
             ))}
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setTrailsEnabled(!trailsEnabled)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 10px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: trailsEnabled
+                  ? '1px solid var(--cc-mint)'
+                  : '1px solid var(--cc-mint-line)',
+                color: trailsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: trailsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+              }}
+            >
+              Trails
+            </button>
           </div>
           {traitOverlay && (
             <button
