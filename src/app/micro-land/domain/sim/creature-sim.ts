@@ -47,6 +47,7 @@ import {
   settleOnGround,
   solidAt,
   spawnCreature,
+  tickMoisture,
   tileAt,
 } from './world'
 
@@ -335,6 +336,8 @@ export function tickCreatures(
   w.nextCarcassId ??= 1
   w.burrows ??= []
   w.scents ??= []
+  w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
+  tickMoisture(w, tickCount, dt, rng)
   w.eggs ??= []
   w.nextEggId ??= 1
 
