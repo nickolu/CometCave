@@ -493,6 +493,7 @@ export class Renderer {
     wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
 
     this.drawCarcasses(w, vx, vw)
+    this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -706,6 +707,22 @@ export class Renderer {
       ctx.fillRect(car.x - 0.75, car.y - 0.75, 1.5, 1.5)
     }
     ctx.globalAlpha = 1
+  }
+
+  private drawEggs(w: WorldState, vx: number, vw: number): void {
+    if (!w.eggs?.length) return
+    const ctx = this.wctx
+    ctx.strokeStyle = '#f5e642'
+    ctx.lineWidth = 1
+    for (const egg of w.eggs) {
+      if (egg.hatchIn <= 0) continue
+      if (egg.x + 2 < vx || egg.x - 2 > vx + vw) continue
+      const rx = 1.5
+      const ry = 2
+      ctx.beginPath()
+      ctx.ellipse(Math.round(egg.x), Math.round(egg.y), rx, ry, 0, 0, Math.PI * 2)
+      ctx.stroke()
+    }
   }
 
   private drawCreatures(w: WorldState, vx: number, vw: number): void {

@@ -83,6 +83,10 @@ export const TUNING_DEFAULTS = {
    * 0 = no seasonal effect. 0.7 = ×0.3 at trough, ×1.7 at peak.
    */
   seasonAmplitude: 0,
+  /**
+   * How long an egg takes to hatch, in sim seconds.
+   */
+  eggHatchSeconds: 15,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
