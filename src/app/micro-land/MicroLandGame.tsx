@@ -10,6 +10,7 @@ import {
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
+import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
 import { Inspector } from '@/app/micro-land/components/inspector'
@@ -272,6 +273,15 @@ export function MicroLandGame() {
     [notify]
   )
 
+  const handleOpenHistory = useCallback(() => {
+    const snapshots = gameRef.current?.getSnapshotHistory() ?? []
+    if (snapshots.length === 0) {
+      useMicroLand.getState().notify('No history yet — the world needs to run for at least 30 seconds.')
+      return
+    }
+    useMicroLand.getState().enterReplay(snapshots)
+  }, [])
+
   const handleReshuffle = useCallback(() => {
     gameRef.current?.reshuffle()
     notify('The ground shifts and settles somewhere new.')
@@ -317,7 +327,7 @@ export function MicroLandGame() {
 
   return (
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
-      <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} />
+      <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
 
       <div className="relative min-h-0 flex-1">
         <canvas
@@ -341,6 +351,7 @@ export function MicroLandGame() {
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />
       <SettingsPanel />
+      <ReplayBar />
     </div>
   )
 }

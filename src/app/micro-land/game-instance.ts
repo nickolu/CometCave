@@ -156,6 +156,10 @@ export class GameInstance {
   /** World-clock time of the last hunt notice, so kills don't spam the screen. */
   private lastHuntNotice = -HUNT_NOTICE_GAP
 
+  // --- time-lapse ---
+  private snapshotHistory: Array<{ elapsed: number; creatures: Creature[] }> = []
+  private lastSnapshotElapsed = -30
+
   // --- records ---
   /** Which land's records are being written to. See `landId()`. */
   private currentLand = DEFAULT_THEME
@@ -336,7 +340,15 @@ export class GameInstance {
     // answers at the same speed whether the world is paused or on fast-forward.
     this.updateCamera(delta / 1000)
 
-    this.renderer.render(this.world, theme, this.inspectedId, this.elderId)
+    // In replay mode, render the historical snapshot instead of live creatures.
+    const { replaySnapshots, replayIndex } = useMicroLand.getState()
+    if (replaySnapshots && replaySnapshots.length > 0) {
+      const snap = replaySnapshots[replayIndex] ?? replaySnapshots[replaySnapshots.length - 1]
+      const replayWorld = { ...this.world, creatures: snap.creatures }
+      this.renderer.render(replayWorld, theme, undefined, undefined)
+    } else {
+      this.renderer.render(this.world, theme, this.inspectedId, this.elderId)
+    }
   }
 
   /**
@@ -400,6 +412,17 @@ export class GameInstance {
   private step(gravity: number, events: SimEvent[]): void {
     const w = this.world
     w.elapsed += TICK_S
+
+    // Time-lapse: take a creature snapshot every 30 sim-seconds.
+    if (w.elapsed - this.lastSnapshotElapsed >= 30) {
+      this.lastSnapshotElapsed = w.elapsed
+      this.snapshotHistory.push({
+        elapsed: w.elapsed,
+        creatures: w.creatures.map(c => ({ ...c, traits: { ...c.traits } })),
+      })
+      // Keep last 60 snapshots (30 min at 30s intervals)
+      if (this.snapshotHistory.length > 60) this.snapshotHistory.shift()
+    }
 
     this.tileCounter++
     if (this.tileCounter >= TILE_TICK_EVERY) {
@@ -1059,6 +1082,8 @@ export class GameInstance {
       this.knownSpecies.clear()
       this.inspectedId = null
       this.following = false
+      this.snapshotHistory = []
+      this.lastSnapshotElapsed = -30
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -1071,6 +1096,8 @@ export class GameInstance {
     this.knownSpecies.clear()
     this.inspectedId = null
     this.following = false
+    this.snapshotHistory = []
+    this.lastSnapshotElapsed = -30
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
     this.beginLand()
@@ -1089,6 +1116,8 @@ export class GameInstance {
       this.knownSpecies.clear()
       this.inspectedId = null
       this.following = false
+      this.snapshotHistory = []
+      this.lastSnapshotElapsed = -30
       this.renderer.markTilesDirty()
       this.beginLand()
       this.pushStats()
@@ -1099,6 +1128,8 @@ export class GameInstance {
     this.knownSpecies.clear()
     this.inspectedId = null
     this.following = false
+    this.snapshotHistory = []
+    this.lastSnapshotElapsed = -30
     seedStarters(this.world, themeId, this.rng)
     this.renderer.markTilesDirty()
     this.beginLand()
@@ -1231,6 +1262,11 @@ export class GameInstance {
 
   getWorld(): WorldState {
     return this.world
+  }
+
+  /** Returns a copy of the snapshot ring buffer for the replay UI. */
+  getSnapshotHistory(): Array<{ elapsed: number; creatures: Creature[] }> {
+    return [...this.snapshotHistory]
   }
 
   // -------------------------------------------------------------------------
