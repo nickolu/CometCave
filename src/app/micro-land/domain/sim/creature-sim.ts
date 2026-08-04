@@ -390,7 +390,23 @@ export function tickCreatures(
     if (c.breedCooldown > 0) c.breedCooldown -= dt
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
+    if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+
+    // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
+    if (bp.body.locomotion === 'walk') {
+      const qs_fx = Math.floor(c.x + body.dx + body.w / 2)
+      const qs_fy = Math.floor(c.y + body.dy + body.h)
+      if (MATERIAL_BY_INDEX[tileAt(w, qs_fx, qs_fy)]?.id === 'quicksand') {
+        c.sinking += dt
+        if (c.sinking > 12) {
+          kill(w, c, bp, dead, events, 'drowned')
+          continue
+        }
+      } else {
+        c.sinking = Math.max(0, c.sinking - dt * 2)
+      }
+    }
 
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
@@ -1213,8 +1229,16 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   switch (bp.move.kind) {
     case 'walk': {
+      // Mud slows walkers to 50%; quicksand slows progressively toward 0.
+      const footX = Math.floor(c.x + body.dx + body.w / 2)
+      const footY = Math.floor(c.y + body.dy + body.h)
+      const groundId = MATERIAL_BY_INDEX[tileAt(w, footX, footY)]?.id
+      const groundMult =
+        groundId === 'mud' ? 0.5
+        : groundId === 'quicksand' ? Math.max(0.05, 1 - c.sinking / 8)
+        : 1
       c.vx += wantX * accel * dt
-      c.vx = clampMag(c.vx, speed)
+      c.vx = clampMag(c.vx, speed * groundMult)
 
       /**
        * A burrower goes to ground when it is fed, and comes back up when it is

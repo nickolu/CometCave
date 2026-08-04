@@ -67,6 +67,7 @@ export const BASE_MATERIAL_IDS = [
   'wood',
   'snow',
   'mud',
+  'quicksand',
   'moss',
   'crystal',
   'gem',
@@ -119,6 +120,7 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     melts: true,
   }),
   mud: material('mud', 'Mud', '#4d3a26', { grain: 0.22, powder: true, fertile: true }),
+  quicksand: material('quicksand', 'Quicksand', '#c4a060', { grain: 0.18, powder: true }),
   moss: material('moss', 'Moss', '#5f8a3e', { grain: 0.24, fertile: true, glow: 0.04 }),
 
   // --- shiny --------------------------------------------------------------
@@ -267,6 +269,7 @@ export const PAINTABLE: BaseMaterialId[] = [
   'grass',
   'moss',
   'mud',
+  'quicksand',
   'stone',
   'sand',
   'snow',
