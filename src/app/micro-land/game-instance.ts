@@ -440,14 +440,17 @@ export class GameInstance {
 
   /** Turn raw sim events into the occasional human-readable notice. */
   private digestEvents(events: SimEvent[]): void {
-    const notify = useMicroLand.getState().notify
+    const { notify, logEat } = useMicroLand.getState()
 
     for (const event of events) {
+      if (event.kind !== 'ate' || !event.victimId) continue
+      // Log to food web — every eat, including carcasses (victimId now set for both).
+      logEat(event.blueprintId, event.victimId)
+
       // Announce predation on animals — a kill is instant and the victim just
       // vanishes, so without this the food chain runs invisibly and looks like
       // it isn't happening at all. Plants are eaten constantly; saying so every
       // time would drown out everything else.
-      if (event.kind !== 'ate' || !event.victimId) continue
       const victim = this.world.blueprints[event.victimId]
       if (!victim || victim.move.kind === 'root') continue
       if (this.world.elapsed - this.lastHuntNotice < HUNT_NOTICE_GAP) continue
@@ -1408,6 +1411,7 @@ export class GameInstance {
     this.following = false
     store.setInspected(null)
     store.clearExtinctions()
+    store.clearFoodWeb()
 
     this.renderer.panToLeft(save.camX)
     this.renderer.markTilesDirty()

@@ -71,6 +71,10 @@ export function FieldGuide() {
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
+  const foodWeb = useMicroLand(s => s.foodWeb)
+  const allBlueprintNames = useMicroLand(s =>
+    Object.fromEntries(s.blueprints.map(b => [b.id, b.name]))
+  )
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -420,6 +424,38 @@ export function FieldGuide() {
                   <span>🦴 {ext.name}</span>
                   <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
                     gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {Object.keys(foodWeb).length > 0 && (
+          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="pb-2" style={sectionHeading}>
+              Food web
+            </h3>
+            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+              Who ate whom — observed in this world so far.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {Object.entries(foodWeb).map(([eaterId, preyIds]) => (
+                <li
+                  key={eaterId}
+                  style={{
+                    fontSize: 11,
+                    fontFamily: 'var(--cc-font-mono)',
+                    padding: '3px 0',
+                    lineHeight: 1.6,
+                  }}
+                >
+                  <span style={{ color: 'var(--cc-text-default)' }}>
+                    {allBlueprintNames[eaterId] ?? eaterId}
+                  </span>
+                  <span style={{ color: 'var(--cc-text-muted)' }}>{' → '}</span>
+                  <span style={{ color: 'var(--cc-text-muted)' }}>
+                    {preyIds.map(id => allBlueprintNames[id] ?? id).join(', ')}
                   </span>
                 </li>
               ))}
