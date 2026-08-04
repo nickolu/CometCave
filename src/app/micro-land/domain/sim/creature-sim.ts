@@ -88,6 +88,25 @@ const STUCK_COOLDOWN_PASSES = 6
  */
 const BITE_PAD = 0.5
 
+/**
+ * Speed (|vx| + |vy|) below which a non-root animal counts as still.
+ *
+ * Still animals are harder to spot — camouflage. A creature pressed against a
+ * wall or resting between hops reads as effectively motionless even though it
+ * isn't at literal zero, so the threshold is a small positive rather than zero.
+ */
+const CAMOUFLAGE_STILL = 1.5
+
+/**
+ * Fraction of food-sight at which a still animal can first be detected.
+ *
+ * 0.5 halves the detection radius, so a resting creature is invisible to a
+ * hungry predator until it is much closer than it would otherwise need to be.
+ * Plants are exempt — this only applies to animals that could plausibly freeze
+ * or blend in, not to vegetation that the food chain depends on finding.
+ */
+const CAMOUFLAGE_FACTOR = 0.5
+
 export interface SimEvent {
   /**
    * `eaten` is from the victim's side (this species lost one); `ate` is from the
@@ -594,8 +613,9 @@ function look(
       continue
     }
 
-    if (hungry && d2 <= foodSight2 && canEat(bp, obp)) {
-      // Bodies touching? Eat now, don't bother pathing.
+    if (hungry && canEat(bp, obp)) {
+      // Bodies touching? Eat now, don't bother pathing — camouflage can't save
+      // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
       if (touching) {
         devour(w, other, obp, dead, events)
@@ -613,7 +633,14 @@ function look(
         })
         return
       }
-      if (d2 < preyDist) {
+      // A still non-root animal blends in — detected at a shorter range.
+      // Plants are exempt: the whole food chain depends on grazers finding them,
+      // and roots never move anyway so they'd always benefit without this guard.
+      const still =
+        obp.move.kind !== 'root' &&
+        Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
+      const efs2 = still ? foodSight2 * (CAMOUFLAGE_FACTOR * CAMOUFLAGE_FACTOR) : foodSight2
+      if (d2 <= efs2 && d2 < preyDist) {
         preyDist = d2
         prey = other
         preyDir = dx >= 0 ? 1 : -1
