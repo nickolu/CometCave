@@ -381,6 +381,7 @@ export function spawnCreature(
     name: null,
     huntPassCount: 0,
     poisoned: 0,
+    migrateTimer: 0,
     packTimer: 0,
     sinking: 0,
   }
