@@ -146,6 +146,7 @@ export function CreatureBuilder({
   const [color, setColor] = useState(DEFAULT_INKS[6])
   const [onion, setOnion] = useState(true)
   const [planId, setPlanId] = useState<PlanId>('walk')
+  const [hop, setHop] = useState(0)
   const [dietId, setDietId] = useState<DietId>('plant')
   const [glows, setGlows] = useState(false)
   const [fireproof, setFireproof] = useState(false)
@@ -204,12 +205,14 @@ export function CreatureBuilder({
     if (from) {
       setName(from.name)
       setPlanId(planOf(from))
+      setHop(from.move.hop)
       setDietId(dietOf(from))
       setGlows(from.glow > 0)
       setFireproof(from.body.immuneTo.includes('lava'))
     } else {
       setName('')
       setPlanId('walk')
+      setHop(0)
       setDietId('plant')
       setGlows(false)
       setFireproof(false)
@@ -313,7 +316,14 @@ export function CreatureBuilder({
   /** The literal the drawing describes. Same shape the model returns. */
   function compose(): Record<string, unknown> | null {
     if (!draft || empty) return null
-    return buildRawCreature({ name, draft, planId, dietId, glows, fireproof, seed })
+    const raw = buildRawCreature({ name, draft, planId, dietId, glows, fireproof, seed })
+    // Apply the hop slider for walkers — the plan presets are all-or-nothing
+    // (Walker = 0, Hopper = 1), but the slider lets the player tune anything
+    // between a beast that never leaves the ground and one that bounces every step.
+    if ((planId === 'walk' || planId === 'hop') && raw.move && typeof raw.move === 'object') {
+      ;(raw.move as Record<string, unknown>).hop = hop
+    }
+    return raw
   }
 
   /** Make a new species out of the drawing, leaving whatever it came from alone. */
@@ -781,7 +791,15 @@ export function CreatureBuilder({
                       key={plan.id}
                       type="button"
                       className="cc-btn"
-                      onClick={() => setPlanId(plan.id)}
+                      onClick={() => {
+                        setPlanId(plan.id)
+                        // Seed the hop slider to each plan's natural default so
+                        // "Walker" gives a grounded creature and "Hopper" gives
+                        // one that bounces — the slider is there to tune, not to
+                        // demand the player already know what 0.4 feels like.
+                        if (plan.id === 'walk') setHop(0)
+                        else if (plan.id === 'hop') setHop(1)
+                      }}
                       aria-pressed={planId === plan.id}
                       title={plan.hint}
                       style={chipStyle(planId === plan.id)}
@@ -793,6 +811,54 @@ export function CreatureBuilder({
                 <p style={{ ...note, marginTop: 6 }}>
                   {BODY_PLANS.find(p => p.id === planId)?.hint}
                 </p>
+                {(planId === 'walk' || planId === 'hop') && (
+                  <div className="mt-3">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <label
+                        htmlFor="creature-builder-hop"
+                        style={{ ...note, color: 'var(--cc-text-default)' }}
+                      >
+                        Hop
+                      </label>
+                      <span
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 11,
+                          color: hop > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {hop === 0
+                          ? 'Never'
+                          : hop < 0.4
+                            ? 'Occasionally'
+                            : hop < 0.7
+                              ? 'Often'
+                              : 'Always'}
+                      </span>
+                    </div>
+                    <input
+                      id="creature-builder-hop"
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={hop}
+                      onChange={e => setHop(Number(e.target.value))}
+                      className="mt-1 w-full"
+                      style={{ accentColor: hop > 0 ? 'var(--cc-mint)' : undefined, minHeight: 24 }}
+                    />
+                    <p style={{ ...note, marginTop: 2 }}>
+                      {hop === 0
+                        ? 'Runs along the ground. Only jumps when blocked.'
+                        : hop < 0.4
+                          ? 'Walks mostly, leaps now and then.'
+                          : hop < 0.7
+                            ? 'Moves in bounds — part walker, part frog.'
+                            : 'Travels entirely in leaps. Always airborne between steps.'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {planId !== 'root' && (
