@@ -294,6 +294,17 @@ export interface CreatureBlueprint {
   toxicity?: number
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
+  /**
+   * Optional symbiosis partner.
+   *
+   * When set to another species' blueprintId, this creature treats that species
+   * as a mutualistic partner: it won't attack them even if its diet says it
+   * could, and when near them it gets a 15% speed boost and 20% slower hunger
+   * drain. The bond is declared here rather than negotiated at runtime, so it
+   * is stable but one-sided by default — both partners have to name each other
+   * for the buff to apply to both.
+   */
+  symbiosisPartnerId?: string | null
 }
 
 /**
@@ -527,6 +538,14 @@ export interface Creature {
    * the creature moves at 0.2× speed. Counts down each tick.
    */
   stunTimer: number
+  /**
+   * Seconds of symbiosis bonus remaining.
+   *
+   * Set by the sense pass when a symbiosis partner is within 5 tiles. Grants
+   * 15% speed boost and 20% slower hunger drain while above zero. Decays each
+   * tick. Only one sense-interval worth of time is granted at a time.
+   */
+  symbiosisTimer: number
   /**
    * Seconds of disease remaining.
    *
