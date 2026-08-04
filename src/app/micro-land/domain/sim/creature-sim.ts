@@ -298,7 +298,9 @@ export function tickCreatures(
     if (c.breedCooldown > 0) c.breedCooldown -= dt
 
     // --- hunger ---------------------------------------------------------
-    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * dt)
+    // Resting creatures aren't running or hunting, so they burn energy more slowly.
+    const restSlowdown = c.mood === 'rest' ? 0.5 : 1
+    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
@@ -684,7 +686,14 @@ function look(
     c.mood = 'mate'
     c.targetId = mate.id
   } else {
-    c.mood = c.hunger > 0.75 ? 'hunt' : 'wander'
+    // A well-fed grounded non-root creature rests. Roots are excluded — they
+    // don't call steer anyway, and the 'wander' default keeps their inspector
+    // line reading as 'Growing quietly' rather than 'Resting'.
+    if (c.hunger < 0.25 && c.grounded && bp.move.kind !== 'root') {
+      c.mood = 'rest'
+    } else {
+      c.mood = c.hunger > 0.75 ? 'hunt' : 'wander'
+    }
     c.targetId = null
   }
 }
@@ -999,6 +1008,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     const sign = c.mood === 'flee' ? -1 : 1
     wantX = (dx / len) * sign
     wantY = (dy / len) * sign
+  } else if (c.mood === 'rest') {
+    // Resting — no active movement. `wantX` and `wantY` stay at 0, so physics
+    // runs without any locomotion drive: gravity keeps walkers grounded, drag
+    // bleeds off any residual velocity, and the creature sits still.
+    c.targetId = null
   } else {
     /**
      * Nothing worth going to. Either mill about, or go looking.
