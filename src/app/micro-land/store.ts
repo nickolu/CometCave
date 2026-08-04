@@ -129,6 +129,8 @@ export interface PopulationEntry {
   blueprintId: string
   name: string
   count: number
+  /** Highest generation number among living creatures of this species. */
+  maxGeneration: number
 }
 
 /** One time-series data point for the population graph. */
