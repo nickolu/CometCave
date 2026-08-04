@@ -73,9 +73,7 @@ export function FieldGuide() {
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const foodWeb = useMicroLand(s => s.foodWeb)
-  const allBlueprintNames = useMicroLand(s =>
-    Object.fromEntries(s.blueprints.map(b => [b.id, b.name]))
-  )
+  const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
