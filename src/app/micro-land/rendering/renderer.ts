@@ -513,6 +513,7 @@ export class Renderer {
     )
 
     this.drawMinimap(w, theme, vx)
+    this.drawNameLabels(w, vx, vw)
   }
 
   // -------------------------------------------------------------------------
@@ -871,6 +872,51 @@ export class Renderer {
     ctx.lineWidth = border
     ctx.strokeRect(x - border / 2, y - border / 2, width + border, height + border)
     ctx.restore()
+  }
+
+  /**
+   * Name tags for creatures the player has named.
+   *
+   * Drawn on the display canvas at display resolution so text stays legible
+   * regardless of zoom. Only named creatures get a tag, which keeps the world
+   * uncluttered — a name is notable, not a default label.
+   */
+  private drawNameLabels(w: WorldState, vx: number, vw: number): void {
+    const named = w.creatures.filter(c => c.name !== null)
+    if (named.length === 0) return
+
+    const ctx = this.ctx
+    const scale = this.scale
+    const offsetX = this.offsetX
+    const offsetY = this.offsetY
+    const viewTop = this.viewTop()
+
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    for (const c of named) {
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp) continue
+      // Cull off-screen.
+      if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
+
+      const rows = bp.art.frames[0]
+      const bw = rows[0].length
+
+      // Centre of the sprite top edge, in display pixels.
+      const dx = (c.x + bw / 2 - vx) * scale + offsetX
+      const dy = (c.y - viewTop) * scale + offsetY - 3
+
+      // Shadow for legibility.
+      ctx.fillStyle = 'rgba(0,0,0,0.7)'
+      ctx.fillText(c.name!, dx + 1, dy + 1)
+      ctx.fillStyle = '#ffffff'
+      ctx.fillText(c.name!, dx, dy)
+    }
+
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
   }
 
   private buildMapImage(w: WorldState, theme: Theme): void {
