@@ -405,6 +405,14 @@ export interface Traits {
    * below neither emit nor follow. Creates a fork: loners vs. clusters.
    */
   cooperation: number
+  /**
+   * Activity preference: -1 = fully nocturnal, 0 = crepuscular, +1 = fully diurnal.
+   *
+   * During the creature's inactive phase (day for nocturnal, night for diurnal)
+   * speed and sight are reduced by up to 50%. Neutral at 0 — no preference.
+   * Heritable — a line that survives better at night drifts toward nocturnal.
+   */
+  diurnal: number
 }
 
 /** One living thing in the world. */

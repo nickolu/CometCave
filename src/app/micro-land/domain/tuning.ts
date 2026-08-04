@@ -83,6 +83,11 @@ export const TUNING_DEFAULTS = {
    * 0 = no seasonal effect. 0.7 = ×0.3 at trough, ×1.7 at peak.
    */
   seasonAmplitude: 0,
+  /**
+   * How long one day/night cycle lasts, in sim seconds.
+   * 0 = no day/night cycle (default). 120 = one cycle every two real-world minutes at normal speed.
+   */
+  dayLengthSeconds: 0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
