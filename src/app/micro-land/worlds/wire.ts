@@ -150,6 +150,8 @@ function cleanTraits(raw: unknown): SavedCreature['traits'] {
     // Wrapped rather than clamped — hue is an angle, and 370° is 10°, not 360°.
     hue: ((clamp(raw.hue, -1e6, 1e6, 0) % 360) + 360) % 360,
     shade: clamp(raw.shade, SHADE_MIN, SHADE_MAX, 1),
+    // roam was added after the first save format; absent in old saves → defaults to 1.
+    roam: clamp(raw.roam, TRAIT_MIN, TRAIT_MAX, 1),
   }
 }
 
