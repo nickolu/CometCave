@@ -448,6 +448,14 @@ export interface Creature {
    */
   poisoned: number
   /**
+   * Seconds spent hungry (above FORAGE_HUNGER) with no food target in sight.
+   *
+   * When this exceeds 30 s the creature is considered to be migrating: its
+   * food-sensing range expands to 4× normal so it can detect distant patches
+   * and walk toward them. Resets to 0 as soon as a target is found.
+   */
+  migrateTimer: number
+  /**
    * Seconds of pack-hunting speed bonus remaining.
    *
    * Set by the sense pass when a same-species neighbour is also targeting the
