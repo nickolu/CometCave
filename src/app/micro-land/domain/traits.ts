@@ -129,7 +129,6 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-<<<<<<< HEAD
   const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
