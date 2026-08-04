@@ -1500,7 +1500,7 @@ export class GameInstance {
     }
 
     this.lastPlaceAt = 0
-    this.applyTool(p.x, p.y)
+    this.applyTool(p.x, p.y, e.shiftKey)
   }
 
   private onPointerMove = (e: PointerEvent) => {
@@ -1626,7 +1626,7 @@ export class GameInstance {
     }
   }
 
-  private applyTool(x: number, y: number): void {
+  private applyTool(x: number, y: number, shiftKey = false): void {
     const state = useMicroLand.getState()
     const tool = state.tool
 
@@ -1637,6 +1637,18 @@ export class GameInstance {
       const bp = this.world.blueprints[tool.blueprintId]
       if (!bp) return
       this.world.dormant = false
+
+      // Shift+click: place a small flock/herd spread around the click point.
+      if (shiftKey) {
+        const GROUP_SIZE = 4
+        for (let i = 0; i < GROUP_SIZE; i++) {
+          if (this.world.creatures.length >= TUNING.maxCreatures) break
+          spawnSomewhereSensible(this.world, bp, this.rng, { x, y, radius: 15 })
+        }
+        this.pushStats()
+        return
+      }
+
       if (this.world.creatures.length >= TUNING.maxCreatures) {
         state.notify('The world is full. Something has to go.')
         return
