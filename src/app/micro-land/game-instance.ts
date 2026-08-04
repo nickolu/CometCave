@@ -63,6 +63,7 @@ import {
   type Traits,
   type WorldState,
 } from './domain/types'
+import { playBorn, playDeath, playEat, playExtinction, isSoundEnabled } from './audio/sound-engine'
 import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
 import { forgetSprites } from './rendering/sprite-cache'
@@ -447,6 +448,12 @@ export class GameInstance {
       if (event.kind !== 'ate' || !event.victimId) continue
       // Log to food web — every eat, including carcasses (victimId now set for both).
       logEat(event.blueprintId, event.victimId)
+      if (isSoundEnabled()) {
+        // Hash blueprint id to a hue-like number (0–360) for pitch variety
+        let h = 0
+        for (const ch of event.blueprintId) h = (h * 31 + ch.charCodeAt(0)) & 0xffff
+        playEat((h % 360))
+      }
 
       // Announce predation on animals — a kill is instant and the victim just
       // vanishes, so without this the food chain runs invisibly and looks like
@@ -490,6 +497,7 @@ export class GameInstance {
       notify(
         event.kind === 'starved' ? `The last ${bp.name} starved.` : `The last ${bp.name} was eaten.`
       )
+      if (isSoundEnabled()) playExtinction()
     }
 
     // Accumulate lifetime stats.
@@ -519,6 +527,17 @@ export class GameInstance {
         mostProlificName,
         mostProlificChildren,
       })
+    }
+
+    // Play sounds for aggregate events this tick
+    if (isSoundEnabled()) {
+      let hadBirth = false, hadDeath = false
+      for (const ev of events) {
+        if (ev.kind === 'born' && !hadBirth) { playBorn(); hadBirth = true }
+        if ((ev.kind === 'aged' || ev.kind === 'starved' || ev.kind === 'drowned' || ev.kind === 'burned') && !hadDeath) {
+          playDeath(); hadDeath = true
+        }
+      }
     }
   }
 

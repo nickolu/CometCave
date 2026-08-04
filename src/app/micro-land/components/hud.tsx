@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 
+import { disableSound, enableSound } from '@/app/micro-land/audio/sound-engine'
 import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
 import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
@@ -143,6 +144,8 @@ export function Hud({
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const graphOpen = useMicroLand(s => s.graphOpen)
   const setGraphOpen = useMicroLand(s => s.setGraphOpen)
+  const soundEnabled = useMicroLand(s => s.soundEnabled)
+  const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -317,6 +320,27 @@ export function Hud({
         title="View ecosystem history"
       >
         History
+      </button>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => {
+          const next = !soundEnabled
+          if (next) enableSound()
+          else disableSound()
+          setSoundEnabled(next)
+        }}
+        style={{
+          ...chipBase,
+          ...(soundEnabled
+            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
+            : {}),
+        }}
+        aria-pressed={soundEnabled}
+        title="Toggle ambient sound"
+      >
+        {soundEnabled ? 'Sound on' : 'Sound off'}
       </button>
 
       <div className="ml-auto flex items-center gap-2">

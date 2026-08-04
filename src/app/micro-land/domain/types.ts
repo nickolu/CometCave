@@ -425,6 +425,14 @@ export interface Traits {
    */
   cooperation: number
   /**
+   * Activity preference: -1 = fully nocturnal, 0 = crepuscular, +1 = fully diurnal.
+   *
+   * During the creature's inactive phase (day for nocturnal, night for diurnal)
+   * speed and sight are reduced by up to 50%. Neutral at 0 — no preference.
+   * Heritable — a line that survives better at night drifts toward nocturnal.
+   */
+  diurnal: number
+  /**
    * Resistance to disease.
    *
    * 0 = fully susceptible, 1 = immune. Higher immunity means a sick creature

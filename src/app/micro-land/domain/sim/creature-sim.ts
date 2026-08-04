@@ -752,7 +752,12 @@ function look(
 
   // This creature's sight, not its species' — everything downstream, including
   // the foraging reach and the window the loop below walks, is measured off it.
-  const sight = sightOf(c, bp)
+  const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
+  const nightFactor = TUNING.dayLengthSeconds > 0
+    ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
+    : 0
+  const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const sight = sightOf(c, bp) * (1 - diurnalPenalty)
   const sight2 = sight * sight
 
   /**
@@ -1566,7 +1571,12 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c)
+  const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
+  const nightFactor = TUNING.dayLengthSeconds > 0
+    ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
+    : 0
+  const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
