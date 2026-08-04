@@ -391,6 +391,13 @@ export function tickCreatures(
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+    if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
+    // Migrate timer: counts seconds hungry with no food found.
+    if (c.hunger > FORAGE_HUNGER && c.targetId === null) {
+      c.migrateTimer += dt
+    } else {
+      c.migrateTimer = Math.max(0, c.migrateTimer - dt)
+    }
 
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
@@ -626,7 +633,12 @@ function look(
    * noticing what is stalking it.
    */
   const desperation = Math.max(0, Math.min(1, (c.hunger - 0.3) / 0.6))
-  const foodSight = sight * (1 + HUNGER_REACH * desperation * roamOf(c))
+  // A creature that has been hungry with nothing in sight for 30 s expands its
+  // search to 4× normal range — enough to detect patches across the world.
+  const migrating = c.migrateTimer > 30
+  const foodSight = migrating
+    ? sight * 4
+    : sight * (1 + HUNGER_REACH * desperation * roamOf(c))
   const foodSight2 = foodSight * foodSight
 
   /**
