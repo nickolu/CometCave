@@ -117,7 +117,6 @@ export function MicroLandGame() {
           // exhausting React's nested-update limit.
           const { blueprint, traits } = state.workshopSpawnRequest
           queueMicrotask(() => game?.workshopIntroduce(blueprint, traits))
-          game.workshopIntroduce(state.workshopSpawnRequest.blueprint, state.workshopSpawnRequest.traits)
         }
       })
     })
