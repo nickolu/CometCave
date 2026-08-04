@@ -1,10 +1,13 @@
 'use client'
 
+import Link from 'next/link'
+
 import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
 import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
 import { formatDuration } from '@/app/micro-land/format'
 import { SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
+import { useAuth } from '@/hooks/useAuth'
 
 const SPEEDS = [
   { value: 0.5, label: '½×' },
@@ -79,6 +82,12 @@ export function Hud({
   const settingsOpen = useMicroLand(s => s.settingsOpen)
   const setSettingsOpen = useMicroLand(s => s.setSettingsOpen)
   const tuning = useMicroLand(s => s.tuning)
+
+  const { user, loading: authLoading } = useAuth()
+  const isSignedIn = !authLoading && !!user && !user.isAnonymous
+  const authLabel = isSignedIn
+    ? (user?.displayName || user?.email?.split('@')[0] || 'Account')
+    : 'Log in'
 
   // A world running on numbers other than the shipped ones is worth saying out
   // loud — otherwise a land that behaves strangely months from now is a mystery
@@ -199,6 +208,21 @@ export function Hud({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        {!authLoading && (
+          <Link
+            href="/auth"
+            style={{
+              ...chipBase,
+              padding: '7px 10px',
+              ...(isSignedIn
+                ? { color: 'var(--cc-text-default)' }
+                : { color: 'var(--cc-mint)', borderColor: 'var(--cc-mint)' }),
+            }}
+            title={isSignedIn ? 'Account settings' : 'Sign in to save your progress across devices'}
+          >
+            {authLabel}
+          </Link>
+        )}
         <button
           type="button"
           className="cc-btn"
