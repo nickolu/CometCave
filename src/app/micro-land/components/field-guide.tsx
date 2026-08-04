@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
-import { canEat, moveWord } from '@/app/micro-land/domain/blueprint'
+import { canEat, isPlantLike, moveWord } from '@/app/micro-land/domain/blueprint'
 import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand } from '@/app/micro-land/store'
@@ -63,10 +65,22 @@ export function FieldGuide() {
   const milestones = useMicroLand(s => s.milestones)
   const requestLocate = useMicroLand(s => s.requestLocate)
 
+  const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
+
+  function hideSpecies(id: string) {
+    setHiddenPlantIds(prev => new Set([...prev, id]))
+  }
+
+  function showAll() {
+    setHiddenPlantIds(new Set())
+  }
+
   if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
-  const ordered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+  const allOrdered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+  const hiddenCount = [...allOrdered].filter(bp => hiddenPlantIds.has(bp.id)).length
+  const ordered = allOrdered.filter(bp => !hiddenPlantIds.has(bp.id))
 
   // Species the player has met before that aren't in this world — the reason a
   // summoned creature no longer dies with the tab it was invented in.
@@ -195,6 +209,42 @@ export function FieldGuide() {
           </section>
         )}
 
+        {hiddenCount > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2"
+            style={{ borderBottom: '1px solid var(--cc-panel-divider)', background: 'var(--cc-modal-bg-from)' }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              {hiddenCount} {hiddenCount === 1 ? 'plant' : 'plants'} hidden
+            </span>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={showAll}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 8px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Show all
+            </button>
+          </div>
+        )}
         <ul className="flex flex-col">
           {ordered.map(bp => (
             <GuideEntry
@@ -203,6 +253,7 @@ export function FieldGuide() {
               alive={counts.get(bp.id) ?? 0}
               blueprints={blueprints}
               onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
+              onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
             />
           ))}
         </ul>
