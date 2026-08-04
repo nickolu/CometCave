@@ -283,6 +283,14 @@ export interface CreatureBlueprint {
   aura: CreatureAura | null
   /** Light it casts into dark areas, 0..1. */
   glow: number
+  /**
+   * How harmful this creature is to eat, 0..1.
+   *
+   * Typically nonzero only for plants. When an animal consumes a toxic plant it
+   * keeps the meal but moves at half-speed for `toxicity * 5` seconds — a
+   * deterrent rather than a kill, creating selection pressure for resistance.
+   */
+  toxicity?: number
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
 }
@@ -424,6 +432,13 @@ export interface Creature {
    * Resets when the target changes or a meal is eaten. Used for stuck detection.
    */
   huntPassCount: number
+  /**
+   * Seconds of poison remaining after eating a toxic plant.
+   *
+   * While above zero the creature moves at half its normal speed. Counts down
+   * each tick and returns to 0 on its own — no antidote needed.
+   */
+  poisoned: number
 }
 
 /**

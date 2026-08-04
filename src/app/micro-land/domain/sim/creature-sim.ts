@@ -319,6 +319,9 @@ export function tickCreatures(
     c.ageSeconds += dt
     c.animMs += dt * 1000
     if (c.breedCooldown > 0) c.breedCooldown -= dt
+    // Migration: creatures saved before toxicity was added won't have poisoned.
+    if (c.poisoned === undefined) c.poisoned = 0
+    if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
 
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
@@ -663,6 +666,10 @@ function look(
         c.mealsEaten++
         c.mood = 'eat'
         c.targetId = null
+        // Toxic plants slow the eater — the meal lands, but at a cost.
+        if (obp.toxicity) {
+          c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)
+        }
         events.push({
           kind: 'ate',
           blueprintId: bp.id,
@@ -1124,7 +1131,8 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     c.targetId = null
   }
 
-  const speed = speedOf(c, bp)
+  // Poison from a toxic plant halves movement speed for its duration.
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
