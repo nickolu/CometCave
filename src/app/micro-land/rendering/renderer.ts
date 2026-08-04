@@ -497,6 +497,7 @@ export class Renderer {
     this.drawTombstones(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
+    this.drawPollinatorAuras(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
@@ -721,6 +722,38 @@ export class Renderer {
       ctx.fillRect(car.x - 0.75, car.y - 0.75, 1.5, 1.5)
     }
     ctx.globalAlpha = 1
+  }
+
+  /**
+   * Orbiting pollen motes around creatures with a plant-helping aura.
+   * Drawn on the world canvas so they scale with zoom like everything else.
+   */
+  private drawPollinatorAuras(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    for (const c of w.creatures) {
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp?.aura?.helps.includes('plant')) continue
+
+      const rows = bp.art.frames[0]
+      const bw = rows[0].length
+      const bh = rows.length
+      if (c.x + bw < vx || c.x > vx + vw) continue
+
+      const cx = c.x + bw / 2
+      const cy = c.y + bh / 2
+      const orbitR = Math.max(4, bw)
+
+      // 4 motes orbiting at different phase offsets
+      ctx.fillStyle = '#fde68a'
+      for (let i = 0; i < 4; i++) {
+        const angle = w.elapsed * 1.8 + i * (Math.PI / 2)
+        const mx = Math.round(cx + Math.cos(angle) * orbitR)
+        const my = Math.round(cy + Math.sin(angle) * orbitR * 0.5)
+        ctx.globalAlpha = 0.45 + 0.3 * Math.sin(w.elapsed * 3 + i)
+        ctx.fillRect(mx, my, 1, 1)
+      }
+      ctx.globalAlpha = 1
+    }
   }
 
   /**

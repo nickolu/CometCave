@@ -699,6 +699,22 @@ export function tickCreatures(
       plantsAlive++
       speciesCount[victimBp.id] = (speciesCount[victimBp.id] ?? 0) + 1
       events.push({ kind: 'born', blueprintId: victimBp.id, x: seedling.x, y: seedling.y })
+      // A few pollen motes drift upward where the grazer ate.
+      const pollenCount = 2 + Math.floor(rng() * 2)
+      for (let p = 0; p < pollenCount; p++) {
+        if (w.particles.length >= 600) break
+        const spread = (rng() - 0.5) * 6
+        const upward = 0.4 + rng() * 0.6
+        w.particles.push({
+          x: ev.x + spread,
+          y: ev.y - rng() * 2,
+          vx: spread * 0.15,
+          vy: -upward,
+          life: 2 + rng() * 2,
+          maxLife: 3,
+          color: '#fde68a',
+        })
+      }
     }
   }
 
