@@ -293,6 +293,94 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           </div>
         )}
 
+        {/*
+          Naming for non-elder creatures. The elder gets the gold ceremony above;
+          this is a quieter offer for any other creature the player has noticed.
+        */}
+        {!inspected.isElder && !inspected.name && (
+          <div className="flex items-center justify-between gap-2">
+            {naming ? (
+              <form
+                className="flex flex-1 gap-1.5"
+                onSubmit={e => {
+                  e.preventDefault()
+                  if (onName(draft)) setPending(null)
+                }}
+              >
+                <label className="sr-only" htmlFor="micro-land-creature-name">
+                  Name this creature
+                </label>
+                <input
+                  id="micro-land-creature-name"
+                  autoFocus
+                  value={draft}
+                  onChange={e => setPending({ id: inspected.id, text: e.target.value })}
+                  maxLength={24}
+                  placeholder="Give it a name"
+                  className="min-w-0 flex-1 rounded px-2 py-1"
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--cc-text-default)',
+                    background: 'rgba(0,0,0,0.4)',
+                    border: '1px solid var(--cc-mint-line)',
+                  }}
+                  onPointerDown={e => e.stopPropagation()}
+                />
+                <button
+                  type="submit"
+                  className="cc-btn"
+                  disabled={draft.trim().length === 0}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 10,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '4px 8px',
+                    color: 'var(--cc-mint)',
+                    border: '1px solid var(--cc-mint-line)',
+                    opacity: draft.trim().length === 0 ? 0.4 : 1,
+                  }}
+                  onPointerDown={e => e.stopPropagation()}
+                >
+                  Name
+                </button>
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={() => setPending(null)}
+                  style={{
+                    fontSize: 10,
+                    padding: '4px 8px',
+                    color: 'var(--cc-text-muted)',
+                    border: '1px solid var(--cc-panel-divider)',
+                  }}
+                  onPointerDown={e => e.stopPropagation()}
+                >
+                  ✕
+                </button>
+              </form>
+            ) : (
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => setPending({ id: inspected.id, text: '' })}
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  padding: '3px 8px',
+                  color: 'var(--cc-text-muted)',
+                  border: '1px solid var(--cc-panel-divider)',
+                }}
+                onPointerDown={e => e.stopPropagation()}
+              >
+                Name this creature
+              </button>
+            )}
+          </div>
+        )}
+
         <div
           style={{
             fontFamily: 'var(--cc-font-mono)',

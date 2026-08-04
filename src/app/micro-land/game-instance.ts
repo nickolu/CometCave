@@ -718,6 +718,36 @@ export class GameInstance {
     return true
   }
 
+  /**
+   * Give any inspected creature a name.
+   *
+   * Works for all creatures, not just the elder. If the creature being named
+   * happens to be the elder, the chronicle is also updated so the record panel
+   * stays consistent.
+   */
+  nameCreature(id: number, name: string): boolean {
+    const trimmed = name.trim().slice(0, 24)
+    if (!trimmed) return false
+    const c = this.world.creatures.find(x => x.id === id)
+    if (!c) return false
+    c.name = trimmed
+    // If this creature is also the elder, keep the chronicle in sync.
+    if (id === this.elderId) {
+      if (this.elderSnapshot) this.elderSnapshot.name = trimmed
+      updateChronicle(() => {
+        const record = landRecord(this.currentLand)
+        if (record.elder) record.elder.name = trimmed
+        for (const kind of LIFE_KINDS) {
+          if (this.kindElderIds.get(kind) !== c.id) continue
+          const column = record.byKind[kind]
+          if (column.elder) column.elder.name = trimmed
+        }
+      })
+    }
+    this.pushStats()
+    return true
+  }
+
   /** Fire any milestone that just became true. Each one fires once, ever. */
   private checkMilestones(
     archive: SpeciesRecord[],

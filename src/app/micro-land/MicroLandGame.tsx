@@ -290,8 +290,10 @@ export function MicroLandGame() {
     return gameRef.current?.reviseSpecies(blueprintId, raw) ?? null
   }, [])
 
-  const handleNameElder = useCallback((name: string) => {
-    return gameRef.current?.nameElder(name) ?? false
+  const handleName = useCallback((name: string) => {
+    const id = useMicroLand.getState().inspected?.id
+    if (id == null) return false
+    return gameRef.current?.nameCreature(id, name) ?? false
   }, [])
 
   const handleHoldPan = useCallback((direction: -1 | 0 | 1) => {
@@ -330,7 +332,7 @@ export function MicroLandGame() {
         <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
         <ZoomControls onZoom={handleZoom} />
         <Notices />
-        <Inspector onName={handleNameElder} />
+        <Inspector onName={handleName} />
       </div>
 
       <Toolbar onRemoveSpecies={handleRemoveSpecies} />
