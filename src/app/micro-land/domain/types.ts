@@ -294,6 +294,25 @@ export interface CreatureBlueprint {
   toxicity?: number
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
+  /**
+   * Whether this species lays eggs rather than giving live birth.
+   *
+   * When true, breeding drops an Egg at the breeding spot with inherited
+   * traits; the juvenile hatches after `TUNING.eggHatchSeconds`. Eggs are
+   * vulnerable to predation in the meantime.
+   */
+  egglayer?: boolean
+  /**
+   * Optional symbiosis partner.
+   *
+   * When set to another species' blueprintId, this creature treats that species
+   * as a mutualistic partner: it won't attack them even if its diet says it
+   * could, and when near them it gets a 15% speed boost and 20% slower hunger
+   * drain. The bond is declared here rather than negotiated at runtime, so it
+   * is stable but one-sided by default — both partners have to name each other
+   * for the buff to apply to both.
+   */
+  symbiosisPartnerId?: string | null
 }
 
 /**
@@ -536,6 +555,14 @@ export interface Creature {
    */
   stunTimer: number
   /**
+   * Seconds of symbiosis bonus remaining.
+   *
+   * Set by the sense pass when a symbiosis partner is within 5 tiles. Grants
+   * 15% speed boost and 20% slower hunger drain while above zero. Decays each
+   * tick. Only one sense-interval worth of time is granted at a time.
+   */
+  symbiosisTimer: number
+  /**
    * Seconds of disease remaining.
    *
    * Set to 20 when infected. Counts down each tick. When it reaches 0 the
@@ -580,6 +607,28 @@ export interface Burrow {
 }
 
 /**
+ * An unhatched egg dropped by an egg-laying creature.
+ *
+ * Contains the full inherited traits so the juvenile hatches with the same
+ * genetics it would have received at live birth. Sits in place and can be
+ * eaten by any predator that could eat the parent species.
+ */
+export interface Egg {
+  id: number
+  /** World-tile coordinates of the egg's centre. */
+  x: number
+  y: number
+  /** The species this egg will hatch into. */
+  blueprintId: string
+  /** The inherited traits for the juvenile that hatches from this egg. */
+  traits: Traits
+  /** Which generation the hatchling will be. */
+  generation: number
+  /** Seconds until this egg hatches. */
+  hatchIn: number
+}
+
+/**
  * A chemical marker left when a creature eats.
  *
  * Same-species animals that are hungry and have nothing in sight drift toward
@@ -618,6 +667,13 @@ export interface WorldState {
   burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]
+  /**
+   * Per-tile moisture level, [0,1]. Tiles near water gain moisture; all tiles
+   * slowly dry out. Plants seed more readily in moist soil.
+   */
+  moisture: Float32Array
+  eggs: Egg[]
+  nextEggId: number
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number

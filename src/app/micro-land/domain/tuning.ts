@@ -88,6 +88,10 @@ export const TUNING_DEFAULTS = {
    * 0 = no day/night cycle (default). 120 = one cycle every two real-world minutes at normal speed.
    */
   dayLengthSeconds: 0,
+  /**
+   * How long an egg takes to hatch, in sim seconds.
+   */
+  eggHatchSeconds: 15,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS

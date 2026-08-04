@@ -47,6 +47,7 @@ import {
   settleOnGround,
   solidAt,
   spawnCreature,
+  tickMoisture,
   tileAt,
 } from './world'
 
@@ -335,6 +336,10 @@ export function tickCreatures(
   w.nextCarcassId ??= 1
   w.burrows ??= []
   w.scents ??= []
+  w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
+  tickMoisture(w, tickCount, dt, rng)
+  w.eggs ??= []
+  w.nextEggId ??= 1
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
   // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
@@ -406,6 +411,8 @@ export function tickCreatures(
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
+    if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
+    if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
     if (c.sick > 0) {
       c.sick -= dt
@@ -460,7 +467,8 @@ export function tickCreatures(
       }
     }
 
-    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
+    const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
+    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt)
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
@@ -552,56 +560,80 @@ export function tickCreatures(
         // them walk to each other.
         const ox = mate ? (c.x + mate.x) / 2 : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
-        const child = reproduce(w, bp, ox, oy, bw, bh, rng)
-        if (child) {
-          // Set here rather than inside `reproduce`, which returns through two
-          // different paths and would need both parents threaded into each. The
-          // deeper of the two lines is the one the child inherits — generation
-          // counts ancestry, so a bloodline shouldn't get shallower by marrying
-          // into a newer one.
-          child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
-          // Set here for the same reason as the generation above, and from the
-          // same two parents. `spawnCreature` gave the child its species'
-          // neutral values; this is the only place in the game that ever
-          // replaces them, which is what makes "born here" and "put here" two
-          // genuinely different things.
-          child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+        if (bp.egglayer && !isPlant) {
+          // Egg-layer: drop an egg with inherited traits rather than spawning live.
+          const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
+          const generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+          w.eggs.push({
+            id: w.nextEggId++,
+            x: ox,
+            y: oy,
+            blueprintId: bp.id,
+            traits: childTraits,
+            generation,
+            hatchIn: TUNING.eggHatchSeconds,
+          })
           c.children++
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-          if (isPlant) {
-            plantsAlive++
-            // Plants photosynthesise: spreading costs them nothing. Charging
-            // them the usual hunger cost would sterilise them permanently —
-            // their hungerRate is 0, so the debt could never be paid back and
-            // each plant would breed twice in its entire life.
-            //
-            // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
-            // the cooldown inversely: richer soil means a shorter wait, so
-            // plants cluster in patches rather than carpeting the map evenly.
-            // Seasons multiply the same way: summer doubles spread, winter halves it.
-            c.breedCooldown =
-              TUNING.plantSpreadCooldown /
-              (auraBoost(w, c, bp, bw, bh, helpers) *
-                fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
-                seasonFactor)
-          } else {
-            // Both of them paid to be here, so both of them pay for it. Charging
-            // only the one whose turn it happened to be would make a baby cost a
-            // pair half of what it used to cost a single animal, which is a
-            // *cheapening* of breeding dressed up as a restriction.
-            payForChild(w, c, bp, bw, bh, helpers)
-            if (mate) {
-              mate.children++
-              payForChild(w, mate, bp, bw, bh, helpers)
-            }
+          c.breedCooldown = TUNING.breedCooldown
+          payForChild(w, c, bp, bw, bh, helpers)
+          if (mate) {
+            mate.children++
+            payForChild(w, mate, bp, bw, bh, helpers)
           }
-          events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
+          events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
-          // Nowhere to put it — wait a bit before trying again. The partner
-          // waits too, or it spends the next tick re-finding a creature that is
-          // now on cooldown and failing at exactly the same spot.
-          c.breedCooldown = 3
-          if (mate) mate.breedCooldown = 3
+          const child = reproduce(w, bp, ox, oy, bw, bh, rng)
+          if (child) {
+            // Set here rather than inside `reproduce`, which returns through two
+            // different paths and would need both parents threaded into each. The
+            // deeper of the two lines is the one the child inherits — generation
+            // counts ancestry, so a bloodline shouldn't get shallower by marrying
+            // into a newer one.
+            child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+            // Set here for the same reason as the generation above, and from the
+            // same two parents. `spawnCreature` gave the child its species'
+            // neutral values; this is the only place in the game that ever
+            // replaces them, which is what makes "born here" and "put here" two
+            // genuinely different things.
+            child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+            c.children++
+            speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
+            if (isPlant) {
+              plantsAlive++
+              // Plants photosynthesise: spreading costs them nothing. Charging
+              // them the usual hunger cost would sterilise them permanently —
+              // their hungerRate is 0, so the debt could never be paid back and
+              // each plant would breed twice in its entire life.
+              //
+              // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
+              // the cooldown inversely: richer soil means a shorter wait, so
+              // plants cluster in patches rather than carpeting the map evenly.
+              // Seasons multiply the same way: summer doubles spread, winter halves it.
+              c.breedCooldown =
+                TUNING.plantSpreadCooldown /
+                (auraBoost(w, c, bp, bw, bh, helpers) *
+                  fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
+                  seasonFactor)
+            } else {
+              // Both of them paid to be here, so both of them pay for it. Charging
+              // only the one whose turn it happened to be would make a baby cost a
+              // pair half of what it used to cost a single animal, which is a
+              // *cheapening* of breeding dressed up as a restriction.
+              payForChild(w, c, bp, bw, bh, helpers)
+              if (mate) {
+                mate.children++
+                payForChild(w, mate, bp, bw, bh, helpers)
+              }
+            }
+            events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
+          } else {
+            // Nowhere to put it — wait a bit before trying again. The partner
+            // waits too, or it spends the next tick re-finding a creature that is
+            // now on cooldown and failing at exactly the same spot.
+            c.breedCooldown = 3
+            if (mate) mate.breedCooldown = 3
+          }
         }
       }
     }
@@ -609,6 +641,29 @@ export function tickCreatures(
 
   if (dead.size > 0) {
     w.creatures = creatures.filter(c => !dead.has(c.id))
+  }
+
+  // Egg hatching: decrement timers and hatch ready eggs.
+  w.eggs ??= []
+  const hatchedEggIds = new Set<number>()
+  for (const egg of w.eggs) {
+    egg.hatchIn -= dt
+    if (egg.hatchIn <= 0) {
+      const ebp = w.blueprints[egg.blueprintId]
+      if (ebp && w.creatures.length < TUNING.maxCreatures) {
+        const { w: ew, h: eh } = artSize(ebp)
+        const hatchling = spawnCreature(w, ebp, egg.x - ew / 2, egg.y - eh / 2)
+        if (hatchling) {
+          hatchling.generation = egg.generation
+          hatchling.traits = egg.traits
+          events.push({ kind: 'born', blueprintId: ebp.id, x: egg.x, y: egg.y })
+        }
+      }
+      hatchedEggIds.add(egg.id)
+    }
+  }
+  if (hatchedEggIds.size > 0) {
+    w.eggs = w.eggs.filter(e => !hatchedEggIds.has(e.id))
   }
 
   // --- pollination --------------------------------------------------------
@@ -778,6 +833,29 @@ function look(
     }
   }
 
+  // Egg eating: a hungry carnivore that stumbles over an egg eats it.
+  if (hungry && bp.move.kind !== 'root' && w.eggs.length > 0) {
+    for (const egg of w.eggs) {
+      if (egg.hatchIn <= 0) continue // already eaten or hatched
+      const eggBp = w.blueprints[egg.blueprintId]
+      if (!eggBp || !canEat(bp, eggBp)) continue
+      const dx = egg.x - cx
+      const dy = egg.y - cy
+      const gapX = Math.max(0, Math.abs(dx) - bw / 2)
+      const gapY = Math.max(0, Math.abs(dy) - bh / 2)
+      if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
+        c.hunger = Math.max(0, c.hunger - TUNING.mealValue * 0.6) // eggs are smaller meals
+        c.starving = 0
+        c.mealsEaten++
+        c.mood = 'eat'
+        c.targetId = null
+        egg.hatchIn = -1 // mark for removal by the hatching block
+        events.push({ kind: 'ate', blueprintId: bp.id, victimId: eggBp.id, x: c.x, y: c.y })
+        return
+      }
+    }
+  }
+
   // Only the creatures whose left edge falls in the window can possibly be in
   // range; everything beyond it is skipped without being touched. Sized off the
   // *food* reach, which is the larger of the two whenever the creature is hungry
@@ -826,6 +904,16 @@ function look(
       if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
+      }
+      continue
+    }
+
+    // Symbiosis: skip attack against declared partner species.
+    const isPartner = bp.symbiosisPartnerId && obp.id === bp.symbiosisPartnerId
+    if (isPartner) {
+      // Partner is near — grant bonus and skip attack.
+      if (d2 <= sight2) {
+        c.symbiosisTimer = Math.max(c.symbiosisTimer, (SENSE_EVERY / 60) * 2.5)
       }
       continue
     }
@@ -1351,6 +1439,29 @@ function unliveableAhead(
 }
 
 /**
+ * Whether moving in the normalised direction (dx, dy) would walk into a solid
+ * tile within the next step — the obstacle detector for the steering layer.
+ *
+ * Uses a short look-ahead along the *leading edge* of the body box rather than
+ * the centre, so the check fires before the collision engine would, giving the
+ * creature time to steer clear instead of bouncing. Only called for locomotion
+ * that cares about terrain (walk/crawl); flyers and swimmers skip it.
+ */
+function solidAhead(
+  w: WorldState,
+  c: Creature,
+  body: BodyBox,
+  dx: number,
+  dy: number
+): boolean {
+  if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return false
+  const lookDist = 1.5
+  const tx = c.x + body.dx + (dx > 0 ? body.w : 0) + dx * lookDist
+  const ty = c.y + body.dy + (dy > 0 ? body.h / 2 : 0)
+  return boxHitsSolid(w, tx, ty, body.w * 0.6, body.h * 0.6)
+}
+
+/**
  * Launch velocity for a creature that means to clear `move.jump` worth of
  * height — see `JUMP_TILES_PER_STRENGTH` for why `jump` stopped being a
  * velocity in the first place.
@@ -1432,6 +1543,32 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     c.targetId = null
   }
 
+  // Obstacle avoidance: walk and crawl locomotion steer around solid walls.
+  // Flyers and swimmers are free to move through/over terrain so skip this.
+  if ((bp.move.kind === 'walk' || bp.move.kind === 'crawl') && !bp.dig.through.length) {
+    const len = Math.hypot(wantX, wantY)
+    if (len > 0.01 && solidAhead(w, c, body, wantX / len, wantY / len)) {
+      const angle = Math.atan2(wantY, wantX)
+      const tries = [Math.PI / 4, -Math.PI / 4, Math.PI / 2, -Math.PI / 2]
+      let cleared = false
+      for (const delta of tries) {
+        const a = angle + delta
+        const tx = Math.cos(a)
+        const ty = Math.sin(a)
+        if (!solidAhead(w, c, body, tx, ty)) {
+          wantX = tx
+          wantY = ty
+          cleared = true
+          break
+        }
+      }
+      if (!cleared) {
+        wantX = 0
+        wantY = 0
+      }
+    }
+  }
+
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
@@ -1439,7 +1576,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) / sizeOf(c) * (1 - diurnalPenalty)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 

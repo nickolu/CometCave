@@ -49,6 +49,9 @@ export function createWorld(seed = 1337): WorldState {
     burrows: [],
     nextCarcassId: 1,
     scents: [],
+    moisture: new Float32Array(WORLD_W * WORLD_H),
+    eggs: [],
+    nextEggId: 1,
     blueprints,
     nextCreatureId: 1,
     elapsed: 0,
@@ -387,6 +390,7 @@ export function spawnCreature(
     packTimer: 0,
     sinking: 0,
     stunTimer: 0,
+    symbiosisTimer: 0,
     sick: 0,
   }
   w.creatures.push(creature)
@@ -661,7 +665,67 @@ export function seedNativePlants(w: WorldState, rng: Rng, seasonFactor = 1): voi
 
   for (let i = 0; i < batch; i++) {
     const bp = w.blueprints[pool[i % pool.length]]
-    if (bp) spawnSomewhereSensible(w, bp, rng)
+    if (!bp) continue
+    // Try a couple of spots and prefer the more moist one — moisture fertilises.
+    const spot1 = findSpawnSpot(w, bp, rng)
+    const spot2 = findSpawnSpot(w, bp, rng)
+    let bestSpot = spot1
+    if (spot1 && spot2 && w.moisture) {
+      const m1 = w.moisture[Math.floor(spot1.y) * WORLD_W + Math.floor(spot1.x)] ?? 0
+      const m2 = w.moisture[Math.floor(spot2.y) * WORLD_W + Math.floor(spot2.x)] ?? 0
+      bestSpot = m2 > m1 ? spot2 : spot1
+    } else {
+      bestSpot = spot1 ?? spot2
+    }
+    if (bestSpot) {
+      spawnCreature(w, bp, bestSpot.x, bestSpot.y)
+    }
+  }
+}
+
+/**
+ * Update the moisture field — called once per sim step.
+ *
+ * Runs at a reduced cadence (every 30 ticks ≈ twice a second) to keep the
+ * O(width×height) scan from dominating the frame budget. Water-adjacent tiles
+ * gain moisture; everything dries at a baseline rate; a periodic rainfall zone
+ * adds a burst of moisture somewhere in the world.
+ */
+export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: Rng): void {
+  if (tickCount % 30 !== 0) return
+  w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
+  const timePassed = 30 / 60 // seconds per update window
+  const waterIdx = MATERIAL_INDEX.water
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const i = y * WORLD_W + x
+      w.moisture[i] = Math.max(0, w.moisture[i] - 0.005 * timePassed)
+      const hasWater =
+        w.tiles[i] === waterIdx ||
+        (x > 0 && w.tiles[i - 1] === waterIdx) ||
+        (x < WORLD_W - 1 && w.tiles[i + 1] === waterIdx) ||
+        (y > 0 && w.tiles[i - WORLD_W] === waterIdx) ||
+        (y < WORLD_H - 1 && w.tiles[i + WORLD_W] === waterIdx)
+      if (hasWater) {
+        w.moisture[i] = Math.min(1, w.moisture[i] + 0.01 * timePassed)
+      }
+    }
+  }
+  // Rainfall: once per sim-minute, soak a random zone.
+  if (Math.floor(w.elapsed / 60) > Math.floor((w.elapsed - timePassed) / 60)) {
+    const rx = Math.floor(rng() * WORLD_W)
+    const ry = Math.floor(rng() * WORLD_H)
+    const radius = 15 + Math.floor(rng() * 25)
+    for (let dy2 = -radius; dy2 <= radius; dy2++) {
+      for (let dx2 = -radius; dx2 <= radius; dx2++) {
+        const tx = rx + dx2
+        const ty = ry + dy2
+        if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) continue
+        if (dx2 * dx2 + dy2 * dy2 > radius * radius) continue
+        const mi = ty * WORLD_W + tx
+        w.moisture[mi] = Math.min(1, (w.moisture[mi] || 0) + 0.25)
+      }
+    }
   }
 }
 
