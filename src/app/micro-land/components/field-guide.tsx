@@ -65,6 +65,8 @@ export function FieldGuide() {
   const milestones = useMicroLand(s => s.milestones)
   const populationHistory = useMicroLand(s => s.populationHistory)
   const requestLocate = useMicroLand(s => s.requestLocate)
+  const traitOverlay = useMicroLand(s => s.traitOverlay)
+  const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -307,6 +309,60 @@ export function FieldGuide() {
           </section>
         )}
         <PopulationGraph history={populationHistory} blueprints={blueprints} />
+
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>
+            Evolution view
+          </h3>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.5, marginBottom: 8, opacity: 0.8 }}>
+            Color creatures by trait — blue is below average, red is above.
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {(['speed', 'sight', 'lifespan', 'roam'] as const).map(trait => (
+              <button
+                key={trait}
+                type="button"
+                className="cc-btn"
+                onClick={() => setTraitOverlay(trait)}
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 9,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  padding: '4px 10px',
+                  minHeight: 28,
+                  borderRadius: 4,
+                  border: traitOverlay === trait
+                    ? '1px solid var(--cc-mint)'
+                    : '1px solid var(--cc-mint-line)',
+                  color: traitOverlay === trait ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                  background: traitOverlay === trait ? 'rgba(100,220,200,0.1)' : 'transparent',
+                }}
+              >
+                {trait === 'lifespan' ? 'Life' : trait.charAt(0).toUpperCase() + trait.slice(1)}
+              </button>
+            ))}
+          </div>
+          {traitOverlay && (
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setTraitOverlay(null)}
+              style={{
+                marginTop: 8,
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                color: 'var(--cc-text-muted)',
+                border: '1px solid var(--cc-panel-divider)',
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </section>
       </div>
     </div>
   )
