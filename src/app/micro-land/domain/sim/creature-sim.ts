@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -106,6 +106,75 @@ const CAMOUFLAGE_STILL = 1.5
  * or blend in, not to vegetation that the food chain depends on finding.
  */
 const CAMOUFLAGE_FACTOR = 0.5
+
+/**
+ * How fertile the soil is at a world position — a multiplier on plant spread rate.
+ *
+ * Range: 0.2 (barren rock) to 1.5 (rich soil next to water). Derived from the
+ * tile material and a small adjacency check for nearby water, so no extra storage
+ * is needed. Called once per plant per breed cycle, so the 25-tile scan is cheap.
+ */
+function fertilityAt(w: WorldState, x: number, y: number): number {
+  const xi = Math.floor(x)
+  const yi = Math.floor(y)
+  const matId = MATERIAL_BY_INDEX[tileAt(w, xi, yi)]?.id ?? 'dirt'
+
+  let f: number
+  switch (matId) {
+    case 'mud':
+      f = 1.3
+      break
+    case 'dirt':
+    case 'grass':
+    case 'moss':
+      f = 1.0
+      break
+    case 'wood':
+    case 'sap':
+      f = 0.9
+      break
+    case 'ash':
+      f = 0.7
+      break
+    case 'bone':
+    case 'sand':
+    case 'snow':
+      f = 0.5
+      break
+    case 'ice':
+      f = 0.4
+      break
+    case 'stone':
+    case 'obsidian':
+    case 'marble':
+      f = 0.3
+      break
+    case 'metal':
+    case 'iron':
+    case 'glass':
+    case 'gold':
+    case 'gem':
+      f = 0.2
+      break
+    default:
+      f = 1.0
+  }
+
+  // Proximity bonus: a plant within 2 tiles of fresh water or ice gets +0.3.
+  const waterIdx = MATERIAL_INDEX.water
+  const iceIdx = MATERIAL_INDEX.ice
+  outer: for (let dx = -2; dx <= 2; dx++) {
+    for (let dy = -2; dy <= 2; dy++) {
+      const t = tileAt(w, xi + dx, yi + dy)
+      if (t === waterIdx || t === iceIdx) {
+        f = Math.min(1.5, f + 0.3)
+        break outer
+      }
+    }
+  }
+
+  return Math.max(0.2, f)
+}
 
 export interface SimEvent {
   /**
@@ -437,7 +506,13 @@ export function tickCreatures(
             // them the usual hunger cost would sterilise them permanently —
             // their hungerRate is 0, so the debt could never be paid back and
             // each plant would breed twice in its entire life.
-            c.breedCooldown = TUNING.plantSpreadCooldown / auraBoost(w, c, bp, bw, bh, helpers)
+            //
+            // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
+            // the cooldown inversely: richer soil means a shorter wait, so
+            // plants cluster in patches rather than carpeting the map evenly.
+            c.breedCooldown =
+              TUNING.plantSpreadCooldown /
+              (auraBoost(w, c, bp, bw, bh, helpers) * fertilityAt(w, c.x + bw / 2, c.y + bh / 2))
           } else {
             // Both of them paid to be here, so both of them pay for it. Charging
             // only the one whose turn it happened to be would make a baby cost a
