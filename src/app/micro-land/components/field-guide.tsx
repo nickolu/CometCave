@@ -61,6 +61,7 @@ export function FieldGuide() {
   const records = useMicroLand(s => s.records)
   const archive = useMicroLand(s => s.archive)
   const milestones = useMicroLand(s => s.milestones)
+  const requestLocate = useMicroLand(s => s.requestLocate)
 
   if (!open) return null
 
@@ -201,6 +202,7 @@ export function FieldGuide() {
               bp={bp}
               alive={counts.get(bp.id) ?? 0}
               blueprints={blueprints}
+              onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
             />
           ))}
         </ul>
@@ -316,10 +318,14 @@ function GuideEntry({
   bp,
   alive,
   blueprints,
+  onHide,
+  onLocate,
 }: {
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
+  onHide?: () => void
+  onLocate?: () => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -333,44 +339,96 @@ function GuideEntry({
         <CreaturePortrait blueprint={bp} size={40} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 12,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-              color: alive > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-            }}
-          >
-            {bp.name}
-          </span>
-          <span
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
-            }}
-          >
-            {alive > 0 ? `${alive} alive` : 'none left'}
-          </span>
-          {bp.summoned && (
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span
-              className="inline-flex items-center gap-1"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
+                fontSize: 12,
+                letterSpacing: 1.4,
                 textTransform: 'uppercase',
-                padding: '2px 6px',
-                borderRadius: 999,
-                color: 'var(--cc-pink)',
-                border: '1px solid var(--cc-pink-border)',
+                color: alive > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
               }}
             >
-              <SparkleIcon size={9} />
-              Generated
+              {bp.name}
             </span>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
+              }}
+            >
+              {alive > 0 ? `${alive} alive` : 'none left'}
+            </span>
+            {bp.summoned && (
+              <span
+                className="inline-flex items-center gap-1"
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 9,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  padding: '2px 6px',
+                  borderRadius: 999,
+                  color: 'var(--cc-pink)',
+                  border: '1px solid var(--cc-pink-border)',
+                }}
+              >
+                <SparkleIcon size={9} />
+                Generated
+              </span>
+            )}
+          </div>
+          {(onLocate || onHide) && (
+            <div className="flex shrink-0 items-center gap-1">
+              {onLocate && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={onLocate}
+                  aria-label={`Pan camera to ${bp.name}`}
+                  title="Pan to this creature in the world"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: '1px solid var(--cc-mint-line)',
+                    color: 'var(--cc-mint)',
+                    opacity: 0.8,
+                  }}
+                >
+                  Find
+                </button>
+              )}
+              {onHide && (
+                <button
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={onHide}
+                  aria-label={`Hide ${bp.name} from field guide`}
+                  title="Hide from field guide (plant still lives in the world)"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: '1px solid var(--cc-mint-line)',
+                    color: 'var(--cc-text-muted)',
+                    opacity: 0.65,
+                  }}
+                >
+                  Hide
+                </button>
+              )}
+            </div>
           )}
         </div>
 

@@ -94,6 +94,15 @@ export function MicroLandGame() {
       // and a dependency-driven effect would rebuild the world on every remount.
       unsubscribe = useMicroLand.subscribe((state, previous) => {
         if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
+        if (state.locateRequest !== previous.locateRequest && state.locateRequest && game) {
+          const found = game.locateSpecies(state.locateRequest.blueprintId)
+          if (!found) {
+            const name =
+              game.getWorld().blueprints[state.locateRequest.blueprintId]?.name ??
+              state.locateRequest.blueprintId
+            useMicroLand.getState().notify(`No ${name} alive right now`)
+          }
+        }
       })
     })
 

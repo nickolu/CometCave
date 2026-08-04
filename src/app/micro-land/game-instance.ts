@@ -928,6 +928,20 @@ export class GameInstance {
     return record ?? { blueprint: bp, firstSeen: Date.now(), lastSeen: Date.now(), longestLife: 0 }
   }
 
+  /**
+   * Centre the camera on the first living creature of this species.
+   *
+   * Returns true when one was found; false when the species has no living
+   * members (so the caller can tell the player rather than quietly doing
+   * nothing).
+   */
+  locateSpecies(blueprintId: string): boolean {
+    const creature = this.world.creatures.find(c => c.blueprintId === blueprintId)
+    if (!creature) return false
+    this.renderer.centerOn(creature.x, creature.y)
+    return true
+  }
+
   /** Put a removed species back on the shelf. Undo for `removeSpecies`. */
   restoreSpecies(record: SpeciesRecord): void {
     restoreSpeciesRecord(record)
