@@ -30,6 +30,7 @@ import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { tintKey } from '@/app/micro-land/domain/traits'
 import type { WorldState } from '@/app/micro-land/domain/types'
+import { useMicroLand } from '@/app/micro-land/store'
 
 import { getSprites } from './sprite-cache'
 
@@ -705,6 +706,7 @@ export class Renderer {
 
   private drawCreatures(w: WorldState, vx: number, vw: number): void {
     const ctx = this.wctx
+    const traitKey = useMicroLand.getState().traitOverlay
     for (const c of w.creatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
@@ -730,6 +732,17 @@ export class Renderer {
       }
       ctx.drawImage(source, x, y)
       ctx.globalAlpha = 1
+
+      if (traitKey) {
+        const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
+        if (Math.abs(delta) >= 0.08) {
+          const alpha = Math.min(0.6, Math.abs(delta) * 1.2).toFixed(2)
+          ctx.globalAlpha = parseFloat(alpha)
+          ctx.fillStyle = delta < 0 ? '#1e64ff' : '#ff3c00'
+          ctx.fillRect(x, y, sprites.width, sprites.height)
+          ctx.globalAlpha = 1
+        }
+      }
     }
   }
 

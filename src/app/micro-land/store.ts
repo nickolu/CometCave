@@ -276,6 +276,14 @@ interface MicroLandState {
   /** Close the guide and emit a locate request for the game instance to handle. */
   requestLocate: (blueprintId: string) => void
 
+  /**
+   * When set, the renderer draws each creature with a color overlay based on
+   * this trait's value — blue for weak, red for strong. Null means no overlay.
+   */
+  traitOverlay: string | null
+  /** Toggle the trait overlay. Passing the current trait turns it off. */
+  setTraitOverlay: (trait: string | null) => void
+
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
@@ -399,6 +407,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   worldsOpen: false,
   locateRequest: null,
+  traitOverlay: null,
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -472,6 +481,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setWorldsOpen: worldsOpen => set({ worldsOpen }),
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
+  setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
 
   notify: (text, action) =>
     set(s => ({
