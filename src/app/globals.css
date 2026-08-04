@@ -612,6 +612,46 @@ body {
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Micro Land — a canvas you drag your finger across, not a document
+   ─────────────────────────────────────────────────────────────────── */
+
+/*
+  The world is three screens wide, so swiping back and forth across it is the
+  main way you move — and a phone reads a slow horizontal drag over a page as
+  "start selecting text". The result was the whole game flashing blue mid-pan,
+  and a long press bringing up the copy/paste callout over a terrarium. The
+  canvas already had `touch-action: none`, which only stops scrolling; nothing
+  stopped selection, because selection is a document behaviour and this is a
+  game.
+
+  Set on the shell rather than the canvas because a selection that *starts* on
+  an unselectable canvas will happily still rope in the HUD and toolbar text
+  beside it. Both properties inherit, so one declaration covers the modals too.
+*/
+.micro-land-shell {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Typing a world's name still needs a cursor, a caret and a double-tap. */
+.micro-land-shell input,
+.micro-land-shell textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+/*
+  Only the canvas. The toolbar chips have no hover state on a phone, so the tap
+  flash is the sole feedback that a tool was chosen — worth keeping there. On
+  the world it is just a grey rectangle over the land every time you pan.
+*/
+.micro-land-shell canvas {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
