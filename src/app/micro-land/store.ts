@@ -261,6 +261,11 @@ interface MicroLandState {
   shelf: ShelfState
   worldsOpen: boolean
 
+  /** Set when the field guide asks to find a species in the world. */
+  locateRequest: { blueprintId: string; serial: number } | null
+  /** Close the guide and emit a locate request for the game instance to handle. */
+  requestLocate: (blueprintId: string) => void
+
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
@@ -318,6 +323,7 @@ interface MicroLandState {
 
 let noticeId = 0
 let pendingId = 0
+let locateSerial = 0
 
 const TOOLBAR_KEY = 'micro-land:toolbar:v1'
 
@@ -381,6 +387,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   saveState: { kind: 'idle' },
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   worldsOpen: false,
+  locateRequest: null,
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -437,6 +444,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
   setWorldsOpen: worldsOpen => set({ worldsOpen }),
+  requestLocate: blueprintId =>
+    set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
 
   notify: (text, action) =>
     set(s => ({

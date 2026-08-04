@@ -63,6 +63,7 @@ export function FieldGuide() {
   const records = useMicroLand(s => s.records)
   const archive = useMicroLand(s => s.archive)
   const milestones = useMicroLand(s => s.milestones)
+  const requestLocate = useMicroLand(s => s.requestLocate)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -251,6 +252,7 @@ export function FieldGuide() {
               bp={bp}
               alive={counts.get(bp.id) ?? 0}
               blueprints={blueprints}
+              onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
               onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
             />
           ))}
@@ -368,11 +370,13 @@ function GuideEntry({
   alive,
   blueprints,
   onHide,
+  onLocate,
 }: {
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
   onHide?: () => void
+  onLocate?: () => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -427,28 +431,55 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {onHide && (
-            <button
-              type="button"
-              className="cc-btn shrink-0"
-              onClick={onHide}
-              aria-label={`Hide ${bp.name} from field guide`}
-              title="Hide from field guide (plant still lives in the world)"
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                padding: '3px 7px',
-                minHeight: 24,
-                borderRadius: 4,
-                border: '1px solid var(--cc-mint-line)',
-                color: 'var(--cc-text-muted)',
-                opacity: 0.65,
-              }}
-            >
-              Hide
-            </button>
+          {(onLocate || onHide) && (
+            <div className="flex shrink-0 items-center gap-1">
+              {onLocate && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={onLocate}
+                  aria-label={`Pan camera to ${bp.name}`}
+                  title="Pan to this creature in the world"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: '1px solid var(--cc-mint-line)',
+                    color: 'var(--cc-mint)',
+                    opacity: 0.8,
+                  }}
+                >
+                  Find
+                </button>
+              )}
+              {onHide && (
+                <button
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={onHide}
+                  aria-label={`Hide ${bp.name} from field guide`}
+                  title="Hide from field guide (plant still lives in the world)"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: '1px solid var(--cc-mint-line)',
+                    color: 'var(--cc-text-muted)',
+                    opacity: 0.65,
+                  }}
+                >
+                  Hide
+                </button>
+              )}
+            </div>
           )}
         </div>
 
