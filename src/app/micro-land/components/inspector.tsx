@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { canEat } from '@/app/micro-land/domain/blueprint'
 import { notableTraits, traitPhrases } from '@/app/micro-land/domain/traits'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
-import { useMicroLand } from '@/app/micro-land/store'
+import { formatDuration } from '@/app/micro-land/format'
+import { type Inspected, useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 
@@ -95,6 +96,44 @@ const meterLabel: React.CSSProperties = {
   letterSpacing: 1.2,
   textTransform: 'uppercase',
   opacity: 0.75,
+}
+
+/**
+ * A creature's life as a handful of plain facts.
+ *
+ * Returns dot-separated phrases that read left to right from origin to present:
+ * "Generation 4 · 3m 14s old · 18 meals · 2 children"
+ *
+ * Shown for everything — plants just have fewer facts to report.
+ */
+function biography(c: Inspected, bp: CreatureBlueprint): string {
+  const parts: string[] = []
+
+  if (c.generation <= 1) {
+    parts.push('First of its line')
+  } else {
+    parts.push(`Generation ${c.generation}`)
+  }
+
+  parts.push(`${formatDuration(c.ageSeconds)} old`)
+
+  if (bp.move.kind !== 'root') {
+    if (c.mealsEaten === 0) {
+      parts.push('no meals yet')
+    } else {
+      parts.push(`${c.mealsEaten} ${c.mealsEaten === 1 ? 'meal' : 'meals'}`)
+    }
+    if (c.children === 1) {
+      parts.push('1 child')
+    } else if (c.children > 1) {
+      parts.push(`${c.children} children`)
+    }
+    if (c.tilesDug > 5) {
+      parts.push(`${c.tilesDug} tiles dug`)
+    }
+  }
+
+  return parts.join(' · ')
 }
 
 /**
@@ -415,6 +454,17 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           </div>
         )}
 
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--cc-text-muted)',
+            lineHeight: 1.5,
+            opacity: 0.8,
+          }}
+        >
+          {biography(inspected, bp)}
+        </div>
+
         <Meter
           label="Full"
           value={fullness}
@@ -428,18 +478,8 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
         />
 
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-0.5">
-          <Stat label="Meals eaten" value={String(inspected.mealsEaten)} />
-          <Stat label="Babies" value={String(inspected.children)} />
           <Stat label="Size" value={String(bp.size)} />
           <Stat label="Speed" value={inspected.speed.toFixed(1)} />
-          {/*
-            Hidden at generation 1, which is every creature you place by hand.
-            It appears the first time you're looking at something that was *born*
-            here, which is the only point at which the number means anything.
-          */}
-          {inspected.generation > 1 && (
-            <Stat label="Generation" value={String(inspected.generation)} />
-          )}
           {/*
             The evidence under the sentence above. Only the traits that earned a
             phrase are listed, and only as a ratio against the species — "1.24×"
@@ -449,9 +489,6 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           {traits.map(t => (
             <Stat key={t.label} label={t.label} value={`${t.value.toFixed(2)}×`} />
           ))}
-          {bp.dig.through.length > 0 && (
-            <Stat label="Tiles dug" value={String(inspected.tilesDug)} />
-          )}
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.55 }}>
