@@ -76,6 +76,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   shade: 1,
   roam: 1,
   territorial: 0.5,
+  size: 1,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -123,7 +124,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -134,6 +135,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     shade: clamp(mix('shade') + nudge(rng, drift), SHADE_MIN, SHADE_MAX),
     roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
+    size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
   }
 }
 
@@ -177,6 +179,11 @@ export function lifespanOf(c: Creature, bp: CreatureBlueprint): number {
  */
 export function roamOf(c: Creature): number {
   return c.traits.roam ?? 1
+}
+
+/** Body size multiplier. Defaults to 1 for old saves. */
+export function sizeOf(c: Creature): number {
+  return c.traits.size ?? 1
 }
 
 // ---------------------------------------------------------------------------
@@ -251,6 +258,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.roam ?? 1) <= 1 - NOTABLE) phrases.push('stay-close')
   if ((t.territorial ?? 0.5) >= 0.5 + NOTABLE) phrases.push('territorial')
   else if ((t.territorial ?? 0.5) <= 0.5 - NOTABLE) phrases.push('wandering')
+  if ((t.size ?? 1) >= 1 + NOTABLE) phrases.push('larger than most')
+  else if ((t.size ?? 1) <= 1 - NOTABLE) phrases.push('smaller than most')
   return phrases
 }
 
@@ -268,5 +277,6 @@ export function notableTraits(t: Traits): { label: string; value: number }[] {
     { label: 'Own sight', value: t.sight },
     { label: 'Own lifespan', value: t.lifespan },
     { label: 'Own roam', value: t.roam ?? 1 },
+    { label: 'Own size', value: t.size ?? 1 },
   ].filter(entry => Math.abs(entry.value - 1) >= NOTABLE)
 }
