@@ -266,6 +266,10 @@ export function tickCreatures(
 ): void {
   tickCount++
 
+  // Migration: worlds saved before carcasses were added won't have these fields.
+  w.carcasses ??= []
+  w.nextCarcassId ??= 1
+
   const creatures = w.creatures
   const dead = new Set<number>()
 
@@ -499,6 +503,14 @@ export function tickCreatures(
   // dead — see `seedNativePlants`.
   seedNativePlants(w, rng)
 
+  // Decay carcasses and remove expired ones.
+  for (const car of w.carcasses) {
+    car.decaySeconds -= dt
+  }
+  if (w.carcasses.some(car => car.decaySeconds <= 0)) {
+    w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
+  }
+
   tickParticles(w, dt, gravityScale)
 }
 
@@ -562,6 +574,31 @@ function look(
   let preyCy = 0
   let mate: Creature | null = null
   let mateDist = Infinity
+
+  // --- Carcass eating (touch-based opportunistic scavenging) ---
+  // A hungry carnivore that stumbles over a carcass eats it immediately.
+  // No active pursuit — the creature's normal hunt/wander brings it close enough.
+  if (hungry && bp.move.kind !== 'root') {
+    for (const car of w.carcasses) {
+      const carBp = w.blueprints[car.blueprintId]
+      if (!carBp || !canEat(bp, carBp)) continue
+      const dx = car.x - cx
+      const dy = car.y - cy
+      // Gap between creature sprite edge and the carcass point.
+      const gapX = Math.max(0, Math.abs(dx) - bw / 2)
+      const gapY = Math.max(0, Math.abs(dy) - bh / 2)
+      if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
+        c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
+        c.starving = 0
+        c.mealsEaten++
+        c.mood = 'eat'
+        c.targetId = null
+        car.decaySeconds = 0 // mark for removal at end of tick
+        events.push({ kind: 'ate', blueprintId: bp.id, x: c.x, y: c.y })
+        return
+      }
+    }
+  }
 
   // Only the creatures whose left edge falls in the window can possibly be in
   // range; everything beyond it is skipped without being touched. Sized off the
@@ -777,6 +814,16 @@ function devour(
   if (dead.has(victim.id)) return
   dead.add(victim.id)
   const { w: vw, h: vh } = artSize(victimBp)
+  // Animals leave a carcass. Plants vanish cleanly — grazers find them alive.
+  if (victimBp.move.kind !== 'root') {
+    w.carcasses.push({
+      id: w.nextCarcassId++,
+      x: victim.x + vw / 2,
+      y: victim.y + vh / 2,
+      decaySeconds: 15,
+      blueprintId: victim.blueprintId,
+    })
+  }
   emitParticles(
     w,
     victim.x + vw / 2,
@@ -1488,6 +1535,16 @@ function kill(
   if (dead.has(c.id)) return
   dead.add(c.id)
   const { w: bw, h: bh } = artSize(bp)
+  // Animals leave a carcass on any death.
+  if (bp.move.kind !== 'root') {
+    w.carcasses.push({
+      id: w.nextCarcassId++,
+      x: c.x + bw / 2,
+      y: c.y + bh / 2,
+      decaySeconds: 15,
+      blueprintId: c.blueprintId,
+    })
+  }
   emitParticles(w, c.x + bw / 2, c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)
   if (bp.death.becomes) {
     setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])

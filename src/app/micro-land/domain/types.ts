@@ -426,6 +426,24 @@ export interface Creature {
   huntPassCount: number
 }
 
+/**
+ * A dead animal's remains — a temporary food source for carnivores.
+ *
+ * Spawned at death (either eaten by a predator or killed by the world).
+ * Plants are excluded: grazers find them alive; a decomposing plant corpse
+ * would make root-species too easy to farm.
+ */
+export interface Carcass {
+  id: number
+  /** World-tile coordinates of the creature's centre at the moment of death. */
+  x: number
+  y: number
+  /** Seconds until this carcass vanishes. */
+  decaySeconds: number
+  /** Blueprint of the creature that died — determines who can eat it. */
+  blueprintId: string
+}
+
 export interface Particle {
   x: number
   y: number
@@ -445,6 +463,8 @@ export interface WorldState {
   grain: Uint8Array
   creatures: Creature[]
   particles: Particle[]
+  carcasses: Carcass[]
+  nextCarcassId: number
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number

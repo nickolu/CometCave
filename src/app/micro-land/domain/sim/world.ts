@@ -45,6 +45,8 @@ export function createWorld(seed = 1337): WorldState {
     grain,
     creatures: [],
     particles: [],
+    carcasses: [],
+    nextCarcassId: 1,
     blueprints,
     nextCreatureId: 1,
     elapsed: 0,
