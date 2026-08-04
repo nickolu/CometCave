@@ -559,6 +559,18 @@ export class GameInstance {
 
     useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
 
+    // Speed run win/loss detection
+    const sr = useMicroLand.getState().speedRun
+    if (sr.active && sr.result === 'none') {
+      const deepestGen = population.reduce((max, p) => Math.max(max, p.maxGeneration), 0)
+      const timeUsed = this.world.elapsed - sr.startElapsed
+      if (deepestGen >= sr.targetGeneration) {
+        useMicroLand.getState().endSpeedRun('won')
+      } else if (timeUsed >= sr.timeLimitSeconds || this.world.creatures.length === 0) {
+        useMicroLand.getState().endSpeedRun('lost')
+      }
+    }
+
     const currentStats = useMicroLand.getState().worldStats
     if (this.world.creatures.length > currentStats.peakPopulation) {
       useMicroLand.getState().updateWorldStats({ peakPopulation: this.world.creatures.length })

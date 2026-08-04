@@ -21,6 +21,15 @@ import {
   setTuning,
 } from './domain/tuning'
 
+export interface SpeedRunState {
+  active: boolean
+  targetGeneration: number
+  timeLimitSeconds: number
+  /** World elapsed time (seconds) when the run started — so countdown = timeLimit - (elapsed - startElapsed). */
+  startElapsed: number
+  result: 'none' | 'won' | 'lost'
+}
+
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
 import type { Creature, CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
@@ -254,10 +263,14 @@ interface MicroLandState {
   graphOpen: boolean
   challengesOpen: boolean
   challengeActive: { name: string; goal: string } | null
+  speedRun: SpeedRunState
   /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
   reshuffleToken: number
   setChallengesOpen: (open: boolean) => void
   setChallengeActive: (c: { name: string; goal: string } | null) => void
+  startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
+  endSpeedRun: (result: 'won' | 'lost') => void
+  cancelSpeedRun: () => void
   requestReshuffle: () => void
   /**
    * Whether the tool drawer along the bottom is unrolled.
@@ -475,6 +488,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   graphOpen: false,
   challengesOpen: false,
   challengeActive: null,
+  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
   reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
@@ -553,6 +567,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setGraphOpen: graphOpen => set({ graphOpen }),
   setChallengesOpen: open => set({ challengesOpen: open }),
   setChallengeActive: c => set({ challengeActive: c }),
+  startSpeedRun: (targetGeneration, timeLimitSeconds, currentElapsed) =>
+    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none' } }),
+  endSpeedRun: result =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result } })),
+  cancelSpeedRun: () =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result: 'none' } })),
   requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
   setToolbarOpen: toolbarOpen => {
     storeToolbarOpen(toolbarOpen)
