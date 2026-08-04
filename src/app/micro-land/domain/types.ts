@@ -34,6 +34,7 @@ export type BaseMaterialId =
   | 'wood'
   | 'snow'
   | 'mud'
+  | 'quicksand'
   | 'moss'
   | 'crystal'
   | 'gem'
@@ -439,6 +440,14 @@ export interface Creature {
    * each tick and returns to 0 on its own — no antidote needed.
    */
   poisoned: number
+  /**
+   * Seconds spent standing on quicksand.
+   *
+   * Walkers slow progressively as this rises (fully stopped at 8 s) and die
+   * if trapped for more than 12 s. Decays at 2× speed when off quicksand.
+   * Only tracked for 'walk' locomotion; other locomotion kinds ignore it.
+   */
+  sinking: number
 }
 
 /**
