@@ -10,6 +10,7 @@ import {
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
 import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
+import { PopulationGraph } from '@/app/micro-land/components/population-graph'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
@@ -355,6 +356,7 @@ export function MicroLandGame() {
       <FieldGuide />
       <SettingsPanel />
       <ReplayBar />
+      <PopulationGraph />
     </div>
   )
 }
