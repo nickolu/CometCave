@@ -491,11 +491,14 @@ export class GameInstance {
   private pushStats(): void {
     const counts = countByBlueprint(this.world)
     const population: PopulationEntry[] = Object.entries(counts)
-      .map(([blueprintId, count]) => ({
-        blueprintId,
-        name: this.world.blueprints[blueprintId]?.name ?? blueprintId,
-        count,
-      }))
+      .map(([blueprintId, count]) => {
+        const name = this.world.blueprints[blueprintId]?.name ?? blueprintId
+        const maxGeneration = this.world.creatures.reduce(
+          (max, c) => c.blueprintId === blueprintId ? Math.max(max, c.generation) : max,
+          1
+        )
+        return { blueprintId, name, count, maxGeneration }
+      })
       .sort((a, b) => b.count - a.count)
 
     for (const entry of population) this.knownSpecies.add(entry.blueprintId)

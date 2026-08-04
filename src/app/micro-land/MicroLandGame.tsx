@@ -9,6 +9,7 @@ import {
   initChronicle,
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
+import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
@@ -95,6 +96,7 @@ export function MicroLandGame() {
       // and a dependency-driven effect would rebuild the world on every remount.
       unsubscribe = useMicroLand.subscribe((state, previous) => {
         if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
+        if (state.reshuffleToken !== previous.reshuffleToken) game?.reshuffle()
         if (state.locateRequest !== previous.locateRequest && state.locateRequest && game) {
           const found = game.locateSpecies(state.locateRequest.blueprintId)
           if (!found) {
@@ -348,6 +350,7 @@ export function MicroLandGame() {
       <Toolbar onRemoveSpecies={handleRemoveSpecies} />
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
+      <ChallengesPanel />
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />
       <SettingsPanel />
