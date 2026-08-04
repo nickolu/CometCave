@@ -659,6 +659,11 @@ export interface WorldState {
   burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]
+  /**
+   * Per-tile moisture level, [0,1]. Tiles near water gain moisture; all tiles
+   * slowly dry out. Plants seed more readily in moist soil.
+   */
+  moisture: Float32Array
   eggs: Egg[]
   nextEggId: number
   /** Blueprints available in this world, keyed by id. */
