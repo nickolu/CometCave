@@ -56,6 +56,14 @@ import type { Rng } from './prng'
 const SENSE_EVERY = 6
 
 /**
+ * How many consecutive sense passes a hunter can spend chasing the same
+ * unreachable prey before it gives up. At 10 Hz this is about 1.2 seconds.
+ * Long enough for legitimate pursuit of a fleeing target; short enough to
+ * escape a wall.
+ */
+const STUCK_SENSE_PASSES = 12
+
+/**
  * How much the two bodies have to overlap to count as a bite, in tiles.
  *
  * This is deliberately a box-overlap test rather than a distance between
@@ -565,6 +573,24 @@ function look(
         preyCy = other.y + oh / 2
       }
     }
+  }
+
+  // Stuck detection — if this creature has been locked on the same prey for
+  // too many consecutive passes without eating, the path is likely blocked.
+  // Clearing the target lets the next pass scan fresh; the creature may still
+  // find the same prey from a different angle, or pick a more reachable one.
+  if (prey !== null) {
+    if (c.mood === 'hunt' && c.targetId === prey.id) {
+      c.huntPassCount++
+      if (c.huntPassCount >= STUCK_SENSE_PASSES) {
+        prey = null
+        c.huntPassCount = 0
+      }
+    } else {
+      c.huntPassCount = 0
+    }
+  } else if (c.mood !== 'hunt') {
+    c.huntPassCount = 0
   }
 
   if (threat) {

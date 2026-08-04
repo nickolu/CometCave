@@ -202,6 +202,7 @@ function thaw(saved: SavedCreature): Creature {
     generation: saved.generation,
     traits: saved.traits ? { ...saved.traits } : neutralTraits(),
     name: saved.name,
+    huntPassCount: 0,
   }
 }
 

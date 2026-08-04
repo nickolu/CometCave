@@ -375,6 +375,7 @@ export function spawnCreature(
     generation: 1,
     traits: neutralTraits(),
     name: null,
+    huntPassCount: 0,
   }
   w.creatures.push(creature)
   return creature
