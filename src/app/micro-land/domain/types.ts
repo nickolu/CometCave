@@ -34,6 +34,7 @@ export type BaseMaterialId =
   | 'wood'
   | 'snow'
   | 'mud'
+  | 'quicksand'
   | 'moss'
   | 'crystal'
   | 'gem'
@@ -362,6 +363,13 @@ export interface Traits {
    * Neither is universally better; which wins depends on the world.
    */
   roam: number
+  /**
+   * Body size relative to the blueprint.
+   *
+   * Larger creatures are slower but harder to predate. Smaller ones move faster
+   * but are easier prey. Drifts each generation in [0.8, 1.2].
+   */
+  size: number
 }
 
 /** One living thing in the world. */
@@ -448,6 +456,14 @@ export interface Creature {
    * bonus only persists as long as coordination continues.
    */
   packTimer: number
+  /**
+   * Seconds spent standing on quicksand.
+   *
+   * Walkers slow progressively as this rises (fully stopped at 8 s) and die
+   * if trapped for more than 12 s. Decays at 2× speed when off quicksand.
+   * Only tracked for 'walk' locomotion; other locomotion kinds ignore it.
+   */
+  sinking: number
 }
 
 /**
@@ -466,6 +482,22 @@ export interface Carcass {
   decaySeconds: number
   /** Blueprint of the creature that died — determines who can eat it. */
   blueprintId: string
+}
+
+/**
+ * A chemical marker left when a creature eats.
+ *
+ * Same-species animals that are hungry and have nothing in sight drift toward
+ * nearby scents, creating social foraging without any explicit communication.
+ * Decays over 15 seconds and vanishes. Capped at 200 world-wide.
+ */
+export interface Scent {
+  x: number
+  y: number
+  /** Which species left this marker. Only that species follows it. */
+  blueprintId: string
+  /** Seconds until this marker vanishes. */
+  decaySeconds: number
 }
 
 export interface Particle {
@@ -489,6 +521,7 @@ export interface WorldState {
   particles: Particle[]
   carcasses: Carcass[]
   nextCarcassId: number
+  scents: Scent[]
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number
