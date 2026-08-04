@@ -487,6 +487,7 @@ export class Renderer {
 
     wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
 
+    this.drawCarcasses(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -687,6 +688,19 @@ export class Renderer {
     const top = a + (b - a) * tx
     const bottom = c + (d - c) * tx
     return top + (bottom - top) * ty
+  }
+
+  private drawCarcasses(w: WorldState, vx: number, vw: number): void {
+    if (w.carcasses.length === 0) return
+    const ctx = this.wctx
+    ctx.fillStyle = '#5a2e10'
+    for (const car of w.carcasses) {
+      if (car.x + 1 < vx || car.x > vx + vw) continue
+      // Fade out during the last 3 seconds of decay.
+      ctx.globalAlpha = Math.min(1, car.decaySeconds / 3) * 0.8
+      ctx.fillRect(car.x - 0.75, car.y - 0.75, 1.5, 1.5)
+    }
+    ctx.globalAlpha = 1
   }
 
   private drawCreatures(w: WorldState, vx: number, vw: number): void {
