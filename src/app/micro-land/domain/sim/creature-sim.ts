@@ -64,6 +64,18 @@ const SENSE_EVERY = 6
 const STUCK_SENSE_PASSES = 12
 
 /**
+ * Sense passes the creature can't lock onto a specific target after getting
+ * stuck. Stored as a negative value in `huntPassCount` so no new field is
+ * needed: negative means cooldown, zero or positive means the normal counter.
+ *
+ * Without this, a creature pressed against an obstacle clears its target for
+ * exactly one tick then immediately re-locks on the same blocked prey — so the
+ * "try a different angle" comment in the stuck block never actually happens.
+ * Six passes (0.6s) of free foraging is enough to clear a typical obstacle.
+ */
+const STUCK_COOLDOWN_PASSES = 6
+
+/**
  * How much the two bodies have to overlap to count as a bite, in tiles.
  *
  * This is deliberately a box-overlap test rather than a distance between
@@ -428,6 +440,40 @@ export function tickCreatures(
     w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
+  // --- pollination --------------------------------------------------------
+  //
+  // A fraction of plant meals scatter a seed near the eating spot. This gives
+  // plants a secondary spread vector that does not require them to be near
+  // fertile ground — a grazer browsing one patch carries pollen to wherever it
+  // wanders next, seeding plants in areas they would never self-spread into and
+  // adding gentle variety to where each species ends up.
+  //
+  // The `events` array carries `ate` events emitted by `look()` this tick.
+  // The eaten blueprint's id (`victimId`) tells us which plant to scatter; the
+  // position is where the creature was at the moment it ate. The actual seed is
+  // scattered 20–60 tiles away — far enough to cross the gap between one cluster
+  // and the next, close enough that local terrain still determines viability.
+  for (const ev of events) {
+    if (ev.kind !== 'ate' || !ev.victimId) continue
+    const victimBp = w.blueprints[ev.victimId]
+    if (!victimBp || victimBp.move.kind !== 'root') continue
+    if (plantsAlive >= TUNING.maxPlants) continue
+    if ((speciesCount[victimBp.id] ?? 0) >= TUNING.plantSpeciesCap) continue
+    // Roughly 1 in 12 plant meals scatters a seed.
+    if (rng() > 1 / 12) continue
+    const { w: vw, h: vh } = artSize(victimBp)
+    const angle = rng() * Math.PI * 2
+    const dist = 20 + rng() * 40
+    const ox = ev.x + Math.cos(angle) * dist
+    const oy = ev.y + Math.sin(angle) * dist
+    const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
+    if (seedling) {
+      plantsAlive++
+      speciesCount[victimBp.id] = (speciesCount[victimBp.id] ?? 0) + 1
+      events.push({ kind: 'born', blueprintId: victimBp.id, x: seedling.x, y: seedling.y })
+    }
+  }
+
   // The only thing the world regrows on its own. Animals that die out stay
   // dead — see `seedNativePlants`.
   seedNativePlants(w, rng)
@@ -577,14 +623,25 @@ function look(
 
   // Stuck detection — if this creature has been locked on the same prey for
   // too many consecutive passes without eating, the path is likely blocked.
-  // Clearing the target lets the next pass scan fresh; the creature may still
-  // find the same prey from a different angle, or pick a more reachable one.
-  if (prey !== null) {
+  //
+  // `huntPassCount` doubles as a post-stuck cooldown when negative. During the
+  // cooldown the creature can't lock onto a specific target, which forces it to
+  // forage freely and gives it a genuine chance to find a different angle or a
+  // different meal, rather than immediately re-locking on the obstacle it just
+  // bounced off.
+  if (c.huntPassCount < 0) {
+    // Still in cooldown: count up toward 0 and suppress target-locking.
+    c.huntPassCount++
+    prey = null
+  } else if (prey !== null) {
     if (c.mood === 'hunt' && c.targetId === prey.id) {
       c.huntPassCount++
       if (c.huntPassCount >= STUCK_SENSE_PASSES) {
         prey = null
-        c.huntPassCount = 0
+        // Reverse the committed direction so the next foraging leg actively
+        // moves away from the obstacle rather than pressing back against it.
+        c.drift = -Math.sign(c.drift || 1) as 1 | -1
+        c.huntPassCount = -STUCK_COOLDOWN_PASSES
       }
     } else {
       c.huntPassCount = 0
