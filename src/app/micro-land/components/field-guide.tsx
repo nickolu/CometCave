@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
-import { canEat, isPlantLike, moveWord } from '@/app/micro-land/domain/blueprint'
+import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
@@ -67,6 +67,7 @@ export function FieldGuide() {
   const requestLocate = useMicroLand(s => s.requestLocate)
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
+  const addBlueprint = useMicroLand(s => s.addBlueprint)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -257,6 +258,10 @@ export function FieldGuide() {
               blueprints={blueprints}
               onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
               onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
+              onCopyCode={() => {
+                const code = btoa(JSON.stringify(bp))
+                navigator.clipboard.writeText(code).catch(() => {})
+              }}
             />
           ))}
         </ul>
@@ -363,6 +368,8 @@ export function FieldGuide() {
             </button>
           )}
         </section>
+
+        <ImportSection addBlueprint={addBlueprint} />
       </div>
     </div>
   )
@@ -429,12 +436,14 @@ function GuideEntry({
   blueprints,
   onHide,
   onLocate,
+  onCopyCode,
 }: {
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
   onHide?: () => void
   onLocate?: () => void
+  onCopyCode?: () => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -489,8 +498,27 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {(onLocate || onHide) && (
+          {(onLocate || onHide || onCopyCode) && (
             <div className="flex shrink-0 items-center gap-1">
+              {onCopyCode && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={onCopyCode}
+                  title="Copy blueprint code to share"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 8px',
+                    border: '1px solid var(--cc-mint-line)',
+                    color: 'var(--cc-text-muted)',
+                  }}
+                >
+                  Copy code
+                </button>
+              )}
               {onLocate && (
                 <button
                   type="button"
@@ -583,6 +611,74 @@ function GuideEntry({
         </p>
       </div>
     </li>
+  )
+}
+
+function ImportSection({ addBlueprint }: { addBlueprint: (bp: import('@/app/micro-land/domain/types').CreatureBlueprint) => void }) {
+  const [code, setCode] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
+
+  function handleImport() {
+    setError(null)
+    setSuccess(false)
+    try {
+      const json = JSON.parse(atob(code.trim()))
+      const bp = sanitizeBlueprint(json, { summoned: true })
+      addBlueprint(bp)
+      setCode('')
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 2000)
+    } catch {
+      setError('Invalid code — paste the full code copied from another world.')
+    }
+  }
+
+  return (
+    <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+      <h3 className="pb-2" style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.4, textTransform: 'uppercase', color: 'var(--cc-text-muted)' }}>
+        Import blueprint
+      </h3>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={code}
+          onChange={e => { setCode(e.target.value); setError(null) }}
+          placeholder="Paste code here"
+          style={{
+            flex: 1,
+            background: 'var(--cc-panel-bg)',
+            border: `1px solid ${error ? 'var(--cc-pink)' : 'var(--cc-mint-line)'}`,
+            borderRadius: 4,
+            padding: '4px 8px',
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            color: 'var(--cc-text-default)',
+            outline: 'none',
+          }}
+        />
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={handleImport}
+          disabled={!code.trim()}
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            padding: '4px 10px',
+            border: '1px solid var(--cc-mint-line)',
+            color: success ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+          }}
+        >
+          {success ? 'Added!' : 'Import'}
+        </button>
+      </div>
+      {error && (
+        <p style={{ fontSize: 10, color: 'var(--cc-pink)', marginTop: 4 }}>{error}</p>
+      )}
+    </section>
   )
 }
 

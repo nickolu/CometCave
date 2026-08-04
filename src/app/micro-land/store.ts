@@ -290,6 +290,8 @@ interface MicroLandState {
   togglePaused: () => void
   setSpeed: (n: number) => void
   setBlueprints: (list: CreatureBlueprint[]) => void
+  /** Add a single blueprint without resetting population history. */
+  addBlueprint: (bp: CreatureBlueprint) => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
@@ -415,6 +417,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
   setBlueprints: blueprints => set({ blueprints, populationHistory: [] }),
+  addBlueprint: bp =>
+    set(s => ({
+      blueprints: s.blueprints.some(b => b.id === bp.id)
+        ? s.blueprints.map(b => (b.id === bp.id ? bp : b))
+        : [...s.blueprints, bp],
+    })),
   setStats: (population, totalCreatures, elapsed) =>
     set(s => {
       const last = s.populationHistory[s.populationHistory.length - 1]
