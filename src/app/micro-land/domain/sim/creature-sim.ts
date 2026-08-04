@@ -32,7 +32,7 @@ import {
 } from '@/app/micro-land/domain/constants'
 import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
+import type { Burrow, Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -338,6 +338,7 @@ export function tickCreatures(
   // Migration: worlds saved before carcasses were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.burrows ??= []
   w.scents ??= []
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
@@ -404,6 +405,8 @@ export function tickCreatures(
     if (c.poisoned === undefined) c.poisoned = 0
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+    if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
+    if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
 
     // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
     if (bp.body.locomotion === 'walk') {
@@ -423,6 +426,23 @@ export function tickCreatures(
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
+
+    // Burrowing: a well-rested digger stakes this spot as a den if none is nearby.
+    if (
+      c.mood === 'rest' &&
+      bp.dig.through.length > 0 &&
+      w.burrows.length < 50
+    ) {
+      const bx = Math.round(c.x)
+      const by = Math.round(c.y)
+      const nearbyBurrow = w.burrows.some(
+        b => b.blueprintId === c.blueprintId && Math.abs(b.x - bx) + Math.abs(b.y - by) < 8
+      )
+      if (!nearbyBurrow) {
+        w.burrows.push({ x: bx, y: by, blueprintId: c.blueprintId })
+      }
+    }
+
     c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
     if (c.hunger >= 1) {
       c.starving += dt
@@ -867,9 +887,50 @@ function look(
     c.huntPassCount = 0
   }
 
+  // Pack hunting: scan for a same-species neighbour targeting the same prey.
+  // When found, both creatures share a brief speed bonus — coordinated attacks
+  // close faster and are harder to flee from.
+  if (prey !== null) {
+    const packReach = sight + bw / 2
+    const packLast = cx + packReach + SIGHT_PAD_RIGHT
+    let coordinating = false
+    for (let pi = lowerBound(byX, cx - packReach - SIGHT_PAD_LEFT); pi < byX.length; pi++) {
+      const pk = byX[pi]
+      if (pk.x > packLast) break
+      if (pk.id === c.id) continue
+      if (pk.blueprintId === c.blueprintId && pk.targetId === prey.id) {
+        coordinating = true
+        break
+      }
+    }
+    // Grant one sense-interval of bonus (plus a little buffer) so it persists
+    // until the next pass rather than dropping between ticks.
+    c.packTimer = coordinating ? (SENSE_EVERY / 60) * 2.5 : 0
+  } else {
+    c.packTimer = 0
+  }
+
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
+    // Diggers: flee toward a known burrow rather than just away from threat.
+    if (bp.dig.through.length > 0 && w.burrows.length > 0) {
+      let nearestBurrow: Burrow | null = null
+      let nearestBurrowD2 = Infinity
+      for (const b of w.burrows) {
+        if (b.blueprintId !== c.blueprintId) continue
+        const bdx = b.x - cx
+        const bdy = b.y - (c.y + bh / 2)
+        const bd2 = bdx * bdx + bdy * bdy
+        if (bd2 < nearestBurrowD2 && bd2 < sight * sight * 9) {
+          nearestBurrowD2 = bd2
+          nearestBurrow = b
+        }
+      }
+      if (nearestBurrow) {
+        c.drift = nearestBurrow.x > cx ? 1 : -1
+      }
+    }
   } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
     c.mood = 'hunt'
     c.targetId = prey.id
@@ -1275,7 +1336,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) / sizeOf(c)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 

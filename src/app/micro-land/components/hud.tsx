@@ -62,9 +62,11 @@ function SlidersIcon() {
 export function Hud({
   onReshuffle,
   onClearLife,
+  onOpenHistory,
 }: {
   onReshuffle: () => void
   onClearLife: () => void
+  onOpenHistory: () => void
 }) {
   const themeId = useMicroLand(s => s.themeId)
   const setTheme = useMicroLand(s => s.setTheme)
@@ -86,6 +88,8 @@ export function Hud({
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
+
+  const replaySnapshots = useMicroLand(s => s.replaySnapshots)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -226,6 +230,25 @@ export function Hud({
           </button>
         ))}
       </div>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={onOpenHistory}
+        disabled={!!replaySnapshots}
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 9,
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          padding: '3px 8px',
+          border: '1px solid var(--cc-mint-line)',
+          color: 'var(--cc-text-muted)',
+        }}
+        title="View ecosystem history"
+      >
+        History
+      </button>
 
       <div className="ml-auto flex items-center gap-2">
         {challengeActive && (

@@ -46,6 +46,7 @@ export function createWorld(seed = 1337): WorldState {
     creatures: [],
     particles: [],
     carcasses: [],
+    burrows: [],
     nextCarcassId: 1,
     scents: [],
     blueprints,
@@ -380,6 +381,7 @@ export function spawnCreature(
     name: null,
     huntPassCount: 0,
     poisoned: 0,
+    packTimer: 0,
     sinking: 0,
   }
   w.creatures.push(creature)
