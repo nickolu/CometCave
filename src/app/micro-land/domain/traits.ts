@@ -77,6 +77,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   roam: 1,
   territorial: 0.5,
   size: 1,
+  camouflage: 0.2,
   toxicity: 0,
 })
 
@@ -125,7 +126,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'toxicity') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -137,6 +138,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
     size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
+    camouflage: clamp(mix('camouflage') + nudge(rng, drift), 0, 0.8),
     toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
   }
 }
@@ -262,6 +264,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.territorial ?? 0.5) <= 0.5 - NOTABLE) phrases.push('wandering')
   if ((t.size ?? 1) >= 1 + NOTABLE) phrases.push('larger than most')
   else if ((t.size ?? 1) <= 1 - NOTABLE) phrases.push('smaller than most')
+  if ((t.camouflage ?? 0.2) >= 0.3) phrases.push('hard to spot')
+  else if ((t.camouflage ?? 0.2) <= 0.1) phrases.push('easy to spot')
   if ((t.toxicity ?? 0) >= 0.4) phrases.push('venomous')
   return phrases
 }

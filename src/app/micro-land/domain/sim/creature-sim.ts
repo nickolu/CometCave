@@ -97,15 +97,6 @@ const BITE_PAD = 0.5
  */
 const CAMOUFLAGE_STILL = 1.5
 
-/**
- * Fraction of food-sight at which a still animal can first be detected.
- *
- * 0.5 halves the detection radius, so a resting creature is invisible to a
- * hungry predator until it is much closer than it would otherwise need to be.
- * Plants are exempt — this only applies to animals that could plausibly freeze
- * or blend in, not to vegetation that the food chain depends on finding.
- */
-const CAMOUFLAGE_FACTOR = 0.5
 
 /**
  * How fertile the soil is at a world position — a multiplier on plant spread rate.
@@ -844,7 +835,13 @@ function look(
       const still =
         obp.move.kind !== 'root' &&
         Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
-      const efs2 = still ? foodSight2 * (CAMOUFLAGE_FACTOR * CAMOUFLAGE_FACTOR) : foodSight2
+      // Camouflage: trait scales how hard this creature is to spot.
+      // Still creatures benefit most; moving gives most of it away.
+      const camouflage = (other.traits as { camouflage?: number }).camouflage ?? 0.2
+      const detFactor = still
+        ? Math.max(0.15, 0.5 - camouflage * 0.375)  // 0.5 (camo=0) → 0.2 (camo=0.8)
+        : 1 - camouflage * 0.3                        // 1.0 (camo=0) → 0.76 (camo=0.8)
+      const efs2 = foodSight2 * detFactor * detFactor
       if (d2 <= efs2 && d2 < preyDist) {
         preyDist = d2
         prey = other

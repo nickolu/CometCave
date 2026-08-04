@@ -380,6 +380,15 @@ export interface Traits {
    */
   size: number
   /**
+   * How well this creature blends into its background.
+   *
+   * 0 = no camouflage (full visibility), 1 = highly camouflaged (hard to spot).
+   * Still creatures benefit the most — a motionless animal with high camouflage
+   * is nearly invisible until a predator is almost on top of it. Moving gives
+   * most of it away. Heritable — a hunted line can evolve toward stillness.
+   */
+  camouflage: number
+  /**
    * How toxic this creature is to those that eat it.
    *
    * 0 = harmless, 1 = fully venomous. Neutral 0.
