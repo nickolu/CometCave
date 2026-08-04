@@ -389,6 +389,7 @@ export function spawnCreature(
     packTimer: 0,
     sinking: 0,
     stunTimer: 0,
+    symbiosisTimer: 0,
     sick: 0,
   }
   w.creatures.push(creature)

@@ -408,6 +408,8 @@ export function tickCreatures(
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
+    if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
+    if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
     if (c.sick > 0) {
       c.sick -= dt
@@ -462,7 +464,8 @@ export function tickCreatures(
       }
     }
 
-    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
+    const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
+    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt)
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
@@ -893,6 +896,16 @@ function look(
       if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
+      }
+      continue
+    }
+
+    // Symbiosis: skip attack against declared partner species.
+    const isPartner = bp.symbiosisPartnerId && obp.id === bp.symbiosisPartnerId
+    if (isPartner) {
+      // Partner is near — grant bonus and skip attack.
+      if (d2 <= sight2) {
+        c.symbiosisTimer = Math.max(c.symbiosisTimer, (SENSE_EVERY / 60) * 2.5)
       }
       continue
     }
@@ -1501,7 +1514,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) / sizeOf(c)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
