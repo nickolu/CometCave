@@ -30,9 +30,9 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
+import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Burrow, Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
+import type { Burrow, Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -339,6 +339,18 @@ export function tickCreatures(
   w.carcasses ??= []
   w.nextCarcassId ??= 1
   w.burrows ??= []
+  w.scents ??= []
+
+  // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
+  // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
+  // When `seasonAmplitude` is 0 (default), this is always exactly 1.
+  const seasonFactor =
+    TUNING.seasonAmplitude > 0
+      ? Math.max(
+          0.05,
+          1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod)
+        )
+      : 1
 
   const creatures = w.creatures
   const dead = new Set<number>()
@@ -391,7 +403,23 @@ export function tickCreatures(
     if (c.breedCooldown > 0) c.breedCooldown -= dt
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
+    if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+
+    // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
+    if (bp.body.locomotion === 'walk') {
+      const qs_fx = Math.floor(c.x + body.dx + body.w / 2)
+      const qs_fy = Math.floor(c.y + body.dy + body.h)
+      if (MATERIAL_BY_INDEX[tileAt(w, qs_fx, qs_fy)]?.id === 'quicksand') {
+        c.sinking += dt
+        if (c.sinking > 12) {
+          kill(w, c, bp, dead, events, 'drowned')
+          continue
+        }
+      } else {
+        c.sinking = Math.max(0, c.sinking - dt * 2)
+      }
+    }
 
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
@@ -531,9 +559,12 @@ export function tickCreatures(
             // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
             // the cooldown inversely: richer soil means a shorter wait, so
             // plants cluster in patches rather than carpeting the map evenly.
+            // Seasons multiply the same way: summer doubles spread, winter halves it.
             c.breedCooldown =
               TUNING.plantSpreadCooldown /
-              (auraBoost(w, c, bp, bw, bh, helpers) * fertilityAt(w, c.x + bw / 2, c.y + bh / 2))
+              (auraBoost(w, c, bp, bw, bh, helpers) *
+                fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
+                seasonFactor)
           } else {
             // Both of them paid to be here, so both of them pay for it. Charging
             // only the one whose turn it happened to be would make a baby cost a
@@ -597,7 +628,7 @@ export function tickCreatures(
 
   // The only thing the world regrows on its own. Animals that die out stay
   // dead — see `seedNativePlants`.
-  seedNativePlants(w, rng)
+  seedNativePlants(w, rng, seasonFactor)
 
   // Decay carcasses and remove expired ones.
   for (const car of w.carcasses) {
@@ -606,6 +637,10 @@ export function tickCreatures(
   if (w.carcasses.some(car => car.decaySeconds <= 0)) {
     w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
   }
+
+  // Scent decay
+  for (const s of w.scents) s.decaySeconds -= dt
+  w.scents = w.scents.filter(s => s.decaySeconds > 0)
 
   tickParticles(w, dt, gravityScale)
 }
@@ -687,6 +722,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
@@ -748,7 +787,7 @@ function look(
       continue
     }
 
-    if (hungry && canEat(bp, obp)) {
+    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -757,6 +796,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         // Toxic plants slow the eater — the meal lands, but at a cost.
@@ -786,6 +829,30 @@ function look(
         preyCx = other.x + ow / 2
         preyCy = other.y + oh / 2
       }
+    }
+  }
+
+  // Scent following: a hungry animal with nothing in sight drifts toward
+  // a same-species scent trail if one is nearby. Cap the search radius at
+  // 2× plain sight so the behavior doesn't fire from across the world.
+  if (hungry && !prey && !threat && w.scents.length > 0) {
+    const scentReach2 = sight * sight * 4
+    const midX = cx
+    const midY = c.y + bh / 2
+    let nearestD2 = Infinity
+    let nearestScent: Scent | null = null
+    for (const s of w.scents) {
+      if (s.blueprintId !== c.blueprintId) continue
+      const sdx = s.x - midX
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 < nearestD2 && d2 < scentReach2) {
+        nearestD2 = d2
+        nearestScent = s
+      }
+    }
+    if (nearestScent) {
+      c.drift = nearestScent.x > midX ? 1 : -1
     }
   }
 
@@ -1243,14 +1310,23 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   }
 
   // Poison from a toxic plant halves movement speed for its duration.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1)
+  // Larger creatures are slower: size is a denominator, not a multiplier.
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
   switch (bp.move.kind) {
     case 'walk': {
+      // Mud slows walkers to 50%; quicksand slows progressively toward 0.
+      const footX = Math.floor(c.x + body.dx + body.w / 2)
+      const footY = Math.floor(c.y + body.dy + body.h)
+      const groundId = MATERIAL_BY_INDEX[tileAt(w, footX, footY)]?.id
+      const groundMult =
+        groundId === 'mud' ? 0.5
+        : groundId === 'quicksand' ? Math.max(0.05, 1 - c.sinking / 8)
+        : 1
       c.vx += wantX * accel * dt
-      c.vx = clampMag(c.vx, speed)
+      c.vx = clampMag(c.vx, speed * groundMult)
 
       /**
        * A burrower goes to ground when it is fed, and comes back up when it is
