@@ -98,6 +98,16 @@ function SlidersIcon() {
   )
 }
 
+function GraphIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor" aria-hidden="true">
+      <polyline points="0,12 0,8 3,8 3,12" strokeWidth="0" />
+      <polyline points="4,12 4,4 7,4 7,12" strokeWidth="0" />
+      <polyline points="8,12 8,0 11,0 11,12" strokeWidth="0" />
+    </svg>
+  )
+}
+
 export function Hud({
   onReshuffle,
   onClearLife,
@@ -129,6 +139,8 @@ export function Hud({
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
 
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
+  const graphOpen = useMicroLand(s => s.graphOpen)
+  const setGraphOpen = useMicroLand(s => s.setGraphOpen)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -357,6 +369,20 @@ export function Hud({
           title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
         >
           <SlidersIcon />
+        </button>
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={() => setGraphOpen(!graphOpen)}
+          style={{
+            ...chipBase,
+            padding: '7px 9px',
+            ...(graphOpen ? activeChip : {}),
+          }}
+          aria-pressed={graphOpen}
+          title="Population graph — species counts over time"
+        >
+          <GraphIcon />
         </button>
         <button
           type="button"
