@@ -28,7 +28,7 @@
 import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
-import { tintKey } from '@/app/micro-land/domain/traits'
+import { lifespanOf, tintKey } from '@/app/micro-land/domain/traits'
 import type { WorldState } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -778,6 +778,20 @@ export class Renderer {
       }
       ctx.drawImage(source, x, y)
       ctx.globalAlpha = 1
+
+      // Age desaturation: overlay a gray wash that grows as the creature ages.
+      // Only applies to animals (plants age differently); kicks in after half
+      // their lifespan has elapsed so young creatures look vivid.
+      if (bp.move.kind !== 'root') {
+        const ageFraction = Math.min(1, c.ageSeconds / lifespanOf(c, bp))
+        if (ageFraction > 0.5) {
+          const grayAlpha = ((ageFraction - 0.5) / 0.5) * 0.45
+          ctx.globalAlpha = grayAlpha
+          ctx.fillStyle = '#888888'
+          ctx.fillRect(x, y, sprites.width, sprites.height)
+          ctx.globalAlpha = 1
+        }
+      }
 
       if (traitKey) {
         const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
