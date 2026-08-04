@@ -475,6 +475,22 @@ export interface Carcass {
   blueprintId: string
 }
 
+/**
+ * A chemical marker left when a creature eats.
+ *
+ * Same-species animals that are hungry and have nothing in sight drift toward
+ * nearby scents, creating social foraging without any explicit communication.
+ * Decays over 15 seconds and vanishes. Capped at 200 world-wide.
+ */
+export interface Scent {
+  x: number
+  y: number
+  /** Which species left this marker. Only that species follows it. */
+  blueprintId: string
+  /** Seconds until this marker vanishes. */
+  decaySeconds: number
+}
+
 export interface Particle {
   x: number
   y: number
@@ -496,6 +512,7 @@ export interface WorldState {
   particles: Particle[]
   carcasses: Carcass[]
   nextCarcassId: number
+  scents: Scent[]
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number
