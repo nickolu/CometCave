@@ -30,7 +30,7 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
+import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
@@ -760,7 +760,7 @@ function look(
       continue
     }
 
-    if (hungry && canEat(bp, obp)) {
+    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -1237,7 +1237,8 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   }
 
   // Poison from a toxic plant halves movement speed for its duration.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1)
+  // Larger creatures are slower: size is a denominator, not a multiplier.
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 

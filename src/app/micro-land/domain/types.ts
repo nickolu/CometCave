@@ -363,6 +363,13 @@ export interface Traits {
    * Neither is universally better; which wins depends on the world.
    */
   roam: number
+  /**
+   * Body size relative to the blueprint.
+   *
+   * Larger creatures are slower but harder to predate. Smaller ones move faster
+   * but are easier prey. Drifts each generation in [0.8, 1.2].
+   */
+  size: number
 }
 
 /** One living thing in the world. */
