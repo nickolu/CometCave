@@ -6,7 +6,7 @@ import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/type
 import { canEat, isPlantLike, moveWord } from '@/app/micro-land/domain/blueprint'
 import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
-import { useMicroLand } from '@/app/micro-land/store'
+import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
@@ -63,6 +63,7 @@ export function FieldGuide() {
   const records = useMicroLand(s => s.records)
   const archive = useMicroLand(s => s.archive)
   const milestones = useMicroLand(s => s.milestones)
+  const populationHistory = useMicroLand(s => s.populationHistory)
   const requestLocate = useMicroLand(s => s.requestLocate)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
@@ -305,6 +306,7 @@ export function FieldGuide() {
             </ul>
           </section>
         )}
+        <PopulationGraph history={populationHistory} blueprints={blueprints} />
       </div>
     </div>
   )
@@ -525,6 +527,156 @@ function GuideEntry({
         </p>
       </div>
     </li>
+  )
+}
+
+const GRAPH_COLORS = [
+  '#4fc3f7',
+  '#81c784',
+  '#ffb74d',
+  '#f06292',
+  '#ba68c8',
+  '#4db6ac',
+  '#fff176',
+  '#90a4ae',
+]
+
+function PopulationGraph({
+  history,
+  blueprints,
+}: {
+  history: PopulationSnapshot[]
+  blueprints: CreatureBlueprint[]
+}) {
+  if (history.length < 2) {
+    return (
+      <section
+        className="px-4 py-3"
+        style={{ borderTop: '1px solid var(--cc-panel-divider)' }}
+      >
+        <h3 className="pb-2" style={sectionHeading}>
+          Population over time
+        </h3>
+        <p style={{ fontSize: 12, color: 'var(--cc-text-muted)', opacity: 0.6 }}>
+          Gathering data…
+        </p>
+      </section>
+    )
+  }
+
+  const MAX_SPECIES = 8
+  const W = 320
+  const H = 72
+  const PAD_TOP = 4
+  const PAD_BOTTOM = 4
+
+  // Determine which species to show: top MAX_SPECIES by peak count in history
+  const bpMap = new Map(blueprints.map(b => [b.id, b]))
+  const peakByBp = new Map<string, number>()
+  for (const snap of history) {
+    for (const [id, count] of Object.entries(snap.counts)) {
+      peakByBp.set(id, Math.max(peakByBp.get(id) ?? 0, count))
+    }
+  }
+  const shown = [...peakByBp.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, MAX_SPECIES)
+    .map(([id]) => id)
+    .filter(id => bpMap.has(id))
+
+  const minT = history[0].elapsed
+  const maxT = history[history.length - 1].elapsed
+  const tRange = Math.max(maxT - minT, 1)
+
+  let maxCount = 1
+  for (const snap of history) {
+    for (const id of shown) {
+      maxCount = Math.max(maxCount, snap.counts[id] ?? 0)
+    }
+  }
+
+  function toX(elapsed: number) {
+    return ((elapsed - minT) / tRange) * W
+  }
+
+  function toY(count: number) {
+    return PAD_TOP + (1 - count / maxCount) * (H - PAD_TOP - PAD_BOTTOM)
+  }
+
+  return (
+    <section
+      className="px-4 py-3"
+      style={{ borderTop: '1px solid var(--cc-panel-divider)' }}
+    >
+      <h3 className="pb-2" style={sectionHeading}>
+        Population over time
+      </h3>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        style={{ width: '100%', height: 'auto', display: 'block', overflow: 'visible' }}
+        aria-hidden
+      >
+        {/* Zero line */}
+        <line
+          x1={0}
+          y1={toY(0)}
+          x2={W}
+          y2={toY(0)}
+          stroke="var(--cc-panel-divider)"
+          strokeWidth={1}
+        />
+        {shown.map((bpId, i) => {
+          const points = history
+            .map(snap => `${toX(snap.elapsed).toFixed(1)},${toY(snap.counts[bpId] ?? 0).toFixed(1)}`)
+            .join(' ')
+          return (
+            <polyline
+              key={bpId}
+              points={points}
+              fill="none"
+              stroke={GRAPH_COLORS[i % GRAPH_COLORS.length]}
+              strokeWidth={1.5}
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              opacity={0.85}
+            />
+          )
+        })}
+      </svg>
+      {/* Legend */}
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {shown.map((bpId, i) => {
+          const bp = bpMap.get(bpId)
+          if (!bp) return null
+          const latest = history[history.length - 1].counts[bpId] ?? 0
+          return (
+            <span key={bpId} className="flex items-center gap-1">
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 8,
+                  height: 8,
+                  borderRadius: 2,
+                  background: GRAPH_COLORS[i % GRAPH_COLORS.length],
+                  flexShrink: 0,
+                }}
+              />
+              <span
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 9,
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
+                  color: 'var(--cc-text-muted)',
+                }}
+              >
+                {bp.name} · {latest}
+              </span>
+            </span>
+          )
+        })}
+      </div>
+    </section>
   )
 }
 

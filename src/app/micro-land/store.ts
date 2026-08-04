@@ -131,6 +131,14 @@ export interface PopulationEntry {
   count: number
 }
 
+/** One time-series data point for the population graph. */
+export interface PopulationSnapshot {
+  /** Sim time in seconds when this snapshot was taken. */
+  elapsed: number
+  /** Creature count per blueprintId at this moment. */
+  counts: Record<string, number>
+}
+
 export interface Notice {
   id: number
   text: string
@@ -170,6 +178,8 @@ interface MicroLandState {
   population: PopulationEntry[]
   totalCreatures: number
   elapsed: number
+  /** Rolling history for the population graph. Cleared on world load. */
+  populationHistory: PopulationSnapshot[]
 
   summonOpen: boolean
   summonBusy: boolean
@@ -362,6 +372,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   population: [],
   totalCreatures: 0,
   elapsed: 0,
+  populationHistory: [],
 
   summonOpen: false,
   summonBusy: false,
@@ -394,8 +405,23 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrush: brush => set({ brush }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints }),
-  setStats: (population, totalCreatures, elapsed) => set({ population, totalCreatures, elapsed }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [] }),
+  setStats: (population, totalCreatures, elapsed) =>
+    set(s => {
+      const last = s.populationHistory[s.populationHistory.length - 1]
+      const shouldSnapshot = !last || elapsed - last.elapsed >= 1
+      const snapshot: PopulationSnapshot | undefined = shouldSnapshot
+        ? { elapsed, counts: Object.fromEntries(population.map(p => [p.blueprintId, p.count])) }
+        : undefined
+      return {
+        population,
+        totalCreatures,
+        elapsed,
+        ...(snapshot !== undefined && {
+          populationHistory: [...s.populationHistory.slice(-299), snapshot],
+        }),
+      }
+    }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
   setSummonMode: summonMode => set({ summonMode }),
