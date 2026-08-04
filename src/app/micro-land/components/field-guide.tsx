@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
+
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
-import { canEat, moveWord } from '@/app/micro-land/domain/blueprint'
+import { canEat, isPlantLike, moveWord } from '@/app/micro-land/domain/blueprint'
 import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand } from '@/app/micro-land/store'
@@ -62,10 +64,22 @@ export function FieldGuide() {
   const archive = useMicroLand(s => s.archive)
   const milestones = useMicroLand(s => s.milestones)
 
+  const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
+
+  function hideSpecies(id: string) {
+    setHiddenPlantIds(prev => new Set([...prev, id]))
+  }
+
+  function showAll() {
+    setHiddenPlantIds(new Set())
+  }
+
   if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
-  const ordered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+  const allOrdered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+  const hiddenCount = [...allOrdered].filter(bp => hiddenPlantIds.has(bp.id)).length
+  const ordered = allOrdered.filter(bp => !hiddenPlantIds.has(bp.id))
 
   // Species the player has met before that aren't in this world — the reason a
   // summoned creature no longer dies with the tab it was invented in.
@@ -194,6 +208,42 @@ export function FieldGuide() {
           </section>
         )}
 
+        {hiddenCount > 0 && (
+          <div
+            className="flex items-center justify-between px-4 py-2"
+            style={{ borderBottom: '1px solid var(--cc-panel-divider)', background: 'var(--cc-modal-bg-from)' }}
+          >
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              {hiddenCount} {hiddenCount === 1 ? 'plant' : 'plants'} hidden
+            </span>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={showAll}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 8px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Show all
+            </button>
+          </div>
+        )}
         <ul className="flex flex-col">
           {ordered.map(bp => (
             <GuideEntry
@@ -201,6 +251,7 @@ export function FieldGuide() {
               bp={bp}
               alive={counts.get(bp.id) ?? 0}
               blueprints={blueprints}
+              onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
             />
           ))}
         </ul>
@@ -316,10 +367,12 @@ function GuideEntry({
   bp,
   alive,
   blueprints,
+  onHide,
 }: {
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
+  onHide?: () => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -333,44 +386,69 @@ function GuideEntry({
         <CreaturePortrait blueprint={bp} size={40} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 12,
-              letterSpacing: 1.4,
-              textTransform: 'uppercase',
-              color: alive > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-            }}
-          >
-            {bp.name}
-          </span>
-          <span
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
-            }}
-          >
-            {alive > 0 ? `${alive} alive` : 'none left'}
-          </span>
-          {bp.summoned && (
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
             <span
-              className="inline-flex items-center gap-1"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 12,
+                letterSpacing: 1.4,
+                textTransform: 'uppercase',
+                color: alive > 0 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+              }}
+            >
+              {bp.name}
+            </span>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
+              }}
+            >
+              {alive > 0 ? `${alive} alive` : 'none left'}
+            </span>
+            {bp.summoned && (
+              <span
+                className="inline-flex items-center gap-1"
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 9,
+                  letterSpacing: 1.2,
+                  textTransform: 'uppercase',
+                  padding: '2px 6px',
+                  borderRadius: 999,
+                  color: 'var(--cc-pink)',
+                  border: '1px solid var(--cc-pink-border)',
+                }}
+              >
+                <SparkleIcon size={9} />
+                Generated
+              </span>
+            )}
+          </div>
+          {onHide && (
+            <button
+              type="button"
+              className="cc-btn shrink-0"
+              onClick={onHide}
+              aria-label={`Hide ${bp.name} from field guide`}
+              title="Hide from field guide (plant still lives in the world)"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
-                letterSpacing: 1.2,
+                letterSpacing: 1,
                 textTransform: 'uppercase',
-                padding: '2px 6px',
-                borderRadius: 999,
-                color: 'var(--cc-pink)',
-                border: '1px solid var(--cc-pink-border)',
+                padding: '3px 7px',
+                minHeight: 24,
+                borderRadius: 4,
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+                opacity: 0.65,
               }}
             >
-              <SparkleIcon size={9} />
-              Generated
-            </span>
+              Hide
+            </button>
           )}
         </div>
 
