@@ -386,6 +386,7 @@ export function spawnCreature(
     migrateTimer: 0,
     packTimer: 0,
     sinking: 0,
+    stunTimer: 0,
   }
   w.creatures.push(creature)
   return creature
