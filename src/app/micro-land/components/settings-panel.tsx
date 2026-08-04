@@ -55,6 +55,44 @@ export function SettingsPanel() {
   const tuning = useMicroLand(s => s.tuning)
   const setKnob = useMicroLand(s => s.setTuningKnob)
   const reset = useMicroLand(s => s.resetTuningKnobs)
+  const notify = useMicroLand(s => s.notify)
+
+  async function copySettings() {
+    const text = JSON.stringify(tuning, null, 2)
+    try {
+      await navigator.clipboard.writeText(text)
+      notify('Settings copied to clipboard')
+    } catch {
+      notify('Could not copy — check clipboard permissions')
+    }
+  }
+
+  async function pasteSettings() {
+    try {
+      const text = await navigator.clipboard.readText()
+      const parsed: unknown = JSON.parse(text)
+      if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+        notify('Clipboard does not contain valid settings')
+        return
+      }
+      const keys = Object.keys(TUNING_DEFAULTS) as TuningKey[]
+      let applied = 0
+      for (const key of keys) {
+        const value = (parsed as Record<string, unknown>)[key]
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          setKnob(key, value)
+          applied++
+        }
+      }
+      if (applied > 0) {
+        notify(`Applied ${applied} setting${applied === 1 ? '' : 's'} from clipboard`)
+      } else {
+        notify('No valid settings found in clipboard')
+      }
+    } catch {
+      notify('Could not read clipboard')
+    }
+  }
 
   // Escape closes, wherever focus happens to be — the panel deliberately does
   // not take focus away from the world, so it can't rely on catching the key
@@ -107,6 +145,44 @@ export function SettingsPanel() {
           Laws of the land
         </h2>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={copySettings}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 10,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '6px 8px',
+              minHeight: 32,
+              borderRadius: 4,
+              border: '1px solid var(--cc-mint-line)',
+              color: 'var(--cc-text-muted)',
+            }}
+            title="Copy all settings to clipboard as JSON"
+          >
+            Copy
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={pasteSettings}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 10,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '6px 8px',
+              minHeight: 32,
+              borderRadius: 4,
+              border: '1px solid var(--cc-mint-line)',
+              color: 'var(--cc-text-muted)',
+            }}
+            title="Paste settings from clipboard"
+          >
+            Paste
+          </button>
           <button
             type="button"
             className="cc-btn"
