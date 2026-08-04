@@ -379,6 +379,8 @@ export function spawnCreature(
     name: null,
     huntPassCount: 0,
     poisoned: 0,
+    homeX: Math.round(x),
+    homeY: Math.round(y),
   }
   w.creatures.push(creature)
   return creature

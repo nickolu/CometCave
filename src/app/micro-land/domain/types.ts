@@ -362,6 +362,15 @@ export interface Traits {
    * Neither is universally better; which wins depends on the world.
    */
   roam: number
+  /**
+   * How strongly this creature defends a home area.
+   *
+   * Controls both the pull back toward home when wandering, and the radius
+   * within which well-fed individuals attack non-prey non-predator intruders.
+   * Heritable — a line under pressure from neighbors can evolve toward a
+   * more defended range over generations. Neutral at 0.5.
+   */
+  territorial: number
 }
 
 /** One living thing in the world. */
@@ -439,6 +448,10 @@ export interface Creature {
    * each tick and returns to 0 on its own — no antidote needed.
    */
   poisoned: number
+  /** X tile of where this creature was born/placed — its home centre. */
+  homeX: number
+  /** Y tile of where this creature was born/placed — its home centre. */
+  homeY: number
 }
 
 /**

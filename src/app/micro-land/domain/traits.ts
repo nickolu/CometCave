@@ -75,6 +75,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   hue: 0,
   shade: 1,
   roam: 1,
+  territorial: 0.5,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -122,7 +123,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -132,6 +133,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     hue: wrapHue((b ? blendHue(a.hue, b.hue) : a.hue) + nudge(rng, hueDrift)),
     shade: clamp(mix('shade') + nudge(rng, drift), SHADE_MIN, SHADE_MAX),
     roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
+    territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
   }
 }
 
@@ -247,6 +249,8 @@ export function traitPhrases(t: Traits): string[] {
   else if (t.lifespan <= 1 - NOTABLE) phrases.push('short-lived')
   if ((t.roam ?? 1) >= 1 + NOTABLE) phrases.push('wide-ranging')
   else if ((t.roam ?? 1) <= 1 - NOTABLE) phrases.push('stay-close')
+  if ((t.territorial ?? 0.5) >= 0.5 + NOTABLE) phrases.push('territorial')
+  else if ((t.territorial ?? 0.5) <= 0.5 - NOTABLE) phrases.push('wandering')
   return phrases
 }
 
