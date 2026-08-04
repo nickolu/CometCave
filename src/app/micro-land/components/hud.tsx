@@ -6,8 +6,47 @@ import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
 import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
 import { formatDuration } from '@/app/micro-land/format'
-import { SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
+import { type PopulationEntry, SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
 import { useAuth } from '@/hooks/useAuth'
+
+// ---------------------------------------------------------------------------
+// Ecosystem health
+// ---------------------------------------------------------------------------
+
+type HealthStatus = 'Thriving' | 'Stable' | 'Stressed' | 'Collapsing'
+
+const HEALTH_COLOR: Record<HealthStatus, string> = {
+  Thriving: '#22c55e',
+  Stable: '#a3e635',
+  Stressed: '#f97316',
+  Collapsing: '#ef4444',
+}
+
+const HEALTH_TOOLTIP: Record<HealthStatus, string> = {
+  Thriving: 'Many species, spread roughly even — the land supports itself.',
+  Stable: 'Decent variety, no single kind overwhelming the rest.',
+  Stressed: 'Few species or one kind crowding out the others.',
+  Collapsing: 'Almost nothing alive, or only one kind left.',
+}
+
+function ecosystemHealth(population: PopulationEntry[], total: number): HealthStatus {
+  const richness = population.length
+  if (richness === 0 || total === 0) return 'Collapsing'
+  if (richness === 1) return 'Stressed'
+
+  // Shannon evenness: how evenly the population is distributed across species.
+  let entropy = 0
+  for (const p of population) {
+    const pi = p.count / total
+    if (pi > 0) entropy -= pi * Math.log(pi)
+  }
+  const evenness = entropy / Math.log(richness)
+
+  if (richness >= 4 && evenness >= 0.65) return 'Thriving'
+  if (richness >= 3 && evenness >= 0.45) return 'Stable'
+  if (richness >= 2 || evenness >= 0.3) return 'Stressed'
+  return 'Collapsing'
+}
 
 const SPEEDS = [
   { value: 0.5, label: '½×' },
@@ -334,6 +373,24 @@ export function Hud({
             </>
           )}
         </button>
+        {(() => {
+          const status = ecosystemHealth(population, total)
+          return (
+            <span
+              title={HEALTH_TOOLTIP[status]}
+              style={{
+                ...chipBase,
+                borderColor: HEALTH_COLOR[status],
+                color: HEALTH_COLOR[status],
+                cursor: 'default',
+                display: 'inline-flex',
+                alignItems: 'center',
+              }}
+            >
+              {status}
+            </span>
+          )
+        })()}
         <button
           type="button"
           className="cc-btn"
