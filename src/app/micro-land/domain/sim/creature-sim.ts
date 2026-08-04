@@ -405,6 +405,7 @@ export function tickCreatures(
     if (c.poisoned === undefined) c.poisoned = 0
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
+    if ((c as { homeX?: number }).homeX === undefined) { c.homeX = Math.round(c.x); c.homeY = Math.round(c.y) }
     if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
     if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
@@ -837,6 +838,25 @@ function look(
         Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
       const efs2 = still ? foodSight2 * (CAMOUFLAGE_FACTOR * CAMOUFLAGE_FACTOR) : foodSight2
       if (d2 <= efs2 && d2 < preyDist) {
+        preyDist = d2
+        prey = other
+        preyDir = dx >= 0 ? 1 : -1
+        preyCx = other.x + ow / 2
+        preyCy = other.y + oh / 2
+      }
+    }
+
+    // Territorial: well-fed creature drives non-prey non-predator intruders away.
+    if (
+      !hungry &&
+      (c.traits.territorial ?? 0.5) > 0.4 &&
+      other.blueprintId !== c.blueprintId &&
+      !canEat(bp, obp) &&   // not our prey
+      !canEat(obp, bp) &&   // not our predator
+      obp.move.kind !== 'root'  // not a plant
+    ) {
+      const territoryR = (c.traits.territorial ?? 0.5) * 10
+      if (d2 < territoryR * territoryR && d2 < preyDist) {
         preyDist = d2
         prey = other
         preyDir = dx >= 0 ? 1 : -1
@@ -1340,6 +1360,10 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Committing to a heading is only an improvement if the heading isn't fatal.
     if (c.drift !== 0 && unliveableAhead(w, c, bp, body, c.drift > 0 ? 1 : -1)) {
       c.drift = -c.drift
+    }
+    // Pull toward home when far away.
+    if ((c.traits.territorial ?? 0.5) > 0.2 && Math.abs(c.homeX - c.x) > 15) {
+      c.drift = c.homeX > c.x ? 1 : -1
     }
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0

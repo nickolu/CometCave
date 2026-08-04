@@ -364,6 +364,15 @@ export interface Traits {
    */
   roam: number
   /**
+   * How strongly this creature defends a home area.
+   *
+   * Controls both the pull back toward home when wandering, and the radius
+   * within which well-fed individuals attack non-prey non-predator intruders.
+   * Heritable — a line under pressure from neighbors can evolve toward a
+   * more defended range over generations. Neutral at 0.5.
+   */
+  territorial: number
+  /**
    * Body size relative to the blueprint.
    *
    * Larger creatures are slower but harder to predate. Smaller ones move faster
@@ -447,6 +456,10 @@ export interface Creature {
    * each tick and returns to 0 on its own — no antidote needed.
    */
   poisoned: number
+  /** X tile of where this creature was born/placed — its home centre. */
+  homeX: number
+  /** Y tile of where this creature was born/placed — its home centre. */
+  homeY: number
   /**
    * Seconds spent hungry (above FORAGE_HUNGER) with no food target in sight.
    *
