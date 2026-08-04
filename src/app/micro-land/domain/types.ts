@@ -461,6 +461,15 @@ export interface Creature {
   /** Y tile of where this creature was born/placed — its home centre. */
   homeY: number
   /**
+   * Seconds of pack-hunting speed bonus remaining.
+   *
+   * Set by the sense pass when a same-species neighbour is also targeting the
+   * same prey. Grants a 1.2× speed multiplier while above zero; decays each
+   * tick. Only one sense-interval worth of time is granted at a time, so the
+   * bonus only persists as long as coordination continues.
+   */
+  packTimer: number
+  /**
    * Seconds spent standing on quicksand.
    *
    * Walkers slow progressively as this rises (fully stopped at 8 s) and die
@@ -485,6 +494,21 @@ export interface Carcass {
   /** Seconds until this carcass vanishes. */
   decaySeconds: number
   /** Blueprint of the creature that died — determines who can eat it. */
+  blueprintId: string
+}
+
+/**
+ * A persistent den created by a burrowing creature.
+ *
+ * A creature with dig capability that rests long enough at a spot stakes that
+ * spot as a burrow for its species. Same-species diggers flee toward the nearest
+ * burrow when threatened, and the burrow persists after the creator dies — ready
+ * for another to claim.
+ */
+export interface Burrow {
+  x: number
+  y: number
+  /** The species that made (and can use) this burrow. */
   blueprintId: string
 }
 
@@ -524,6 +548,7 @@ export interface WorldState {
   creatures: Creature[]
   particles: Particle[]
   carcasses: Carcass[]
+  burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]
   /** Blueprints available in this world, keyed by id. */
