@@ -614,7 +614,7 @@ export function establishNativePlants(w: WorldState, rng: Rng): boolean {
  * creeping back over minutes reads as the land recovering, where a fast one read
  * as the game undoing what just happened.
  */
-export function seedNativePlants(w: WorldState, rng: Rng): void {
+export function seedNativePlants(w: WorldState, rng: Rng, seasonFactor = 1): void {
   if (w.elapsed < w.nextPlantSeed) return
   w.nextPlantSeed = w.elapsed + TUNING.plantSeedInterval
   if (w.dormant) return
@@ -628,7 +628,10 @@ export function seedNativePlants(w: WorldState, rng: Rng): void {
     plants++
   }
 
-  const deficit = TUNING.nativePlantTarget - plants
+  // In winter (seasonFactor < 1), the ground targets fewer plants — the seed
+  // bank is depleted. In summer (> 1) it aims higher and seeds more aggressively.
+  const scaledTarget = Math.max(0, Math.round(TUNING.nativePlantTarget * seasonFactor))
+  const deficit = scaledTarget - plants
   if (deficit <= 0) return
   if (plants >= TUNING.maxPlants || w.creatures.length >= TUNING.maxCreatures) return
 
