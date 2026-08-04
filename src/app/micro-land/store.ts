@@ -32,7 +32,7 @@ export interface SpeedRunState {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { Creature, CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
+import type { Creature, CreatureBlueprint, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
 
 /** One entry in the time-lapse snapshot ring buffer. */
@@ -250,6 +250,7 @@ interface MicroLandState {
    */
   foodWeb: Record<string, string[]>
   worldStats: WorldStats
+  namedCreatures: NamedCreatureEntry[]
 
   summonOpen: boolean
   summonBusy: boolean
@@ -397,6 +398,7 @@ interface MicroLandState {
   resetWorldStats: () => void
   logEat: (eaterId: string, preyId: string) => void
   clearFoodWeb: () => void
+  setNamedCreatures: (entries: NamedCreatureEntry[]) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
   setSummonMode: (mode: 'creature' | 'scene' | 'terrain') => void
@@ -491,6 +493,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   extinctions: [],
   foodWeb: {},
   worldStats: { ...EMPTY_STATS },
+  namedCreatures: [],
 
   summonOpen: false,
   summonBusy: false,
@@ -568,6 +571,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     return { foodWeb: { ...s.foodWeb, [eaterId]: [...existing, preyId] } }
   }),
   clearFoodWeb: () => set({ foodWeb: {} }),
+  setNamedCreatures: entries => set({ namedCreatures: entries }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
   setSummonMode: summonMode => set({ summonMode }),

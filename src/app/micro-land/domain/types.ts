@@ -604,6 +604,21 @@ export interface Tombstone {
   y: number        // world tile y, creature centre at death
   name: string     // what the player called it
   blueprintId: string
+  ageSeconds: number    // how long it lived
+  generation: number   // which generation
+  mealsEaten: number
+  children: number
+}
+
+/** A named creature — may be alive or dead. */
+export interface NamedCreatureEntry {
+  name: string
+  blueprintId: string
+  ageSeconds: number
+  generation: number
+  mealsEaten: number
+  children: number
+  alive: boolean
 }
 
 /**

@@ -72,6 +72,7 @@ export function FieldGuide() {
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
+  const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
@@ -264,6 +265,91 @@ export function FieldGuide() {
                 </span>
               </div>
             )}
+          </section>
+        )}
+
+        {namedCreatures.length > 0 && (
+          <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+              Named · {namedCreatures.length}
+            </h3>
+            <ul className="flex flex-col">
+              {namedCreatures
+                .slice()
+                .sort((a, b) => {
+                  // Living first, then by age descending
+                  if (a.alive !== b.alive) return a.alive ? -1 : 1
+                  return b.ageSeconds - a.ageSeconds
+                })
+                .map((entry, i) => {
+                  const bp = blueprints.find(b => b.id === entry.blueprintId)
+                  return (
+                    <li
+                      key={entry.name + entry.blueprintId + i}
+                      className="flex gap-3 px-4 py-2.5"
+                      style={{
+                        borderBottom: '1px solid var(--cc-panel-divider)',
+                        opacity: entry.alive ? 1 : 0.7,
+                      }}
+                    >
+                      {bp && (
+                        <div className="shrink-0 pt-0.5">
+                          <CreaturePortrait blueprint={bp} size={30} />
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            style={{
+                              fontFamily: 'var(--cc-font-mono)',
+                              fontSize: 12,
+                              letterSpacing: 1.4,
+                              textTransform: 'uppercase',
+                              color: entry.alive ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                            }}
+                          >
+                            {entry.name}
+                          </span>
+                          {!entry.alive && (
+                            <span
+                              style={{
+                                fontFamily: 'var(--cc-font-mono)',
+                                fontSize: 9,
+                                letterSpacing: 1,
+                                textTransform: 'uppercase',
+                                color: 'var(--cc-text-muted)',
+                                opacity: 0.6,
+                              }}
+                            >
+                              †
+                            </span>
+                          )}
+                        </div>
+                        {bp && (
+                          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
+                            {bp.name}
+                          </p>
+                        )}
+                        <p
+                          style={{
+                            fontFamily: 'var(--cc-font-mono)',
+                            fontSize: 10,
+                            color: 'var(--cc-text-muted)',
+                            opacity: 0.75,
+                            marginTop: 4,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {entry.alive ? 'alive · ' : ''}{formatDuration(entry.ageSeconds)}
+                          {entry.generation > 1 && ` · gen ${entry.generation}`}
+                          {entry.children > 0 && ` · ${entry.children} offspring`}
+                          {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                        </p>
+                      </div>
+                    </li>
+                  )
+                })}
+            </ul>
           </section>
         )}
 

@@ -2023,6 +2023,10 @@ function kill(
       y: c.y + bh / 2,
       name: c.name,
       blueprintId: c.blueprintId,
+      ageSeconds: c.ageSeconds,
+      generation: c.generation,
+      mealsEaten: c.mealsEaten,
+      children: c.children,
     })
   }
   emitParticles(w, c.x + bw / 2, c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)

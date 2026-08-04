@@ -60,6 +60,7 @@ import {
   type CreatureBlueprint,
   LIFE_KINDS,
   type LifeKind,
+  type NamedCreatureEntry,
   type Traits,
   type WorldState,
 } from './domain/types'
@@ -598,6 +599,29 @@ export class GameInstance {
 
     this.updateRecords(population)
     this.pushInspected()
+
+    // Sync named creatures: living ones (current state) + dead ones (tombstones).
+    const livingNamed: NamedCreatureEntry[] = this.world.creatures
+      .filter(c => c.name !== null)
+      .map(c => ({
+        name: c.name!,
+        blueprintId: c.blueprintId,
+        ageSeconds: c.ageSeconds,
+        generation: c.generation,
+        mealsEaten: c.mealsEaten,
+        children: c.children,
+        alive: true,
+      }))
+    const deadNamed: NamedCreatureEntry[] = this.world.tombstones.map(t => ({
+      name: t.name,
+      blueprintId: t.blueprintId,
+      ageSeconds: t.ageSeconds ?? 0,
+      generation: t.generation ?? 1,
+      mealsEaten: t.mealsEaten ?? 0,
+      children: t.children ?? 0,
+      alive: false,
+    }))
+    useMicroLand.getState().setNamedCreatures([...livingNamed, ...deadNamed])
 
     // A running world is different every tick, so there is no cheaper signal
     // than "time passed" to hang the autosave on. The shelf debounces it hard
