@@ -119,6 +119,17 @@ export const HUNGER_REACH = 2
 export const FORAGE_HUNGER = 0.55
 
 /**
+ * Global multiplier on every creature's per-species hunger rate.
+ *
+ * 1 = shipped balance. 0 = creatures never get hungry (hunger is effectively
+ * disabled). Values above 1 make every animal drain faster, compressing the
+ * window between a full stomach and a starving one without touching the amount
+ * a meal restores — so a world set to 2× goes through the same boom-and-crash
+ * cycles on a tighter clock.
+ */
+export const HUNGER_RATE_SCALE = 1
+
+/**
  * Hard population ceiling. Past this, nothing new is born (summoning still works).
  *
  * Scaled with the world rather than left alone, because this ceiling binds well

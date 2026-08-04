@@ -286,7 +286,7 @@ export function tickCreatures(
     if (c.breedCooldown > 0) c.breedCooldown -= dt
 
     // --- hunger ---------------------------------------------------------
-    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * dt)
+    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * dt)
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
