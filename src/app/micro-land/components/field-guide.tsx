@@ -78,6 +78,12 @@ export function FieldGuide() {
   const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
+  const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
+
+  function hideSpecies(id: string) {
+    setHiddenPlantIds(prev => new Set([...prev, id]))
+  }
+
   const [plantsHidden, setPlantsHidden] = useState(false)
 
   if (!open) return null
