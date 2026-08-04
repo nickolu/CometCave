@@ -358,6 +358,8 @@ interface MicroLandState {
   setTraitOverlay: (trait: string | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
+  soundEnabled: boolean
+  setSoundEnabled: (on: boolean) => void
 
   /** Creature snapshots for time-lapse. Null = not in replay mode. */
   replaySnapshots: CreatureSnapshot[] | null
@@ -510,6 +512,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
+  soundEnabled: false,
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -611,6 +614,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
+  setSoundEnabled: on => set({ soundEnabled: on }),
 
   enterReplay: snapshots =>
     set({ replaySnapshots: snapshots, replayIndex: snapshots.length - 1, paused: true }),
