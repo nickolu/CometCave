@@ -60,6 +60,7 @@ import {
   type CreatureBlueprint,
   LIFE_KINDS,
   type LifeKind,
+  type Traits,
   type WorldState,
 } from './domain/types'
 import { formatDuration } from './format'
@@ -1236,6 +1237,35 @@ export class GameInstance {
     }
     this.pushStats()
     return { blueprint: bp, placed }
+  }
+
+  /**
+   * Create a new species from the workshop and spawn 5 of them.
+   *
+   * The blueprint is sanitized (so it gets a fresh id) and registered; then
+   * 5 creatures are placed and their traits are overwritten with the player's
+   * chosen values before the stats are pushed.
+   */
+  workshopIntroduce(blueprint: CreatureBlueprint, traits: Traits): void {
+    const bp = sanitizeBlueprint(blueprint as unknown, { summoned: true, idPrefix: 'workshop' })
+    this.world.dormant = false
+    registerBlueprint(this.world, bp)
+    this.syncBlueprintsToStore()
+
+    let placed = 0
+    for (let i = 0; i < 5; i++) {
+      if (this.world.creatures.length >= TUNING.maxCreatures) break
+      const creature = spawnSomewhereSensible(this.world, bp, this.rng)
+      if (creature) {
+        creature.traits = { ...traits }
+        placed++
+      }
+    }
+    this.pushStats()
+    if (placed > 0) {
+      useMicroLand.getState().notify(`${bp.name} × ${placed} placed in the world`)
+    }
+    useMicroLand.getState().clearWorkshopSpawnRequest()
   }
 
   /**
