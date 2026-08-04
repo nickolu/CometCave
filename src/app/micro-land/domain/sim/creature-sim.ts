@@ -30,7 +30,7 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import { inherit, lifespanOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
+import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
@@ -507,13 +507,15 @@ function look(
    * How far it can find something to eat, which is not how far it can see.
    *
    * Ramps from plain sight at the moment it starts feeling hungry up to
-   * `1 + HUNGER_REACH` times that by the time it is nearly starving. Food only:
+   * `1 + HUNGER_REACH * roam` times that by the time it is nearly starving.
+   * The `roam` trait multiplies the extension, so a wide-ranging line smells
+   * food further out and a stay-close line hunts at shorter range. Food only:
    * `sight2` above still decides what counts as a threat, so getting hungry
    * makes an animal bolder and further-ranging without also making it better at
    * noticing what is stalking it.
    */
   const desperation = Math.max(0, Math.min(1, (c.hunger - 0.3) / 0.6))
-  const foodSight = sight * (1 + HUNGER_REACH * desperation)
+  const foodSight = sight * (1 + HUNGER_REACH * desperation * roamOf(c))
   const foodSight2 = foodSight * foodSight
 
   /**

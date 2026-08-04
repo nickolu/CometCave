@@ -344,6 +344,16 @@ export interface Traits {
    * against the sky, and one at half would vanish into the dark.
    */
   shade: number
+  /**
+   * Multiplier on the hunger-reach bonus — how much further than plain sight a
+   * hungry creature will sense food.
+   *
+   * A wide-ranging line drifts above 1 and picks up food earlier in a search,
+   * which pays off when food is spread thin. A stay-close line drifts below 1
+   * and hunts at shorter range, which matters less when prey is dense.
+   * Neither is universally better; which wins depends on the world.
+   */
+  roam: number
 }
 
 /** One living thing in the world. */

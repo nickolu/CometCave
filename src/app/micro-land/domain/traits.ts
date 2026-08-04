@@ -74,6 +74,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   lifespan: 1,
   hue: 0,
   shade: 1,
+  roam: 1,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -121,7 +122,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -130,6 +131,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     lifespan: clamp(mix('lifespan') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     hue: wrapHue((b ? blendHue(a.hue, b.hue) : a.hue) + nudge(rng, hueDrift)),
     shade: clamp(mix('shade') + nudge(rng, drift), SHADE_MIN, SHADE_MAX),
+    roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
   }
 }
 
@@ -163,6 +165,16 @@ export function sightOf(c: Creature, bp: CreatureBlueprint): number {
  */
 export function lifespanOf(c: Creature, bp: CreatureBlueprint): number {
   return bp.diet.lifespanSeconds * c.traits.lifespan
+}
+
+/**
+ * How far beyond its plain sight radius this creature will smell food.
+ *
+ * Old saves that predate the roam trait have `undefined` here; defaulting to 1
+ * keeps them identical to freshly spawned creatures at the neutral value.
+ */
+export function roamOf(c: Creature): number {
+  return c.traits.roam ?? 1
 }
 
 // ---------------------------------------------------------------------------
@@ -233,6 +245,8 @@ export function traitPhrases(t: Traits): string[] {
   else if (t.sight <= 1 - NOTABLE) phrases.push('short-sighted')
   if (t.lifespan >= 1 + NOTABLE) phrases.push('long-lived')
   else if (t.lifespan <= 1 - NOTABLE) phrases.push('short-lived')
+  if ((t.roam ?? 1) >= 1 + NOTABLE) phrases.push('wide-ranging')
+  else if ((t.roam ?? 1) <= 1 - NOTABLE) phrases.push('stay-close')
   return phrases
 }
 
@@ -249,5 +263,6 @@ export function notableTraits(t: Traits): { label: string; value: number }[] {
     { label: 'Own speed', value: t.speed },
     { label: 'Own sight', value: t.sight },
     { label: 'Own lifespan', value: t.lifespan },
+    { label: 'Own roam', value: t.roam ?? 1 },
   ].filter(entry => Math.abs(entry.value - 1) >= NOTABLE)
 }
