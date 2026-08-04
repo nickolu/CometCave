@@ -379,6 +379,15 @@ export interface Traits {
    * but are easier prey. Drifts each generation in [0.8, 1.2].
    */
   size: number
+  /**
+   * How toxic this creature is to those that eat it.
+   *
+   * 0 = harmless, 1 = fully venomous. Neutral 0.
+   * A predator that eats a creature with toxicity > 0.5 gains less nutrition
+   * (meal value is halved) and is briefly stunned — barely moving for 1.5 s.
+   * High-toxicity lineages can drift toward vivid colouring over generations.
+   */
+  toxicity: number
 }
 
 /** One living thing in the world. */
@@ -485,6 +494,13 @@ export interface Creature {
    * Only tracked for 'walk' locomotion; other locomotion kinds ignore it.
    */
   sinking: number
+  /**
+   * Seconds of venom stun remaining after eating toxic prey.
+   *
+   * Set when the creature eats a creature with high toxicity. While above zero
+   * the creature moves at 0.2× speed. Counts down each tick.
+   */
+  stunTimer: number
 }
 
 /**

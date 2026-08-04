@@ -409,6 +409,8 @@ export function tickCreatures(
     if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
     if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
+    if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
+    if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
     // Migrate timer: counts seconds hungry with no food found.
     if (c.hunger > FORAGE_HUNGER && c.targetId === null) {
       c.migrateTimer += dt
@@ -820,6 +822,12 @@ function look(
         // Toxic plants slow the eater — the meal lands, but at a cost.
         if (obp.toxicity) {
           c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)
+        }
+        // Trait-level toxicity: venomous prey stuns the predator and cuts the meal.
+        const preyToxicity = (other.traits as { toxicity?: number }).toxicity ?? 0
+        if (preyToxicity > 0.5) {
+          c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5)
+          c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5)
         }
         events.push({
           kind: 'ate',
@@ -1372,7 +1380,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) / sizeOf(c)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 

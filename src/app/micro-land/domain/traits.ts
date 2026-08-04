@@ -77,6 +77,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   roam: 1,
   territorial: 0.5,
   size: 1,
+  toxicity: 0,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -124,7 +125,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'toxicity') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -136,6 +137,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
     size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
+    toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
   }
 }
 
@@ -260,6 +262,7 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.territorial ?? 0.5) <= 0.5 - NOTABLE) phrases.push('wandering')
   if ((t.size ?? 1) >= 1 + NOTABLE) phrases.push('larger than most')
   else if ((t.size ?? 1) <= 1 - NOTABLE) phrases.push('smaller than most')
+  if ((t.toxicity ?? 0) >= 0.4) phrases.push('venomous')
   return phrases
 }
 
