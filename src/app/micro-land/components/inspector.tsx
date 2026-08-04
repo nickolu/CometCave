@@ -145,8 +145,8 @@ function biography(c: Inspected, bp: CreatureBlueprint): string {
  */
 export function Inspector({ onName }: { onName: (name: string) => boolean }) {
   const inspected = useMicroLand(s => s.inspected)
+  const setInspected = useMicroLand(s => s.setInspected)
   const blueprints = useMicroLand(s => s.blueprints)
-  const setTool = useMicroLand(s => s.setTool)
 
   /**
    * The half-typed name, tagged with who it is for.
@@ -227,7 +227,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
         <button
           type="button"
           className="cc-btn"
-          onClick={() => setTool({ kind: 'inspect' })}
+          onClick={() => setInspected(null)}
           aria-label="Stop inspecting"
           style={{ minWidth: 28, minHeight: 28, color: 'var(--cc-text-muted)', fontSize: 12 }}
           onPointerDown={e => e.stopPropagation()}
