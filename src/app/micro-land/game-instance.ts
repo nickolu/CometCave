@@ -661,6 +661,23 @@ export class GameInstance {
     // rebuilt on every stats tick.
     const archive = archivedSpecies()
 
+    // Species population milestones — fire once ever per (species × threshold).
+    //
+    // Each threshold is checked in ascending order so the first unclaimed one
+    // fires. Only one notification per species per stats push so three species
+    // all crossing 10 at the same moment don't spam the screen.
+    for (const entry of population) {
+      const bp = w.blueprints[entry.blueprintId]
+      if (!bp) continue
+      for (const threshold of [5, 10, 25, 50]) {
+        if (entry.count < threshold) break
+        if (claimMilestone(`sp:${entry.blueprintId}:${threshold}`, now)) {
+          store.notify(`${threshold} ${bp.name}s alive at once!`)
+          break
+        }
+      }
+    }
+
     this.checkMilestones(archive, {
       elapsed: w.elapsed,
       steadySeconds,
