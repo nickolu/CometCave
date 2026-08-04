@@ -367,6 +367,7 @@ export function spawnCreature(
     // Founder of its line until `reproduce` says otherwise.
     generation: 1,
     name: null,
+    huntPassCount: 0,
   }
   w.creatures.push(creature)
   return creature

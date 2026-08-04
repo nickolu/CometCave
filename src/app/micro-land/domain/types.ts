@@ -341,6 +341,11 @@ export interface Creature {
    * and it is worth more if it has to be earned.
    */
   name: string | null
+  /**
+   * Consecutive sense passes spent hunting the same target without success.
+   * Resets when the target changes or a meal is eaten. Used for stuck detection.
+   */
+  huntPassCount: number
 }
 
 export interface Particle {

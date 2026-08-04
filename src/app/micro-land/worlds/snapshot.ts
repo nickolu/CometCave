@@ -189,6 +189,7 @@ function thaw(saved: SavedCreature): Creature {
     tilesDug: saved.tilesDug,
     generation: saved.generation,
     name: saved.name,
+    huntPassCount: 0,
   }
 }
 
