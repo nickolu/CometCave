@@ -32,7 +32,7 @@ import {
 } from '@/app/micro-land/domain/constants'
 import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
+import type { Burrow, Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -338,6 +338,7 @@ export function tickCreatures(
   // Migration: worlds saved before carcasses were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.burrows ??= []
 
   const creatures = w.creatures
   const dead = new Set<number>()
@@ -395,6 +396,23 @@ export function tickCreatures(
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
+
+    // Burrowing: a well-rested digger stakes this spot as a den if none is nearby.
+    if (
+      c.mood === 'rest' &&
+      bp.dig.through.length > 0 &&
+      w.burrows.length < 50
+    ) {
+      const bx = Math.round(c.x)
+      const by = Math.round(c.y)
+      const nearbyBurrow = w.burrows.some(
+        b => b.blueprintId === c.blueprintId && Math.abs(b.x - bx) + Math.abs(b.y - by) < 8
+      )
+      if (!nearbyBurrow) {
+        w.burrows.push({ x: bx, y: by, blueprintId: c.blueprintId })
+      }
+    }
+
     c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
     if (c.hunger >= 1) {
       c.starving += dt
@@ -803,6 +821,24 @@ function look(
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
+    // Diggers: flee toward a known burrow rather than just away from threat.
+    if (bp.dig.through.length > 0 && w.burrows.length > 0) {
+      let nearestBurrow: Burrow | null = null
+      let nearestBurrowD2 = Infinity
+      for (const b of w.burrows) {
+        if (b.blueprintId !== c.blueprintId) continue
+        const bdx = b.x - cx
+        const bdy = b.y - (c.y + bh / 2)
+        const bd2 = bdx * bdx + bdy * bdy
+        if (bd2 < nearestBurrowD2 && bd2 < sight * sight * 9) {
+          nearestBurrowD2 = bd2
+          nearestBurrow = b
+        }
+      }
+      if (nearestBurrow) {
+        c.drift = nearestBurrow.x > cx ? 1 : -1
+      }
+    }
   } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
     c.mood = 'hunt'
     c.targetId = prey.id

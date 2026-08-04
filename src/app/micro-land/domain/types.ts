@@ -459,6 +459,21 @@ export interface Carcass {
   blueprintId: string
 }
 
+/**
+ * A persistent den created by a burrowing creature.
+ *
+ * A creature with dig capability that rests long enough at a spot stakes that
+ * spot as a burrow for its species. Same-species diggers flee toward the nearest
+ * burrow when threatened, and the burrow persists after the creator dies — ready
+ * for another to claim.
+ */
+export interface Burrow {
+  x: number
+  y: number
+  /** The species that made (and can use) this burrow. */
+  blueprintId: string
+}
+
 export interface Particle {
   x: number
   y: number
@@ -479,6 +494,7 @@ export interface WorldState {
   creatures: Creature[]
   particles: Particle[]
   carcasses: Carcass[]
+  burrows: Burrow[]
   nextCarcassId: number
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
