@@ -64,6 +64,18 @@ const SENSE_EVERY = 6
 const STUCK_SENSE_PASSES = 12
 
 /**
+ * Sense passes the creature can't lock onto a specific target after getting
+ * stuck. Stored as a negative value in `huntPassCount` so no new field is
+ * needed: negative means cooldown, zero or positive means the normal counter.
+ *
+ * Without this, a creature pressed against an obstacle clears its target for
+ * exactly one tick then immediately re-locks on the same blocked prey — so the
+ * "try a different angle" comment in the stuck block never actually happens.
+ * Six passes (0.6s) of free foraging is enough to clear a typical obstacle.
+ */
+const STUCK_COOLDOWN_PASSES = 6
+
+/**
  * How much the two bodies have to overlap to count as a bite, in tiles.
  *
  * This is deliberately a box-overlap test rather than a distance between
@@ -577,14 +589,25 @@ function look(
 
   // Stuck detection — if this creature has been locked on the same prey for
   // too many consecutive passes without eating, the path is likely blocked.
-  // Clearing the target lets the next pass scan fresh; the creature may still
-  // find the same prey from a different angle, or pick a more reachable one.
-  if (prey !== null) {
+  //
+  // `huntPassCount` doubles as a post-stuck cooldown when negative. During the
+  // cooldown the creature can't lock onto a specific target, which forces it to
+  // forage freely and gives it a genuine chance to find a different angle or a
+  // different meal, rather than immediately re-locking on the obstacle it just
+  // bounced off.
+  if (c.huntPassCount < 0) {
+    // Still in cooldown: count up toward 0 and suppress target-locking.
+    c.huntPassCount++
+    prey = null
+  } else if (prey !== null) {
     if (c.mood === 'hunt' && c.targetId === prey.id) {
       c.huntPassCount++
       if (c.huntPassCount >= STUCK_SENSE_PASSES) {
         prey = null
-        c.huntPassCount = 0
+        // Reverse the committed direction so the next foraging leg actively
+        // moves away from the obstacle rather than pressing back against it.
+        c.drift = -Math.sign(c.drift || 1) as 1 | -1
+        c.huntPassCount = -STUCK_COOLDOWN_PASSES
       }
     } else {
       c.huntPassCount = 0
