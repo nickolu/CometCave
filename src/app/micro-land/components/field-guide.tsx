@@ -70,6 +70,7 @@ export function FieldGuide() {
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
+  const extinctions = useMicroLand(s => s.extinctions)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -393,6 +394,38 @@ export function FieldGuide() {
             </button>
           )}
         </section>
+
+        {extinctions.length > 0 && (
+          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="pb-2" style={sectionHeading}>
+              Extinctions
+            </h3>
+            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+              Species that lived and died in this land.
+            </p>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {[...extinctions].reverse().map(ext => (
+                <li
+                  key={ext.blueprintId + ext.elapsed}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    padding: '3px 0',
+                    opacity: 0.6,
+                    fontSize: 11,
+                    fontFamily: 'var(--cc-font-mono)',
+                  }}
+                >
+                  <span>🦴 {ext.name}</span>
+                  <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
+                    gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <ImportSection addBlueprint={addBlueprint} />
       </div>

@@ -139,6 +139,17 @@ export interface PopulationEntry {
   maxGeneration: number
 }
 
+export interface ExtinctionRecord {
+  blueprintId: string
+  name: string
+  /** Sim time when the last one died, seconds. */
+  elapsed: number
+  /** How many sim seconds it was alive in this world. */
+  livedFor: number
+  /** Highest generation reached. */
+  maxGeneration: number
+}
+
 /** One time-series data point for the population graph. */
 export interface PopulationSnapshot {
   /** Sim time in seconds when this snapshot was taken. */
@@ -188,6 +199,8 @@ interface MicroLandState {
   elapsed: number
   /** Rolling history for the population graph. Cleared on world load. */
   populationHistory: PopulationSnapshot[]
+  /** Species that went extinct in this session, newest last. */
+  extinctions: ExtinctionRecord[]
 
   summonOpen: boolean
   summonBusy: boolean
@@ -318,6 +331,8 @@ interface MicroLandState {
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
+  addExtinction: (record: ExtinctionRecord) => void
+  clearExtinctions: () => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
   setSummonMode: (mode: 'creature' | 'scene' | 'terrain') => void
@@ -409,6 +424,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   totalCreatures: 0,
   elapsed: 0,
   populationHistory: [],
+  extinctions: [],
 
   summonOpen: false,
   summonBusy: false,
@@ -449,7 +465,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrush: brush => set({ brush }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [] }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -472,6 +488,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
         }),
       }
     }),
+  addExtinction: record => set(s => ({ extinctions: [...s.extinctions, record] })),
+  clearExtinctions: () => set({ extinctions: [] }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
   setSummonMode: summonMode => set({ summonMode }),
