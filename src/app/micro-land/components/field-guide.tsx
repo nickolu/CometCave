@@ -81,6 +81,7 @@ export function FieldGuide() {
   if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
+  const genByBp = new Map(population.map(p => [p.blueprintId, p.maxGeneration]))
   const allOrdered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
   const hiddenCount = [...allOrdered].filter(bp => hiddenPlantIds.has(bp.id)).length
   const ordered = allOrdered.filter(bp => !hiddenPlantIds.has(bp.id))
@@ -254,6 +255,7 @@ export function FieldGuide() {
               key={bp.id}
               bp={bp}
               alive={counts.get(bp.id) ?? 0}
+              maxGeneration={genByBp.get(bp.id) ?? 1}
               blueprints={blueprints}
               onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
               onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
@@ -427,12 +429,14 @@ function GuideEntry({
   bp,
   alive,
   blueprints,
+  maxGeneration,
   onHide,
   onLocate,
 }: {
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
+  maxGeneration: number
   onHide?: () => void
   onLocate?: () => void
 }) {
@@ -553,6 +557,7 @@ function GuideEntry({
           }}
         >
           Size {bp.size} · {moveWord(bp)}
+          {maxGeneration > 1 && ` · ${maxGeneration} generations born here`}
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
           {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}
