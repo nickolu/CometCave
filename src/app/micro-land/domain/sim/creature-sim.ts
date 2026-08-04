@@ -335,6 +335,8 @@ export function tickCreatures(
   w.nextCarcassId ??= 1
   w.burrows ??= []
   w.scents ??= []
+  w.eggs ??= []
+  w.nextEggId ??= 1
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
   // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
@@ -552,56 +554,80 @@ export function tickCreatures(
         // them walk to each other.
         const ox = mate ? (c.x + mate.x) / 2 : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
-        const child = reproduce(w, bp, ox, oy, bw, bh, rng)
-        if (child) {
-          // Set here rather than inside `reproduce`, which returns through two
-          // different paths and would need both parents threaded into each. The
-          // deeper of the two lines is the one the child inherits — generation
-          // counts ancestry, so a bloodline shouldn't get shallower by marrying
-          // into a newer one.
-          child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
-          // Set here for the same reason as the generation above, and from the
-          // same two parents. `spawnCreature` gave the child its species'
-          // neutral values; this is the only place in the game that ever
-          // replaces them, which is what makes "born here" and "put here" two
-          // genuinely different things.
-          child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+        if (bp.egglayer && !isPlant) {
+          // Egg-layer: drop an egg with inherited traits rather than spawning live.
+          const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
+          const generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+          w.eggs.push({
+            id: w.nextEggId++,
+            x: ox,
+            y: oy,
+            blueprintId: bp.id,
+            traits: childTraits,
+            generation,
+            hatchIn: TUNING.eggHatchSeconds,
+          })
           c.children++
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-          if (isPlant) {
-            plantsAlive++
-            // Plants photosynthesise: spreading costs them nothing. Charging
-            // them the usual hunger cost would sterilise them permanently —
-            // their hungerRate is 0, so the debt could never be paid back and
-            // each plant would breed twice in its entire life.
-            //
-            // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
-            // the cooldown inversely: richer soil means a shorter wait, so
-            // plants cluster in patches rather than carpeting the map evenly.
-            // Seasons multiply the same way: summer doubles spread, winter halves it.
-            c.breedCooldown =
-              TUNING.plantSpreadCooldown /
-              (auraBoost(w, c, bp, bw, bh, helpers) *
-                fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
-                seasonFactor)
-          } else {
-            // Both of them paid to be here, so both of them pay for it. Charging
-            // only the one whose turn it happened to be would make a baby cost a
-            // pair half of what it used to cost a single animal, which is a
-            // *cheapening* of breeding dressed up as a restriction.
-            payForChild(w, c, bp, bw, bh, helpers)
-            if (mate) {
-              mate.children++
-              payForChild(w, mate, bp, bw, bh, helpers)
-            }
+          c.breedCooldown = TUNING.breedCooldown
+          payForChild(w, c, bp, bw, bh, helpers)
+          if (mate) {
+            mate.children++
+            payForChild(w, mate, bp, bw, bh, helpers)
           }
-          events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
+          events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
-          // Nowhere to put it — wait a bit before trying again. The partner
-          // waits too, or it spends the next tick re-finding a creature that is
-          // now on cooldown and failing at exactly the same spot.
-          c.breedCooldown = 3
-          if (mate) mate.breedCooldown = 3
+          const child = reproduce(w, bp, ox, oy, bw, bh, rng)
+          if (child) {
+            // Set here rather than inside `reproduce`, which returns through two
+            // different paths and would need both parents threaded into each. The
+            // deeper of the two lines is the one the child inherits — generation
+            // counts ancestry, so a bloodline shouldn't get shallower by marrying
+            // into a newer one.
+            child.generation = Math.max(c.generation, mate?.generation ?? 0) + 1
+            // Set here for the same reason as the generation above, and from the
+            // same two parents. `spawnCreature` gave the child its species'
+            // neutral values; this is the only place in the game that ever
+            // replaces them, which is what makes "born here" and "put here" two
+            // genuinely different things.
+            child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+            c.children++
+            speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
+            if (isPlant) {
+              plantsAlive++
+              // Plants photosynthesise: spreading costs them nothing. Charging
+              // them the usual hunger cost would sterilise them permanently —
+              // their hungerRate is 0, so the debt could never be paid back and
+              // each plant would breed twice in its entire life.
+              //
+              // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
+              // the cooldown inversely: richer soil means a shorter wait, so
+              // plants cluster in patches rather than carpeting the map evenly.
+              // Seasons multiply the same way: summer doubles spread, winter halves it.
+              c.breedCooldown =
+                TUNING.plantSpreadCooldown /
+                (auraBoost(w, c, bp, bw, bh, helpers) *
+                  fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
+                  seasonFactor)
+            } else {
+              // Both of them paid to be here, so both of them pay for it. Charging
+              // only the one whose turn it happened to be would make a baby cost a
+              // pair half of what it used to cost a single animal, which is a
+              // *cheapening* of breeding dressed up as a restriction.
+              payForChild(w, c, bp, bw, bh, helpers)
+              if (mate) {
+                mate.children++
+                payForChild(w, mate, bp, bw, bh, helpers)
+              }
+            }
+            events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
+          } else {
+            // Nowhere to put it — wait a bit before trying again. The partner
+            // waits too, or it spends the next tick re-finding a creature that is
+            // now on cooldown and failing at exactly the same spot.
+            c.breedCooldown = 3
+            if (mate) mate.breedCooldown = 3
+          }
         }
       }
     }
@@ -609,6 +635,29 @@ export function tickCreatures(
 
   if (dead.size > 0) {
     w.creatures = creatures.filter(c => !dead.has(c.id))
+  }
+
+  // Egg hatching: decrement timers and hatch ready eggs.
+  w.eggs ??= []
+  const hatchedEggIds = new Set<number>()
+  for (const egg of w.eggs) {
+    egg.hatchIn -= dt
+    if (egg.hatchIn <= 0) {
+      const ebp = w.blueprints[egg.blueprintId]
+      if (ebp && w.creatures.length < TUNING.maxCreatures) {
+        const { w: ew, h: eh } = artSize(ebp)
+        const hatchling = spawnCreature(w, ebp, egg.x - ew / 2, egg.y - eh / 2)
+        if (hatchling) {
+          hatchling.generation = egg.generation
+          hatchling.traits = egg.traits
+          events.push({ kind: 'born', blueprintId: ebp.id, x: egg.x, y: egg.y })
+        }
+      }
+      hatchedEggIds.add(egg.id)
+    }
+  }
+  if (hatchedEggIds.size > 0) {
+    w.eggs = w.eggs.filter(e => !hatchedEggIds.has(e.id))
   }
 
   // --- pollination --------------------------------------------------------
@@ -768,6 +817,29 @@ function look(
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
+        return
+      }
+    }
+  }
+
+  // Egg eating: a hungry carnivore that stumbles over an egg eats it.
+  if (hungry && bp.move.kind !== 'root' && w.eggs.length > 0) {
+    for (const egg of w.eggs) {
+      if (egg.hatchIn <= 0) continue // already eaten or hatched
+      const eggBp = w.blueprints[egg.blueprintId]
+      if (!eggBp || !canEat(bp, eggBp)) continue
+      const dx = egg.x - cx
+      const dy = egg.y - cy
+      const gapX = Math.max(0, Math.abs(dx) - bw / 2)
+      const gapY = Math.max(0, Math.abs(dy) - bh / 2)
+      if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
+        c.hunger = Math.max(0, c.hunger - TUNING.mealValue * 0.6) // eggs are smaller meals
+        c.starving = 0
+        c.mealsEaten++
+        c.mood = 'eat'
+        c.targetId = null
+        egg.hatchIn = -1 // mark for removal by the hatching block
+        events.push({ kind: 'ate', blueprintId: bp.id, victimId: eggBp.id, x: c.x, y: c.y })
         return
       }
     }

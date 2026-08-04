@@ -294,6 +294,14 @@ export interface CreatureBlueprint {
   toxicity?: number
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
+  /**
+   * Whether this species lays eggs rather than giving live birth.
+   *
+   * When true, breeding drops an Egg at the breeding spot with inherited
+   * traits; the juvenile hatches after `TUNING.eggHatchSeconds`. Eggs are
+   * vulnerable to predation in the meantime.
+   */
+  egglayer?: boolean
 }
 
 /**
@@ -572,6 +580,28 @@ export interface Burrow {
 }
 
 /**
+ * An unhatched egg dropped by an egg-laying creature.
+ *
+ * Contains the full inherited traits so the juvenile hatches with the same
+ * genetics it would have received at live birth. Sits in place and can be
+ * eaten by any predator that could eat the parent species.
+ */
+export interface Egg {
+  id: number
+  /** World-tile coordinates of the egg's centre. */
+  x: number
+  y: number
+  /** The species this egg will hatch into. */
+  blueprintId: string
+  /** The inherited traits for the juvenile that hatches from this egg. */
+  traits: Traits
+  /** Which generation the hatchling will be. */
+  generation: number
+  /** Seconds until this egg hatches. */
+  hatchIn: number
+}
+
+/**
  * A chemical marker left when a creature eats.
  *
  * Same-species animals that are hungry and have nothing in sight drift toward
@@ -610,6 +640,8 @@ export interface WorldState {
   burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]
+  eggs: Egg[]
+  nextEggId: number
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number
