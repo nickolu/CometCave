@@ -763,7 +763,7 @@ function look(
         c.mood = 'eat'
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
-        events.push({ kind: 'ate', blueprintId: bp.id, x: c.x, y: c.y })
+        events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
         return
       }
     }
