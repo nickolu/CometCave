@@ -23,8 +23,14 @@ import {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
+import type { Creature, CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
+
+/** One entry in the time-lapse snapshot ring buffer. */
+export interface CreatureSnapshot {
+  elapsed: number
+  creatures: Creature[]
+}
 
 /** Theme id standing for "the land the player summoned". */
 export const SUMMONED_THEME_ID = 'summoned'
@@ -295,6 +301,13 @@ interface MicroLandState {
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
 
+  /** Creature snapshots for time-lapse. Null = not in replay mode. */
+  replaySnapshots: CreatureSnapshot[] | null
+  replayIndex: number
+  enterReplay: (snapshots: CreatureSnapshot[]) => void
+  setReplayIndex: (i: number) => void
+  exitReplay: () => void
+
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
@@ -422,6 +435,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   worldsOpen: false,
   locateRequest: null,
   traitOverlay: null,
+  replaySnapshots: null,
+  replayIndex: 0,
   trailsEnabled: false,
 
   setTheme: themeId => set({ themeId }),
@@ -501,6 +516,11 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
+
+  enterReplay: snapshots =>
+    set({ replaySnapshots: snapshots, replayIndex: snapshots.length - 1, paused: true }),
+  setReplayIndex: i => set({ replayIndex: i }),
+  exitReplay: () => set({ replaySnapshots: null, replayIndex: 0, paused: false }),
 
   notify: (text, action) =>
     set(s => ({
