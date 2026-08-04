@@ -21,6 +21,15 @@ import {
   setTuning,
 } from './domain/tuning'
 
+export interface SpeedRunState {
+  active: boolean
+  targetGeneration: number
+  timeLimitSeconds: number
+  /** World elapsed time (seconds) when the run started — so countdown = timeLimit - (elapsed - startElapsed). */
+  startElapsed: number
+  result: 'none' | 'won' | 'lost'
+}
+
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
 import type { Creature, CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
@@ -265,6 +274,7 @@ interface MicroLandState {
   challengeActive: { name: string; goal: string } | null
   workshopOpen: boolean
   workshopSpawnRequest: WorkshopSpawnRequest | null
+  speedRun: SpeedRunState
   /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
   reshuffleToken: number
   setChallengesOpen: (open: boolean) => void
@@ -272,6 +282,9 @@ interface MicroLandState {
   setWorkshopOpen: (open: boolean) => void
   requestWorkshopSpawn: (blueprint: CreatureBlueprint, traits: Traits) => void
   clearWorkshopSpawnRequest: () => void
+  startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
+  endSpeedRun: (result: 'won' | 'lost') => void
+  cancelSpeedRun: () => void
   requestReshuffle: () => void
   /**
    * Whether the tool drawer along the bottom is unrolled.
@@ -491,6 +504,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   challengeActive: null,
   workshopOpen: false,
   workshopSpawnRequest: null,
+  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
   reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
@@ -573,6 +587,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestWorkshopSpawn: (blueprint, traits) =>
     set(s => ({ workshopSpawnRequest: { blueprint, traits, serial: (s.workshopSpawnRequest?.serial ?? 0) + 1 } })),
   clearWorkshopSpawnRequest: () => set({ workshopSpawnRequest: null }),
+  startSpeedRun: (targetGeneration, timeLimitSeconds, currentElapsed) =>
+    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none' } }),
+  endSpeedRun: result =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result } })),
+  cancelSpeedRun: () =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result: 'none' } })),
   requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
   setToolbarOpen: toolbarOpen => {
     storeToolbarOpen(toolbarOpen)
