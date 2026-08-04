@@ -383,6 +383,7 @@ export function spawnCreature(
     poisoned: 0,
     homeX: Math.round(x),
     homeY: Math.round(y),
+    migrateTimer: 0,
     packTimer: 0,
     sinking: 0,
   }
