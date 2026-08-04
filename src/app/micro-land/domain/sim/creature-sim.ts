@@ -339,6 +339,17 @@ export function tickCreatures(
   w.carcasses ??= []
   w.nextCarcassId ??= 1
 
+  // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
+  // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
+  // When `seasonAmplitude` is 0 (default), this is always exactly 1.
+  const seasonFactor =
+    TUNING.seasonAmplitude > 0
+      ? Math.max(
+          0.05,
+          1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod)
+        )
+      : 1
+
   const creatures = w.creatures
   const dead = new Set<number>()
 
@@ -513,9 +524,12 @@ export function tickCreatures(
             // Soil fertility (0.2 on bare stone → 1.5 in waterside mud) scales
             // the cooldown inversely: richer soil means a shorter wait, so
             // plants cluster in patches rather than carpeting the map evenly.
+            // Seasons multiply the same way: summer doubles spread, winter halves it.
             c.breedCooldown =
               TUNING.plantSpreadCooldown /
-              (auraBoost(w, c, bp, bw, bh, helpers) * fertilityAt(w, c.x + bw / 2, c.y + bh / 2))
+              (auraBoost(w, c, bp, bw, bh, helpers) *
+                fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
+                seasonFactor)
           } else {
             // Both of them paid to be here, so both of them pay for it. Charging
             // only the one whose turn it happened to be would make a baby cost a
@@ -579,7 +593,7 @@ export function tickCreatures(
 
   // The only thing the world regrows on its own. Animals that die out stay
   // dead — see `seedNativePlants`.
-  seedNativePlants(w, rng)
+  seedNativePlants(w, rng, seasonFactor)
 
   // Decay carcasses and remove expired ones.
   for (const car of w.carcasses) {
