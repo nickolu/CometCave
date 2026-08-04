@@ -10,6 +10,7 @@ import {
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
 import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
+import { SpeedRunOverlay } from '@/app/micro-land/components/speed-run-overlay'
 import { PopulationGraph } from '@/app/micro-land/components/population-graph'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
@@ -352,6 +353,7 @@ export function MicroLandGame() {
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
       <ChallengesPanel />
+      <SpeedRunOverlay />
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />
       <SettingsPanel />
