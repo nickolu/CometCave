@@ -9,6 +9,7 @@ import {
   initChronicle,
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
+import { BlueprintWorkshop } from '@/app/micro-land/components/blueprint-workshop'
 import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
 import { SpeedRunOverlay } from '@/app/micro-land/components/speed-run-overlay'
 import { PopulationGraph } from '@/app/micro-land/components/population-graph'
@@ -107,6 +108,9 @@ export function MicroLandGame() {
               state.locateRequest.blueprintId
             useMicroLand.getState().notify(`No ${name} alive right now`)
           }
+        }
+        if (state.workshopSpawnRequest !== previous.workshopSpawnRequest && state.workshopSpawnRequest && game) {
+          game.workshopIntroduce(state.workshopSpawnRequest.blueprint, state.workshopSpawnRequest.traits)
         }
       })
     })
@@ -353,6 +357,7 @@ export function MicroLandGame() {
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
       <ChallengesPanel />
+      <BlueprintWorkshop />
       <SpeedRunOverlay />
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />

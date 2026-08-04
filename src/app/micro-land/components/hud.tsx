@@ -137,6 +137,8 @@ export function Hud({
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
+  const workshopOpen = useMicroLand(s => s.workshopOpen)
+  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
 
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const graphOpen = useMicroLand(s => s.graphOpen)
@@ -235,6 +237,22 @@ export function Hud({
         }
       >
         Worlds
+      </button>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => setWorkshopOpen(!workshopOpen)}
+        style={{
+          ...chipBase,
+          ...(workshopOpen
+            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
+            : {}),
+        }}
+        aria-pressed={workshopOpen}
+        title="Blueprint Workshop — design a creature"
+      >
+        Workshop
       </button>
 
       <button

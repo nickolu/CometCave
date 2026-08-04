@@ -1403,6 +1403,157 @@ const CANDY: Theme = {
   },
 }
 
+const BIOME_WORLD: Theme = {
+  id: 'biome-world',
+  name: 'Three Lands',
+  blurb: 'Forest, open plains, and desert — three biomes side by side.',
+  sky: ['#8ecf9a', '#2a5c3a'],
+  gloom: 0.18,
+  gravity: 1,
+  starters: [
+    { id: 'sunleaf', count: 20 },
+    { id: 'glowvine', count: 8 },
+    { id: 'bramble', count: 10 },
+    { id: 'skybloom', count: 8 },
+    { id: 'sporecap', count: 6 },
+    { id: 'mite', count: 10 },
+    { id: 'mote', count: 8 },
+    { id: 'hopper', count: 6 },
+    { id: 'dustbee', count: 6 },
+    { id: 'loamworm', count: 4 },
+    { id: 'glimmer-moth', count: 4 },
+    { id: 'woolly', count: 4 },
+    { id: 'delver', count: 3 },
+    { id: 'ember-grub', count: 4 },
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const featureNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const THIRD = Math.floor(WORLD_W / 3)
+    const skyDepth = Math.floor(WORLD_H * 0.30)
+    const BLEND = 18  // border blend width in tiles
+
+    for (let x = 0; x < WORLD_W; x++) {
+      // Smooth biome blend factor at borders: 0 = first biome, 1 = second biome
+      const leftBorder = THIRD
+      const rightBorder = THIRD * 2
+
+      // blendFP: 0 = pure forest, 1 = pure plains (active in transition zone)
+      const blendFP = x < leftBorder - BLEND ? 0
+        : x > leftBorder ? 1
+        : (x - (leftBorder - BLEND)) / BLEND
+
+      // blendPD: 0 = pure plains, 1 = pure desert
+      const blendPD = x < rightBorder - BLEND ? 0
+        : x > rightBorder ? 1
+        : (x - (rightBorder - BLEND)) / BLEND
+
+      // Terrain height per biome
+      const forestH = fbm(surfaceNoise, x * 0.030, 0.5, 3)
+      const forestSurf = skyDepth + (forestH - 0.5) * 22
+
+      const plainsH = fbm(surfaceNoise, x * 0.014 + 100, 0.5, 2)
+      const plainsSurf = skyDepth + (plainsH - 0.5) * 8 + 4
+
+      const desertH = fbm(surfaceNoise, x * 0.020 + 300, 0.5, 2)
+      const desertSurf = skyDepth + (desertH - 0.5) * 16 + 6
+
+      // Blend surface heights at borders
+      let rawSurf: number
+      if (x < leftBorder) {
+        rawSurf = forestSurf * (1 - blendFP) + plainsSurf * blendFP
+      } else if (x < rightBorder) {
+        rawSurf = plainsSurf * (1 - blendPD) + desertSurf * blendPD
+      } else {
+        rawSurf = desertSurf
+      }
+      const surface = Math.floor(rawSurf)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        let mat: MaterialId
+
+        if (x < leftBorder) {
+          // Forest: grass crust, dirt, stone, deep lava
+          if (depth < 0.02) mat = 'grass'
+          else if (depth < 0.16) mat = 'dirt'
+          else if (depth < 0.85) mat = 'stone'
+          else mat = 'lava'
+        } else if (x < rightBorder) {
+          // Plains: thicker grass layer, dirt, stone
+          if (depth < 0.04) mat = 'grass'
+          else if (depth < 0.20) mat = 'dirt'
+          else if (depth < 0.85) mat = 'stone'
+          else mat = 'lava'
+        } else {
+          // Desert: deep sand over stone
+          if (depth < 0.28) mat = 'sand'
+          else if (depth < 0.85) mat = 'stone'
+          else mat = 'lava'
+        }
+
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Forest trees: wood columns above ground with moss canopy
+    for (let x = 4; x < THIRD - 4; x++) {
+      if (featureNoise(x * 0.18, 0.2) > 0.52) {
+        const sy = surfaceY(tiles, x)
+        const height = 4 + Math.floor(rng() * 5)
+        for (let dy = 1; dy <= height; dy++) {
+          set(tiles, x, sy - dy, 'wood')
+        }
+        for (let dx = -2; dx <= 2; dx++) {
+          for (let dy = height - 1; dy <= height + 2; dy++) {
+            if (rng() > 0.35) set(tiles, x + dx, sy - dy, 'moss')
+          }
+        }
+      }
+    }
+
+    // Forest: water springs (3–4 pools)
+    const springCount = 3 + Math.floor(rng() * 2)
+    for (let i = 0; i < springCount; i++) {
+      const sx = 20 + Math.floor(rng() * (THIRD - 40))
+      const sy = surfaceY(tiles, sx)
+      blob(tiles, sx, sy + 3 + Math.floor(rng() * 4), 3, 'water', rng, ['dirt', 'stone'])
+    }
+
+    // Plains: scattered water pools
+    for (let i = 0; i < 3; i++) {
+      const px = THIRD + 20 + Math.floor(rng() * (THIRD - 40))
+      const sy = surfaceY(tiles, px)
+      blob(tiles, px, sy + 2, 4, 'water', rng, ['dirt', 'stone', 'grass'])
+    }
+
+    // Desert: stone rock formations
+    for (let rx = THIRD * 2 + 25; rx < WORLD_W - 20; rx += 30 + Math.floor(rng() * 25)) {
+      const sy = surfaceY(tiles, rx)
+      const height = 3 + Math.floor(rng() * 6)
+      for (let dy = 0; dy < height; dy++) {
+        set(tiles, rx, sy - dy, 'stone')
+        if (rng() > 0.4) set(tiles, rx + 1, sy - dy, 'stone')
+      }
+    }
+
+    // Desert: buried aquifer (water at depth ~78%)
+    const waterTable = Math.floor(WORLD_H * 0.78)
+    for (let x = THIRD * 2; x < WORLD_W; x++) {
+      for (let dy = 0; dy < 3; dy++) {
+        const y = waterTable + dy
+        if (y < WORLD_H && tileAt(tiles, x, y) !== M.air) {
+          set(tiles, x, y, 'water')
+        }
+      }
+    }
+  },
+}
+
 /**
  * Order is the order of the picker, and it is a reading order: nothing, then
  * the world most like ours, then the ones that bend it further and further.
@@ -1410,6 +1561,7 @@ const CANDY: Theme = {
 export const THEMES: Theme[] = [
   EMPTY,
   EARTH,
+  BIOME_WORLD,
   PEAKS,
   WINTER,
   DUNES,

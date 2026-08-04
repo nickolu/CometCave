@@ -217,6 +217,15 @@ export interface PendingSummon {
   prompt: string
 }
 
+export interface WorkshopSpawnRequest {
+  /** The blueprint to introduce (will be sanitized in game-instance). */
+  blueprint: CreatureBlueprint
+  /** Initial traits for all spawned creatures. */
+  traits: Traits
+  /** Incremented to trigger the subscribe handler even for the same blueprint. */
+  serial: number
+}
+
 interface MicroLandState {
   themeId: string
   tool: Tool
@@ -263,11 +272,16 @@ interface MicroLandState {
   graphOpen: boolean
   challengesOpen: boolean
   challengeActive: { name: string; goal: string } | null
+  workshopOpen: boolean
+  workshopSpawnRequest: WorkshopSpawnRequest | null
   speedRun: SpeedRunState
   /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
   reshuffleToken: number
   setChallengesOpen: (open: boolean) => void
   setChallengeActive: (c: { name: string; goal: string } | null) => void
+  setWorkshopOpen: (open: boolean) => void
+  requestWorkshopSpawn: (blueprint: CreatureBlueprint, traits: Traits) => void
+  clearWorkshopSpawnRequest: () => void
   startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
   endSpeedRun: (result: 'won' | 'lost') => void
   cancelSpeedRun: () => void
@@ -488,6 +502,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   graphOpen: false,
   challengesOpen: false,
   challengeActive: null,
+  workshopOpen: false,
+  workshopSpawnRequest: null,
   speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
   reshuffleToken: 0,
   toolbarOpen: true,
@@ -567,6 +583,10 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setGraphOpen: graphOpen => set({ graphOpen }),
   setChallengesOpen: open => set({ challengesOpen: open }),
   setChallengeActive: c => set({ challengeActive: c }),
+  setWorkshopOpen: open => set({ workshopOpen: open }),
+  requestWorkshopSpawn: (blueprint, traits) =>
+    set(s => ({ workshopSpawnRequest: { blueprint, traits, serial: (s.workshopSpawnRequest?.serial ?? 0) + 1 } })),
+  clearWorkshopSpawnRequest: () => set({ workshopSpawnRequest: null }),
   startSpeedRun: (targetGeneration, timeLimitSeconds, currentElapsed) =>
     set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none' } }),
   endSpeedRun: result =>
