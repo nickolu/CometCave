@@ -494,6 +494,7 @@ export class Renderer {
     wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
 
     this.drawCarcasses(w, vx, vw)
+    this.drawTombstones(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawParticles(w, vx, vw)
@@ -533,6 +534,7 @@ export class Renderer {
 
     this.drawMinimap(w, theme, vx)
     this.drawNameLabels(w, vx, vw, elderId)
+    this.drawTombstoneLabels(w, vx, vw)
   }
 
   // -------------------------------------------------------------------------
@@ -719,6 +721,71 @@ export class Renderer {
       ctx.fillRect(car.x - 0.75, car.y - 0.75, 1.5, 1.5)
     }
     ctx.globalAlpha = 1
+  }
+
+  /**
+   * Pixel-art headstones where named creatures died.
+   *
+   * Drawn on the world canvas so they sit in the world at tile scale and get
+   * scaled up with everything else. Names are drawn separately on the display
+   * canvas so they stay legible at any zoom.
+   */
+  private drawTombstones(w: WorldState, vx: number, vw: number): void {
+    if (!w.tombstones || w.tombstones.length === 0) return
+    const ctx = this.wctx
+    ctx.fillStyle = '#9a8878'
+    ctx.globalAlpha = 0.9
+
+    for (const tomb of w.tombstones) {
+      const cx = Math.round(tomb.x)
+      const cy = Math.round(tomb.y)
+      if (cx + 2 < vx || cx - 2 > vx + vw) continue
+
+      // Headstone shape: 1-wide cap, then 3-wide body rising upward from centre.
+      //  .█.   cy-4
+      //  ███   cy-3
+      //  ███   cy-2
+      //  ███   cy-1
+      ctx.fillRect(cx, cy - 4, 1, 1)
+      ctx.fillRect(cx - 1, cy - 3, 3, 3)
+    }
+
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Name tags for tombstones, drawn on the display canvas so they stay
+   * legible regardless of zoom — same approach as drawNameLabels.
+   */
+  private drawTombstoneLabels(w: WorldState, vx: number, vw: number): void {
+    if (!w.tombstones || w.tombstones.length === 0) return
+
+    const ctx = this.ctx
+    const scale = this.scale
+    const offsetX = this.offsetX
+    const offsetY = this.offsetY
+    const viewTop = this.viewTop()
+
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    for (const tomb of w.tombstones) {
+      if (tomb.x + 2 < vx || tomb.x - 2 > vx + vw) continue
+
+      // Position: above the headstone top (cy-4 in world coords, then convert).
+      const dx = (tomb.x - vx) * scale + offsetX
+      const dy = (tomb.y - 5 - viewTop) * scale + offsetY
+
+      // Dim shadow + muted warm-gray text (more memorial than the white creature labels).
+      ctx.fillStyle = 'rgba(0,0,0,0.5)'
+      ctx.fillText(tomb.name, dx + 1, dy + 1)
+      ctx.fillStyle = 'rgba(200,185,165,0.85)'
+      ctx.fillText(tomb.name, dx, dy)
+    }
+
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
   }
 
   private drawEggs(w: WorldState, vx: number, vw: number): void {

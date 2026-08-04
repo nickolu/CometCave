@@ -331,9 +331,11 @@ export function tickCreatures(
 ): void {
   tickCount++
 
-  // Migration: worlds saved before carcasses were added won't have these fields.
+  // Migration: worlds saved before carcasses or tombstones were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.tombstones ??= []
+  w.nextTombstoneId ??= 1
   w.burrows ??= []
   w.scents ??= []
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
@@ -2009,6 +2011,17 @@ function kill(
       x: c.x + bw / 2,
       y: c.y + bh / 2,
       decaySeconds: 15,
+      blueprintId: c.blueprintId,
+    })
+  }
+  // Named creatures leave a tombstone that stays in the world. Placed outside
+  // the `root` guard so a named plant that burns still gets its headstone.
+  if (c.name !== null) {
+    w.tombstones.push({
+      id: w.nextTombstoneId++,
+      x: c.x + bw / 2,
+      y: c.y + bh / 2,
+      name: c.name,
       blueprintId: c.blueprintId,
     })
   }
