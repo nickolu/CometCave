@@ -32,7 +32,7 @@ import {
 } from '@/app/micro-land/domain/constants'
 import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
+import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -338,6 +338,7 @@ export function tickCreatures(
   // Migration: worlds saved before carcasses were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.scents ??= []
 
   const creatures = w.creatures
   const dead = new Set<number>()
@@ -589,6 +590,10 @@ export function tickCreatures(
     w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
   }
 
+  // Scent decay
+  for (const s of w.scents) s.decaySeconds -= dt
+  w.scents = w.scents.filter(s => s.decaySeconds > 0)
+
   tickParticles(w, dt, gravityScale)
 }
 
@@ -669,6 +674,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
@@ -739,6 +748,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         // Toxic plants slow the eater — the meal lands, but at a cost.
@@ -768,6 +781,30 @@ function look(
         preyCx = other.x + ow / 2
         preyCy = other.y + oh / 2
       }
+    }
+  }
+
+  // Scent following: a hungry animal with nothing in sight drifts toward
+  // a same-species scent trail if one is nearby. Cap the search radius at
+  // 2× plain sight so the behavior doesn't fire from across the world.
+  if (hungry && !prey && !threat && w.scents.length > 0) {
+    const scentReach2 = sight * sight * 4
+    const midX = cx
+    const midY = c.y + bh / 2
+    let nearestD2 = Infinity
+    let nearestScent: Scent | null = null
+    for (const s of w.scents) {
+      if (s.blueprintId !== c.blueprintId) continue
+      const sdx = s.x - midX
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 < nearestD2 && d2 < scentReach2) {
+        nearestD2 = d2
+        nearestScent = s
+      }
+    }
+    if (nearestScent) {
+      c.drift = nearestScent.x > midX ? 1 : -1
     }
   }
 
