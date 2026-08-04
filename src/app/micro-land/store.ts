@@ -283,6 +283,8 @@ interface MicroLandState {
   traitOverlay: string | null
   /** Toggle the trait overlay. Passing the current trait turns it off. */
   setTraitOverlay: (trait: string | null) => void
+  trailsEnabled: boolean
+  setTrailsEnabled: (on: boolean) => void
 
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
@@ -408,6 +410,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   worldsOpen: false,
   locateRequest: null,
   traitOverlay: null,
+  trailsEnabled: false,
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -482,6 +485,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
+  setTrailsEnabled: on => set({ trailsEnabled: on }),
 
   notify: (text, action) =>
     set(s => ({
