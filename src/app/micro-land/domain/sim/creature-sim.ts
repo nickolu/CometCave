@@ -440,6 +440,40 @@ export function tickCreatures(
     w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
+  // --- pollination --------------------------------------------------------
+  //
+  // A fraction of plant meals scatter a seed near the eating spot. This gives
+  // plants a secondary spread vector that does not require them to be near
+  // fertile ground — a grazer browsing one patch carries pollen to wherever it
+  // wanders next, seeding plants in areas they would never self-spread into and
+  // adding gentle variety to where each species ends up.
+  //
+  // The `events` array carries `ate` events emitted by `look()` this tick.
+  // The eaten blueprint's id (`victimId`) tells us which plant to scatter; the
+  // position is where the creature was at the moment it ate. The actual seed is
+  // scattered 20–60 tiles away — far enough to cross the gap between one cluster
+  // and the next, close enough that local terrain still determines viability.
+  for (const ev of events) {
+    if (ev.kind !== 'ate' || !ev.victimId) continue
+    const victimBp = w.blueprints[ev.victimId]
+    if (!victimBp || victimBp.move.kind !== 'root') continue
+    if (plantsAlive >= TUNING.maxPlants) continue
+    if ((speciesCount[victimBp.id] ?? 0) >= TUNING.plantSpeciesCap) continue
+    // Roughly 1 in 12 plant meals scatters a seed.
+    if (rng() > 1 / 12) continue
+    const { w: vw, h: vh } = artSize(victimBp)
+    const angle = rng() * Math.PI * 2
+    const dist = 20 + rng() * 40
+    const ox = ev.x + Math.cos(angle) * dist
+    const oy = ev.y + Math.sin(angle) * dist
+    const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
+    if (seedling) {
+      plantsAlive++
+      speciesCount[victimBp.id] = (speciesCount[victimBp.id] ?? 0) + 1
+      events.push({ kind: 'born', blueprintId: victimBp.id, x: seedling.x, y: seedling.y })
+    }
+  }
+
   // The only thing the world regrows on its own. Animals that die out stay
   // dead — see `seedNativePlants`.
   seedNativePlants(w, rng)
