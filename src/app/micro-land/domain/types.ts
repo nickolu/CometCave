@@ -405,6 +405,15 @@ export interface Traits {
    * below neither emit nor follow. Creates a fork: loners vs. clusters.
    */
   cooperation: number
+  /**
+   * Resistance to disease.
+   *
+   * 0 = fully susceptible, 1 = immune. Higher immunity means a sick creature
+   * is more likely to survive the disease and less likely to catch it from a
+   * neighbour. Heritable — a population under disease pressure can evolve
+   * resistance over generations. Neutral at 0.2.
+   */
+  immunity: number
 }
 
 /** One living thing in the world. */
@@ -518,6 +527,15 @@ export interface Creature {
    * the creature moves at 0.2× speed. Counts down each tick.
    */
   stunTimer: number
+  /**
+   * Seconds of disease remaining.
+   *
+   * Set to 20 when infected. Counts down each tick. When it reaches 0 the
+   * creature either recovers (rng < immunity * 0.8 + 0.2) or dies. While
+   * positive the creature moves at 0.7× speed and can spread disease to
+   * nearby animals within 4 tiles.
+   */
+  sick: number
 }
 
 /**
