@@ -23,8 +23,14 @@ import {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
+import type { Creature, CreatureBlueprint, LifeKind, MaterialId, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
+
+/** One entry in the time-lapse snapshot ring buffer. */
+export interface CreatureSnapshot {
+  elapsed: number
+  creatures: Creature[]
+}
 
 /** Theme id standing for "the land the player summoned". */
 export const SUMMONED_THEME_ID = 'summoned'
@@ -129,6 +135,8 @@ export interface PopulationEntry {
   blueprintId: string
   name: string
   count: number
+  /** Highest generation number among living creatures of this species. */
+  maxGeneration: number
 }
 
 /** One time-series data point for the population graph. */
@@ -199,6 +207,13 @@ interface MicroLandState {
   builderOpen: boolean
   guideOpen: boolean
   settingsOpen: boolean
+  challengesOpen: boolean
+  challengeActive: { name: string; goal: string } | null
+  /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
+  reshuffleToken: number
+  setChallengesOpen: (open: boolean) => void
+  setChallengeActive: (c: { name: string; goal: string } | null) => void
+  requestReshuffle: () => void
   /**
    * Whether the tool drawer along the bottom is unrolled.
    *
@@ -283,6 +298,15 @@ interface MicroLandState {
   traitOverlay: string | null
   /** Toggle the trait overlay. Passing the current trait turns it off. */
   setTraitOverlay: (trait: string | null) => void
+  trailsEnabled: boolean
+  setTrailsEnabled: (on: boolean) => void
+
+  /** Creature snapshots for time-lapse. Null = not in replay mode. */
+  replaySnapshots: CreatureSnapshot[] | null
+  replayIndex: number
+  enterReplay: (snapshots: CreatureSnapshot[]) => void
+  setReplayIndex: (i: number) => void
+  exitReplay: () => void
 
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
@@ -290,6 +314,8 @@ interface MicroLandState {
   togglePaused: () => void
   setSpeed: (n: number) => void
   setBlueprints: (list: CreatureBlueprint[]) => void
+  /** Add a single blueprint without resetting population history. */
+  addBlueprint: (bp: CreatureBlueprint) => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
@@ -391,6 +417,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   builderOpen: false,
   guideOpen: false,
   settingsOpen: false,
+  challengesOpen: false,
+  challengeActive: null,
+  reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
   inspected: null,
@@ -408,6 +437,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   worldsOpen: false,
   locateRequest: null,
   traitOverlay: null,
+  replaySnapshots: null,
+  replayIndex: 0,
+  trailsEnabled: false,
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -415,6 +447,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
   setBlueprints: blueprints => set({ blueprints, populationHistory: [] }),
+  addBlueprint: bp =>
+    set(s => ({
+      blueprints: s.blueprints.some(b => b.id === bp.id)
+        ? s.blueprints.map(b => (b.id === bp.id ? bp : b))
+        : [...s.blueprints, bp],
+    })),
   setStats: (population, totalCreatures, elapsed) =>
     set(s => {
       const last = s.populationHistory[s.populationHistory.length - 1]
@@ -446,6 +484,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBuilderOpen: builderOpen => set({ builderOpen }),
   setGuideOpen: guideOpen => set({ guideOpen }),
   setSettingsOpen: settingsOpen => set({ settingsOpen }),
+  setChallengesOpen: open => set({ challengesOpen: open }),
+  setChallengeActive: c => set({ challengeActive: c }),
+  requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
   setToolbarOpen: toolbarOpen => {
     storeToolbarOpen(toolbarOpen)
     set({ toolbarOpen })
@@ -482,6 +523,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
+  setTrailsEnabled: on => set({ trailsEnabled: on }),
+
+  enterReplay: snapshots =>
+    set({ replaySnapshots: snapshots, replayIndex: snapshots.length - 1, paused: true }),
+  setReplayIndex: i => set({ replayIndex: i }),
+  exitReplay: () => set({ replaySnapshots: null, replayIndex: 0, paused: false }),
 
   notify: (text, action) =>
     set(s => ({

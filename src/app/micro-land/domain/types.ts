@@ -363,6 +363,13 @@ export interface Traits {
    * Neither is universally better; which wins depends on the world.
    */
   roam: number
+  /**
+   * Body size relative to the blueprint.
+   *
+   * Larger creatures are slower but harder to predate. Smaller ones move faster
+   * but are easier prey. Drifts each generation in [0.8, 1.2].
+   */
+  size: number
 }
 
 /** One living thing in the world. */
@@ -449,6 +456,15 @@ export interface Creature {
    */
   migrateTimer: number
   /**
+   * Seconds of pack-hunting speed bonus remaining.
+   *
+   * Set by the sense pass when a same-species neighbour is also targeting the
+   * same prey. Grants a 1.2× speed multiplier while above zero; decays each
+   * tick. Only one sense-interval worth of time is granted at a time, so the
+   * bonus only persists as long as coordination continues.
+   */
+  packTimer: number
+  /**
    * Seconds spent standing on quicksand.
    *
    * Walkers slow progressively as this rises (fully stopped at 8 s) and die
@@ -476,6 +492,37 @@ export interface Carcass {
   blueprintId: string
 }
 
+/**
+ * A persistent den created by a burrowing creature.
+ *
+ * A creature with dig capability that rests long enough at a spot stakes that
+ * spot as a burrow for its species. Same-species diggers flee toward the nearest
+ * burrow when threatened, and the burrow persists after the creator dies — ready
+ * for another to claim.
+ */
+export interface Burrow {
+  x: number
+  y: number
+  /** The species that made (and can use) this burrow. */
+  blueprintId: string
+}
+
+/**
+ * A chemical marker left when a creature eats.
+ *
+ * Same-species animals that are hungry and have nothing in sight drift toward
+ * nearby scents, creating social foraging without any explicit communication.
+ * Decays over 15 seconds and vanishes. Capped at 200 world-wide.
+ */
+export interface Scent {
+  x: number
+  y: number
+  /** Which species left this marker. Only that species follows it. */
+  blueprintId: string
+  /** Seconds until this marker vanishes. */
+  decaySeconds: number
+}
+
 export interface Particle {
   x: number
   y: number
@@ -496,7 +543,9 @@ export interface WorldState {
   creatures: Creature[]
   particles: Particle[]
   carcasses: Carcass[]
+  burrows: Burrow[]
   nextCarcassId: number
+  scents: Scent[]
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number

@@ -30,9 +30,9 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import { inherit, lifespanOf, roamOf, sightOf, speedOf } from '@/app/micro-land/domain/traits'
+import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
+import type { Burrow, Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -338,6 +338,8 @@ export function tickCreatures(
   // Migration: worlds saved before carcasses were added won't have these fields.
   w.carcasses ??= []
   w.nextCarcassId ??= 1
+  w.burrows ??= []
+  w.scents ??= []
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
   // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
@@ -404,6 +406,8 @@ export function tickCreatures(
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
     if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
+    if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
+    if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
     // Migrate timer: counts seconds hungry with no food found.
     if (c.hunger > FORAGE_HUNGER && c.targetId === null) {
       c.migrateTimer += dt
@@ -429,6 +433,23 @@ export function tickCreatures(
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
+
+    // Burrowing: a well-rested digger stakes this spot as a den if none is nearby.
+    if (
+      c.mood === 'rest' &&
+      bp.dig.through.length > 0 &&
+      w.burrows.length < 50
+    ) {
+      const bx = Math.round(c.x)
+      const by = Math.round(c.y)
+      const nearbyBurrow = w.burrows.some(
+        b => b.blueprintId === c.blueprintId && Math.abs(b.x - bx) + Math.abs(b.y - by) < 8
+      )
+      if (!nearbyBurrow) {
+        w.burrows.push({ x: bx, y: by, blueprintId: c.blueprintId })
+      }
+    }
+
     c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * dt)
     if (c.hunger >= 1) {
       c.starving += dt
@@ -626,6 +647,10 @@ export function tickCreatures(
     w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
   }
 
+  // Scent decay
+  for (const s of w.scents) s.decaySeconds -= dt
+  w.scents = w.scents.filter(s => s.decaySeconds > 0)
+
   tickParticles(w, dt, gravityScale)
 }
 
@@ -711,6 +736,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
@@ -772,7 +801,7 @@ function look(
       continue
     }
 
-    if (hungry && canEat(bp, obp)) {
+    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -781,6 +810,10 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        // Leave a scent so hungry packmates can follow toward food.
+        if (w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        }
         c.mood = 'eat'
         c.targetId = null
         // Toxic plants slow the eater — the meal lands, but at a cost.
@@ -813,6 +846,30 @@ function look(
     }
   }
 
+  // Scent following: a hungry animal with nothing in sight drifts toward
+  // a same-species scent trail if one is nearby. Cap the search radius at
+  // 2× plain sight so the behavior doesn't fire from across the world.
+  if (hungry && !prey && !threat && w.scents.length > 0) {
+    const scentReach2 = sight * sight * 4
+    const midX = cx
+    const midY = c.y + bh / 2
+    let nearestD2 = Infinity
+    let nearestScent: Scent | null = null
+    for (const s of w.scents) {
+      if (s.blueprintId !== c.blueprintId) continue
+      const sdx = s.x - midX
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 < nearestD2 && d2 < scentReach2) {
+        nearestD2 = d2
+        nearestScent = s
+      }
+    }
+    if (nearestScent) {
+      c.drift = nearestScent.x > midX ? 1 : -1
+    }
+  }
+
   // Stuck detection — if this creature has been locked on the same prey for
   // too many consecutive passes without eating, the path is likely blocked.
   //
@@ -842,9 +899,50 @@ function look(
     c.huntPassCount = 0
   }
 
+  // Pack hunting: scan for a same-species neighbour targeting the same prey.
+  // When found, both creatures share a brief speed bonus — coordinated attacks
+  // close faster and are harder to flee from.
+  if (prey !== null) {
+    const packReach = sight + bw / 2
+    const packLast = cx + packReach + SIGHT_PAD_RIGHT
+    let coordinating = false
+    for (let pi = lowerBound(byX, cx - packReach - SIGHT_PAD_LEFT); pi < byX.length; pi++) {
+      const pk = byX[pi]
+      if (pk.x > packLast) break
+      if (pk.id === c.id) continue
+      if (pk.blueprintId === c.blueprintId && pk.targetId === prey.id) {
+        coordinating = true
+        break
+      }
+    }
+    // Grant one sense-interval of bonus (plus a little buffer) so it persists
+    // until the next pass rather than dropping between ticks.
+    c.packTimer = coordinating ? (SENSE_EVERY / 60) * 2.5 : 0
+  } else {
+    c.packTimer = 0
+  }
+
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
+    // Diggers: flee toward a known burrow rather than just away from threat.
+    if (bp.dig.through.length > 0 && w.burrows.length > 0) {
+      let nearestBurrow: Burrow | null = null
+      let nearestBurrowD2 = Infinity
+      for (const b of w.burrows) {
+        if (b.blueprintId !== c.blueprintId) continue
+        const bdx = b.x - cx
+        const bdy = b.y - (c.y + bh / 2)
+        const bd2 = bdx * bdx + bdy * bdy
+        if (bd2 < nearestBurrowD2 && bd2 < sight * sight * 9) {
+          nearestBurrowD2 = bd2
+          nearestBurrow = b
+        }
+      }
+      if (nearestBurrow) {
+        c.drift = nearestBurrow.x > cx ? 1 : -1
+      }
+    }
   } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
     c.mood = 'hunt'
     c.targetId = prey.id
@@ -1249,7 +1347,8 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   }
 
   // Poison from a toxic plant halves movement speed for its duration.
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1)
+  // Larger creatures are slower: size is a denominator, not a multiplier.
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) / sizeOf(c)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
