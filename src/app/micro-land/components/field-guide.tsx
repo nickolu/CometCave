@@ -734,6 +734,17 @@ function GuideEntry({
           <br />
           <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
           {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
+          {bp.symbiosisPartnerId && (() => {
+            const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
+            return partner ? (
+              <>
+                <br />
+                <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
+                  Partners with: {partner.name}
+                </span>
+              </>
+            ) : null
+          })()}
         </p>
       </div>
     </li>
