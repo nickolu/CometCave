@@ -68,6 +68,8 @@ export function FieldGuide() {
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
+  const trailsEnabled = useMicroLand(s => s.trailsEnabled)
+  const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
 
   const [hiddenPlantIds, setHiddenPlantIds] = useState<ReadonlySet<string>>(new Set())
 
@@ -82,6 +84,7 @@ export function FieldGuide() {
   if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
+  const genByBp = new Map(population.map(p => [p.blueprintId, p.maxGeneration]))
   const allOrdered = [...blueprints].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
   const hiddenCount = [...allOrdered].filter(bp => hiddenPlantIds.has(bp.id)).length
   const ordered = allOrdered.filter(bp => !hiddenPlantIds.has(bp.id))
@@ -255,6 +258,7 @@ export function FieldGuide() {
               key={bp.id}
               bp={bp}
               alive={counts.get(bp.id) ?? 0}
+              maxGeneration={genByBp.get(bp.id) ?? 1}
               blueprints={blueprints}
               onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
               onHide={isPlantLike(bp) ? () => hideSpecies(bp.id) : undefined}
@@ -347,6 +351,27 @@ export function FieldGuide() {
                 {trait === 'lifespan' ? 'Life' : trait.charAt(0).toUpperCase() + trait.slice(1)}
               </button>
             ))}
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setTrailsEnabled(!trailsEnabled)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 10px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: trailsEnabled
+                  ? '1px solid var(--cc-mint)'
+                  : '1px solid var(--cc-mint-line)',
+                color: trailsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: trailsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+              }}
+            >
+              Trails
+            </button>
           </div>
           {traitOverlay && (
             <button
@@ -434,6 +459,7 @@ function GuideEntry({
   bp,
   alive,
   blueprints,
+  maxGeneration,
   onHide,
   onLocate,
   onCopyCode,
@@ -441,6 +467,7 @@ function GuideEntry({
   bp: CreatureBlueprint
   alive: number
   blueprints: CreatureBlueprint[]
+  maxGeneration: number
   onHide?: () => void
   onLocate?: () => void
   onCopyCode?: () => void
@@ -581,6 +608,7 @@ function GuideEntry({
           }}
         >
           Size {bp.size} · {moveWord(bp)}
+          {maxGeneration > 1 && ` · ${maxGeneration} generations born here`}
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
           {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}

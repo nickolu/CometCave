@@ -82,6 +82,10 @@ export function Hud({
   const settingsOpen = useMicroLand(s => s.settingsOpen)
   const setSettingsOpen = useMicroLand(s => s.setSettingsOpen)
   const tuning = useMicroLand(s => s.tuning)
+  const challengesOpen = useMicroLand(s => s.challengesOpen)
+  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
+  const challengeActive = useMicroLand(s => s.challengeActive)
+  const setChallengeActive = useMicroLand(s => s.setChallengeActive)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -178,6 +182,22 @@ export function Hud({
         Worlds
       </button>
 
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => setChallengesOpen(!challengesOpen)}
+        style={{
+          ...chipBase,
+          ...(challengeActive
+            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
+            : {}),
+        }}
+        aria-pressed={challengesOpen}
+        title="Choose a challenge"
+      >
+        Challenges
+      </button>
+
       <div className="flex items-center gap-1" role="group" aria-label="Speed">
         <button
           type="button"
@@ -208,6 +228,41 @@ export function Hud({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
+        {challengeActive && (
+          <span
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1,
+              color: 'var(--cc-mint)',
+              opacity: 0.85,
+              maxWidth: 240,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            title={challengeActive.goal}
+          >
+            {challengeActive.name}: {challengeActive.goal}
+          </span>
+        )}
+        {challengeActive && (
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setChallengeActive(null)}
+            title="End challenge"
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              padding: '2px 6px',
+              border: '1px solid var(--cc-mint-line)',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            ×
+          </button>
+        )}
         {!authLoading && (
           <Link
             href="/auth"
