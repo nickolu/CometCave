@@ -179,6 +179,10 @@ export interface SimEvent {
   victimId?: string
   x: number
   y: number
+  /** Only set on death events: how long the creature lived. */
+  ageSeconds?: number
+  /** Only set on death events: how many children the creature had. */
+  children?: number
 }
 
 let tickCount = 0
@@ -402,6 +406,18 @@ export function tickCreatures(
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
+    if ((c as { sick?: number }).sick === undefined) c.sick = 0
+    if (c.sick > 0) {
+      c.sick -= dt
+      if (c.sick <= 0) {
+        c.sick = 0
+        const immunity = (c.traits as { immunity?: number }).immunity ?? 0.2
+        if (rng() >= immunity * 0.8 + 0.2) {
+          kill(w, c, bp, dead, events, 'starved')
+          continue
+        }
+      }
+    }
     // Migrate timer: counts seconds hungry with no food found.
     if (c.hunger > FORAGE_HUNGER && c.targetId === null) {
       c.migrateTimer += dt
@@ -644,6 +660,20 @@ export function tickCreatures(
   // Scent decay
   for (const s of w.scents) s.decaySeconds -= dt
   w.scents = w.scents.filter(s => s.decaySeconds > 0)
+
+  // Disease outbreak: roughly every 3 sim-minutes, infect one random non-plant.
+  if (Math.floor(w.elapsed / 180) > Math.floor((w.elapsed - dt) / 180)) {
+    const animals = w.creatures.filter(
+      c => !dead.has(c.id) && w.blueprints[c.blueprintId]?.move.kind !== 'root'
+    )
+    if (animals.length > 0) {
+      const victim = animals[Math.floor(rng() * animals.length)]
+      const immunity = (victim.traits as { immunity?: number }).immunity ?? 0.2
+      if (rng() > immunity) {
+        victim.sick = 20
+      }
+    }
+  }
 
   tickParticles(w, dt, gravityScale)
 }
@@ -927,6 +957,28 @@ function look(
     }
   } else if (c.mood !== 'hunt') {
     c.huntPassCount = 0
+  }
+
+  // Disease spread: an infected creature spreads to non-plant neighbours within 4 tiles.
+  if (c.sick > 0 && bp.move.kind !== 'root') {
+    const spreadReach = 4
+    const last2 = cx + spreadReach + bw / 2 + SIGHT_PAD_RIGHT
+    for (let i = lowerBound(byX, cx - spreadReach - SIGHT_PAD_LEFT); i < byX.length; i++) {
+      const other = byX[i]
+      if (other.x > last2) break
+      if (other.id === c.id || dead.has(other.id)) continue
+      if ((other as { sick?: number }).sick) continue // already sick
+      const obp = w.blueprints[other.blueprintId]
+      if (!obp || obp.move.kind === 'root') continue
+      const { w: ow, h: oh } = artSize(obp)
+      const gdx = Math.max(0, Math.abs(other.x + ow / 2 - cx) - (bw + ow) / 2)
+      const gdy = Math.max(0, Math.abs(other.y + oh / 2 - (c.y + bh / 2)) - (bh + oh) / 2)
+      if (gdx * gdx + gdy * gdy > spreadReach * spreadReach) continue
+      const otherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
+      if (rng() < 0.05 * (1 - otherImmunity)) {
+        other.sick = 20
+      }
+    }
   }
 
   // Pack hunting: scan for a same-species neighbour targeting the same prey.
@@ -1387,7 +1439,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) / sizeOf(c) * (1 - diurnalPenalty)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
   const digger = bp.dig.through.length > 0
 
@@ -1827,7 +1879,7 @@ function kill(
   if (bp.death.becomes) {
     setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])
   }
-  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y })
+  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children })
 }
 
 // ---------------------------------------------------------------------------

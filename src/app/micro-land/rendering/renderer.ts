@@ -809,6 +809,15 @@ export class Renderer {
         }
       }
 
+      // Disease indicator: semi-transparent green-yellow wash that pulses.
+      if ((c as { sick?: number }).sick) {
+        const sickPulse = Math.sin(w.elapsed * 6) * 0.25 + 0.55
+        ctx.globalAlpha = sickPulse
+        ctx.fillStyle = '#7fff00'
+        ctx.fillRect(x, y, sw, sh)
+        ctx.globalAlpha = 1
+      }
+
       if (traitKey) {
         const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
         if (Math.abs(delta) >= 0.08) {

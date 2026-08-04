@@ -81,6 +81,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   toxicity: 0,
   cooperation: 0.3,
   diurnal: 0,
+  immunity: 0.2,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -128,7 +129,8 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal') =>
+<<<<<<< HEAD
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -144,6 +146,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
     cooperation: clamp(mix('cooperation') + nudge(rng, drift), 0, 1),
     diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
+    immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
   }
 }
 
@@ -275,6 +278,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.cooperation ?? 0.3) <= 0.3 - NOTABLE) phrases.push('solitary')
   if ((t.diurnal ?? 0) >= 0.5) phrases.push('diurnal')
   else if ((t.diurnal ?? 0) <= -0.5) phrases.push('nocturnal')
+  if ((t.immunity ?? 0.2) >= 0.6) phrases.push('disease-resistant')
+  else if ((t.immunity ?? 0.2) <= 0.05) phrases.push('susceptible')
   return phrases
 }
 

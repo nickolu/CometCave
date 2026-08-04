@@ -150,6 +150,29 @@ export interface ExtinctionRecord {
   maxGeneration: number
 }
 
+/** Session-level lifetime statistics. */
+export interface WorldStats {
+  totalBorn: number
+  totalDeaths: number
+  totalEats: number
+  peakPopulation: number
+  /** Age in seconds of the longest-lived creature that died this session. */
+  longestLived: number
+  /** Name of the most prolific species (most children from one creature). */
+  mostProlificName: string | null
+  mostProlificChildren: number
+}
+
+const EMPTY_STATS: WorldStats = {
+  totalBorn: 0,
+  totalDeaths: 0,
+  totalEats: 0,
+  peakPopulation: 0,
+  longestLived: 0,
+  mostProlificName: null,
+  mostProlificChildren: 0,
+}
+
 /** One time-series data point for the population graph. */
 export interface PopulationSnapshot {
   /** Sim time in seconds when this snapshot was taken. */
@@ -208,6 +231,7 @@ interface MicroLandState {
    * Updated on every eat event (live prey and carcasses).
    */
   foodWeb: Record<string, string[]>
+  worldStats: WorldStats
 
   summonOpen: boolean
   summonBusy: boolean
@@ -340,6 +364,8 @@ interface MicroLandState {
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
+  updateWorldStats: (patch: Partial<WorldStats>) => void
+  resetWorldStats: () => void
   logEat: (eaterId: string, preyId: string) => void
   clearFoodWeb: () => void
   setSummonOpen: (open: boolean) => void
@@ -435,6 +461,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   populationHistory: [],
   extinctions: [],
   foodWeb: {},
+  worldStats: { ...EMPTY_STATS },
 
   summonOpen: false,
   summonBusy: false,
@@ -475,7 +502,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrush: brush => set({ brush }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], foodWeb: {} }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {} }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -500,6 +527,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
     }),
   addExtinction: record => set(s => ({ extinctions: [...s.extinctions, record] })),
   clearExtinctions: () => set({ extinctions: [] }),
+  updateWorldStats: patch => set(s => ({ worldStats: { ...s.worldStats, ...patch } })),
+  resetWorldStats: () => set({ worldStats: { ...EMPTY_STATS } }),
   logEat: (eaterId, preyId) => set(s => {
     const existing = s.foodWeb[eaterId] ?? []
     if (existing.includes(preyId)) return {}
