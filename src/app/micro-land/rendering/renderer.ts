@@ -532,7 +532,7 @@ export class Renderer {
     )
 
     this.drawMinimap(w, theme, vx)
-    this.drawNameLabels(w, vx, vw)
+    this.drawNameLabels(w, vx, vw, elderId)
   }
 
   // -------------------------------------------------------------------------
@@ -849,13 +849,9 @@ export class Renderer {
   }
 
   /**
-   * Halo over the oldest thing that has ever lived here.
+   * Glow around the oldest thing that has ever lived here.
    *
-   * A ring rather than a crown: at six pixels wide a crown is three pixels of
-   * mush sitting on the creature's head, while an ellipse floating clear of the
-   * sprite reads as a halo at any size and never hides the animal wearing it.
-   * This is the only mark the record system puts on the world — everything else
-   * it knows lives behind a tap.
+   * A ring of pixels wrapping the sprite rather than floating above it — a glow reads as vitality; a halo reads as dead.
    */
   private drawElder(w: WorldState, id: number): void {
     const c = w.creatures.find(x => x.id === id)
@@ -864,24 +860,22 @@ export class Renderer {
     if (!bp) return
     const rows = bp.art.frames[0]
     const bw = rows[0].length
+    const bh = rows.length
 
     const ctx = this.wctx
+    // Centre of the sprite body — glow wraps around it, not above it.
     const cx = Math.round(c.x) + bw / 2
-    // Two pixels of clear air above the sprite, so it reads as floating rather
-    // than as part of the creature.
-    const cy = Math.round(c.y) - 3
-    const rx = Math.max(2, Math.min(6, bw / 2))
-    const ry = Math.max(1, rx * 0.42)
+    const cy = Math.round(c.y) + bh / 2
 
-    // Slower than the selection pulse — this is meant to be noticed, not to
-    // demand attention while you're doing something else.
+    // 2px clearance outside the sprite bounds on each axis.
+    const rx = bw / 2 + 2
+    const ry = bh / 2 + 2
+
     ctx.fillStyle = '#fcd34d'
-    ctx.globalAlpha = 0.62 + 0.28 * Math.sin(w.elapsed * 2.6)
+    ctx.globalAlpha = 0.5 + 0.25 * Math.sin(w.elapsed * 2.6)
 
-    // Plotted point by point instead of ctx.ellipse: a stroked path at this
-    // scale antialiases into a grey smudge, and the whole world is nearest
-    // neighbour. Step is tied to the radius so small halos don't come out dotted.
-    const steps = Math.max(12, Math.round(rx * 6))
+    // Point-by-point so it stays sharp at pixel scale (no antialiasing).
+    const steps = Math.max(16, Math.round((rx + ry) * 4))
     for (let i = 0; i < steps; i++) {
       const t = (i / steps) * Math.PI * 2
       ctx.fillRect(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry), 1, 1)
@@ -1010,9 +1004,12 @@ export class Renderer {
    * regardless of zoom. Only named creatures get a tag, which keeps the world
    * uncluttered — a name is notable, not a default label.
    */
-  private drawNameLabels(w: WorldState, vx: number, vw: number): void {
-    const named = w.creatures.filter(c => c.name !== null)
-    if (named.length === 0) return
+  private drawNameLabels(w: WorldState, vx: number, vw: number, elderId: number | null): void {
+    const elder = elderId !== null ? w.creatures.find(x => x.id === elderId) ?? null : null
+    const namedCreatures = w.creatures.filter(c => c.name !== null)
+    const showUnnamed = elder !== null && elder.name === null
+
+    if (namedCreatures.length === 0 && !showUnnamed) return
 
     const ctx = this.ctx
     const scale = this.scale
@@ -1024,24 +1021,32 @@ export class Renderer {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'bottom'
 
-    for (const c of named) {
+    for (const c of namedCreatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
-      // Cull off-screen.
       if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
 
       const rows = bp.art.frames[0]
       const bw = rows[0].length
-
-      // Centre of the sprite top edge, in display pixels.
       const dx = (c.x + bw / 2 - vx) * scale + offsetX
       const dy = (c.y - viewTop) * scale + offsetY - 3
 
-      // Shadow for legibility.
       ctx.fillStyle = 'rgba(0,0,0,0.7)'
       ctx.fillText(c.name!, dx + 1, dy + 1)
       ctx.fillStyle = '#ffffff'
       ctx.fillText(c.name!, dx, dy)
+    }
+
+    // Unnamed elder: dim placeholder so the player knows it can be named.
+    if (showUnnamed && elder) {
+      const bp = w.blueprints[elder.blueprintId]
+      if (bp && !(elder.x + bp.art.frames[0][0].length < vx || elder.x > vx + vw)) {
+        const bw = bp.art.frames[0][0].length
+        const dx = (elder.x + bw / 2 - vx) * scale + offsetX
+        const dy = (elder.y - viewTop) * scale + offsetY - 3
+        ctx.fillStyle = 'rgba(255,255,255,0.3)'
+        ctx.fillText('unnamed', dx, dy)
+      }
     }
 
     ctx.textAlign = 'left'
