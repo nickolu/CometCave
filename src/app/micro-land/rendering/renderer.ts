@@ -28,7 +28,7 @@
 import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
-import { lifespanOf, tintKey } from '@/app/micro-land/domain/traits'
+import { lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
 import type { WorldState } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
@@ -768,15 +768,19 @@ export class Renderer {
       const source =
         c.facing === -1 && bp.art.faceMotion ? sprites.flipped[frame] : sprites.frames[frame]
 
-      const x = Math.round(c.x)
-      const y = Math.round(c.y)
+      const size = sizeOf(c)
+      const sw = Math.round(sprites.width * size)
+      const sh = Math.round(sprites.height * size)
+      // Anchor at the bottom-centre so feet stay on the ground.
+      const x = Math.round(c.x + (sprites.width - sw) / 2)
+      const y = Math.round(c.y + sprites.height - sh)
 
       // A creature about to starve or drown flickers, so you can spot it.
       if (c.starving > 0 || c.distress > 2) {
         const pulse = Math.sin(w.elapsed * 12) * 0.5 + 0.5
         ctx.globalAlpha = 0.45 + pulse * 0.55
       }
-      ctx.drawImage(source, x, y)
+      ctx.drawImage(source, x, y, sw, sh)
       ctx.globalAlpha = 1
 
       // Age desaturation: overlay a gray wash that grows as the creature ages.
@@ -799,7 +803,7 @@ export class Renderer {
           const alpha = Math.min(0.6, Math.abs(delta) * 1.2).toFixed(2)
           ctx.globalAlpha = parseFloat(alpha)
           ctx.fillStyle = delta < 0 ? '#1e64ff' : '#ff3c00'
-          ctx.fillRect(x, y, sprites.width, sprites.height)
+          ctx.fillRect(x, y, sw, sh)
           ctx.globalAlpha = 1
         }
       }

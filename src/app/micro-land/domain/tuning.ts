@@ -69,6 +69,10 @@ export const TUNING_DEFAULTS = {
   traitDrift: TRAIT_DRIFT,
 
   gravity: GRAVITY,
+  /** Horizontal water current — positive pushes swimmers rightward, tiles/s². */
+  currentX: 0,
+  /** Vertical water current — positive pushes swimmers downward, tiles/s². */
+  currentY: 0,
   /**
    * How long one seasonal cycle lasts, in sim seconds.
    * 300 = five real-world minutes at normal speed.
@@ -283,6 +287,24 @@ export const KNOBS: Knob[] = [
     min: 4,
     max: 90,
     step: 1,
+  },
+  {
+    key: 'currentX',
+    group: 'world',
+    label: 'Water current — left/right',
+    help: 'A directional push through all liquid. Positive flows rightward, negative leftward. Swimmers and drifters are carried; walkers ignore it.',
+    min: -3,
+    max: 3,
+    step: 0.1,
+  },
+  {
+    key: 'currentY',
+    group: 'world',
+    label: 'Water current — up/down',
+    help: 'Vertical component of the water current. Positive sinks, negative lifts. A downward current in a deep lake tests whether your fish can fight it.',
+    min: -3,
+    max: 3,
+    step: 0.1,
   },
   {
     key: 'seasonAmplitude',
