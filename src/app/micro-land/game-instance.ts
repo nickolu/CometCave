@@ -440,7 +440,7 @@ export class GameInstance {
 
   /** Turn raw sim events into the occasional human-readable notice. */
   private digestEvents(events: SimEvent[]): void {
-    const { notify, logEat } = useMicroLand.getState()
+    const { notify, logEat, updateWorldStats, worldStats } = useMicroLand.getState()
 
     for (const event of events) {
       if (event.kind !== 'ate' || !event.victimId) continue
@@ -490,6 +490,35 @@ export class GameInstance {
         event.kind === 'starved' ? `The last ${bp.name} starved.` : `The last ${bp.name} was eaten.`
       )
     }
+
+    // Accumulate lifetime stats.
+    let totalBorn = 0, totalDeaths = 0, totalEats = 0
+    let longestLived = worldStats.longestLived
+    let mostProlificName = worldStats.mostProlificName
+    let mostProlificChildren = worldStats.mostProlificChildren
+    for (const event of events) {
+      if (event.kind === 'born') { totalBorn++ }
+      else if (event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' || event.kind === 'burned' || event.kind === 'aged') {
+        totalDeaths++
+        if ((event.ageSeconds ?? 0) > longestLived) longestLived = event.ageSeconds ?? 0
+        if ((event.children ?? 0) > mostProlificChildren) {
+          mostProlificChildren = event.children ?? 0
+          mostProlificName = this.world.blueprints[event.blueprintId]?.name ?? null
+        }
+      } else if (event.kind === 'ate' && event.victimId) {
+        totalEats++
+      }
+    }
+    if (totalBorn > 0 || totalDeaths > 0 || totalEats > 0 || longestLived !== worldStats.longestLived) {
+      updateWorldStats({
+        totalBorn: worldStats.totalBorn + totalBorn,
+        totalDeaths: worldStats.totalDeaths + totalDeaths,
+        totalEats: worldStats.totalEats + totalEats,
+        longestLived,
+        mostProlificName,
+        mostProlificChildren,
+      })
+    }
   }
 
   /**
@@ -529,6 +558,11 @@ export class GameInstance {
     }
 
     useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
+
+    const currentStats = useMicroLand.getState().worldStats
+    if (this.world.creatures.length > currentStats.peakPopulation) {
+      useMicroLand.getState().updateWorldStats({ peakPopulation: this.world.creatures.length })
+    }
 
     this.updateRecords(population)
     this.pushInspected()

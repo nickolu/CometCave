@@ -71,6 +71,7 @@ export function FieldGuide() {
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
+  const worldStats = useMicroLand(s => s.worldStats)
   const foodWeb = useMicroLand(s => s.foodWeb)
   const allBlueprintNames = useMicroLand(s =>
     Object.fromEntries(s.blueprints.map(b => [b.id, b.name]))
@@ -462,6 +463,34 @@ export function FieldGuide() {
             </ul>
           </section>
         )}
+
+        {/* World Statistics */}
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>
+            This session
+          </h3>
+          <table style={{ width: '100%', fontSize: 11, fontFamily: 'var(--cc-font-mono)', borderCollapse: 'collapse' }}>
+            <tbody>
+              {(
+                [
+                  ['Born', worldStats.totalBorn],
+                  ['Died', worldStats.totalDeaths],
+                  ['Predation events', worldStats.totalEats],
+                  ['Peak population', worldStats.peakPopulation],
+                  ['Longest life', worldStats.longestLived > 0 ? `${Math.round(worldStats.longestLived)}s` : '—'],
+                  ['Most prolific', worldStats.mostProlificName
+                    ? `${worldStats.mostProlificName} (${worldStats.mostProlificChildren} offspring)`
+                    : '—'],
+                ] as [string, string | number][]
+              ).map(([label, value]) => (
+                <tr key={label} style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+                  <td style={{ padding: '4px 0', color: 'var(--cc-text-muted)', width: '55%' }}>{label}</td>
+                  <td style={{ padding: '4px 0', textAlign: 'right' }}>{value}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
 
         <ImportSection addBlueprint={addBlueprint} />
       </div>
