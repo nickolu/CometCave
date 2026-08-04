@@ -737,9 +737,9 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
-        // Leave a scent so hungry packmates can follow toward food.
-        if (w.scents.length < 200) {
-          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        // Cooperative creatures signal food location to kin.
+        if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
         }
         c.mood = 'eat'
         c.targetId = null
@@ -811,9 +811,9 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
-        // Leave a scent so hungry packmates can follow toward food.
-        if (w.scents.length < 200) {
-          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
+        // Cooperative creatures signal food location to kin.
+        if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
         }
         c.mood = 'eat'
         c.targetId = null
@@ -866,10 +866,10 @@ function look(
     }
   }
 
-  // Scent following: a hungry animal with nothing in sight drifts toward
-  // a same-species scent trail if one is nearby. Cap the search radius at
-  // 2× plain sight so the behavior doesn't fire from across the world.
-  if (hungry && !prey && !threat && w.scents.length > 0) {
+  // Scent following: cooperative creatures follow food beacons left by kin.
+  // Only creatures with cooperation > 0.5 participate — loners ignore signals.
+  if (hungry && !prey && !threat && w.scents.length > 0 &&
+      ((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5) {
     const scentReach2 = sight * sight * 4
     const midX = cx
     const midY = c.y + bh / 2

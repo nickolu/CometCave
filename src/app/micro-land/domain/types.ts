@@ -379,6 +379,14 @@ export interface Traits {
    * but are easier prey. Drifts each generation in [0.8, 1.2].
    */
   size: number
+  /**
+   * Tendency to share food discoveries with same-species members.
+   *
+   * 0 = solitary, 1 = highly cooperative. Creatures above 0.5 emit a
+   * food-beacon scent when they eat and follow beacons left by kin. Those
+   * below neither emit nor follow. Creates a fork: loners vs. clusters.
+   */
+  cooperation: number
 }
 
 /** One living thing in the world. */
