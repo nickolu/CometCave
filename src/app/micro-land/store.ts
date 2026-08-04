@@ -201,6 +201,13 @@ interface MicroLandState {
   builderOpen: boolean
   guideOpen: boolean
   settingsOpen: boolean
+  challengesOpen: boolean
+  challengeActive: { name: string; goal: string } | null
+  /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
+  reshuffleToken: number
+  setChallengesOpen: (open: boolean) => void
+  setChallengeActive: (c: { name: string; goal: string } | null) => void
+  requestReshuffle: () => void
   /**
    * Whether the tool drawer along the bottom is unrolled.
    *
@@ -395,6 +402,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   builderOpen: false,
   guideOpen: false,
   settingsOpen: false,
+  challengesOpen: false,
+  challengeActive: null,
+  reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
   inspected: null,
@@ -451,6 +461,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBuilderOpen: builderOpen => set({ builderOpen }),
   setGuideOpen: guideOpen => set({ guideOpen }),
   setSettingsOpen: settingsOpen => set({ settingsOpen }),
+  setChallengesOpen: open => set({ challengesOpen: open }),
+  setChallengeActive: c => set({ challengeActive: c }),
+  requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
   setToolbarOpen: toolbarOpen => {
     storeToolbarOpen(toolbarOpen)
     set({ toolbarOpen })
