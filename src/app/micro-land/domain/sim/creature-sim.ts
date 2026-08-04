@@ -1305,10 +1305,14 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     case 'swim': {
       const wet = boxLiquidFraction(w, c.x, c.y, bw, bh)
       if (wet > 0.3) {
-        c.vx += wantX * accel * dt
-        c.vy += wantY * accel * dt
-        c.vx = clampMag(c.vx, speed)
-        c.vy = clampMag(c.vy, speed)
+        // Current adds directly to the swimmer's acceleration. Swimming with
+        // the current is free speed; fighting it costs effort.
+        const cx = TUNING.currentX
+        const cy = TUNING.currentY
+        c.vx += (wantX * accel + cx) * dt
+        c.vy += (wantY * accel + cy) * dt
+        c.vx = clampMag(c.vx, speed + Math.abs(cx) * 0.5)
+        c.vy = clampMag(c.vy, speed + Math.abs(cy) * 0.5)
       } else {
         // Beached — flop uselessly and hope for the best.
         if (c.grounded && rng() < 6 * dt) {
@@ -1332,10 +1336,13 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       break
     }
     case 'drift': {
-      c.vx += wantX * accel * dt * 0.4
-      c.vy += wantY * accel * dt * 0.4
-      c.vx = clampMag(c.vx, speed)
-      c.vy = clampMag(c.vy, speed * 0.8)
+      // Drifters go where the water takes them — current carries them freely.
+      const cx = TUNING.currentX
+      const cy = TUNING.currentY
+      c.vx += (wantX * accel * 0.4 + cx) * dt
+      c.vy += (wantY * accel * 0.4 + cy) * dt
+      c.vx = clampMag(c.vx, speed + Math.abs(cx) * 0.5)
+      c.vy = clampMag(c.vy, (speed + Math.abs(cy) * 0.5) * 0.8)
       break
     }
   }
