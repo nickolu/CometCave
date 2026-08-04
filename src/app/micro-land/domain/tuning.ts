@@ -73,6 +73,16 @@ export const TUNING_DEFAULTS = {
   currentX: 0,
   /** Vertical water current — positive pushes swimmers downward, tiles/s². */
   currentY: 0,
+  /**
+   * How long one seasonal cycle lasts, in sim seconds.
+   * 300 = five real-world minutes at normal speed.
+   */
+  seasonPeriod: 300,
+  /**
+   * How much seasons swing plant availability, 0..1.
+   * 0 = no seasonal effect. 0.7 = ×0.3 at trough, ×1.7 at peak.
+   */
+  seasonAmplitude: 0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -295,6 +305,24 @@ export const KNOBS: Knob[] = [
     min: -3,
     max: 3,
     step: 0.1,
+  },
+  {
+    key: 'seasonAmplitude',
+    group: 'world',
+    label: 'Seasons — strength',
+    help: 'A slow cycle that swings how fast plants grow and spread. At 0 there are no seasons. At 0.7, plants thrive in summer (×1.7 rate) and barely survive winter (×0.3 rate). At 1 they go dormant entirely in the trough.',
+    min: 0,
+    max: 1,
+    step: 0.05,
+  },
+  {
+    key: 'seasonPeriod',
+    group: 'world',
+    label: 'Seasons — cycle length (sim seconds)',
+    help: 'How long one full season cycle takes in simulation time. 300 is about five real minutes at normal speed. Shorter periods make the world feel more volatile; longer ones feel geological.',
+    min: 30,
+    max: 1800,
+    step: 30,
   },
 ]
 

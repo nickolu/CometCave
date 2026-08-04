@@ -30,6 +30,7 @@ import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { tintKey } from '@/app/micro-land/domain/traits'
 import type { WorldState } from '@/app/micro-land/domain/types'
+import { useMicroLand } from '@/app/micro-land/store'
 
 import { getSprites } from './sprite-cache'
 
@@ -104,6 +105,10 @@ export interface MapRect {
   w: number
   h: number
 }
+
+interface TrailPoint { x: number; y: number; elapsed: number }
+/** Creature id → recent positions. Updated and drawn by drawCreatures(). */
+const trailMap = new Map<number, TrailPoint[]>()
 
 export class Renderer {
   private display: HTMLCanvasElement
@@ -705,6 +710,49 @@ export class Renderer {
 
   private drawCreatures(w: WorldState, vx: number, vw: number): void {
     const ctx = this.wctx
+    const traitKey = useMicroLand.getState().traitOverlay
+    const trailsEnabled = useMicroLand.getState().trailsEnabled
+
+    // --- trails: record positions, then draw before sprites ---
+    if (trailsEnabled) {
+      const now = w.elapsed
+      // Build a fast id→creature lookup for pruning dead trails
+      const alive = new Set(w.creatures.map(c => c.id))
+      for (const id of trailMap.keys()) {
+        if (!alive.has(id)) trailMap.delete(id)
+      }
+      // Sample & prune each creature
+      for (const c of w.creatures) {
+        let trail = trailMap.get(c.id)
+        if (!trail) { trail = []; trailMap.set(c.id, trail) }
+        // Sample at ~10 Hz (every 0.1 s of elapsed time)
+        const last = trail[trail.length - 1]
+        if (!last || now - last.elapsed > 0.1) {
+          trail.push({ x: c.x, y: c.y, elapsed: now })
+        }
+        // Drop points older than 5 s
+        while (trail.length > 0 && now - trail[0].elapsed > 5) trail.shift()
+      }
+      // Draw all trails (under sprites)
+      for (const c of w.creatures) {
+        const trail = trailMap.get(c.id)
+        if (!trail || trail.length < 2) continue
+        if (c.x + 4 < vx || c.x > vx + vw) continue  // rough cull
+        const hue = c.traits.hue ?? 0
+        ctx.fillStyle = `hsl(${hue}, 55%, 68%)`
+        for (const pt of trail) {
+          const age = w.elapsed - pt.elapsed
+          if (age > 5) continue
+          ctx.globalAlpha = (1 - age / 5) * 0.45
+          ctx.fillRect(Math.round(pt.x), Math.round(pt.y), 1, 1)
+        }
+      }
+      ctx.globalAlpha = 1
+    } else {
+      // Clear stale data when trails are off, so re-enabling starts fresh.
+      if (trailMap.size > 0) trailMap.clear()
+    }
+
     for (const c of w.creatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
@@ -730,6 +778,17 @@ export class Renderer {
       }
       ctx.drawImage(source, x, y)
       ctx.globalAlpha = 1
+
+      if (traitKey) {
+        const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
+        if (Math.abs(delta) >= 0.08) {
+          const alpha = Math.min(0.6, Math.abs(delta) * 1.2).toFixed(2)
+          ctx.globalAlpha = parseFloat(alpha)
+          ctx.fillStyle = delta < 0 ? '#1e64ff' : '#ff3c00'
+          ctx.fillRect(x, y, sprites.width, sprites.height)
+          ctx.globalAlpha = 1
+        }
+      }
     }
   }
 
