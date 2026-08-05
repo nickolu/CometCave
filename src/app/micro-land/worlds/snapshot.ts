@@ -152,8 +152,6 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
       breedCooldown: round(c.breedCooldown),
       mealsEaten: c.mealsEaten,
       children: c.children,
-      digProgress: round(c.digProgress),
-      tilesDug: c.tilesDug,
       generation: c.generation,
       // Stored, and it has to be. A reopened world whose creatures came back as
       // their blueprints would quietly delete every line the player had grown —
@@ -197,8 +195,6 @@ function thaw(saved: SavedCreature): Creature {
     breedCooldown: saved.breedCooldown,
     mealsEaten: saved.mealsEaten,
     children: saved.children,
-    digProgress: saved.digProgress,
-    tilesDug: saved.tilesDug,
     generation: saved.generation,
     traits: saved.traits ? { ...saved.traits } : neutralTraits(),
     name: saved.name,

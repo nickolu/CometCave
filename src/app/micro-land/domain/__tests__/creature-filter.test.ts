@@ -58,7 +58,6 @@ function bp(over: {
     },
     senses: { sight: 8 },
     habitat: { needs: null, drowns: true },
-    dig: { through: [], speed: 1 },
     death: { becomes: null, particleColor: '#ffffff', particleCount: 0 },
     aura: null,
     glow: over.glow ?? 0,

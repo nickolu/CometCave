@@ -212,20 +212,6 @@ export interface CreatureHabitat {
 }
 
 /**
- * What this creature can tunnel through.
- *
- * Kept separate from locomotion on purpose: digging is orthogonal to how you
- * move, so a walker, a swimmer and a floater can each be a digger, and each can
- * be limited to different rock.
- */
-export interface CreatureDig {
-  /** Materials it can chew through. Empty means it cannot dig at all. */
-  through: MaterialId[]
-  /** Tiles per second it gets through. Low values read as effort. */
-  speed: number
-}
-
-/**
  * A creature that changes the world around it rather than just living in it.
  *
  * This is how a bee is different from a moth. Both fly and eat plants; only one
@@ -278,7 +264,6 @@ export interface CreatureBlueprint {
   diet: CreatureDiet
   senses: CreatureSenses
   habitat: CreatureHabitat
-  dig: CreatureDig
   death: CreatureDeath
   /** What it does to its surroundings, or null for the vast majority. */
   aura: CreatureAura | null
@@ -479,10 +464,6 @@ export interface Creature {
   mealsEaten: number
   /** Lifetime tally of offspring. */
   children: number
-  /** Progress into the tile currently being chewed through, 0..1. */
-  digProgress: number
-  /** Lifetime tally of tiles tunnelled through. */
-  tilesDug: number
   /**
    * How far back this creature's line goes. 1 was placed or seeded by hand or by
    * the world; anything higher was born here, to a parent one lower.
@@ -626,21 +607,6 @@ export interface NamedCreatureEntry {
 }
 
 /**
- * A persistent den created by a burrowing creature.
- *
- * A creature with dig capability that rests long enough at a spot stakes that
- * spot as a burrow for its species. Same-species diggers flee toward the nearest
- * burrow when threatened, and the burrow persists after the creator dies — ready
- * for another to claim.
- */
-export interface Burrow {
-  x: number
-  y: number
-  /** The species that made (and can use) this burrow. */
-  blueprintId: string
-}
-
-/**
  * An unhatched egg dropped by an egg-laying creature.
  *
  * Contains the full inherited traits so the juvenile hatches with the same
@@ -700,7 +666,6 @@ export interface WorldState {
   carcasses: Carcass[]
   tombstones: Tombstone[]
   nextTombstoneId: number
-  burrows: Burrow[]
   nextCarcassId: number
   scents: Scent[]
   /**

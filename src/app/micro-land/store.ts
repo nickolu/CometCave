@@ -67,7 +67,6 @@ export interface Inspected {
   lifespanSeconds: number
   mealsEaten: number
   children: number
-  tilesDug: number
   /** Seconds spent somewhere it can't survive; 0 when it's fine. */
   distress: number
   starving: number

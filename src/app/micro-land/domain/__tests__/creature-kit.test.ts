@@ -169,15 +169,12 @@ describe('buildRawCreature', () => {
       move: { kind: 'walk', speed: 9.5, jump: 3, restlessness: 0.11 },
       diet: { eats: ['plant'], lifespanSeconds: 777 },
       body: { immuneTo: ['lava'] },
-      dig: { through: ['stone'], speed: 2 },
     }) as CreatureBlueprint
 
     const same = build({ seed, name: 'Cinder Wyrm' })
     expect(same.move.speed).toBe(9.5)
     expect(same.diet.lifespanSeconds).toBe(777)
     expect(same.blurb).toBe('It swims through lava.')
-    // Things no canvas can express come along for the ride.
-    expect(same.dig.through).toEqual(['stone'])
     // ...but the drawing still decides how big it is.
     expect(same.size).toBe(3)
   })

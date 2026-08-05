@@ -32,7 +32,7 @@ import {
 } from '@/app/micro-land/domain/constants'
 import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Burrow, Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
+import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 
 import {
   boxDeadlyMaterial,
@@ -336,7 +336,6 @@ export function tickCreatures(
   w.nextCarcassId ??= 1
   w.tombstones ??= []
   w.nextTombstoneId ??= 1
-  w.burrows ??= []
   w.scents ??= []
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
   tickMoisture(w, tickCount, dt, rng)
@@ -456,22 +455,6 @@ export function tickCreatures(
     // --- hunger ---------------------------------------------------------
     // Resting creatures aren't running or hunting, so they burn energy more slowly.
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
-
-    // Burrowing: a well-rested digger stakes this spot as a den if none is nearby.
-    if (
-      c.mood === 'rest' &&
-      bp.dig.through.length > 0 &&
-      w.burrows.length < 50
-    ) {
-      const bx = Math.round(c.x)
-      const by = Math.round(c.y)
-      const nearbyBurrow = w.burrows.some(
-        b => b.blueprintId === c.blueprintId && Math.abs(b.x - bx) + Math.abs(b.y - by) < 8
-      )
-      if (!nearbyBurrow) {
-        w.burrows.push({ x: bx, y: by, blueprintId: c.blueprintId })
-      }
-    }
 
     const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
     c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt)
@@ -1183,24 +1166,6 @@ function look(
   if (threat) {
     c.mood = 'flee'
     c.targetId = threat.id
-    // Diggers: flee toward a known burrow rather than just away from threat.
-    if (bp.dig.through.length > 0 && w.burrows.length > 0) {
-      let nearestBurrow: Burrow | null = null
-      let nearestBurrowD2 = Infinity
-      for (const b of w.burrows) {
-        if (b.blueprintId !== c.blueprintId) continue
-        const bdx = b.x - cx
-        const bdy = b.y - (c.y + bh / 2)
-        const bd2 = bdx * bdx + bdy * bdy
-        if (bd2 < nearestBurrowD2 && bd2 < sight * sight * 9) {
-          nearestBurrowD2 = bd2
-          nearestBurrow = b
-        }
-      }
-      if (nearestBurrow) {
-        c.drift = nearestBurrow.x > cx ? 1 : -1
-      }
-    }
   } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
     c.mood = 'hunt'
     c.targetId = prey.id
@@ -1476,17 +1441,6 @@ function riseAhead(w: WorldState, c: Creature, body: BodyBox, dir: number): numb
   return 0
 }
 
-/** Solid directly over its head. The sky is not a roof. */
-function roofed(w: WorldState, c: Creature, body: BodyBox): boolean {
-  const y = Math.floor(c.y + body.dy) - 1
-  if (y < 0) return false
-  const x1 = Math.floor(c.x + body.dx + body.w - 0.001)
-  for (let x = Math.floor(c.x + body.dx); x <= x1; x++) {
-    if (solidAt(w, x, y)) return true
-  }
-  return false
-}
-
 /**
  * Is the way it is wandering somewhere it cannot survive?
  *
@@ -1633,7 +1587,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
 
   // Obstacle avoidance: walk and crawl locomotion steer around solid walls.
   // Flyers and swimmers are free to move through/over terrain so skip this.
-  if ((bp.move.kind === 'walk' || bp.move.kind === 'crawl') && !bp.dig.through.length) {
+  if (bp.move.kind === 'walk' || bp.move.kind === 'crawl') {
     const len = Math.hypot(wantX, wantY)
     if (len > 0.01 && solidAhead(w, c, body, wantX / len, wantY / len)) {
       const angle = Math.atan2(wantY, wantX)
@@ -1666,7 +1620,6 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
   const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
-  const digger = bp.dig.through.length > 0
 
   switch (bp.move.kind) {
     case 'walk': {
@@ -1680,36 +1633,6 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
         : 1
       c.vx += wantX * accel * dt
       c.vx = clampMag(c.vx, speed * groundMult)
-
-      /**
-       * A burrower goes to ground when it is fed, and comes back up when it is
-       * hungry.
-       *
-       * Downward was already here: a well-fed digger makes a warren, and only a
-       * well-fed one, or it would tunnel away from the food it needs and starve
-       * in the dark. How deep it gets is bounded by its own dig list — a Delver
-       * chews soil but not stone, so it hollows out the topsoil and stops there
-       * instead of reaching the lava.
-       *
-       * What was missing was the return trip. Sampling the harness at the moment
-       * of starving, a Delver had something edible inside its sight 81% of the
-       * time, a median of fourteen tiles away — because the food was on the
-       * surface and the Delver was under it. A tunnel dug on a full stomach was
-       * a one-way trip.
-       *
-       * Upward is re-asserted every tick rather than kicked once, because
-       * gravity is pulling the other way and it is being held against the roof
-       * that lets `chewThrough` accumulate progress and pop the tile. It costs
-       * one row of lookups per digger per tick and stops the instant there is
-       * open sky overhead, so a digger already on the surface pays nothing.
-       */
-      if (digger) {
-        if (c.grounded && c.hunger < 0.4 && rng() < 0.6 * dt) {
-          c.vy = 6
-        } else if (c.hunger > FORAGE_HUNGER && roofed(w, c, body)) {
-          c.vy = Math.min(c.vy, -Math.max(2, bp.dig.speed * 2))
-        }
-      }
 
       /**
        * Jump when there's something in the way its legs can't take, or when the
@@ -1878,7 +1801,6 @@ function integrate(
   c.vx = Math.max(-MAX_FALL, Math.min(MAX_FALL, c.vx))
 
   const canStepUp = kind === 'walk'
-  const digger = bp.dig.through.length > 0
 
   // Everything below works in *core* coordinates and converts back at the end.
   // `c.x`/`c.y` are the sprite's top-left; the core sits at `+ body.dx/dy`, so
@@ -1905,9 +1827,6 @@ function integrate(
   if (step >= 0) {
     c.x = nx
     c.y -= step
-  } else if (digger && chewThrough(w, c, bp, nx + ox, c.y + oy, body.w, body.h, dt)) {
-    // Held against the rock while it works. The tunnel opens next tick.
-    c.vx *= 0.2
   } else {
     const bx = nx + ox
     c.x = (c.vx > 0 ? Math.floor(bx + body.w - 0.001) - body.w : Math.floor(bx) + 1) - ox
@@ -1933,11 +1852,6 @@ function integrate(
   const ny = c.y + c.vy * dt
   if (!boxHitsSolid(w, c.x + ox, ny + oy, body.w, body.h)) {
     c.y = ny
-  } else if (digger && chewThrough(w, c, bp, c.x + ox, ny + oy, body.w, body.h, dt)) {
-    c.vy *= 0.2
-    // A digger resting on rock it is actively burrowing into still counts as
-    // standing on something, or a walker would never get the jump to push down.
-    if (c.vy > 0) c.grounded = true
   } else {
     const by = ny + oy
     if (c.vy > 0) {
@@ -1955,58 +1869,6 @@ function integrate(
   // Belt and braces: never let anything escape the box.
   c.x = Math.max(0, Math.min(WORLD_W - bw, c.x))
   c.y = Math.max(0, Math.min(WORLD_H - bh, c.y))
-}
-
-/**
- * Try to tunnel into whatever is blocking a move.
- *
- * Returns true when the creature is *able* to dig here — including while it is
- * still part-way through a tile — so the caller stalls it against the rock
- * instead of bouncing it off. Only one tile is removed per completed unit of
- * progress, which is what makes a slow digger read as effort rather than a
- * creature that phases through walls.
- */
-function chewThrough(
-  w: WorldState,
-  c: Creature,
-  bp: CreatureBlueprint,
-  x: number,
-  y: number,
-  bw: number,
-  bh: number,
-  dt: number
-): boolean {
-  const diggable = new Set(bp.dig.through.map(m => MATERIAL_INDEX[m]))
-
-  // Collect the blocking tiles this move would run into.
-  const x0 = Math.floor(x)
-  const y0 = Math.floor(y)
-  const x1 = Math.floor(x + bw - 0.001)
-  const y1 = Math.floor(y + bh - 0.001)
-
-  let targetX = -1
-  let targetY = -1
-  for (let ty = y0; ty <= y1 && targetX < 0; ty++) {
-    for (let tx = x0; tx <= x1; tx++) {
-      if (!solidAt(w, tx, ty)) continue
-      // Out of bounds reads as solid but isn't a real tile — never dig the walls
-      // of the world, or creatures escape the box entirely.
-      if (!inBounds(tx, ty)) return false
-      if (!diggable.has(tileAt(w, tx, ty))) return false
-      targetX = tx
-      targetY = ty
-      break
-    }
-  }
-  if (targetX < 0) return false
-
-  c.digProgress += bp.dig.speed * dt
-  if (c.digProgress >= 1) {
-    c.digProgress -= 1
-    setTile(w, targetX, targetY, MATERIAL_INDEX.air)
-    c.tilesDug++
-  }
-  return true
 }
 
 function clampMag(v: number, max: number): number {

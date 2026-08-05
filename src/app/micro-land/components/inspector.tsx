@@ -128,9 +128,6 @@ function biography(c: Inspected, bp: CreatureBlueprint): string {
     } else if (c.children > 1) {
       parts.push(`${c.children} children`)
     }
-    if (c.tilesDug > 5) {
-      parts.push(`${c.tilesDug} tiles dug`)
-    }
   }
 
   return parts.join(' · ')
@@ -496,12 +493,6 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           {bp.body.immuneTo.length > 0 && ' · fireproof'}
           {bp.glow > 0 && ' · glows'}
           {inspected.inWater && ' · in water'}
-          {bp.dig.through.length > 0 && (
-            <>
-              <br />
-              Digs through {bp.dig.through.join(', ')}
-            </>
-          )}
         </div>
 
         <div style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.55 }}>

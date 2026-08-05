@@ -1007,7 +1007,6 @@ export class GameInstance {
       lifespanSeconds: lifespanOf(c, bp),
       mealsEaten: c.mealsEaten,
       children: c.children,
-      tilesDug: c.tilesDug,
       distress: c.distress,
       starving: c.starving,
       speed: Math.hypot(c.vx, c.vy),

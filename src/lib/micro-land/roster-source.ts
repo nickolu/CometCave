@@ -72,7 +72,6 @@ export function creatureLiteral(bp: CreatureBlueprint): Record<string, unknown> 
     },
     senses: { sight: bp.senses.sight },
     habitat: { needs: bp.habitat.needs, drowns: bp.habitat.drowns },
-    dig: { through: bp.dig.through, speed: bp.dig.speed },
     death: {
       becomes: bp.death.becomes,
       particleColor: bp.death.particleColor,

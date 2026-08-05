@@ -48,7 +48,6 @@ export function createWorld(seed = 1337): WorldState {
     carcasses: [],
     tombstones: [],
     nextTombstoneId: 1,
-    burrows: [],
     nextCarcassId: 1,
     scents: [],
     moisture: new Float32Array(WORLD_W * WORLD_H),
@@ -372,8 +371,6 @@ export function spawnCreature(
     breedCooldown: 0,
     mealsEaten: 0,
     children: 0,
-    digProgress: 0,
-    tilesDug: 0,
     // Founder of its line until `reproduce` says otherwise — and, being a
     // founder, exactly its species. Every creature this function makes is one
     // the world put there rather than one that was born: placed by hand, seeded

@@ -65,8 +65,6 @@ export interface SavedCreature {
   breedCooldown: number
   mealsEaten: number
   children: number
-  digProgress: number
-  tilesDug: number
   generation: number
   /**
    * What this one inherited, or absent for a world saved before creatures
