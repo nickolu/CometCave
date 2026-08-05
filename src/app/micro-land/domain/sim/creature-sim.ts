@@ -524,7 +524,7 @@ export function tickCreatures(
 
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events)
+      look(w, c, bp, bw, bh, dead, events, rng)
     }
 
     // --- movement -------------------------------------------------------
@@ -762,7 +762,8 @@ function look(
   bw: number,
   bh: number,
   dead: Set<number>,
-  events: SimEvent[]
+  events: SimEvent[],
+  rng: Rng
 ): void {
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2
