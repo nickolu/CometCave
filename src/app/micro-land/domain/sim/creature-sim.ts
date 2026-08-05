@@ -610,6 +610,7 @@ export function tickCreatures(
       readyToBreed(c, bp) &&
       creatures.length < TUNING.maxCreatures &&
       !(isPlant && plantsAlive >= TUNING.maxPlants) &&
+      !(isPlant && TUNING.pollinationOnly) &&
       (speciesCount[bp.id] ?? 0) < (isPlant ? TUNING.plantSpeciesCap : TUNING.speciesSoftCap)
     ) {
       /**

@@ -346,6 +346,12 @@ export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
  */
 export const POLLINATION_CARRY_SECONDS = 30
 
+/**
+ * When 1, plants cannot spread on their own — they may only reproduce via
+ * pollinator seed-carriers. 0 = off (default).
+ */
+export const POLLINATION_ONLY = 0
+
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9
 

@@ -270,6 +270,32 @@ function KnobRow({
   const id = `micro-land-knob-${knob.key}`
   const isDefault = value === TUNING_DEFAULTS[knob.key]
 
+  if (knob.type === 'toggle') {
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-3">
+          <label htmlFor={id} style={{ ...knobLabel, cursor: 'pointer' }}>
+            {knob.label}
+          </label>
+          <input
+            id={id}
+            type="checkbox"
+            checked={value === 1}
+            onChange={e => onChange(e.target.checked ? 1 : 0)}
+            style={{ accentColor: isDefault ? 'var(--cc-mint)' : 'var(--cc-gold)', width: 18, height: 18, cursor: 'pointer' }}
+            aria-describedby={`${id}-help`}
+          />
+        </div>
+        <p
+          id={`${id}-help`}
+          style={{ fontSize: 11, color: 'var(--cc-text-muted)', opacity: 0.75, lineHeight: 1.45 }}
+        >
+          {knob.help}
+        </p>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between gap-3">
