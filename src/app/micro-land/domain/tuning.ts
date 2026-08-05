@@ -37,6 +37,7 @@ import {
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   PLANT_SPREAD_COOLDOWN,
+  POLLINATION_CARRY_SECONDS,
   SPECIES_SOFT_CAP,
   TRAIT_DRIFT,
 } from '@/app/micro-land/domain/constants'
@@ -92,6 +93,10 @@ export const TUNING_DEFAULTS = {
    * How long an egg takes to hatch, in sim seconds.
    */
   eggHatchSeconds: 15,
+  /**
+   * How long a pollinator can carry a seed before it auto-drops, in sim seconds.
+   */
+  pollinationCarrySeconds: POLLINATION_CARRY_SECONDS,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -212,6 +217,16 @@ export const KNOBS: Knob[] = [
     min: 1,
     max: 8,
     step: 1,
+  },
+  {
+    key: 'pollinationCarrySeconds',
+    group: 'plants',
+    label: 'How long a bee carries a seed',
+    help: 'A pollinator picks up a seed when it brushes past a plant and drops it wherever it travels next. This is how long before it drops on its own.',
+    min: 5,
+    max: 120,
+    step: 5,
+    unit: 's',
   },
 
   {

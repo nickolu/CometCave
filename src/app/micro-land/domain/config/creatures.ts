@@ -906,6 +906,70 @@ const DUSTBEE = builtin('dustbee', {
   glow: 0,
 })
 
+const FLUTTERMOTH = builtin('fluttermoth', {
+  name: 'Fluttermoth',
+  blurb: 'A slow drifter that carries seeds far from where they were born.',
+  size: 2,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { w: '#f0e6d0', b: '#7a6850', s: '#c8b89a', d: '#3a2f20' },
+    frames: [
+      ['wbw', 'bsb', 'wdw'],
+      ['wsw', 'bdb', 'wsw'],
+    ],
+    frameMs: 140,
+    faceMotion: false,
+  },
+  body: { mass: 0.15, bounce: 0.05, drag: 0.7, buoyancy: 1.1, immuneTo: [] },
+  move: { kind: 'fly', speed: 2.8, jump: 0, restlessness: 0.35 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.018,
+    starveSeconds: 40,
+    breedAt: 0.68,
+    lifespanSeconds: 280,
+  },
+  senses: { sight: 20 },
+  habitat: { needs: null, drowns: true },
+  dig: { through: [], speed: 1 },
+  death: { becomes: null, particleColor: '#f0e6d0', particleCount: 4 },
+  aura: { radius: 14, helps: ['plant'], boost: 1.5, converts: null, convertRate: 0 },
+  glow: 0,
+})
+
+const SEEDMITE = builtin('seedmite', {
+  name: 'Seedmite',
+  blurb: 'Barely visible, but responsible for half the seeds that land somewhere new.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { g: '#a8d878', d: '#2a4010', y: '#e8f040' },
+    frames: [
+      ['gdg'],
+      ['.y.'],
+    ],
+    frameMs: 60,
+    faceMotion: true,
+  },
+  body: { mass: 0.05, bounce: 0.2, drag: 0.4, buoyancy: 1.3, immuneTo: [] },
+  move: { kind: 'fly', speed: 7.5, jump: 0, restlessness: 0.9 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.035,
+    starveSeconds: 18,
+    breedAt: 0.65,
+    lifespanSeconds: 90,
+  },
+  senses: { sight: 16 },
+  habitat: { needs: null, drowns: true },
+  dig: { through: [], speed: 1 },
+  death: { becomes: null, particleColor: '#a8d878', particleCount: 3 },
+  aura: { radius: 8, helps: ['plant'], boost: 1.3, converts: null, convertRate: 0 },
+  glow: 0,
+})
+
 const LOAMWORM = builtin('loamworm', {
   name: 'Loamworm',
   blurb: 'Chews bare rock and leaves good soil behind it.',
@@ -1495,6 +1559,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   DRIFTMOLE,
   WOOLLY,
   DUSTBEE,
+  FLUTTERMOTH,
+  SEEDMITE,
   LOAMWORM,
   CRYSTAL_SNAIL,
   STALKER,

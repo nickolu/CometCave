@@ -336,6 +336,16 @@ export const SPECIES_SOFT_CAP = Math.round(70 * WIDTH_SCALE)
  */
 export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
 
+/**
+ * How long a pollinator can carry a seed before it auto-drops, seconds.
+ *
+ * Long enough for a dustbee or fluttermoth to cross a gap between two plant
+ * clusters, short enough that a seed does not ride forever on a creature that
+ * never lands. The 2-second minimum-carry guard in creature-sim prevents
+ * the seed from dropping right back at the pickup plant.
+ */
+export const POLLINATION_CARRY_SECONDS = 30
+
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9
 

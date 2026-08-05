@@ -742,16 +742,26 @@ export class Renderer {
       const cx = c.x + bw / 2
       const cy = c.y + bh / 2
       const orbitR = Math.max(4, bw)
+      const carrying = !!(c as { carryingSeed?: string | null }).carryingSeed
 
-      // 4 motes orbiting at different phase offsets
-      ctx.fillStyle = '#fde68a'
+      // Orbiting motes — brighter and faster when carrying a seed.
+      ctx.fillStyle = carrying ? '#fff7aa' : '#fde68a'
+      const speed = carrying ? 3.0 : 1.8
       for (let i = 0; i < 4; i++) {
-        const angle = w.elapsed * 1.8 + i * (Math.PI / 2)
+        const angle = w.elapsed * speed + i * (Math.PI / 2)
         const mx = Math.round(cx + Math.cos(angle) * orbitR)
         const my = Math.round(cy + Math.sin(angle) * orbitR * 0.5)
-        ctx.globalAlpha = 0.45 + 0.3 * Math.sin(w.elapsed * 3 + i)
+        ctx.globalAlpha = 0.55 + 0.3 * Math.sin(w.elapsed * 3 + i)
         ctx.fillRect(mx, my, 1, 1)
       }
+
+      // Extra centre dot when loaded with a seed.
+      if (carrying) {
+        ctx.globalAlpha = 0.8
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(Math.round(cx), Math.round(cy - 1), 1, 1)
+      }
+
       ctx.globalAlpha = 1
     }
   }

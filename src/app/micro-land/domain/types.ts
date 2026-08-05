@@ -506,6 +506,10 @@ export interface Creature {
    * and it is worth more if it has to be earned.
    */
   name: string | null
+  /** BlueprintId of the plant seed this pollinator is currently carrying. Null if not carrying. */
+  carryingSeed: string | null
+  /** Seconds remaining before the carried seed auto-drops. */
+  seedTimer: number
   /**
    * Consecutive sense passes spent hunting the same target without success.
    * Resets when the target changes or a meal is eaten. Used for stuck detection.

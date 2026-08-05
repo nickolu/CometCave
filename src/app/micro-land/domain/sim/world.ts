@@ -394,6 +394,8 @@ export function spawnCreature(
     stunTimer: 0,
     symbiosisTimer: 0,
     sick: 0,
+    carryingSeed: null,
+    seedTimer: 0,
   }
   w.creatures.push(creature)
   return creature

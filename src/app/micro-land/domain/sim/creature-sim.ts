@@ -416,6 +416,10 @@ export function tickCreatures(
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
+    if ((c as { carryingSeed?: unknown }).carryingSeed === undefined) {
+      c.carryingSeed = null
+      c.seedTimer = 0
+    }
     if (c.sick > 0) {
       c.sick -= dt
       if (c.sick <= 0) {
@@ -531,6 +535,70 @@ export function tickCreatures(
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
+    }
+
+    // --- pollination: seed carrying ----------------------------------------
+    //
+    // Pollinators (aura.helps contains 'plant') pick up a seed when they
+    // brush past a plant, carry it for up to pollinationCarrySeconds, then
+    // drop it wherever they land. Flying creatures drop on landing; all
+    // pollinators drop when the timer expires.
+    if (bp.aura?.helps.includes('plant') && bp.move.kind !== 'root') {
+      if (c.carryingSeed) {
+        // Carrying — count down and check drop conditions.
+        c.seedTimer -= dt
+        // A 2-second minimum carry time prevents dropping at the pickup spot.
+        const canDrop =
+          c.seedTimer <= 0 ||
+          (c.grounded && bp.move.kind === 'fly' && c.seedTimer < TUNING.pollinationCarrySeconds - 2)
+        if (canDrop) {
+          const seedBp = w.blueprints[c.carryingSeed]
+          if (seedBp && plantsAlive < TUNING.maxPlants &&
+              (speciesCount[seedBp.id] ?? 0) < TUNING.plantSpeciesCap) {
+            const { w: sw, h: sh } = artSize(seedBp)
+            const seedling = reproduce(w, seedBp, c.x, c.y + bh, sw, sh, rng)
+            if (seedling) {
+              plantsAlive++
+              speciesCount[seedBp.id] = (speciesCount[seedBp.id] ?? 0) + 1
+              events.push({ kind: 'born', blueprintId: seedBp.id, x: seedling.x, y: seedling.y })
+              // A small pollen burst at the drop point.
+              for (let p = 0; p < 3; p++) {
+                if (w.particles.length >= 600) break
+                w.particles.push({
+                  x: c.x + (rng() - 0.5) * 4,
+                  y: c.y - rng() * 2,
+                  vx: (rng() - 0.5) * 0.6,
+                  vy: -(0.3 + rng() * 0.5),
+                  life: 1.5 + rng() * 1.5,
+                  maxLife: 2.5,
+                  color: '#fde68a',
+                })
+              }
+            }
+          }
+          c.carryingSeed = null
+          c.seedTimer = 0
+        }
+      } else {
+        // Not carrying — look for a nearby plant to pick up on the SENSE_EVERY interval.
+        if ((tickCount + c.id) % SENSE_EVERY === 0) {
+          const cx = c.x + bw / 2
+          const cy = c.y + bh / 2
+          for (const other of w.creatures) {
+            if (other === c || dead.has(other.id)) continue
+            const obp = w.blueprints[other.blueprintId]
+            if (!obp || obp.move.kind !== 'root') continue
+            const { w: ow, h: oh } = artSize(obp)
+            const dx = cx - (other.x + ow / 2)
+            const dy = cy - (other.y + oh / 2)
+            if (dx * dx + dy * dy < 9) { // within ~3 tiles
+              c.carryingSeed = other.blueprintId
+              c.seedTimer = TUNING.pollinationCarrySeconds
+              break
+            }
+          }
+        }
+      }
     }
 
     // --- what it does to the world around it -----------------------------
