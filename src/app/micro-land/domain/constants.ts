@@ -404,7 +404,7 @@ export const DISEASE_DURATION = 10
  * Shorter than 30 would override the already-working expanded-sight-range
  * mechanic. Sixty gives a creature two full minutes to find food locally first.
  */
-export const MIGRATION_THRESHOLD = 25
+export const MIGRATION_THRESHOLD = 60
 
 /**
  * How many seconds of resting it takes to build a nest from scratch.

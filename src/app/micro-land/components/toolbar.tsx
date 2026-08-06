@@ -334,10 +334,13 @@ export function Toolbar({
 
       {(open || side) && (
         <div id="micro-land-tools" className="flex flex-col gap-1.5">
-          {/* Terrain palette — collapsed first row + accordion for the rest. */}
+          {/* Terrain palette — fills full width, clips to one row when collapsed */}
           <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
-            {/* Always-visible row: erase + first 8 materials + expand toggle */}
-            <div className="flex flex-wrap gap-1.5">
+            {/* All materials: clipped to one swatch row when collapsed */}
+            <div
+              className="flex flex-wrap gap-1.5"
+              style={terrainExpanded ? undefined : { maxHeight: 44, overflow: 'hidden' }}
+            >
               <button
                 type="button"
                 className="cc-btn shrink-0"
@@ -356,7 +359,7 @@ export function Toolbar({
                 />
                 <span style={swatchLabel}>Erase</span>
               </button>
-              {PAINTABLE.slice(0, 8).map(id => {
+              {PAINTABLE.map(id => {
                 const inHand = family === id && tool.kind === 'material' ? tool.material : id
                 const material = MATERIALS[inHand]
                 const selected = tool.kind === 'material' && (tool.material === id || family === id)
@@ -402,89 +405,35 @@ export function Toolbar({
                   </button>
                 )
               })}
-              {/* Expand / collapse toggle */}
-              <button
-                type="button"
-                className="cc-btn shrink-0"
-                onClick={() => setTerrainExpanded(x => !x)}
-                aria-expanded={terrainExpanded}
-                aria-label={
-                  terrainExpanded
-                    ? 'Show fewer terrain types'
-                    : `Show ${PAINTABLE.length - 8} more terrain types`
-                }
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 2,
-                  padding: '4px 7px',
-                  borderRadius: 4,
-                  border: `1px solid ${terrainExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
-                  background: terrainExpanded ? 'var(--cc-mint-soft)' : 'transparent',
-                  color: 'var(--cc-text-muted)',
-                }}
-              >
-                <Chevron up={terrainExpanded} />
-                <span style={swatchLabel}>{terrainExpanded ? 'Less' : `+${PAINTABLE.length - 8}`}</span>
-              </button>
             </div>
-            {/* Accordion: remaining materials */}
-            {terrainExpanded && (
-              <div className="flex flex-wrap gap-1.5">
-                {PAINTABLE.slice(8).map(id => {
-                  const inHand = family === id && tool.kind === 'material' ? tool.material : id
-                  const material = MATERIALS[inHand]
-                  const selected = tool.kind === 'material' && (tool.material === id || family === id)
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className="cc-btn shrink-0"
-                      onClick={() => setTool({ kind: 'material', material: inHand })}
-                      aria-pressed={selected}
-                      style={swatchStyle(selected)}
-                    >
-                      <span
-                        aria-hidden
-                        style={{
-                          position: 'relative',
-                          display: 'block',
-                          width: 22,
-                          height: 22,
-                          borderRadius: 3,
-                          background: material.color,
-                          boxShadow:
-                            material.glow > 0
-                              ? `0 0 10px ${material.color}`
-                              : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
-                        }}
-                      >
-                        {MATERIALS[id].tintable && (
-                          <span
-                            style={{
-                              position: 'absolute',
-                              right: 1,
-                              bottom: 1,
-                              width: 0,
-                              height: 0,
-                              borderLeft: '6px solid transparent',
-                              borderBottom: '6px solid rgba(255,255,255,0.75)',
-                            }}
-                          />
-                        )}
-                      </span>
-                      <span style={swatchLabel}>{MATERIALS[id].name}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            )}
+            {/* Show more / show less toggle — sits BELOW the clipped area */}
+            <button
+              type="button"
+              className="cc-btn shrink-0"
+              onClick={() => setTerrainExpanded(x => !x)}
+              aria-expanded={terrainExpanded}
+              aria-label={terrainExpanded ? 'Show fewer terrain types' : `Show all ${PAINTABLE.length + 1} terrain types`}
+              style={{
+                alignSelf: 'flex-start',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 2,
+                padding: '4px 7px',
+                borderRadius: 4,
+                border: `1px solid ${terrainExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                background: terrainExpanded ? 'var(--cc-mint-soft)' : 'transparent',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              <Chevron up={terrainExpanded} />
+              <span style={swatchLabel}>{terrainExpanded ? 'Less' : `+${PAINTABLE.length - 1}`}</span>
+            </button>
           </div>
 
           {family && (
             <div
-              className="-mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1"
+              className="-mx-1 flex flex-wrap items-center gap-1.5 px-1 pb-1"
               role="group"
               aria-label={`${MATERIALS[family].name} colour`}
             >
