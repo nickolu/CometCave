@@ -133,6 +133,16 @@ export class Renderer {
   private shadowCanvas: HTMLCanvasElement
   private shadowCtx: CanvasRenderingContext2D
 
+  /**
+   * Fog-of-war overlay, world resolution.
+   *
+   * Tiles not yet visited by any creature are painted black with partial
+   * opacity. The canvas is full world width so we only blit the visible slice.
+   */
+  private fogCanvas: HTMLCanvasElement
+  private fogCtx: CanvasRenderingContext2D
+  private fogImage: ImageData
+
   private light = new Float32Array(LW * LH)
   private lightScratch = new Float32Array(LW * LH)
   private skyDepth = new Int16Array(WORLD_W)
@@ -197,6 +207,12 @@ export class Renderer {
     this.shadowCanvas.height = WORLD_H
     this.shadowCtx = this.shadowCanvas.getContext('2d')!
     this.shadowImage = this.shadowCtx.createImageData(WORLD_W, WORLD_H)
+
+    this.fogCanvas = document.createElement('canvas')
+    this.fogCanvas.width = WORLD_W
+    this.fogCanvas.height = WORLD_H
+    this.fogCtx = this.fogCanvas.getContext('2d')!
+    this.fogImage = this.fogCtx.createImageData(WORLD_W, WORLD_H)
 
     this.mapCanvas = document.createElement('canvas')
     this.mapCanvas.width = MW
@@ -527,6 +543,14 @@ export class Renderer {
       }
     }
 
+    // Fog of war: paint darkness over tiles no creature has ever visited.
+    // Read the store directly — the renderer already reads TUNING and
+    // trailsEnabled this same way rather than threading them as props.
+    if (w.visited && useMicroLand.getState().fogEnabled) {
+      this.updateFog(w.visited, vx, vw)
+      wctx.drawImage(this.fogCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
+    }
+
     // One scaled blit. Nearest-neighbour keeps the pixels crisp.
     const ctx = this.ctx
     ctx.imageSmoothingEnabled = false
@@ -757,6 +781,34 @@ export class Renderer {
       }
     }
     ctx.globalAlpha = 1
+  }
+
+  /**
+   * Paint fog-of-war over unvisited tiles.
+   *
+   * Writes only the vx..vx+vw column slice of the ImageData so the scan is
+   * proportional to viewport width rather than the full world width. Visited
+   * tiles are transparent; everything else gets a dark overlay.
+   */
+  private updateFog(visited: Uint8Array, vx: number, vw: number): void {
+    const data = this.fogImage.data
+    for (let y = 0; y < WORLD_H; y++) {
+      const rowBase = y * WORLD_W
+      for (let x = vx; x < vx + vw; x++) {
+        const o = (rowBase + x) * 4
+        if (visited[rowBase + x]) {
+          // Visited — transparent so the world shows through.
+          data[o + 3] = 0
+        } else {
+          // Unvisited — nearly-opaque dark fill.
+          data[o] = 0
+          data[o + 1] = 0
+          data[o + 2] = 0
+          data[o + 3] = 210
+        }
+      }
+    }
+    this.fogCtx.putImageData(this.fogImage, 0, 0, vx, 0, vw, WORLD_H)
   }
 
   /**

@@ -791,6 +791,14 @@ export interface WorldState {
    * Optional so old serialised worlds without it don't crash.
    */
   corridors?: Uint8Array
+  /**
+   * Which tiles have been seen by at least one living creature this session.
+   *
+   * A 1 means visited; 0 means fog. Length = width × height. Transient — not
+   * persisted in WorldSave. Optional so worlds loaded from a save still work
+   * before the first tick initialises it.
+   */
+  visited?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------

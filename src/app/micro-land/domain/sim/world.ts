@@ -65,6 +65,7 @@ export function createWorld(seed = 1337): WorldState {
     nextPlantSeed: 0,
     dormant: false,
     corridors: new Uint8Array(WORLD_W * WORLD_H),
+    visited: new Uint8Array(WORLD_W * WORLD_H),
   }
 }
 
@@ -307,6 +308,9 @@ export function applyThemeObject(w: WorldState, theme: Theme, seed?: number): vo
   for (let i = 0; i < w.grain.length; i++) w.grain[i] = Math.floor(rng() * 256)
   w.particles.length = 0
   w.dormant = false
+  // New terrain means a new exploration slate — all fog reset.
+  if (w.visited) w.visited.fill(0)
+  else w.visited = new Uint8Array(WORLD_W * WORLD_H)
 }
 
 /** Paint a filled circle of material. This is the player's brush. */
