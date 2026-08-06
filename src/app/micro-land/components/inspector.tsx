@@ -153,6 +153,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
    * makes it true on the same render instead of one render later.
    */
   const [pending, setPending] = useState<{ id: number; text: string } | null>(null)
+  const [lifeOpen, setLifeOpen] = useState(false)
 
   if (!inspected) return null
 
@@ -515,6 +516,56 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           </strong>{' '}
           {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
         </div>
+
+        {inspected.lifeLog.length > 0 && (
+          <div>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setLifeOpen(o => !o)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                color: 'var(--cc-text-muted)',
+                padding: '2px 0',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+              }}
+            >
+              <span style={{ opacity: 0.6 }}>{lifeOpen ? '▾' : '▸'}</span>
+              Life story
+            </button>
+            {lifeOpen && (
+              <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                {inspected.lifeLog.map((entry, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
+                    <span
+                      style={{
+                        fontFamily: 'var(--cc-font-mono)',
+                        fontSize: 9,
+                        color: 'var(--cc-text-muted)',
+                        opacity: 0.55,
+                        minWidth: 32,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {Math.round(entry.elapsed)}s
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--cc-text-muted)' }}>
+                      {entry.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
