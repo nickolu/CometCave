@@ -449,6 +449,12 @@ export interface Traits {
    */
   reproductionCooldown: number
   /**
+   * Thermal preference: -1 = craves cold (top rows), +1 = craves heat (bottom
+   * rows), 0 = indifferent. Heritable — a line consistently exposed to harsh
+   * temperatures drifts toward tolerance over generations.
+   */
+  thermophily: number
+  /**
    * How many eggs this creature lays per breeding event (egg-layers only).
    *
    * Range 1..4; heritable. A line in a food-rich patch with few predators can

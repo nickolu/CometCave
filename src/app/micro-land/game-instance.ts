@@ -567,7 +567,7 @@ export class GameInstance {
     }
 
     for (const event of events) {
-      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased') continue
+      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased' && event.kind !== 'frosted' && event.kind !== 'overheated') continue
       const bp = this.world.blueprints[event.blueprintId]
       if (!bp) continue
       // Was that the last one? Only interesting for species we'd seen alive.
@@ -611,6 +611,8 @@ export class GameInstance {
         : event.kind === 'drowned' ? `The last ${bp.name} drowned.`
         : event.kind === 'burned' ? `The last ${bp.name} burned.`
         : event.kind === 'aged' ? `The last ${bp.name} lived to old age.`
+        : event.kind === 'frosted' ? `The last ${bp.name} froze.`
+        : event.kind === 'overheated' ? `The last ${bp.name} overheated.`
         : `The last ${bp.name} was eaten.`
       )
       // Trophic cascade: note the food web ripple from this extinction.

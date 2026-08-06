@@ -83,6 +83,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   diurnal: 0,
   immunity: 0.2,
   reproductionCooldown: 1,
+  thermophily: 0,
   clutchSize: 1,
 })
 
@@ -131,7 +132,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'clutchSize') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'thermophily' | 'clutchSize') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -149,6 +150,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
     immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
     reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
+    thermophily: clamp(mix('thermophily') + nudge(rng, drift), -1, 1),
     clutchSize: clamp(mix('clutchSize') + nudge(rng, drift * 0.5), 1, 4),
   }
 }
@@ -281,6 +283,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.cooperation ?? 0.3) <= 0.3 - NOTABLE) phrases.push('solitary')
   if ((t.diurnal ?? 0) >= 0.5) phrases.push('diurnal')
   else if ((t.diurnal ?? 0) <= -0.5) phrases.push('nocturnal')
+  if ((t.thermophily ?? 0) >= 0.5) phrases.push('heat-loving')
+  else if ((t.thermophily ?? 0) <= -0.5) phrases.push('cold-loving')
   if ((t.immunity ?? 0.2) >= 0.6) phrases.push('disease-resistant')
   else if ((t.immunity ?? 0.2) <= 0.05) phrases.push('susceptible')
   if ((t.reproductionCooldown ?? 1) <= 1 - NOTABLE) phrases.push('breeds quickly')

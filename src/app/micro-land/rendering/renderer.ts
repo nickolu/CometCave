@@ -521,6 +521,7 @@ export class Renderer {
     this.drawFossils(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
     if (w.corridors) this.drawCorridors(w.corridors, vx, vw)
+    if (TUNING.temperatureGradient > 0) this.drawTemperatureGradient(vx, vw)
     this.drawTerritorialStains(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
@@ -841,6 +842,33 @@ export class Renderer {
           ctx.fillRect(x, y, 1, 1)
         }
       }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Subtle warm-to-cool tint across the world height.
+   * Bottom rows get a red-orange wash; top rows get a blue wash.
+   * Only called when temperatureGradient > 0.
+   */
+  private drawTemperatureGradient(vx: number, vw: number): void {
+    const ctx = this.wctx
+    const strength = TUNING.temperatureGradient
+    // Hot bottom: warm orange-red rows.
+    const hotRows = Math.round(WORLD_H * 0.25)
+    for (let y = WORLD_H - hotRows; y < WORLD_H; y++) {
+      const t = (y - (WORLD_H - hotRows)) / hotRows  // 0 at zone top, 1 at bottom
+      ctx.globalAlpha = t * strength * 0.12
+      ctx.fillStyle = '#f97316'  // orange-500
+      ctx.fillRect(vx, y, vw, 1)
+    }
+    // Cold top: blue rows.
+    const coldRows = Math.round(WORLD_H * 0.25)
+    for (let y = 0; y < coldRows; y++) {
+      const t = 1 - y / coldRows  // 1 at very top, 0 at zone bottom
+      ctx.globalAlpha = t * strength * 0.10
+      ctx.fillStyle = '#60a5fa'  // blue-400
+      ctx.fillRect(vx, y, vw, 1)
     }
     ctx.globalAlpha = 1
   }
