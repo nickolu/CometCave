@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { THEME_BY_ID } from '@/app/micro-land/domain/config/themes'
 import { formatDuration } from '@/app/micro-land/format'
@@ -46,6 +46,18 @@ function since(at: number): string {
 }
 
 /**
+ * Conjure a name from whatever is alive in the world right now.
+ * Returns null when there is nothing interesting to work with.
+ */
+function suggestWorldName(blueprints: { name: string }[], here: string): string {
+  // Pick up to two creature kinds and weave them into the land name.
+  const names = blueprints.slice(0, 2).map(b => b.name)
+  if (names.length === 2) return `The ${here} of ${names[0]}s and ${names[1]}s`
+  if (names.length === 1) return `The ${here} of ${names[0]}s`
+  return here
+}
+
+/**
  * The shelf — worlds the player has kept, and the way back into them.
  *
  * Two things this panel is careful about, both because the person using it is a
@@ -73,21 +85,37 @@ export function WorldsPanel({
   const themeId = useMicroLand(s => s.themeId)
   const summonedLand = useMicroLand(s => s.summonedLand)
   const total = useMicroLand(s => s.totalCreatures)
+  const blueprints = useMicroLand(s => s.blueprints)
 
   const [name, setName] = useState('')
   const [confirming, setConfirming] = useState<string | null>(null)
+  const [focusInputOnMount, setFocusInputOnMount] = useState(false)
 
   if (!open) return null
 
   const active = shelf.worlds.find(w => w.id === shelf.activeId) ?? null
   const full = shelf.worlds.length >= MAX_SAVED_WORLDS && !active
   const here = summonedLand ?? THEME_BY_ID[themeId]?.name ?? 'This land'
+  const suggested = !active ? suggestWorldName(blueprints, here) : here
+
+  // When panel opens for a new world, pre-fill name with suggestion and set focus flag
+  useEffect(() => {
+    if (open && !active) {
+      setName(suggested)
+      setFocusInputOnMount(true)
+    } else if (!open) {
+      // Reset on close
+      setName('')
+      setFocusInputOnMount(false)
+    }
+  }, [open, active, suggested])
 
   // Through the same cleaner the server would apply, so a world is called the
   // same thing whether it was kept on this device or on the account.
   const keep = () => {
-    onKeep(cleanWorldName(name, active ? active.name : here))
+    onKeep(cleanWorldName(name, active ? active.name : suggested))
     setName('')
+    setFocusInputOnMount(false)
   }
 
   return (
@@ -153,13 +181,19 @@ export function WorldsPanel({
             </label>
             <input
               id="micro-land-world-name"
+              ref={el => {
+                if (focusInputOnMount && el) {
+                  el.focus()
+                  setFocusInputOnMount(false)
+                }
+              }}
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => {
                 if (e.key === 'Enter') keep()
               }}
               maxLength={40}
-              placeholder={active ? active.name : here}
+              placeholder={active ? active.name : suggested}
               className="min-w-0 flex-1"
               style={{
                 fontSize: 13,
