@@ -74,10 +74,8 @@ function Chevron({ up }: { up: boolean }) {
 
 export function Toolbar({
   onRemoveSpecies,
-  side = false,
 }: {
   onRemoveSpecies: (blueprintId: string) => void
-  side?: boolean
 }) {
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
@@ -195,32 +193,16 @@ export function Toolbar({
    */
   const held = heldTool(tool, blueprints)
 
-  // When the field guide is open the toolbar moves to a left column so the
-  // layout reads as [ Tools | Canvas | Guide ] rather than overlapping it.
-  const Container: React.ElementType = side ? 'aside' : 'footer'
-
   return (
-    <Container
+    <footer
       className="flex flex-col gap-1.5 px-3 pb-3 pt-2"
-      style={
-        side
-          ? {
-              width: 240,
-              flexShrink: 0,
-              borderRight: '1px solid var(--cc-panel-divider)',
-              background: 'linear-gradient(270deg, var(--cc-panel-grad-from), transparent)',
-              overflowY: 'auto' as const,
-            }
-          : {
-              borderTop: '1px solid var(--cc-panel-divider)',
-              background: 'linear-gradient(0deg, var(--cc-panel-grad-from), transparent)',
-            }
-      }
+      style={{
+        borderTop: '1px solid var(--cc-panel-divider)',
+        background: 'linear-gradient(0deg, var(--cc-panel-grad-from), transparent)',
+      }}
     >
       {/*
         The handle, and — while the drawer is open — the brush sizes beside it.
-        Hidden in side-column mode: the panel is always visible there, so there
-        is nothing to fold away, and the canvas row provides the visual anchor.
 
         Nothing here animates. The canvas is sized by a ResizeObserver on its
         parent and `Renderer.resize` reallocates the backing store every call, so
@@ -228,7 +210,7 @@ export function Toolbar({
         length of the slide. Instant is also what `prefers-reduced-motion`
         wants, which makes the cheap answer the correct one twice over.
       */}
-      {!side && <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {open && (
           <>
             <span style={label}>Ground</span>
@@ -330,9 +312,9 @@ export function Toolbar({
             </>
           )}
         </button>
-      </div>}
+      </div>
 
-      {(open || side) && (
+      {open && (
         <div id="micro-land-tools" className="flex flex-col gap-1.5">
           {/* Terrain palette — fills full width, clips to one row when collapsed */}
           <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
@@ -677,7 +659,7 @@ export function Toolbar({
           <div
             role="tabpanel"
             className="-mx-1 flex flex-wrap gap-1.5 overflow-y-auto px-1 pb-1"
-            style={{ maxHeight: side ? undefined : '24vh' }}
+            style={{ maxHeight: '24vh' }}
           >
             {/* Creatures still on their way hold their place at the front of the
             strip, right where the finished one lands.
@@ -813,7 +795,7 @@ export function Toolbar({
           </div>
         </div>
       )}
-    </Container>
+    </footer>
   )
 }
 
