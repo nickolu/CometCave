@@ -4,7 +4,7 @@
  * Deliberately outside React: the world mutates 60 times a second and React
  * only hears about it through a small summary pushed a few times a second.
  */
-import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { AIR, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   type SanitizedTerrain,
   sanitizeTerrain,
@@ -812,6 +812,14 @@ export class GameInstance {
     this.pendingBirths = {}
     this.pendingDeaths = {}
     useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed, births, deaths)
+
+    // Count distinct non-air tile materials for biome diversity score.
+    const seenMaterials = new Set<number>()
+    for (let i = 0; i < this.world.tiles.length; i++) {
+      const m = this.world.tiles[i]
+      if (m !== AIR) seenMaterials.add(m)
+    }
+    useMicroLand.getState().setActiveMaterials(seenMaterials.size)
 
     // Per-creature thumbnails for the Field Guide population viewer.
     const thumbs: CreatureThumb[] = this.world.creatures
