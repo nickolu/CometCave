@@ -1139,7 +1139,9 @@ function look(
       obp.move.kind !== 'root'  // not a plant
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
-      if (d2 < territoryR * territoryR && d2 < preyDist) {
+      const intruderCamo = (other.traits as { camouflage?: number }).camouflage ?? 0.2
+      const effectiveTerritoryR = territoryR * (1 - intruderCamo * 0.5)
+      if (d2 < effectiveTerritoryR * effectiveTerritoryR && d2 < preyDist) {
         preyDist = d2
         prey = other
         preyDir = dx >= 0 ? 1 : -1

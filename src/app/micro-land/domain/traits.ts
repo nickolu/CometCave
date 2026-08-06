@@ -295,7 +295,7 @@ export function traitPhrases(t: Traits): string[] {
  * being broken.
  */
 export function notableTraits(t: Traits): { label: string; value: number }[] {
-  return [
+  const base = [
     { label: 'Own speed', value: t.speed },
     { label: 'Own sight', value: t.sight },
     { label: 'Own lifespan', value: t.lifespan },
@@ -303,4 +303,8 @@ export function notableTraits(t: Traits): { label: string; value: number }[] {
     { label: 'Own size', value: t.size ?? 1 },
     { label: 'Own breed cooldown', value: t.reproductionCooldown ?? 1 },
   ].filter(entry => Math.abs(entry.value - 1) >= NOTABLE)
+  // Camouflage uses a custom threshold: notable when it meaningfully affects
+  // detection (>0.4), not when it deviates from 1 (neutral is 0.2, not 1).
+  if ((t.camouflage ?? 0.2) > 0.4) base.push({ label: 'Own camouflage', value: t.camouflage ?? 0.2 })
+  return base
 }
