@@ -812,7 +812,7 @@ export class GameInstance {
       const deepestGen = population.reduce((max, p) => Math.max(max, p.maxGeneration), 0)
       const timeUsed = this.world.elapsed - sr.startElapsed
       if (deepestGen >= sr.targetGeneration) {
-        useMicroLand.getState().endSpeedRun('won')
+        useMicroLand.getState().endSpeedRun('won', Math.round(timeUsed))
         saveSpeedRunRecord({
           theme: useMicroLand.getState().themeId,
           targetGen: sr.targetGeneration,
