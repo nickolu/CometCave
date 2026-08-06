@@ -43,6 +43,7 @@ function defaultTraits(): Traits {
 export function WorkshopPane({ onClose }: { onClose: () => void }) {
   const blueprints = useMicroLand(s => s.blueprints)
   const requestWorkshopSpawn = useMicroLand(s => s.requestWorkshopSpawn)
+  const setBuilderOpen = useMicroLand(s => s.setBuilderOpen)
 
   const [step, setStep] = useState<'pick' | 'configure'>('pick')
   const [base, setBase] = useState<CreatureBlueprint | null>(null)
@@ -108,25 +109,50 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={{ padding: '16px 16px 20px' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <h2 style={{
-          fontFamily: 'var(--cc-font-mono)', fontSize: 11,
-          letterSpacing: 1.6, textTransform: 'uppercase',
-          color: 'var(--cc-text-muted)', margin: 0,
-        }}>
-          {step === 'pick' ? 'Blueprint Workshop — Pick a Base' : 'Blueprint Workshop — Configure'}
-        </h2>
-        {step === 'configure' && (
+      {/* Tab row + header */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
+          <span style={{
+            fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
+            textTransform: 'uppercase', padding: '3px 10px', borderRadius: 4,
+            border: '1px solid var(--cc-mint)', color: 'var(--cc-mint)',
+            background: 'rgba(100,220,200,0.08)',
+          }}>
+            Configure
+          </span>
           <button
             type="button"
             className="cc-btn"
-            onClick={() => setStep('pick')}
-            style={{ ...chipBase, border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)' }}
+            onClick={() => { setBuilderOpen(true); onClose() }}
+            style={{
+              ...chipBase,
+              border: '1px solid var(--cc-panel-divider)',
+              color: 'var(--cc-text-muted)',
+            }}
+            title="Switch to the pixel drawing tool"
           >
-            ← Back
+            ✎ Draw
           </button>
-        )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{
+            fontFamily: 'var(--cc-font-mono)', fontSize: 11,
+            letterSpacing: 1.6, textTransform: 'uppercase',
+            color: 'var(--cc-text-muted)', margin: 0,
+          }}>
+            {step === 'pick' ? 'Pick a base species' : 'Configure variant'}
+          </h2>
+          {step === 'configure' && (
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setStep('pick')}
+              style={{ ...chipBase, border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)' }}
+            >
+              ← Back
+            </button>
+          )}
+        </div>
       </div>
 
       {step === 'pick' && (
