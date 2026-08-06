@@ -412,6 +412,23 @@ export function paintBiomeSquare(
   }
 }
 
+/**
+ * Degrade a tile one step due to sustained creature traffic.
+ * Grass wears to dirt; dirt wears to mud. All other materials are unchanged.
+ */
+export function erodeTile(w: WorldState, x: number, y: number): void {
+  if (!inBounds(x, y)) return
+  const current = w.tiles[y * WORLD_W + x]
+  const grassVal = MATERIAL_INDEX['grass']
+  const dirtVal = MATERIAL_INDEX['dirt']
+  const mudVal = MATERIAL_INDEX['mud']
+  if (current === grassVal) {
+    setTile(w, x, y, dirtVal)
+  } else if (current === dirtVal) {
+    setTile(w, x, y, mudVal)
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Spawning
 // ---------------------------------------------------------------------------

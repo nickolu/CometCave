@@ -49,6 +49,7 @@ import {
   clearCreatures,
   countByBlueprint,
   createWorld,
+  erodeTile,
   paintBiomeCircle,
   paintBiomeSquare,
   paintCircle,
@@ -206,6 +207,14 @@ export class GameInstance {
   private steadySince = 0
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
   private lastArchiveSize = -1
+
+  // --- terrain erosion ---
+  /**
+   * Per-tile creature visit counter. Incremented on each erosion update;
+   * reset to 0 when the tile degrades. Uint16Array keeps it cheap.
+   */
+  private erosionTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
+  private erosionTickCounter = 0
 
   // --- mood history for inspector sparkline ---
   private moodHistory: string[] = []
@@ -461,6 +470,30 @@ export class GameInstance {
     }
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
+
+    // --- terrain erosion (every 30 ticks ≈ every 0.5 s at 60 fps) ---
+    this.erosionTickCounter++
+    if (this.erosionTickCounter >= 30) {
+      this.erosionTickCounter = 0
+      const w = this.world
+      // Stamp each creature's current tile.
+      for (const c of w.creatures) {
+        const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(c.x)))
+        const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(c.y)))
+        const i = ty * WORLD_W + tx
+        if (this.erosionTraffic[i] < 65000) this.erosionTraffic[i]++
+      }
+      // Degrade any tile that has seen enough traffic.
+      const THRESHOLD = 80
+      for (let i = 0; i < this.erosionTraffic.length; i++) {
+        if (this.erosionTraffic[i] >= THRESHOLD) {
+          const x = i % WORLD_W
+          const y = Math.floor(i / WORLD_W)
+          erodeTile(w, x, y)
+          this.erosionTraffic[i] = 0
+        }
+      }
+    }
 
     // --- rain ---
     if (TUNING.rainRate > 0 && this.rng() < TUNING.rainRate) {
