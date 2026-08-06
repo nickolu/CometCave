@@ -135,6 +135,12 @@ export const TUNING_DEFAULTS = {
    * How many tile rows the tide rises above the permanent seabed.
    */
   tidalAmplitude: 8,
+  /**
+   * Strength of the temperature gradient, 0..1.
+   * 0 = no gradient (default). 1 = full warm-bottom / cold-top effect.
+   * Affects both the visual tint and how strongly thermophily trait matters.
+   */
+  temperatureGradient: 0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -493,6 +499,15 @@ export const KNOBS: Knob[] = [
     max: 30,
     step: 1,
     unit: ' rows',
+  },
+  {
+    key: 'temperatureGradient',
+    group: 'world',
+    label: 'Temperature gradient',
+    help: 'Warmer at the bottom, cooler at the top. Heat-loving creatures thrive near the floor; cold-lovers do better in the heights. 0 = off.',
+    min: 0,
+    max: 1,
+    step: 0.1,
   },
 ]
 

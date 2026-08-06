@@ -176,7 +176,7 @@ export interface SimEvent {
    * hunter's side and carries who it caught. Both fire for a single kill — the
    * UI wants the hunter's framing, the extinction check wants the victim's.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'frosted' | 'overheated'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -552,6 +552,24 @@ export function tickCreatures(
       }
     } else {
       c.distress = Math.max(0, c.distress - dt * 1.5)
+    }
+
+    // Temperature stress: creatures with strong thermophily out of their zone
+    // take slow health damage. Only active when temperatureGradient > 0.
+    if (TUNING.temperatureGradient > 0 && Math.abs(c.traits.thermophily ?? 0) > 0.3) {
+      const worldTemp = c.y / WORLD_H   // 0 at top (cold), 1 at bottom (hot)
+      const pref = ((c.traits.thermophily ?? 0) + 1) / 2  // map [-1,1] to [0,1]
+      const mismatch = Math.abs(worldTemp - pref)
+      if (mismatch > 0.3) {
+        const stress = (mismatch - 0.3) * TUNING.temperatureGradient * dt * 0.003
+        c.hunger = Math.min(1, c.hunger + stress)
+        c.starving += stress
+        if (c.starving >= bp.diet.starveSeconds) {
+          const cause = (c.traits.thermophily ?? 0) > 0 ? 'frosted' : 'overheated'
+          kill(w, c, bp, dead, events, cause)
+          continue
+        }
+      }
     }
 
     // --- senses ---------------------------------------------------------

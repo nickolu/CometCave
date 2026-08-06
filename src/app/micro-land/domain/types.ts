@@ -448,6 +448,12 @@ export interface Traits {
    * Neutral at 1. Range [TRAIT_MIN, TRAIT_MAX].
    */
   reproductionCooldown: number
+  /**
+   * Thermal preference: -1 = craves cold (top rows), +1 = craves heat (bottom
+   * rows), 0 = indifferent. Heritable — a line consistently exposed to harsh
+   * temperatures drifts toward tolerance over generations.
+   */
+  thermophily: number
 }
 
 /** One living thing in the world. */
