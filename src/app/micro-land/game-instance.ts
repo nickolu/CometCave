@@ -42,6 +42,7 @@ import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creatu
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
 import {
+  applyMassExtinction,
   applyTheme,
   applyThemeObject,
   applyTide,
@@ -217,6 +218,8 @@ export class GameInstance {
   private trophicCascadeDetected = false
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
   private lastArchiveSize = -1
+  /** World-time of the last mass extinction cataclysm. */
+  private lastMassExtinction = -Infinity
 
   // --- terrain erosion ---
   /**
@@ -481,6 +484,32 @@ export class GameInstance {
       applyTide(w)
       // Tiles moved, so the cached tile image is stale.
       this.renderer.markTilesDirty()
+    }
+
+    // --- mass extinction cataclysm ---
+    if (
+      TUNING.massExtinctionInterval > 0 &&
+      w.elapsed - this.lastMassExtinction >= TUNING.massExtinctionInterval
+    ) {
+      this.lastMassExtinction = w.elapsed
+      const { cx, cy } = applyMassExtinction(w, this.rng)
+      this.renderer.markTilesDirty()
+      // Scatter a burst of dark particles at the blast centre.
+      for (let i = 0; i < 20; i++) {
+        const angle = this.rng() * Math.PI * 2
+        const speed = 0.5 + this.rng() * 1.5
+        w.particles.push({
+          x: cx + (this.rng() - 0.5) * 6,
+          y: cy + (this.rng() - 0.5) * 6,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 0.5,
+          life: 2 + this.rng() * 2,
+          maxLife: 4,
+          color: this.rng() < 0.5 ? '#6b7280' : '#374151',
+        })
+      }
+      useMicroLand.getState().notify('A cataclysm strikes. The land remembers nothing.')
+      this.breakSteadyStreak()
     }
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
