@@ -7,7 +7,8 @@ import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
 import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
 import { formatDuration } from '@/app/micro-land/format'
-import { type PopulationEntry, SUMMONED_THEME_ID, useMicroLand } from '@/app/micro-land/store'
+import { type PopulationEntry, SUMMONED_THEME_ID, useMicroLand, type Tool } from '@/app/micro-land/store'
+import { SparkleIcon } from '@/app/micro-land/components/sparkle-icon'
 import { useAuth } from '@/hooks/useAuth'
 
 // ---------------------------------------------------------------------------
@@ -132,6 +133,9 @@ export function Hud({
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
 
   const setHistoryOpen = useMicroLand(s => s.setHistoryOpen)
+  const setSummonOpen = useMicroLand(s => s.setSummonOpen)
+  const tool = useMicroLand(s => s.tool)
+  const setTool = useMicroLand(s => s.setTool)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -226,6 +230,41 @@ export function Hud({
         }
       >
         Worlds
+      </button>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => setSummonOpen(true)}
+        style={{
+          ...chipBase,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+          background: 'linear-gradient(135deg, var(--cc-mint-soft), rgba(100,220,200,0.05))',
+          borderColor: 'var(--cc-mint)',
+          color: 'var(--cc-mint)',
+        }}
+        title="Introduce a creature to this world"
+      >
+        <SparkleIcon size={10} />
+        Generate
+      </button>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() =>
+          setTool(tool.kind === 'inspect' ? { kind: 'material', material: 'dirt' } : { kind: 'inspect' })
+        }
+        aria-pressed={tool.kind === 'inspect'}
+        style={{
+          ...chipBase,
+          ...(tool.kind === 'inspect' ? activeChip : {}),
+        }}
+        title="Click any creature to inspect it"
+      >
+        Inspect
       </button>
 
       <div className="flex items-center gap-1" role="group" aria-label="Speed">
