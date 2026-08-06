@@ -270,7 +270,7 @@ export const KNOBS: Knob[] = [
     label: 'Crowding penalty',
     help: 'How much slower a plant spreads for each same-species neighbour within 12 tiles. Higher values break up clusters more aggressively.',
     min: 0,
-    max: 2,
+    max: 5,
     step: 0.05,
   },
   {
@@ -279,7 +279,7 @@ export const KNOBS: Knob[] = [
     label: 'Min spread distance',
     help: 'Minimum tiles a seed must travel from its parent. Prevents seeds from piling up directly beneath the plant.',
     min: 1,
-    max: 12,
+    max: 20,
     step: 1,
     unit: ' tiles',
   },
