@@ -526,6 +526,7 @@ export class Renderer {
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
     this.drawPollinatorAuras(w, vx, vw)
+    this.drawGlowAuras(w, vx, vw)
     if (useMicroLand.getState().scentsEnabled) this.drawScentBeacons(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -966,6 +967,49 @@ export class Renderer {
 
       ctx.globalAlpha = 1
     }
+  }
+
+  /**
+   * Soft bioluminescence aura around creatures with glow > 0.
+   *
+   * Drawn on the world canvas before the shadow overlay so it shows through
+   * darkness in dark caves — a creature with glow > 0 already brightens the
+   * shadow system; this adds a visible cyan-teal wash so players can see
+   * bioluminescent animals even in dim conditions. Pulses gently over time.
+   */
+  private drawGlowAuras(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    ctx.fillStyle = '#67e8f9'  // cyan-200 — cool bioluminescent blue-green
+
+    for (const c of w.creatures) {
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp || bp.glow <= 0) continue
+
+      const rows = bp.art.frames[0]
+      const bw = rows[0].length
+      const bh = rows.length
+      if (c.x + bw < vx || c.x > vx + vw) continue
+
+      const cx = Math.round(c.x + bw / 2)
+      const cy = Math.round(c.y + bh / 2)
+      const r = Math.ceil(bp.glow * 5) + 2   // radius 2..7 tiles
+      // Gentle pulse: amplitude ±15% of the base alpha.
+      const pulse = 1 + 0.15 * Math.sin(w.elapsed * 2.5 + cx * 0.3)
+
+      for (let dy = -r; dy <= r; dy++) {
+        const y = cy + dy
+        if (y < 0 || y >= WORLD_H) continue
+        for (let dx = -r; dx <= r; dx++) {
+          const x = cx + dx
+          if (x < vx || x >= vx + vw) continue
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist >= r) continue
+          ctx.globalAlpha = Math.min(0.45, bp.glow * 0.4 * (1 - dist / r) * pulse)
+          ctx.fillRect(x, y, 1, 1)
+        }
+      }
+    }
+    ctx.globalAlpha = 1
   }
 
   private drawScentBeacons(w: WorldState, vx: number, vw: number): void {
