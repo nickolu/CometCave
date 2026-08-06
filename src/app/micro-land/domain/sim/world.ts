@@ -53,6 +53,8 @@ export function createWorld(seed = 1337): WorldState {
     moisture: new Float32Array(WORLD_W * WORLD_H),
     eggs: [],
     nextEggId: 1,
+    nests: [],
+    nextNestId: 1,
     blueprints,
     nextCreatureId: 1,
     elapsed: 0,

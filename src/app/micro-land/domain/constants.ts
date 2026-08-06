@@ -405,3 +405,20 @@ export const DISEASE_DURATION = 20
  * mechanic. Sixty gives a creature two full minutes to find food locally first.
  */
 export const MIGRATION_THRESHOLD = 60
+
+/**
+ * How many seconds of resting it takes to build a nest from scratch.
+ *
+ * Thirty seconds ensures a creature has to commit to a spot before it gets a
+ * burrow — fast enough to see happen in a session, slow enough that nomadic
+ * creatures never stay anywhere long enough to build one.
+ */
+export const NEST_BUILD_TIME = 30
+
+/**
+ * How many seconds a nest survives after its owner stops visiting.
+ *
+ * Two minutes: long enough that a creature can leave to hunt and return, short
+ * enough that an abandoned burrow eventually disappears.
+ */
+export const NEST_DECAY_SECONDS = 120

@@ -495,6 +495,7 @@ export class Renderer {
     wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
 
     this.drawCarcasses(w, vx, vw)
+    this.drawNests(w, vx, vw)
     this.drawTombstones(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
     this.drawEggs(w, vx, vw)
@@ -734,6 +735,34 @@ export class Renderer {
         ctx.fillStyle = '#ff3200'
         ctx.fillRect(x, y, 1, 1)
       }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Burrow entrances dug by territorial creatures at their home positions.
+   *
+   * Drawn as a small dark mound with a black entrance hole. Fades in as the
+   * nest is built and fades out when it begins to decay.
+   */
+  private drawNests(w: WorldState, vx: number, vw: number): void {
+    if (!w.nests?.length) return
+    const ctx = this.wctx
+    for (const nest of w.nests) {
+      if (nest.x + 3 < vx || nest.x - 3 > vx + vw) continue
+      const x = Math.round(nest.x)
+      const y = Math.round(nest.y)
+      // Fade in during construction; fade out when abandoned (last 10 s of decay).
+      const alpha = nest.progress * Math.min(1, nest.decaySeconds / 10) * 0.85
+      if (alpha < 0.05) continue
+      ctx.globalAlpha = alpha
+      // Earthen mound — 5-wide base, 3-wide cap.
+      ctx.fillStyle = '#5c3a1a'
+      ctx.fillRect(x - 2, y, 5, 1)
+      ctx.fillRect(x - 1, y - 1, 3, 1)
+      // Entrance hole.
+      ctx.fillStyle = '#0d0704'
+      ctx.fillRect(x, y, 1, 1)
     }
     ctx.globalAlpha = 1
   }

@@ -706,6 +706,27 @@ export interface Particle {
   color: string
 }
 
+/**
+ * A burrow dug by a territorial creature at its home position.
+ *
+ * Built gradually while the creature rests well-fed. Decays once the owner
+ * dies or wanders away and never returns. Multiple creatures of the same
+ * species do not share nests — each has its own.
+ */
+export interface Nest {
+  id: number
+  /** ID of the creature that owns this nest. */
+  creatureId: number
+  /** World-tile x coordinate of the burrow entrance. */
+  x: number
+  /** World-tile y coordinate of the burrow entrance. */
+  y: number
+  /** Build progress, 0..1. Only complete (1) nests are drawn at full opacity. */
+  progress: number
+  /** Seconds before this nest collapses. Resets while owner is resting here; counts down when owner is absent. */
+  decaySeconds: number
+}
+
 export interface WorldState {
   width: number
   height: number
@@ -727,6 +748,9 @@ export interface WorldState {
   moisture: Float32Array
   eggs: Egg[]
   nextEggId: number
+  /** Burrows dug by territorial creatures at their home positions. */
+  nests: Nest[]
+  nextNestId: number
   /** Blueprints available in this world, keyed by id. */
   blueprints: Record<string, CreatureBlueprint>
   nextCreatureId: number
