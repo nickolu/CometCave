@@ -778,7 +778,6 @@ function GuideEntry({
           {maxGeneration > 1 && ` · ${maxGeneration} generations born here`}
           {bp.body.immuneTo.length > 0 && ` · unburnable`}
           {bp.glow > 0 && ` · glows`}
-          {bp.dig.through.length > 0 && ` · digs through ${bp.dig.through.join(', ')}`}
           {bp.aura && (
             <>
               <br />

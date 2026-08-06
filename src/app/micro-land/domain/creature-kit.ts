@@ -594,10 +594,9 @@ export interface BuildOptions {
    * The creature this drawing started from, if any.
    *
    * Anything that makes a creature *itself* rather than a category — its
-   * description, what it can tunnel through, what it leaves behind, its aura —
-   * is carried across, because none of it is expressible on this canvas and
-   * throwing it away would punish the player for opening a summoned dragon and
-   * changing two pixels.
+   * description, what it leaves behind, its aura — is carried across, because
+   * none of it is expressible on this canvas and throwing it away would punish
+   * the player for opening a summoned dragon and changing two pixels.
    */
   seed: CreatureBlueprint | null
 }
@@ -685,7 +684,6 @@ export function buildRawCreature(options: BuildOptions): Record<string, unknown>
     // Hunters need to see further than the things they are chasing.
     senses: { sight: keepSeedTuning ? seed.senses.sight : diet === 'meat' ? 32 : 20 },
     habitat: keepSeedTuning ? seed.habitat : plan.habitat,
-    dig: seed?.dig ?? { through: [], speed: 1 },
     death: {
       becomes: seed?.death.becomes ?? null,
       particleColor: dominant,

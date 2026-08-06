@@ -13,7 +13,7 @@
  */
 import { z } from 'zod'
 
-import { BASE_MATERIAL_IDS, IS_LIQUID, MATERIAL_IDS, MATERIAL_INDEX } from './config/materials'
+import { BASE_MATERIAL_IDS, MATERIAL_IDS } from './config/materials'
 import { TerrainSchema } from './terrain'
 
 import type { CreatureAura, CreatureBlueprint, LifeKind, LocomotionKind, MaterialId } from './types'
@@ -176,20 +176,6 @@ export const BlueprintSchema = z.object({
         .describe('True if being underwater kills it. False for fish and amphibians.'),
     })
     .describe('Where it can survive.'),
-  dig: z
-    .object({
-      through: z
-        .array(materialEnum)
-        .describe(
-          'Materials this creature can tunnel through, leaving a real tunnel behind it. [] for almost everything — digging is a special ability, not a default. A mole might use ["dirt","sand","grass"]; a rock-borer ["stone","obsidian"]; a scrap-eating machine ["metal","glass"]. Never include water or lava; those are liquids, not walls.'
-        ),
-      speed: z
-        .number()
-        .describe(
-          'Tiles chewed through per second, 0.2 to 6. Slow digging through hard rock looks like effort; fast digging through loose sand looks right.'
-        ),
-    })
-    .describe('Tunnelling ability. Most creatures cannot dig.'),
   death: z
     .object({
       becomes: materialEnum
@@ -499,7 +485,6 @@ export function sanitizeBlueprint(
   const senses = (b.senses ?? {}) as Record<string, unknown>
   const habitat = (b.habitat ?? {}) as Record<string, unknown>
   const death = (b.death ?? {}) as Record<string, unknown>
-  const dig = (b.dig ?? {}) as Record<string, unknown>
 
   const name =
     typeof b.name === 'string' && b.name.trim().length > 0 ? b.name.trim().slice(0, 32) : 'Whatsit'
@@ -586,13 +571,6 @@ export function sanitizeBlueprint(
       lifespanSeconds: clamp(diet.lifespanSeconds, 10, 1800, 240),
     },
     senses: { sight: clamp(senses.sight, 1, 60, 14) },
-    dig: {
-      // Liquids aren't walls — letting them be "dug" would delete oceans.
-      through: cleanMaterials(dig.through).filter(
-        m => m !== 'air' && IS_LIQUID[MATERIAL_INDEX[m]] !== 1
-      ),
-      speed: clamp(dig.speed, 0.05, 8, 1),
-    },
     habitat: {
       needs: needs && needs.length > 0 ? needs : null,
       drowns: habitat.drowns !== false,

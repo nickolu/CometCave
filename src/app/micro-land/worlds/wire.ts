@@ -180,8 +180,6 @@ function cleanCreature(raw: unknown, index: number): SavedCreature | null {
     breedCooldown: clamp(raw.breedCooldown, 0, 1e6, 0),
     mealsEaten: Math.floor(clamp(raw.mealsEaten, 0, 1e9, 0)),
     children: Math.floor(clamp(raw.children, 0, 1e9, 0)),
-    digProgress: clamp(raw.digProgress, 0, 1, 0),
-    tilesDug: Math.floor(clamp(raw.tilesDug, 0, 1e9, 0)),
     generation: Math.floor(clamp(raw.generation, 1, 1e6, 1)),
     traits: cleanTraits(raw.traits),
     name: typeof raw.name === 'string' ? raw.name.slice(0, 32) : null,

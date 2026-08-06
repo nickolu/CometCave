@@ -131,6 +131,8 @@ export function Hud({
   const soundEnabled = useMicroLand(s => s.soundEnabled)
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
 
+  const setHistoryOpen = useMicroLand(s => s.setHistoryOpen)
+
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
   const authLabel = isSignedIn
@@ -272,6 +274,24 @@ export function Hud({
         title="View ecosystem history"
       >
         History
+      </button>
+
+      <button
+        type="button"
+        className="cc-btn"
+        onClick={() => setHistoryOpen(true)}
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 9,
+          letterSpacing: 1.2,
+          textTransform: 'uppercase',
+          padding: '3px 8px',
+          border: '1px solid var(--cc-mint-line)',
+          color: 'var(--cc-text-muted)',
+        }}
+        title="View the event log"
+      >
+        Log
       </button>
 
       <button

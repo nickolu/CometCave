@@ -19,6 +19,7 @@ import { Hud } from '@/app/micro-land/components/hud'
 import { Inspector } from '@/app/micro-land/components/inspector'
 import { Notices } from '@/app/micro-land/components/notices'
 import { PanControls } from '@/app/micro-land/components/pan-controls'
+import { HistoryPanel } from '@/app/micro-land/components/history-panel'
 import { SettingsPanel } from '@/app/micro-land/components/settings-panel'
 import { SummonPanel } from '@/app/micro-land/components/summon-panel'
 import { Toolbar } from '@/app/micro-land/components/toolbar'
@@ -367,6 +368,7 @@ export function MicroLandGame() {
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
       <FieldGuide />
       <SettingsPanel />
+      <HistoryPanel />
       <ReplayBar />
     </div>
   )

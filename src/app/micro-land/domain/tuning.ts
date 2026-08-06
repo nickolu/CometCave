@@ -37,6 +37,8 @@ import {
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   PLANT_SPREAD_COOLDOWN,
+  POLLINATION_CARRY_SECONDS,
+  POLLINATION_ONLY,
   SPECIES_SOFT_CAP,
   TRAIT_DRIFT,
 } from '@/app/micro-land/domain/constants'
@@ -92,6 +94,11 @@ export const TUNING_DEFAULTS = {
    * How long an egg takes to hatch, in sim seconds.
    */
   eggHatchSeconds: 15,
+  /**
+   * How long a pollinator can carry a seed before it auto-drops, in sim seconds.
+   */
+  pollinationCarrySeconds: POLLINATION_CARRY_SECONDS,
+  pollinationOnly: POLLINATION_ONLY,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -111,6 +118,8 @@ export interface Knob {
   step: number
   /** Appended to the number, for the ones where a bare integer means nothing. */
   unit?: string
+  /** When 'toggle', renders a checkbox instead of a slider. Expects min=0, max=1, step=1. */
+  type?: 'range' | 'toggle'
 }
 
 export const KNOB_GROUPS: { id: KnobGroup; title: string; blurb: string }[] = [
@@ -212,6 +221,26 @@ export const KNOBS: Knob[] = [
     min: 1,
     max: 8,
     step: 1,
+  },
+  {
+    key: 'pollinationCarrySeconds',
+    group: 'plants',
+    label: 'How long a bee carries a seed',
+    help: 'A pollinator picks up a seed when it brushes past a plant and drops it wherever it travels next. This is how long before it drops on its own.',
+    min: 5,
+    max: 120,
+    step: 5,
+    unit: 's',
+  },
+  {
+    key: 'pollinationOnly',
+    group: 'plants',
+    label: 'Pollination only',
+    help: 'When on, plants can only spread by pollinator seed-carriers — they cannot reproduce on their own.',
+    min: 0,
+    max: 1,
+    step: 1,
+    type: 'toggle',
   },
 
   {
