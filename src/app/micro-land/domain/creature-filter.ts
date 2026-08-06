@@ -49,6 +49,8 @@ export interface CreatureFilter {
   glows: boolean
   /** Keep only creatures lava can't hurt. */
   lavaProof: boolean
+  /** Keep only creatures with at least one of these structural diet tags. */
+  dietTags: string[]
 }
 
 export const EMPTY_FILTER: CreatureFilter = {
@@ -56,6 +58,7 @@ export const EMPTY_FILTER: CreatureFilter = {
   sizes: [],
   glows: false,
   lavaProof: false,
+  dietTags: [],
 }
 
 /** True if a creature casts light of its own. */
@@ -83,13 +86,23 @@ export function sizeBand(bp: CreatureBlueprint): SizeBandId | null {
 
 /** True if any axis is asking something. */
 export function isFilterActive(filter: CreatureFilter): boolean {
-  return filter.moves.length > 0 || filter.sizes.length > 0 || filter.glows || filter.lavaProof
+  return (
+    filter.moves.length > 0 ||
+    filter.sizes.length > 0 ||
+    filter.glows ||
+    filter.lavaProof ||
+    filter.dietTags.length > 0
+  )
 }
 
 /** How many conditions are on — the number badged on the collapsed control. */
 export function activeConditionCount(filter: CreatureFilter): number {
   return (
-    filter.moves.length + filter.sizes.length + (filter.glows ? 1 : 0) + (filter.lavaProof ? 1 : 0)
+    filter.moves.length +
+    filter.sizes.length +
+    (filter.glows ? 1 : 0) +
+    (filter.lavaProof ? 1 : 0) +
+    filter.dietTags.length
   )
 }
 
@@ -101,6 +114,7 @@ export function matchesFilter(bp: CreatureBlueprint, filter: CreatureFilter): bo
   }
   if (filter.glows && !isGlowing(bp)) return false
   if (filter.lavaProof && !isLavaProof(bp)) return false
+  if (filter.dietTags.length > 0 && !filter.dietTags.some(tag => bp.tags.includes(tag))) return false
   return true
 }
 
@@ -119,25 +133,35 @@ export interface FilterOptions {
   sizes: SizeBandId[]
   glows: boolean
   lavaProof: boolean
+  dietTags: string[]
 }
+
+const DIET_TAG_ORDER = ['plant', 'meat', 'mineral'] as const
 
 export function filterOptions(roster: CreatureBlueprint[]): FilterOptions {
   const moves = new Set<LocomotionKind>()
   const sizes = new Set<SizeBandId>()
   let glows = false
   let lavaProof = false
+  const dietTagSet = new Set<string>()
   for (const bp of roster) {
     moves.add(bp.move.kind)
     const band = sizeBand(bp)
     if (band) sizes.add(band)
     if (isGlowing(bp)) glows = true
     if (isLavaProof(bp)) lavaProof = true
+    for (const tag of bp.tags) {
+      if (DIET_TAG_ORDER.includes(tag as (typeof DIET_TAG_ORDER)[number])) {
+        dietTagSet.add(tag)
+      }
+    }
   }
   return {
     moves: MOVE_ORDER.filter(k => moves.has(k)),
     sizes: SIZE_BANDS.filter(b => sizes.has(b.id)).map(b => b.id),
     glows,
     lavaProof,
+    dietTags: DIET_TAG_ORDER.filter(t => dietTagSet.has(t)),
   }
 }
 
@@ -159,5 +183,6 @@ export function describeFilter(filter: CreatureFilter): string {
   }
   if (filter.glows) parts.push('glows in the dark')
   if (filter.lavaProof) parts.push('lava-proof')
+  if (filter.dietTags.length > 0) parts.push(filter.dietTags.join(' or '))
   return parts.join(' · ')
 }
