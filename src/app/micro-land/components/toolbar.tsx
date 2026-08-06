@@ -7,6 +7,7 @@ import {
   type CreatureGroup,
   creatureGroup,
 } from '@/app/micro-land/domain/blueprint'
+import { BIOMES } from '@/app/micro-land/domain/config/biomes'
 import { MATERIALS, PAINTABLE, TINTS, tintedId } from '@/app/micro-land/domain/config/materials'
 import {
   type CreatureFilter,
@@ -448,6 +449,37 @@ export function Toolbar({
             </button>
           </div>
 
+          {/* Biome brushes — paint mixed terrain themes in one stroke */}
+          <div className="-mx-1 flex flex-wrap items-center gap-1.5 px-1 pb-1">
+            <span style={label}>Biomes</span>
+            {BIOMES.map(biome => {
+              const selected = tool.kind === 'biome' && tool.biomeId === biome.id
+              return (
+                <button
+                  key={biome.id}
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setTool({ kind: 'biome', biomeId: biome.id })}
+                  aria-pressed={selected}
+                  title={`Paint ${biome.label.toLowerCase()} terrain mix`}
+                  style={swatchStyle(selected)}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 3,
+                      background: biome.color,
+                      boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.35)',
+                    }}
+                  />
+                  <span style={swatchLabel}>{biome.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
           {family && (
             <div
               className="-mx-1 flex flex-wrap items-center gap-1.5 px-1 pb-1"
@@ -863,6 +895,25 @@ function heldTool(
 
   if (tool.kind === 'inspect') {
     return { name: 'Inspect', swatch: <span style={{ fontSize: 13 }}>⌕</span> }
+  }
+
+  if (tool.kind === 'biome') {
+    const biome = BIOMES.find(b => b.id === tool.biomeId)
+    if (!biome) return { name: 'Biome', swatch: null }
+    return {
+      name: biome.label,
+      swatch: (
+        <span
+          style={{
+            width: 16,
+            height: 16,
+            borderRadius: 3,
+            background: biome.color,
+            boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.35)',
+          }}
+        />
+      ),
+    }
   }
 
   if (tool.kind === 'creature') {

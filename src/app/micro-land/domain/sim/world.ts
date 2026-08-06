@@ -11,6 +11,7 @@ import {
   MATERIAL_INDEX,
   VISCOSITY,
 } from '@/app/micro-land/domain/config/materials'
+import type { Biome } from '../config/biomes'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
   SURFACE_SEEDING_BIAS,
@@ -350,6 +351,63 @@ export function paintSquare(
   for (let y = y0; y <= y1; y++) {
     for (let x = x0; x <= x1; x++) {
       setTile(w, x, y, value)
+    }
+  }
+}
+
+/** Pick one material from a biome palette by weighted random selection. */
+function pickBiomeMat(rng: Rng, palette: Biome['palette']): number {
+  let total = 0
+  for (const e of palette) total += e.weight
+  let roll = rng() * total
+  for (const e of palette) {
+    roll -= e.weight
+    if (roll < 0) return MATERIAL_INDEX[e.material]
+  }
+  return MATERIAL_INDEX[palette[palette.length - 1].material]
+}
+
+/** Paint a filled circle where each tile is drawn from a biome's weighted material palette. */
+export function paintBiomeCircle(
+  w: WorldState,
+  cx: number,
+  cy: number,
+  radius: number,
+  biome: Biome,
+  rng: Rng
+): void {
+  w.dormant = false
+  const r2 = radius * radius
+  const x0 = Math.floor(cx - radius)
+  const x1 = Math.ceil(cx + radius)
+  const y0 = Math.floor(cy - radius)
+  const y1 = Math.ceil(cy + radius)
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const dx = x - cx
+      const dy = y - cy
+      if (dx * dx + dy * dy <= r2) setTile(w, x, y, pickBiomeMat(rng, biome.palette))
+    }
+  }
+}
+
+/** Paint a filled square where each tile is drawn from a biome's weighted material palette. */
+export function paintBiomeSquare(
+  w: WorldState,
+  cx: number,
+  cy: number,
+  half: number,
+  biome: Biome,
+  rng: Rng
+): void {
+  w.dormant = false
+  const x0 = Math.floor(cx - half)
+  const x1 = Math.ceil(cx + half)
+  const y0 = Math.floor(cy - half)
+  const y1 = Math.ceil(cy + half)
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      setTile(w, x, y, pickBiomeMat(rng, biome.palette))
     }
   }
 }
