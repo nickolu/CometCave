@@ -518,6 +518,7 @@ export class Renderer {
     this.drawCarcasses(w, vx, vw)
     this.drawNests(w, vx, vw)
     this.drawTombstones(w, vx, vw)
+    this.drawFossils(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
     if (w.corridors) this.drawCorridors(w.corridors, vx, vw)
     this.drawEggs(w, vx, vw)
@@ -602,6 +603,7 @@ export class Renderer {
     this.drawNameLabels(w, vx, vw, elderId)
     this.drawThoughtBubbles(w, vx, vw)
     this.drawTombstoneLabels(w, vx, vw)
+    this.drawFossilLabels(w, vx, vw)
   }
 
   // -------------------------------------------------------------------------
@@ -941,6 +943,29 @@ export class Renderer {
   }
 
   /**
+   * Tiny bone-colored cross markers where species went extinct.
+   * Drawn on the world canvas so they scale with zoom like terrain features.
+   */
+  private drawFossils(w: WorldState, vx: number, vw: number): void {
+    if (!w.fossils || w.fossils.length === 0) return
+    const ctx = this.wctx
+    ctx.fillStyle = '#c8b89a'
+    ctx.globalAlpha = 0.7
+
+    for (const fossil of w.fossils) {
+      const fx = Math.round(fossil.x)
+      const fy = Math.round(fossil.y)
+      if (fx + 3 < vx || fx - 3 > vx + vw) continue
+
+      // Cross / × marker: horizontal bar + vertical bar, 3×1 and 1×3.
+      ctx.fillRect(fx - 1, fy,     3, 1)  // horizontal
+      ctx.fillRect(fx,     fy - 1, 1, 3)  // vertical
+    }
+
+    ctx.globalAlpha = 1
+  }
+
+  /**
    * Pixel-art headstones where named creatures died.
    *
    * Drawn on the world canvas so they sit in the world at tile scale and get
@@ -968,6 +993,41 @@ export class Renderer {
     }
 
     ctx.globalAlpha = 1
+  }
+
+  /**
+   * Species name above each fossil, drawn on the display canvas so text stays
+   * legible at any zoom — same approach as drawTombstoneLabels.
+   */
+  private drawFossilLabels(w: WorldState, vx: number, vw: number): void {
+    if (!w.fossils || w.fossils.length === 0) return
+
+    const ctx = this.ctx
+    const scale = this.scale
+    const offsetX = this.offsetX
+    const offsetY = this.offsetY
+    const viewTop = this.viewTop()
+
+    ctx.font = '8px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    for (const fossil of w.fossils) {
+      if (fossil.x + 3 < vx || fossil.x - 3 > vx + vw) continue
+
+      const dx = (fossil.x - vx) * scale + offsetX
+      const dy = (fossil.y - 3 - viewTop) * scale + offsetY
+
+      ctx.globalAlpha = 0.5
+      ctx.fillStyle = 'rgba(0,0,0,0.4)'
+      ctx.fillText(`✦ ${fossil.name}`, dx + 1, dy + 1)
+      ctx.fillStyle = '#c8b89a'
+      ctx.fillText(`✦ ${fossil.name}`, dx, dy)
+    }
+
+    ctx.globalAlpha = 1
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
   }
 
   /**

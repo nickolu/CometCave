@@ -578,15 +578,28 @@ export class GameInstance {
       // Record extinction in store for the field guide memorial.
       {
         const firstSeen = this.speciesFirstSeen.get(bp.id) ?? this.world.elapsed
+        const livedFor = this.world.elapsed - firstSeen
+        const maxGeneration = this.world.creatures.reduce(
+          (max, c) => c.blueprintId === bp.id ? Math.max(max, c.generation) : max,
+          1
+        )
         useMicroLand.getState().addExtinction({
           blueprintId: bp.id,
           name: bp.name,
           elapsed: this.world.elapsed,
-          livedFor: this.world.elapsed - firstSeen,
-          maxGeneration: this.world.creatures.reduce(
-            (max, c) => c.blueprintId === bp.id ? Math.max(max, c.generation) : max,
-            1
-          ),
+          livedFor,
+          maxGeneration,
+        })
+        // Drop a fossil where the last creature of this species died.
+        this.world.fossils.push({
+          id: this.world.nextFossilId++,
+          x: event.x,
+          y: event.y,
+          blueprintId: bp.id,
+          name: bp.name,
+          livedFor,
+          maxGeneration,
+          elapsed: this.world.elapsed,
         })
       }
       // An extinction is exactly what the steady streak measures the absence of

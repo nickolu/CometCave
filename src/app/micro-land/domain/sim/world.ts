@@ -49,6 +49,8 @@ export function createWorld(seed = 1337): WorldState {
     carcasses: [],
     tombstones: [],
     nextTombstoneId: 1,
+    fossils: [],
+    nextFossilId: 1,
     nextCarcassId: 1,
     scents: [],
     moisture: new Float32Array(WORLD_W * WORLD_H),

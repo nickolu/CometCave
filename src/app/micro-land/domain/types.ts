@@ -656,6 +656,29 @@ export interface Tombstone {
   children: number
 }
 
+/**
+ * A permanent fossil marker left where the last creature of a species died.
+ * Records the extinction position and final stats. Never decays — the cave
+ * keeps a record of every extinction.
+ */
+export interface Fossil {
+  id: number
+  /** World-tile x coordinate where the last individual died. */
+  x: number
+  /** World-tile y coordinate where the last individual died. */
+  y: number
+  /** Blueprint id of the extinct species. */
+  blueprintId: string
+  /** Species name, cached here so the renderer needs no blueprint lookup. */
+  name: string
+  /** How long this species survived (sim-seconds). */
+  livedFor: number
+  /** Highest generation reached by this species. */
+  maxGeneration: number
+  /** World elapsed time when extinction happened. */
+  elapsed: number
+}
+
 /** A named creature — may be alive or dead. */
 export interface NamedCreatureEntry {
   name: string
@@ -748,6 +771,8 @@ export interface WorldState {
   carcasses: Carcass[]
   tombstones: Tombstone[]
   nextTombstoneId: number
+  fossils: Fossil[]
+  nextFossilId: number
   nextCarcassId: number
   scents: Scent[]
   /**
