@@ -539,6 +539,13 @@ export interface Creature {
    */
   packTimer: number
   /**
+   * How many creatures are currently hunting the same prey in this creature's pack.
+   *
+   * 0 = not in a pack. Updated every sense tick alongside packTimer.
+   * Pushed to the inspector so the panel can say "hunting in a pack of 3".
+   */
+  packSize?: number
+  /**
    * Seconds spent standing on quicksand.
    *
    * Walkers slow progressively as this rises (fully stopped at 8 s) and die

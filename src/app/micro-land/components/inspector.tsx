@@ -438,6 +438,9 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           {inspected.followingScent && !trouble && !inspected.targetName && (
             <span style={{ opacity: 0.65 }}> · following a scent</span>
           )}
+          {inspected.packSize > 1 && inspected.mood === 'hunt' && !trouble && (
+            <span style={{ opacity: 0.65 }}> · pack of {inspected.packSize}</span>
+          )}
         </div>
 
         {/*

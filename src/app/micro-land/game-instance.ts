@@ -1184,6 +1184,7 @@ export class GameInstance {
       isElder: c.id === this.elderId,
       followingScent: (c as { followingScent?: boolean }).followingScent ?? false,
       lifeLog: c.lifeLog ?? [],
+      packSize: c.packSize ?? 0,
     })
   }
 
