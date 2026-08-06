@@ -473,7 +473,8 @@ export class Renderer {
     w: WorldState,
     theme: Theme,
     highlightId: number | null = null,
-    elderId: number | null = null
+    elderId: number | null = null,
+    heatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
     const vw = Math.min(WORLD_W - vx, Math.ceil(this.viewTiles))
@@ -495,6 +496,7 @@ export class Renderer {
 
     this.drawCarcasses(w, vx, vw)
     this.drawTombstones(w, vx, vw)
+    if (heatmap) this.drawHeatmap(heatmap, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
@@ -710,6 +712,30 @@ export class Renderer {
     const top = a + (b - a) * tx
     const bottom = c + (d - c) * tx
     return top + (bottom - top) * ty
+  }
+
+  private drawHeatmap(heatmap: Float32Array, vx: number, vw: number): void {
+    // Find the peak value over visible tiles for normalization.
+    let peak = 0
+    for (let x = vx; x < vx + vw; x++) {
+      for (let y = 0; y < WORLD_H; y++) {
+        const v = heatmap[y * WORLD_W + x]
+        if (v > peak) peak = v
+      }
+    }
+    if (peak < 0.5) return
+
+    const ctx = this.wctx
+    for (let x = vx; x < vx + vw; x++) {
+      for (let y = 0; y < WORLD_H; y++) {
+        const v = heatmap[y * WORLD_W + x]
+        if (v < 0.5) continue
+        ctx.globalAlpha = Math.min(0.5, v / peak)
+        ctx.fillStyle = '#ff3200'
+        ctx.fillRect(x, y, 1, 1)
+      }
+    }
+    ctx.globalAlpha = 1
   }
 
   private drawCarcasses(w: WorldState, vx: number, vw: number): void {
