@@ -100,6 +100,10 @@ export interface Inspected {
   hostName: string | null
   /** Rolling history of recent mood states, oldest first, max 40 entries. */
   moodHistory: string[]
+  /** Tile X where the creature last ate successfully. null = never eaten. */
+  lastMealX: number | null
+  /** Tile Y where the creature last ate successfully. null = never eaten. */
+  lastMealY: number | null
 }
 
 /** One column of the guide's record book — see `KindRecord`. */

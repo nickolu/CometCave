@@ -613,6 +613,10 @@ export interface Creature {
    * no fatigue data default to 0.
    */
   fatigue?: number
+  /** Tile X where the creature last ate successfully. null = never eaten. */
+  lastMealX: number | null
+  /** Tile Y where the creature last ate successfully. null = never eaten. */
+  lastMealY: number | null
 }
 
 /**
