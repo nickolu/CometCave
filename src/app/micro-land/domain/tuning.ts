@@ -121,6 +121,11 @@ export const TUNING_DEFAULTS = {
   pollinationOnly: POLLINATION_ONLY,
   plantCrowdingStrength: PLANT_CROWDING_STRENGTH,
   plantSpreadMin: PLANT_SPREAD_MIN,
+  /**
+   * How many water drops fall per tick, 0 = dry.
+   * Probabilistic: at 1.0, one drop per tick on average (≈60/s at 60fps).
+   */
+  rainRate: 0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -450,6 +455,15 @@ export const KNOBS: Knob[] = [
     min: 0,
     max: 600,
     step: 30,
+  },
+  {
+    key: 'rainRate',
+    group: 'world',
+    label: 'Rain',
+    help: 'Water drops that fall from the sky. 0 = dry. 0.3 = light rain. 1.0 = downpour. Water pools and flows naturally using the world physics. Pairs well with water-adapted creatures and muddy terrain.',
+    min: 0,
+    max: 1,
+    step: 0.05,
   },
 ]
 

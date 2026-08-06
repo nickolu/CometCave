@@ -495,6 +495,12 @@ export class GameInstance {
       }
     }
 
+    // --- rain ---
+    if (TUNING.rainRate > 0 && this.rng() < TUNING.rainRate) {
+      const rx = Math.floor(this.rng() * WORLD_W)
+      paintCircle(this.world, rx, 0, 1, 'water')
+    }
+
     // --- heatmap update (every 5 ticks) ---
     this.heatmapTickCounter++
     if (this.heatmapTickCounter >= 5) {
