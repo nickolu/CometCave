@@ -66,7 +66,6 @@ export function FieldGuide() {
   const archive = useMicroLand(s => s.archive)
   const milestones = useMicroLand(s => s.milestones)
   const populationHistory = useMicroLand(s => s.populationHistory)
-  const requestLocate = useMicroLand(s => s.requestLocate)
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
@@ -587,11 +586,6 @@ export function FieldGuide() {
               alive={counts.get(bp.id) ?? 0}
               maxGeneration={genByBp.get(bp.id) ?? 1}
               blueprints={blueprints}
-              onLocate={(counts.get(bp.id) ?? 0) > 0 ? () => requestLocate(bp.id) : undefined}
-              onCopyCode={() => {
-                const code = btoa(JSON.stringify(bp))
-                navigator.clipboard.writeText(code).catch(() => {})
-              }}
               thumbs={populationItems.filter(t => t.blueprintId === bp.id)}
               onLocateCreature={requestLocateCreature}
               onCompare={() => handleCompare(bp.id)}
@@ -888,8 +882,6 @@ function GuideEntry({
   alive,
   blueprints,
   maxGeneration,
-  onLocate,
-  onCopyCode,
   thumbs,
   onLocateCreature,
   onCompare,
@@ -903,8 +895,6 @@ function GuideEntry({
   alive: number
   blueprints: CreatureBlueprint[]
   maxGeneration: number
-  onLocate?: () => void
-  onCopyCode?: () => void
   thumbs?: CreatureThumb[]
   onLocateCreature?: (id: number) => void
   onCompare?: () => void
@@ -1005,7 +995,7 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {(onLocate || onCopyCode || onCompare || onHeatmap) && (
+          {(onCompare || onHeatmap) && (
             <div className="flex shrink-0 items-center gap-1">
               {onHeatmap && (
                 <button
@@ -1049,48 +1039,6 @@ function GuideEntry({
                   }}
                 >
                   ⇄
-                </button>
-              )}
-              {onCopyCode && (
-                <button
-                  type="button"
-                  className="cc-btn"
-                  onClick={onCopyCode}
-                  title="Copy blueprint code to share"
-                  style={{
-                    fontFamily: 'var(--cc-font-mono)',
-                    fontSize: 9,
-                    letterSpacing: 1,
-                    textTransform: 'uppercase',
-                    padding: '3px 8px',
-                    border: '1px solid var(--cc-mint-line)',
-                    color: 'var(--cc-text-muted)',
-                  }}
-                >
-                  Copy code
-                </button>
-              )}
-              {onLocate && (
-                <button
-                  type="button"
-                  className="cc-btn"
-                  onClick={onLocate}
-                  aria-label={`Pan camera to ${bp.name}`}
-                  title="Pan to this creature in the world"
-                  style={{
-                    fontFamily: 'var(--cc-font-mono)',
-                    fontSize: 9,
-                    letterSpacing: 1,
-                    textTransform: 'uppercase',
-                    padding: '3px 7px',
-                    minHeight: 24,
-                    borderRadius: 4,
-                    border: '1px solid var(--cc-mint-line)',
-                    color: 'var(--cc-mint)',
-                    opacity: 0.8,
-                  }}
-                >
-                  Find
                 </button>
               )}
             </div>
