@@ -164,6 +164,8 @@ export class GameInstance {
   private accumulator = 0
   private tileCounter = 0
   private statsTimer = 0
+  private pendingBirths: Record<string, number> = {}
+  private pendingDeaths: Record<string, number> = {}
 
   /** Species that existed last time we checked, for extinction notices. */
   private knownSpecies = new Set<string>()
@@ -653,6 +655,18 @@ export class GameInstance {
       })
     }
 
+    // Track per-species births/deaths for the population graph.
+    for (const event of events) {
+      if (event.kind === 'born') {
+        this.pendingBirths[event.blueprintId] = (this.pendingBirths[event.blueprintId] ?? 0) + 1
+      } else if (
+        event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' ||
+        event.kind === 'burned' || event.kind === 'aged' || event.kind === 'diseased'
+      ) {
+        this.pendingDeaths[event.blueprintId] = (this.pendingDeaths[event.blueprintId] ?? 0) + 1
+      }
+    }
+
     // Play sounds for aggregate events this tick
     if (isSoundEnabled()) {
       let hadBirth = false, hadDeath = false
@@ -793,7 +807,11 @@ export class GameInstance {
       }
     }
 
-    useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
+    const births = { ...this.pendingBirths }
+    const deaths = { ...this.pendingDeaths }
+    this.pendingBirths = {}
+    this.pendingDeaths = {}
+    useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed, births, deaths)
 
     // Per-creature thumbnails for the Field Guide population viewer.
     const thumbs: CreatureThumb[] = this.world.creatures
