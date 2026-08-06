@@ -884,7 +884,7 @@ export function tickCreatures(
       const victim = animals[Math.floor(rng() * animals.length)]
       const immunity = (victim.traits as { immunity?: number }).immunity ?? 0.2
       if (rng() > immunity) {
-        victim.sick = 20
+        victim.sick = TUNING.diseaseDuration
       }
     }
   }
@@ -1251,11 +1251,11 @@ function look(
       const gdy = Math.max(0, Math.abs(other.y + oh / 2 - (c.y + bh / 2)) - (bh + oh) / 2)
       if (gdx * gdx + gdy * gdy > spreadReach * spreadReach) continue
       const otherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
-      if (rng() < 0.05 * (1 - otherImmunity)) {
+      if (rng() < TUNING.diseaseSpreadChance * (1 - otherImmunity)) {
         if (!other.sick) {
           events.push({ kind: 'sick', blueprintId: other.blueprintId, x: other.x, y: other.y })
         }
-        other.sick = 20
+        other.sick = TUNING.diseaseDuration
       }
     }
   }
@@ -1276,7 +1276,7 @@ function look(
       const gdx = Math.max(0, Math.abs(plant.x + pw / 2 - cx) - (bw + pw) / 2)
       const gdy = Math.max(0, Math.abs(plant.y + ph / 2 - (c.y + bh / 2)) - (bh + ph) / 2)
       if (gdx * gdx + gdy * gdy > sporeReach * sporeReach) continue
-      if (rng() < 0.01) {
+      if (rng() < TUNING.diseaseSpreadChance * 0.2) {
         if (!c.sick) events.push({ kind: 'sick', blueprintId: c.blueprintId, x: c.x, y: c.y })
         c.sick = Math.max(c.sick ?? 0, 5)
       }

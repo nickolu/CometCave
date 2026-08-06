@@ -386,3 +386,13 @@ export const ELDER_MIN_SECONDS = 60
  * means the food web actually settled.
  */
 export const STEADY_SHOW_SECONDS = 120
+
+/** Base probability per tick that a sick creature infects a healthy neighbour. */
+export const DISEASE_SPREAD_CHANCE = 0.05
+
+/**
+ * How long a creature stays sick after catching a disease, in sim-seconds.
+ * Sporecap spore infections use a fixed 5 s regardless of this setting — they
+ * are a brief slow, not a full disease.
+ */
+export const DISEASE_DURATION = 20
