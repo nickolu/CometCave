@@ -1,8 +1,10 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { CHALLENGES } from '@/app/micro-land/domain/challenges'
+import { loadSpeedRunRecords } from '@/app/micro-land/domain/speed-run-records'
 import { resetTuning, setTuning } from '@/app/micro-land/domain/tuning'
 import { useMicroLand } from '@/app/micro-land/store'
+import { formatDuration } from '@/app/micro-land/format'
 
 /**
  * The challenges content — usable both inside the field guide sidebar
@@ -18,6 +20,8 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
   const startSpeedRun = useMicroLand(s => s.startSpeedRun)
   const elapsed = useMicroLand(s => s.elapsed)
   const speedRun = useMicroLand(s => s.speedRun)
+  const [recordsEpoch, setRecordsEpoch] = useState(0)
+  const records = useMemo(() => loadSpeedRunRecords(targetGen), [targetGen, recordsEpoch])
 
   function startChallenge(preset: (typeof CHALLENGES)[number]) {
     resetTuning()
@@ -136,6 +140,7 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
           className="cc-btn"
           onClick={() => {
             startSpeedRun(targetGen, timeLimitOptions[timeLimitIdx].seconds, elapsed)
+            setRecordsEpoch(e => e + 1)
             onClose()
           }}
           style={{
@@ -148,6 +153,32 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
         >
           {speedRun.active ? 'Restart Speed Run' : 'Start Speed Run'}
         </button>
+        {records.length > 0 && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{
+              fontFamily: 'var(--cc-font-mono)', fontSize: 9, letterSpacing: 1.2,
+              textTransform: 'uppercase', color: 'var(--cc-text-muted)',
+              opacity: 0.7, marginBottom: 6,
+            }}>
+              Best times — gen {targetGen}
+            </div>
+            <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {records.slice(0, 5).map((r, i) => (
+                <li
+                  key={i}
+                  style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+                    fontFamily: 'var(--cc-font-mono)', fontSize: 11,
+                    color: i === 0 ? 'var(--cc-gold)' : 'var(--cc-text-muted)',
+                  }}
+                >
+                  <span>{i + 1}. {formatDuration(r.seconds)}</span>
+                  <span style={{ fontSize: 9, opacity: 0.6 }}>{r.theme} · {r.date}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        )}
       </div>
       <button
         type="button"
