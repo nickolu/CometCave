@@ -368,6 +368,9 @@ interface MicroLandState {
    */
   canZoomIn: boolean
   canZoomOut: boolean
+  /** Player's preferred zoom preset. Controls the canvas zoom level. */
+  viewScale: 'wide' | 'standard' | 'close'
+  setViewScale: (scale: 'wide' | 'standard' | 'close') => void
 
   notices: Notice[]
 
@@ -590,6 +593,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   canPan: true,
   canZoomIn: true,
   canZoomOut: true,
+  viewScale: 'standard',
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -713,6 +717,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setMilestones: milestones => set({ milestones }),
   setCanPan: canPan => set({ canPan }),
   setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
+  setViewScale: viewScale => set({ viewScale }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),

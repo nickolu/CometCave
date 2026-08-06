@@ -378,6 +378,11 @@ export class Renderer {
     return this.setZoom(1)
   }
 
+  /** The minimum zoom — shows the full world width. */
+  get minZoomLevel(): number {
+    return this.minZoom
+  }
+
   /**
    * Slide just far enough to bring a point back on screen.
    *
