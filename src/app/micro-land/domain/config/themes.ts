@@ -1684,6 +1684,162 @@ const MUSHROOM_FOREST: Theme = {
   },
 }
 
+const CAVE: Theme = {
+  id: 'cave',
+  name: 'The Deep',
+  blurb: 'Stone in every direction. Crystals older than the surface. Things that never needed eyes.',
+  sky: ['#0c051e', '#04020d'],
+  gloom: 0.65,
+  gravity: 1,
+  starters: [
+    { id: 'glowvine', count: 20 },
+    { id: 'sporecap', count: 12 },
+    { id: 'loamworm', count: 8 },
+    { id: 'delver', count: 6 },
+    { id: 'finling', count: 8 },
+  ],
+  build: (tiles, rng) => {
+    // The whole world is stone to start; everything is carved out of it.
+    fill(tiles, 'stone')
+
+    const edgeNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    // BSP carves connected cave chambers — same trick as STATION but organic.
+    interface CaveBox { x0: number; y0: number; x1: number; y1: number }
+    const chambers: Array<{ cx: number; cy: number; rx: number; ry: number }> = []
+
+    const margin = 12
+    const maxDepth = 4 + Math.round(Math.log2(WIDTH_SCALE))
+
+    function split(box: CaveBox, depth: number) {
+      const w = box.x1 - box.x0
+      const h = box.y1 - box.y0
+      // Stop when the box is cave-sized or we have enough chambers.
+      if (depth > maxDepth || (w < 38 && h < 30) || chambers.length >= across(5)) {
+        const cx = box.x0 + Math.floor(w * (0.3 + rng() * 0.4))
+        const cy = box.y0 + Math.floor(h * (0.3 + rng() * 0.4))
+        chambers.push({
+          cx,
+          cy,
+          rx: Math.max(7, Math.floor(w * 0.27)),
+          ry: Math.max(5, Math.floor(h * 0.27)),
+        })
+        return
+      }
+      const horizontal = w > h * 1.3 ? true : h > w * 1.3 ? false : rng() > 0.5
+      if (horizontal) {
+        const cut = box.x0 + Math.floor(w * (0.35 + rng() * 0.3))
+        split({ ...box, x1: cut }, depth + 1)
+        split({ ...box, x0: cut }, depth + 1)
+      } else {
+        const cut = box.y0 + Math.floor(h * (0.35 + rng() * 0.3))
+        split({ ...box, y1: cut }, depth + 1)
+        split({ ...box, y0: cut }, depth + 1)
+      }
+    }
+
+    split({ x0: margin, y0: margin, x1: WORLD_W - margin, y1: WORLD_H - margin }, 0)
+
+    // Carve each chamber as a noise-deformed ellipse.
+    for (const { cx, cy, rx, ry } of chambers) {
+      for (let y = cy - ry; y <= cy + ry; y++) {
+        for (let x = cx - rx; x <= cx + rx; x++) {
+          const nx = (x - cx) / (rx + 1)
+          const ny = (y - cy) / (ry + 1)
+          const dist = Math.sqrt(nx * nx + ny * ny)
+          // Edge noise makes the boundary rough rather than a perfect ellipse.
+          const noise = edgeNoise(x * 0.07, y * 0.07) * 0.38
+          if (dist < 0.64 + noise) set(tiles, x, y, 'air')
+        }
+      }
+    }
+
+    // Connect chambers with Z-shaped tunnels (horizontal → vertical → horizontal).
+    // Sort by centre X so each chamber connects to its horizontal neighbour.
+    const sorted = [...chambers].sort((a, b) => a.cx - b.cx)
+    for (let i = 0; i + 1 < sorted.length; i++) {
+      const a = sorted[i]
+      const b = sorted[i + 1]
+      const midX = Math.floor((a.cx + b.cx) / 2)
+      // Leg 1: horizontal from a to midX at a's depth.
+      for (let x = Math.min(a.cx, midX); x <= Math.max(a.cx, midX); x++) {
+        for (let dy = -2; dy <= 2; dy++) set(tiles, x, a.cy + dy, 'air')
+      }
+      // Leg 2: vertical between the two depths.
+      for (let y = Math.min(a.cy, b.cy) - 2; y <= Math.max(a.cy, b.cy) + 2; y++) {
+        for (let dx = -2; dx <= 2; dx++) set(tiles, midX + dx, y, 'air')
+      }
+      // Leg 3: horizontal from midX to b.
+      for (let x = Math.min(midX, b.cx); x <= Math.max(midX, b.cx); x++) {
+        for (let dy = -2; dy <= 2; dy++) set(tiles, x, b.cy + dy, 'air')
+      }
+    }
+
+    // Stalactites: stone columns hanging down from cave ceilings into open air.
+    // A ceiling tile is stone (y) with air below it (y+1); the stalactite extends
+    // further downward into that air.
+    for (let x = 0; x < WORLD_W; x++) {
+      for (let y = 0; y < WORLD_H - 1; y++) {
+        if (tileAt(tiles, x, y) !== M.stone) continue
+        if (tileAt(tiles, x, y + 1) !== M.air) continue
+        if (rng() > 0.18) continue
+        const length = 2 + Math.floor(rng() * 7)
+        for (let d = 1; d <= length; d++) {
+          if (tileAt(tiles, x, y + d) !== M.air) break
+          set(tiles, x, y + d, 'stone')
+        }
+      }
+    }
+
+    // Underground lakes: water in the air space just above cave floors,
+    // only in chambers sitting below the mid-point of the world.
+    for (const { cx, cy } of chambers) {
+      if (cy < WORLD_H * 0.44 || rng() > 0.55) continue
+      const lakeW = 5 + Math.floor(rng() * 14)
+      for (let x = cx - lakeW; x <= cx + lakeW; x++) {
+        // Scan downward from cy to find the floor of the chamber at this column.
+        let floorY = -1
+        for (let y = cy; y < Math.min(WORLD_H, cy + 24); y++) {
+          if (tileAt(tiles, x, y) === M.stone) { floorY = y; break }
+        }
+        if (floorY < 0) continue
+        const t = 1 - Math.abs(x - cx) / (lakeW + 1)
+        const depth = Math.floor(t * 5)
+        for (let d = 1; d <= depth; d++) {
+          if (tileAt(tiles, x, floorY - d) === M.air) set(tiles, x, floorY - d, 'water')
+        }
+      }
+    }
+
+    // Lava pockets in the lower quarter — the deep rock is still hot.
+    for (let i = 0; i < across(3); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.70 + rng() * 0.22))
+      blob(tiles, cx, cy, 3 + Math.floor(rng() * 5), 'lava', rng, ['stone'])
+    }
+
+    // Crystal and gem veins grow in the stone walls.
+    for (let i = 0; i < across(14); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.08 + rng() * 0.84))
+      const t = oreNoise(cx * 0.05, cy * 0.05)
+      const id: MaterialId = t < 0.4 ? 'crystal' : t < 0.75 ? 'gem' : 'gold'
+      blob(tiles, cx, cy, 2 + Math.floor(rng() * 3), id, rng, ['stone'])
+    }
+
+    // Ancient bone deposits — whatever once lived down here.
+    for (let i = 0; i < across(5); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.25 + rng() * 0.65))
+      blob(tiles, cx, cy, 2 + Math.floor(rng() * 2), 'bone', rng, ['stone'])
+    }
+
+    // Moss on the exposed stone floors and walls where moisture collects.
+    mossify(tiles, rng, 0.28, ['stone'])
+  },
+}
+
 /**
  * Order is the order of the picker, and it is a reading order: nothing, then
  * the world most like ours, then the ones that bend it further and further.
@@ -1699,6 +1855,7 @@ export const THEMES: Theme[] = [
   TIDEPOOL,
   SKYLANDS,
   VOLCANIC,
+  CAVE,
   CASTLE,
   STATION,
   CANDY,
