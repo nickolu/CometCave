@@ -1755,6 +1755,34 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     const sign = c.mood === 'flee' ? -1 : 1
     wantX = (dx / len) * sign
     wantY = (dy / len) * sign
+    // Shelter-seeking: when fleeing, redirect toward the nearest stone or
+    // wood tile within 6 tiles. Creatures use solid objects as safe spots.
+    if (c.mood === 'flee') {
+      const STONE = MATERIAL_INDEX['stone']
+      const WOOD = MATERIAL_INDEX['wood']
+      const SHELTER_R = 6
+      const x0 = Math.max(0, Math.floor(cx - SHELTER_R))
+      const x1 = Math.min(w.width - 1, Math.ceil(cx + SHELTER_R))
+      const y0 = Math.max(0, Math.floor(cy - SHELTER_R))
+      const y1 = Math.min(w.height - 1, Math.ceil(cy + SHELTER_R))
+      let nearX = -1, nearY = -1, nearDist = Infinity
+      for (let ty = y0; ty <= y1; ty++) {
+        for (let tx = x0; tx <= x1; tx++) {
+          const t = w.tiles[ty * w.width + tx]
+          if (t === STONE || t === WOOD) {
+            const d = (tx - cx) ** 2 + (ty - cy) ** 2
+            if (d > 0 && d < nearDist) { nearDist = d; nearX = tx; nearY = ty }
+          }
+        }
+      }
+      if (nearX >= 0) {
+        const sdx = nearX - cx
+        const sdy = nearY - cy
+        const slen = Math.hypot(sdx, sdy) || 1
+        wantX = sdx / slen
+        wantY = sdy / slen
+      }
+    }
   } else if (c.mood === 'rest') {
     // Resting — no active movement. `wantX` and `wantY` stay at 0, so physics
     // runs without any locomotion drive: gravity keeps walkers grounded, drag
