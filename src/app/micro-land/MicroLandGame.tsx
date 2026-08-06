@@ -53,6 +53,7 @@ export function MicroLandGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<GameInstance | null>(null)
   const notify = useMicroLand(s => s.notify)
+  const guideOpen = useMicroLand(s => s.guideOpen)
   const { user } = useAuth()
 
   /**
@@ -418,9 +419,11 @@ export function MicroLandGame() {
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
       <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
 
-      {/* Canvas + Field Guide sidebar share a flex row so the sidebar pushes
-          the canvas narrower rather than overlaying it. */}
+      {/* Canvas + Field Guide (and optionally Tools) share a flex row.
+          When the guide is open the toolbar moves to the left column so the
+          layout reads [ Tools | Canvas | Guide ] instead of overlapping. */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
+        {guideOpen && <Toolbar side onRemoveSpecies={handleRemoveSpecies} />}
         <div className="relative min-w-0 flex-1">
           <canvas
             ref={canvasRef}
@@ -439,7 +442,7 @@ export function MicroLandGame() {
         <FieldGuide />
       </div>
 
-      <Toolbar onRemoveSpecies={handleRemoveSpecies} />
+      {!guideOpen && <Toolbar onRemoveSpecies={handleRemoveSpecies} />}
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
       <ChallengesPanel />
