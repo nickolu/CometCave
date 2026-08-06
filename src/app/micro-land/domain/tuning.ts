@@ -24,6 +24,8 @@
 import {
   BREED_COOLDOWN,
   BREED_COST,
+  DISEASE_DURATION,
+  DISEASE_SPREAD_CHANCE,
   GRAVITY,
   HUNGER_RATE_SCALE,
   MATE_RADIUS,
@@ -71,6 +73,13 @@ export const TUNING_DEFAULTS = {
   mealValue: MEAL_VALUE,
   breedCost: BREED_COST,
   traitDrift: TRAIT_DRIFT,
+  /**
+   * Base probability per tick that a sick creature infects a healthy neighbour.
+   * Setting this to 0 disables animal-to-animal disease spread entirely.
+   */
+  diseaseSpreadChance: DISEASE_SPREAD_CHANCE,
+  /** How long a creature stays sick, in sim-seconds. */
+  diseaseDuration: DISEASE_DURATION,
 
   gravity: GRAVITY,
   /** Horizontal water current — positive pushes swimmers rightward, tiles/s². */
@@ -339,6 +348,25 @@ export const KNOBS: Knob[] = [
     min: 0,
     max: 0.4,
     step: 0.01,
+  },
+  {
+    key: 'diseaseSpreadChance',
+    group: 'creatures',
+    label: 'Disease spread chance',
+    help: 'How likely a sick creature is to infect a healthy neighbour each tick. Set to 0 to disable disease entirely.',
+    min: 0,
+    max: 0.5,
+    step: 0.005,
+  },
+  {
+    key: 'diseaseDuration',
+    group: 'creatures',
+    label: 'Disease duration',
+    help: 'How long an animal stays sick after catching something.',
+    min: 1,
+    max: 120,
+    step: 1,
+    unit: 's',
   },
   {
     key: 'gravity',
