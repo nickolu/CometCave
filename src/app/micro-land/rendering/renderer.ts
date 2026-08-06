@@ -521,6 +521,7 @@ export class Renderer {
     this.drawFossils(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
     if (w.corridors) this.drawCorridors(w.corridors, vx, vw)
+    this.drawTerritorialStains(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
@@ -798,6 +799,46 @@ export class Renderer {
         ctx.globalAlpha = Math.min(0.5, v / peak)
         ctx.fillStyle = '#ff3200'
         ctx.fillRect(x, y, 1, 1)
+      }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Soft amber tint over the territory each high-territoriality creature has
+   * claimed around its home position. Fades with distance from home; purely
+   * visual — no effect on the sim.
+   *
+   * Iterates per-creature (not per-tile) to keep cost proportional to the
+   * number of territorial animals rather than world area.
+   */
+  private drawTerritorialStains(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    ctx.fillStyle = '#c4913a'
+
+    for (const c of w.creatures) {
+      if (c.traits.territoriality <= 0.4) continue
+      const radius = c.traits.territoriality * 10
+      const hx = Math.round(c.homeX)
+      const hy = Math.round(c.homeY)
+      // Cull: skip if the bounding box of this territory is entirely off-screen.
+      if (hx + radius < vx || hx - radius > vx + vw) continue
+
+      const strength = (c.traits.territoriality - 0.4) / 1.0  // 0..1
+      const r = Math.ceil(radius)
+      for (let dy = -r; dy <= r; dy++) {
+        const y = hy + dy
+        if (y < 0 || y >= WORLD_H) continue
+        for (let dx = -r; dx <= r; dx++) {
+          const x = hx + dx
+          if (x < vx || x >= vx + vw) continue
+          const dist = Math.sqrt(dx * dx + dy * dy)
+          if (dist >= radius) continue
+          const influence = strength * (1 - dist / radius)
+          if (influence < 0.02) continue
+          ctx.globalAlpha = Math.min(0.20, influence * 0.28)
+          ctx.fillRect(x, y, 1, 1)
+        }
       }
     }
     ctx.globalAlpha = 1
