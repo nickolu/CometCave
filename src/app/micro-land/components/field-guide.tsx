@@ -12,6 +12,7 @@ import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 import { WorkshopPane } from './blueprint-workshop'
 import { ChallengesPane } from './challenges-panel'
+import { SymbiosisWeb } from './symbiosis-web'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -776,6 +777,15 @@ export function FieldGuide() {
             </ul>
           </section>
         )}
+
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>Symbiosis web</h3>
+          <SymbiosisWeb
+            blueprints={blueprints}
+            aliveIds={new Set(population.map(p => p.blueprintId))}
+            foodWeb={foodWeb}
+          />
+        </section>
 
         {Object.keys(foodWeb).length > 0 && (
           <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
