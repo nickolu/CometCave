@@ -497,6 +497,7 @@ export class Renderer {
     this.drawTombstones(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
+    this.drawStatusDots(w, vx, vw)
     this.drawPollinatorAuras(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -936,15 +937,6 @@ export class Renderer {
         }
       }
 
-      // Disease indicator: semi-transparent purple wash that pulses.
-      if ((c as { sick?: number }).sick) {
-        const sickPulse = Math.sin(w.elapsed * 6) * 0.25 + 0.55
-        ctx.globalAlpha = sickPulse
-        ctx.fillStyle = '#a855f7'
-        ctx.fillRect(x, y, sw, sh)
-        ctx.globalAlpha = 1
-      }
-
       if (traitKey) {
         const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
         if (Math.abs(delta) >= 0.08) {
@@ -954,6 +946,56 @@ export class Renderer {
           ctx.fillRect(x, y, sw, sh)
           ctx.globalAlpha = 1
         }
+      }
+    }
+  }
+
+  /**
+   * Status effect dots: one 3×3 px square per active ailment, centered above
+   * the creature's sprite. Drawn after creatures so they're never occluded.
+   *
+   * Design language (one source of truth):
+   *   purple  #a855f7  diseased
+   *   orange  #f97316  starving
+   *   lime    #84cc16  poisoned
+   *   yellow  #facc15  stunned
+   *   blue    #60a5fa  distress (drowning / out-of-water)
+   *
+   * Multiple effects stack left-to-right. The dots sit above the top edge of
+   * the sprite so they never overlap the creature body.
+   */
+  private drawStatusDots(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    const DOT = 3
+    const GAP = 1
+
+    for (const c of w.creatures) {
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp) continue
+      if (c.x + 8 < vx || c.x - 8 > vx + vw) continue
+
+      const dots: string[] = []
+      if ((c as { sick?: number }).sick) dots.push('#a855f7')
+      if (c.starving > 0) dots.push('#f97316')
+      if ((c as { poisoned?: number }).poisoned > 0) dots.push('#84cc16')
+      if ((c as { stunTimer?: number }).stunTimer > 0) dots.push('#facc15')
+      if (c.distress > 1) dots.push('#60a5fa')
+      if (dots.length === 0) continue
+
+      const sprites = getSprites(bp, tintKey(c.traits))
+      const size = sizeOf(c)
+      const sw = Math.round(sprites.width * size)
+      const sh = Math.round(sprites.height * size)
+      const spriteX = Math.round(c.x + (sprites.width - sw) / 2)
+      const spriteY = Math.round(c.y + sprites.height - sh)
+
+      const totalW = dots.length * DOT + (dots.length - 1) * GAP
+      const startX = Math.round(spriteX + sw / 2 - totalW / 2)
+      const startY = spriteY - DOT - 2
+
+      for (let i = 0; i < dots.length; i++) {
+        ctx.fillStyle = dots[i]
+        ctx.fillRect(startX + i * (DOT + GAP), startY, DOT, DOT)
       }
     }
   }
