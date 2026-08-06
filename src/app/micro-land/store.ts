@@ -204,6 +204,10 @@ export interface PopulationSnapshot {
   elapsed: number
   /** Creature count per blueprintId at this moment. */
   counts: Record<string, number>
+  /** Per-species births since previous snapshot. */
+  births?: Record<string, number>
+  /** Per-species deaths since previous snapshot. */
+  deaths?: Record<string, number>
 }
 
 /** One sample in the trait evolution history for a species. */
@@ -468,7 +472,7 @@ interface MicroLandState {
   setBlueprints: (list: CreatureBlueprint[]) => void
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
-  setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
+  setStats: (population: PopulationEntry[], total: number, elapsed: number, births?: Record<string, number>, deaths?: Record<string, number>) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
   updateWorldStats: (patch: Partial<WorldStats>) => void
@@ -639,12 +643,17 @@ export const useMicroLand = create<MicroLandState>(set => ({
         ? s.blueprints.map(b => (b.id === bp.id ? bp : b))
         : [...s.blueprints, bp],
     })),
-  setStats: (population, totalCreatures, elapsed) =>
+  setStats: (population, totalCreatures, elapsed, births, deaths) =>
     set(s => {
       const last = s.populationHistory[s.populationHistory.length - 1]
       const shouldSnapshot = !last || elapsed - last.elapsed >= 1
       const snapshot: PopulationSnapshot | undefined = shouldSnapshot
-        ? { elapsed, counts: Object.fromEntries(population.map(p => [p.blueprintId, p.count])) }
+        ? {
+            elapsed,
+            counts: Object.fromEntries(population.map(p => [p.blueprintId, p.count])),
+            ...(births && Object.keys(births).length > 0 && { births }),
+            ...(deaths && Object.keys(deaths).length > 0 && { deaths }),
+          }
         : undefined
       return {
         population,
