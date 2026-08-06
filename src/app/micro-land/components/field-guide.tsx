@@ -10,6 +10,7 @@ import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
+import { WorkshopPane } from './blueprint-workshop'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -75,12 +76,12 @@ export function FieldGuide() {
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
+  const [view, setView] = useState<'guide' | 'workshop'>('guide')
 
   if (!open) return null
 
@@ -146,7 +147,7 @@ export function FieldGuide() {
             <button
               type="button"
               className="cc-btn"
-              onClick={() => { setWorkshopOpen(true) }}
+              onClick={() => setView('workshop')}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -182,7 +183,11 @@ export function FieldGuide() {
           </div>
         </div>
 
-        {hasRecords && (
+        {view === 'workshop' && (
+          <WorkshopPane onClose={() => setView('guide')} />
+        )}
+
+        {view === 'guide' && hasRecords && (
           <section
             className="flex flex-col gap-2.5 px-4 py-3"
             style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
@@ -253,6 +258,8 @@ export function FieldGuide() {
             )}
           </section>
         )}
+
+        {view === 'guide' && <>
 
         {namedCreatures.length > 0 && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
@@ -612,6 +619,8 @@ export function FieldGuide() {
         </section>
 
         <ImportSection addBlueprint={addBlueprint} />
+
+        </>}
       </div>
     </aside>
   )
