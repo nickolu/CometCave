@@ -81,6 +81,8 @@ export function FieldGuide() {
   const compareId = useMicroLand(s => s.compareId)
   const setCompareId = useMicroLand(s => s.setCompareId)
   const traitHistory = useMicroLand(s => s.traitHistory)
+  const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
+  const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
@@ -508,6 +510,8 @@ export function FieldGuide() {
               onCompare={() => handleCompare(bp.id)}
               isComparePin={compareId === bp.id}
               traitHistory={traitHistory[bp.id]}
+              isHeatmap={heatmapBlueprintId === bp.id}
+              onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
             />
           ))}
         </ul>
@@ -803,6 +807,8 @@ function GuideEntry({
   onCompare,
   isComparePin,
   traitHistory,
+  isHeatmap,
+  onHeatmap,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -815,6 +821,8 @@ function GuideEntry({
   onCompare?: () => void
   isComparePin?: boolean
   traitHistory?: TraitHistoryEntry[]
+  isHeatmap?: boolean
+  onHeatmap?: () => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -905,8 +913,30 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {(onLocate || onCopyCode || onCompare) && (
+          {(onLocate || onCopyCode || onCompare || onHeatmap) && (
             <div className="flex shrink-0 items-center gap-1">
+              {onHeatmap && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={onHeatmap}
+                  aria-pressed={isHeatmap}
+                  title={isHeatmap ? 'Turn off heatmap' : 'Show activity heatmap'}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: isHeatmap ? '1px solid var(--cc-pink)' : '1px solid var(--cc-mint-line)',
+                    color: isHeatmap ? 'var(--cc-pink)' : 'var(--cc-text-muted)',
+                  }}
+                >
+                  ⬤
+                </button>
+              )}
               {onCompare && (
                 <button
                   type="button"
