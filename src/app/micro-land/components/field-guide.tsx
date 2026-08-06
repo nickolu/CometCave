@@ -146,24 +146,6 @@ export function FieldGuide() {
             <button
               type="button"
               className="cc-btn"
-              onClick={() => setPlantsHidden(h => !h)}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                minHeight: 26,
-                borderRadius: 4,
-                border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-                color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-              }}
-            >
-              {plantsHidden ? 'Plants hidden' : 'Hide plants'}
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
               onClick={() => { setWorkshopOpen(true) }}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
@@ -357,6 +339,43 @@ export function FieldGuide() {
           </section>
         )}
 
+        {/* Filter row — sits right above the list it affects so it reads as a
+            list control rather than a navigation option. */}
+        <div
+          className="flex items-center justify-between px-3 py-1.5"
+          style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            {ordered.length} {ordered.length === 1 ? 'species' : 'species'} in this land
+          </span>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setPlantsHidden(h => !h)}
+            aria-pressed={plantsHidden}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              padding: '2px 7px',
+              minHeight: 22,
+              borderRadius: 3,
+              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+            }}
+          >
+            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+          </button>
+        </div>
         <ul className="flex flex-col">
           {ordered.map(bp => (
             <GuideEntry
