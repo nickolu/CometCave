@@ -26,6 +26,8 @@ import {
   JUMP_TILES_PER_STRENGTH,
   MAX_FALL,
   MAX_PARTICLES,
+  NEST_BUILD_TIME,
+  NEST_DECAY_SECONDS,
   PARTICLE_LIFE,
   WORLD_H,
   WORLD_W,
@@ -584,6 +586,39 @@ export function tickCreatures(
       }
     }
 
+    // --- nest building --------------------------------------------------------
+    // A well-fed, grounded, territorial creature digs a burrow at its home
+    // while resting. The nest builds over NEST_BUILD_TIME seconds of rest and
+    // decays in NEST_DECAY_SECONDS once the owner stops visiting.
+    w.nests ??= []
+    w.nextNestId ??= 1
+    if (
+      c.mood === 'rest' &&
+      (c.traits.territorial ?? 0.5) >= 0.4 &&
+      c.hunger < 0.25 &&
+      bp.move.kind !== 'root'
+    ) {
+      let nest = w.nests.find(n => n.creatureId === c.id)
+      if (!nest) {
+        nest = {
+          id: w.nextNestId++,
+          creatureId: c.id,
+          x: Math.round(c.homeX),
+          y: Math.round(c.homeY),
+          progress: 0,
+          decaySeconds: NEST_DECAY_SECONDS,
+        }
+        w.nests.push(nest)
+      }
+      // Advance build progress; a completed nest stays at 1.
+      if (nest.progress < 1) nest.progress = Math.min(1, nest.progress + dt / NEST_BUILD_TIME)
+      // Track the creature's current home (it drifts slightly over time).
+      nest.x = Math.round(c.homeX)
+      nest.y = Math.round(c.homeY)
+      // Refresh decay: the owner is here, so the burrow doesn't collapse.
+      nest.decaySeconds = NEST_DECAY_SECONDS
+    }
+
     // --- pollination: seed carrying ----------------------------------------
     //
     // Pollinators (aura.helps contains 'plant') pick up a seed when they
@@ -869,6 +904,19 @@ export function tickCreatures(
   }
   if (w.carcasses.some(car => car.decaySeconds <= 0)) {
     w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
+  }
+
+  // Nests decay when their owner is absent or dead; remove fully decayed ones.
+  if (w.nests?.length) {
+    const livingIds = new Set(w.creatures.map(c => c.id))
+    for (const nest of w.nests) {
+      if (!livingIds.has(nest.creatureId)) {
+        nest.decaySeconds -= dt
+      }
+    }
+    if (w.nests.some(n => n.decaySeconds <= 0)) {
+      w.nests = w.nests.filter(n => n.decaySeconds > 0)
+    }
   }
 
   // Scent decay
