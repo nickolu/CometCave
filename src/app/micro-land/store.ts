@@ -28,6 +28,8 @@ export interface SpeedRunState {
   /** World elapsed time (seconds) when the run started — so countdown = timeLimit - (elapsed - startElapsed). */
   startElapsed: number
   result: 'none' | 'won' | 'lost'
+  /** Seconds taken when result is 'won'. Null otherwise. */
+  wonSeconds: number | null
 }
 
 import type { SaveState } from './chronicle/chronicle'
@@ -314,7 +316,7 @@ interface MicroLandState {
   requestWorkshopSpawn: (blueprint: CreatureBlueprint, traits: Traits) => void
   clearWorkshopSpawnRequest: () => void
   startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
-  endSpeedRun: (result: 'won' | 'lost') => void
+  endSpeedRun: (result: 'won' | 'lost', wonSeconds?: number) => void
   cancelSpeedRun: () => void
   requestReshuffle: () => void
   /**
@@ -365,6 +367,10 @@ interface MicroLandState {
    */
   canZoomIn: boolean
   canZoomOut: boolean
+
+  /** Global leaderboard fetched after a speed run win. Null = not yet fetched. */
+  speedRunLeaderboard: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null
+  setSpeedRunLeaderboard: (entries: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null) => void
 
   notices: Notice[]
 
@@ -579,7 +585,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   challengeActive: null,
   workshopOpen: false,
   workshopSpawnRequest: null,
-  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
+  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none', wonSeconds: null },
   reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
@@ -587,6 +593,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   canPan: true,
   canZoomIn: true,
   canZoomOut: true,
+  speedRunLeaderboard: null,
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -675,9 +682,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set(s => ({ workshopSpawnRequest: { blueprint, traits, serial: (s.workshopSpawnRequest?.serial ?? 0) + 1 } })),
   clearWorkshopSpawnRequest: () => set({ workshopSpawnRequest: null }),
   startSpeedRun: (targetGeneration, timeLimitSeconds, currentElapsed) =>
-    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none' } }),
-  endSpeedRun: result =>
-    set(s => ({ speedRun: { ...s.speedRun, active: false, result } })),
+    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none', wonSeconds: null } }),
+  endSpeedRun: (result, wonSeconds) =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result, wonSeconds: wonSeconds ?? null } })),
   cancelSpeedRun: () =>
     set(s => ({ speedRun: { ...s.speedRun, active: false, result: 'none' } })),
   requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
@@ -710,6 +717,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setMilestones: milestones => set({ milestones }),
   setCanPan: canPan => set({ canPan }),
   setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
+  setSpeedRunLeaderboard: entries => set({ speedRunLeaderboard: entries }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
