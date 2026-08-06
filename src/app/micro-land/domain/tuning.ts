@@ -126,6 +126,15 @@ export const TUNING_DEFAULTS = {
    * Probabilistic: at 1.0, one drop per tick on average (≈60/s at 60fps).
    */
   rainRate: 0,
+  /**
+   * How long one full tide cycle takes, in sim seconds. 0 = no tides.
+   * 180 = one tide every three real minutes at normal speed.
+   */
+  tidalPeriod: 0,
+  /**
+   * How many tile rows the tide rises above the permanent seabed.
+   */
+  tidalAmplitude: 8,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -464,6 +473,26 @@ export const KNOBS: Knob[] = [
     min: 0,
     max: 1,
     step: 0.05,
+  },
+  {
+    key: 'tidalPeriod',
+    group: 'world',
+    label: 'Tide cycle length',
+    help: 'How long one full tide cycle takes. 0 = no tides. 180 = one tide every three real minutes. Works best in worlds with a shoreline or open ocean near the bottom. Non-swimmers may drown at high tide.',
+    min: 0,
+    max: 600,
+    step: 30,
+    unit: 's',
+  },
+  {
+    key: 'tidalAmplitude',
+    group: 'world',
+    label: 'Tide height',
+    help: 'How many tile rows the tide rises. 8 = a gentle tide. 20 = a dramatic flood that covers the shore. Only meaningful when the tide cycle is set.',
+    min: 1,
+    max: 30,
+    step: 1,
+    unit: ' rows',
   },
 ]
 

@@ -851,3 +851,44 @@ export function countByBlueprint(w: WorldState): Record<string, number> {
 }
 
 export { AIR }
+
+/**
+ * Applies tidal flooding — periodically raises and lowers water in the bottom
+ * tidal zone based on elapsed sim time. Only affects AIR and WATER tiles;
+ * solid terrain (stone, dirt, etc.) is never modified.
+ *
+ * Sine-wave phase: 0 s = low tide, tidalPeriod/2 = high tide.
+ * The tidal zone spans the bottom (tidalAmplitude + 2) rows, leaving the
+ * bottom 2 rows as a permanent base that is never drained.
+ */
+export function applyTide(w: WorldState): void {
+  if (TUNING.tidalPeriod <= 0) return
+
+  const WATER_IDX = MATERIAL_INDEX.water
+  const { width, height } = w
+  const amp = Math.ceil(TUNING.tidalAmplitude)
+
+  // Sinusoidal phase: low tide at start, high tide halfway through
+  const phase = (w.elapsed % TUNING.tidalPeriod) / TUNING.tidalPeriod
+  const riseRows = Math.round(((1 - Math.cos(phase * 2 * Math.PI)) / 2) * amp)
+
+  // Leave the bottom BASE rows untouched (permanent seabed/bedrock)
+  const BASE = 2
+  const zoneTop = Math.max(0, height - amp - BASE)
+  // Current tide line: rows at y >= tideLine are in the flood zone
+  const tideLine = height - BASE - riseRows
+
+  for (let x = 0; x < width; x++) {
+    for (let y = zoneTop; y < height - BASE; y++) {
+      const i = y * width + x
+      const mat = w.tiles[i]
+      if (y >= tideLine) {
+        // In the flood zone — fill air with water
+        if (mat === AIR) w.tiles[i] = WATER_IDX
+      } else if (mat === WATER_IDX) {
+        // Above the tide line in the tidal zone — drain water back to air
+        w.tiles[i] = AIR
+      }
+    }
+  }
+}

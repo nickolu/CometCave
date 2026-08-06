@@ -44,6 +44,7 @@ import { tickTiles } from './domain/sim/tile-sim'
 import {
   applyTheme,
   applyThemeObject,
+  applyTide,
   boxHitsSolid,
   boxLiquidFraction,
   clearCreatures,
@@ -467,6 +468,7 @@ export class GameInstance {
     if (this.tileCounter >= TILE_TICK_EVERY) {
       this.tileCounter = 0
       tickTiles(w)
+      applyTide(w)
       // Tiles moved, so the cached tile image is stale.
       this.renderer.markTilesDirty()
     }
