@@ -511,6 +511,11 @@ export interface Creature {
    */
   generation: number
   /**
+   * BlueprintIds of the two parents at live birth. Null/absent for placed creatures.
+   * The second entry is null for self-fertilisation or unknown mate.
+   */
+  parentBlueprintIds?: readonly [string, string | null]
+  /**
    * What this one inherited, as multipliers on its species.
    *
    * Neutral for anything that wasn't born here, which is what makes a species

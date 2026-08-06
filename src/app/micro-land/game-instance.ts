@@ -1332,6 +1332,7 @@ export class GameInstance {
       grounded: c.grounded,
       targetName: targetBp?.name ?? null,
       generation: c.generation,
+      parentBlueprintIds: (c as { parentBlueprintIds?: readonly [string, string | null] }).parentBlueprintIds ?? null,
       // Copied, like everything else here. Traits are replaced wholesale rather
       // than mutated, so the reference would in fact be safe today — but that is
       // a fact about `inherit`, and this panel shouldn't depend on it.

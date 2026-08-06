@@ -755,6 +755,7 @@ export function tickCreatures(
             // genuinely different things.
             child.traits = inherit(c.traits, mate?.traits ?? null, rng)
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
+            child.parentBlueprintIds = [c.blueprintId, mate?.blueprintId ?? null] as const
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
