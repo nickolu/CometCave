@@ -31,6 +31,7 @@ import {
   MATE_RADIUS,
   MAX_CREATURES,
   MAX_PLANTS,
+  MIGRATION_THRESHOLD,
   MEAL_VALUE,
   NATIVE_PLANT_SPECIES,
   NATIVE_PLANT_TARGET,
@@ -80,6 +81,12 @@ export const TUNING_DEFAULTS = {
   diseaseSpreadChance: DISEASE_SPREAD_CHANCE,
   /** How long a creature stays sick, in sim-seconds. */
   diseaseDuration: DISEASE_DURATION,
+  /**
+   * Seconds without food before a creature steers toward greener terrain.
+   * The 30-second expanded-sight range kicks in first; this is the longer wait
+   * before the creature actually changes course.
+   */
+  migrationThreshold: MIGRATION_THRESHOLD,
 
   gravity: GRAVITY,
   /** Horizontal water current — positive pushes swimmers rightward, tiles/s². */
@@ -366,6 +373,16 @@ export const KNOBS: Knob[] = [
     min: 1,
     max: 120,
     step: 1,
+    unit: 's',
+  },
+  {
+    key: 'migrationThreshold',
+    group: 'world',
+    label: 'Time before animals migrate',
+    help: 'How many seconds a hungry creature searches its home range before giving up and moving toward greener terrain. Lower values make populations more nomadic.',
+    min: 15,
+    max: 300,
+    step: 5,
     unit: 's',
   },
   {

@@ -396,3 +396,12 @@ export const DISEASE_SPREAD_CHANCE = 0.05
  * are a brief slow, not a full disease.
  */
 export const DISEASE_DURATION = 20
+
+/**
+ * Seconds a creature must be hungry with no food in sight before it abandons
+ * its home range and migrates toward richer terrain.
+ *
+ * Shorter than 30 would override the already-working expanded-sight-range
+ * mechanic. Sixty gives a creature two full minutes to find food locally first.
+ */
+export const MIGRATION_THRESHOLD = 60

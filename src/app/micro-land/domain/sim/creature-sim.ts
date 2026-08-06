@@ -1751,6 +1751,30 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
         Math.abs(c.homeX - c.x) > 15 * (c.traits.roam ?? 1)) {
       c.drift = c.homeX > c.x ? 1 : -1
     }
+    // Migration: when hunger has gone unmet for long enough, steer toward
+    // plant-richer terrain instead of wandering or returning home.
+    // Rate-limited via rng() so the tile scan fires ~once per second
+    // rather than every tick — about 0.017 per tick at 60 Hz.
+    if (c.migrateTimer > TUNING.migrationThreshold && bp.move.kind !== 'root' && rng() < 0.017) {
+      const grassIdx = MATERIAL_INDEX.grass
+      const mossIdx = MATERIAL_INDEX.moss
+      let leftScore = 0
+      let rightScore = 0
+      const baseX = Math.round(c.x)
+      const baseY = Math.round(c.y)
+      for (let dy = -20; dy <= 20; dy += 10) {
+        const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
+        for (let dx = 12; dx <= 160; dx += 12) {
+          const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
+          const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
+          if (lMat === grassIdx || lMat === mossIdx) leftScore++
+          if (rMat === grassIdx || rMat === mossIdx) rightScore++
+        }
+      }
+      if (leftScore !== rightScore) {
+        c.drift = leftScore > rightScore ? -1 : 1
+      }
+    }
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0
     c.targetId = null
