@@ -47,6 +47,7 @@ export const SUMMONED_THEME_ID = 'summoned'
 export type Tool =
   | { kind: 'material'; material: MaterialId }
   | { kind: 'erase' }
+  | { kind: 'biome'; biomeId: string }
   | { kind: 'creature'; blueprintId: string }
   | { kind: 'inspect' }
 

@@ -34,6 +34,7 @@ import {
   reserveSummonIds,
   sanitizeBlueprint,
 } from './domain/blueprint'
+import { BIOME_BY_ID } from './domain/config/biomes'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
 import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
@@ -48,6 +49,8 @@ import {
   clearCreatures,
   countByBlueprint,
   createWorld,
+  paintBiomeCircle,
+  paintBiomeSquare,
   paintCircle,
   paintSquare,
   registerBlueprint,
@@ -2114,6 +2117,19 @@ export class GameInstance {
 
     // Inspecting is resolved on pointerdown; it never paints.
     if (tool.kind === 'inspect') return
+
+    if (tool.kind === 'biome') {
+      const biome = BIOME_BY_ID[tool.biomeId]
+      if (biome) {
+        if (state.brushShape === 'square') {
+          paintBiomeSquare(this.world, x, y, state.brush, biome, this.rng)
+        } else {
+          paintBiomeCircle(this.world, x, y, state.brush, biome, this.rng)
+        }
+        this.renderer.markTilesDirty()
+      }
+      return
+    }
 
     const material = tool.kind === 'erase' ? 'air' : tool.material
     if (state.brushShape === 'square') {
