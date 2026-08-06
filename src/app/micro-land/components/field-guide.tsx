@@ -14,6 +14,67 @@ import { WorkshopPane } from './blueprint-workshop'
 import { ChallengesPane } from './challenges-panel'
 import { SymbiosisWeb } from './symbiosis-web'
 
+// ---------------------------------------------------------------------------
+// Biome health score
+// ---------------------------------------------------------------------------
+
+interface BiomeHealthBreakdown {
+  score: number
+  grade: 'A' | 'B' | 'C' | 'D' | 'F'
+  gradeColor: string
+  diversity: number      // 0..40
+  trophic: number        // 0..30
+  stability: number      // 0..20
+  steadiness: number     // 0..10
+}
+
+function computeBiomeHealth(
+  population: PopulationSnapshot[],
+  blueprints: CreatureBlueprint[],
+  steadySeconds: number
+): BiomeHealthBreakdown {
+  const bpById = Object.fromEntries(blueprints.map(b => [b.id, b]))
+  const alive = population.filter(p => p.count > 0)
+  const speciesAlive = alive.length
+
+  // Diversity (0–40): 4 pts per living species, max 10 species.
+  const diversity = Math.min(40, speciesAlive * 4)
+
+  // Trophic chain (0–30): 10 pts each for plants, herbivores, carnivores present.
+  let hasPlants = false, hasHerbivores = false, hasCarnivores = false
+  for (const p of alive) {
+    const bp = bpById[p.blueprintId]
+    if (!bp) continue
+    if (isPlantLike(bp)) { hasPlants = true; continue }
+    const eatsMeat = bp.diet.eats.includes('meat')
+    const eatsPlants = bp.diet.eats.includes('plant')
+    if (eatsPlants && !eatsMeat) hasHerbivores = true
+    if (eatsMeat) hasCarnivores = true
+  }
+  const trophic = (hasPlants ? 10 : 0) + (hasHerbivores ? 10 : 0) + (hasCarnivores ? 10 : 0)
+
+  // Stability (0–20): start at 20, subtract 4 for each species at risk (≤3 alive).
+  const atRisk = alive.filter(p => p.count <= 3).length
+  const stability = Math.max(0, 20 - atRisk * 4)
+
+  // Steadiness (0–10): 1 pt per minute without an extinction, max 10.
+  const steadiness = Math.min(10, Math.floor(steadySeconds / 60))
+
+  const score = diversity + trophic + stability + steadiness
+  const grade =
+    score >= 80 ? 'A' :
+    score >= 60 ? 'B' :
+    score >= 40 ? 'C' :
+    score >= 20 ? 'D' : 'F'
+  const gradeColor =
+    grade === 'A' ? '#4ade80' :
+    grade === 'B' ? '#a3e635' :
+    grade === 'C' ? '#facc15' :
+    grade === 'D' ? '#f97316' : '#f87171'
+
+  return { score, grade, gradeColor, diversity, trophic, stability, steadiness }
+}
+
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
   fontSize: 10,
@@ -138,6 +199,8 @@ export function FieldGuide() {
   // summoned creature no longer dies with the tab it was invented in.
   const here = new Set(blueprints.map(b => b.id))
   const remembered = archive.filter(s => !here.has(s.blueprint.id))
+
+  const biome = computeBiomeHealth(population, blueprints, worldStats.steadySeconds)
 
   const hasRecords =
     records.elder !== null || records.bestSteadySeconds > 0 || records.bestGenerations > 1
@@ -348,6 +411,70 @@ export function FieldGuide() {
         )}
 
         {view === 'guide' && compareTarget === null && <>
+
+        {population.some(p => p.count > 0) && (
+          <section className="px-4 py-3" style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="pb-2" style={sectionHeading}>Biome health</h3>
+            <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
+              <span
+                style={{
+                  fontFamily: 'var(--cc-font-mono)',
+                  fontSize: 32,
+                  fontWeight: 700,
+                  color: biome.gradeColor,
+                  lineHeight: 1,
+                  minWidth: 28,
+                }}
+              >
+                {biome.grade}
+              </span>
+              <div style={{ flex: 1 }}>
+                {/* Score bar */}
+                <div
+                  style={{
+                    height: 4,
+                    borderRadius: 2,
+                    background: 'rgba(255,255,255,0.08)',
+                    overflow: 'hidden',
+                    marginBottom: 4,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${biome.score}%`,
+                      height: '100%',
+                      background: biome.gradeColor,
+                      borderRadius: 2,
+                      transition: 'width 0.4s ease',
+                    }}
+                  />
+                </div>
+                <span style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 10, color: 'var(--cc-text-muted)' }}>
+                  {biome.score} / 100
+                </span>
+              </div>
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr 1fr',
+                gap: '4px 12px',
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              <span>diversity</span>
+              <span style={{ textAlign: 'right' }}>{biome.diversity} / 40</span>
+              <span>food chain</span>
+              <span style={{ textAlign: 'right' }}>{biome.trophic} / 30</span>
+              <span>stability</span>
+              <span style={{ textAlign: 'right' }}>{biome.stability} / 20</span>
+              <span>steadiness</span>
+              <span style={{ textAlign: 'right' }}>{biome.steadiness} / 10</span>
+            </div>
+          </section>
+        )}
 
         {namedCreatures.some(e => e.alive) && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
