@@ -127,6 +127,7 @@ export function CreatureBuilder({
   const blueprints = useMicroLand(s => s.blueprints)
   const setTool = useMicroLand(s => s.setTool)
   const notify = useMicroLand(s => s.notify)
+  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
 
   const [draft, setDraft] = useState<Draft | null>(null)
   const [seed, setSeed] = useState<CreatureBlueprint | null>(null)
@@ -464,7 +465,27 @@ export function CreatureBuilder({
           className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
         >
-          <h2 style={heading}>✎ Creature Builder</h2>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => {
+                abortRef.current?.abort()
+                setWorkshopOpen(true)
+                setOpen(false)
+              }}
+              style={{
+                fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
+                textTransform: 'uppercase', padding: '3px 10px', borderRadius: 4,
+                border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)',
+                background: 'transparent',
+              }}
+              title="Switch to the stat-based configure tool"
+            >
+              Configure
+            </button>
+            <span style={heading}>✎ Draw</span>
+          </div>
           <button
             type="button"
             className="cc-btn"
