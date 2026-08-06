@@ -151,6 +151,16 @@ export const TUNING_DEFAULTS = {
    * Radius of the destruction zone for each mass extinction event, in tiles.
    */
   massExtinctionRadius: 20,
+  /**
+   * How often a storm strikes, in sim seconds. 0 = never.
+   * Each storm strips vegetation from the surface and dumps rain in the area,
+   * creating a brief flash flood.
+   */
+  stormInterval: 0,
+  /**
+   * Horizontal width (in tiles) of the storm's ground effect.
+   */
+  stormWidth: 40,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -537,6 +547,26 @@ export const KNOBS: Knob[] = [
     min: 5,
     max: 50,
     step: 5,
+    unit: ' tiles',
+  },
+  {
+    key: 'stormInterval',
+    group: 'world',
+    label: 'Storm interval',
+    help: 'How often a storm rolls in, stripping vegetation and flooding the surface. 0 = never. 120 = every 2 minutes.',
+    min: 0,
+    max: 1200,
+    step: 30,
+    unit: 's',
+  },
+  {
+    key: 'stormWidth',
+    group: 'world',
+    label: 'Storm width',
+    help: 'How wide a swath the storm covers. Only meaningful when storm interval is set.',
+    min: 10,
+    max: 120,
+    step: 10,
     unit: ' tiles',
   },
 ]

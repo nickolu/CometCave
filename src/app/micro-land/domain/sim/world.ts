@@ -936,3 +936,56 @@ export function applyMassExtinction(
 
   return { cx, cy, radius }
 }
+
+/**
+ * Apply a storm event at a random horizontal position.
+ *
+ * A storm has two effects on terrain:
+ *   1. Strips vegetation — grass and moss tiles near the surface become dirt,
+ *      simulating heavy rain tearing off leaf cover.
+ *   2. Flash flood — adds a thin sheet of water above the surface across the
+ *      storm's width; gravity and normal tile physics carry it downhill.
+ *
+ * Returns the X range of the storm so the caller can render rain particles.
+ */
+export function applyStorm(
+  w: WorldState,
+  rng: Rng
+): { x0: number; x1: number } {
+  const halfW = Math.max(5, Math.round(TUNING.stormWidth / 2))
+  const cx = halfW + Math.floor(rng() * (WORLD_W - 2 * halfW))
+  const x0 = Math.max(0, cx - halfW)
+  const x1 = Math.min(WORLD_W - 1, cx + halfW)
+
+  const grassIdx = MATERIAL_INDEX['grass']
+  const mossIdx = MATERIAL_INDEX['moss']
+  const dirtIdx = MATERIAL_INDEX['dirt']
+  const airIdx = MATERIAL_INDEX['air']
+  const waterIdx = MATERIAL_INDEX['water']
+
+  for (let x = x0; x <= x1; x++) {
+    // Strip vegetation in the top 60% of the column above the first solid tile.
+    let hitSurface = false
+    for (let y = 0; y < WORLD_H; y++) {
+      const mat = w.tiles[y * WORLD_W + x]
+      if (mat === airIdx) continue
+      // First solid tile — strip it if grass/moss.
+      hitSurface = true
+      if (mat === grassIdx || mat === mossIdx) {
+        w.tiles[y * WORLD_W + x] = dirtIdx
+      }
+      break
+    }
+    // Flash flood: drop water at the very top of the column if it's open air.
+    if (hitSurface) {
+      const depth = 1 + Math.floor(rng() * 2)
+      for (let d = 0; d < depth; d++) {
+        if (w.tiles[d * WORLD_W + x] === airIdx) {
+          w.tiles[d * WORLD_W + x] = waterIdx
+        }
+      }
+    }
+  }
+
+  return { x0, x1 }
+}
