@@ -141,6 +141,16 @@ export const TUNING_DEFAULTS = {
    * Affects both the visual tint and how strongly thermophily trait matters.
    */
   temperatureGradient: 0,
+  /**
+   * How often a mass extinction cataclysm strikes, in sim seconds. 0 = never.
+   * Each event picks a random point in the world and blasts a ~20-tile radius,
+   * killing creatures and reducing terrain to rubble (air). Rare by default.
+   */
+  massExtinctionInterval: 0,
+  /**
+   * Radius of the destruction zone for each mass extinction event, in tiles.
+   */
+  massExtinctionRadius: 20,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -508,6 +518,26 @@ export const KNOBS: Knob[] = [
     min: 0,
     max: 1,
     step: 0.1,
+  },
+  {
+    key: 'massExtinctionInterval',
+    group: 'world',
+    label: 'Cataclysm interval',
+    help: 'How often a random cataclysm strikes, blasting a crater and killing everything inside it. 0 = never. 300 = every 5 real minutes.',
+    min: 0,
+    max: 1800,
+    step: 30,
+    unit: 's',
+  },
+  {
+    key: 'massExtinctionRadius',
+    group: 'world',
+    label: 'Cataclysm radius',
+    help: 'How many tiles the cataclysm blasts. Only meaningful when cataclysm interval is set.',
+    min: 5,
+    max: 50,
+    step: 5,
+    unit: ' tiles',
   },
 ]
 

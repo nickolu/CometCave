@@ -894,3 +894,45 @@ export function applyTide(w: WorldState): void {
     }
   }
 }
+
+/**
+ * Triggers a mass extinction cataclysm at a random point in the world.
+ *
+ * Converts all non-air solid tiles within `radius` tiles to air, removing
+ * terrain and killing every creature caught inside the blast zone. Returns the
+ * center of the blast so the caller can scroll to it and emit particles.
+ */
+export function applyMassExtinction(
+  w: WorldState,
+  rng: Rng
+): { cx: number; cy: number; radius: number } {
+  const radius = Math.max(5, Math.round(TUNING.massExtinctionRadius))
+  const { width, height } = w
+
+  // Pick a random centre, avoiding a narrow border so the blast isn't half off-world.
+  const cx = radius + Math.floor(rng() * (width - 2 * radius))
+  const cy = radius + Math.floor(rng() * (height - 2 * radius))
+
+  const r2 = radius * radius
+  for (let dy = -radius; dy <= radius; dy++) {
+    const y = cy + dy
+    if (y < 0 || y >= height) continue
+    for (let dx = -radius; dx <= radius; dx++) {
+      if (dx * dx + dy * dy > r2) continue
+      const x = cx + dx
+      if (x < 0 || x >= width) continue
+      // Only blast solid tiles — leave air, water, and lava alone.
+      const mat = w.tiles[y * width + x]
+      if (mat !== AIR) w.tiles[y * width + x] = AIR
+    }
+  }
+
+  // Kill all creatures in the blast zone.
+  w.creatures = w.creatures.filter(c => {
+    const dx = c.x - cx
+    const dy = c.y - cy
+    return dx * dx + dy * dy > r2
+  })
+
+  return { cx, cy, radius }
+}
