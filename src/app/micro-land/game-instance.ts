@@ -11,6 +11,7 @@ import {
   terrainToTheme,
 } from '@/app/micro-land/domain/terrain'
 import { SUMMONED_THEME_ID } from '@/app/micro-land/store'
+import { saveSpeedRunRecord } from '@/app/micro-land/domain/speed-run-records'
 
 import {
   archivedSpecies,
@@ -730,6 +731,12 @@ export class GameInstance {
       const timeUsed = this.world.elapsed - sr.startElapsed
       if (deepestGen >= sr.targetGeneration) {
         useMicroLand.getState().endSpeedRun('won')
+        saveSpeedRunRecord({
+          theme: useMicroLand.getState().themeId,
+          targetGen: sr.targetGeneration,
+          seconds: Math.round(timeUsed),
+          date: new Date().toLocaleDateString(),
+        })
       } else if (timeUsed >= sr.timeLimitSeconds || this.world.creatures.length === 0) {
         useMicroLand.getState().endSpeedRun('lost')
       }
