@@ -543,6 +543,41 @@ export class GameInstance {
         : event.kind === 'aged' ? `The last ${bp.name} lived to old age.`
         : `The last ${bp.name} was eaten.`
       )
+      // Trophic cascade: note the food web ripple from this extinction.
+      {
+        const foodWeb = useMicroLand.getState().foodWeb
+        const eatsMeat = bp.diet.eats.includes('meat')
+        const eatsPlants = bp.diet.eats.includes('plant')
+
+        if (eatsMeat) {
+          // A predator went extinct — surviving prey species may now multiply unchecked.
+          const preyIds = foodWeb[bp.id] ?? []
+          const alivePrey = preyIds
+            .map(id => this.world.blueprints[id]?.name)
+            .filter((name): name is string =>
+              !!name && this.world.creatures.some(c => this.world.blueprints[c.blueprintId]?.name === name)
+            )
+          if (alivePrey.length === 1) {
+            notify(`Without ${bp.name}, the ${alivePrey[0]} have nothing to fear.`)
+          } else if (alivePrey.length >= 2) {
+            notify(`Without ${bp.name}, the ${alivePrey[0]} and ${alivePrey[1]} have nothing to fear.`)
+          }
+        } else if (eatsPlants) {
+          // A herbivore went extinct — surviving predators that ate it lose a food source.
+          const predatorIds = Object.keys(foodWeb).filter(predId =>
+            foodWeb[predId].includes(bp.id)
+          )
+          const alivePredNames = predatorIds
+            .filter(id => this.world.creatures.some(c => c.blueprintId === id))
+            .map(id => this.world.blueprints[id]?.name)
+            .filter((name): name is string => !!name)
+          if (alivePredNames.length === 1) {
+            notify(`The ${alivePredNames[0]} lost their prey.`)
+          } else if (alivePredNames.length >= 2) {
+            notify(`The ${alivePredNames[0]} and ${alivePredNames[1]} lost their prey.`)
+          }
+        }
+      }
       if (isSoundEnabled()) playExtinction()
     }
 
