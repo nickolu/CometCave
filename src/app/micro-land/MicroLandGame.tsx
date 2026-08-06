@@ -419,30 +419,34 @@ export function MicroLandGame() {
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
       <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
 
-      {/* Canvas + Field Guide (and optionally Tools) share a flex row.
-          When the guide is open the toolbar moves to the left column so the
-          layout reads [ Tools | Canvas | Guide ] instead of overlapping. */}
-      <div className="flex min-h-0 flex-1 overflow-hidden" style={{ position: 'relative' }}>
-        {guideOpen && <Toolbar side onRemoveSpecies={handleRemoveSpecies} />}
-        <div className="relative min-w-0 flex-1">
-          <canvas
-            ref={canvasRef}
-            // Focusable so the arrow keys reach it. The world is wider than the
-            // screen, and a keyboard has to be able to get to the rest of it.
-            tabIndex={0}
-            className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
-            style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
-            aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world, plus and minus move closer and further away."
-          />
-          <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
-          <ZoomControls onZoom={handleZoom} />
-          <Notices />
-          <Inspector onName={handleName} />
+      {/* Two-column layout: world column (canvas + toolbar) | field guide column.
+          The toolbar stays anchored at the bottom of the world column whether
+          the guide is open or closed. The divider between columns is draggable
+          (handled by FieldGuide's internal resize logic). */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* World column: canvas fills remaining space, toolbar always at bottom */}
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <div className="relative min-h-0 flex-1">
+            <canvas
+              ref={canvasRef}
+              // Focusable so the arrow keys reach it. The world is wider than the
+              // screen, and a keyboard has to be able to get to the rest of it.
+              tabIndex={0}
+              className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
+              style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
+              aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world, plus and minus move closer and further away."
+            />
+            <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
+            <ZoomControls onZoom={handleZoom} />
+            <Notices />
+            <Inspector onName={handleName} />
+          </div>
+          <Toolbar onRemoveSpecies={handleRemoveSpecies} />
         </div>
+        {/* Field guide column — renders null when closed */}
         <FieldGuide />
       </div>
 
-      {!guideOpen && <Toolbar onRemoveSpecies={handleRemoveSpecies} />}
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
       <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
       <ChallengesPanel />

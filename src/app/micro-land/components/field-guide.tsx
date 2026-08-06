@@ -93,7 +93,6 @@ export function FieldGuide() {
   })
   const isDragging = useRef(false)
 
-  const OVERLAP_THRESHOLD = 330
   const MIN_WIDTH = 240
   const MAX_WIDTH = 600
 
@@ -120,7 +119,6 @@ export function FieldGuide() {
     document.addEventListener('mouseup', onUp)
   }, [])
 
-  const isOverlap = guideWidth > OVERLAP_THRESHOLD
   const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
   const [compareTarget, setCompareTarget] = useState<string | null>(null)
 
@@ -161,19 +159,12 @@ export function FieldGuide() {
       style={{
         width: guideWidth,
         flexShrink: 0,
-        borderLeft: isOverlap ? 'none' : '1px solid var(--cc-panel-divider)',
+        borderLeft: '1px solid var(--cc-panel-divider)',
         background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
-        ...(isOverlap ? {
-          position: 'absolute' as const,
-          right: 0,
-          top: 0,
-          bottom: 0,
-          zIndex: 10,
-          boxShadow: '-4px 0 20px rgba(0,0,0,0.4)',
-        } : {}),
+        position: 'relative',
       }}
     >
       {/* Drag handle — left edge of the guide */}
