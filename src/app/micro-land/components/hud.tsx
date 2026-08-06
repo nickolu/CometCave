@@ -138,6 +138,7 @@ export function Hud({
   const setSummonOpen = useMicroLand(s => s.setSummonOpen)
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
+  const notify = useMicroLand(s => s.notify)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -163,6 +164,7 @@ export function Hud({
     'Young'
 
   const [overflowOpen, setOverflowOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
 
   // Close the overflow menu when clicking outside it.
@@ -531,6 +533,33 @@ export function Hud({
               >
                 <SlidersIcon />
                 {tuned ? 'Settings ✦' : 'Settings'}
+              </button>
+
+              {/* Share snapshot */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => {
+                  const health = ecosystemHealth(population, total)
+                  const lines: string[] = [
+                    `Micro Land — ${ageLabel} (${formatDuration(elapsed)})`,
+                    `${species} kinds · ${total} alive · ${health}`,
+                  ]
+                  if (steady) lines.push(`Steady for ${steady}`)
+                  const text = lines.join('\n')
+                  navigator.clipboard.writeText(text).then(() => {
+                    setCopied(true)
+                    notify('World snapshot copied to clipboard.')
+                    setTimeout(() => setCopied(false), 2000)
+                  }).catch(() => {
+                    notify('Could not copy — try selecting the text manually.')
+                  })
+                  setOverflowOpen(false)
+                }}
+                style={overflowItem}
+                title="Copy a text summary of this world to the clipboard"
+              >
+                {copied ? 'Copied!' : 'Share snapshot'}
               </button>
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
