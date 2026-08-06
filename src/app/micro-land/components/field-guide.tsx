@@ -12,6 +12,7 @@ import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 import { WorkshopPane } from './blueprint-workshop'
 import { ChallengesPane } from './challenges-panel'
+import { SymbiosisWeb } from './symbiosis-web'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -71,6 +72,8 @@ export function FieldGuide() {
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
+  const fogEnabled = useMicroLand(s => s.fogEnabled)
+  const setFogEnabled = useMicroLand(s => s.setFogEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
@@ -691,6 +694,27 @@ export function FieldGuide() {
             >
               Trails
             </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setFogEnabled(!fogEnabled)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 10px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: fogEnabled
+                  ? '1px solid var(--cc-mint)'
+                  : '1px solid var(--cc-mint-line)',
+                color: fogEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: fogEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+              }}
+            >
+              Fog
+            </button>
           </div>
           {traitOverlay && (
             <button
@@ -753,6 +777,15 @@ export function FieldGuide() {
             </ul>
           </section>
         )}
+
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>Symbiosis web</h3>
+          <SymbiosisWeb
+            blueprints={blueprints}
+            aliveIds={new Set(population.map(p => p.blueprintId))}
+            foodWeb={foodWeb}
+          />
+        </section>
 
         {Object.keys(foodWeb).length > 0 && (
           <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
