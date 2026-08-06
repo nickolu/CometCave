@@ -929,6 +929,14 @@ export class GameInstance {
       }
     }
 
+    const maxToxicity = w.creatures.reduce(
+      (m, cr) => Math.max(m, (cr.traits as Traits).toxicity ?? 0),
+      0
+    )
+    const maxPredatorImmunity = w.creatures
+      .filter(cr => w.blueprints[cr.blueprintId]?.diet.eats.includes('meat'))
+      .reduce((m, cr) => Math.max(m, (cr.traits as Traits).immunity ?? 0), 0)
+
     this.checkMilestones(archive, {
       elapsed: w.elapsed,
       steadySeconds,
@@ -936,6 +944,8 @@ export class GameInstance {
       generations: deepest,
       speciesAlive: population.length,
       total: w.creatures.length,
+      maxToxicity,
+      maxPredatorImmunity,
     })
 
     this.syncArchive(archive)
