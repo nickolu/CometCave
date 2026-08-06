@@ -681,6 +681,21 @@ export function tickCreatures(
           }
         }
       }
+
+      // --- seed dispersal trail ------------------------------------------
+      // Pollinators occasionally leave a small fading particle as they move,
+      // visualizing pollen/seed dispersal paths.
+      if (Math.random() < 0.05 * dt && w.particles.length < MAX_PARTICLES) {
+        w.particles.push({
+          x: c.x + (Math.random() - 0.5) * bw,
+          y: c.y + (Math.random() - 0.5) * bh,
+          vx: (Math.random() - 0.5) * 0.1,
+          vy: -0.1 - Math.random() * 0.1,
+          life: 2 + Math.random(),
+          maxLife: 3,
+          color: '#90ee90',
+        })
+      }
     }
 
     // --- what it does to the world around it -----------------------------
@@ -1036,6 +1051,8 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         car.decaySeconds = 0 // mark for removal at end of tick
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
         return
@@ -1060,6 +1077,8 @@ function look(
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         egg.hatchIn = -1 // mark for removal by the hatching block
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: eggBp.id, x: c.x, y: c.y })
         return
@@ -1156,6 +1175,8 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         // Toxic plants slow the eater — the meal lands, but at a cost.
         if (obp.toxicity) {
           c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)

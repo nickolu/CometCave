@@ -80,7 +80,11 @@ export function CreatureFilterBar({
   // species of plant on an empty map has no second way of moving and no size to
   // contrast with. Offering a filter there is a control that cannot do anything.
   const anythingToAsk =
-    options.moves.length > 1 || options.sizes.length > 1 || options.glows || options.lavaProof
+    options.moves.length > 1 ||
+    options.sizes.length > 1 ||
+    options.glows ||
+    options.lavaProof ||
+    options.dietTags.length > 1
   if (!anythingToAsk && !active) return null
 
   const setMoves = (kind: LocomotionKind) =>
@@ -184,6 +188,39 @@ export function CreatureFilterBar({
                   {band.label}
                 </button>
               ))}
+            </div>
+          )}
+
+          {options.dietTags.length > 1 && (
+            <div
+              className="flex flex-wrap items-center gap-1"
+              role="group"
+              aria-label="What it eats"
+            >
+              <span style={{ ...label, width: 44 }}>Diet</span>
+              {options.dietTags.map(tag => {
+                const active = filter.dietTags.includes(tag)
+                const tagLabel = tag === 'plant' ? 'Plant' : tag === 'meat' ? 'Meat' : 'Mineral'
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    className="cc-btn shrink-0"
+                    onClick={() =>
+                      setFilter({
+                        ...filter,
+                        dietTags: active
+                          ? filter.dietTags.filter(t => t !== tag)
+                          : [...filter.dietTags, tag],
+                      })
+                    }
+                    aria-pressed={active}
+                    style={chipStyle(active)}
+                  >
+                    {tagLabel}
+                  </button>
+                )
+              })}
             </div>
           )}
 

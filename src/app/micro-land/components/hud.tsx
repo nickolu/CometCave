@@ -139,6 +139,7 @@ export function Hud({
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
   const notify = useMicroLand(s => s.notify)
+  const activeMaterials = useMicroLand(s => s.activeMaterials)
 
   const { user, loading: authLoading } = useAuth()
   const isSignedIn = !authLoading && !!user && !user.isAnonymous
@@ -359,6 +360,12 @@ export function Hud({
           )}
           {' · '}
           <span style={{ color: 'var(--cc-text-muted)' }}>Day {dayNumber}</span>
+          {activeMaterials > 0 && (
+            <>
+              {' · '}
+              <span style={{ color: 'var(--cc-text-muted)' }}>{activeMaterials} biomes</span>
+            </>
+          )}
         </button>
 
         {/* Ecosystem health — informational */}

@@ -72,8 +72,8 @@ export function FieldGuide() {
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
-  const fogEnabled = useMicroLand(s => s.fogEnabled)
-  const setFogEnabled = useMicroLand(s => s.setFogEnabled)
+  const scentsEnabled = useMicroLand(s => s.scentsEnabled)
+  const setScentsEnabled = useMicroLand(s => s.setScentsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
@@ -697,7 +697,7 @@ export function FieldGuide() {
             <button
               type="button"
               className="cc-btn"
-              onClick={() => setFogEnabled(!fogEnabled)}
+              onClick={() => setScentsEnabled(!scentsEnabled)}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -706,14 +706,14 @@ export function FieldGuide() {
                 padding: '4px 10px',
                 minHeight: 28,
                 borderRadius: 4,
-                border: fogEnabled
+                border: scentsEnabled
                   ? '1px solid var(--cc-mint)'
                   : '1px solid var(--cc-mint-line)',
-                color: fogEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                background: fogEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+                color: scentsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: scentsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
               }}
             >
-              Fog
+              Scents
             </button>
           </div>
           {traitOverlay && (

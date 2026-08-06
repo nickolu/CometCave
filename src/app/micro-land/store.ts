@@ -100,6 +100,10 @@ export interface Inspected {
   hostName: string | null
   /** Rolling history of recent mood states, oldest first, max 40 entries. */
   moodHistory: string[]
+  /** Tile X where the creature last ate successfully. null = never eaten. */
+  lastMealX: number | null
+  /** Tile Y where the creature last ate successfully. null = never eaten. */
+  lastMealY: number | null
 }
 
 /** One column of the guide's record book — see `KindRecord`. */
@@ -276,6 +280,8 @@ interface MicroLandState {
   blueprints: CreatureBlueprint[]
   population: PopulationEntry[]
   totalCreatures: number
+  /** Number of distinct non-air material types currently present in the world tiles. */
+  activeMaterials: number
   elapsed: number
   /** Rolling history for the population graph. Cleared on world load. */
   populationHistory: PopulationSnapshot[]
@@ -454,6 +460,8 @@ interface MicroLandState {
   setFocusedSpeciesStats: (stats: FocusedSpeciesStats | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
+  scentsEnabled: boolean
+  setScentsEnabled: (on: boolean) => void
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
@@ -477,6 +485,7 @@ interface MicroLandState {
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number, births?: Record<string, number>, deaths?: Record<string, number>) => void
+  setActiveMaterials: (n: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
   updateWorldStats: (patch: Partial<WorldStats>) => void
@@ -578,6 +587,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   blueprints: [],
   population: [],
   totalCreatures: 0,
+  activeMaterials: 0,
   elapsed: 0,
   populationHistory: [],
   extinctions: [],
@@ -632,6 +642,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
+  scentsEnabled: false,
   heatmapBlueprintId: null,
   soundEnabled: false,
 
@@ -748,6 +759,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setPopulationItems: items => set({ populationItems: items }),
+  setActiveMaterials: n => set({ activeMaterials: n }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
@@ -756,6 +768,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setGraphFocusId: id => set({ graphFocusId: id, ...(id === null && { focusedSpeciesStats: null }) }),
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
+  setScentsEnabled: on => set({ scentsEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 

@@ -508,6 +508,7 @@ export class Renderer {
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
     this.drawPollinatorAuras(w, vx, vw)
+    if (useMicroLand.getState().scentsEnabled) this.drawScentBeacons(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
@@ -838,6 +839,21 @@ export class Renderer {
       }
 
       ctx.globalAlpha = 1
+    }
+  }
+
+  private drawScentBeacons(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    for (const scent of w.scents) {
+      if (scent.x < vx || scent.x >= vx + vw) continue
+      const alpha = Math.max(0.1, scent.decaySeconds / 15)
+      ctx.save()
+      ctx.globalAlpha = alpha * 0.7
+      ctx.fillStyle = '#22c55e'
+      ctx.beginPath()
+      ctx.arc(scent.x + 0.5, scent.y + 0.5, 0.4, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
     }
   }
 
