@@ -261,29 +261,23 @@ export function FieldGuide() {
 
         {view === 'guide' && <>
 
-        {namedCreatures.length > 0 && (
+        {namedCreatures.some(e => e.alive) && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
             <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
-              Named · {namedCreatures.length}
+              Named · {namedCreatures.filter(e => e.alive).length}
             </h3>
             <ul className="flex flex-col">
               {namedCreatures
+                .filter(e => e.alive)
                 .slice()
-                .sort((a, b) => {
-                  // Living first, then by age descending
-                  if (a.alive !== b.alive) return a.alive ? -1 : 1
-                  return b.ageSeconds - a.ageSeconds
-                })
+                .sort((a, b) => b.ageSeconds - a.ageSeconds)
                 .map((entry, i) => {
                   const bp = blueprints.find(b => b.id === entry.blueprintId)
                   return (
                     <li
                       key={entry.name + entry.blueprintId + i}
                       className="flex gap-3 px-4 py-2.5"
-                      style={{
-                        borderBottom: '1px solid var(--cc-panel-divider)',
-                        opacity: entry.alive ? 1 : 0.7,
-                      }}
+                      style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
                     >
                       {bp && (
                         <div className="shrink-0 pt-0.5">
@@ -291,33 +285,17 @@ export function FieldGuide() {
                         </div>
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span
-                            style={{
-                              fontFamily: 'var(--cc-font-mono)',
-                              fontSize: 12,
-                              letterSpacing: 1.4,
-                              textTransform: 'uppercase',
-                              color: entry.alive ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                            }}
-                          >
-                            {entry.name}
-                          </span>
-                          {!entry.alive && (
-                            <span
-                              style={{
-                                fontFamily: 'var(--cc-font-mono)',
-                                fontSize: 9,
-                                letterSpacing: 1,
-                                textTransform: 'uppercase',
-                                color: 'var(--cc-text-muted)',
-                                opacity: 0.6,
-                              }}
-                            >
-                              †
-                            </span>
-                          )}
-                        </div>
+                        <span
+                          style={{
+                            fontFamily: 'var(--cc-font-mono)',
+                            fontSize: 12,
+                            letterSpacing: 1.4,
+                            textTransform: 'uppercase',
+                            color: 'var(--cc-mint)',
+                          }}
+                        >
+                          {entry.name}
+                        </span>
                         {bp && (
                           <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
                             {bp.name}
@@ -333,7 +311,104 @@ export function FieldGuide() {
                             lineHeight: 1.6,
                           }}
                         >
-                          {entry.alive ? 'alive · ' : ''}{formatDuration(entry.ageSeconds)}
+                          alive · {formatDuration(entry.ageSeconds)}
+                          {entry.generation > 1 && ` · gen ${entry.generation}`}
+                          {entry.children > 0 && ` · ${entry.children} offspring`}
+                          {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                        </p>
+                      </div>
+                    </li>
+                  )
+                })}
+            </ul>
+          </section>
+        )}
+
+        {namedCreatures.some(e => !e.alive) && (
+          <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+              Graveyard · {namedCreatures.filter(e => !e.alive).length}
+            </h3>
+            <ul className="flex flex-col">
+              {namedCreatures
+                .filter(e => !e.alive)
+                .slice()
+                .sort((a, b) => b.ageSeconds - a.ageSeconds)
+                .map((entry, i) => {
+                  const bp = blueprints.find(b => b.id === entry.blueprintId)
+                  return (
+                    <li
+                      key={entry.name + entry.blueprintId + i}
+                      className="flex gap-3 px-4 py-2.5"
+                      style={{
+                        borderBottom: '1px solid var(--cc-panel-divider)',
+                        opacity: 0.65,
+                      }}
+                    >
+                      {/* Pixel tombstone */}
+                      <div className="shrink-0" style={{ paddingTop: 2 }}>
+                        <svg
+                          width="30"
+                          height="30"
+                          viewBox="0 0 8 8"
+                          style={{ imageRendering: 'pixelated', display: 'block' }}
+                          aria-hidden
+                        >
+                          {/* stone body */}
+                          <rect x="1" y="3" width="6" height="4" fill="#6b7280" />
+                          {/* rounded top — two rows forming an arch */}
+                          <rect x="2" y="1" width="4" height="3" fill="#6b7280" />
+                          <rect x="1" y="2" width="6" height="1" fill="#6b7280" />
+                          {/* highlight edge */}
+                          <rect x="1" y="1" width="1" height="5" fill="#9ca3af" />
+                          <rect x="2" y="1" width="4" height="1" fill="#9ca3af" />
+                          {/* cross */}
+                          <rect x="3" y="2" width="2" height="4" fill="#374151" />
+                          <rect x="2" y="3" width="4" height="1" fill="#374151" />
+                          {/* base ground */}
+                          <rect x="0" y="7" width="8" height="1" fill="#4b5563" />
+                        </svg>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline gap-1.5">
+                          <span
+                            style={{
+                              fontFamily: 'var(--cc-font-mono)',
+                              fontSize: 12,
+                              letterSpacing: 1.4,
+                              textTransform: 'uppercase',
+                              color: 'var(--cc-text-muted)',
+                            }}
+                          >
+                            {entry.name}
+                          </span>
+                          <span
+                            style={{
+                              fontFamily: 'var(--cc-font-mono)',
+                              fontSize: 9,
+                              color: 'var(--cc-text-muted)',
+                              opacity: 0.55,
+                            }}
+                          >
+                            †
+                          </span>
+                        </div>
+                        {bp && (
+                          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
+                            {bp.name}
+                          </p>
+                        )}
+                        <p
+                          style={{
+                            fontFamily: 'var(--cc-font-mono)',
+                            fontSize: 10,
+                            color: 'var(--cc-text-muted)',
+                            opacity: 0.65,
+                            marginTop: 4,
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          lived {formatDuration(entry.ageSeconds)}
                           {entry.generation > 1 && ` · gen ${entry.generation}`}
                           {entry.children > 0 && ` · ${entry.children} offspring`}
                           {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
