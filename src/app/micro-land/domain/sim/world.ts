@@ -333,6 +333,27 @@ export function paintCircle(
   }
 }
 
+/** Paint a filled square (axis-aligned) of material. */
+export function paintSquare(
+  w: WorldState,
+  cx: number,
+  cy: number,
+  half: number,
+  mat: MaterialId
+): void {
+  const value = MATERIAL_INDEX[mat]
+  w.dormant = false
+  const x0 = Math.floor(cx - half)
+  const x1 = Math.ceil(cx + half)
+  const y0 = Math.floor(cy - half)
+  const y1 = Math.ceil(cy + half)
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      setTile(w, x, y, value)
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Spawning
 // ---------------------------------------------------------------------------
