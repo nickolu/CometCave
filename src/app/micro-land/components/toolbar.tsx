@@ -144,6 +144,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
    * target far too small for the hands this is built for.
    */
   const [editing, setEditing] = useState(false)
+  const [terrainExpanded, setTerrainExpanded] = useState(false)
 
   // Jump to "Yours" the moment a summon is asked for, and again when it lands,
   // so the thing you just invented — and the slot holding its place until then —
@@ -315,75 +316,152 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
 
       {open && (
         <div id="micro-land-tools" className="flex flex-col gap-1.5">
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
-            <button
-              type="button"
-              className="cc-btn shrink-0"
-              onClick={() => setTool({ kind: 'erase' })}
-              aria-pressed={tool.kind === 'erase'}
-              style={swatchStyle(tool.kind === 'erase')}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 3,
-                  border: '1px dashed var(--cc-text-muted)',
-                }}
-              />
-              <span style={swatchLabel}>Erase</span>
-            </button>
-
-            {PAINTABLE.map(id => {
-              // A tintable swatch shows whichever color of itself is in hand, so
-              // the palette reflects what the brush will actually paint.
-              const inHand = family === id && tool.kind === 'material' ? tool.material : id
-              const material = MATERIALS[inHand]
-              const selected = tool.kind === 'material' && (tool.material === id || family === id)
-              return (
-                <button
-                  key={id}
-                  type="button"
-                  className="cc-btn shrink-0"
-                  onClick={() => setTool({ kind: 'material', material: inHand })}
-                  aria-pressed={selected}
-                  style={swatchStyle(selected)}
-                >
-                  <span
-                    aria-hidden
-                    style={{
-                      position: 'relative',
-                      display: 'block',
-                      width: 22,
-                      height: 22,
-                      borderRadius: 3,
-                      background: material.color,
-                      boxShadow:
-                        material.glow > 0
-                          ? `0 0 10px ${material.color}`
-                          : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
-                    }}
+          {/* Terrain palette — collapsed first row + accordion for the rest. */}
+          <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
+            {/* Always-visible row: erase + first 8 materials + expand toggle */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                className="cc-btn shrink-0"
+                onClick={() => setTool({ kind: 'erase' })}
+                aria-pressed={tool.kind === 'erase'}
+                style={swatchStyle(tool.kind === 'erase')}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 3,
+                    border: '1px dashed var(--cc-text-muted)',
+                  }}
+                />
+                <span style={swatchLabel}>Erase</span>
+              </button>
+              {PAINTABLE.slice(0, 8).map(id => {
+                const inHand = family === id && tool.kind === 'material' ? tool.material : id
+                const material = MATERIALS[inHand]
+                const selected = tool.kind === 'material' && (tool.material === id || family === id)
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className="cc-btn shrink-0"
+                    onClick={() => setTool({ kind: 'material', material: inHand })}
+                    aria-pressed={selected}
+                    style={swatchStyle(selected)}
                   >
-                    {MATERIALS[id].tintable && (
-                      // A corner notch marks the ones that come in colors.
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'relative',
+                        display: 'block',
+                        width: 22,
+                        height: 22,
+                        borderRadius: 3,
+                        background: material.color,
+                        boxShadow:
+                          material.glow > 0
+                            ? `0 0 10px ${material.color}`
+                            : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
+                      }}
+                    >
+                      {MATERIALS[id].tintable && (
+                        <span
+                          style={{
+                            position: 'absolute',
+                            right: 1,
+                            bottom: 1,
+                            width: 0,
+                            height: 0,
+                            borderLeft: '6px solid transparent',
+                            borderBottom: '6px solid rgba(255,255,255,0.75)',
+                          }}
+                        />
+                      )}
+                    </span>
+                    <span style={swatchLabel}>{MATERIALS[id].name}</span>
+                  </button>
+                )
+              })}
+              {/* Expand / collapse toggle */}
+              <button
+                type="button"
+                className="cc-btn shrink-0"
+                onClick={() => setTerrainExpanded(x => !x)}
+                aria-expanded={terrainExpanded}
+                aria-label={
+                  terrainExpanded
+                    ? 'Show fewer terrain types'
+                    : `Show ${PAINTABLE.length - 8} more terrain types`
+                }
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 2,
+                  padding: '4px 7px',
+                  borderRadius: 4,
+                  border: `1px solid ${terrainExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                  background: terrainExpanded ? 'var(--cc-mint-soft)' : 'transparent',
+                  color: 'var(--cc-text-muted)',
+                }}
+              >
+                <Chevron up={terrainExpanded} />
+                <span style={swatchLabel}>{terrainExpanded ? 'Less' : `+${PAINTABLE.length - 8}`}</span>
+              </button>
+            </div>
+            {/* Accordion: remaining materials */}
+            {terrainExpanded && (
+              <div className="flex flex-wrap gap-1.5">
+                {PAINTABLE.slice(8).map(id => {
+                  const inHand = family === id && tool.kind === 'material' ? tool.material : id
+                  const material = MATERIALS[inHand]
+                  const selected = tool.kind === 'material' && (tool.material === id || family === id)
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className="cc-btn shrink-0"
+                      onClick={() => setTool({ kind: 'material', material: inHand })}
+                      aria-pressed={selected}
+                      style={swatchStyle(selected)}
+                    >
                       <span
+                        aria-hidden
                         style={{
-                          position: 'absolute',
-                          right: 1,
-                          bottom: 1,
-                          width: 0,
-                          height: 0,
-                          borderLeft: '6px solid transparent',
-                          borderBottom: '6px solid rgba(255,255,255,0.75)',
+                          position: 'relative',
+                          display: 'block',
+                          width: 22,
+                          height: 22,
+                          borderRadius: 3,
+                          background: material.color,
+                          boxShadow:
+                            material.glow > 0
+                              ? `0 0 10px ${material.color}`
+                              : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
                         }}
-                      />
-                    )}
-                  </span>
-                  <span style={swatchLabel}>{MATERIALS[id].name}</span>
-                </button>
-              )
-            })}
+                      >
+                        {MATERIALS[id].tintable && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              right: 1,
+                              bottom: 1,
+                              width: 0,
+                              height: 0,
+                              borderLeft: '6px solid transparent',
+                              borderBottom: '6px solid rgba(255,255,255,0.75)',
+                            }}
+                          />
+                        )}
+                      </span>
+                      <span style={swatchLabel}>{MATERIALS[id].name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           {family && (
