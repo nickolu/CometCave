@@ -57,7 +57,9 @@ import {
   paintCircle,
   paintSquare,
   registerBlueprint,
+  restoreGrass,
   seedStarters,
+  setTile,
   spawnCreature,
   spawnSomewhereSensible,
 } from './domain/sim/world'
@@ -228,6 +230,14 @@ export class GameInstance {
    */
   private erosionTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
   private erosionTickCounter = 0
+
+  // --- graze depletion ---
+  /** Per-tile count of plant-eating events; triggers grass→dirt when it overflows the threshold. */
+  private grazeTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
+  /** Marks tiles that were converted to dirt by overgrazing, so they know to recover. */
+  private grazeDepleted: Uint8Array = new Uint8Array(WORLD_W * WORLD_H)
+  /** Counts erosion ticks between graze-traffic decay steps. */
+  private grazeDecayTick = 0
 
   // --- mood history for inspector sparkline ---
   private moodHistory: string[] = []
@@ -514,6 +524,17 @@ export class GameInstance {
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
 
+    // --- graze depletion: stamp plant-eating events onto the tile they happened on ---
+    for (const event of events) {
+      if (event.kind !== 'ate') continue
+      const victimBp = w.blueprints[event.victimId ?? '']
+      if (!victimBp || victimBp.move.kind !== 'root') continue
+      const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(event.x)))
+      const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(event.y)))
+      const gi = ty * WORLD_W + tx
+      if (this.grazeTraffic[gi] < 65000) this.grazeTraffic[gi]++
+    }
+
     // --- terrain erosion (every 30 ticks ≈ every 0.5 s at 60 fps) ---
     this.erosionTickCounter++
     if (this.erosionTickCounter >= 30) {
@@ -536,6 +557,43 @@ export class GameInstance {
           this.erosionTraffic[i] = 0
         }
       }
+
+      // --- graze depletion: convert over-grazed grass to dirt and recover idle tiles ---
+      const GRAZE_THRESHOLD = 12
+      const grassVal = MATERIAL_INDEX['grass']
+      const dirtVal = MATERIAL_INDEX['dirt']
+      let grazeTilesDirty = false
+      for (let i = 0; i < this.grazeTraffic.length; i++) {
+        if (this.grazeTraffic[i] >= GRAZE_THRESHOLD) {
+          if (w.tiles[i] === grassVal) {
+            const x = i % WORLD_W
+            const y = Math.floor(i / WORLD_W)
+            setTile(w, x, y, dirtVal)
+            this.grazeDepleted[i] = 1
+            grazeTilesDirty = true
+          }
+          // Reset to just below threshold so recovery countdown starts.
+          this.grazeTraffic[i] = GRAZE_THRESHOLD - 1
+        }
+      }
+      // Decay graze traffic every 20 erosion ticks (~10 sim-seconds).
+      this.grazeDecayTick++
+      if (this.grazeDecayTick >= 20) {
+        this.grazeDecayTick = 0
+        for (let i = 0; i < this.grazeTraffic.length; i++) {
+          if (this.grazeTraffic[i] > 0) {
+            this.grazeTraffic[i]--
+          } else if (this.grazeDepleted[i]) {
+            // Traffic has fully cleared — restore grass on this depleted tile.
+            if (w.tiles[i] === dirtVal) {
+              restoreGrass(w, i % WORLD_W, Math.floor(i / WORLD_W))
+              grazeTilesDirty = true
+            }
+            this.grazeDepleted[i] = 0
+          }
+        }
+      }
+      if (grazeTilesDirty) this.renderer.markTilesDirty()
     }
 
     // --- rain ---
