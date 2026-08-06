@@ -32,11 +32,13 @@ import {
   MEAL_VALUE,
   NATIVE_PLANT_SPECIES,
   NATIVE_PLANT_TARGET,
+  PLANT_CROWDING_STRENGTH,
   PLANT_MATURITY,
   PLANT_SEED_BATCH,
   PLANT_SEED_INTERVAL,
   PLANT_SPECIES_CAP,
   PLANT_SPREAD_COOLDOWN,
+  PLANT_SPREAD_MIN,
   POLLINATION_CARRY_SECONDS,
   POLLINATION_ONLY,
   SPECIES_SOFT_CAP,
@@ -99,6 +101,8 @@ export const TUNING_DEFAULTS = {
    */
   pollinationCarrySeconds: POLLINATION_CARRY_SECONDS,
   pollinationOnly: POLLINATION_ONLY,
+  plantCrowdingStrength: PLANT_CROWDING_STRENGTH,
+  plantSpreadMin: PLANT_SPREAD_MIN,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -241,6 +245,25 @@ export const KNOBS: Knob[] = [
     max: 1,
     step: 1,
     type: 'toggle',
+  },
+  {
+    key: 'plantCrowdingStrength',
+    group: 'plants',
+    label: 'Crowding penalty',
+    help: 'How much slower a plant spreads for each same-species neighbour within 12 tiles. Higher values break up clusters more aggressively.',
+    min: 0,
+    max: 2,
+    step: 0.05,
+  },
+  {
+    key: 'plantSpreadMin',
+    group: 'plants',
+    label: 'Min spread distance',
+    help: 'Minimum tiles a seed must travel from its parent. Prevents seeds from piling up directly beneath the plant.',
+    min: 1,
+    max: 12,
+    step: 1,
+    unit: ' tiles',
   },
 
   {

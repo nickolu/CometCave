@@ -84,6 +84,9 @@ export function FieldGuide() {
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
+  const [compact, setCompact] = useState(() => {
+    try { return localStorage.getItem('fg-compact') === '1' } catch { return false }
+  })
   const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
   const [compareTarget, setCompareTarget] = useState<string | null>(null)
 
@@ -470,25 +473,53 @@ export function FieldGuide() {
           >
             {ordered.length} {ordered.length === 1 ? 'species' : 'species'} in this land
           </span>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => setPlantsHidden(h => !h)}
-            aria-pressed={plantsHidden}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1,
-              textTransform: 'uppercase',
-              padding: '2px 7px',
-              minHeight: 22,
-              borderRadius: 3,
-              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-            }}
-          >
-            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => {
+                setCompact(c => {
+                  const next = !c
+                  try { localStorage.setItem('fg-compact', next ? '1' : '0') } catch {}
+                  return next
+                })
+              }}
+              aria-pressed={compact}
+              title={compact ? 'Switch to full view' : 'Switch to compact view'}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                padding: '2px 7px',
+                minHeight: 22,
+                borderRadius: 3,
+                border: compact ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+                color: compact ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+              }}
+            >
+              {compact ? '≡ Full' : '≡ Compact'}
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setPlantsHidden(h => !h)}
+              aria-pressed={plantsHidden}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                padding: '2px 7px',
+                minHeight: 22,
+                borderRadius: 3,
+                border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+                color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+              }}
+            >
+              {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+            </button>
+          </div>
         </div>
         <ul className="flex flex-col">
           {ordered.map(bp => (
@@ -508,6 +539,7 @@ export function FieldGuide() {
               onCompare={() => handleCompare(bp.id)}
               isComparePin={compareId === bp.id}
               traitHistory={traitHistory[bp.id]}
+              compact={compact}
             />
           ))}
         </ul>
@@ -803,6 +835,7 @@ function GuideEntry({
   onCompare,
   isComparePin,
   traitHistory,
+  compact,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -815,6 +848,7 @@ function GuideEntry({
   onCompare?: () => void
   isComparePin?: boolean
   traitHistory?: TraitHistoryEntry[]
+  compact?: boolean
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -859,10 +893,12 @@ function GuideEntry({
           ))}
         </div>
       )}
-      <div className="flex gap-3 px-4 py-3">
-      <div className="shrink-0 pt-0.5">
-        <CreaturePortrait blueprint={bp} size={40} />
-      </div>
+      <div className={`flex gap-3 px-4 ${compact ? 'py-1.5' : 'py-3'}`}>
+      {!compact && (
+        <div className="shrink-0 pt-0.5">
+          <CreaturePortrait blueprint={bp} size={40} />
+        </div>
+      )}
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -975,59 +1011,63 @@ function GuideEntry({
           )}
         </div>
 
-        <p style={{ fontSize: 13, color: 'var(--cc-text-muted)', marginTop: 2 }}>{bp.blurb}</p>
+        {!compact && (
+          <p style={{ fontSize: 13, color: 'var(--cc-text-muted)', marginTop: 2 }}>{bp.blurb}</p>
+        )}
 
-        <p
-          style={{
-            fontSize: 12,
-            color: 'var(--cc-text-muted)',
-            opacity: 0.85,
-            marginTop: 6,
-            lineHeight: 1.6,
-          }}
-        >
-          Size {bp.size} · {moveWord(bp)}
-          {maxGeneration > 1 && ` · ${maxGeneration} generations born here`}
-          {bp.body.immuneTo.length > 0 && ` · unburnable`}
-          {bp.glow > 0 && ` · glows`}
-          {bp.aura && (
-            <>
-              <br />
-              <strong style={{ fontWeight: 600 }}>Helps:</strong>{' '}
-              {[
-                bp.aura.helps.length > 0 &&
-                  bp.aura.boost > 1 &&
-                  `${bp.aura.helps.join(' and ')} nearby grow back faster`,
-                bp.aura.converts && `turns ${bp.aura.converts.from} into ${bp.aura.converts.to}`,
-              ]
-                .filter(Boolean)
-                .join(' · ')}
-            </>
-          )}
-          <br />
-          <strong style={{ fontWeight: 600 }}>Eats:</strong>{' '}
-          {eats.length > 0
-            ? eats.map(e => e.name).join(', ')
-            : bp.move.kind === 'root'
-              ? 'sunlight'
-              : 'nothing here'}
-          <br />
-          <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
-          {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
-          {bp.symbiosisPartnerId && (() => {
-            const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
-            return partner ? (
+        {!compact && (
+          <p
+            style={{
+              fontSize: 12,
+              color: 'var(--cc-text-muted)',
+              opacity: 0.85,
+              marginTop: 6,
+              lineHeight: 1.6,
+            }}
+          >
+            Size {bp.size} · {moveWord(bp)}
+            {maxGeneration > 1 && ` · ${maxGeneration} generations born here`}
+            {bp.body.immuneTo.length > 0 && ` · unburnable`}
+            {bp.glow > 0 && ` · glows`}
+            {bp.aura && (
               <>
                 <br />
-                <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
-                  Partners with: {partner.name}
-                </span>
+                <strong style={{ fontWeight: 600 }}>Helps:</strong>{' '}
+                {[
+                  bp.aura.helps.length > 0 &&
+                    bp.aura.boost > 1 &&
+                    `${bp.aura.helps.join(' and ')} nearby grow back faster`,
+                  bp.aura.converts && `turns ${bp.aura.converts.from} into ${bp.aura.converts.to}`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
               </>
-            ) : null
-          })()}
-        </p>
+            )}
+            <br />
+            <strong style={{ fontWeight: 600 }}>Eats:</strong>{' '}
+            {eats.length > 0
+              ? eats.map(e => e.name).join(', ')
+              : bp.move.kind === 'root'
+                ? 'sunlight'
+                : 'nothing here'}
+            <br />
+            <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
+            {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
+            {bp.symbiosisPartnerId && (() => {
+              const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
+              return partner ? (
+                <>
+                  <br />
+                  <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
+                    Partners with: {partner.name}
+                  </span>
+                </>
+              ) : null
+            })()}
+          </p>
+        )}
 
-        {traitHistory && traitHistory.length >= 3 && (
+        {!compact && traitHistory && traitHistory.length >= 3 && (
           <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
             <Sparkline data={traitHistory.map(e => e.speed)} label="speed" />
             <Sparkline data={traitHistory.map(e => e.sight)} label="sight" />

@@ -438,6 +438,16 @@ export interface Traits {
    * resistance over generations. Neutral at 0.2.
    */
   immunity: number
+  /**
+   * Multiplier on the time this creature waits between births.
+   *
+   * Below 1 means a shorter cooldown — fast breeders that swamp food-rich
+   * environments. Above 1 means longer waits — slow breeders that trade
+   * quantity for whatever makes each offspring more likely to survive.
+   * `effectiveCooldown = TUNING.breedCooldown * reproductionCooldown`.
+   * Neutral at 1. Range [TRAIT_MIN, TRAIT_MAX].
+   */
+  reproductionCooldown: number
 }
 
 /** One living thing in the world. */

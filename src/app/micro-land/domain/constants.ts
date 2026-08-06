@@ -352,6 +352,12 @@ export const POLLINATION_CARRY_SECONDS = 30
  */
 export const POLLINATION_ONLY = 0
 
+/** Multiplier added to spread cooldown per same-species plant within crowding radius. */
+export const PLANT_CROWDING_STRENGTH = 0.25
+
+/** Minimum tiles a plant seed must travel from its parent. */
+export const PLANT_SPREAD_MIN = 5
+
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9
 
