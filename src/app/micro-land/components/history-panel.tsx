@@ -18,10 +18,11 @@ function formatSimTime(seconds: number): string {
   return `${m}m ${s}s`
 }
 
-type FilterKey = 'died' | 'born' | 'ate' | 'named' | 'plant' | 'sick'
+type FilterKey = 'died' | 'plant_died' | 'born' | 'ate' | 'named' | 'plant' | 'sick'
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: 'died', label: 'Deaths' },
+  { key: 'plant_died', label: 'Plant deaths' },
   { key: 'born', label: 'Births' },
   { key: 'ate', label: 'Predation' },
   { key: 'named', label: 'Named' },
@@ -31,6 +32,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 
 const DEFAULT_ACTIVE: Record<FilterKey, boolean> = {
   died: true,
+  plant_died: false,
   born: true,
   ate: true,
   named: true,
@@ -46,6 +48,7 @@ const GRAPH_H = 68
 /** Line color per filter category — chosen to match the CometCave palette. */
 const CATEGORY_COLORS: Record<FilterKey, string> = {
   died: '#e07070',
+  plant_died: '#a3c46a',
   born: '#4caf9e',
   ate: '#c8a030',
   named: '#d4b84a',
@@ -77,6 +80,7 @@ const btnActive: React.CSSProperties = {
 
 function kindToFilter(kind: HistoryEventKind): FilterKey {
   if (kind === 'died') return 'died'
+  if (kind === 'plant_died') return 'plant_died'
   if (kind === 'born') return 'born'
   if (kind === 'ate') return 'ate'
   if (kind === 'named') return 'named'
