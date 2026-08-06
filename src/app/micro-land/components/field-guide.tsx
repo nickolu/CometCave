@@ -10,6 +10,7 @@ import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
+import { WorkshopPane } from './blueprint-workshop'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -75,12 +76,12 @@ export function FieldGuide() {
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
+  const [view, setView] = useState<'guide' | 'workshop'>('guide')
 
   if (!open) return null
 
@@ -146,25 +147,7 @@ export function FieldGuide() {
             <button
               type="button"
               className="cc-btn"
-              onClick={() => setPlantsHidden(h => !h)}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                minHeight: 26,
-                borderRadius: 4,
-                border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-                color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-              }}
-            >
-              {plantsHidden ? 'Plants hidden' : 'Hide plants'}
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => { setWorkshopOpen(true) }}
+              onClick={() => setView('workshop')}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -200,7 +183,11 @@ export function FieldGuide() {
           </div>
         </div>
 
-        {hasRecords && (
+        {view === 'workshop' && (
+          <WorkshopPane onClose={() => setView('guide')} />
+        )}
+
+        {view === 'guide' && hasRecords && (
           <section
             className="flex flex-col gap-2.5 px-4 py-3"
             style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
@@ -271,6 +258,8 @@ export function FieldGuide() {
             )}
           </section>
         )}
+
+        {view === 'guide' && <>
 
         {namedCreatures.length > 0 && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
@@ -357,6 +346,43 @@ export function FieldGuide() {
           </section>
         )}
 
+        {/* Filter row — sits right above the list it affects so it reads as a
+            list control rather than a navigation option. */}
+        <div
+          className="flex items-center justify-between px-3 py-1.5"
+          style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+        >
+          <span
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            {ordered.length} {ordered.length === 1 ? 'species' : 'species'} in this land
+          </span>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setPlantsHidden(h => !h)}
+            aria-pressed={plantsHidden}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              padding: '2px 7px',
+              minHeight: 22,
+              borderRadius: 3,
+              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+            }}
+          >
+            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+          </button>
+        </div>
         <ul className="flex flex-col">
           {ordered.map(bp => (
             <GuideEntry
@@ -593,6 +619,8 @@ export function FieldGuide() {
         </section>
 
         <ImportSection addBlueprint={addBlueprint} />
+
+        </>}
       </div>
     </aside>
   )

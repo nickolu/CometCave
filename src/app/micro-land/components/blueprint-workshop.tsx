@@ -39,9 +39,8 @@ function defaultTraits(): Traits {
   }
 }
 
-export function BlueprintWorkshop() {
-  const open = useMicroLand(s => s.workshopOpen)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
+/** The workshop content, usable both inline (inside the Field Guide) and inside the modal wrapper. */
+export function WorkshopPane({ onClose }: { onClose: () => void }) {
   const blueprints = useMicroLand(s => s.blueprints)
   const requestWorkshopSpawn = useMicroLand(s => s.requestWorkshopSpawn)
 
@@ -54,8 +53,6 @@ export function BlueprintWorkshop() {
   const [traits, setTraits] = useState<Traits>(defaultTraits)
   const [hue, setHue] = useState(0)
   const [shade, setShade] = useState(1)
-
-  if (!open) return null
 
   const animals = blueprints.filter(bp => bp.move.kind !== 'root')
   const displayList = animals.length > 0 ? animals : blueprints
@@ -94,12 +91,7 @@ export function BlueprintWorkshop() {
     }
     const finalTraits: Traits = { ...traits, hue, shade }
     requestWorkshopSpawn(finalBlueprint, finalTraits)
-    setWorkshopOpen(false)
-    setStep('pick')
-  }
-
-  function close() {
-    setWorkshopOpen(false)
+    onClose()
     setStep('pick')
   }
 
@@ -115,6 +107,287 @@ export function BlueprintWorkshop() {
   }
 
   return (
+    <div style={{ padding: '16px 16px 20px' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{
+          fontFamily: 'var(--cc-font-mono)', fontSize: 11,
+          letterSpacing: 1.6, textTransform: 'uppercase',
+          color: 'var(--cc-text-muted)', margin: 0,
+        }}>
+          {step === 'pick' ? 'Blueprint Workshop — Pick a Base' : 'Blueprint Workshop — Configure'}
+        </h2>
+        {step === 'configure' && (
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setStep('pick')}
+            style={{ ...chipBase, border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)' }}
+          >
+            ← Back
+          </button>
+        )}
+      </div>
+
+      {step === 'pick' && (
+        <>
+          <p style={{ fontSize: 12, color: 'var(--cc-text-muted)', marginBottom: 12 }}>
+            Pick a species as your starting point. You&apos;ll be able to rename it and adjust all of its traits.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {displayList.map(bp => (
+              <button
+                key={bp.id}
+                type="button"
+                className="cc-btn"
+                onClick={() => pickBase(bp)}
+                style={{
+                  display: 'block', textAlign: 'left',
+                  padding: '8px 12px',
+                  border: '1px solid var(--cc-mint-line)',
+                  borderRadius: 6, background: 'transparent', cursor: 'pointer',
+                }}
+              >
+                <div style={{
+                  fontFamily: 'var(--cc-font-mono)', fontSize: 11,
+                  letterSpacing: 1.2, textTransform: 'uppercase',
+                  color: 'var(--cc-mint)', marginBottom: 2,
+                }}>
+                  {bp.name}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--cc-text-muted)' }}>
+                  {bp.move.kind} · {bp.diet.eats.join('/')}
+                </div>
+              </button>
+            ))}
+            {displayList.length === 0 && (
+              <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
+                No species in the world yet. Place some creatures first.
+              </p>
+            )}
+          </div>
+        </>
+      )}
+
+      {step === 'configure' && base && (
+        <>
+          {/* Name */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{
+              display: 'block',
+              fontFamily: 'var(--cc-font-mono)', fontSize: 10,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)', marginBottom: 4,
+            }}>
+              Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={e => { setName(e.target.value); setNameError(false) }}
+              maxLength={32}
+              style={{
+                width: '100%',
+                background: 'rgba(255,255,255,0.05)',
+                border: `1px solid ${nameError ? '#ef4444' : 'var(--cc-panel-divider)'}`,
+                borderRadius: 4, color: 'var(--cc-text-main)',
+                fontFamily: 'var(--cc-font-mono)', fontSize: 12,
+                padding: '6px 10px', outline: 'none', boxSizing: 'border-box',
+              }}
+              placeholder="Name your creature"
+            />
+            {nameError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Name cannot be empty</div>}
+          </div>
+
+          {/* Locomotion kind */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{
+              fontFamily: 'var(--cc-font-mono)', fontSize: 10,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)', marginBottom: 6,
+            }}>
+              Locomotion
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {LOCO_KINDS.map(k => (
+                <button
+                  key={k}
+                  type="button"
+                  className="cc-btn"
+                  onClick={() => setLocoKind(k)}
+                  style={{
+                    ...chipBase,
+                    border: `1px solid ${locoKind === k ? 'var(--cc-mint)' : 'var(--cc-panel-divider)'}`,
+                    color: locoKind === k ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                  }}
+                >
+                  {k}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Diet */}
+          <div style={{ marginBottom: 12 }}>
+            <div style={{
+              fontFamily: 'var(--cc-font-mono)', fontSize: 10,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)', marginBottom: 6,
+            }}>
+              Diet
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {DIET_OPTIONS.map((opt, i) => (
+                <button
+                  key={opt.label}
+                  type="button"
+                  className="cc-btn"
+                  onClick={() => setDietIdx(i)}
+                  style={{
+                    ...chipBase,
+                    border: `1px solid ${dietIdx === i ? 'var(--cc-mint)' : 'var(--cc-panel-divider)'}`,
+                    color: dietIdx === i ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                  }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Hue + Shade + Color preview */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{
+              fontFamily: 'var(--cc-font-mono)', fontSize: 10,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)', marginBottom: 6,
+            }}>
+              Color
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 28, height: 28, borderRadius: 4,
+                  background: traitColor(hue, shade),
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: 'var(--cc-text-muted)', marginBottom: 2 }}>Hue</div>
+                <input
+                  type="range" min={0} max={359} step={1} value={hue}
+                  onChange={e => setHue(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, color: 'var(--cc-text-muted)', marginBottom: 2 }}>Shade</div>
+                <input
+                  type="range" min={0.82} max={1.18} step={0.01} value={shade}
+                  onChange={e => setShade(Number(e.target.value))}
+                  style={{ width: '100%' }}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Trait sliders */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{
+              fontFamily: 'var(--cc-font-mono)', fontSize: 10,
+              letterSpacing: 1.2, textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)', marginBottom: 8,
+            }}>
+              Traits
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {TRAIT_DEFS.map(def => (
+                <div key={def.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{
+                    width: 88, fontSize: 11, color: 'var(--cc-text-muted)',
+                    fontFamily: 'var(--cc-font-mono)', flexShrink: 0,
+                  }}>
+                    {def.label}
+                  </div>
+                  <input
+                    type="range"
+                    min={def.min}
+                    max={def.max}
+                    step={def.step}
+                    value={(traits[def.key] as number) ?? def.neutral}
+                    onChange={e => setTrait(def.key, Number(e.target.value))}
+                    style={{ flex: 1 }}
+                  />
+                  <div style={{
+                    width: 36, textAlign: 'right',
+                    fontSize: 11, color: 'var(--cc-text-muted)',
+                    fontFamily: 'var(--cc-font-mono)', flexShrink: 0,
+                  }}>
+                    {((traits[def.key] as number) ?? def.neutral).toFixed(2)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Spawn button */}
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={onClose}
+              style={{
+                ...chipBase,
+                border: '1px solid var(--cc-panel-divider)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={handleSpawn}
+              style={{
+                ...chipBase,
+                border: '1px solid var(--cc-mint)',
+                color: 'var(--cc-mint)',
+                padding: '6px 16px',
+              }}
+            >
+              Create & Spawn 5
+            </button>
+          </div>
+        </>
+      )}
+
+      {step === 'pick' && (
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={onClose}
+          style={{
+            marginTop: 14,
+            ...chipBase,
+            border: '1px solid var(--cc-panel-divider)',
+            color: 'var(--cc-text-muted)',
+          }}
+        >
+          Close
+        </button>
+      )}
+    </div>
+  )
+}
+
+export function BlueprintWorkshop() {
+  const open = useMicroLand(s => s.workshopOpen)
+  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
+
+  if (!open) return null
+
+  return (
     <div
       style={{
         position: 'fixed', inset: 0, zIndex: 50,
@@ -122,14 +395,16 @@ export function BlueprintWorkshop() {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         overflowY: 'auto',
       }}
-      onClick={close}
+      onClick={() => setWorkshopOpen(false)}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Blueprint Workshop"
         style={{
           background: 'var(--cc-panel-bg)',
           border: '1px solid var(--cc-panel-divider)',
           borderRadius: 8,
-          padding: '20px 24px',
           maxWidth: 460,
           width: '90vw',
           maxHeight: '85vh',
@@ -137,275 +412,7 @@ export function BlueprintWorkshop() {
         }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{
-            fontFamily: 'var(--cc-font-mono)', fontSize: 11,
-            letterSpacing: 1.6, textTransform: 'uppercase',
-            color: 'var(--cc-text-muted)', margin: 0,
-          }}>
-            {step === 'pick' ? 'Blueprint Workshop — Pick a Base' : 'Blueprint Workshop — Configure'}
-          </h2>
-          {step === 'configure' && (
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setStep('pick')}
-              style={{ ...chipBase, border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)' }}
-            >
-              ← Back
-            </button>
-          )}
-        </div>
-
-        {step === 'pick' && (
-          <>
-            <p style={{ fontSize: 12, color: 'var(--cc-text-muted)', marginBottom: 12 }}>
-              Pick a species as your starting point. You&apos;ll be able to rename it and adjust all of its traits.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {displayList.map(bp => (
-                <button
-                  key={bp.id}
-                  type="button"
-                  className="cc-btn"
-                  onClick={() => pickBase(bp)}
-                  style={{
-                    display: 'block', textAlign: 'left',
-                    padding: '8px 12px',
-                    border: '1px solid var(--cc-mint-line)',
-                    borderRadius: 6, background: 'transparent', cursor: 'pointer',
-                  }}
-                >
-                  <div style={{
-                    fontFamily: 'var(--cc-font-mono)', fontSize: 11,
-                    letterSpacing: 1.2, textTransform: 'uppercase',
-                    color: 'var(--cc-mint)', marginBottom: 2,
-                  }}>
-                    {bp.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--cc-text-muted)' }}>
-                    {bp.move.kind} · {bp.diet.eats.join('/')}
-                  </div>
-                </button>
-              ))}
-              {displayList.length === 0 && (
-                <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
-                  No species in the world yet. Place some creatures first.
-                </p>
-              )}
-            </div>
-          </>
-        )}
-
-        {step === 'configure' && base && (
-          <>
-            {/* Name */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{
-                display: 'block',
-                fontFamily: 'var(--cc-font-mono)', fontSize: 10,
-                letterSpacing: 1.2, textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)', marginBottom: 4,
-              }}>
-                Name *
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={e => { setName(e.target.value); setNameError(false) }}
-                maxLength={32}
-                style={{
-                  width: '100%',
-                  background: 'rgba(255,255,255,0.05)',
-                  border: `1px solid ${nameError ? '#ef4444' : 'var(--cc-panel-divider)'}`,
-                  borderRadius: 4, color: 'var(--cc-text-main)',
-                  fontFamily: 'var(--cc-font-mono)', fontSize: 12,
-                  padding: '6px 10px', outline: 'none', boxSizing: 'border-box',
-                }}
-                placeholder="Name your creature"
-              />
-              {nameError && <div style={{ fontSize: 11, color: '#ef4444', marginTop: 4 }}>Name cannot be empty</div>}
-            </div>
-
-            {/* Locomotion kind */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{
-                fontFamily: 'var(--cc-font-mono)', fontSize: 10,
-                letterSpacing: 1.2, textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)', marginBottom: 6,
-              }}>
-                Locomotion
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {LOCO_KINDS.map(k => (
-                  <button
-                    key={k}
-                    type="button"
-                    className="cc-btn"
-                    onClick={() => setLocoKind(k)}
-                    style={{
-                      ...chipBase,
-                      border: `1px solid ${locoKind === k ? 'var(--cc-mint)' : 'var(--cc-panel-divider)'}`,
-                      color: locoKind === k ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                    }}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Diet */}
-            <div style={{ marginBottom: 12 }}>
-              <div style={{
-                fontFamily: 'var(--cc-font-mono)', fontSize: 10,
-                letterSpacing: 1.2, textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)', marginBottom: 6,
-              }}>
-                Diet
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {DIET_OPTIONS.map((opt, i) => (
-                  <button
-                    key={opt.label}
-                    type="button"
-                    className="cc-btn"
-                    onClick={() => setDietIdx(i)}
-                    style={{
-                      ...chipBase,
-                      border: `1px solid ${dietIdx === i ? 'var(--cc-mint)' : 'var(--cc-panel-divider)'}`,
-                      color: dietIdx === i ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                    }}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Hue + Shade + Color preview */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{
-                fontFamily: 'var(--cc-font-mono)', fontSize: 10,
-                letterSpacing: 1.2, textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)', marginBottom: 6,
-              }}>
-                Color
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div
-                  style={{
-                    width: 28, height: 28, borderRadius: 4,
-                    background: traitColor(hue, shade),
-                    border: '1px solid rgba(255,255,255,0.15)',
-                    flexShrink: 0,
-                  }}
-                />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: 'var(--cc-text-muted)', marginBottom: 2 }}>Hue</div>
-                  <input
-                    type="range" min={0} max={359} step={1} value={hue}
-                    onChange={e => setHue(Number(e.target.value))}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 10, color: 'var(--cc-text-muted)', marginBottom: 2 }}>Shade</div>
-                  <input
-                    type="range" min={0.82} max={1.18} step={0.01} value={shade}
-                    onChange={e => setShade(Number(e.target.value))}
-                    style={{ width: '100%' }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Trait sliders */}
-            <div style={{ marginBottom: 14 }}>
-              <div style={{
-                fontFamily: 'var(--cc-font-mono)', fontSize: 10,
-                letterSpacing: 1.2, textTransform: 'uppercase',
-                color: 'var(--cc-text-muted)', marginBottom: 8,
-              }}>
-                Traits
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {TRAIT_DEFS.map(def => (
-                  <div key={def.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{
-                      width: 88, fontSize: 11, color: 'var(--cc-text-muted)',
-                      fontFamily: 'var(--cc-font-mono)', flexShrink: 0,
-                    }}>
-                      {def.label}
-                    </div>
-                    <input
-                      type="range"
-                      min={def.min}
-                      max={def.max}
-                      step={def.step}
-                      value={(traits[def.key] as number) ?? def.neutral}
-                      onChange={e => setTrait(def.key, Number(e.target.value))}
-                      style={{ flex: 1 }}
-                    />
-                    <div style={{
-                      width: 36, textAlign: 'right',
-                      fontSize: 11, color: 'var(--cc-text-muted)',
-                      fontFamily: 'var(--cc-font-mono)', flexShrink: 0,
-                    }}>
-                      {((traits[def.key] as number) ?? def.neutral).toFixed(2)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Spawn button */}
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                className="cc-btn"
-                onClick={close}
-                style={{
-                  ...chipBase,
-                  border: '1px solid var(--cc-panel-divider)',
-                  color: 'var(--cc-text-muted)',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="cc-btn"
-                onClick={handleSpawn}
-                style={{
-                  ...chipBase,
-                  border: '1px solid var(--cc-mint)',
-                  color: 'var(--cc-mint)',
-                  padding: '6px 16px',
-                }}
-              >
-                Create & Spawn 5
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 'pick' && (
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={close}
-            style={{
-              marginTop: 14,
-              ...chipBase,
-              border: '1px solid var(--cc-panel-divider)',
-              color: 'var(--cc-text-muted)',
-            }}
-          >
-            Close
-          </button>
-        )}
+        <WorkshopPane onClose={() => setWorkshopOpen(false)} />
       </div>
     </div>
   )
