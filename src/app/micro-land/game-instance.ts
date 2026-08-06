@@ -49,6 +49,7 @@ import {
   countByBlueprint,
   createWorld,
   paintCircle,
+  paintSquare,
   registerBlueprint,
   seedStarters,
   spawnCreature,
@@ -2115,7 +2116,11 @@ export class GameInstance {
     if (tool.kind === 'inspect') return
 
     const material = tool.kind === 'erase' ? 'air' : tool.material
-    paintCircle(this.world, x, y, state.brush, material)
+    if (state.brushShape === 'square') {
+      paintSquare(this.world, x, y, state.brush, material)
+    } else {
+      paintCircle(this.world, x, y, state.brush, material)
+    }
     this.renderer.markTilesDirty()
   }
 

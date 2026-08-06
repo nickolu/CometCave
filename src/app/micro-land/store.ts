@@ -256,6 +256,7 @@ interface MicroLandState {
   themeId: string
   tool: Tool
   brush: number
+  brushShape: 'circle' | 'square'
   paused: boolean
   speed: number
 
@@ -446,6 +447,7 @@ interface MicroLandState {
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
+  setBrushShape: (shape: 'circle' | 'square') => void
   togglePaused: () => void
   setSpeed: (n: number) => void
   setBlueprints: (list: CreatureBlueprint[]) => void
@@ -546,6 +548,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   themeId: DEFAULT_THEME,
   tool: { kind: 'material', material: 'dirt' },
   brush: 4,
+  brushShape: 'circle',
   paused: false,
   speed: 1,
 
@@ -609,6 +612,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
   setBrush: brush => set({ brush }),
+  setBrushShape: brushShape => set({ brushShape }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
   setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, historyLog: [] }),

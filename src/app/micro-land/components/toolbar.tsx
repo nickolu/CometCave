@@ -81,6 +81,8 @@ export function Toolbar({
   const setTool = useMicroLand(s => s.setTool)
   const brush = useMicroLand(s => s.brush)
   const setBrush = useMicroLand(s => s.setBrush)
+  const brushShape = useMicroLand(s => s.brushShape)
+  const setBrushShape = useMicroLand(s => s.setBrushShape)
   const blueprints = useMicroLand(s => s.blueprints)
   const pending = useMicroLand(s => s.pendingSummons)
   const setSummonOpen = useMicroLand(s => s.setSummonOpen)
@@ -210,7 +212,44 @@ export function Toolbar({
         {open && (
           <>
             <span style={label}>Ground</span>
-            <div className="flex items-center gap-1">
+            {/* Brush shape: circle or square */}
+            <div className="flex items-center gap-1" role="group" aria-label="Brush shape">
+              {(['circle', 'square'] as const).map(shape => {
+                const selected = brushShape === shape
+                return (
+                  <button
+                    key={shape}
+                    type="button"
+                    className="cc-btn"
+                    onClick={() => setBrushShape(shape)}
+                    aria-label={`${shape} brush`}
+                    aria-pressed={selected}
+                    title={shape === 'circle' ? 'Circle brush' : 'Square brush'}
+                    style={{
+                      width: 26,
+                      height: 26,
+                      display: 'grid',
+                      placeItems: 'center',
+                      borderRadius: 4,
+                      border: `1px solid ${selected ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                      background: selected ? 'var(--cc-mint-soft)' : 'transparent',
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        width: 10,
+                        height: 10,
+                        borderRadius: shape === 'circle' ? '50%' : 2,
+                        background: selected ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                      }}
+                    />
+                  </button>
+                )
+              })}
+            </div>
+            {/* Brush size */}
+            <div className="flex items-center gap-1" role="group" aria-label="Brush size">
               {BRUSHES.map(size => (
                 <button
                   key={size}
@@ -234,7 +273,7 @@ export function Toolbar({
                       display: 'block',
                       width: Math.min(14, 3 + size),
                       height: Math.min(14, 3 + size),
-                      borderRadius: '50%',
+                      borderRadius: brushShape === 'square' ? 2 : '50%',
                       background: brush === size ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
                     }}
                   />
