@@ -148,6 +148,7 @@ export function CreatureBuilder({
   const [planId, setPlanId] = useState<PlanId>('walk')
   const [hop, setHop] = useState(0)
   const [roam, setRoam] = useState(1)
+  const [territorial, setTerritorial] = useState(0.5)
   const [dietId, setDietId] = useState<DietId>('plant')
   const [glows, setGlows] = useState(false)
   const [fireproof, setFireproof] = useState(false)
@@ -208,6 +209,7 @@ export function CreatureBuilder({
       setPlanId(planOf(from))
       setHop(from.move.hop)
       setRoam(from.traitDefaults?.roam ?? 1)
+      setTerritorial(from.traitDefaults?.territorial ?? 0.5)
       setDietId(dietOf(from))
       setGlows(from.glow > 0)
       setFireproof(from.body.immuneTo.includes('lava'))
@@ -216,6 +218,7 @@ export function CreatureBuilder({
       setPlanId('walk')
       setHop(0)
       setRoam(1)
+      setTerritorial(0.5)
       setDietId('plant')
       setGlows(false)
       setFireproof(false)
@@ -326,8 +329,8 @@ export function CreatureBuilder({
     if ((planId === 'walk' || planId === 'hop') && raw.move && typeof raw.move === 'object') {
       ;(raw.move as Record<string, unknown>).hop = hop
     }
-    // Propagate the roam slider into spawned creatures via traitDefaults.
-    raw.traitDefaults = { roam }
+    // Propagate the roam and territorial sliders into spawned creatures via traitDefaults.
+    raw.traitDefaults = { roam, territorial }
     return raw
   }
 
@@ -913,6 +916,58 @@ export function CreatureBuilder({
                             : roam < 1.5
                               ? 'Ranges farther than most before turning back home.'
                               : 'Barely tethered. Will roam very far from its starting point.'}
+                    </p>
+                  </div>
+                )}
+                {planId !== 'root' && (
+                  <div className="mt-3">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <label
+                        htmlFor="creature-builder-territorial"
+                        style={{ ...note, color: 'var(--cc-text-default)' }}
+                      >
+                        Territorial
+                      </label>
+                      <span
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 11,
+                          color: Math.abs(territorial - 0.5) > 0.1 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {territorial < 0.25
+                          ? 'Drifter'
+                          : territorial < 0.4
+                            ? 'Loose'
+                            : territorial < 0.6
+                              ? 'Typical'
+                              : territorial < 0.85
+                                ? 'Territorial'
+                                : 'Fiercely territorial'}
+                      </span>
+                    </div>
+                    <input
+                      id="creature-builder-territorial"
+                      type="range"
+                      min={0.1}
+                      max={1.4}
+                      step={0.05}
+                      value={territorial}
+                      onChange={e => setTerritorial(Number(e.target.value))}
+                      className="mt-1 w-full"
+                      style={{ accentColor: Math.abs(territorial - 0.5) > 0.1 ? 'var(--cc-mint)' : undefined, minHeight: 24 }}
+                    />
+                    <p style={{ ...note, marginTop: 2 }}>
+                      {territorial < 0.25
+                        ? 'Roams freely, no attachment to any spot.'
+                        : territorial < 0.4
+                          ? 'Wanders widely with only a loose sense of home.'
+                          : territorial < 0.6
+                            ? 'Returns to a general area but doesn\'t defend it.'
+                            : territorial < 0.85
+                              ? 'Defends a territory and chases rivals away.'
+                              : 'Fiercely guards its patch. Will pursue rivals very aggressively.'}
                     </p>
                   </div>
                 )}

@@ -415,6 +415,19 @@ export function tickCreatures(
     if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
     if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
+    // Home drift: territory gradually shifts toward wherever the creature
+    // has been thriving. A hungry creature stays anchored; a well-fed one
+    // slowly claims the area it's actually living in.
+    const hdt = c as { homeDriftTimer?: number }
+    if (hdt.homeDriftTimer === undefined) hdt.homeDriftTimer = 30
+    hdt.homeDriftTimer = Math.max(0, hdt.homeDriftTimer - dt)
+    if (hdt.homeDriftTimer <= 0) {
+      const wellFed = Math.max(0, 0.5 - c.hunger)  // 0 when hungry, up to 0.5 when stuffed
+      const pull = wellFed * 0.3                    // at most 15% shift per 30s tick
+      c.homeX += (c.x - c.homeX) * pull
+      c.homeY += (c.y - c.homeY) * pull
+      hdt.homeDriftTimer = 30
+    }
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
@@ -1592,9 +1605,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     if (c.drift !== 0 && unliveableAhead(w, c, bp, body, c.drift > 0 ? 1 : -1)) {
       c.drift = -c.drift
     }
-    // Pull toward home when far away. Roam multiplies the leash distance so
-    // wide-ranging creatures drift further before snapping back.
-    if ((c.traits.territorial ?? 0.5) > 0.2 && Math.abs(c.homeX - c.x) > 15 * (c.traits.roam ?? 1)) {
+    // Pull toward home when far away — but not when starving. A creature that
+    // has exhausted its local food must be free to range until it finds more.
+    // Roam multiplies the leash so wide-ranging creatures drift further.
+    if ((c.traits.territorial ?? 0.5) > 0.2 && c.hunger <= 0.6 &&
+        Math.abs(c.homeX - c.x) > 15 * (c.traits.roam ?? 1)) {
       c.drift = c.homeX > c.x ? 1 : -1
     }
     wantX = c.drift

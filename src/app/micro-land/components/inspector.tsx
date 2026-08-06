@@ -483,6 +483,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           <Stat label="Size" value={String(bp.size)} />
           <Stat label="Speed" value={inspected.speed.toFixed(1)} />
           <Stat label="Roam" value={`${(inspected.traits.roam ?? 1).toFixed(2)}×`} />
+          <Stat label="Territorial" value={`${(inspected.traits.territorial ?? 0.5).toFixed(2)}×`} />
           {/*
             The evidence under the sentence above. Only the traits that earned a
             phrase are listed, and only as a ratio against the species — "1.24×"
