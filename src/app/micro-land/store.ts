@@ -93,6 +93,8 @@ export interface Inspected {
   lifeLog: Array<{ elapsed: number; text: string }>
   packSize: number
   hostName: string | null
+  /** Rolling history of recent mood states, oldest first, max 40 entries. */
+  moodHistory: string[]
 }
 
 /** One column of the guide's record book — see `KindRecord`. */
