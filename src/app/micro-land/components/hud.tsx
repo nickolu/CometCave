@@ -169,6 +169,9 @@ export function Hud({
       ? SEASON_NAMES[Math.floor(((elapsed % tuning.seasonPeriod) / tuning.seasonPeriod) * 4) % 4]
       : null
 
+  /** One in-world day = 60 sim seconds. Day 1 starts at t=0. */
+  const dayNumber = Math.floor(elapsed / 60) + 1
+
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
@@ -354,6 +357,8 @@ export function Hud({
               <span style={{ color: 'var(--cc-text-muted)' }}>{seasonName}</span>
             </>
           )}
+          {' · '}
+          <span style={{ color: 'var(--cc-text-muted)' }}>Day {dayNumber}</span>
         </button>
 
         {/* Ecosystem health — informational */}
