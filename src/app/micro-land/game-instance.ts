@@ -2206,6 +2206,23 @@ export class GameInstance {
     // Inspecting is resolved on pointerdown; it never paints.
     if (tool.kind === 'inspect') return
 
+    if (tool.kind === 'corridor') {
+      if (!this.world.corridors) this.world.corridors = new Uint8Array(WORLD_W * WORLD_H)
+      const r = state.brush
+      const x0 = Math.max(0, Math.round(x) - r)
+      const x1 = Math.min(WORLD_W - 1, Math.round(x) + r)
+      const y0 = Math.max(0, Math.round(y) - r)
+      const y1 = Math.min(WORLD_H - 1, Math.round(y) + r)
+      for (let cy = y0; cy <= y1; cy++) {
+        for (let cx = x0; cx <= x1; cx++) {
+          const dx = cx - x, dy = cy - y
+          if (state.brushShape !== 'square' && dx * dx + dy * dy > r * r) continue
+          this.world.corridors[cy * WORLD_W + cx] = 1
+        }
+      }
+      return
+    }
+
     if (tool.kind === 'biome') {
       const biome = BIOME_BY_ID[tool.biomeId]
       if (biome) {

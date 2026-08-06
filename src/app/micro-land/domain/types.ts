@@ -781,6 +781,12 @@ export interface WorldState {
    * generative — painting, placing, summoning, changing theme — wakes it again.
    */
   dormant: boolean
+  /**
+   * Per-tile corridor markers, painted by the player. Migrating creatures
+   * prefer moving toward marked tiles over bare terrain scanning.
+   * Optional so old serialised worlds without it don't crash.
+   */
+  corridors?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------

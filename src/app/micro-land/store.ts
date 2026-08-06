@@ -48,6 +48,7 @@ export type Tool =
   | { kind: 'material'; material: MaterialId }
   | { kind: 'erase' }
   | { kind: 'biome'; biomeId: string }
+  | { kind: 'corridor' }
   | { kind: 'creature'; blueprintId: string }
   | { kind: 'inspect' }
 

@@ -498,6 +498,7 @@ export class Renderer {
     this.drawNests(w, vx, vw)
     this.drawTombstones(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
+    if (w.corridors) this.drawCorridors(w.corridors, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
@@ -733,6 +734,19 @@ export class Renderer {
         if (v < 0.5) continue
         ctx.globalAlpha = Math.min(0.5, v / peak)
         ctx.fillStyle = '#ff3200'
+        ctx.fillRect(x, y, 1, 1)
+      }
+    }
+    ctx.globalAlpha = 1
+  }
+
+  private drawCorridors(corridors: Uint8Array, vx: number, vw: number): void {
+    const ctx = this.wctx
+    for (let x = vx; x < vx + vw; x++) {
+      for (let y = 0; y < WORLD_H; y++) {
+        if (!corridors[y * WORLD_W + x]) continue
+        ctx.globalAlpha = 0.38
+        ctx.fillStyle = '#ffe066'
         ctx.fillRect(x, y, 1, 1)
       }
     }
