@@ -160,9 +160,10 @@ export function Hud({
   const steady = steadySeconds >= STEADY_SHOW_SECONDS ? formatDuration(steadySeconds) : null
 
   const ageLabel =
-    elapsed >= 1800 ? 'Ancient' :
-    elapsed >= 600  ? 'Established' :
-    'Young'
+    elapsed >= 3600 ? 'The Ancient Cave' :
+    elapsed >= 1200 ? 'The Great Struggle' :
+    elapsed >= 300  ? 'The Green Age' :
+    'The Young Age'
 
   const SEASON_NAMES = ['Spring', 'Summer', 'Autumn', 'Winter'] as const
   const seasonName =
@@ -345,7 +346,7 @@ export function Hud({
           {' · '}
           <span
             style={{
-              color: ageLabel === 'Young'
+              color: ageLabel === 'The Young Age'
                 ? 'var(--cc-text-muted)'
                 : 'var(--cc-gold)',
             }}
