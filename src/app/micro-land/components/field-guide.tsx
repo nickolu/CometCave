@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
-import { type CreatureBlueprint, type CreatureThumb, LIFE_KINDS } from '@/app/micro-land/domain/types'
+import { type CreatureBlueprint, type CreatureThumb, type Traits, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 
@@ -78,10 +78,13 @@ export function FieldGuide() {
   const foodWeb = useMicroLand(s => s.foodWeb)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
+  const compareId = useMicroLand(s => s.compareId)
+  const setCompareId = useMicroLand(s => s.setCompareId)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
   const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
+  const [compareTarget, setCompareTarget] = useState<string | null>(null)
 
   if (!open) return null
 
@@ -97,6 +100,22 @@ export function FieldGuide() {
 
   const hasRecords =
     records.elder !== null || records.bestSteadySeconds > 0 || records.bestGenerations > 1
+
+  const handleCompare = (bpId: string) => {
+    if (compareTarget !== null) {
+      // Already in comparison — clear it
+      setCompareTarget(null)
+      setCompareId(null)
+      return
+    }
+    if (compareId === null) {
+      setCompareId(bpId)
+    } else if (compareId === bpId) {
+      setCompareId(null)
+    } else {
+      setCompareTarget(bpId)
+    }
+  }
 
   return (
     <aside
@@ -191,7 +210,15 @@ export function FieldGuide() {
           <ChallengesPane onClose={() => setView('guide')} />
         )}
 
-        {view === 'guide' && hasRecords && (
+        {view === 'guide' && compareTarget !== null && compareId !== null && (
+          <ComparisonPanel
+            bpA={blueprints.find(b => b.id === compareId)!}
+            bpB={blueprints.find(b => b.id === compareTarget)!}
+            onDismiss={() => { setCompareTarget(null); setCompareId(null) }}
+          />
+        )}
+
+        {view === 'guide' && compareTarget === null && hasRecords && (
           <section
             className="flex flex-col gap-2.5 px-4 py-3"
             style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
@@ -263,7 +290,7 @@ export function FieldGuide() {
           </section>
         )}
 
-        {view === 'guide' && <>
+        {view === 'guide' && compareTarget === null && <>
 
         {namedCreatures.some(e => e.alive) && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
@@ -477,6 +504,8 @@ export function FieldGuide() {
               }}
               thumbs={populationItems.filter(t => t.blueprintId === bp.id)}
               onLocateCreature={requestLocateCreature}
+              onCompare={() => handleCompare(bp.id)}
+              isComparePin={compareId === bp.id}
             />
           ))}
         </ul>
@@ -769,6 +798,8 @@ function GuideEntry({
   onCopyCode,
   thumbs,
   onLocateCreature,
+  onCompare,
+  isComparePin,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -778,6 +809,8 @@ function GuideEntry({
   onCopyCode?: () => void
   thumbs?: CreatureThumb[]
   onLocateCreature?: (id: number) => void
+  onCompare?: () => void
+  isComparePin?: boolean
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -868,8 +901,30 @@ function GuideEntry({
               </span>
             )}
           </div>
-          {(onLocate || onCopyCode) && (
+          {(onLocate || onCopyCode || onCompare) && (
             <div className="flex shrink-0 items-center gap-1">
+              {onCompare && (
+                <button
+                  type="button"
+                  className="cc-btn"
+                  onClick={onCompare}
+                  aria-label={`Compare ${bp.name}`}
+                  title="Pin for comparison"
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    padding: '3px 7px',
+                    minHeight: 24,
+                    borderRadius: 4,
+                    border: isComparePin ? '1px solid var(--cc-gold)' : '1px solid var(--cc-mint-line)',
+                    color: isComparePin ? 'var(--cc-gold)' : 'var(--cc-text-muted)',
+                  }}
+                >
+                  ⇄
+                </button>
+              )}
               {onCopyCode && (
                 <button
                   type="button"
@@ -1253,5 +1308,110 @@ function RememberedEntry({ record }: { record: SpeciesRecord }) {
         </p>
       </div>
     </li>
+  )
+}
+
+function ComparisonPanel({
+  bpA,
+  bpB,
+  onDismiss,
+}: {
+  bpA: CreatureBlueprint
+  bpB: CreatureBlueprint
+  onDismiss: () => void
+}) {
+  // Traits to compare as numeric multipliers
+  const TRAIT_KEYS: Array<{ key: keyof Traits; label: string }> = [
+    { key: 'speed', label: 'Speed' },
+    { key: 'sight', label: 'Sight' },
+    { key: 'lifespan', label: 'Lifespan' },
+    { key: 'roam', label: 'Roam' },
+    { key: 'size', label: 'Size' },
+    { key: 'territorial', label: 'Territorial' },
+    { key: 'cooperation', label: 'Cooperation' },
+    { key: 'camouflage', label: 'Camouflage' },
+    { key: 'toxicity', label: 'Toxicity' },
+  ]
+
+  // Use traitDefaults if set by builder/workshop; otherwise neutral
+  const getTraitVal = (bp: CreatureBlueprint, key: keyof Traits): number => {
+    const v = bp.traitDefaults?.[key]
+    if (v !== undefined) return v as number
+    // Neutral defaults per trait
+    if (key === 'territorial') return 0.5
+    if (key === 'camouflage') return 0.2
+    if (key === 'toxicity') return 0
+    if (key === 'cooperation') return 0.3
+    return 1
+  }
+
+  const mono: React.CSSProperties = {
+    fontFamily: 'var(--cc-font-mono)',
+    fontSize: 10,
+    letterSpacing: 0.5,
+  }
+
+  return (
+    <div className="px-3 py-3">
+      <div className="flex items-center justify-between pb-2">
+        <span style={{ ...mono, fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--cc-text-muted)' }}>
+          Comparing
+        </span>
+        <button type="button" className="cc-btn" onClick={onDismiss}
+          style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase',
+            padding: '2px 8px', border: '1px solid var(--cc-panel-divider)', color: 'var(--cc-text-muted)' }}>
+          Dismiss
+        </button>
+      </div>
+
+      {/* Species name header */}
+      <div className="grid gap-1 pb-2" style={{ gridTemplateColumns: '90px 1fr 1fr' }}>
+        <div />
+        <div style={{ ...mono, color: 'var(--cc-mint)', textTransform: 'uppercase', fontSize: 9, letterSpacing: 1 }}>
+          {bpA.name}
+        </div>
+        <div style={{ ...mono, color: 'var(--cc-mint)', textTransform: 'uppercase', fontSize: 9, letterSpacing: 1 }}>
+          {bpB.name}
+        </div>
+      </div>
+
+      {/* Categorical rows */}
+      {[
+        { label: 'Moves', a: bpA.move.kind, b: bpB.move.kind },
+        { label: 'Diet', a: bpA.diet.eats.join(', '), b: bpB.diet.eats.join(', ') },
+        { label: 'Body size', a: String(bpA.size), b: String(bpB.size) },
+      ].map(row => (
+        <div key={row.label} className="grid gap-1 py-1" style={{ gridTemplateColumns: '90px 1fr 1fr', borderBottom: '1px solid var(--cc-panel-divider)' }}>
+          <span style={{ ...mono, fontSize: 9, color: 'var(--cc-text-muted)', opacity: 0.7, textTransform: 'uppercase', letterSpacing: 1 }}>{row.label}</span>
+          <span style={{ ...mono, color: row.a !== row.b ? 'var(--cc-text-default)' : 'var(--cc-text-muted)' }}>{row.a}</span>
+          <span style={{ ...mono, color: row.a !== row.b ? 'var(--cc-text-default)' : 'var(--cc-text-muted)' }}>{row.b}</span>
+        </div>
+      ))}
+
+      {/* Numeric trait rows */}
+      {TRAIT_KEYS.map(({ key, label }) => {
+        const a = getTraitVal(bpA, key)
+        const b = getTraitVal(bpB, key)
+        const diff = Math.abs(a - b)
+        const notable = diff > 0.1
+        return (
+          <div key={key} className="grid gap-1 py-1" style={{ gridTemplateColumns: '90px 1fr 1fr', borderBottom: '1px solid var(--cc-panel-divider)' }}>
+            <span style={{ ...mono, fontSize: 9, color: 'var(--cc-text-muted)', opacity: 0.7, textTransform: 'uppercase', letterSpacing: 1 }}>{label}</span>
+            <span style={{
+              ...mono,
+              color: notable ? (a > b ? 'var(--cc-mint)' : 'var(--cc-pink)') : 'var(--cc-text-muted)',
+            }}>
+              {a.toFixed(2)}{notable && a > b ? ' ▲' : notable && a < b ? ' ▼' : ''}
+            </span>
+            <span style={{
+              ...mono,
+              color: notable ? (b > a ? 'var(--cc-mint)' : 'var(--cc-pink)') : 'var(--cc-text-muted)',
+            }}>
+              {b.toFixed(2)}{notable && b > a ? ' ▲' : notable && b < a ? ' ▼' : ''}
+            </span>
+          </div>
+        )
+      })}
+    </div>
   )
 }
