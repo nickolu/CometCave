@@ -195,6 +195,14 @@ export interface PopulationSnapshot {
   counts: Record<string, number>
 }
 
+/** One sample in the trait evolution history for a species. */
+export interface TraitHistoryEntry {
+  elapsed: number
+  speed: number
+  sight: number
+  size: number
+}
+
 /** Average trait values for the species the player has focused in the graph. */
 export interface FocusedSpeciesStats {
   blueprintId: string
@@ -403,6 +411,14 @@ interface MicroLandState {
   /** Species pinned for comparison (first selection). */
   compareId: string | null
   setCompareId: (id: string | null) => void
+  /**
+   * Mean trait values sampled every 30s for each living species.
+   *
+   * Ring buffer — at most 60 entries per species. Pushed by game-instance.
+   * Sparse — species that went extinct no longer receive new samples.
+   */
+  traitHistory: Record<string, TraitHistoryEntry[]>
+  setTraitHistory: (h: Record<string, TraitHistoryEntry[]>) => void
   /** Blueprint id of the species clicked in the population graph — drives the detail panel. */
   graphFocusId: string | null
   setGraphFocusId: (id: string | null) => void
@@ -575,6 +591,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
+  traitHistory: {},
   graphFocusId: null,
   focusedSpeciesStats: null,
   replaySnapshots: null,
@@ -690,6 +707,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
   setCompareId: id => set({ compareId: id }),
+  setTraitHistory: h => set({ traitHistory: h }),
   setGraphFocusId: id => set({ graphFocusId: id, ...(id === null && { focusedSpeciesStats: null }) }),
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),

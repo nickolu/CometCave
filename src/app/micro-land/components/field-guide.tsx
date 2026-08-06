@@ -6,7 +6,7 @@ import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/type
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import { type CreatureBlueprint, type CreatureThumb, type Traits, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
-import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
+import { useMicroLand, type PopulationSnapshot, type TraitHistoryEntry } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
@@ -80,6 +80,7 @@ export function FieldGuide() {
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
   const setCompareId = useMicroLand(s => s.setCompareId)
+  const traitHistory = useMicroLand(s => s.traitHistory)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
@@ -506,6 +507,7 @@ export function FieldGuide() {
               onLocateCreature={requestLocateCreature}
               onCompare={() => handleCompare(bp.id)}
               isComparePin={compareId === bp.id}
+              traitHistory={traitHistory[bp.id]}
             />
           ))}
         </ul>
@@ -800,6 +802,7 @@ function GuideEntry({
   onLocateCreature,
   onCompare,
   isComparePin,
+  traitHistory,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -811,6 +814,7 @@ function GuideEntry({
   onLocateCreature?: (id: number) => void
   onCompare?: () => void
   isComparePin?: boolean
+  traitHistory?: TraitHistoryEntry[]
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -1022,6 +1026,14 @@ function GuideEntry({
             ) : null
           })()}
         </p>
+
+        {traitHistory && traitHistory.length >= 3 && (
+          <div style={{ marginTop: 8, display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+            <Sparkline data={traitHistory.map(e => e.speed)} label="speed" />
+            <Sparkline data={traitHistory.map(e => e.sight)} label="sight" />
+            <Sparkline data={traitHistory.map(e => e.size)} label="size" />
+          </div>
+        )}
       </div>
     </div>
   </li>
@@ -1253,6 +1265,56 @@ function PopulationGraph({
  * world, and repeating it for a creature that isn't here would be describing a
  * food chain that doesn't exist.
  */
+/**
+ * A tiny inline SVG line graph showing a trait's drift over the last N samples.
+ *
+ * Lines are mint when the trait has drifted > 0.15 from its first recorded value,
+ * dimmed otherwise — the point is to surface meaningful evolution, not noise.
+ */
+function Sparkline({
+  data,
+  label,
+}: {
+  data: number[]
+  label: string
+}) {
+  if (data.length < 3) return null
+  const min = Math.min(...data)
+  const max = Math.max(...data)
+  const range = max - min || 0.001
+  const W = 56
+  const H = 16
+  const points = data
+    .map((v, i) => `${(i / (data.length - 1)) * W},${H - ((v - min) / range) * (H - 2) - 1}`)
+    .join(' ')
+  const drifted = Math.abs(data[data.length - 1] - data[0]) > 0.15
+  const color = drifted ? 'var(--cc-mint)' : 'rgba(255,255,255,0.3)'
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+      <svg
+        width={W}
+        height={H}
+        style={{ overflow: 'visible' }}
+        aria-label={`${label} trend`}
+      >
+        <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} strokeLinejoin="round" />
+      </svg>
+      <span
+        style={{
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 8,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+          color: drifted ? 'var(--cc-mint)' : 'rgba(255,255,255,0.35)',
+        }}
+      >
+        {label}
+      </span>
+    </div>
+  )
+}
+
 function RememberedEntry({ record }: { record: SpeciesRecord }) {
   const bp = record.blueprint
   return (

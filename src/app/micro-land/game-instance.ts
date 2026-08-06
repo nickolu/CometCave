@@ -76,6 +76,7 @@ import {
   type FocusedSpeciesStats,
   type KindRecordsView,
   type PopulationEntry,
+  type TraitHistoryEntry,
   useMicroLand,
 } from './store'
 import { releaseActiveWorld, touchActiveWorld } from './worlds/shelf'
@@ -168,6 +169,10 @@ export class GameInstance {
   // --- time-lapse ---
   private snapshotHistory: Array<{ elapsed: number; creatures: Creature[] }> = []
   private lastSnapshotElapsed = -30
+
+  // --- trait evolution history ---
+  private traitHistory = new Map<string, TraitHistoryEntry[]>()
+  private lastTraitSample = -30
 
   // --- records ---
   /** Which land's records are being written to. See `landId()`. */
@@ -756,6 +761,29 @@ export class GameInstance {
     }))
     useMicroLand.getState().setNamedCreatures([...livingNamed, ...deadNamed])
 
+    // Trait evolution history — sample mean traits for each living species every 30s.
+    if (this.world.elapsed - this.lastTraitSample >= 30) {
+      this.lastTraitSample = this.world.elapsed
+      const liveIds = new Set(population.map(p => p.blueprintId))
+      for (const bpId of liveIds) {
+        const members = this.world.creatures.filter(c => c.blueprintId === bpId)
+        if (members.length === 0) continue
+        const avg = (f: (c: Creature) => number) =>
+          members.reduce((s, c) => s + f(c), 0) / members.length
+        const entry: TraitHistoryEntry = {
+          elapsed: this.world.elapsed,
+          speed: avg(c => (c.traits as Traits).speed ?? 1),
+          sight: avg(c => (c.traits as Traits).sight ?? 1),
+          size: avg(c => (c.traits as Traits).size ?? 1),
+        }
+        const prev = this.traitHistory.get(bpId) ?? []
+        this.traitHistory.set(bpId, [...prev.slice(-59), entry])
+      }
+      const flat: Record<string, TraitHistoryEntry[]> = {}
+      for (const [id, hist] of this.traitHistory) flat[id] = hist
+      useMicroLand.getState().setTraitHistory(flat)
+    }
+
     // A running world is different every tick, so there is no cheaper signal
     // than "time passed" to hang the autosave on. The shelf debounces it hard
     // and does nothing at all when no shelved world is open.
@@ -1123,6 +1151,9 @@ export class GameInstance {
     // eventually collide with an unrelated creature and freeze a record's date.
     this.kindElderIds.clear()
     this.lastArchiveSize = -1
+    this.traitHistory.clear()
+    this.lastTraitSample = -30
+    useMicroLand.getState().setTraitHistory({})
   }
 
   /** Copy the watched creature's live state out for the inspector panel. */
