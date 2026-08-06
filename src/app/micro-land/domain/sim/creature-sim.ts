@@ -1027,10 +1027,14 @@ function look(
           c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)
         }
         // Trait-level toxicity: venomous prey stuns the predator and cuts the meal.
+        // High immunity in the predator reduces both effects — this is the arms-race
+        // mechanic: toxic lineages and immune lineages co-evolve under mutual pressure.
         const preyToxicity = (other.traits as { toxicity?: number }).toxicity ?? 0
         if (preyToxicity > 0.5) {
-          c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5)
-          c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5)
+          const eatImmunity = (c.traits as { immunity?: number }).immunity ?? 0.2
+          const toxMod = Math.max(0, 1 - eatImmunity * 0.7)
+          c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5 * toxMod)
+          c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5 * toxMod)
         }
         events.push({
           kind: 'ate',

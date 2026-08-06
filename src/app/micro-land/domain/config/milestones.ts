@@ -29,6 +29,10 @@ export interface MilestoneContext {
   archived: number
   /** How many of those the player summoned. */
   summonedArchived: number
+  /** Highest toxicity trait value among all living creatures. */
+  maxToxicity: number
+  /** Highest immunity trait value among living meat-eaters. */
+  maxPredatorImmunity: number
 }
 
 export interface Milestone {
@@ -97,6 +101,11 @@ export const MILESTONES: Milestone[] = [
     id: 'guide-30',
     text: 'Thirty kinds. The field guide is getting heavy.',
     reached: c => c.archived >= 30,
+  },
+  {
+    id: 'toxicity-arms-race',
+    text: 'A venomous lineage and an immune one, locked in step.',
+    reached: c => c.maxToxicity >= 0.7 && c.maxPredatorImmunity >= 0.5,
   },
 ]
 
