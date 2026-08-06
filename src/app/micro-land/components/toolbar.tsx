@@ -72,7 +72,13 @@ function Chevron({ up }: { up: boolean }) {
   )
 }
 
-export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: string) => void }) {
+export function Toolbar({
+  onRemoveSpecies,
+  side = false,
+}: {
+  onRemoveSpecies: (blueprintId: string) => void
+  side?: boolean
+}) {
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
   const brush = useMicroLand(s => s.brush)
@@ -189,20 +195,32 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
    */
   const held = heldTool(tool, blueprints)
 
+  // When the field guide is open the toolbar moves to a left column so the
+  // layout reads as [ Tools | Canvas | Guide ] rather than overlapping it.
+  const Container: React.ElementType = side ? 'aside' : 'footer'
+
   return (
-    <footer
+    <Container
       className="flex flex-col gap-1.5 px-3 pb-3 pt-2"
-      style={{
-        borderTop: '1px solid var(--cc-panel-divider)',
-        background: 'linear-gradient(0deg, var(--cc-panel-grad-from), transparent)',
-      }}
+      style={
+        side
+          ? {
+              width: 240,
+              flexShrink: 0,
+              borderRight: '1px solid var(--cc-panel-divider)',
+              background: 'linear-gradient(270deg, var(--cc-panel-grad-from), transparent)',
+              overflowY: 'auto' as const,
+            }
+          : {
+              borderTop: '1px solid var(--cc-panel-divider)',
+              background: 'linear-gradient(0deg, var(--cc-panel-grad-from), transparent)',
+            }
+      }
     >
       {/*
         The handle, and — while the drawer is open — the brush sizes beside it.
-
-        Sharing one row rather than giving the handle a strip of its own is the
-        whole point: on the phone this exists for, a row spent on a control that
-        only reveals other controls is a row taken off the world.
+        Hidden in side-column mode: the panel is always visible there, so there
+        is nothing to fold away, and the canvas row provides the visual anchor.
 
         Nothing here animates. The canvas is sized by a ResizeObserver on its
         parent and `Renderer.resize` reallocates the backing store every call, so
@@ -210,7 +228,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
         length of the slide. Instant is also what `prefers-reduced-motion`
         wants, which makes the cheap answer the correct one twice over.
       */}
-      <div className="flex items-center gap-2">
+      {!side && <div className="flex items-center gap-2">
         {open && (
           <>
             <span style={label}>Ground</span>
@@ -312,9 +330,9 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
             </>
           )}
         </button>
-      </div>
+      </div>}
 
-      {open && (
+      {(open || side) && (
         <div id="micro-land-tools" className="flex flex-col gap-1.5">
           {/* Terrain palette — collapsed first row + accordion for the rest. */}
           <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
@@ -710,7 +728,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
           <div
             role="tabpanel"
             className="-mx-1 flex flex-wrap gap-1.5 overflow-y-auto px-1 pb-1"
-            style={{ maxHeight: '24vh' }}
+            style={{ maxHeight: side ? undefined : '24vh' }}
           >
             {/* Creatures still on their way hold their place at the front of the
             strip, right where the finished one lands.
@@ -846,7 +864,7 @@ export function Toolbar({ onRemoveSpecies }: { onRemoveSpecies: (blueprintId: st
           </div>
         </div>
       )}
-    </footer>
+    </Container>
   )
 }
 
