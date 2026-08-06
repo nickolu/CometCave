@@ -1135,7 +1135,13 @@ export class GameInstance {
 
     const c = this.world.creatures.find(x => x.id === this.inspectedId)
     if (!c) {
-      // It died while we were watching. Let go rather than freezing a corpse.
+      // It died while we were watching. Emit a life-story notice if it logged events.
+      const was = store.inspected
+      if (was && was.lifeLog.length > 0) {
+        const label = was.name ?? (this.world.blueprints[was.blueprintId]?.name ?? 'creature')
+        const events = was.lifeLog.map(e => e.text).join(' · ')
+        store.notify(`${label}: ${events}`)
+      }
       this.inspectedId = null
       this.following = false
       store.setInspected(null)
@@ -1177,6 +1183,7 @@ export class GameInstance {
       name: c.name,
       isElder: c.id === this.elderId,
       followingScent: (c as { followingScent?: boolean }).followingScent ?? false,
+      lifeLog: c.lifeLog ?? [],
     })
   }
 

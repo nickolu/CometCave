@@ -190,6 +190,13 @@ export interface SimEvent {
 
 let tickCount = 0
 
+/** Append a life event to a creature's log (max 20 entries). */
+function logLife(c: Creature, elapsed: number, text: string): void {
+  if (!c.lifeLog) c.lifeLog = []
+  if (c.lifeLog.length >= 20) return
+  c.lifeLog.push({ elapsed, text })
+}
+
 /**
  * The population sorted left to right, reused between ticks.
  *
@@ -646,11 +653,15 @@ export function tickCreatures(
             hatchIn: TUNING.eggHatchSeconds,
           })
           c.children++
+          if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
+          else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
           c.breedCooldown = TUNING.breedCooldown
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
+            if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
+            else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
@@ -669,7 +680,10 @@ export function tickCreatures(
             // replaces them, which is what makes "born here" and "put here" two
             // genuinely different things.
             child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+            child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             c.children++
+            if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
+            else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
             speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
             if (isPlant) {
               plantsAlive++
@@ -695,6 +709,8 @@ export function tickCreatures(
               payForChild(w, c, bp, bw, bh, helpers)
               if (mate) {
                 mate.children++
+                if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
+                else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
                 payForChild(w, mate, bp, bw, bh, helpers)
               }
             }
@@ -728,6 +744,7 @@ export function tickCreatures(
         if (hatchling) {
           hatchling.generation = egg.generation
           hatchling.traits = egg.traits
+          hatchling.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${egg.generation})` }]
           events.push({ kind: 'born', blueprintId: ebp.id, x: egg.x, y: egg.y })
         }
       }
@@ -909,6 +926,7 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
         if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
@@ -936,6 +954,7 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue * 0.6) // eggs are smaller meals
         c.starving = 0
         c.mealsEaten++
+        if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         c.mood = 'eat'
         c.targetId = null
         egg.hatchIn = -1 // mark for removal by the hatching block
@@ -1016,6 +1035,7 @@ function look(
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
         c.mealsEaten++
+        if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
         if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })

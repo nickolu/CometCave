@@ -471,6 +471,14 @@ export interface Creature {
   /** Lifetime tally of offspring. */
   children: number
   /**
+   * Key life events in chronological order (max 20).
+   *
+   * Optional so old serialised worlds without it don't crash — always guard
+   * reads with `?? []`. Written by tickCreatures at: birth, first meal,
+   * first offspring, and every 10th offspring.
+   */
+  lifeLog?: Array<{ elapsed: number; text: string }>
+  /**
    * How far back this creature's line goes. 1 was placed or seeded by hand or by
    * the world; anything higher was born here, to a parent one lower.
    *
