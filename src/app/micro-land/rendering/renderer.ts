@@ -528,6 +528,7 @@ export class Renderer {
     this.drawStatusDots(w, vx, vw)
     this.drawPollinatorAuras(w, vx, vw)
     this.drawGlowAuras(w, vx, vw)
+    this.drawEcholocationPulses(w, vx, vw)
     if (useMicroLand.getState().scentsEnabled) this.drawScentBeacons(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -1038,6 +1039,49 @@ export class Renderer {
       }
     }
     ctx.globalAlpha = 1
+  }
+
+  /**
+   * Expanding sonar-ring pulses for creatures with high echolocation trait.
+   *
+   * Each pulse is a thin ring that expands outward from the creature and fades.
+   * Multiple offset pulses per creature simulate the periodic ping of real sonar.
+   * Drawn on the world canvas in amber so it reads as "sound" vs. the cyan of bioluminescence.
+   */
+  private drawEcholocationPulses(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.wctx
+    const PULSE_PERIOD = 2.5   // seconds between pings
+    const MAX_RADIUS = 10       // max ring radius in tiles
+    ctx.strokeStyle = '#f59e0b' // amber-400 — warm sonar colour
+
+    for (const c of w.creatures) {
+      const echo = (c.traits as { echolocation?: number }).echolocation ?? 0
+      if (echo < 0.4) continue
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp) continue
+      const rows = bp.art.frames[0]
+      const bw = rows[0].length
+      const bh = rows.length
+      if (c.x + bw < vx || c.x > vx + vw) continue
+
+      const cx = c.x + bw / 2
+      const cy = c.y + bh / 2
+      const phase = (w.elapsed % PULSE_PERIOD) / PULSE_PERIOD
+      // Draw two staggered rings per creature so there is always one in motion.
+      for (const offset of [0, 0.5]) {
+        const t = (phase + offset) % 1  // 0..1, 0 = just emitted, 1 = fully expanded
+        const r = t * MAX_RADIUS * echo
+        const alpha = (1 - t) * echo * 0.6
+        if (r < 0.5 || alpha < 0.02) continue
+        ctx.globalAlpha = alpha
+        ctx.lineWidth = 0.6
+        ctx.beginPath()
+        ctx.arc(cx, cy, r, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+    }
+    ctx.globalAlpha = 1
+    ctx.lineWidth = 1
   }
 
   private drawScentBeacons(w: WorldState, vx: number, vw: number): void {

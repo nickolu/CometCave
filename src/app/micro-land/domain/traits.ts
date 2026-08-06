@@ -85,6 +85,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   reproductionCooldown: 1,
   thermophily: 0,
   clutchSize: 1,
+  echolocation: 0,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -132,7 +133,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'thermophily' | 'clutchSize') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'thermophily' | 'clutchSize' | 'echolocation') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -152,6 +153,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     thermophily: clamp(mix('thermophily') + nudge(rng, drift), -1, 1),
     clutchSize: clamp(mix('clutchSize') + nudge(rng, drift * 0.5), 1, 4),
+    echolocation: clamp(mix('echolocation') + nudge(rng, drift * 0.5), 0, 1),
   }
 }
 
@@ -289,6 +291,7 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.immunity ?? 0.2) <= 0.05) phrases.push('susceptible')
   if ((t.reproductionCooldown ?? 1) <= 1 - NOTABLE) phrases.push('breeds quickly')
   else if ((t.reproductionCooldown ?? 1) >= 1 + NOTABLE) phrases.push('breeds slowly')
+  if ((t.echolocation ?? 0) >= 0.6) phrases.push('navigates by sound')
   return phrases
 }
 
