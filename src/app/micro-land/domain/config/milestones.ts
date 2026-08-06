@@ -93,6 +93,16 @@ export const MILESTONES: Milestone[] = [
     reached: c => c.steadySeconds >= 600,
   },
   {
+    id: 'age-established',
+    text: 'This land has stood for ten minutes.',
+    reached: c => c.elapsed >= 600,
+  },
+  {
+    id: 'age-ancient',
+    text: 'Thirty minutes in one world. Something endures here.',
+    reached: c => c.elapsed >= 1800,
+  },
+  {
     id: 'gen-12',
     text: 'Twelve generations. None of the first are left.',
     reached: c => c.generations >= 12,
