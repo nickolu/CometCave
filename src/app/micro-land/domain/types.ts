@@ -463,6 +463,14 @@ export interface Traits {
    * Ignored for live-bearing species.
    */
   clutchSize: number
+  /**
+   * Ability to navigate by emitting sound pulses (0..1).
+   *
+   * Range 0..1. When ≥ 0.5, this creature bypasses light-dependent vision
+   * penalties (diurnal darkness, cave fog) and gains a proportional sight
+   * bonus — echolocation is not affected by the time of day or ambient light.
+   */
+  echolocation: number
 }
 
 /** One living thing in the world. */

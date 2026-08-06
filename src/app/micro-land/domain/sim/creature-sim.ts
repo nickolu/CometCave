@@ -1047,7 +1047,11 @@ function look(
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
   const inPhaseBonus = Math.max(0, (diurnal > 0 ? diurnal * (1 - nightFactor * 2) : -diurnal * (nightFactor * 2 - 1)) * 0.5)
-  const sight = sightOf(c, bp) * (1 - diurnalPenalty) * (1 + inPhaseBonus)
+  // Echolocation bypasses light-dependent penalties and adds a sight bonus.
+  const echo = (c.traits as { echolocation?: number }).echolocation ?? 0
+  const echoPenaltyBypass = echo >= 0.5 ? diurnalPenalty : 0
+  const echoBonus = Math.max(0, echo - 0.3) * 1.5
+  const sight = sightOf(c, bp) * (1 - diurnalPenalty + echoPenaltyBypass) * (1 + inPhaseBonus + echoBonus)
   const sight2 = sight * sight
 
   /**
