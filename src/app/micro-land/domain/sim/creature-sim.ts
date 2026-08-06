@@ -572,9 +572,27 @@ export function tickCreatures(
       }
     }
 
-    // --- senses ---------------------------------------------------------
-    if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events, rng)
+    // --- diurnal dormancy -----------------------------------------------
+    // Strongly nocturnal creatures (diurnal <= -0.7) go dormant in full daylight
+    // and strongly diurnal ones (diurnal >= 0.7) go dormant at night. Dormant
+    // creatures skip senses, rest in place, and neither hunt nor flee.
+    const diurnalTrait = (c.traits as { diurnal?: number }).diurnal ?? 0
+    const isDormant = TUNING.dayLengthSeconds > 0 && Math.abs(diurnalTrait) >= 0.7 && (() => {
+      const nightFactor = (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
+      // nightFactor: 0 = full day, 1 = full night
+      const offPhase = diurnalTrait > 0 ? nightFactor : (1 - nightFactor)
+      // offPhase: how far into the inactive period this creature is (0..1)
+      return offPhase < 0.25  // dormant when well into the active-opposite phase
+    })()
+
+    if (isDormant) {
+      c.mood = 'rest'
+      c.targetId = null
+    } else {
+      // --- senses ---------------------------------------------------------
+      if ((tickCount + c.id) % SENSE_EVERY === 0) {
+        look(w, c, bp, bw, bh, dead, events, rng)
+      }
     }
 
     // --- movement -------------------------------------------------------
@@ -1028,7 +1046,8 @@ function look(
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const sight = sightOf(c, bp) * (1 - diurnalPenalty)
+  const inPhaseBonus = Math.max(0, (diurnal > 0 ? diurnal * (1 - nightFactor * 2) : -diurnal * (nightFactor * 2 - 1)) * 0.5)
+  const sight = sightOf(c, bp) * (1 - diurnalPenalty) * (1 + inPhaseBonus)
   const sight2 = sight * sight
 
   /**
@@ -1971,8 +1990,13 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const nightFactor = TUNING.dayLengthSeconds > 0
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
+  // Off-phase penalty (0..0.5) — reduced speed during inactive period.
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty)
+  // Active-phase bonus: up to +50% speed during peak active hours.
+  // inPhase = 1 when fully in active period; 0 at transition; negative in off-phase.
+  const inPhase = diurnal > 0 ? diurnal * (1 - nightFactor * 2) : -diurnal * (nightFactor * 2 - 1)
+  const diurnalBonus = Math.max(0, inPhase * 0.5)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty) * (1 + diurnalBonus)
   const accel = speed * 6
 
   switch (bp.move.kind) {
