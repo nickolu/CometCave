@@ -498,6 +498,19 @@ interface MicroLandState {
   setReplayIndex: (i: number) => void
   exitReplay: () => void
 
+  /**
+   * Ghost mode: which extinct species to show as a translucent overlay.
+   * Null = no ghost active.
+   */
+  ghostBlueprintId: string | null
+  /**
+   * Last-known positions for each species at the moment it went extinct.
+   * Key = blueprintId. Written when the last creature of a species dies.
+   */
+  ghostPositions: Record<string, { x: number; y: number }[]>
+  setGhostBlueprintId: (id: string | null) => void
+  setGhostPositions: (blueprintId: string, positions: { x: number; y: number }[]) => void
+
   setTheme: (id: string) => void
   setTool: (tool: Tool) => void
   setBrush: (n: number) => void
@@ -674,6 +687,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   fogEnabled: true,
   heatmapBlueprintId: null,
   soundEnabled: false,
+  ghostBlueprintId: null,
+  ghostPositions: {},
 
   setTheme: themeId => set({ themeId }),
   setTool: tool => set({ tool }),
@@ -681,7 +696,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrushShape: brushShape => set({ brushShape }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, speciesFirstSeen: {}, historyLog: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, speciesFirstSeen: {}, historyLog: [], ghostBlueprintId: null, ghostPositions: {} }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -811,6 +826,10 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ replaySnapshots: snapshots, replayIndex: snapshots.length - 1, paused: true }),
   setReplayIndex: i => set({ replayIndex: i }),
   exitReplay: () => set({ replaySnapshots: null, replayIndex: 0, paused: false }),
+
+  setGhostBlueprintId: id => set({ ghostBlueprintId: id }),
+  setGhostPositions: (blueprintId, positions) =>
+    set(s => ({ ghostPositions: { ...s.ghostPositions, [blueprintId]: positions } })),
 
   notify: (text, action) =>
     set(s => ({

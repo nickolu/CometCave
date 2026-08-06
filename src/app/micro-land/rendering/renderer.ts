@@ -28,7 +28,7 @@
 import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
-import { lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
+import { NEUTRAL_TINT, lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { WorldState } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
@@ -529,6 +529,7 @@ export class Renderer {
     this.drawPollinatorAuras(w, vx, vw)
     this.drawGlowAuras(w, vx, vw)
     this.drawEcholocationPulses(w, vx, vw)
+    this.drawGhosts(w, vx, vw)
     if (useMicroLand.getState().scentsEnabled) this.drawScentBeacons(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
@@ -1082,6 +1083,29 @@ export class Renderer {
     }
     ctx.globalAlpha = 1
     ctx.lineWidth = 1
+  }
+
+  /** Ghost mode: draw extinct species' last positions as translucent spirits. */
+  private drawGhosts(w: WorldState, vx: number, vw: number): void {
+    const { ghostBlueprintId, ghostPositions } = useMicroLand.getState()
+    if (!ghostBlueprintId) return
+    const positions = ghostPositions[ghostBlueprintId]
+    if (!positions || positions.length === 0) return
+    const bp = w.blueprints[ghostBlueprintId]
+    if (!bp) return
+
+    const ctx = this.wctx
+    const sprites = getSprites(bp, NEUTRAL_TINT)
+    // Gentle drift: ghosts pulse in and out of visibility
+    const pulse = 0.15 + Math.sin(w.elapsed * 1.5) * 0.08
+    ctx.globalAlpha = pulse
+
+    for (const pos of positions) {
+      if (pos.x + sprites.width < vx || pos.x > vx + vw) continue
+      const frame = sprites.frames[0]
+      ctx.drawImage(frame, Math.round(pos.x), Math.round(pos.y), sprites.width, sprites.height)
+    }
+    ctx.globalAlpha = 1
   }
 
   private drawScentBeacons(w: WorldState, vx: number, vw: number): void {

@@ -138,6 +138,8 @@ export function FieldGuide() {
   const fogEnabled = useMicroLand(s => s.fogEnabled)
   const setFogEnabled = useMicroLand(s => s.setFogEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
+  const ghostBlueprintId = useMicroLand(s => s.ghostBlueprintId)
+  const setGhostBlueprintId = useMicroLand(s => s.setGhostBlueprintId)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
@@ -925,6 +927,25 @@ export function FieldGuide() {
                       ? `${formatDuration(ext.livedFor)} · reached gen ${ext.maxGeneration}`
                       : formatDuration(ext.livedFor)}
                   </span>
+                  <button
+                    onClick={() => setGhostBlueprintId(ghostBlueprintId === ext.blueprintId ? null : ext.blueprintId)}
+                    title={ghostBlueprintId === ext.blueprintId ? 'Hide ghost' : 'Show ghost'}
+                    style={{
+                      gridColumn: '1 / -1',
+                      marginTop: 3,
+                      padding: '2px 6px',
+                      fontSize: 10,
+                      fontFamily: 'var(--cc-font-mono)',
+                      background: ghostBlueprintId === ext.blueprintId ? 'rgba(147,197,253,0.2)' : 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(147,197,253,0.3)',
+                      borderRadius: 3,
+                      color: ghostBlueprintId === ext.blueprintId ? '#93c5fd' : 'var(--cc-text-muted)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                    }}
+                  >
+                    {ghostBlueprintId === ext.blueprintId ? '◈ haunting' : '◇ haunt'}
+                  </button>
                 </li>
               ))}
             </ul>

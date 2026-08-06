@@ -187,6 +187,10 @@ export class GameInstance {
   private traitHistory = new Map<string, TraitHistoryEntry[]>()
   private lastTraitSample = -30
 
+  // --- ghost mode ---
+  /** Last known positions for each species, refreshed every stats tick. */
+  private lastSpeciesPositions = new Map<string, { x: number; y: number }[]>()
+
   // --- records ---
   /** Which land's records are being written to. See `landId()`. */
   private currentLand = DEFAULT_THEME
@@ -706,6 +710,11 @@ export class GameInstance {
           livedFor,
           maxGeneration,
         })
+        // Save last-known positions so ghost mode can haunt this species.
+        useMicroLand.getState().setGhostPositions(
+          bp.id,
+          this.lastSpeciesPositions.get(bp.id) ?? [{ x: event.x, y: event.y }],
+        )
         // Drop a fossil where the last creature of this species died.
         this.world.fossils.push({
           id: this.world.nextFossilId++,
@@ -1084,6 +1093,15 @@ export class GameInstance {
       const flat: Record<string, number> = {}
       for (const [id, t] of this.speciesFirstSeen) flat[id] = t
       useMicroLand.getState().setSpeciesFirstSeen(flat)
+    }
+
+    // Track last-known positions for ghost mode — snapshot where each species is
+    // right now so we have something to draw if it goes extinct.
+    for (const entry of population) {
+      const positions = this.world.creatures
+        .filter(c => c.blueprintId === entry.blueprintId)
+        .map(c => ({ x: c.x, y: c.y }))
+      this.lastSpeciesPositions.set(entry.blueprintId, positions)
     }
 
     // Accumulate mutualism bond time for species pairs in active symbiosis.
