@@ -208,6 +208,13 @@ export class GameInstance {
   private kindElderIds = new Map<LifeKind, number>()
   /** World-clock time the current no-extinction streak began. */
   private steadySince = 0
+  /**
+   * Prey species to watch for trophic-cascade blooms after their predator went
+   * extinct. Maps blueprintId → creature count at the moment of extinction.
+   */
+  private trophicWatch = new Map<string, number>()
+  /** Flips to true permanently once a cascade bloom has been confirmed. */
+  private trophicCascadeDetected = false
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
   private lastArchiveSize = -1
 
@@ -608,6 +615,16 @@ export class GameInstance {
             notify(`Without ${bp.name}, the ${alivePrey[0]} have nothing to fear.`)
           } else if (alivePrey.length >= 2) {
             notify(`Without ${bp.name}, the ${alivePrey[0]} and ${alivePrey[1]} have nothing to fear.`)
+          }
+          // Record prey counts now for trophic-cascade bloom detection.
+          if (!this.trophicCascadeDetected) {
+            const counts = countByBlueprint(this.world)
+            for (const preyId of preyIds) {
+              const c = counts[preyId] ?? 0
+              if (c > 0 && !this.trophicWatch.has(preyId)) {
+                this.trophicWatch.set(preyId, c)
+              }
+            }
           }
         } else if (eatsPlants) {
           // A herbivore went extinct — surviving predators that ate it lose a food source.
@@ -1132,6 +1149,18 @@ export class GameInstance {
       .filter(cr => w.blueprints[cr.blueprintId]?.diet.eats.includes('meat'))
       .reduce((m, cr) => Math.max(m, (cr.traits as Traits).immunity ?? 0), 0)
 
+    // Trophic cascade bloom check: has any watched prey species doubled?
+    if (!this.trophicCascadeDetected && this.trophicWatch.size > 0) {
+      const counts = countByBlueprint(this.world)
+      for (const [preyId, countAtExtinction] of this.trophicWatch) {
+        const current = counts[preyId] ?? 0
+        if (current >= countAtExtinction * 2 && current >= 10) {
+          this.trophicCascadeDetected = true
+          break
+        }
+      }
+    }
+
     this.checkMilestones(archive, {
       elapsed: w.elapsed,
       steadySeconds,
@@ -1141,6 +1170,7 @@ export class GameInstance {
       total: w.creatures.length,
       maxToxicity,
       maxPredatorImmunity,
+      trophicCascadeDetected: this.trophicCascadeDetected,
     })
 
     this.syncArchive(archive)
