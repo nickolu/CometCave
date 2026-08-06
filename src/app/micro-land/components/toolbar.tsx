@@ -150,22 +150,18 @@ export function Toolbar({
   const [editing, setEditing] = useState(false)
   const [terrainExpanded, setTerrainExpanded] = useState(false)
 
-  // Jump to "Yours" the moment a summon is asked for, and again when it lands,
-  // so the thing you just invented — and the slot holding its place until then —
-  // is under your thumb instead of behind a tab you have to go and find.
-  const summonedCount = blueprints.filter(bp => bp.summoned).length
+  // Jump to "Yours" the moment a summon is asked for, so the loading slot is
+  // under your thumb. Once the creature lands it moves to its species tab —
+  // no need to redirect there, the user is already watching.
   const pendingCount = pending.length
-  const lastSummoned = useRef(summonedCount)
   const lastPending = useRef(pendingCount)
   useEffect(() => {
-    if (summonedCount > lastSummoned.current || pendingCount > lastPending.current) {
+    if (pendingCount > lastPending.current) {
       setGroup('yours')
-      // Arriving here because something new was made must never arrive armed.
       setEditing(false)
     }
-    lastSummoned.current = summonedCount
     lastPending.current = pendingCount
-  }, [summonedCount, pendingCount])
+  }, [pendingCount])
 
   // Whatever tab is showing has to exist — "Yours" disappears on a fresh world.
   const active = tabs.some(t => t.id === group) ? group : (tabs[0]?.id ?? 'plants')
@@ -180,7 +176,7 @@ export function Toolbar({
    * on the way out of the tab, so coming back later never finds a row that
    * silently deletes on tap.
    */
-  const canEdit = active === 'yours' && shown.length > 0
+  const canEdit = shown.some(bp => bp.summoned)
   const editOn = editing && canEdit
 
   /**

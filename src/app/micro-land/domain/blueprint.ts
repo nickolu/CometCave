@@ -679,15 +679,14 @@ export function lifeKind(bp: CreatureBlueprint): LifeKind {
  * Worked out from the blueprint rather than a hand-kept list, for the same
  * reason the field guide derives its "eats / eaten by": a creature summoned
  * thirty seconds ago has to file itself correctly, and a list in the UI would
- * silently drop every one of them into "other". The one exception is `yours`,
- * which wins over everything — after you summon a dragon you want to find the
- * dragon, not go hunting for which category it landed in.
+ * silently drop every one of them into "other". Summoned creatures land in
+ * their natural species tab; the pink border on the chip is how you tell
+ * them apart from the world's own natives.
  *
  * `roster` is every creature in the world; a hunter is defined as something
  * that can actually eat one of them, which is the same rule the simulation uses.
  */
 export function creatureGroup(bp: CreatureBlueprint, roster: CreatureBlueprint[]): CreatureGroup {
-  if (bp.summoned) return 'yours'
   if (isPlantLike(bp)) return 'plants'
   if (bp.size >= 5) return 'giants'
   if (bp.aura) return 'helpers'
