@@ -501,6 +501,8 @@ export function spawnCreature(
     fatigue: 0,
     carryingSeed: null,
     seedTimer: 0,
+    lastMealX: null,
+    lastMealY: null,
   }
   w.creatures.push(creature)
   return creature

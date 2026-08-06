@@ -1375,6 +1375,8 @@ export class GameInstance {
         return host ? (this.world.blueprints[host.blueprintId]?.name ?? null) : null
       })(),
       moodHistory: [...this.moodHistory],
+      lastMealX: c.lastMealX,
+      lastMealY: c.lastMealY,
     })
   }
 

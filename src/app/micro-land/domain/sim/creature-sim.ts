@@ -1036,6 +1036,8 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         car.decaySeconds = 0 // mark for removal at end of tick
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
         return
@@ -1060,6 +1062,8 @@ function look(
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         egg.hatchIn = -1 // mark for removal by the hatching block
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: eggBp.id, x: c.x, y: c.y })
         return
@@ -1156,6 +1160,8 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
+        c.lastMealX = Math.floor(c.x)
+        c.lastMealY = Math.floor(c.y)
         // Toxic plants slow the eater — the meal lands, but at a cost.
         if (obp.toxicity) {
           c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)

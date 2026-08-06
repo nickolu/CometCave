@@ -519,6 +519,19 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           {biography(inspected, bp, blueprints)}
         </div>
 
+        {inspected.lastMealX !== null && inspected.lastMealY !== null && (
+          <div
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 10,
+              color: 'var(--cc-text-muted)',
+              opacity: 0.7,
+            }}
+          >
+            Last ate at tile ({inspected.lastMealX}, {inspected.lastMealY})
+          </div>
+        )}
+
         <Meter
           label="Full"
           value={fullness}
