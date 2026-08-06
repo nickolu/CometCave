@@ -2,12 +2,117 @@
 
 import { useEffect, useRef } from 'react'
 
-import { useMicroLand } from '@/app/micro-land/store'
+import { type FocusedSpeciesStats, useMicroLand } from '@/app/micro-land/store'
 
 /** Picks the first opaque color from a blueprint's art palette. */
 function firstPaletteColor(palette: Record<string, string>): string {
   const vals = Object.values(palette)
   return vals.length > 0 ? vals[0] : '#888888'
+}
+
+function fmt(n: number, decimals = 2) {
+  return n.toFixed(decimals)
+}
+
+function StatRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+      <span style={{ color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--cc-font-mono)', fontSize: 9, letterSpacing: 1, textTransform: 'uppercase' }}>
+        {label}
+      </span>
+      <span style={{ color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--cc-font-mono)', fontSize: 10 }}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
+function SpeciesStatsPanel({
+  blueprintId,
+  stats,
+  color,
+  name,
+  currentCount,
+  peakCount,
+  maxGeneration,
+  onDismiss,
+}: {
+  blueprintId: string
+  stats: FocusedSpeciesStats | null
+  color: string
+  name: string
+  currentCount: number
+  peakCount: number
+  maxGeneration: number
+  onDismiss: () => void
+}) {
+  const requestLocate = useMicroLand(s => s.requestLocate)
+
+  return (
+    <div
+      style={{
+        borderTop: '1px solid rgba(255,255,255,0.1)',
+        padding: '10px 12px',
+        background: 'rgba(0,0,0,0.7)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 6,
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
+          <span style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255,255,255,0.8)' }}>
+            {name}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={onDismiss}
+          style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }}
+          aria-label="Close species panel"
+        >
+          ×
+        </button>
+      </div>
+
+      <StatRow label="alive" value={`${currentCount}`} />
+      <StatRow label="peak" value={`${peakCount}`} />
+      <StatRow label="max gen" value={`${maxGeneration}`} />
+
+      {stats && (
+        <>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '3px 0' }} />
+          <StatRow label="speed" value={fmt(stats.avgSpeed)} />
+          <StatRow label="sight" value={fmt(stats.avgSight)} />
+          <StatRow label="size" value={fmt(stats.avgSize)} />
+          {stats.avgToxicity > 0.05 && <StatRow label="toxicity" value={fmt(stats.avgToxicity)} />}
+          {stats.avgImmunity > 0.25 && <StatRow label="immunity" value={fmt(stats.avgImmunity)} />}
+        </>
+      )}
+
+      <button
+        type="button"
+        onClick={() => requestLocate(blueprintId)}
+        style={{
+          marginTop: 4,
+          fontFamily: 'var(--cc-font-mono)',
+          fontSize: 9,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          padding: '3px 8px',
+          border: '1px solid rgba(255,255,255,0.25)',
+          color: 'rgba(255,255,255,0.6)',
+          background: 'transparent',
+          cursor: 'pointer',
+          alignSelf: 'flex-start',
+        }}
+      >
+        Locate in world
+      </button>
+    </div>
+  )
 }
 
 export function PopulationGraph() {
@@ -16,7 +121,12 @@ export function PopulationGraph() {
   const history = useMicroLand(s => s.populationHistory)
   const population = useMicroLand(s => s.population)
   const blueprints = useMicroLand(s => s.blueprints)
+  const graphFocusId = useMicroLand(s => s.graphFocusId)
+  const setGraphFocusId = useMicroLand(s => s.setGraphFocusId)
+  const focusedSpeciesStats = useMicroLand(s => s.focusedSpeciesStats)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  const PAD = { top: 8, right: 10, bottom: 24, left: 34 }
 
   useEffect(() => {
     if (!graphOpen) return
@@ -27,7 +137,6 @@ export function PopulationGraph() {
 
     const W = canvas.width
     const H = canvas.height
-    const PAD = { top: 8, right: 10, bottom: 24, left: 34 }
     const chartW = W - PAD.left - PAD.right
     const chartH = H - PAD.top - PAD.bottom
 
@@ -93,12 +202,16 @@ export function PopulationGraph() {
       H - 6
     )
 
-    // Lines
+    // Lines — unfocused at reduced opacity, focused bright and thick
     for (const id of ids) {
       const color = colorOf(id)
+      const isFocused = id === graphFocusId
+      const hasFocus = graphFocusId !== null
+
       ctx.beginPath()
       ctx.strokeStyle = color
-      ctx.lineWidth = 1.5
+      ctx.lineWidth = isFocused ? 2.5 : 1.5
+      ctx.globalAlpha = hasFocus && !isFocused ? 0.3 : 1
       ctx.lineJoin = 'round'
       let first = true
       for (const snap of history) {
@@ -109,10 +222,65 @@ export function PopulationGraph() {
         else ctx.lineTo(x, y)
       }
       ctx.stroke()
+      ctx.globalAlpha = 1
     }
-  }, [graphOpen, history, population, blueprints])
+  }, [graphOpen, history, population, blueprints, graphFocusId])
+
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current
+    if (!canvas || history.length < 2) return
+
+    const rect = canvas.getBoundingClientRect()
+    const cx = e.clientX - rect.left
+    const cy = e.clientY - rect.top
+
+    const W = canvas.width
+    const H = canvas.height
+    const chartW = W - PAD.left - PAD.right
+    const chartH = H - PAD.top - PAD.bottom
+
+    const elMin = history[0].elapsed
+    const elMax = history[history.length - 1].elapsed
+    const elSpan = Math.max(1, elMax - elMin)
+
+    const allCounts = history.flatMap(s => Object.values(s.counts))
+    const maxCount = Math.max(1, ...allCounts)
+
+    const ids = [...new Set([
+      ...population.map(p => p.blueprintId),
+      ...history.flatMap(s => Object.keys(s.counts)),
+    ])]
+
+    // Find the history snapshot nearest to the click's X
+    const targetElapsed = elMin + ((cx - PAD.left) / chartW) * elSpan
+    let nearestSnap = history[0]
+    let minDt = Math.abs(history[0].elapsed - targetElapsed)
+    for (const snap of history) {
+      const dt = Math.abs(snap.elapsed - targetElapsed)
+      if (dt < minDt) { minDt = dt; nearestSnap = snap }
+    }
+
+    // Find the species whose line is closest to the click Y
+    let bestId: string | null = null
+    let bestDist = 24  // px threshold
+    for (const id of ids) {
+      const count = nearestSnap.counts[id] ?? 0
+      const lineY = PAD.top + chartH - (count / maxCount) * chartH
+      const dist = Math.abs(cy - lineY)
+      if (dist < bestDist) { bestDist = dist; bestId = id }
+    }
+
+    setGraphFocusId(bestId === graphFocusId ? null : bestId)
+  }
 
   if (!graphOpen) return null
+
+  const bpMap = new Map(blueprints.map(b => [b.id, b]))
+  const focusedBp = graphFocusId ? bpMap.get(graphFocusId) : undefined
+  const focusedEntry = graphFocusId ? population.find(p => p.blueprintId === graphFocusId) : undefined
+  const peakCount = graphFocusId
+    ? Math.max(0, ...history.map(s => s.counts[graphFocusId] ?? 0))
+    : 0
 
   return (
     <div
@@ -165,8 +333,21 @@ export function PopulationGraph() {
         ref={canvasRef}
         width={360}
         height={160}
-        style={{ display: 'block' }}
+        style={{ display: 'block', cursor: 'crosshair' }}
+        onClick={handleCanvasClick}
       />
+      {graphFocusId && focusedBp && (
+        <SpeciesStatsPanel
+          blueprintId={graphFocusId}
+          stats={focusedSpeciesStats?.blueprintId === graphFocusId ? focusedSpeciesStats : null}
+          color={firstPaletteColor(focusedBp.art.palette)}
+          name={focusedBp.name}
+          currentCount={focusedEntry?.count ?? 0}
+          peakCount={peakCount}
+          maxGeneration={focusedEntry?.maxGeneration ?? 1}
+          onDismiss={() => setGraphFocusId(null)}
+        />
+      )}
     </div>
   )
 }

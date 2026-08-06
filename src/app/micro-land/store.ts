@@ -193,6 +193,16 @@ export interface PopulationSnapshot {
   counts: Record<string, number>
 }
 
+/** Average trait values for the species the player has focused in the graph. */
+export interface FocusedSpeciesStats {
+  blueprintId: string
+  avgSpeed: number
+  avgSight: number
+  avgSize: number
+  avgToxicity: number
+  avgImmunity: number
+}
+
 export interface Notice {
   id: number
   text: string
@@ -391,6 +401,12 @@ interface MicroLandState {
   /** Species pinned for comparison (first selection). */
   compareId: string | null
   setCompareId: (id: string | null) => void
+  /** Blueprint id of the species clicked in the population graph — drives the detail panel. */
+  graphFocusId: string | null
+  setGraphFocusId: (id: string | null) => void
+  /** Live average traits for the focused species, pushed on each stats tick. */
+  focusedSpeciesStats: FocusedSpeciesStats | null
+  setFocusedSpeciesStats: (stats: FocusedSpeciesStats | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
   soundEnabled: boolean
@@ -557,6 +573,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
+  graphFocusId: null,
+  focusedSpeciesStats: null,
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
@@ -670,6 +688,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
   setCompareId: id => set({ compareId: id }),
+  setGraphFocusId: id => set({ graphFocusId: id, ...(id === null && { focusedSpeciesStats: null }) }),
+  setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 

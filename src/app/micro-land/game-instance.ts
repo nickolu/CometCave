@@ -73,6 +73,7 @@ import { forgetSprites } from './rendering/sprite-cache'
 import {
   type EarnedMilestone,
   type ExtinctionRecord,
+  type FocusedSpeciesStats,
   type KindRecordsView,
   type PopulationEntry,
   useMicroLand,
@@ -709,6 +710,28 @@ export class GameInstance {
 
     this.updateRecords(population)
     this.pushInspected()
+
+    // Average traits for the population-graph detail panel — only compute when a
+    // species is focused so this doesn't run on every stats tick in normal play.
+    const focusId = useMicroLand.getState().graphFocusId
+    if (focusId) {
+      const focused = this.world.creatures.filter(c => c.blueprintId === focusId)
+      if (focused.length > 0) {
+        const avg = (f: (c: Creature) => number) =>
+          focused.reduce((s, c) => s + f(c), 0) / focused.length
+        const stats: FocusedSpeciesStats = {
+          blueprintId: focusId,
+          avgSpeed: avg(c => (c.traits as Traits).speed ?? 1),
+          avgSight: avg(c => (c.traits as Traits).sight ?? 1),
+          avgSize: avg(c => (c.traits as Traits).size ?? 1),
+          avgToxicity: avg(c => (c.traits as Traits).toxicity ?? 0),
+          avgImmunity: avg(c => (c.traits as Traits).immunity ?? 0.2),
+        }
+        useMicroLand.getState().setFocusedSpeciesStats(stats)
+      } else {
+        useMicroLand.getState().setFocusedSpeciesStats(null)
+      }
+    }
 
     // Sync named creatures: living ones (current state) + dead ones (tombstones).
     const livingNamed: NamedCreatureEntry[] = this.world.creatures
