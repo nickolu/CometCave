@@ -82,6 +82,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   cooperation: 0.3,
   diurnal: 0,
   immunity: 0.2,
+  reproductionCooldown: 1,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -129,7 +130,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -146,6 +147,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     cooperation: clamp(mix('cooperation') + nudge(rng, drift), 0, 1),
     diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
     immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
+    reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
   }
 }
 
@@ -279,6 +281,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.diurnal ?? 0) <= -0.5) phrases.push('nocturnal')
   if ((t.immunity ?? 0.2) >= 0.6) phrases.push('disease-resistant')
   else if ((t.immunity ?? 0.2) <= 0.05) phrases.push('susceptible')
+  if ((t.reproductionCooldown ?? 1) <= 1 - NOTABLE) phrases.push('breeds quickly')
+  else if ((t.reproductionCooldown ?? 1) >= 1 + NOTABLE) phrases.push('breeds slowly')
   return phrases
 }
 
@@ -297,5 +301,6 @@ export function notableTraits(t: Traits): { label: string; value: number }[] {
     { label: 'Own lifespan', value: t.lifespan },
     { label: 'Own roam', value: t.roam ?? 1 },
     { label: 'Own size', value: t.size ?? 1 },
+    { label: 'Own breed cooldown', value: t.reproductionCooldown ?? 1 },
   ].filter(entry => Math.abs(entry.value - 1) >= NOTABLE)
 }

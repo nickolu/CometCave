@@ -672,7 +672,7 @@ export function tickCreatures(
           if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
           else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-          c.breedCooldown = TUNING.breedCooldown
+          c.breedCooldown = TUNING.breedCooldown * ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -1421,7 +1421,7 @@ function payForChild(
   helpers: Creature[]
 ): void {
   parent.hunger = Math.min(1, parent.hunger + TUNING.breedCost)
-  parent.breedCooldown = TUNING.breedCooldown / auraBoost(w, parent, bp, bw, bh, helpers)
+  parent.breedCooldown = TUNING.breedCooldown * ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) / auraBoost(w, parent, bp, bw, bh, helpers)
   if (parent.mood === 'mate') {
     parent.mood = 'wander'
     parent.targetId = null
