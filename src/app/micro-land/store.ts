@@ -32,7 +32,7 @@ export interface SpeedRunState {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { Creature, CreatureBlueprint, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
+import type { Creature, CreatureBlueprint, HistoryEntry, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
 
 /** One entry in the time-lapse snapshot ring buffer. */
@@ -337,6 +337,10 @@ interface MicroLandState {
 
   notices: Notice[]
 
+  /** Event history log, newest first, capped at 500 entries. */
+  historyLog: HistoryEntry[]
+  historyOpen: boolean
+
   /**
    * What the chronicle's storage layer is doing.
    *
@@ -445,11 +449,14 @@ interface MicroLandState {
   setWorldsOpen: (open: boolean) => void
   notify: (text: string, action?: Notice['action']) => void
   dismissNotice: (id: number) => void
+  addHistoryEntry: (entry: Omit<HistoryEntry, 'id'>) => void
+  setHistoryOpen: (open: boolean) => void
 }
 
 let noticeId = 0
 let pendingId = 0
 let locateSerial = 0
+let historyEntryId = 0
 
 const TOOLBAR_KEY = 'micro-land:toolbar:v1'
 
@@ -522,6 +529,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   milestones: [],
 
   notices: [],
+  historyLog: [],
+  historyOpen: false,
   saveState: { kind: 'idle' },
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   worldsOpen: false,
@@ -537,7 +546,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrush: brush => set({ brush }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {} }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, historyLog: [] }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -650,4 +659,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
       notices: [...s.notices, { id: ++noticeId, text, action }].slice(-3),
     })),
   dismissNotice: id => set(s => ({ notices: s.notices.filter(n => n.id !== id) })),
+  addHistoryEntry: entry =>
+    set(s => ({
+      historyLog: [{ ...entry, id: ++historyEntryId }, ...s.historyLog].slice(0, 500),
+    })),
+  setHistoryOpen: historyOpen => set({ historyOpen }),
 }))

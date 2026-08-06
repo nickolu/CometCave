@@ -174,7 +174,7 @@ export interface SimEvent {
    * hunter's side and carries who it caught. Both fire for a single kill — the
    * UI wants the hunter's framing, the extinction check wants the victim's.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -184,6 +184,8 @@ export interface SimEvent {
   ageSeconds?: number
   /** Only set on death events: how many children the creature had. */
   children?: number
+  /** Only set on death events: the player-given name of the creature that died, if any. */
+  creatureName?: string | null
 }
 
 let tickCount = 0
@@ -425,7 +427,7 @@ export function tickCreatures(
         c.sick = 0
         const immunity = (c.traits as { immunity?: number }).immunity ?? 0.2
         if (rng() >= immunity * 0.8 + 0.2) {
-          kill(w, c, bp, dead, events, 'starved')
+          kill(w, c, bp, dead, events, 'diseased')
           continue
         }
       }
@@ -1135,6 +1137,9 @@ function look(
       if (gdx * gdx + gdy * gdy > spreadReach * spreadReach) continue
       const otherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
       if (rng() < 0.05 * (1 - otherImmunity)) {
+        if (!other.sick) {
+          events.push({ kind: 'sick', blueprintId: other.blueprintId, x: other.x, y: other.y })
+        }
         other.sick = 20
       }
     }
@@ -1981,7 +1986,7 @@ function kill(
   if (bp.death.becomes) {
     setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])
   }
-  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children })
+  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children, creatureName: c.name ?? null })
 }
 
 // ---------------------------------------------------------------------------

@@ -701,3 +701,29 @@ export interface WorldState {
    */
   dormant: boolean
 }
+
+// ---------------------------------------------------------------------------
+// Event history
+// ---------------------------------------------------------------------------
+
+export type HistoryEventKind = 'born' | 'died' | 'ate' | 'named' | 'plant' | 'sick'
+
+export interface HistoryEntry {
+  id: number
+  /** Simulation elapsed seconds at the time of the event. */
+  simTime: number
+  kind: HistoryEventKind
+  /** Blueprint id of the primary creature involved. */
+  blueprintId: string
+  /** Display name of the species. */
+  speciesName: string
+  /** Name of the individual creature, if it had one. */
+  creatureName: string | null
+  /** Human-readable one-liner. */
+  detail: string
+  /** Death cause — only present when kind === 'died'. */
+  cause?: 'starved' | 'eaten' | 'drowned' | 'burned' | 'aged' | 'diseased'
+  /** Blueprint id of the killer species — only for cause === 'eaten'. */
+  killerBlueprintId?: string
+  killerSpeciesName?: string
+}

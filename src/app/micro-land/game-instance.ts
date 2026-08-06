@@ -58,6 +58,7 @@ import { TUNING } from './domain/tuning'
 import {
   type Creature,
   type CreatureBlueprint,
+  type HistoryEntry,
   LIFE_KINDS,
   type LifeKind,
   type NamedCreatureEntry,
@@ -470,7 +471,7 @@ export class GameInstance {
     }
 
     for (const event of events) {
-      if (event.kind !== 'eaten' && event.kind !== 'starved') continue
+      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased') continue
       const bp = this.world.blueprints[event.blueprintId]
       if (!bp) continue
       // Was that the last one? Only interesting for species we'd seen alive.
@@ -496,7 +497,12 @@ export class GameInstance {
       // — it is the moment the world has to bail the player out via seed rain.
       this.breakSteadyStreak()
       notify(
-        event.kind === 'starved' ? `The last ${bp.name} starved.` : `The last ${bp.name} was eaten.`
+        event.kind === 'starved' ? `The last ${bp.name} starved.`
+        : event.kind === 'diseased' ? `The last ${bp.name} died of disease.`
+        : event.kind === 'drowned' ? `The last ${bp.name} drowned.`
+        : event.kind === 'burned' ? `The last ${bp.name} burned.`
+        : event.kind === 'aged' ? `The last ${bp.name} lived to old age.`
+        : `The last ${bp.name} was eaten.`
       )
       if (isSoundEnabled()) playExtinction()
     }
@@ -508,7 +514,7 @@ export class GameInstance {
     let mostProlificChildren = worldStats.mostProlificChildren
     for (const event of events) {
       if (event.kind === 'born') { totalBorn++ }
-      else if (event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' || event.kind === 'burned' || event.kind === 'aged') {
+      else if (event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' || event.kind === 'burned' || event.kind === 'aged' || event.kind === 'diseased') {
         totalDeaths++
         if ((event.ageSeconds ?? 0) > longestLived) longestLived = event.ageSeconds ?? 0
         if ((event.children ?? 0) > mostProlificChildren) {
@@ -535,9 +541,101 @@ export class GameInstance {
       let hadBirth = false, hadDeath = false
       for (const ev of events) {
         if (ev.kind === 'born' && !hadBirth) { playBorn(); hadBirth = true }
-        if ((ev.kind === 'aged' || ev.kind === 'starved' || ev.kind === 'drowned' || ev.kind === 'burned') && !hadDeath) {
+        if ((ev.kind === 'aged' || ev.kind === 'starved' || ev.kind === 'drowned' || ev.kind === 'burned' || ev.kind === 'diseased') && !hadDeath) {
           playDeath(); hadDeath = true
         }
+      }
+    }
+
+    // Push entries to the event history log.
+    const { addHistoryEntry } = useMicroLand.getState()
+    const simTime = this.world.elapsed
+    const bps = this.world.blueprints
+
+    for (const event of events) {
+      const bp = bps[event.blueprintId]
+      if (!bp) continue
+      const speciesName = bp.name
+      const isPlant = bp.move.kind === 'root'
+
+      if (event.kind === 'born') {
+        if (isPlant) {
+          addHistoryEntry({
+            simTime,
+            kind: 'plant',
+            blueprintId: event.blueprintId,
+            speciesName,
+            creatureName: null,
+            detail: `A ${speciesName} spread`,
+          })
+        } else {
+          addHistoryEntry({
+            simTime,
+            kind: 'born',
+            blueprintId: event.blueprintId,
+            speciesName,
+            creatureName: null,
+            detail: `A ${speciesName} was born`,
+          })
+        }
+      } else if (event.kind === 'ate') {
+        if (!event.victimId) continue
+        const victimBp = bps[event.victimId]
+        if (!victimBp || victimBp.move.kind === 'root') continue
+        addHistoryEntry({
+          simTime,
+          kind: 'ate',
+          blueprintId: event.blueprintId,
+          speciesName,
+          creatureName: null,
+          detail: `A ${speciesName} ate a ${victimBp.name}`,
+          killerBlueprintId: event.blueprintId,
+          killerSpeciesName: speciesName,
+        })
+      } else if (
+        event.kind === 'eaten' ||
+        event.kind === 'starved' ||
+        event.kind === 'drowned' ||
+        event.kind === 'burned' ||
+        event.kind === 'aged' ||
+        event.kind === 'diseased'
+      ) {
+        const creatureName = event.creatureName ?? null
+        const prefix = creatureName ? `${creatureName} the ${speciesName}` : `A ${speciesName}`
+        let detail: string
+        if (event.kind === 'aged') {
+          const age = event.ageSeconds != null ? ` (${Math.round(event.ageSeconds)}s)` : ''
+          detail = `${prefix} lived to old age${age}`
+        } else if (event.kind === 'starved') {
+          detail = `${prefix} starved`
+        } else if (event.kind === 'eaten') {
+          detail = `${prefix} was eaten`
+        } else if (event.kind === 'drowned') {
+          detail = `${prefix} drowned`
+        } else if (event.kind === 'burned') {
+          detail = `${prefix} burned`
+        } else {
+          detail = `${prefix} died of disease`
+        }
+        const entry: Omit<HistoryEntry, 'id'> = {
+          simTime,
+          kind: 'died',
+          blueprintId: event.blueprintId,
+          speciesName,
+          creatureName,
+          detail,
+          cause: event.kind,
+        }
+        addHistoryEntry(entry)
+      } else if (event.kind === 'sick') {
+        addHistoryEntry({
+          simTime,
+          kind: 'sick',
+          blueprintId: event.blueprintId,
+          speciesName,
+          creatureName: null,
+          detail: `A ${speciesName} caught disease`,
+        })
       }
     }
   }
@@ -900,6 +998,18 @@ export class GameInstance {
           const column = record.byKind[kind]
           if (column.elder) column.elder.name = trimmed
         }
+      })
+    }
+    // Record the naming in the history log.
+    const bp = this.world.blueprints[c.blueprintId]
+    if (bp) {
+      useMicroLand.getState().addHistoryEntry({
+        simTime: this.world.elapsed,
+        kind: 'named',
+        blueprintId: c.blueprintId,
+        speciesName: bp.name,
+        creatureName: trimmed,
+        detail: `"${trimmed}" — a ${bp.name} is named`,
       })
     }
     this.pushStats()
