@@ -121,6 +121,7 @@ export function Hud({
   const setGuideOpen = useMicroLand(s => s.setGuideOpen)
   const summonedLand = useMicroLand(s => s.summonedLand)
   const steadySeconds = useMicroLand(s => s.records.steadySeconds)
+  const elapsed = useMicroLand(s => s.elapsed)
   const setWorldsOpen = useMicroLand(s => s.setWorldsOpen)
   const activeWorldId = useMicroLand(s => s.shelf.activeId)
   const settingsOpen = useMicroLand(s => s.settingsOpen)
@@ -155,6 +156,11 @@ export function Hud({
   // Below the threshold this would flicker on and off through the early churn,
   // which reads as a broken counter rather than as a streak.
   const steady = steadySeconds >= STEADY_SHOW_SECONDS ? formatDuration(steadySeconds) : null
+
+  const ageLabel =
+    elapsed >= 1800 ? 'Ancient' :
+    elapsed >= 600  ? 'Established' :
+    'Young'
 
   const [overflowOpen, setOverflowOpen] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
@@ -315,7 +321,7 @@ export function Hud({
           className="cc-btn"
           onClick={() => setGuideOpen(true)}
           style={chipBase}
-          title={steady ? 'How long this land has gone without losing a species' : 'Open the field guide'}
+          title="Open the field guide"
         >
           {species} kinds · {total} alive
           {steady && (
@@ -324,6 +330,16 @@ export function Hud({
               <span style={{ color: 'var(--cc-gold)' }}>{steady} steady</span>
             </>
           )}
+          {' · '}
+          <span
+            style={{
+              color: ageLabel === 'Young'
+                ? 'var(--cc-text-muted)'
+                : 'var(--cc-gold)',
+            }}
+          >
+            {ageLabel}
+          </span>
         </button>
 
         {/* Ecosystem health — informational */}
