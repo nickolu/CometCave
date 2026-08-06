@@ -600,6 +600,7 @@ export class Renderer {
 
     this.drawMinimap(w, theme, vx)
     this.drawNameLabels(w, vx, vw, elderId)
+    this.drawThoughtBubbles(w, vx, vw)
     this.drawTombstoneLabels(w, vx, vw)
   }
 
@@ -1352,6 +1353,54 @@ export class Renderer {
    * regardless of zoom. Only named creatures get a tag, which keeps the world
    * uncluttered — a name is notable, not a default label.
    */
+  /**
+   * Tiny colour-coded state labels above creatures in notable moods.
+   * Idle wandering shows nothing; only hunt / flee / eat / mate / sick are shown.
+   */
+  private drawThoughtBubbles(w: WorldState, vx: number, vw: number): void {
+    const ctx = this.ctx
+    const scale = this.scale
+    const offsetX = this.offsetX
+    const offsetY = this.offsetY
+    const viewTop = this.viewTop()
+
+    const BUBBLE: Record<string, { label: string; color: string }> = {
+      hunt:  { label: 'hunt',  color: '#f59e0b' },
+      flee:  { label: 'run!',  color: '#f87171' },
+      eat:   { label: 'eat',   color: '#4ade80' },
+      mate:  { label: 'love',  color: '#f9a8d4' },
+    }
+
+    ctx.font = '8px monospace'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'bottom'
+
+    for (const c of w.creatures) {
+      // Skip moods that don't warrant a label.
+      const sick = (c as { sick?: number }).sick ?? 0
+      const bubble = BUBBLE[c.mood] ?? (sick > 0 ? { label: 'sick', color: '#a78bfa' } : null)
+      if (!bubble) continue
+
+      const bp = w.blueprints[c.blueprintId]
+      if (!bp) continue
+      if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
+
+      const bw = bp.art.frames[0][0].length
+      const dx = (c.x + bw / 2 - vx) * scale + offsetX
+      const dy = (c.y - viewTop) * scale + offsetY - 4
+
+      ctx.globalAlpha = 0.85
+      ctx.fillStyle = 'rgba(0,0,0,0.6)'
+      ctx.fillText(bubble.label, dx + 1, dy + 1)
+      ctx.fillStyle = bubble.color
+      ctx.fillText(bubble.label, dx, dy)
+    }
+
+    ctx.globalAlpha = 1
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+  }
+
   private drawNameLabels(w: WorldState, vx: number, vw: number, elderId: number | null): void {
     const elder = elderId !== null ? w.creatures.find(x => x.id === elderId) ?? null : null
     const namedCreatures = w.creatures.filter(c => c.name !== null)
