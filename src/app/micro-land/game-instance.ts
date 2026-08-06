@@ -1230,7 +1230,7 @@ export class GameInstance {
       // This one's lifespan, not its species' — a long-lived creature showing a
       // "life left" meter drawn against the blueprint would sit at empty for the
       // whole of the extra life its line earned it.
-      lifespanSeconds: lifespanOf(c, bp),
+      lifespanSeconds: lifespanOf(c, bp) * TUNING.lifespanScale,
       mealsEaten: c.mealsEaten,
       children: c.children,
       distress: c.distress,

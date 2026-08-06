@@ -422,3 +422,10 @@ export const NEST_BUILD_TIME = 30
  * enough that an abandoned burrow eventually disappears.
  */
 export const NEST_DECAY_SECONDS = 120
+
+/**
+ * Global lifespan multiplier applied on top of each species' base lifespanSeconds
+ * and each creature's inherited lifespan trait. 2 = twice as long-lived as the
+ * per-species defaults, which were tuned at 1× for a faster-paced world.
+ */
+export const LIFESPAN_SCALE = 2

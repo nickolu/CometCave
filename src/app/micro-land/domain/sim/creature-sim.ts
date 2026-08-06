@@ -249,7 +249,7 @@ function compareX(a: Creature, b: Creature): number {
  * breed. See `lifespanOf`.
  */
 function breedingAge(c: Creature, bp: CreatureBlueprint): number {
-  return bp.move.kind === 'root' ? TUNING.plantMaturity : lifespanOf(c, bp) * 0.2
+  return bp.move.kind === 'root' ? TUNING.plantMaturity : lifespanOf(c, bp) * TUNING.lifespanScale * 0.2
 }
 
 /**
@@ -512,7 +512,7 @@ export function tickCreatures(
     }
 
     // --- old age --------------------------------------------------------
-    if (c.ageSeconds >= lifespanOf(c, bp)) {
+    if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
       continue
     }
