@@ -276,6 +276,8 @@ interface MicroLandState {
   blueprints: CreatureBlueprint[]
   population: PopulationEntry[]
   totalCreatures: number
+  /** Number of distinct non-air material types currently present in the world tiles. */
+  activeMaterials: number
   elapsed: number
   /** Rolling history for the population graph. Cleared on world load. */
   populationHistory: PopulationSnapshot[]
@@ -477,6 +479,7 @@ interface MicroLandState {
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number, births?: Record<string, number>, deaths?: Record<string, number>) => void
+  setActiveMaterials: (n: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
   updateWorldStats: (patch: Partial<WorldStats>) => void
@@ -578,6 +581,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   blueprints: [],
   population: [],
   totalCreatures: 0,
+  activeMaterials: 0,
   elapsed: 0,
   populationHistory: [],
   extinctions: [],
@@ -748,6 +752,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setPopulationItems: items => set({ populationItems: items }),
+  setActiveMaterials: n => set({ activeMaterials: n }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
