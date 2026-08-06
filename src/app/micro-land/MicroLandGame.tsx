@@ -101,6 +101,7 @@ export function MicroLandGame() {
       unsubscribe = useMicroLand.subscribe((state, previous) => {
         if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
         if (state.reshuffleToken !== previous.reshuffleToken) game?.reshuffle()
+        if (state.viewScale !== previous.viewScale) game?.setViewScale(state.viewScale)
         if (state.locateRequest !== previous.locateRequest && state.locateRequest && game) {
           const found = game.locateSpecies(state.locateRequest.blueprintId)
           if (!found) {

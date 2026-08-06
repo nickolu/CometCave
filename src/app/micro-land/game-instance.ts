@@ -1909,6 +1909,14 @@ export class GameInstance {
     if (this.renderer.resetZoom()) this.pushCamera()
   }
 
+  setViewScale(preset: 'wide' | 'standard' | 'close'): void {
+    const target =
+      preset === 'wide' ? this.renderer.minZoomLevel :
+      preset === 'close' ? 2 :
+      1
+    if (this.renderer.setZoom(target)) this.pushCamera()
+  }
+
   /**
    * Tell the UI what the camera can currently do.
    *
