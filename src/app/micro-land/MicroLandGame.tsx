@@ -109,6 +109,14 @@ export function MicroLandGame() {
             useMicroLand.getState().notify(`No ${name} alive right now`)
           }
         }
+        if (
+          state.locateCreatureRequest !== previous.locateCreatureRequest &&
+          state.locateCreatureRequest &&
+          game
+        ) {
+          const found = game.inspectCreature(state.locateCreatureRequest.id)
+          if (!found) useMicroLand.getState().notify('That creature is no longer with us')
+        }
         if (state.workshopSpawnRequest !== previous.workshopSpawnRequest && state.workshopSpawnRequest && game) {
           // Deferred: workshopIntroduce triggers many sequential set() calls
           // (setBlueprints, setStats, notify, clearWorkshopSpawnRequest…). Calling
@@ -343,20 +351,25 @@ export function MicroLandGame() {
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
       <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
 
-      <div className="relative min-h-0 flex-1">
-        <canvas
-          ref={canvasRef}
-          // Focusable so the arrow keys reach it. The world is wider than the
-          // screen, and a keyboard has to be able to get to the rest of it.
-          tabIndex={0}
-          className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
-          style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
-          aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world, plus and minus move closer and further away."
-        />
-        <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
-        <ZoomControls onZoom={handleZoom} />
-        <Notices />
-        <Inspector onName={handleName} />
+      {/* Canvas + Field Guide sidebar share a flex row so the sidebar pushes
+          the canvas narrower rather than overlaying it. */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        <div className="relative min-w-0 flex-1">
+          <canvas
+            ref={canvasRef}
+            // Focusable so the arrow keys reach it. The world is wider than the
+            // screen, and a keyboard has to be able to get to the rest of it.
+            tabIndex={0}
+            className="absolute inset-0 block h-full w-full touch-none focus:outline-none"
+            style={{ imageRendering: 'pixelated', cursor: 'crosshair' }}
+            aria-label="Micro Land world. Tap to place things, drag a creature to pick it up and throw it. Arrow keys scroll across the world, plus and minus move closer and further away."
+          />
+          <PanControls onHold={handleHoldPan} onNudge={handleNudgePan} />
+          <ZoomControls onZoom={handleZoom} />
+          <Notices />
+          <Inspector onName={handleName} />
+        </div>
+        <FieldGuide />
       </div>
 
       <Toolbar onRemoveSpecies={handleRemoveSpecies} />
@@ -366,7 +379,6 @@ export function MicroLandGame() {
       <BlueprintWorkshop />
       <SpeedRunOverlay />
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
-      <FieldGuide />
       <SettingsPanel />
       <HistoryPanel />
       <ReplayBar />
