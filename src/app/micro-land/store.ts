@@ -70,6 +70,8 @@ export interface Inspected {
   /** Seconds spent somewhere it can't survive; 0 when it's fine. */
   distress: number
   starving: number
+  /** Seconds of disease remaining; 0 when healthy. */
+  sick: number
   speed: number
   inWater: boolean
   grounded: boolean

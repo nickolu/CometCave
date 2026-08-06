@@ -936,11 +936,11 @@ export class Renderer {
         }
       }
 
-      // Disease indicator: semi-transparent green-yellow wash that pulses.
+      // Disease indicator: semi-transparent purple wash that pulses.
       if ((c as { sick?: number }).sick) {
         const sickPulse = Math.sin(w.elapsed * 6) * 0.25 + 0.55
         ctx.globalAlpha = sickPulse
-        ctx.fillStyle = '#7fff00'
+        ctx.fillStyle = '#a855f7'
         ctx.fillRect(x, y, sw, sh)
         ctx.globalAlpha = 1
       }

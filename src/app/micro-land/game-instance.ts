@@ -1119,6 +1119,7 @@ export class GameInstance {
       children: c.children,
       distress: c.distress,
       starving: c.starving,
+      sick: (c as { sick?: number }).sick ?? 0,
       speed: Math.hypot(c.vx, c.vy),
       inWater: boxLiquidFraction(this.world, c.x, c.y, bw, bh) > 0.3,
       grounded: c.grounded,

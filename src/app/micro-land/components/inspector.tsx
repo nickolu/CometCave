@@ -181,13 +181,15 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
   const traits = notableTraits(inspected.traits)
 
   const trouble =
-    inspected.starving > 0
-      ? 'Starving!'
-      : inspected.distress > 1
-        ? inspected.inWater
-          ? 'Drowning!'
-          : 'Out of water!'
-        : null
+    inspected.sick > 0
+      ? 'Diseased!'
+      : inspected.starving > 0
+        ? 'Starving!'
+        : inspected.distress > 1
+          ? inspected.inWater
+            ? 'Drowning!'
+            : 'Out of water!'
+          : null
 
   return (
     <div
