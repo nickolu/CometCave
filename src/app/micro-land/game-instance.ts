@@ -1050,6 +1050,13 @@ export class GameInstance {
       useMicroLand.getState().setTraitHistory(flat)
     }
 
+    // Push species first-seen times to the store for the lineage timeline.
+    {
+      const flat: Record<string, number> = {}
+      for (const [id, t] of this.speciesFirstSeen) flat[id] = t
+      useMicroLand.getState().setSpeciesFirstSeen(flat)
+    }
+
     // Accumulate mutualism bond time for species pairs in active symbiosis.
     const STATS_DT = STATS_EVERY_MS / 1000
     for (const c of this.world.creatures) {

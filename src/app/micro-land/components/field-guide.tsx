@@ -142,6 +142,8 @@ export function FieldGuide() {
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
   const mutualismBonds = useMicroLand(s => s.mutualismBonds)
+  const speciesFirstSeen = useMicroLand(s => s.speciesFirstSeen)
+  const elapsed = useMicroLand(s => s.elapsed)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -926,6 +928,67 @@ export function FieldGuide() {
                 </li>
               ))}
             </ul>
+          </section>
+        )}
+
+        {Object.keys(speciesFirstSeen).length > 0 && elapsed > 0 && (
+          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="pb-2" style={sectionHeading}>Species timeline</h3>
+            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 10 }}>
+              When each species appeared and how long it lasted.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {Object.entries(speciesFirstSeen)
+                .sort(([, a], [, b]) => a - b)
+                .map(([bpId, firstSeen]) => {
+                  const ext = extinctions.find(e => e.blueprintId === bpId)
+                  const endTime = ext ? ext.elapsed : elapsed
+                  const isAlive = !ext
+                  const barStart = (firstSeen / elapsed) * 100
+                  const barWidth = Math.max(1, ((endTime - firstSeen) / elapsed) * 100)
+                  const name = blueprints.find(b => b.id === bpId)?.name ?? bpId
+                  // Deterministic hue from blueprint id
+                  let h = 5381
+                  for (const ch of bpId) h = (((h << 5) + h) ^ ch.charCodeAt(0)) & 0x7fffffff
+                  const hue = h % 360
+                  const color = isAlive ? `hsl(${hue}, 55%, 55%)` : `hsl(${hue}, 25%, 40%)`
+                  return (
+                    <div key={bpId} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 6, alignItems: 'center' }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontFamily: 'var(--cc-font-mono)',
+                          color: isAlive ? 'var(--cc-text-default)' : 'var(--cc-text-muted)',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          opacity: isAlive ? 1 : 0.6,
+                        }}
+                        title={name}
+                      >
+                        {name}
+                      </span>
+                      <div style={{ position: 'relative', height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: `${barStart}%`,
+                            width: `${barWidth}%`,
+                            height: '100%',
+                            background: color,
+                            borderRadius: 3,
+                            opacity: isAlive ? 0.85 : 0.45,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, fontFamily: 'var(--cc-font-mono)', color: 'var(--cc-text-muted)', opacity: 0.5 }}>
+              <span>0</span>
+              <span>{formatDuration(elapsed)}</span>
+            </div>
           </section>
         )}
 
