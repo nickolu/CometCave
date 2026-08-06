@@ -1218,7 +1218,10 @@ function look(
       continue
     }
 
-    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
+    // Prey must not be more than 1.4× the predator's size — wide enough to let
+    // normal predation work but narrow enough that small creatures can't tackle
+    // large ones, and large creatures gain a clear dietary advantage.
+    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.4) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -1278,10 +1281,13 @@ function look(
         Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
       // Camouflage: trait scales how hard this creature is to spot.
       // Still creatures benefit most; moving gives most of it away.
+      // Small body size also reduces detectability (harder to see a tiny creature).
       const camouflage = (other.traits as { camouflage?: number }).camouflage ?? 0.2
-      const detFactor = still
+      const sizeFactor = Math.min(1, sizeOf(other))  // 0.5..1.0 — tiny creatures are half as visible
+      const detFactor = (still
         ? Math.max(0.15, 0.5 - camouflage * 0.375)  // 0.5 (camo=0) → 0.2 (camo=0.8)
         : 1 - camouflage * 0.3                        // 1.0 (camo=0) → 0.76 (camo=0.8)
+      ) * sizeFactor
       const efs2 = foodSight2 * detFactor * detFactor
       if (d2 <= efs2 && d2 < preyDist) {
         preyDist = d2
