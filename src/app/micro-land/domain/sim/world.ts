@@ -436,6 +436,17 @@ export function erodeTile(w: WorldState, x: number, y: number): void {
   }
 }
 
+/**
+ * Restore an overgrazing-depleted tile back to grass.
+ * Only acts on dirt; all other tiles are left alone.
+ */
+export function restoreGrass(w: WorldState, x: number, y: number): void {
+  if (!inBounds(x, y)) return
+  if (w.tiles[y * WORLD_W + x] === MATERIAL_INDEX['dirt']) {
+    setTile(w, x, y, MATERIAL_INDEX['grass'])
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Spawning
 // ---------------------------------------------------------------------------
