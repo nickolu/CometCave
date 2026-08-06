@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
@@ -87,6 +87,39 @@ export function FieldGuide() {
   const [compact, setCompact] = useState(() => {
     try { return localStorage.getItem('fg-compact') === '1' } catch { return false }
   })
+  const [guideWidth, setGuideWidth] = useState(() => {
+    try { return Number(localStorage.getItem('fg-width')) || 300 } catch { return 300 }
+  })
+  const isDragging = useRef(false)
+
+  const OVERLAP_THRESHOLD = 330
+  const MIN_WIDTH = 240
+  const MAX_WIDTH = 600
+
+  const handleDragStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault()
+    isDragging.current = true
+    const onMove = (ev: MouseEvent) => {
+      if (!isDragging.current) return
+      setGuideWidth(prev => {
+        const next = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, prev - ev.movementX))
+        return next
+      })
+    }
+    const onUp = () => {
+      isDragging.current = false
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup', onUp)
+      setGuideWidth(prev => {
+        try { localStorage.setItem('fg-width', String(prev)) } catch {}
+        return prev
+      })
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup', onUp)
+  }, [])
+
+  const isOverlap = guideWidth > OVERLAP_THRESHOLD
   const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
   const [compareTarget, setCompareTarget] = useState<string | null>(null)
 
@@ -125,15 +158,38 @@ export function FieldGuide() {
     <aside
       aria-label="Field guide"
       style={{
-        width: 300,
+        width: guideWidth,
         flexShrink: 0,
-        borderLeft: '1px solid var(--cc-panel-divider)',
+        borderLeft: isOverlap ? 'none' : '1px solid var(--cc-panel-divider)',
         background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
+        ...(isOverlap ? {
+          position: 'absolute' as const,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          zIndex: 10,
+          boxShadow: '-4px 0 20px rgba(0,0,0,0.4)',
+        } : {}),
       }}
     >
+      {/* Drag handle — left edge of the guide */}
+      <div
+        aria-hidden
+        onMouseDown={handleDragStart}
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 5,
+          cursor: 'ew-resize',
+          zIndex: 1,
+          background: 'transparent',
+        }}
+      />
       <div style={{ overflowY: 'auto', flex: 1 }}>
         <div
           className="sticky top-0 flex flex-col gap-1.5 px-3 py-2.5"

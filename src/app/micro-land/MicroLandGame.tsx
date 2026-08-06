@@ -422,7 +422,7 @@ export function MicroLandGame() {
       {/* Canvas + Field Guide (and optionally Tools) share a flex row.
           When the guide is open the toolbar moves to the left column so the
           layout reads [ Tools | Canvas | Guide ] instead of overlapping. */}
-      <div className="flex min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden" style={{ position: 'relative' }}>
         {guideOpen && <Toolbar side onRemoveSpecies={handleRemoveSpecies} />}
         <div className="relative min-w-0 flex-1">
           <canvas
