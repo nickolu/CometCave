@@ -72,6 +72,8 @@ export interface Inspected {
   starving: number
   /** Seconds of disease remaining; 0 when healthy. */
   sick: number
+  /** Sprint fatigue 0–1; 0 when rested. */
+  fatigue: number
   speed: number
   inWater: boolean
   grounded: boolean

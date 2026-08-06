@@ -561,6 +561,29 @@ export function tickCreatures(
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
     }
 
+    // --- fatigue --------------------------------------------------------
+    if (bp.move.kind !== 'root') {
+      const fatigue = c.fatigue ?? 0
+      const isExerting = c.mood === 'hunt' || c.mood === 'flee'
+      const isResting = c.mood === 'rest' || c.mood === 'eat'
+      // Larger creatures have more stamina — high size trait slows fatigue build.
+      const stamina = c.traits.size ?? 1
+      if (isExerting) {
+        c.fatigue = Math.min(1, fatigue + dt * 0.15 / stamina)
+      } else if (isResting) {
+        c.fatigue = Math.max(0, fatigue - dt * 0.2)
+      } else {
+        c.fatigue = Math.max(0, fatigue - dt * 0.1)
+      }
+      // Enter rest when exhausted; exit when sufficiently recovered.
+      if ((c.fatigue ?? 0) >= 0.9 && c.mood !== 'rest') {
+        c.mood = 'rest'
+        c.targetId = null
+      } else if (c.mood === 'rest' && (c.fatigue ?? 0) < 0.2) {
+        c.mood = 'wander'
+      }
+    }
+
     // --- pollination: seed carrying ----------------------------------------
     //
     // Pollinators (aura.helps contains 'plant') pick up a seed when they
@@ -1766,7 +1789,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) / sizeOf(c) * (1 - diurnalPenalty)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
 
   switch (bp.move.kind) {

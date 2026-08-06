@@ -399,6 +399,7 @@ export function spawnCreature(
     stunTimer: 0,
     symbiosisTimer: 0,
     sick: 0,
+    fatigue: 0,
     carryingSeed: null,
     seedTimer: 0,
   }
