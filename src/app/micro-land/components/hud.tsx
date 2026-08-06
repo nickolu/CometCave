@@ -163,6 +163,12 @@ export function Hud({
     elapsed >= 600  ? 'Established' :
     'Young'
 
+  const SEASON_NAMES = ['Spring', 'Summer', 'Autumn', 'Winter'] as const
+  const seasonName =
+    tuning.seasonAmplitude > 0 && tuning.seasonPeriod > 0
+      ? SEASON_NAMES[Math.floor(((elapsed % tuning.seasonPeriod) / tuning.seasonPeriod) * 4) % 4]
+      : null
+
   const [overflowOpen, setOverflowOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
@@ -342,6 +348,12 @@ export function Hud({
           >
             {ageLabel}
           </span>
+          {seasonName && (
+            <>
+              {' · '}
+              <span style={{ color: 'var(--cc-text-muted)' }}>{seasonName}</span>
+            </>
+          )}
         </button>
 
         {/* Ecosystem health — informational */}
