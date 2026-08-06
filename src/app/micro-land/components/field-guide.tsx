@@ -786,6 +786,50 @@ export function FieldGuide() {
           </section>
         )}
 
+        {/* Mutualism — derived from which alive blueprints have auras that help other alive species */}
+        {(() => {
+          const aliveIds = new Set(population.map(p => p.blueprintId))
+          const grouped: Record<string, string[]> = {}
+          for (const helper of blueprints) {
+            if (!helper.aura?.helps?.length || !aliveIds.has(helper.id)) continue
+            for (const helpee of blueprints) {
+              if (helpee.id === helper.id || !aliveIds.has(helpee.id)) continue
+              if (helper.aura.helps.some(tag => helpee.tags.includes(tag))) {
+                grouped[helper.name] = [...(grouped[helper.name] ?? []), helpee.name]
+              }
+            }
+          }
+          const entries = Object.entries(grouped)
+          if (!entries.length) return null
+          return (
+            <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+              <h3 className="pb-2" style={sectionHeading}>
+                Mutualism
+              </h3>
+              <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+                Helpers and the species they support right now.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {entries.map(([helperName, helpeeNames]) => (
+                  <li
+                    key={helperName}
+                    style={{
+                      fontSize: 11,
+                      fontFamily: 'var(--cc-font-mono)',
+                      padding: '3px 0',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    <span style={{ color: 'var(--cc-mint)' }}>{helperName}</span>
+                    <span style={{ color: 'var(--cc-text-muted)' }}>{' ↔ '}</span>
+                    <span style={{ color: 'var(--cc-text-muted)' }}>{helpeeNames.join(', ')}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        })()}
+
         {/* World Statistics */}
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
           <h3 className="pb-2" style={sectionHeading}>
