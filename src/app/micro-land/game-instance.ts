@@ -1143,6 +1143,7 @@ export class GameInstance {
       traits: { ...c.traits },
       name: c.name,
       isElder: c.id === this.elderId,
+      followingScent: (c as { followingScent?: boolean }).followingScent ?? false,
     })
   }
 

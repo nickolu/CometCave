@@ -1071,9 +1071,12 @@ function look(
   }
 
   // Scent following: cooperative creatures follow food beacons left by kin.
-  // Only creatures with cooperation > 0.5 participate — loners ignore signals.
-  if (hungry && !prey && !threat && w.scents.length > 0 &&
-      ((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5) {
+  // Only when wandering and hungry — not while actively fleeing or hunting a
+  // visible target. High cooperation → stronger pull (weight = cooperation × 0.3).
+  const cooperationVal = ((c.traits as { cooperation?: number }).cooperation ?? 0.3)
+  ;(c as { followingScent?: boolean }).followingScent = false
+  if (hungry && !prey && !threat && c.mood === 'wander' && w.scents.length > 0 &&
+      cooperationVal > 0.5) {
     const scentReach2 = sight * sight * 4
     const midX = cx
     const midY = c.y + bh / 2
@@ -1090,7 +1093,12 @@ function look(
       }
     }
     if (nearestScent) {
-      c.drift = nearestScent.x > midX ? 1 : -1
+      // Softer than direct food following: a gentle bias rather than full
+      // commitment. Cooperation scales the strength — a barely-cooperative
+      // creature barely follows, a highly cooperative one follows reliably.
+      const weight = cooperationVal * 0.3
+      c.drift = nearestScent.x > midX ? weight : -weight
+      ;(c as { followingScent?: boolean }).followingScent = true
     }
   }
 
