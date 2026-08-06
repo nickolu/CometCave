@@ -1989,6 +1989,10 @@ export class GameInstance {
     this.pendingInspect = null
   }
 
+  private onPointerLeave = () => {
+    useMicroLand.getState().setHoveredCreature(null)
+  }
+
   private onPointerDown = (e: PointerEvent) => {
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
 
@@ -2084,6 +2088,42 @@ export class GameInstance {
       const perPixel = this.renderer.tilesPerClientPixel()
       this.renderer.panTo(this.panAnchorCam - dx * perPixel, this.panAnchorCamY - dy * perPixel)
       return
+    }
+
+    // Hover tooltip: track which creature is under the cursor when not painting or panning.
+    if (e.isPrimary && !this.pointerDown && !this.panning && this.pointers.size <= 1) {
+      const hp = this.renderer.screenToWorld(e.clientX, e.clientY)
+      const hovered = this.creatureAt(hp.x, hp.y)
+      const hState = useMicroLand.getState()
+      const currentId = hState.hoveredCreature?.id ?? null
+      const newId = hovered?.id ?? null
+      if (newId !== currentId) {
+        if (hovered) {
+          const bp = this.world.blueprints[hovered.blueprintId]
+          hState.setHoveredCreature({
+            id: hovered.id,
+            mood: hovered.mood,
+            hunger: hovered.hunger,
+            name: bp?.name ?? hovered.blueprintId,
+            screenX: e.clientX,
+            screenY: e.clientY,
+          })
+        } else {
+          hState.setHoveredCreature(null)
+        }
+      } else if (hovered && hState.hoveredCreature) {
+        // Keep position and stats fresh even without id change.
+        const cur = hState.hoveredCreature
+        if (Math.abs(e.clientX - cur.screenX) > 4 || Math.abs(e.clientY - cur.screenY) > 4 ||
+            cur.mood !== hovered.mood || Math.abs(cur.hunger - hovered.hunger) > 0.05) {
+          const bp = this.world.blueprints[hovered.blueprintId]
+          hState.setHoveredCreature({
+            id: hovered.id, mood: hovered.mood, hunger: hovered.hunger,
+            name: bp?.name ?? hovered.blueprintId,
+            screenX: e.clientX, screenY: e.clientY,
+          })
+        }
+      }
     }
 
     if (!this.pointerDown || !e.isPrimary) return
@@ -2413,6 +2453,7 @@ export class GameInstance {
     this.canvas.addEventListener('pointermove', this.onPointerMove)
     this.canvas.addEventListener('pointerup', this.onPointerUp)
     this.canvas.addEventListener('pointercancel', this.onPointerUp)
+    this.canvas.addEventListener('pointerleave', this.onPointerLeave)
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false })
     this.canvas.addEventListener('keydown', this.onKeyDown)
     this.canvas.addEventListener('keyup', this.onKeyUp)
@@ -2424,6 +2465,7 @@ export class GameInstance {
     this.canvas.removeEventListener('pointermove', this.onPointerMove)
     this.canvas.removeEventListener('pointerup', this.onPointerUp)
     this.canvas.removeEventListener('pointercancel', this.onPointerUp)
+    this.canvas.removeEventListener('pointerleave', this.onPointerLeave)
     this.canvas.removeEventListener('wheel', this.onWheel)
     this.canvas.removeEventListener('keydown', this.onKeyDown)
     this.canvas.removeEventListener('keyup', this.onKeyUp)

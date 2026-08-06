@@ -16,6 +16,7 @@ import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
+import { CreatureTooltip } from '@/app/micro-land/components/creature-tooltip'
 import { Inspector } from '@/app/micro-land/components/inspector'
 import { Notices } from '@/app/micro-land/components/notices'
 import { PanControls } from '@/app/micro-land/components/pan-controls'
@@ -466,6 +467,7 @@ export function MicroLandGame() {
             <ZoomControls onZoom={handleZoom} />
             <Notices />
             <Inspector onName={handleName} />
+            <CreatureTooltip />
           </div>
           <Toolbar onRemoveSpecies={handleRemoveSpecies} />
         </div>
