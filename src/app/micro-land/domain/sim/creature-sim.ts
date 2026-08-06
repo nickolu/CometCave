@@ -681,6 +681,21 @@ export function tickCreatures(
           }
         }
       }
+
+      // --- seed dispersal trail ------------------------------------------
+      // Pollinators occasionally leave a small fading particle as they move,
+      // visualizing pollen/seed dispersal paths.
+      if (Math.random() < 0.05 * dt && w.particles.length < MAX_PARTICLES) {
+        w.particles.push({
+          x: c.x + (Math.random() - 0.5) * bw,
+          y: c.y + (Math.random() - 0.5) * bh,
+          vx: (Math.random() - 0.5) * 0.1,
+          vy: -0.1 - Math.random() * 0.1,
+          life: 2 + Math.random(),
+          maxLife: 3,
+          color: '#90ee90',
+        })
+      }
     }
 
     // --- what it does to the world around it -----------------------------
