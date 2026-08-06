@@ -71,6 +71,8 @@ export function FieldGuide() {
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
+  const scentsEnabled = useMicroLand(s => s.scentsEnabled)
+  const setScentsEnabled = useMicroLand(s => s.setScentsEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
@@ -690,6 +692,27 @@ export function FieldGuide() {
               }}
             >
               Trails
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setScentsEnabled(!scentsEnabled)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 10px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: scentsEnabled
+                  ? '1px solid var(--cc-mint)'
+                  : '1px solid var(--cc-mint-line)',
+                color: scentsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: scentsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+              }}
+            >
+              Scents
             </button>
           </div>
           {traitOverlay && (
