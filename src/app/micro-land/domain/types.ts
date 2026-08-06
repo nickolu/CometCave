@@ -511,6 +511,11 @@ export interface Creature {
    */
   generation: number
   /**
+   * BlueprintIds of the two parents at live birth. Null/absent for placed creatures.
+   * The second entry is null for self-fertilisation or unknown mate.
+   */
+  parentBlueprintIds?: readonly [string, string | null]
+  /**
    * What this one inherited, as multipliers on its species.
    *
    * Neutral for anything that wasn't born here, which is what makes a species
@@ -776,6 +781,12 @@ export interface WorldState {
    * generative — painting, placing, summoning, changing theme — wakes it again.
    */
   dormant: boolean
+  /**
+   * Per-tile corridor markers, painted by the player. Migrating creatures
+   * prefer moving toward marked tiles over bare terrain scanning.
+   * Optional so old serialised worlds without it don't crash.
+   */
+  corridors?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------

@@ -50,6 +50,7 @@ export type Tool =
   | { kind: 'material'; material: MaterialId }
   | { kind: 'erase' }
   | { kind: 'biome'; biomeId: string }
+  | { kind: 'corridor' }
   | { kind: 'creature'; blueprintId: string }
   | { kind: 'inspect' }
 
@@ -84,6 +85,8 @@ export interface Inspected {
   targetName: string | null
   /** How far back its line goes; 1 means it was placed rather than born. */
   generation: number
+  /** BlueprintIds of the parents, if this creature was born here (not placed). */
+  parentBlueprintIds?: readonly [string, string | null] | null
   /** What it inherited, as multipliers on its species. Neutral at generation 1. */
   traits: Traits
   /** Player-given name, if this one earned the right to have one. */
@@ -367,6 +370,9 @@ interface MicroLandState {
    */
   canZoomIn: boolean
   canZoomOut: boolean
+  /** Player's preferred zoom preset. Controls the canvas zoom level. */
+  viewScale: 'wide' | 'standard' | 'close'
+  setViewScale: (scale: 'wide' | 'standard' | 'close') => void
 
   /** Global leaderboard fetched after a speed run win. Null = not yet fetched. */
   speedRunLeaderboard: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null
@@ -594,6 +600,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   canZoomIn: true,
   canZoomOut: true,
   speedRunLeaderboard: null,
+  viewScale: 'standard',
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -718,6 +725,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setCanPan: canPan => set({ canPan }),
   setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
   setSpeedRunLeaderboard: entries => set({ speedRunLeaderboard: entries }),
+  setViewScale: viewScale => set({ viewScale }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
