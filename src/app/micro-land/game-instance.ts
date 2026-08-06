@@ -216,6 +216,10 @@ export class GameInstance {
   private erosionTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
   private erosionTickCounter = 0
 
+  // --- mood history for inspector sparkline ---
+  private moodHistory: string[] = []
+  private moodHistoryCreatureId: number | null = null
+
   // --- heatmap ---
   private heatmap: Float32Array | null = null
   private heatmapCurrentBpId: string | null = null
@@ -1287,6 +1291,14 @@ export class GameInstance {
 
     const bp = this.world.blueprints[c.blueprintId]
     if (!bp) return
+    // Accumulate mood history for the sparkline.
+    if (c.id !== this.moodHistoryCreatureId) {
+      this.moodHistory = [c.mood]
+      this.moodHistoryCreatureId = c.id
+    } else {
+      this.moodHistory.push(c.mood)
+      if (this.moodHistory.length > 40) this.moodHistory.shift()
+    }
     const { w: bw, h: bh } = artSize(bp)
 
     const target =
@@ -1329,6 +1341,7 @@ export class GameInstance {
         const host = this.world.creatures.find(x => x.id === hid)
         return host ? (this.world.blueprints[host.blueprintId]?.name ?? null) : null
       })(),
+      moodHistory: [...this.moodHistory],
     })
   }
 
