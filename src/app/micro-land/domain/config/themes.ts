@@ -1574,6 +1574,116 @@ const BIOME_WORLD: Theme = {
   },
 }
 
+const MUSHROOM_FOREST: Theme = {
+  id: 'mushroom-forest',
+  name: 'The Spore Wood',
+  blurb: 'Rot and bloom together. Something has been growing here for a long time.',
+  sky: ['#1a0d2e', '#0a0618'],
+  gloom: 0.5,
+  gravity: 1,
+  starters: [
+    { id: 'glowvine', count: 25 },
+    { id: 'sporecap', count: 20 },
+    { id: 'loamworm', count: 10 },
+    { id: 'mite', count: 10 },
+    { id: 'delver', count: 5 },
+    { id: 'stalker', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const treeNoise = makeNoise2D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.44)
+
+    // Muddy ground: shallow surface layer is mud, then dirt, then stone.
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = fbm(groundNoise, x * 0.022, 4.5, 2)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 12)
+      for (let y = surface; y < WORLD_H; y++) {
+        const d = y - surface
+        const depth = d / (WORLD_H - surface)
+        set(tiles, x, y, d < 3 ? 'mud' : depth < 0.3 ? 'dirt' : 'stone')
+      }
+    }
+
+    // Dense wood columns — mushroom stems and ancient fungi, packed tightly.
+    // Two passes: tall thick ones, then shorter ones to fill gaps.
+    for (let pass = 0; pass < 2; pass++) {
+      for (let x = 2; x < WORLD_W - 2; x++) {
+        const thresh = pass === 0 ? 0.52 : 0.40
+        if (treeNoise(x * 0.13 + pass * 50, 0.7 + pass * 0.3) < thresh) continue
+        const sy = surfaceY(tiles, x)
+        if (sy >= WORLD_H - 4) continue
+        const height = pass === 0
+          ? 10 + Math.floor(rng() * 14)
+          : 4 + Math.floor(rng() * 6)
+        const capW = pass === 0 ? 2 + Math.floor(rng() * 3) : 1 + Math.floor(rng() * 2)
+        // Stem
+        for (let dy = 1; dy <= height; dy++) set(tiles, x, sy - dy, 'wood')
+        // Moss cap
+        for (let dx = -capW; dx <= capW; dx++) {
+          set(tiles, x + dx, sy - height - 1, 'moss')
+          if (Math.abs(dx) < capW) set(tiles, x + dx, sy - height - 2, 'moss')
+        }
+      }
+    }
+
+    // Fallen logs: horizontal wood rects resting on the forest floor.
+    for (let i = 0; i < across(6); i++) {
+      const cx = 8 + Math.floor(rng() * (WORLD_W - 16))
+      const sy = surfaceY(tiles, cx)
+      if (sy >= WORLD_H - 2) continue
+      const logW = 9 + Math.floor(rng() * 14)
+      rect(tiles, cx, sy, cx + logW, sy, 'wood')
+      rect(tiles, cx, sy + 1, cx + logW, sy + 1, 'wood')
+    }
+
+    // Sap pools on the forest floor — spore goo where sporecap plants will root.
+    for (let i = 0; i < across(9); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const sy = surfaceY(tiles, cx)
+      if (sy >= WORLD_H) continue
+      const w = 3 + Math.floor(rng() * 7)
+      for (let x = cx - w; x <= cx + w; x++) {
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const poolY = surfaceY(tiles, x)
+        for (let d = 0; d < Math.floor(t * 3); d++) {
+          set(tiles, x, poolY + d, 'sap')
+        }
+      }
+    }
+
+    // Scattered mud pockets underground.
+    for (let i = 0; i < across(7); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const sy = surfaceY(tiles, cx)
+      if (sy >= WORLD_H) continue
+      blob(tiles, cx, sy + 2 + Math.floor(rng() * 4), 2 + Math.floor(rng() * 4), 'mud', rng, [
+        'dirt',
+        'stone',
+      ])
+    }
+
+    // Bone in the soil — what the forest has claimed over the years.
+    for (let i = 0; i < across(6); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.5 + rng() * 0.4))
+      blob(tiles, cx, cy, 1 + Math.floor(rng() * 2), 'bone', rng, ['dirt', 'stone', 'mud'])
+    }
+
+    // Sparse gem seams deep in the rock — the forest hides old wealth.
+    for (let i = 0; i < across(4); i++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const cy = Math.floor(WORLD_H * (0.7 + rng() * 0.25))
+      blob(tiles, cx, cy, 1 + Math.floor(rng() * 2), rng() < 0.6 ? 'gem' : 'crystal', rng, ['stone'])
+    }
+
+    // Moss covers everything exposed: mud, dirt, wood.
+    mossify(tiles, rng, 0.48, ['mud', 'dirt', 'wood'])
+  },
+}
+
 /**
  * Order is the order of the picker, and it is a reading order: nothing, then
  * the world most like ours, then the ones that bend it further and further.
@@ -1585,6 +1695,7 @@ export const THEMES: Theme[] = [
   PEAKS,
   WINTER,
   DUNES,
+  MUSHROOM_FOREST,
   TIDEPOOL,
   SKYLANDS,
   VOLCANIC,
