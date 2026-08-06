@@ -479,13 +479,14 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
         <div className="grid grid-cols-2 gap-x-3 gap-y-1 pt-0.5">
           <Stat label="Size" value={String(bp.size)} />
           <Stat label="Speed" value={inspected.speed.toFixed(1)} />
+          <Stat label="Roam" value={`${(inspected.traits.roam ?? 1).toFixed(2)}×`} />
           {/*
             The evidence under the sentence above. Only the traits that earned a
             phrase are listed, and only as a ratio against the species — "1.24×"
             says what "quicker than most" means without the panel having to
             explain what a hopper's speed is in tiles per second.
           */}
-          {traits.map(t => (
+          {traits.filter(t => t.label !== 'Own roam').map(t => (
             <Stat key={t.label} label={t.label} value={`${t.value.toFixed(2)}×`} />
           ))}
         </div>
