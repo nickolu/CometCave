@@ -11,6 +11,7 @@ import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 import { WorkshopPane } from './blueprint-workshop'
+import { ChallengesPane } from './challenges-panel'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -75,7 +76,6 @@ export function FieldGuide() {
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
-  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -83,7 +83,7 @@ export function FieldGuide() {
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
-  const [view, setView] = useState<'guide' | 'workshop'>('guide')
+  const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
   const [compareTarget, setCompareTarget] = useState<string | null>(null)
 
   if (!open) return null
@@ -184,7 +184,7 @@ export function FieldGuide() {
             <button
               type="button"
               className="cc-btn"
-              onClick={() => { setChallengesOpen(true) }}
+              onClick={() => setView('challenges')}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -204,6 +204,10 @@ export function FieldGuide() {
 
         {view === 'workshop' && (
           <WorkshopPane onClose={() => setView('guide')} />
+        )}
+
+        {view === 'challenges' && (
+          <ChallengesPane onClose={() => setView('guide')} />
         )}
 
         {view === 'guide' && compareTarget !== null && compareId !== null && (
