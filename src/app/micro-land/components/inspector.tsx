@@ -446,6 +446,40 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           )}
         </div>
 
+        {/* Mood history — color-coded timeline of recent states */}
+        {inspected.moodHistory.length > 1 && (
+          <div
+            style={{
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+              marginTop: 4,
+            }}
+            title="Mood history — oldest to newest"
+          >
+            {inspected.moodHistory.map((m, i) => (
+              <span
+                key={i}
+                style={{
+                  display: 'block',
+                  width: 5,
+                  height: 10,
+                  borderRadius: 1,
+                  flexShrink: 0,
+                  background:
+                    m === 'eat'    ? '#22c55e' :
+                    m === 'mate'   ? '#c084fc' :
+                    m === 'hunt'   ? '#ef4444' :
+                    m === 'flee'   ? '#f97316' :
+                    m === 'rest'   ? '#60a5fa' :
+                    /* wander */     '#94a3b8',
+                  opacity: 0.5 + 0.5 * (i / inspected.moodHistory.length),
+                }}
+              />
+            ))}
+          </div>
+        )}
+
         {/*
           Sits directly under the mood, above the meters, because it is the one
           line on this panel that is about *this* creature rather than about its
