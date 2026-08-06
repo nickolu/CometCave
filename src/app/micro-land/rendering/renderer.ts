@@ -920,6 +920,10 @@ export class Renderer {
         const pulse = Math.sin(w.elapsed * 12) * 0.5 + 0.5
         ctx.globalAlpha = 0.45 + pulse * 0.55
       }
+      // Highly camouflaged creatures (>0.6) render slightly transparent —
+      // the visual hint that they're harder to spot.
+      const camo = (c.traits as { camouflage?: number }).camouflage ?? 0.2
+      if (camo > 0.6) ctx.globalAlpha *= 1 - (camo - 0.6) * 0.6
       ctx.drawImage(source, x, y, sw, sh)
       ctx.globalAlpha = 1
 
