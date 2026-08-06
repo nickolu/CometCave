@@ -104,6 +104,8 @@ export interface Inspected {
   lastMealX: number | null
   /** Tile Y where the creature last ate successfully. null = never eaten. */
   lastMealY: number | null
+  /** Position history — up to 30 samples taken every sim-second. Oldest first. */
+  trail: { x: number; y: number }[]
 }
 
 /** One column of the guide's record book — see `KindRecord`. */

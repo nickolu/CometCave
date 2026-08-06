@@ -222,6 +222,9 @@ export class GameInstance {
   // --- mood history for inspector sparkline ---
   private moodHistory: string[] = []
   private moodHistoryCreatureId: number | null = null
+  /** Position samples for the memory trail; reset when inspectedId changes. */
+  private inspectedTrail: { x: number; y: number }[] = []
+  private trailLastSample = -999
 
   // --- heatmap ---
   private heatmap: Float32Array | null = null
@@ -1305,6 +1308,8 @@ export class GameInstance {
     const store = useMicroLand.getState()
     if (this.inspectedId === null) {
       if (store.inspected !== null) store.setInspected(null)
+      this.inspectedTrail = []
+      this.trailLastSample = -999
       return
     }
 
@@ -1329,9 +1334,17 @@ export class GameInstance {
     if (c.id !== this.moodHistoryCreatureId) {
       this.moodHistory = [c.mood]
       this.moodHistoryCreatureId = c.id
+      this.inspectedTrail = []
+      this.trailLastSample = -999
     } else {
       this.moodHistory.push(c.mood)
       if (this.moodHistory.length > 40) this.moodHistory.shift()
+    }
+    // Sample position every sim-second for the memory trail.
+    if (this.world.elapsed - this.trailLastSample >= 1) {
+      this.trailLastSample = this.world.elapsed
+      this.inspectedTrail.push({ x: c.x, y: c.y })
+      if (this.inspectedTrail.length > 30) this.inspectedTrail.shift()
     }
     const { w: bw, h: bh } = artSize(bp)
 
@@ -1379,6 +1392,7 @@ export class GameInstance {
       moodHistory: [...this.moodHistory],
       lastMealX: c.lastMealX,
       lastMealY: c.lastMealY,
+      trail: [...this.inspectedTrail],
     })
   }
 

@@ -530,7 +530,10 @@ export class Renderer {
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
     // goes first so the selection brackets sit on top when you inspect an elder.
     if (elderId !== null) this.drawElder(w, elderId)
-    if (highlightId !== null) this.drawHighlight(w, highlightId)
+    if (highlightId !== null) {
+      this.drawMemoryTrail(vx)
+      this.drawHighlight(w, highlightId)
+    }
 
     // Day/night cycle: gradually darkens during the night phase.
     if (TUNING.dayLengthSeconds > 0) {
@@ -1204,6 +1207,26 @@ export class Renderer {
     for (let i = 0; i < steps; i++) {
       const t = (i / steps) * Math.PI * 2
       ctx.fillRect(Math.round(cx + Math.cos(t) * rx), Math.round(cy + Math.sin(t) * ry), 1, 1)
+    }
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Fading dot trail showing where the inspected creature has been.
+   * Oldest dots are most transparent; newest are brightest.
+   */
+  private drawMemoryTrail(vx: number): void {
+    const trail = useMicroLand.getState().inspected?.trail
+    if (!trail || trail.length < 2) return
+    const ctx = this.wctx
+    for (let i = 0; i < trail.length; i++) {
+      const pt = trail[i]
+      const t = (i + 1) / trail.length  // 0 = oldest, 1 = newest
+      ctx.globalAlpha = t * 0.55
+      ctx.fillStyle = '#5eead4'
+      const px = Math.round(pt.x) - vx
+      const py = Math.round(pt.y)
+      ctx.fillRect(px, py, 1, 1)
     }
     ctx.globalAlpha = 1
   }
