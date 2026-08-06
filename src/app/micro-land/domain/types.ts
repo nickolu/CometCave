@@ -298,6 +298,12 @@ export interface CreatureBlueprint {
    * for the buff to apply to both.
    */
   symbiosisPartnerId?: string | null
+  /**
+   * Optional trait overrides applied when each instance of this species is first
+   * spawned. The builder uses this to propagate the roam slider into the world
+   * without widening the spawning path.
+   */
+  traitDefaults?: Partial<Traits>
 }
 
 /**

@@ -1584,8 +1584,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     if (c.drift !== 0 && unliveableAhead(w, c, bp, body, c.drift > 0 ? 1 : -1)) {
       c.drift = -c.drift
     }
-    // Pull toward home when far away.
-    if ((c.traits.territorial ?? 0.5) > 0.2 && Math.abs(c.homeX - c.x) > 15) {
+    // Pull toward home when far away. Roam multiplies the leash distance so
+    // wide-ranging creatures drift further before snapping back.
+    if ((c.traits.territorial ?? 0.5) > 0.2 && Math.abs(c.homeX - c.x) > 15 * (c.traits.roam ?? 1)) {
       c.drift = c.homeX > c.x ? 1 : -1
     }
     wantX = c.drift

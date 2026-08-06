@@ -583,6 +583,14 @@ export function sanitizeBlueprint(
     aura: cleanAura(b.aura),
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
+    traitDefaults:
+      b.traitDefaults && typeof b.traitDefaults === 'object'
+        ? {
+            ...((b.traitDefaults as Record<string, unknown>).roam !== undefined && {
+              roam: Number((b.traitDefaults as Record<string, unknown>).roam),
+            }),
+          }
+        : undefined,
   }
 }
 

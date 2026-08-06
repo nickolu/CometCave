@@ -147,6 +147,7 @@ export function CreatureBuilder({
   const [onion, setOnion] = useState(true)
   const [planId, setPlanId] = useState<PlanId>('walk')
   const [hop, setHop] = useState(0)
+  const [roam, setRoam] = useState(1)
   const [dietId, setDietId] = useState<DietId>('plant')
   const [glows, setGlows] = useState(false)
   const [fireproof, setFireproof] = useState(false)
@@ -206,6 +207,7 @@ export function CreatureBuilder({
       setName(from.name)
       setPlanId(planOf(from))
       setHop(from.move.hop)
+      setRoam(from.traitDefaults?.roam ?? 1)
       setDietId(dietOf(from))
       setGlows(from.glow > 0)
       setFireproof(from.body.immuneTo.includes('lava'))
@@ -213,6 +215,7 @@ export function CreatureBuilder({
       setName('')
       setPlanId('walk')
       setHop(0)
+      setRoam(1)
       setDietId('plant')
       setGlows(false)
       setFireproof(false)
@@ -323,6 +326,8 @@ export function CreatureBuilder({
     if ((planId === 'walk' || planId === 'hop') && raw.move && typeof raw.move === 'object') {
       ;(raw.move as Record<string, unknown>).hop = hop
     }
+    // Propagate the roam slider into spawned creatures via traitDefaults.
+    raw.traitDefaults = { roam }
     return raw
   }
 
@@ -856,6 +861,58 @@ export function CreatureBuilder({
                           : hop < 0.7
                             ? 'Moves in bounds — part walker, part frog.'
                             : 'Travels entirely in leaps. Always airborne between steps.'}
+                    </p>
+                  </div>
+                )}
+                {planId !== 'root' && (
+                  <div className="mt-3">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <label
+                        htmlFor="creature-builder-roam"
+                        style={{ ...note, color: 'var(--cc-text-default)' }}
+                      >
+                        Roam
+                      </label>
+                      <span
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 11,
+                          color: roam !== 1 ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {roam < 0.6
+                          ? 'Homebody'
+                          : roam < 0.9
+                            ? 'Stays close'
+                            : roam < 1.1
+                              ? 'Typical'
+                              : roam < 1.5
+                                ? 'Wide-ranging'
+                                : 'Nomad'}
+                      </span>
+                    </div>
+                    <input
+                      id="creature-builder-roam"
+                      type="range"
+                      min={0.25}
+                      max={2}
+                      step={0.05}
+                      value={roam}
+                      onChange={e => setRoam(Number(e.target.value))}
+                      className="mt-1 w-full"
+                      style={{ accentColor: roam !== 1 ? 'var(--cc-mint)' : undefined, minHeight: 24 }}
+                    />
+                    <p style={{ ...note, marginTop: 2 }}>
+                      {roam < 0.6
+                        ? 'Barely leaves home. Stays very close to where it spawned.'
+                        : roam < 0.9
+                          ? 'Tends to stay nearby. Wanders only a little.'
+                          : roam < 1.1
+                            ? 'Default ranging. Moves about as far as any creature would.'
+                            : roam < 1.5
+                              ? 'Ranges farther than most before turning back home.'
+                              : 'Barely tethered. Will roam very far from its starting point.'}
                     </p>
                   </div>
                 )}

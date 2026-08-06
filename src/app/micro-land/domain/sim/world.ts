@@ -379,7 +379,9 @@ export function spawnCreature(
     // out and was placed again start over from the blueprint rather than from
     // wherever its last line had drifted to.
     generation: 1,
-    traits: neutralTraits(),
+    traits: bp.traitDefaults
+      ? { ...((bp.move.kind === 'fly' || bp.move.kind === 'swim') ? { ...neutralTraits(), roam: 1.3 } : neutralTraits()), ...bp.traitDefaults }
+      : (bp.move.kind === 'fly' || bp.move.kind === 'swim') ? { ...neutralTraits(), roam: 1.3 } : neutralTraits(),
     name: null,
     huntPassCount: 0,
     poisoned: 0,
