@@ -374,6 +374,10 @@ interface MicroLandState {
   viewScale: 'wide' | 'standard' | 'close'
   setViewScale: (scale: 'wide' | 'standard' | 'close') => void
 
+  /** Creature under the cursor when not actively interacting. */
+  hoveredCreature: { id: number; mood: string; hunger: number; name: string; screenX: number; screenY: number } | null
+  setHoveredCreature: (c: { id: number; mood: string; hunger: number; name: string; screenX: number; screenY: number } | null) => void
+
   /** Global leaderboard fetched after a speed run win. Null = not yet fetched. */
   speedRunLeaderboard: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null
   setSpeedRunLeaderboard: (entries: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null) => void
@@ -601,6 +605,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   canZoomOut: true,
   speedRunLeaderboard: null,
   viewScale: 'standard',
+  hoveredCreature: null,
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -726,6 +731,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
   setSpeedRunLeaderboard: entries => set({ speedRunLeaderboard: entries }),
   setViewScale: viewScale => set({ viewScale }),
+  setHoveredCreature: c => set({ hoveredCreature: c }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
