@@ -43,6 +43,7 @@ import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
 import {
   applyMassExtinction,
+  applyStorm,
   applyTheme,
   applyThemeObject,
   applyTide,
@@ -222,6 +223,8 @@ export class GameInstance {
   private lastArchiveSize = -1
   /** World-time of the last mass extinction cataclysm. */
   private lastMassExtinction = -Infinity
+  /** World-time of the last storm. */
+  private lastStorm = -Infinity
 
   // --- terrain erosion ---
   /**
@@ -520,6 +523,32 @@ export class GameInstance {
       }
       useMicroLand.getState().notify('A cataclysm strikes. The land remembers nothing.')
       this.breakSteadyStreak()
+    }
+
+    // --- storm event ---
+    if (
+      TUNING.stormInterval > 0 &&
+      w.elapsed - this.lastStorm >= TUNING.stormInterval
+    ) {
+      this.lastStorm = w.elapsed
+      const { x0, x1 } = applyStorm(w, this.rng)
+      this.renderer.markTilesDirty()
+      // Scatter blue-grey rain particles across the storm column.
+      const stormW = x1 - x0
+      for (let i = 0; i < Math.min(30, stormW); i++) {
+        const rx = x0 + Math.floor(this.rng() * stormW)
+        const ry = this.rng() * 8
+        w.particles.push({
+          x: rx,
+          y: ry,
+          vx: (this.rng() - 0.5) * 0.3,
+          vy: 1.5 + this.rng() * 2,
+          life: 1.5 + this.rng() * 1.5,
+          maxLife: 3,
+          color: this.rng() < 0.6 ? '#93c5fd' : '#60a5fa',
+        })
+      }
+      useMicroLand.getState().notify('A storm sweeps through, stripping the land and flooding the banks.')
     }
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
