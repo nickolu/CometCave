@@ -339,6 +339,73 @@ export function MicroLandGame() {
     return { name: terrain.name, fertile: hasFertileGround(terrain) }
   }, [])
 
+  // Global keyboard shortcuts. Ignored when a text input has focus so typing
+  // into the name field or chat box doesn't hijack the keys. Zoom keys are
+  // skipped when the canvas is focused because the canvas already handles them
+  // via its own keydown listener (and doubling the call would over-step).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      )
+        return
+
+      const store = useMicroLand.getState()
+      switch (e.key) {
+        case 'i':
+          store.setTool({ kind: 'inspect' })
+          break
+        case 'f':
+          store.setGuideOpen(!store.guideOpen)
+          break
+        case 'l':
+          store.setHistoryOpen(!store.historyOpen)
+          break
+        case 's':
+          store.setSettingsOpen(!store.settingsOpen)
+          break
+        case 'w':
+          store.setWorldsOpen(!store.worldsOpen)
+          break
+        case 'b':
+          store.setBuilderOpen(!store.builderOpen)
+          break
+        case 'c':
+          store.setChallengesOpen(!store.challengesOpen)
+          break
+        case 'Escape':
+          // Close whichever panel is open, in priority order (most modal first).
+          if (store.summonOpen) { store.setSummonOpen(false); break }
+          if (store.builderOpen) { store.setBuilderOpen(false); break }
+          if (store.workshopOpen) { store.setWorkshopOpen(false); break }
+          if (store.challengesOpen) { store.setChallengesOpen(false); break }
+          if (store.worldsOpen) { store.setWorldsOpen(false); break }
+          if (store.settingsOpen) { store.setSettingsOpen(false); break }
+          if (store.historyOpen) { store.setHistoryOpen(false); break }
+          if (store.guideOpen) { store.setGuideOpen(false); break }
+          break
+        case '+':
+        case '=':
+          // The canvas owns this key when it is focused; don't double-fire.
+          if (document.activeElement === canvasRef.current) break
+          e.preventDefault()
+          gameRef.current?.zoomByStep(1)
+          break
+        case '-':
+          if (document.activeElement === canvasRef.current) break
+          e.preventDefault()
+          gameRef.current?.zoomByStep(-1)
+          break
+      }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   return (
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
       <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
