@@ -74,6 +74,8 @@ export function FieldGuide() {
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
   const scentsEnabled = useMicroLand(s => s.scentsEnabled)
   const setScentsEnabled = useMicroLand(s => s.setScentsEnabled)
+  const fogEnabled = useMicroLand(s => s.fogEnabled)
+  const setFogEnabled = useMicroLand(s => s.setFogEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
@@ -714,6 +716,27 @@ export function FieldGuide() {
               }}
             >
               Scents
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setFogEnabled(!fogEnabled)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '4px 10px',
+                minHeight: 28,
+                borderRadius: 4,
+                border: fogEnabled
+                  ? '1px solid var(--cc-mint)'
+                  : '1px solid var(--cc-mint-line)',
+                color: fogEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: fogEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+              }}
+            >
+              Fog
             </button>
           </div>
           {traitOverlay && (

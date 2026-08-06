@@ -462,6 +462,15 @@ interface MicroLandState {
   setTrailsEnabled: (on: boolean) => void
   scentsEnabled: boolean
   setScentsEnabled: (on: boolean) => void
+  /**
+   * Whether the fog-of-war overlay is on.
+   *
+   * When enabled, tiles that no creature has ever visited are covered by a dark
+   * overlay. Players who find it distracting can toggle it off in the field
+   * guide. Defaults to true so new sessions start in fog.
+   */
+  fogEnabled: boolean
+  setFogEnabled: (on: boolean) => void
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
@@ -643,6 +652,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replayIndex: 0,
   trailsEnabled: false,
   scentsEnabled: false,
+  fogEnabled: true,
   heatmapBlueprintId: null,
   soundEnabled: false,
 
@@ -769,6 +779,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setScentsEnabled: on => set({ scentsEnabled: on }),
+  setFogEnabled: on => set({ fogEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 

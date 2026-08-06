@@ -355,6 +355,8 @@ export function tickCreatures(
   tickMoisture(w, tickCount, dt, rng)
   w.eggs ??= []
   w.nextEggId ??= 1
+  // Migration: worlds loaded from a save before fog-of-war shipped won't have visited.
+  w.visited ??= new Uint8Array(WORLD_W * WORLD_H)
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
   // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
@@ -561,6 +563,28 @@ export function tickCreatures(
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
+    }
+
+    // --- fog of war: reveal tiles near this creature --------------------
+    //
+    // Runs once per creature per tick (not per physics sub-step), so a busy
+    // world pays the scan 60 times a second per creature rather than once per
+    // integration step. The visited array is optional so old saves still work.
+    if (w.visited) {
+      const visRadius = 3
+      const vcx = Math.floor(c.x + bw / 2)
+      const vcy = Math.floor(c.y + bh / 2)
+      for (let dy = -visRadius; dy <= visRadius; dy++) {
+        const row = vcy + dy
+        if (row < 0 || row >= WORLD_H) continue
+        for (let dx = -visRadius; dx <= visRadius; dx++) {
+          const col = vcx + dx
+          if (col < 0 || col >= WORLD_W) continue
+          if (dx * dx + dy * dy <= visRadius * visRadius) {
+            w.visited[row * WORLD_W + col] = 1
+          }
+        }
+      }
     }
 
     // --- fatigue --------------------------------------------------------
