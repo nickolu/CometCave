@@ -127,7 +127,7 @@ export const FORAGE_HUNGER = 0.55
  * a meal restores — so a world set to 2× goes through the same boom-and-crash
  * cycles on a tighter clock.
  */
-export const HUNGER_RATE_SCALE = 1
+export const HUNGER_RATE_SCALE = 0.25
 
 /**
  * Hard population ceiling. Past this, nothing new is born (summoning still works).
@@ -159,7 +159,7 @@ export const MAX_PLANTS = Math.round(195 * WIDTH_SCALE)
 export const BREATH_SECONDS = 9
 
 /** Cooldown after breeding, seconds. */
-export const BREED_COOLDOWN = 12
+export const BREED_COOLDOWN = 20
 
 /**
  * How close two animals of the same kind have to be to have a baby, in tiles.
@@ -223,8 +223,8 @@ export const TRAIT_DRIFT = 0.12
  * everything that eats *those* starves. Plants mature in seconds and spread
  * often, and MAX_PLANT_SHARE is what stops that from becoming a green carpet.
  */
-export const PLANT_MATURITY = 6
-export const PLANT_SPREAD_COOLDOWN = 9
+export const PLANT_MATURITY = 40
+export const PLANT_SPREAD_COOLDOWN = 20
 
 /**
  * How much fullness a meal restores, and what breeding costs.
@@ -233,8 +233,8 @@ export const PLANT_SPREAD_COOLDOWN = 9
  * breed on every full stomach, overshoot the plants, and take the whole food
  * chain down with them.
  */
-export const MEAL_VALUE = 0.42
-export const BREED_COST = 0.55
+export const MEAL_VALUE = 0.54
+export const BREED_COST = 0.69
 
 /**
  * Native plants — the ground's own seed bank, and the only regrowth there is.
@@ -262,7 +262,7 @@ export const BREED_COST = 0.55
  * the harder the seed comes in. That asymmetry is deliberate — a constant
  * trickle would just pin every world at MAX_PLANTS and turn it into a carpet.
  */
-export const NATIVE_PLANT_TARGET = Math.round(45 * WIDTH_SCALE)
+export const NATIVE_PLANT_TARGET = Math.round(5 * WIDTH_SCALE)
 /**
  * How long the ground waits between seedings.
  *
@@ -275,7 +275,7 @@ export const NATIVE_PLANT_TARGET = Math.round(45 * WIDTH_SCALE)
  * doubling) — all the ground has to do is get the count off zero and then stay
  * out of the way.
  */
-export const PLANT_SEED_INTERVAL = 30
+export const PLANT_SEED_INTERVAL = 35
 /**
  * Most plants a single seeding may place, when the world is at zero.
  *
@@ -285,7 +285,7 @@ export const PLANT_SEED_INTERVAL = 30
  * planting one. Anywhere near the target this rounds down to a single sprout
  * every thirty seconds, which is what the trickle is meant to feel like.
  */
-export const PLANT_SEED_BATCH = Math.round(1 * WIDTH_SCALE)
+export const PLANT_SEED_BATCH = 1
 /**
  * How many species the ground picks when it establishes its natives.
  *
@@ -344,7 +344,7 @@ export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
  * never lands. The 2-second minimum-carry guard in creature-sim prevents
  * the seed from dropping right back at the pickup plant.
  */
-export const POLLINATION_CARRY_SECONDS = 30
+export const POLLINATION_CARRY_SECONDS = 15
 
 /**
  * When 1, plants cannot spread on their own — they may only reproduce via
@@ -353,10 +353,10 @@ export const POLLINATION_CARRY_SECONDS = 30
 export const POLLINATION_ONLY = 0
 
 /** Multiplier added to spread cooldown per same-species plant within crowding radius. */
-export const PLANT_CROWDING_STRENGTH = 0.25
+export const PLANT_CROWDING_STRENGTH = 2
 
 /** Minimum tiles a plant seed must travel from its parent. */
-export const PLANT_SPREAD_MIN = 5
+export const PLANT_SPREAD_MIN = 11
 
 /** Particle lifetime range, seconds. */
 export const PARTICLE_LIFE = 0.9
@@ -388,14 +388,14 @@ export const ELDER_MIN_SECONDS = 60
 export const STEADY_SHOW_SECONDS = 120
 
 /** Base probability per tick that a sick creature infects a healthy neighbour. */
-export const DISEASE_SPREAD_CHANCE = 0.05
+export const DISEASE_SPREAD_CHANCE = 0.01
 
 /**
  * How long a creature stays sick after catching a disease, in sim-seconds.
  * Sporecap spore infections use a fixed 5 s regardless of this setting — they
  * are a brief slow, not a full disease.
  */
-export const DISEASE_DURATION = 20
+export const DISEASE_DURATION = 10
 
 /**
  * Seconds a creature must be hungry with no food in sight before it abandons
@@ -422,3 +422,10 @@ export const NEST_BUILD_TIME = 30
  * enough that an abandoned burrow eventually disappears.
  */
 export const NEST_DECAY_SECONDS = 120
+
+/**
+ * Global lifespan multiplier applied on top of each species' base lifespanSeconds
+ * and each creature's inherited lifespan trait. 2 = twice as long-lived as the
+ * per-species defaults, which were tuned at 1× for a faster-paced world.
+ */
+export const LIFESPAN_SCALE = 2

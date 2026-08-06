@@ -102,10 +102,16 @@ export function HistoryPanel() {
   for (const bp of blueprints) bpMap[bp.id] = bp
 
   // --- Graph bucket computation ---
+  // Span only the range where events actually exist so early-session events
+  // don't produce a long flat leader followed by a spike on the right.
+  const minSim = historyLog.reduce((m, e) => Math.min(m, e.simTime), Infinity)
   const maxSim = historyLog.reduce((m, e) => Math.max(m, e.simTime), 0)
-  const numBuckets = Math.max(2, Math.ceil((maxSim + BUCKET_S) / BUCKET_S))
+  const firstBucket = historyLog.length > 0 ? Math.floor(minSim / BUCKET_S) : 0
+  const lastBucket = historyLog.length > 0 ? Math.floor(maxSim / BUCKET_S) + 1 : 1
+  const numBuckets = Math.max(2, lastBucket - firstBucket + 1)
   const bucketCounts: Record<FilterKey, number[]> = {
     died: new Array(numBuckets).fill(0),
+    plant_died: new Array(numBuckets).fill(0),
     born: new Array(numBuckets).fill(0),
     ate: new Array(numBuckets).fill(0),
     named: new Array(numBuckets).fill(0),
@@ -113,7 +119,7 @@ export function HistoryPanel() {
     sick: new Array(numBuckets).fill(0),
   }
   for (const entry of historyLog) {
-    const b = Math.min(numBuckets - 1, Math.floor(entry.simTime / BUCKET_S))
+    const b = Math.min(numBuckets - 1, Math.floor(entry.simTime / BUCKET_S) - firstBucket)
     bucketCounts[kindToFilter(entry.kind)][b]++
   }
   const activeKeys = (Object.keys(active) as FilterKey[]).filter(k => active[k])
@@ -267,7 +273,7 @@ export function HistoryPanel() {
           {/* Hover tooltip */}
           {hoveredBucket !== null && (() => {
             const xPct = ((hoveredBucket + 0.5) / numBuckets) * 100
-            const bucketStart = hoveredBucket * BUCKET_S
+            const bucketStart = (hoveredBucket + firstBucket) * BUCKET_S
             const anyCount = activeKeys.some(k => (bucketCounts[k][hoveredBucket] ?? 0) > 0)
             if (!anyCount) return null
             return (

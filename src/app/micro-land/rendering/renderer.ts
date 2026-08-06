@@ -986,7 +986,7 @@ export class Renderer {
       // Only applies to animals (plants age differently); kicks in after half
       // their lifespan has elapsed so young creatures look vivid.
       if (bp.move.kind !== 'root') {
-        const ageFraction = Math.min(1, c.ageSeconds / lifespanOf(c, bp))
+        const ageFraction = Math.min(1, c.ageSeconds / (lifespanOf(c, bp) * TUNING.lifespanScale))
         if (ageFraction > 0.5) {
           const grayAlpha = ((ageFraction - 0.5) / 0.5) * 0.45
           ctx.globalAlpha = grayAlpha
