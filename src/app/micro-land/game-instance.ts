@@ -58,6 +58,7 @@ import { TUNING } from './domain/tuning'
 import {
   type Creature,
   type CreatureBlueprint,
+  type CreatureThumb,
   type HistoryEntry,
   LIFE_KINDS,
   type LifeKind,
@@ -678,6 +679,17 @@ export class GameInstance {
 
     useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
 
+    // Per-creature thumbnails for the Field Guide population viewer.
+    const thumbs: CreatureThumb[] = this.world.creatures
+      .map(c => ({
+        id: c.id,
+        blueprintId: c.blueprintId,
+        ageSeconds: c.ageSeconds,
+        name: c.name,
+      }))
+      .sort((a, b) => b.ageSeconds - a.ageSeconds)
+    useMicroLand.getState().setPopulationItems(thumbs)
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {
@@ -1237,6 +1249,20 @@ export class GameInstance {
     const creature = this.world.creatures.find(c => c.blueprintId === blueprintId)
     if (!creature) return false
     this.renderer.centerOn(creature.x, creature.y)
+    return true
+  }
+
+  /**
+   * Center the camera on a specific creature by id and open the Inspector for it.
+   * Returns false if the creature is no longer alive.
+   */
+  inspectCreature(id: number): boolean {
+    const creature = this.world.creatures.find(c => c.id === id)
+    if (!creature) return false
+    this.inspectedId = id
+    this.following = true
+    this.renderer.centerOn(creature.x, creature.y)
+    this.pushInspected()
     return true
   }
 

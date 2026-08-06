@@ -32,7 +32,7 @@ export interface SpeedRunState {
 
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
-import type { Creature, CreatureBlueprint, HistoryEntry, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
+import type { Creature, CreatureBlueprint, CreatureThumb, HistoryEntry, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
 import type { ShelfState } from './worlds/shelf'
 
 /** One entry in the time-lapse snapshot ring buffer. */
@@ -370,6 +370,16 @@ interface MicroLandState {
   requestLocate: (blueprintId: string) => void
 
   /**
+   * Per-creature thumbnail data for the Field Guide sidebar population viewer.
+   * Sorted longest-living → shortest. Updated by pushStats() each tick.
+   */
+  populationItems: CreatureThumb[]
+  setPopulationItems: (items: CreatureThumb[]) => void
+  /** Set when the Field Guide circle is clicked — game instance centers + inspects. */
+  locateCreatureRequest: { id: number; serial: number } | null
+  requestLocateCreature: (id: number) => void
+
+  /**
    * When set, the renderer draws each creature with a color overlay based on
    * this trait's value — blue for weak, red for strong. Null means no overlay.
    */
@@ -458,6 +468,7 @@ interface MicroLandState {
 let noticeId = 0
 let pendingId = 0
 let locateSerial = 0
+let locateCreatureSerial = 0
 let historyEntryId = 0
 
 const TOOLBAR_KEY = 'micro-land:toolbar:v1'
@@ -537,6 +548,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   worldsOpen: false,
   locateRequest: null,
+  populationItems: [],
+  locateCreatureRequest: null,
   traitOverlay: null,
   replaySnapshots: null,
   replayIndex: 0,
@@ -646,6 +659,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setWorldsOpen: worldsOpen => set({ worldsOpen }),
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
+  setPopulationItems: items => set({ populationItems: items }),
+  requestLocateCreature: id =>
+    set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setSoundEnabled: on => set({ soundEnabled: on }),

@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
-import { type CreatureBlueprint, LIFE_KINDS } from '@/app/micro-land/domain/types'
+import { type CreatureBlueprint, type CreatureThumb, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand, type PopulationSnapshot } from '@/app/micro-land/store'
 
@@ -76,6 +76,8 @@ export function FieldGuide() {
   const foodWeb = useMicroLand(s => s.foodWeb)
   const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
   const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
+  const populationItems = useMicroLand(s => s.populationItems)
+  const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
@@ -96,104 +98,106 @@ export function FieldGuide() {
     records.elder !== null || records.bestSteadySeconds > 0 || records.bestGenerations > 1
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
-      style={{ background: 'var(--cc-modal-scrim)' }}
-      onClick={() => setOpen(false)}
+    <aside
+      aria-label="Field guide"
+      style={{
+        width: 300,
+        flexShrink: 0,
+        borderLeft: '1px solid var(--cc-panel-divider)',
+        background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
     >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Field guide"
-        className="w-full max-w-2xl overflow-y-auto rounded-t-xl sm:rounded-xl"
-        style={{
-          maxHeight: '88dvh',
-          background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
-          border: '1px solid var(--cc-modal-border)',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
+      <div style={{ overflowY: 'auto', flex: 1 }}>
         <div
-          className="sticky top-0 flex items-center justify-between px-4 py-3"
+          className="sticky top-0 flex flex-col gap-1.5 px-3 py-2.5"
           style={{
             borderBottom: '1px solid var(--cc-panel-divider)',
             background: 'var(--cc-modal-bg-from)',
           }}
         >
-          <h2
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 11,
-              letterSpacing: 2.5,
-              textTransform: 'uppercase',
-              color: 'var(--cc-mint)',
-            }}
-          >
-            Field Guide
-          </h2>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => setPlantsHidden(h => !h)}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '4px 10px',
-              minHeight: 28,
-              borderRadius: 4,
-              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-            }}
-          >
-            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => { setWorkshopOpen(true) }}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '4px 10px',
-              minHeight: 28,
-              borderRadius: 4,
-              border: '1px solid var(--cc-panel-divider)',
-              color: 'var(--cc-text-muted)',
-            }}
-          >
-            Workshop
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => { setChallengesOpen(true) }}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '4px 10px',
-              minHeight: 28,
-              borderRadius: 4,
-              border: '1px solid var(--cc-panel-divider)',
-              color: 'var(--cc-text-muted)',
-            }}
-          >
-            Challenges
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => setOpen(false)}
-            aria-label="Close"
-            style={{ minWidth: 44, minHeight: 34, color: 'var(--cc-text-muted)' }}
-          >
-            ✕
-          </button>
+          {/* Title row + close */}
+          <div className="flex items-center justify-between">
+            <h2
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 11,
+                letterSpacing: 2.5,
+                textTransform: 'uppercase',
+                color: 'var(--cc-mint)',
+              }}
+            >
+              Field Guide
+            </h2>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setOpen(false)}
+              aria-label="Close field guide"
+              style={{ minWidth: 32, minHeight: 28, color: 'var(--cc-text-muted)' }}
+            >
+              ✕
+            </button>
+          </div>
+          {/* Action buttons row */}
+          <div className="flex flex-wrap gap-1">
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setPlantsHidden(h => !h)}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                minHeight: 26,
+                borderRadius: 4,
+                border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+                color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+              }}
+            >
+              {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => { setWorkshopOpen(true) }}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                minHeight: 26,
+                borderRadius: 4,
+                border: '1px solid var(--cc-panel-divider)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Workshop
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => { setChallengesOpen(true) }}
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '3px 8px',
+                minHeight: 26,
+                borderRadius: 4,
+                border: '1px solid var(--cc-panel-divider)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Challenges
+            </button>
+          </div>
         </div>
 
         {hasRecords && (
@@ -366,6 +370,8 @@ export function FieldGuide() {
                 const code = btoa(JSON.stringify(bp))
                 navigator.clipboard.writeText(code).catch(() => {})
               }}
+              thumbs={populationItems.filter(t => t.blueprintId === bp.id)}
+              onLocateCreature={requestLocateCreature}
             />
           ))}
         </ul>
@@ -588,7 +594,7 @@ export function FieldGuide() {
 
         <ImportSection addBlueprint={addBlueprint} />
       </div>
-    </div>
+    </aside>
   )
 }
 
@@ -654,6 +660,8 @@ function GuideEntry({
   maxGeneration,
   onLocate,
   onCopyCode,
+  thumbs,
+  onLocateCreature,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -661,15 +669,53 @@ function GuideEntry({
   maxGeneration: number
   onLocate?: () => void
   onCopyCode?: () => void
+  thumbs?: CreatureThumb[]
+  onLocateCreature?: (id: number) => void
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
+  const bpColor = Object.values(bp.art.palette)[0] ?? '#888888'
 
   return (
     <li
-      className="flex gap-3 px-4 py-3"
       style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
     >
+      {thumbs && thumbs.length > 0 && onLocateCreature && (
+        <div
+          className="flex flex-wrap gap-1 px-3 pt-2"
+          role="group"
+          aria-label={`${bp.name} population — ${thumbs.length} alive`}
+        >
+          {thumbs.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              className="cc-btn"
+              title={
+                t.name
+                  ? `${t.name} · ${Math.round(t.ageSeconds)}s`
+                  : `${Math.round(t.ageSeconds)}s`
+              }
+              onClick={() => onLocateCreature(t.id)}
+              style={{
+                width: 14,
+                height: 14,
+                borderRadius: '50%',
+                background: bpColor,
+                border: t.name ? '2px solid gold' : '1px solid rgba(0,0,0,0.3)',
+                padding: 0,
+                flexShrink: 0,
+              }}
+              aria-label={
+                t.name
+                  ? `${t.name}, age ${Math.round(t.ageSeconds)}s`
+                  : `${bp.name}, age ${Math.round(t.ageSeconds)}s`
+              }
+            />
+          ))}
+        </div>
+      )}
+      <div className="flex gap-3 px-4 py-3">
       <div className="shrink-0 pt-0.5">
         <CreaturePortrait blueprint={bp} size={40} />
       </div>
@@ -815,7 +861,8 @@ function GuideEntry({
           })()}
         </p>
       </div>
-    </li>
+    </div>
+  </li>
   )
 }
 

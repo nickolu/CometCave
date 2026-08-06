@@ -727,3 +727,15 @@ export interface HistoryEntry {
   killerBlueprintId?: string
   killerSpeciesName?: string
 }
+
+/**
+ * A minimal snapshot of one living creature, used to render the population
+ * viewer circles in the Field Guide sidebar.
+ */
+export interface CreatureThumb {
+  id: number
+  blueprintId: string
+  ageSeconds: number
+  /** Player-given name, or null for unnamed individuals. */
+  name: string | null
+}
