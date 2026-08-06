@@ -82,6 +82,8 @@ export interface Inspected {
   targetName: string | null
   /** How far back its line goes; 1 means it was placed rather than born. */
   generation: number
+  /** BlueprintIds of the parents, if this creature was born here (not placed). */
+  parentBlueprintIds?: readonly [string, string | null] | null
   /** What it inherited, as multipliers on its species. Neutral at generation 1. */
   traits: Traits
   /** Player-given name, if this one earned the right to have one. */

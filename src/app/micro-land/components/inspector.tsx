@@ -106,12 +106,23 @@ const meterLabel: React.CSSProperties = {
  *
  * Shown for everything — plants just have fewer facts to report.
  */
-function biography(c: Inspected, bp: CreatureBlueprint): string {
+function biography(c: Inspected, bp: CreatureBlueprint, bpMap: CreatureBlueprint[]): string {
   const parts: string[] = []
 
   if (c.generation <= 1) {
     parts.push('First of its line')
   } else {
+    const parentNames = c.parentBlueprintIds
+      ? [
+          bpMap.find(b => b.id === c.parentBlueprintIds![0])?.name ?? 'unknown',
+          c.parentBlueprintIds[1]
+            ? bpMap.find(b => b.id === c.parentBlueprintIds![1])?.name ?? 'unknown'
+            : null,
+        ].filter(Boolean).join(' × ')
+      : null
+    if (parentNames) {
+      parts.push(`Born from ${parentNames}`)
+    }
     parts.push(`Generation ${c.generation}`)
   }
 
@@ -505,7 +516,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
             opacity: 0.8,
           }}
         >
-          {biography(inspected, bp)}
+          {biography(inspected, bp, blueprints)}
         </div>
 
         <Meter
