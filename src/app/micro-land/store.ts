@@ -85,6 +85,8 @@ export interface Inspected {
   name: string | null
   /** True while this creature holds the land's longevity record. */
   isElder: boolean
+  /** True while this creature is navigating toward a scent left by kin. */
+  followingScent: boolean
 }
 
 /** One column of the guide's record book — see `KindRecord`. */

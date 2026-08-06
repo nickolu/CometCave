@@ -434,6 +434,9 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
               {inspected.targetName}
             </span>
           )}
+          {inspected.followingScent && !trouble && !inspected.targetName && (
+            <span style={{ opacity: 0.65 }}> · following a scent</span>
+          )}
         </div>
 
         {/*
