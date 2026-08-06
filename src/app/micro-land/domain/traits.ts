@@ -83,6 +83,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   diurnal: 0,
   immunity: 0.2,
   reproductionCooldown: 1,
+  clutchSize: 1,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -130,7 +131,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'clutchSize') =>
     b ? (a[key] + b[key]) / 2 : a[key]
 
   return {
@@ -148,6 +149,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
     immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
     reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
+    clutchSize: clamp(mix('clutchSize') + nudge(rng, drift * 0.5), 1, 4),
   }
 }
 

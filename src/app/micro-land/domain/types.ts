@@ -448,6 +448,15 @@ export interface Traits {
    * Neutral at 1. Range [TRAIT_MIN, TRAIT_MAX].
    */
   reproductionCooldown: number
+  /**
+   * How many eggs this creature lays per breeding event (egg-layers only).
+   *
+   * Range 1..4; heritable. A line in a food-rich patch with few predators can
+   * drift toward larger clutches over generations; one under heavy predation may
+   * not gain enough from multiple eggs to outweigh the breeding cost.
+   * Ignored for live-bearing species.
+   */
+  clutchSize: number
 }
 
 /** One living thing in the world. */
