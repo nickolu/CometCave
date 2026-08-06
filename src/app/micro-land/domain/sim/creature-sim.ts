@@ -493,6 +493,22 @@ export function tickCreatures(
       c.starving = Math.max(0, c.starving - dt * 2)
     }
 
+    // --- parasitism: drain host, stay fed, detach when host dies ----------
+    if (c.hostId != null) {
+      const host = findCreature(w, c.hostId)
+      if (!host || dead.has(host.id)) {
+        c.hostId = null // host is dead, detach
+      } else {
+        host.hunger = Math.min(1, host.hunger + 0.018 * dt)
+        if (host.mood === 'wander' || host.mood === 'rest') {
+          host.mood = 'flee'
+          host.targetId = c.id
+        }
+        c.hunger = Math.max(0, c.hunger - 0.015 * dt)
+        c.starving = 0
+      }
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp)) {
       kill(w, c, bp, dead, events, 'aged')
@@ -1030,6 +1046,17 @@ function look(
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
+      if (touching && bp.parasite) {
+        // Parasites attach rather than kill — drain the host over time.
+        c.hostId = other.id
+        c.mood = 'eat'
+        c.targetId = null
+        if (other.mood === 'wander' || other.mood === 'rest') {
+          other.mood = 'flee'
+          other.targetId = c.id
+        }
+        return
+      }
       if (touching) {
         devour(w, other, obp, dead, events)
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
@@ -1589,6 +1616,19 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const body = bodyBox(bp)
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2
+
+  // Attached parasite: snap to host position and return — no other steering.
+  if (c.hostId != null) {
+    const host = findCreature(w, c.hostId)
+    if (host) {
+      c.x = host.x + 0.5  // small offset so they're not perfectly overlapping
+      c.y = host.y - 0.3
+      c.vx = 0
+      c.vy = 0
+      return
+    }
+    c.hostId = null // host gone, detach
+  }
 
   let wantX = 0
   let wantY = 0

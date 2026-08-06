@@ -304,6 +304,12 @@ export interface CreatureBlueprint {
    * without widening the spawning path.
    */
   traitDefaults?: Partial<Traits>
+  /**
+   * When true, this species is parasitic: instead of killing prey on contact,
+   * it attaches and drains the host's energy over time without immediately
+   * killing it. The host's `diet.eats` categories still determine valid hosts.
+   */
+  parasite?: boolean
 }
 
 /**
@@ -470,6 +476,14 @@ export interface Creature {
   mealsEaten: number
   /** Lifetime tally of offspring. */
   children: number
+  /**
+   * The creature the parasite is currently riding.
+   *
+   * Null for non-parasites and unattached parasites. Set by `look()` when the
+   * parasite first contacts a valid host; cleared when the host dies. While set,
+   * the parasite's position is locked near the host and the host's hunger drains.
+   */
+  hostId?: number | null
   /**
    * Key life events in chronological order (max 20).
    *

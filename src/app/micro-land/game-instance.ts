@@ -1185,6 +1185,12 @@ export class GameInstance {
       followingScent: (c as { followingScent?: boolean }).followingScent ?? false,
       lifeLog: c.lifeLog ?? [],
       packSize: c.packSize ?? 0,
+      hostName: (() => {
+        const hid = c.hostId
+        if (hid == null) return null
+        const host = this.world.creatures.find(x => x.id === hid)
+        return host ? (this.world.blueprints[host.blueprintId]?.name ?? null) : null
+      })(),
     })
   }
 

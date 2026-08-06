@@ -89,6 +89,7 @@ export interface Inspected {
   followingScent: boolean
   lifeLog: Array<{ elapsed: number; text: string }>
   packSize: number
+  hostName: string | null
 }
 
 /** One column of the guide's record book — see `KindRecord`. */
