@@ -654,7 +654,7 @@ export class GameInstance {
         }
         const entry: Omit<HistoryEntry, 'id'> = {
           simTime,
-          kind: 'died',
+          kind: isPlant ? 'plant_died' : 'died',
           blueprintId: event.blueprintId,
           speciesName,
           creatureName,
