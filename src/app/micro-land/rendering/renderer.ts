@@ -543,6 +543,33 @@ export class Renderer {
       }
     }
 
+    // Seasonal colour tint — a soft wash that shifts with the season knob.
+    // Spring: muted green, Summer: warm gold, Autumn: amber, Winter: cold blue.
+    if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
+      const p = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+      const p4 = p * 4
+      const qi = Math.floor(p4) % 4
+      const t = p4 - Math.floor(p4)
+      const SEASON_TINTS: [number, number, number][] = [
+        [58,  160,  80],  // spring — green
+        [212, 160,  22],  // summer — amber gold
+        [185,  90,  20],  // autumn — orange
+        [ 26,  62, 140],  // winter — cold blue
+      ]
+      const c1 = SEASON_TINTS[qi]
+      const c2 = SEASON_TINTS[(qi + 1) % 4]
+      const r = Math.round(c1[0] * (1 - t) + c2[0] * t)
+      const g = Math.round(c1[1] * (1 - t) + c2[1] * t)
+      const b = Math.round(c1[2] * (1 - t) + c2[2] * t)
+      const alpha = 0.10 * TUNING.seasonAmplitude  // max 0.10 at full amplitude
+      if (alpha > 0.005) {
+        wctx.globalAlpha = alpha
+        wctx.fillStyle = `rgb(${r},${g},${b})`
+        wctx.fillRect(vx, 0, vw, WORLD_H)
+        wctx.globalAlpha = 1
+      }
+    }
+
     // Fog of war: paint darkness over tiles no creature has ever visited.
     // Read the store directly — the renderer already reads TUNING and
     // trailsEnabled this same way rather than threading them as props.
