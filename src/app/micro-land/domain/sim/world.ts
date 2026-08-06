@@ -351,6 +351,14 @@ export function spawnCreature(
   if (w.creatures.length >= TUNING.maxCreatures) return null
   if (!w.blueprints[bp.id]) w.blueprints[bp.id] = bp
 
+  // Species-specific trait baselines: fly/swim range naturally farther;
+  // meat-eaters are naturally more territorial about their hunting grounds.
+  const spawnBaseTraits = {
+    ...neutralTraits(),
+    ...(bp.move.kind === 'fly' || bp.move.kind === 'swim' ? { roam: 1.3 } : {}),
+    ...(bp.diet.eats.includes('meat') ? { territorial: 0.7 } : {}),
+  }
+
   const creature: Creature = {
     id: w.nextCreatureId++,
     blueprintId: bp.id,
@@ -379,9 +387,7 @@ export function spawnCreature(
     // out and was placed again start over from the blueprint rather than from
     // wherever its last line had drifted to.
     generation: 1,
-    traits: bp.traitDefaults
-      ? { ...((bp.move.kind === 'fly' || bp.move.kind === 'swim') ? { ...neutralTraits(), roam: 1.3 } : neutralTraits()), ...bp.traitDefaults }
-      : (bp.move.kind === 'fly' || bp.move.kind === 'swim') ? { ...neutralTraits(), roam: 1.3 } : neutralTraits(),
+    traits: bp.traitDefaults ? { ...spawnBaseTraits, ...bp.traitDefaults } : spawnBaseTraits,
     name: null,
     huntPassCount: 0,
     poisoned: 0,
