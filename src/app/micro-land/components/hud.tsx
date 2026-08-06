@@ -129,6 +129,8 @@ export function Hud({
   const tuning = useMicroLand(s => s.tuning)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
+  const adaptiveRun = useMicroLand(s => s.adaptiveRun)
+  const endAdaptiveRun = useMicroLand(s => s.endAdaptiveRun)
 
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const soundEnabled = useMicroLand(s => s.soundEnabled)
@@ -323,6 +325,41 @@ export function Hud({
               className="cc-btn"
               onClick={() => setChallengeActive(null)}
               title="End challenge"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                padding: '2px 6px',
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              ×
+            </button>
+          </>
+        )}
+
+        {/* Adaptive challenge HUD badge */}
+        {(adaptiveRun.active || adaptiveRun.result === 'won') && (
+          <>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                color: adaptiveRun.result === 'won' ? 'var(--cc-gold)' : 'var(--cc-mint)',
+                opacity: 0.9,
+              }}
+              title="Adaptive challenge: sustain this population to win"
+            >
+              {adaptiveRun.result === 'won'
+                ? `Adaptive complete!`
+                : `≥${adaptiveRun.targetPopulation} alive · ${Math.floor(adaptiveRun.sustainedSeconds)}/${adaptiveRun.sustainGoal}s`}
+            </span>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={endAdaptiveRun}
+              title="End adaptive challenge"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
