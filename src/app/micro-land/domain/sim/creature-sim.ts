@@ -1832,19 +1832,33 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Rate-limited via rng() so the tile scan fires ~once per second
     // rather than every tick — about 0.017 per tick at 60 Hz.
     if (c.migrateTimer > TUNING.migrationThreshold && bp.move.kind !== 'root' && rng() < 0.017) {
-      const grassIdx = MATERIAL_INDEX.grass
-      const mossIdx = MATERIAL_INDEX.moss
-      let leftScore = 0
-      let rightScore = 0
       const baseX = Math.round(c.x)
       const baseY = Math.round(c.y)
-      for (let dy = -20; dy <= 20; dy += 10) {
-        const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
-        for (let dx = 12; dx <= 160; dx += 12) {
-          const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
-          const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
-          if (lMat === grassIdx || lMat === mossIdx) leftScore++
-          if (rMat === grassIdx || rMat === mossIdx) rightScore++
+      let leftScore = 0
+      let rightScore = 0
+      // If the player has painted corridor paths, prefer those over terrain scan.
+      const corr = w.corridors
+      if (corr) {
+        for (let dy = -15; dy <= 15; dy += 5) {
+          const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
+          for (let dx = 12; dx <= 200; dx += 20) {
+            if (corr[sy * WORLD_W + Math.max(0, baseX - dx)]) leftScore++
+            if (corr[sy * WORLD_W + Math.min(WORLD_W - 1, baseX + dx)]) rightScore++
+          }
+        }
+      }
+      // Fall back to grass/moss scan if no corridor preference found.
+      if (leftScore === rightScore) {
+        const grassIdx = MATERIAL_INDEX.grass
+        const mossIdx = MATERIAL_INDEX.moss
+        for (let dy = -20; dy <= 20; dy += 10) {
+          const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
+          for (let dx = 12; dx <= 160; dx += 12) {
+            const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
+            const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
+            if (lMat === grassIdx || lMat === mossIdx) leftScore++
+            if (rMat === grassIdx || rMat === mossIdx) rightScore++
+          }
         }
       }
       if (leftScore !== rightScore) {

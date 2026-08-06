@@ -64,6 +64,7 @@ export function createWorld(seed = 1337): WorldState {
     natives: [],
     nextPlantSeed: 0,
     dormant: false,
+    corridors: new Uint8Array(WORLD_W * WORLD_H),
   }
 }
 
