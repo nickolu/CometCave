@@ -712,8 +712,23 @@ export function tickCreatures(
               // the cooldown inversely: richer soil means a shorter wait, so
               // plants cluster in patches rather than carpeting the map evenly.
               // Seasons multiply the same way: summer doubles spread, winter halves it.
+              // A plant surrounded by its own kind competes for light and soil —
+              // the more same-species neighbours within range, the longer it waits
+              // before spreading again. This is what breaks up monoculture clusters
+              // without any hard cap: a lone pioneer spreads freely, a dense patch
+              // slows itself down naturally.
+              const crowdRadius = 12
+              let crowdCount = 0
+              for (const other of w.creatures) {
+                if (other === c || other.blueprintId !== bp.id) continue
+                const cdx = other.x - c.x
+                const cdy = other.y - c.y
+                if (cdx * cdx + cdy * cdy < crowdRadius * crowdRadius) crowdCount++
+              }
+              const crowdingPenalty = 1 + crowdCount * TUNING.plantCrowdingStrength
+
               c.breedCooldown =
-                TUNING.plantSpreadCooldown /
+                (TUNING.plantSpreadCooldown * crowdingPenalty) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
                   seasonFactor)
@@ -2036,8 +2051,19 @@ function reproduce(
   const body = bodyBox(bp)
 
   for (let attempt = 0; attempt < 12; attempt++) {
-    const x = ox + (rng() * 2 - 1) * spread
-    const y = oy + (rng() * 2 - 1) * (isPlant ? 6 : spread)
+    const minSpread = isPlant ? TUNING.plantSpreadMin : 0
+    // For plants: pick a random direction and land at least minSpread tiles away.
+    // This prevents seeds from piling up directly beneath the parent.
+    const signX = rng() > 0.5 ? 1 : -1
+    const signY = rng() > 0.5 ? 1 : -1
+    const x = isPlant
+      ? ox + signX * (minSpread + rng() * (spread - minSpread))
+      : ox + (rng() * 2 - 1) * spread
+    const ySpread = isPlant ? 6 : spread
+    const yMin = isPlant ? minSpread * (6 / 14) : 0
+    const y = isPlant
+      ? oy + signY * (yMin + rng() * (ySpread - yMin))
+      : oy + (rng() * 2 - 1) * ySpread
     const cx = Math.max(0, Math.min(WORLD_W - bw, x))
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
 
