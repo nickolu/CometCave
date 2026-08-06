@@ -278,7 +278,10 @@ function needsPartner(bp: CreatureBlueprint): boolean {
  */
 function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
   return (
-    c.breedCooldown <= 0 && 1 - c.hunger >= bp.diet.breedAt && c.ageSeconds > breedingAge(c, bp)
+    c.breedCooldown <= 0 &&
+    1 - c.hunger >= bp.diet.breedAt &&
+    c.hunger + TUNING.breedCost < 1 &&
+    c.ageSeconds > breedingAge(c, bp)
   )
 }
 
