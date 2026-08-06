@@ -1193,27 +1193,38 @@ function look(
     }
   }
 
-  // Pack hunting: scan for a same-species neighbour targeting the same prey.
-  // When found, both creatures share a brief speed bonus — coordinated attacks
-  // close faster and are harder to flee from.
-  if (prey !== null) {
+  // Pack hunting: scan for same-species neighbours targeting the same prey.
+  //
+  // Cooperation gates participation: creatures with cooperation < 0.2 are
+  // loners and never join. For the rest, count how many pack members share
+  // this target and redirect idle kin with high cooperation toward it.
+  const packCooperation = (c.traits as { cooperation?: number }).cooperation ?? 0.3
+  if (prey !== null && packCooperation >= 0.2) {
     const packReach = sight + bw / 2
     const packLast = cx + packReach + SIGHT_PAD_RIGHT
-    let coordinating = false
+    let packCount = 0
     for (let pi = lowerBound(byX, cx - packReach - SIGHT_PAD_LEFT); pi < byX.length; pi++) {
       const pk = byX[pi]
       if (pk.x > packLast) break
       if (pk.id === c.id) continue
-      if (pk.blueprintId === c.blueprintId && pk.targetId === prey.id) {
-        coordinating = true
-        break
+      if (pk.blueprintId !== c.blueprintId) continue
+      const pkCoop = (pk.traits as { cooperation?: number }).cooperation ?? 0.3
+      if (pk.targetId === prey.id) {
+        packCount++
+      } else if (pkCoop >= 0.4 && pk.targetId === null && pk.mood === 'wander' && packCount > 0) {
+        // Recruit idle, cooperative kin to the pack's target.
+        pk.targetId = prey.id
+        pk.mood = 'hunt'
       }
     }
     // Grant one sense-interval of bonus (plus a little buffer) so it persists
     // until the next pass rather than dropping between ticks.
-    c.packTimer = coordinating ? (SENSE_EVERY / 60) * 2.5 : 0
+    const inPack = packCount > 0
+    c.packTimer = inPack ? (SENSE_EVERY / 60) * 2.5 : 0
+    c.packSize = inPack ? packCount + 1 : 0
   } else {
     c.packTimer = 0
+    c.packSize = 0
   }
 
   if (threat) {

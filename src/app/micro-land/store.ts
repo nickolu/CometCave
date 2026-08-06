@@ -88,6 +88,7 @@ export interface Inspected {
   /** True while this creature is navigating toward a scent left by kin. */
   followingScent: boolean
   lifeLog: Array<{ elapsed: number; text: string }>
+  packSize: number
 }
 
 /** One column of the guide's record book — see `KindRecord`. */
