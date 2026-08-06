@@ -591,6 +591,13 @@ export interface Creature {
    * nearby animals within 4 tiles.
    */
   sick: number
+  /**
+   * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
+   * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
+   * creature enters 'rest' mood until it recovers. Optional so old saves with
+   * no fatigue data default to 0.
+   */
+  fatigue?: number
 }
 
 /**

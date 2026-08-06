@@ -479,6 +479,13 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           value={fullness}
           tone={fullness < 0.25 ? 'var(--cc-pink)' : 'var(--cc-mint)'}
         />
+        {inspected.fatigue > 0.1 && (
+          <Meter
+            label="Fatigue"
+            value={inspected.fatigue}
+            tone={inspected.fatigue > 0.8 ? 'var(--cc-pink)' : 'var(--cc-gold)'}
+          />
+        )}
         <Meter
           label="Life left"
           value={lifeLeft}
