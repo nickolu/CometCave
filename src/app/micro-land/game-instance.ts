@@ -992,6 +992,16 @@ export class GameInstance {
       useMicroLand.getState().setTraitHistory(flat)
     }
 
+    // Accumulate mutualism bond time for species pairs in active symbiosis.
+    const STATS_DT = STATS_EVERY_MS / 1000
+    for (const c of this.world.creatures) {
+      if (c.symbiosisTimer <= 0) continue
+      const bp = this.world.blueprints[c.blueprintId]
+      if (!bp?.symbiosisPartnerId) continue
+      const [a, b] = [c.blueprintId, bp.symbiosisPartnerId].sort()
+      useMicroLand.getState().recordMutualismTime(`${a}:${b}`, STATS_DT)
+    }
+
     // A running world is different every tick, so there is no cheaper signal
     // than "time passed" to hang the autosave on. The shelf debounces it hard
     // and does nothing at all when no shelved world is open.

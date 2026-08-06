@@ -141,6 +141,7 @@ export function FieldGuide() {
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const mutualismBonds = useMicroLand(s => s.mutualismBonds)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -935,6 +936,43 @@ export function FieldGuide() {
             aliveIds={new Set(population.map(p => p.blueprintId))}
             foodWeb={foodWeb}
           />
+          {(() => {
+            const significantBonds = Object.entries(mutualismBonds)
+              .filter(([, seconds]) => seconds >= 30)
+              .sort(([, a], [, b]) => b - a)
+            if (significantBonds.length === 0) return null
+            return (
+              <div style={{ marginTop: 10 }}>
+                <p style={{ fontSize: 10, fontFamily: 'var(--cc-font-mono)', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 6 }}>
+                  Long-running bonds
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  {significantBonds.map(([key, seconds]) => {
+                    const [aId, bId] = key.split(':')
+                    const aName = blueprints.find(bp => bp.id === aId)?.name ?? aId
+                    const bName = blueprints.find(bp => bp.id === bId)?.name ?? bId
+                    return (
+                      <li
+                        key={key}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 11,
+                          fontFamily: 'var(--cc-font-mono)',
+                          padding: '3px 0',
+                          color: 'var(--cc-text-muted)',
+                          borderBottom: '1px solid rgba(255,255,255,0.04)',
+                        }}
+                      >
+                        <span style={{ color: '#4ade80' }}>{aName} ↔ {bName}</span>
+                        <span>{formatDuration(Math.round(seconds))}</span>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )
+          })()}
         </section>
 
         {Object.keys(foodWeb).length > 0 && (

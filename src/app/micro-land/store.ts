@@ -296,6 +296,13 @@ interface MicroLandState {
    * Updated on every eat event (live prey and carcasses).
    */
   foodWeb: Record<string, string[]>
+  /**
+   * Cumulative seconds each symbiosis pair has spent in active proximity.
+   *
+   * Key = `"${bpA}:${bpB}"` where bpA < bpB alphabetically.
+   * Value = total sim-seconds of active symbiosis between that pair.
+   */
+  mutualismBonds: Record<string, number>
   worldStats: WorldStats
   namedCreatures: NamedCreatureEntry[]
 
@@ -503,6 +510,8 @@ interface MicroLandState {
   resetWorldStats: () => void
   logEat: (eaterId: string, preyId: string) => void
   clearFoodWeb: () => void
+  recordMutualismTime: (pairKey: string, seconds: number) => void
+  clearMutualismBonds: () => void
   setNamedCreatures: (entries: NamedCreatureEntry[]) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
@@ -603,6 +612,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   populationHistory: [],
   extinctions: [],
   foodWeb: {},
+  mutualismBonds: {},
   worldStats: { ...EMPTY_STATS },
   namedCreatures: [],
 
@@ -664,7 +674,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrushShape: brushShape => set({ brushShape }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, historyLog: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, historyLog: [] }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -702,6 +712,10 @@ export const useMicroLand = create<MicroLandState>(set => ({
     return { foodWeb: { ...s.foodWeb, [eaterId]: [...existing, preyId] } }
   }),
   clearFoodWeb: () => set({ foodWeb: {} }),
+  recordMutualismTime: (pairKey, seconds) => set(s => ({
+    mutualismBonds: { ...s.mutualismBonds, [pairKey]: (s.mutualismBonds[pairKey] ?? 0) + seconds },
+  })),
+  clearMutualismBonds: () => set({ mutualismBonds: {} }),
   setNamedCreatures: entries => set({ namedCreatures: entries }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
