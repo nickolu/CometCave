@@ -117,6 +117,21 @@ export const MILESTONES: Milestone[] = [
     text: 'A venomous lineage and an immune one, locked in step.',
     reached: c => c.maxToxicity >= 0.7 && c.maxPredatorImmunity >= 0.5,
   },
+  {
+    id: 'grade-c',
+    text: 'Grade C — four kinds of life, finding their niches.',
+    reached: c => c.speciesAlive >= 4,
+  },
+  {
+    id: 'grade-b',
+    text: 'Grade B — six kinds. Each one needed.',
+    reached: c => c.speciesAlive >= 6,
+  },
+  {
+    id: 'grade-a',
+    text: 'Grade A — nine kinds, all holding. The cave is old and it approves.',
+    reached: c => c.speciesAlive >= 9,
+  },
 ]
 
 export const MILESTONE_BY_ID: Record<string, Milestone> = Object.fromEntries(
