@@ -1220,6 +1220,30 @@ function look(
     }
   }
 
+  // Spore infection: sporecap plants within 3 tiles have a 1% chance per tick
+  // to give passing animals a brief fungal sickness (5 s, not the full 20 s of a
+  // disease — enough to slow them, not kill them outright).
+  if (bp.move.kind !== 'root') {
+    const sporeReach = 3
+    const sporeLast = cx + sporeReach + SIGHT_PAD_RIGHT
+    for (let si = lowerBound(byX, cx - sporeReach - SIGHT_PAD_LEFT); si < byX.length; si++) {
+      const plant = byX[si]
+      if (plant.x > sporeLast) break
+      if (plant.blueprintId !== 'sporecap') continue
+      const pbp = w.blueprints[plant.blueprintId]
+      if (!pbp || pbp.move.kind !== 'root') continue
+      const { w: pw, h: ph } = artSize(pbp)
+      const gdx = Math.max(0, Math.abs(plant.x + pw / 2 - cx) - (bw + pw) / 2)
+      const gdy = Math.max(0, Math.abs(plant.y + ph / 2 - (c.y + bh / 2)) - (bh + ph) / 2)
+      if (gdx * gdx + gdy * gdy > sporeReach * sporeReach) continue
+      if (rng() < 0.01) {
+        if (!c.sick) events.push({ kind: 'sick', blueprintId: c.blueprintId, x: c.x, y: c.y })
+        c.sick = Math.max(c.sick ?? 0, 5)
+      }
+      break // one nearby sporecap is enough per tick
+    }
+  }
+
   // Pack hunting: scan for same-species neighbours targeting the same prey.
   //
   // Cooperation gates participation: creatures with cooperation < 0.2 are
