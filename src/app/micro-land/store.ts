@@ -454,6 +454,8 @@ interface MicroLandState {
   setFocusedSpeciesStats: (stats: FocusedSpeciesStats | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
+  scentsEnabled: boolean
+  setScentsEnabled: (on: boolean) => void
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
@@ -632,6 +634,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
+  scentsEnabled: false,
   heatmapBlueprintId: null,
   soundEnabled: false,
 
@@ -756,6 +759,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setGraphFocusId: id => set({ graphFocusId: id, ...(id === null && { focusedSpeciesStats: null }) }),
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
+  setScentsEnabled: on => set({ scentsEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 
