@@ -771,28 +771,33 @@ export function tickCreatures(
         const ox = mate ? (c.x + mate.x) / 2 : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
         if (bp.egglayer && !isPlant) {
-          // Egg-layer: drop an egg with inherited traits rather than spawning live.
-          const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
+          // Egg-layer: drop a clutch of inherited eggs rather than spawning live.
           const generation = Math.max(c.generation, mate?.generation ?? 0) + 1
-          w.eggs.push({
-            id: w.nextEggId++,
-            x: ox,
-            y: oy,
-            blueprintId: bp.id,
-            traits: childTraits,
-            generation,
-            hatchIn: TUNING.eggHatchSeconds,
-          })
-          c.children++
-          if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
-          else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
-          speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
+          const clutch = Math.max(1, Math.round((c.traits as { clutchSize?: number }).clutchSize ?? 1))
+          for (let egg = 0; egg < clutch; egg++) {
+            const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
+            // Scatter eggs slightly so they don't all pile on the same tile.
+            const scatter = clutch > 1 ? (rng() * 2 - 1) * 2 : 0
+            w.eggs.push({
+              id: w.nextEggId++,
+              x: ox + scatter,
+              y: oy,
+              blueprintId: bp.id,
+              traits: childTraits,
+              generation,
+              hatchIn: TUNING.eggHatchSeconds,
+            })
+          }
+          c.children += clutch
+          if (c.children === clutch) logLife(c, w.elapsed, 'First offspring')
+          else if (Math.floor(c.children / 10) > Math.floor((c.children - clutch) / 10)) logLife(c, w.elapsed, `${c.children} offspring`)
+          speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + clutch
           c.breedCooldown = TUNING.breedCooldown * ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
-            mate.children++
-            if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
-            else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
+            mate.children += clutch
+            if (mate.children === clutch) logLife(mate, w.elapsed, 'First offspring')
+            else if (Math.floor(mate.children / 10) > Math.floor((mate.children - clutch) / 10)) logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
