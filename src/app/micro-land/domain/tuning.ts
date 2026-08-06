@@ -442,6 +442,15 @@ export const KNOBS: Knob[] = [
     max: 1800,
     step: 30,
   },
+  {
+    key: 'dayLengthSeconds',
+    group: 'world',
+    label: 'Day/night cycle (sim seconds)',
+    help: 'How long one full day/night cycle takes. 0 means no cycle. 120 is two real minutes at normal speed; the world darkens at night and creatures with diurnal traits lose sight in the wrong light. Shorter days feel dramatic; longer days feel subtle.',
+    min: 0,
+    max: 600,
+    step: 30,
+  },
 ]
 
 const KNOB_BY_KEY: Record<TuningKey, Knob> = Object.fromEntries(
