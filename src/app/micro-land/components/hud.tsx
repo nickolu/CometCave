@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 import { disableSound, enableSound } from '@/app/micro-land/audio/sound-engine'
@@ -155,16 +156,42 @@ export function Hud({
   // which reads as a broken counter rather than as a streak.
   const steady = steadySeconds >= STEADY_SHOW_SECONDS ? formatDuration(steadySeconds) : null
 
+  const [overflowOpen, setOverflowOpen] = useState(false)
+  const overflowRef = useRef<HTMLDivElement>(null)
+
+  // Close the overflow menu when clicking outside it.
+  useEffect(() => {
+    if (!overflowOpen) return
+    const onDown = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [overflowOpen])
+
+  // Shared style for items inside the overflow dropdown.
+  const overflowItem: React.CSSProperties = {
+    ...chipBase,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 6,
+    width: '100%',
+    textAlign: 'left',
+  }
+
   return (
     <header
-      className="flex flex-wrap items-center gap-2 px-3 py-2 pl-14"
+      className="flex items-center gap-2 px-3 py-2 pl-14"
       style={{
         borderBottom: '1px solid var(--cc-panel-divider)',
         background: 'linear-gradient(180deg, var(--cc-panel-grad-from), transparent)',
+        overflow: 'hidden',
       }}
     >
       <h1
-        className="hidden sm:block"
+        className="hidden sm:block shrink-0"
         style={{
           fontFamily: 'var(--cc-font-mono)',
           fontSize: 12,
@@ -176,65 +203,11 @@ export function Hud({
         Micro&nbsp;Land
       </h1>
 
-      <label className="sr-only" htmlFor="micro-land-theme">
-        Choose a world
-      </label>
-      <select
-        id="micro-land-theme"
-        value={themeId}
-        onChange={e => setTheme(e.target.value)}
-        style={{
-          ...chipBase,
-          color: 'var(--cc-text-default)',
-          background: 'var(--cc-panel-grad-to)',
-        }}
-      >
-        {THEMES.map(theme => (
-          <option key={theme.id} value={theme.id}>
-            {theme.name}
-          </option>
-        ))}
-        {summonedLand && <option value={SUMMONED_THEME_ID}>✦ {summonedLand}</option>}
-      </select>
+      {/* ── Primary one-click actions ──────────────────────────────────────── */}
 
       <button
         type="button"
-        className="cc-btn"
-        onClick={onReshuffle}
-        style={chipBase}
-        title="Build this world again, differently"
-      >
-        Reshape
-      </button>
-
-      {/*
-        Next to the world picker rather than off with the settings, because it is
-        part of the same question: which land am I in? The picker chooses a kind
-        of world; this chooses one you have already made.
-      */}
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={() => setWorldsOpen(true)}
-        style={{ ...chipBase, ...(activeWorldId ? activeChip : {}) }}
-        // The chip highlight says 'saved' visually; the label stopped saying it
-        // when this became a noun, so the state has to reach a screen reader
-        // some other way than the colour.
-        aria-label={
-          activeWorldId ? 'Worlds — this world is saved' : 'Worlds — this world is not saved'
-        }
-        title={
-          activeWorldId
-            ? 'This world is saved — everything you do here is written back on its own'
-            : 'Save this world, or open one you saved'
-        }
-      >
-        Worlds
-      </button>
-
-      <button
-        type="button"
-        className="cc-btn"
+        className="cc-btn shrink-0"
         onClick={() => setSummonOpen(true)}
         style={{
           ...chipBase,
@@ -253,7 +226,7 @@ export function Hud({
 
       <button
         type="button"
-        className="cc-btn"
+        className="cc-btn shrink-0"
         onClick={() =>
           setTool(tool.kind === 'inspect' ? { kind: 'material', material: 'dirt' } : { kind: 'inspect' })
         }
@@ -267,7 +240,7 @@ export function Hud({
         Inspect
       </button>
 
-      <div className="flex items-center gap-1" role="group" aria-label="Speed">
+      <div className="flex shrink-0 items-center gap-1" role="group" aria-label="Speed">
         <button
           type="button"
           className="cc-btn"
@@ -296,139 +269,53 @@ export function Hud({
         ))}
       </div>
 
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={onOpenHistory}
-        disabled={!!replaySnapshots}
-        style={{
-          fontFamily: 'var(--cc-font-mono)',
-          fontSize: 9,
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          padding: '3px 8px',
-          border: '1px solid var(--cc-mint-line)',
-          color: 'var(--cc-text-muted)',
-        }}
-        title="View ecosystem history"
-      >
-        History
-      </button>
+      {/* ── Right side ────────────────────────────────────────────────────── */}
 
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={() => setHistoryOpen(true)}
-        style={{
-          fontFamily: 'var(--cc-font-mono)',
-          fontSize: 9,
-          letterSpacing: 1.2,
-          textTransform: 'uppercase',
-          padding: '3px 8px',
-          border: '1px solid var(--cc-mint-line)',
-          color: 'var(--cc-text-muted)',
-        }}
-        title="View the event log"
-      >
-        Log
-      </button>
-
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={() => {
-          const next = !soundEnabled
-          if (next) enableSound()
-          else disableSound()
-          setSoundEnabled(next)
-        }}
-        style={{
-          ...chipBase,
-          ...(soundEnabled
-            ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
-            : {}),
-        }}
-        aria-pressed={soundEnabled}
-        title="Toggle ambient sound"
-      >
-        {soundEnabled ? 'Sound on' : 'Sound off'}
-      </button>
-
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-2">
+        {/* Challenge display — contextual, stays visible */}
         {challengeActive && (
-          <span
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1,
-              color: 'var(--cc-mint)',
-              opacity: 0.85,
-              maxWidth: 240,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            title={challengeActive.goal}
-          >
-            {challengeActive.name}: {challengeActive.goal}
-          </span>
+          <>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                color: 'var(--cc-mint)',
+                opacity: 0.85,
+                maxWidth: 200,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              title={challengeActive.goal}
+            >
+              {challengeActive.name}: {challengeActive.goal}
+            </span>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => setChallengeActive(null)}
+              title="End challenge"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                padding: '2px 6px',
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              ×
+            </button>
+          </>
         )}
-        {challengeActive && (
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => setChallengeActive(null)}
-            title="End challenge"
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              padding: '2px 6px',
-              border: '1px solid var(--cc-mint-line)',
-              color: 'var(--cc-text-muted)',
-            }}
-          >
-            ×
-          </button>
-        )}
-        {!authLoading && (
-          <Link
-            href="/auth"
-            style={{
-              ...chipBase,
-              padding: '7px 10px',
-              ...(isSignedIn
-                ? { color: 'var(--cc-text-default)' }
-                : { color: 'var(--cc-mint)', borderColor: 'var(--cc-mint)' }),
-            }}
-            title={isSignedIn ? 'Account settings' : 'Sign in to save your progress across devices'}
-          >
-            {authLabel}
-          </Link>
-        )}
-        <button
-          type="button"
-          className="cc-btn"
-          onClick={() => setSettingsOpen(!settingsOpen)}
-          style={{
-            ...chipBase,
-            padding: '7px 9px',
-            ...(settingsOpen ? activeChip : {}),
-            ...(tuned && !settingsOpen
-              ? { borderColor: 'var(--cc-gold)', color: 'var(--cc-gold)' }
-              : {}),
-          }}
-          aria-pressed={settingsOpen}
-          aria-label="World settings"
-          title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
-        >
-          <SlidersIcon />
-        </button>
+
+        {/* Field Guide — species count and streak */}
         <button
           type="button"
           className="cc-btn"
           onClick={() => setGuideOpen(true)}
           style={chipBase}
-          title={steady ? 'How long this land has gone without losing a species' : undefined}
+          title={steady ? 'How long this land has gone without losing a species' : 'Open the field guide'}
         >
           {species} kinds · {total} alive
           {steady && (
@@ -438,6 +325,8 @@ export function Hud({
             </>
           )}
         </button>
+
+        {/* Ecosystem health — informational */}
         {(() => {
           const status = ecosystemHealth(population, total)
           return (
@@ -456,19 +345,197 @@ export function Hud({
             </span>
           )
         })()}
-        <button
-          type="button"
-          className="cc-btn"
-          onClick={onClearLife}
-          style={{
-            ...chipBase,
-            borderColor: 'var(--cc-pink-border)',
-            color: 'var(--cc-pink)',
-          }}
-          title="Remove every living thing"
-        >
-          Clear all
-        </button>
+
+        {/* Auth — always accessible */}
+        {!authLoading && (
+          <Link
+            href="/auth"
+            style={{
+              ...chipBase,
+              padding: '7px 10px',
+              ...(isSignedIn
+                ? { color: 'var(--cc-text-default)' }
+                : { color: 'var(--cc-mint)', borderColor: 'var(--cc-mint)' }),
+            }}
+            title={isSignedIn ? 'Account settings' : 'Sign in to save your progress across devices'}
+          >
+            {authLabel}
+          </Link>
+        )}
+
+        {/* Overflow menu — secondary actions */}
+        <div ref={overflowRef} style={{ position: 'relative' }}>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setOverflowOpen(v => !v)}
+            aria-expanded={overflowOpen}
+            aria-label="More options"
+            title="More options"
+            style={{
+              ...chipBase,
+              padding: '7px 10px',
+              letterSpacing: 2,
+              ...(overflowOpen ? activeChip : {}),
+              ...(tuned && !overflowOpen
+                ? { borderColor: 'var(--cc-gold)', color: 'var(--cc-gold)' }
+                : {}),
+            }}
+          >
+            ···
+          </button>
+
+          {overflowOpen && (
+            <div
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: 'calc(100% + 4px)',
+                minWidth: 200,
+                background: 'var(--cc-modal-bg-to, #1b1b2e)',
+                border: '1px solid var(--cc-panel-divider)',
+                borderRadius: 6,
+                zIndex: 50,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 2,
+                padding: 6,
+                boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              }}
+            >
+              {/* Theme selector */}
+              <label className="sr-only" htmlFor="micro-land-theme-overflow">
+                Choose a world
+              </label>
+              <select
+                id="micro-land-theme-overflow"
+                value={themeId}
+                onChange={e => { setTheme(e.target.value); setOverflowOpen(false) }}
+                style={{
+                  ...overflowItem,
+                  color: 'var(--cc-text-default)',
+                  background: 'var(--cc-panel-grad-to)',
+                }}
+              >
+                {THEMES.map(theme => (
+                  <option key={theme.id} value={theme.id}>
+                    {theme.name}
+                  </option>
+                ))}
+                {summonedLand && <option value={SUMMONED_THEME_ID}>✦ {summonedLand}</option>}
+              </select>
+
+              {/* Reshape */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { onReshuffle(); setOverflowOpen(false) }}
+                style={overflowItem}
+                title="Build this world again, differently"
+              >
+                Reshape world
+              </button>
+
+              {/* Worlds */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { setWorldsOpen(true); setOverflowOpen(false) }}
+                style={{ ...overflowItem, ...(activeWorldId ? activeChip : {}) }}
+                aria-label={activeWorldId ? 'Worlds — this world is saved' : 'Worlds — open or save a world'}
+                title={activeWorldId ? 'This world is saved' : 'Save this world, or open one you saved'}
+              >
+                Worlds{activeWorldId ? ' ✓' : ''}
+              </button>
+
+              <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+
+              {/* History */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { onOpenHistory(); setOverflowOpen(false) }}
+                disabled={!!replaySnapshots}
+                style={overflowItem}
+                title="View ecosystem history"
+              >
+                History
+              </button>
+
+              {/* Log */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { setHistoryOpen(true); setOverflowOpen(false) }}
+                style={overflowItem}
+                title="View the event log"
+              >
+                Log
+              </button>
+
+              <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+
+              {/* Sound */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => {
+                  const next = !soundEnabled
+                  if (next) enableSound()
+                  else disableSound()
+                  setSoundEnabled(next)
+                }}
+                style={{
+                  ...overflowItem,
+                  ...(soundEnabled
+                    ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
+                    : {}),
+                }}
+                aria-pressed={soundEnabled}
+                title="Toggle ambient sound"
+              >
+                {soundEnabled ? 'Sound on' : 'Sound off'}
+              </button>
+
+              {/* Settings */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { setSettingsOpen(!settingsOpen); setOverflowOpen(false) }}
+                style={{
+                  ...overflowItem,
+                  ...(settingsOpen ? activeChip : {}),
+                  ...(tuned && !settingsOpen
+                    ? { borderColor: 'var(--cc-gold)', color: 'var(--cc-gold)' }
+                    : {}),
+                }}
+                aria-pressed={settingsOpen}
+                aria-label="World settings"
+                title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
+              >
+                <SlidersIcon />
+                {tuned ? 'Settings ✦' : 'Settings'}
+              </button>
+
+              <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+
+              {/* Clear all — destructive */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { onClearLife(); setOverflowOpen(false) }}
+                style={{
+                  ...overflowItem,
+                  borderColor: 'var(--cc-pink-border)',
+                  color: 'var(--cc-pink)',
+                }}
+                title="Remove every living thing"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </header>
   )
