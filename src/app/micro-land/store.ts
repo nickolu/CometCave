@@ -303,6 +303,11 @@ interface MicroLandState {
    * Value = total sim-seconds of active symbiosis between that pair.
    */
   mutualismBonds: Record<string, number>
+  /**
+   * World-time (elapsed seconds) when each species was first observed alive.
+   * Key = blueprintId.
+   */
+  speciesFirstSeen: Record<string, number>
   worldStats: WorldStats
   namedCreatures: NamedCreatureEntry[]
 
@@ -512,6 +517,7 @@ interface MicroLandState {
   clearFoodWeb: () => void
   recordMutualismTime: (pairKey: string, seconds: number) => void
   clearMutualismBonds: () => void
+  setSpeciesFirstSeen: (firstSeen: Record<string, number>) => void
   setNamedCreatures: (entries: NamedCreatureEntry[]) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
@@ -613,6 +619,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   extinctions: [],
   foodWeb: {},
   mutualismBonds: {},
+  speciesFirstSeen: {},
   worldStats: { ...EMPTY_STATS },
   namedCreatures: [],
 
@@ -674,7 +681,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrushShape: brushShape => set({ brushShape }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, historyLog: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, speciesFirstSeen: {}, historyLog: [] }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
@@ -716,6 +723,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     mutualismBonds: { ...s.mutualismBonds, [pairKey]: (s.mutualismBonds[pairKey] ?? 0) + seconds },
   })),
   clearMutualismBonds: () => set({ mutualismBonds: {} }),
+  setSpeciesFirstSeen: firstSeen => set({ speciesFirstSeen: firstSeen }),
   setNamedCreatures: entries => set({ namedCreatures: entries }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
