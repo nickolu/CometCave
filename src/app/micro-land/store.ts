@@ -388,6 +388,9 @@ interface MicroLandState {
   traitOverlay: string | null
   /** Toggle the trait overlay. Passing the current trait turns it off. */
   setTraitOverlay: (trait: string | null) => void
+  /** Species pinned for comparison (first selection). */
+  compareId: string | null
+  setCompareId: (id: string | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
   soundEnabled: boolean
@@ -553,6 +556,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   populationItems: [],
   locateCreatureRequest: null,
   traitOverlay: null,
+  compareId: null,
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
@@ -665,6 +669,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
+  setCompareId: id => set({ compareId: id }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 
