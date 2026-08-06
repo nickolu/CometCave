@@ -1071,10 +1071,19 @@ function GuideEntry({
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 10,
-                color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
+                color:
+                  alive === 0
+                    ? 'var(--cc-pink)'
+                    : alive <= 3
+                    ? 'var(--cc-gold)'
+                    : 'var(--cc-text-muted)',
               }}
             >
-              {alive > 0 ? `${alive} alive` : 'none left'}
+              {alive === 0
+                ? 'none left'
+                : alive <= 3
+                ? `⚠ ${alive} left`
+                : `${alive} alive`}
             </span>
             {bp.summoned && (
               <span
