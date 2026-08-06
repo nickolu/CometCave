@@ -716,28 +716,37 @@ export function FieldGuide() {
         {extinctions.length > 0 && (
           <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
             <h3 className="pb-2" style={sectionHeading}>
-              Extinctions
+              Memorial
             </h3>
             <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
-              Species that lived and died in this land.
+              {extinctions.length === 1
+                ? 'One kind has come and gone in this land.'
+                : `${extinctions.length} kinds have come and gone in this land.`}
             </p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {[...extinctions].reverse().map(ext => (
                 <li
                   key={ext.blueprintId + ext.elapsed}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    padding: '3px 0',
-                    opacity: 0.6,
+                    display: 'grid',
+                    gridTemplateColumns: '1fr auto',
+                    gap: '2px 8px',
+                    padding: '5px 0',
+                    borderBottom: '1px solid rgba(255,255,255,0.04)',
                     fontSize: 11,
                     fontFamily: 'var(--cc-font-mono)',
                   }}
                 >
-                  <span>🦴 {ext.name}</span>
+                  <span style={{ color: 'var(--cc-text-default)', opacity: 0.75 }}>
+                    {ext.name}
+                  </span>
+                  <span style={{ color: 'var(--cc-text-muted)', fontSize: 10, textAlign: 'right' }}>
+                    gone at {formatDuration(ext.elapsed)}
+                  </span>
                   <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
-                    gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
+                    {ext.maxGeneration > 1
+                      ? `${formatDuration(ext.livedFor)} · reached gen ${ext.maxGeneration}`
+                      : formatDuration(ext.livedFor)}
                   </span>
                 </li>
               ))}
