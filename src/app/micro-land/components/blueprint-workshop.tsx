@@ -54,6 +54,9 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
   const [traits, setTraits] = useState<Traits>(defaultTraits)
   const [hue, setHue] = useState(0)
   const [shade, setShade] = useState(1)
+  const [sharing, setSharing] = useState(false)
+  const [shareMsg, setShareMsg] = useState<string | null>(null)
+  const notify = useMicroLand(s => s.notify)
 
   const animals = blueprints.filter(bp => bp.move.kind !== 'root')
   const displayList = animals.length > 0 ? animals : blueprints
@@ -94,6 +97,49 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
     requestWorkshopSpawn(finalBlueprint, finalTraits)
     onClose()
     setStep('pick')
+  }
+
+  async function handleShare() {
+    if (!base) return
+    if (!name.trim()) { setNameError(true); return }
+    setNameError(false)
+    setSharing(true)
+    setShareMsg(null)
+    const finalBlueprint: CreatureBlueprint = {
+      ...base,
+      name: name.trim(),
+      move: { ...base.move, kind: locoKind },
+      diet: { ...base.diet, eats: DIET_OPTIONS[dietIdx].eats },
+    }
+    try {
+      // Get auth token if available
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      try {
+        const { getAuth } = await import('firebase/auth')
+        const { getApp } = await import('firebase/app')
+        const user = getAuth(getApp()).currentUser
+        if (user) {
+          const token = await user.getIdToken()
+          headers['Authorization'] = `Bearer ${token}`
+        }
+      } catch { /* no auth token, still try */ }
+
+      const res = await fetch('/api/v1/micro-land/blueprints', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ blueprint: finalBlueprint }),
+      })
+      if (!res.ok) throw new Error('Save failed')
+      const { id } = await res.json() as { id: string }
+      const url = `${window.location.origin}/micro-land?blueprint=${id}`
+      await navigator.clipboard.writeText(url)
+      notify('Blueprint link copied to clipboard!')
+      setShareMsg('Link copied!')
+    } catch {
+      notify('Could not share blueprint — try again.')
+      setShareMsg('Failed')
+    }
+    setSharing(false)
   }
 
   const chipBase = {
@@ -370,6 +416,21 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
               }}
             >
               Cancel
+            </button>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => void handleShare()}
+              disabled={sharing}
+              title="Share this design — copies a link to clipboard"
+              style={{
+                ...chipBase,
+                border: '1px solid var(--cc-panel-divider)',
+                color: shareMsg === 'Link copied!' ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                opacity: sharing ? 0.5 : 1,
+              }}
+            >
+              {sharing ? 'Sharing…' : shareMsg ?? 'Share link'}
             </button>
             <button
               type="button"

@@ -179,6 +179,31 @@ export function MicroLandGame() {
   useEffect(() => onSaveState(useMicroLand.getState().setSaveState), [])
   useEffect(() => onShelf(useMicroLand.getState().setShelf), [])
 
+  // Load a blueprint from URL param and spawn it when the game is ready
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const blueprintId = params.get('blueprint')
+    if (!blueprintId) return
+    // Wait for game to be ready, then spawn
+    const trySpawn = async () => {
+      for (let i = 0; i < 20; i++) {
+        if (gameRef.current) break
+        await new Promise(r => setTimeout(r, 300))
+      }
+      if (!gameRef.current) return
+      try {
+        const res = await fetch(`/api/v1/micro-land/blueprints/${blueprintId}`)
+        if (!res.ok) return
+        const { shared } = await res.json() as { shared: { blueprintJson: string; name: string; creatorNickname: string } }
+        const blueprint = JSON.parse(shared.blueprintJson) as import('./domain/types').CreatureBlueprint
+        useMicroLand.getState().requestWorkshopSpawn(blueprint, blueprint.traitDefaults ?? {})
+        useMicroLand.getState().notify(`Spawning "${shared.name}" by ${shared.creatorNickname}`)
+      } catch { /* best effort */ }
+    }
+    void trySpawn()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const adoptedRef = useRef<string | null>(null)
   useEffect(() => {
     const uid = user?.uid
