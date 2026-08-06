@@ -143,7 +143,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     shade: clamp(mix('shade') + nudge(rng, drift), SHADE_MIN, SHADE_MAX),
     roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
     territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
-    size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
+    size: clamp(mix('size') + nudge(rng, drift * 1.5), 0.5, 1.8),
     camouflage: clamp(mix('camouflage') + nudge(rng, drift), 0, 0.8),
     toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
     cooperation: clamp(mix('cooperation') + nudge(rng, drift), 0, 1),
@@ -274,7 +274,9 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.roam ?? 1) <= 1 - NOTABLE) phrases.push('stay-close')
   if ((t.territorial ?? 0.5) >= 0.5 + NOTABLE) phrases.push('territorial')
   else if ((t.territorial ?? 0.5) <= 0.5 - NOTABLE) phrases.push('wandering')
-  if ((t.size ?? 1) >= 1 + NOTABLE) phrases.push('larger than most')
+  if ((t.size ?? 1) >= 1.5) phrases.push('giant')
+  else if ((t.size ?? 1) >= 1 + NOTABLE) phrases.push('larger than most')
+  else if ((t.size ?? 1) <= 0.7) phrases.push('tiny')
   else if ((t.size ?? 1) <= 1 - NOTABLE) phrases.push('smaller than most')
   if ((t.camouflage ?? 0.2) >= 0.3) phrases.push('hard to spot')
   else if ((t.camouflage ?? 0.2) <= 0.1) phrases.push('easy to spot')
