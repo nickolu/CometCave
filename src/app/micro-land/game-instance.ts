@@ -35,7 +35,7 @@ import {
 } from './domain/blueprint'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
-import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY } from './domain/constants'
+import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
 import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creature-sim'
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
@@ -202,6 +202,11 @@ export class GameInstance {
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
   private lastArchiveSize = -1
 
+  // --- heatmap ---
+  private heatmap: Float32Array | null = null
+  private heatmapCurrentBpId: string | null = null
+  private heatmapTickCounter = 0
+
   // --- pointer state ---
   private pointerDown = false
   private grabbed: Creature | null = null
@@ -359,9 +364,9 @@ export class GameInstance {
     if (replaySnapshots && replaySnapshots.length > 0) {
       const snap = replaySnapshots[replayIndex] ?? replaySnapshots[replaySnapshots.length - 1]
       const replayWorld = { ...this.world, creatures: snap.creatures }
-      this.renderer.render(replayWorld, theme, undefined, undefined)
+      this.renderer.render(replayWorld, theme, undefined, undefined, null)
     } else {
-      this.renderer.render(this.world, theme, this.inspectedId, this.elderId)
+      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap)
     }
   }
 
@@ -447,6 +452,28 @@ export class GameInstance {
     }
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
+
+    // --- heatmap update (every 5 ticks) ---
+    this.heatmapTickCounter++
+    if (this.heatmapTickCounter >= 5) {
+      this.heatmapTickCounter = 0
+      const bpId = useMicroLand.getState().heatmapBlueprintId
+      if (bpId !== this.heatmapCurrentBpId) {
+        this.heatmapCurrentBpId = bpId
+        this.heatmap = bpId ? new Float32Array(WORLD_W * WORLD_H) : null
+      }
+      if (this.heatmap && bpId) {
+        // Decay existing values.
+        for (let i = 0; i < this.heatmap.length; i++) this.heatmap[i] *= 0.995
+        // Stamp each creature of the tracked species.
+        for (const c of w.creatures) {
+          if (c.blueprintId !== bpId) continue
+          const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(c.x)))
+          const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(c.y)))
+          this.heatmap[ty * WORLD_W + tx] += 1
+        }
+      }
+    }
   }
 
   /** Turn raw sim events into the occasional human-readable notice. */
