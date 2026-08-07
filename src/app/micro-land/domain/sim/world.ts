@@ -49,8 +49,6 @@ export function createWorld(seed = 1337): WorldState {
     carcasses: [],
     tombstones: [],
     nextTombstoneId: 1,
-    fossils: [],
-    nextFossilId: 1,
     nextCarcassId: 1,
     scents: [],
     moisture: new Float32Array(WORLD_W * WORLD_H),
@@ -66,8 +64,6 @@ export function createWorld(seed = 1337): WorldState {
     natives: [],
     nextPlantSeed: 0,
     dormant: false,
-    corridors: new Uint8Array(WORLD_W * WORLD_H),
-    visited: new Uint8Array(WORLD_W * WORLD_H),
   }
 }
 
@@ -310,9 +306,6 @@ export function applyThemeObject(w: WorldState, theme: Theme, seed?: number): vo
   for (let i = 0; i < w.grain.length; i++) w.grain[i] = Math.floor(rng() * 256)
   w.particles.length = 0
   w.dormant = false
-  // New terrain means a new exploration slate — all fog reset.
-  if (w.visited) w.visited.fill(0)
-  else w.visited = new Uint8Array(WORLD_W * WORLD_H)
 }
 
 /** Paint a filled circle of material. This is the player's brush. */
@@ -419,34 +412,6 @@ export function paintBiomeSquare(
   }
 }
 
-/**
- * Degrade a tile one step due to sustained creature traffic.
- * Grass wears to dirt; dirt wears to mud. All other materials are unchanged.
- */
-export function erodeTile(w: WorldState, x: number, y: number): void {
-  if (!inBounds(x, y)) return
-  const current = w.tiles[y * WORLD_W + x]
-  const grassVal = MATERIAL_INDEX['grass']
-  const dirtVal = MATERIAL_INDEX['dirt']
-  const mudVal = MATERIAL_INDEX['mud']
-  if (current === grassVal) {
-    setTile(w, x, y, dirtVal)
-  } else if (current === dirtVal) {
-    setTile(w, x, y, mudVal)
-  }
-}
-
-/**
- * Restore an overgrazing-depleted tile back to grass.
- * Only acts on dirt; all other tiles are left alone.
- */
-export function restoreGrass(w: WorldState, x: number, y: number): void {
-  if (!inBounds(x, y)) return
-  if (w.tiles[y * WORLD_W + x] === MATERIAL_INDEX['dirt']) {
-    setTile(w, x, y, MATERIAL_INDEX['grass'])
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Spawning
 // ---------------------------------------------------------------------------
@@ -518,8 +483,6 @@ export function spawnCreature(
     fatigue: 0,
     carryingSeed: null,
     seedTimer: 0,
-    lastMealX: null,
-    lastMealY: null,
   }
   w.creatures.push(creature)
   return creature
@@ -864,139 +827,3 @@ export function countByBlueprint(w: WorldState): Record<string, number> {
 }
 
 export { AIR }
-
-/**
- * Applies tidal flooding — periodically raises and lowers water in the bottom
- * tidal zone based on elapsed sim time. Only affects AIR and WATER tiles;
- * solid terrain (stone, dirt, etc.) is never modified.
- *
- * Sine-wave phase: 0 s = low tide, tidalPeriod/2 = high tide.
- * The tidal zone spans the bottom (tidalAmplitude + 2) rows, leaving the
- * bottom 2 rows as a permanent base that is never drained.
- */
-export function applyTide(w: WorldState): void {
-  if (TUNING.tidalPeriod <= 0) return
-
-  const WATER_IDX = MATERIAL_INDEX.water
-  const { width, height } = w
-  const amp = Math.ceil(TUNING.tidalAmplitude)
-
-  // Sinusoidal phase: low tide at start, high tide halfway through
-  const phase = (w.elapsed % TUNING.tidalPeriod) / TUNING.tidalPeriod
-  const riseRows = Math.round(((1 - Math.cos(phase * 2 * Math.PI)) / 2) * amp)
-
-  // Leave the bottom BASE rows untouched (permanent seabed/bedrock)
-  const BASE = 2
-  const zoneTop = Math.max(0, height - amp - BASE)
-  // Current tide line: rows at y >= tideLine are in the flood zone
-  const tideLine = height - BASE - riseRows
-
-  for (let x = 0; x < width; x++) {
-    for (let y = zoneTop; y < height - BASE; y++) {
-      const i = y * width + x
-      const mat = w.tiles[i]
-      if (y >= tideLine) {
-        // In the flood zone — fill air with water
-        if (mat === AIR) w.tiles[i] = WATER_IDX
-      } else if (mat === WATER_IDX) {
-        // Above the tide line in the tidal zone — drain water back to air
-        w.tiles[i] = AIR
-      }
-    }
-  }
-}
-
-/**
- * Triggers a mass extinction cataclysm at a random point in the world.
- *
- * Converts all non-air solid tiles within `radius` tiles to air, removing
- * terrain and killing every creature caught inside the blast zone. Returns the
- * center of the blast so the caller can scroll to it and emit particles.
- */
-export function applyMassExtinction(
-  w: WorldState,
-  rng: Rng
-): { cx: number; cy: number; radius: number } {
-  const radius = Math.max(5, Math.round(TUNING.massExtinctionRadius))
-  const { width, height } = w
-
-  // Pick a random centre, avoiding a narrow border so the blast isn't half off-world.
-  const cx = radius + Math.floor(rng() * (width - 2 * radius))
-  const cy = radius + Math.floor(rng() * (height - 2 * radius))
-
-  const r2 = radius * radius
-  for (let dy = -radius; dy <= radius; dy++) {
-    const y = cy + dy
-    if (y < 0 || y >= height) continue
-    for (let dx = -radius; dx <= radius; dx++) {
-      if (dx * dx + dy * dy > r2) continue
-      const x = cx + dx
-      if (x < 0 || x >= width) continue
-      // Only blast solid tiles — leave air, water, and lava alone.
-      const mat = w.tiles[y * width + x]
-      if (mat !== AIR) w.tiles[y * width + x] = AIR
-    }
-  }
-
-  // Kill all creatures in the blast zone.
-  w.creatures = w.creatures.filter(c => {
-    const dx = c.x - cx
-    const dy = c.y - cy
-    return dx * dx + dy * dy > r2
-  })
-
-  return { cx, cy, radius }
-}
-
-/**
- * Apply a storm event at a random horizontal position.
- *
- * A storm has two effects on terrain:
- *   1. Strips vegetation — grass and moss tiles near the surface become dirt,
- *      simulating heavy rain tearing off leaf cover.
- *   2. Flash flood — adds a thin sheet of water above the surface across the
- *      storm's width; gravity and normal tile physics carry it downhill.
- *
- * Returns the X range of the storm so the caller can render rain particles.
- */
-export function applyStorm(
-  w: WorldState,
-  rng: Rng
-): { x0: number; x1: number } {
-  const halfW = Math.max(5, Math.round(TUNING.stormWidth / 2))
-  const cx = halfW + Math.floor(rng() * (WORLD_W - 2 * halfW))
-  const x0 = Math.max(0, cx - halfW)
-  const x1 = Math.min(WORLD_W - 1, cx + halfW)
-
-  const grassIdx = MATERIAL_INDEX['grass']
-  const mossIdx = MATERIAL_INDEX['moss']
-  const dirtIdx = MATERIAL_INDEX['dirt']
-  const airIdx = MATERIAL_INDEX['air']
-  const waterIdx = MATERIAL_INDEX['water']
-
-  for (let x = x0; x <= x1; x++) {
-    // Strip vegetation in the top 60% of the column above the first solid tile.
-    let hitSurface = false
-    for (let y = 0; y < WORLD_H; y++) {
-      const mat = w.tiles[y * WORLD_W + x]
-      if (mat === airIdx) continue
-      // First solid tile — strip it if grass/moss.
-      hitSurface = true
-      if (mat === grassIdx || mat === mossIdx) {
-        w.tiles[y * WORLD_W + x] = dirtIdx
-      }
-      break
-    }
-    // Flash flood: drop water at the very top of the column if it's open air.
-    if (hitSurface) {
-      const depth = 1 + Math.floor(rng() * 2)
-      for (let d = 0; d < depth; d++) {
-        if (w.tiles[d * WORLD_W + x] === airIdx) {
-          w.tiles[d * WORLD_W + x] = waterIdx
-        }
-      }
-    }
-  }
-
-  return { x0, x1 }
-}

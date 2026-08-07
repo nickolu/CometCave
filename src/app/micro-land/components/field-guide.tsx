@@ -12,68 +12,6 @@ import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 import { WorkshopPane } from './blueprint-workshop'
 import { ChallengesPane } from './challenges-panel'
-import { SymbiosisWeb } from './symbiosis-web'
-
-// ---------------------------------------------------------------------------
-// Biome health score
-// ---------------------------------------------------------------------------
-
-interface BiomeHealthBreakdown {
-  score: number
-  grade: 'A' | 'B' | 'C' | 'D' | 'F'
-  gradeColor: string
-  diversity: number      // 0..40
-  trophic: number        // 0..30
-  stability: number      // 0..20
-  steadiness: number     // 0..10
-}
-
-function computeBiomeHealth(
-  population: PopulationSnapshot[],
-  blueprints: CreatureBlueprint[],
-  steadySeconds: number
-): BiomeHealthBreakdown {
-  const bpById = Object.fromEntries(blueprints.map(b => [b.id, b]))
-  const alive = population.filter(p => p.count > 0)
-  const speciesAlive = alive.length
-
-  // Diversity (0–40): 4 pts per living species, max 10 species.
-  const diversity = Math.min(40, speciesAlive * 4)
-
-  // Trophic chain (0–30): 10 pts each for plants, herbivores, carnivores present.
-  let hasPlants = false, hasHerbivores = false, hasCarnivores = false
-  for (const p of alive) {
-    const bp = bpById[p.blueprintId]
-    if (!bp) continue
-    if (isPlantLike(bp)) { hasPlants = true; continue }
-    const eatsMeat = bp.diet.eats.includes('meat')
-    const eatsPlants = bp.diet.eats.includes('plant')
-    if (eatsPlants && !eatsMeat) hasHerbivores = true
-    if (eatsMeat) hasCarnivores = true
-  }
-  const trophic = (hasPlants ? 10 : 0) + (hasHerbivores ? 10 : 0) + (hasCarnivores ? 10 : 0)
-
-  // Stability (0–20): start at 20, subtract 4 for each species at risk (≤3 alive).
-  const atRisk = alive.filter(p => p.count <= 3).length
-  const stability = Math.max(0, 20 - atRisk * 4)
-
-  // Steadiness (0–10): 1 pt per minute without an extinction, max 10.
-  const steadiness = Math.min(10, Math.floor(steadySeconds / 60))
-
-  const score = diversity + trophic + stability + steadiness
-  const grade =
-    score >= 80 ? 'A' :
-    score >= 60 ? 'B' :
-    score >= 40 ? 'C' :
-    score >= 20 ? 'D' : 'F'
-  const gradeColor =
-    grade === 'A' ? '#4ade80' :
-    grade === 'B' ? '#a3e635' :
-    grade === 'C' ? '#facc15' :
-    grade === 'D' ? '#f97316' : '#f87171'
-
-  return { score, grade, gradeColor, diversity, trophic, stability, steadiness }
-}
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -133,17 +71,10 @@ export function FieldGuide() {
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
   const setTrailsEnabled = useMicroLand(s => s.setTrailsEnabled)
-  const scentsEnabled = useMicroLand(s => s.scentsEnabled)
-  const setScentsEnabled = useMicroLand(s => s.setScentsEnabled)
-  const fogEnabled = useMicroLand(s => s.fogEnabled)
-  const setFogEnabled = useMicroLand(s => s.setFogEnabled)
   const extinctions = useMicroLand(s => s.extinctions)
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
-  const mutualismBonds = useMicroLand(s => s.mutualismBonds)
-  const speciesFirstSeen = useMicroLand(s => s.speciesFirstSeen)
-  const elapsed = useMicroLand(s => s.elapsed)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -202,8 +133,6 @@ export function FieldGuide() {
   // summoned creature no longer dies with the tab it was invented in.
   const here = new Set(blueprints.map(b => b.id))
   const remembered = archive.filter(s => !here.has(s.blueprint.id))
-
-  const biome = computeBiomeHealth(population, blueprints, worldStats.steadySeconds)
 
   const hasRecords =
     records.elder !== null || records.bestSteadySeconds > 0 || records.bestGenerations > 1
@@ -414,70 +343,6 @@ export function FieldGuide() {
         )}
 
         {view === 'guide' && compareTarget === null && <>
-
-        {population.some(p => p.count > 0) && (
-          <section className="px-4 py-3" style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="pb-2" style={sectionHeading}>Biome health</h3>
-            <div className="flex items-center gap-3" style={{ marginBottom: 10 }}>
-              <span
-                style={{
-                  fontFamily: 'var(--cc-font-mono)',
-                  fontSize: 32,
-                  fontWeight: 700,
-                  color: biome.gradeColor,
-                  lineHeight: 1,
-                  minWidth: 28,
-                }}
-              >
-                {biome.grade}
-              </span>
-              <div style={{ flex: 1 }}>
-                {/* Score bar */}
-                <div
-                  style={{
-                    height: 4,
-                    borderRadius: 2,
-                    background: 'rgba(255,255,255,0.08)',
-                    overflow: 'hidden',
-                    marginBottom: 4,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: `${biome.score}%`,
-                      height: '100%',
-                      background: biome.gradeColor,
-                      borderRadius: 2,
-                      transition: 'width 0.4s ease',
-                    }}
-                  />
-                </div>
-                <span style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 10, color: 'var(--cc-text-muted)' }}>
-                  {biome.score} / 100
-                </span>
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1fr',
-                gap: '4px 12px',
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              <span>diversity</span>
-              <span style={{ textAlign: 'right' }}>{biome.diversity} / 40</span>
-              <span>food chain</span>
-              <span style={{ textAlign: 'right' }}>{biome.trophic} / 30</span>
-              <span>stability</span>
-              <span style={{ textAlign: 'right' }}>{biome.stability} / 20</span>
-              <span>steadiness</span>
-              <span style={{ textAlign: 'right' }}>{biome.steadiness} / 10</span>
-            </div>
-          </section>
-        )}
 
         {namedCreatures.some(e => e.alive) && (
           <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
@@ -826,48 +691,6 @@ export function FieldGuide() {
             >
               Trails
             </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setScentsEnabled(!scentsEnabled)}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '4px 10px',
-                minHeight: 28,
-                borderRadius: 4,
-                border: scentsEnabled
-                  ? '1px solid var(--cc-mint)'
-                  : '1px solid var(--cc-mint-line)',
-                color: scentsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                background: scentsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
-              }}
-            >
-              Scents
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setFogEnabled(!fogEnabled)}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '4px 10px',
-                minHeight: 28,
-                borderRadius: 4,
-                border: fogEnabled
-                  ? '1px solid var(--cc-mint)'
-                  : '1px solid var(--cc-mint-line)',
-                color: fogEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                background: fogEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
-              }}
-            >
-              Fog
-            </button>
           </div>
           {traitOverlay && (
             <button
@@ -893,150 +716,34 @@ export function FieldGuide() {
         {extinctions.length > 0 && (
           <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
             <h3 className="pb-2" style={sectionHeading}>
-              Memorial
+              Extinctions
             </h3>
             <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
-              {extinctions.length === 1
-                ? 'One kind has come and gone in this land.'
-                : `${extinctions.length} kinds have come and gone in this land.`}
+              Species that lived and died in this land.
             </p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {[...extinctions].reverse().map(ext => (
                 <li
                   key={ext.blueprintId + ext.elapsed}
                   style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr auto',
-                    gap: '2px 8px',
-                    padding: '5px 0',
-                    borderBottom: '1px solid rgba(255,255,255,0.04)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline',
+                    padding: '3px 0',
+                    opacity: 0.6,
                     fontSize: 11,
                     fontFamily: 'var(--cc-font-mono)',
                   }}
                 >
-                  <span style={{ color: 'var(--cc-text-default)', opacity: 0.75 }}>
-                    {ext.name}
-                  </span>
-                  <span style={{ color: 'var(--cc-text-muted)', fontSize: 10, textAlign: 'right' }}>
-                    gone at {formatDuration(ext.elapsed)}
-                  </span>
+                  <span>🦴 {ext.name}</span>
                   <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
-                    {ext.maxGeneration > 1
-                      ? `${formatDuration(ext.livedFor)} · reached gen ${ext.maxGeneration}`
-                      : formatDuration(ext.livedFor)}
+                    gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
                   </span>
                 </li>
               ))}
             </ul>
           </section>
         )}
-
-        {Object.keys(speciesFirstSeen).length > 0 && elapsed > 0 && (
-          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="pb-2" style={sectionHeading}>Species timeline</h3>
-            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 10 }}>
-              When each species appeared and how long it lasted.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-              {Object.entries(speciesFirstSeen)
-                .sort(([, a], [, b]) => a - b)
-                .map(([bpId, firstSeen]) => {
-                  const ext = extinctions.find(e => e.blueprintId === bpId)
-                  const endTime = ext ? ext.elapsed : elapsed
-                  const isAlive = !ext
-                  const barStart = (firstSeen / elapsed) * 100
-                  const barWidth = Math.max(1, ((endTime - firstSeen) / elapsed) * 100)
-                  const name = blueprints.find(b => b.id === bpId)?.name ?? bpId
-                  // Deterministic hue from blueprint id
-                  let h = 5381
-                  for (const ch of bpId) h = (((h << 5) + h) ^ ch.charCodeAt(0)) & 0x7fffffff
-                  const hue = h % 360
-                  const color = isAlive ? `hsl(${hue}, 55%, 55%)` : `hsl(${hue}, 25%, 40%)`
-                  return (
-                    <div key={bpId} style={{ display: 'grid', gridTemplateColumns: '80px 1fr', gap: 6, alignItems: 'center' }}>
-                      <span
-                        style={{
-                          fontSize: 10,
-                          fontFamily: 'var(--cc-font-mono)',
-                          color: isAlive ? 'var(--cc-text-default)' : 'var(--cc-text-muted)',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap',
-                          opacity: isAlive ? 1 : 0.6,
-                        }}
-                        title={name}
-                      >
-                        {name}
-                      </span>
-                      <div style={{ position: 'relative', height: 10, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: `${barStart}%`,
-                            width: `${barWidth}%`,
-                            height: '100%',
-                            background: color,
-                            borderRadius: 3,
-                            opacity: isAlive ? 0.85 : 0.45,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 6, fontSize: 9, fontFamily: 'var(--cc-font-mono)', color: 'var(--cc-text-muted)', opacity: 0.5 }}>
-              <span>0</span>
-              <span>{formatDuration(elapsed)}</span>
-            </div>
-          </section>
-        )}
-
-        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-          <h3 className="pb-2" style={sectionHeading}>Symbiosis web</h3>
-          <SymbiosisWeb
-            blueprints={blueprints}
-            aliveIds={new Set(population.map(p => p.blueprintId))}
-            foodWeb={foodWeb}
-          />
-          {(() => {
-            const significantBonds = Object.entries(mutualismBonds)
-              .filter(([, seconds]) => seconds >= 30)
-              .sort(([, a], [, b]) => b - a)
-            if (significantBonds.length === 0) return null
-            return (
-              <div style={{ marginTop: 10 }}>
-                <p style={{ fontSize: 10, fontFamily: 'var(--cc-font-mono)', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 6 }}>
-                  Long-running bonds
-                </p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  {significantBonds.map(([key, seconds]) => {
-                    const [aId, bId] = key.split(':')
-                    const aName = blueprints.find(bp => bp.id === aId)?.name ?? aId
-                    const bName = blueprints.find(bp => bp.id === bId)?.name ?? bId
-                    return (
-                      <li
-                        key={key}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          fontSize: 11,
-                          fontFamily: 'var(--cc-font-mono)',
-                          padding: '3px 0',
-                          color: 'var(--cc-text-muted)',
-                          borderBottom: '1px solid rgba(255,255,255,0.04)',
-                        }}
-                      >
-                        <span style={{ color: '#4ade80' }}>{aName} ↔ {bName}</span>
-                        <span>{formatDuration(Math.round(seconds))}</span>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            )
-          })()}
-        </section>
 
         {Object.keys(foodWeb).length > 0 && (
           <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
@@ -1069,50 +776,6 @@ export function FieldGuide() {
             </ul>
           </section>
         )}
-
-        {/* Mutualism — derived from which alive blueprints have auras that help other alive species */}
-        {(() => {
-          const aliveIds = new Set(population.map(p => p.blueprintId))
-          const grouped: Record<string, string[]> = {}
-          for (const helper of blueprints) {
-            if (!helper.aura?.helps?.length || !aliveIds.has(helper.id)) continue
-            for (const helpee of blueprints) {
-              if (helpee.id === helper.id || !aliveIds.has(helpee.id)) continue
-              if (helper.aura.helps.some(tag => helpee.tags.includes(tag))) {
-                grouped[helper.name] = [...(grouped[helper.name] ?? []), helpee.name]
-              }
-            }
-          }
-          const entries = Object.entries(grouped)
-          if (!entries.length) return null
-          return (
-            <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-              <h3 className="pb-2" style={sectionHeading}>
-                Mutualism
-              </h3>
-              <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
-                Helpers and the species they support right now.
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                {entries.map(([helperName, helpeeNames]) => (
-                  <li
-                    key={helperName}
-                    style={{
-                      fontSize: 11,
-                      fontFamily: 'var(--cc-font-mono)',
-                      padding: '3px 0',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    <span style={{ color: 'var(--cc-mint)' }}>{helperName}</span>
-                    <span style={{ color: 'var(--cc-text-muted)' }}>{' ↔ '}</span>
-                    <span style={{ color: 'var(--cc-text-muted)' }}>{helpeeNames.join(', ')}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )
-        })()}
 
         {/* World Statistics */}
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
@@ -1299,19 +962,10 @@ function GuideEntry({
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 10,
-                color:
-                  alive === 0
-                    ? 'var(--cc-pink)'
-                    : alive <= 3
-                    ? 'var(--cc-gold)'
-                    : 'var(--cc-text-muted)',
+                color: alive > 0 ? 'var(--cc-text-muted)' : 'var(--cc-pink)',
               }}
             >
-              {alive === 0
-                ? 'none left'
-                : alive <= 3
-                ? `⚠ ${alive} left`
-                : `${alive} alive`}
+              {alive > 0 ? `${alive} alive` : 'none left'}
             </span>
             {bp.summoned && (
               <span

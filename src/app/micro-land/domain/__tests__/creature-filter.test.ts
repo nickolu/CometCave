@@ -32,14 +32,13 @@ function bp(over: {
   kind?: LocomotionKind
   glow?: number
   immuneTo?: string[]
-  tags?: string[]
 }): CreatureBlueprint {
   return {
     id: over.id,
     name: over.id,
     blurb: '',
     size: over.size ?? 2,
-    tags: over.tags ?? [],
+    tags: [],
     art: { palette: {}, frames: [['.']], frameMs: 200, faceMotion: false },
     body: {
       mass: 1,
@@ -117,27 +116,9 @@ describe('matchesFilter', () => {
     expect(matchesFilter({ ...match, body: { ...match.body, immuneTo: [] } }, f)).toBe(false)
   })
 
-  it('ORs diet tags within the axis', () => {
-    const f = filter({ dietTags: ['plant', 'mineral'] })
-    expect(matchesFilter(bp({ id: 'a', tags: ['plant'] }), f)).toBe(true)
-    expect(matchesFilter(bp({ id: 'b', tags: ['mineral'] }), f)).toBe(true)
-    expect(matchesFilter(bp({ id: 'c', tags: ['meat'] }), f)).toBe(false)
-    // A creature with a flavor tag but none of the chosen diet tags is excluded.
-    expect(matchesFilter(bp({ id: 'd', tags: ['bug', 'meat'] }), f)).toBe(false)
-    // A creature with a matching diet tag alongside flavor tags is included.
-    expect(matchesFilter(bp({ id: 'e', tags: ['bug', 'plant'] }), f)).toBe(true)
-  })
-
-  it('empty dietTags axis passes everything through', () => {
-    const f = filter({ dietTags: [] })
-    expect(matchesFilter(bp({ id: 'a', tags: [] }), f)).toBe(true)
-    expect(matchesFilter(bp({ id: 'b', tags: ['plant'] }), f)).toBe(true)
-  })
-
   it('counts conditions rather than axes', () => {
     expect(activeConditionCount(EMPTY_FILTER)).toBe(0)
     expect(activeConditionCount(filter({ moves: ['fly', 'swim'], glows: true }))).toBe(3)
-    expect(activeConditionCount(filter({ dietTags: ['plant', 'meat'] }))).toBe(2)
   })
 })
 
@@ -151,30 +132,6 @@ describe('filterOptions', () => {
     expect(options.sizes).toEqual(['tiny'])
     expect(options.glows).toBe(false)
     expect(options.lavaProof).toBe(false)
-    expect(options.dietTags).toEqual([])
-  })
-
-  it('collects diet tags present in the roster in canonical order', () => {
-    const options = filterOptions([
-      bp({ id: 'a', tags: ['meat', 'bug'] }),
-      bp({ id: 'b', tags: ['plant'] }),
-      bp({ id: 'c', tags: ['fish'] }),
-    ])
-    // 'mineral' is absent from the roster so it should not appear
-    expect(options.dietTags).toEqual(['plant', 'meat'])
-  })
-
-  it('keeps diet tag chips in canonical order regardless of roster order', () => {
-    const forwards = filterOptions([
-      bp({ id: 'a', tags: ['meat'] }),
-      bp({ id: 'b', tags: ['plant'] }),
-    ])
-    const backwards = filterOptions([
-      bp({ id: 'b', tags: ['plant'] }),
-      bp({ id: 'a', tags: ['meat'] }),
-    ])
-    expect(forwards.dietTags).toEqual(backwards.dietTags)
-    expect(forwards.dietTags).toEqual(['plant', 'meat'])
   })
 
   it('offers every axis the built-in roster spans', () => {
@@ -209,13 +166,5 @@ describe('describeFilter', () => {
 
   it('lists size bands in band order, not tap order', () => {
     expect(describeFilter(filter({ sizes: ['huge', 'tiny'] }))).toBe('tiny or huge')
-  })
-
-  it('includes diet tags in the description', () => {
-    expect(describeFilter(filter({ dietTags: ['plant'] }))).toBe('plant')
-    expect(describeFilter(filter({ dietTags: ['meat', 'mineral'] }))).toBe('meat or mineral')
-    expect(
-      describeFilter(filter({ sizes: ['tiny'], dietTags: ['plant'] }))
-    ).toBe('tiny · plant')
   })
 })

@@ -106,23 +106,12 @@ const meterLabel: React.CSSProperties = {
  *
  * Shown for everything — plants just have fewer facts to report.
  */
-function biography(c: Inspected, bp: CreatureBlueprint, bpMap: CreatureBlueprint[]): string {
+function biography(c: Inspected, bp: CreatureBlueprint): string {
   const parts: string[] = []
 
   if (c.generation <= 1) {
     parts.push('First of its line')
   } else {
-    const parentNames = c.parentBlueprintIds
-      ? [
-          bpMap.find(b => b.id === c.parentBlueprintIds![0])?.name ?? 'unknown',
-          c.parentBlueprintIds[1]
-            ? bpMap.find(b => b.id === c.parentBlueprintIds![1])?.name ?? 'unknown'
-            : null,
-        ].filter(Boolean).join(' × ')
-      : null
-    if (parentNames) {
-      parts.push(`Born from ${parentNames}`)
-    }
     parts.push(`Generation ${c.generation}`)
   }
 
@@ -457,40 +446,6 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
           )}
         </div>
 
-        {/* Mood history — color-coded timeline of recent states */}
-        {inspected.moodHistory.length > 1 && (
-          <div
-            style={{
-              display: 'flex',
-              gap: 2,
-              flexWrap: 'wrap',
-              marginTop: 4,
-            }}
-            title="Mood history — oldest to newest"
-          >
-            {inspected.moodHistory.map((m, i) => (
-              <span
-                key={i}
-                style={{
-                  display: 'block',
-                  width: 5,
-                  height: 10,
-                  borderRadius: 1,
-                  flexShrink: 0,
-                  background:
-                    m === 'eat'    ? '#22c55e' :
-                    m === 'mate'   ? '#c084fc' :
-                    m === 'hunt'   ? '#ef4444' :
-                    m === 'flee'   ? '#f97316' :
-                    m === 'rest'   ? '#60a5fa' :
-                    /* wander */     '#94a3b8',
-                  opacity: 0.5 + 0.5 * (i / inspected.moodHistory.length),
-                }}
-              />
-            ))}
-          </div>
-        )}
-
         {/*
           Sits directly under the mood, above the meters, because it is the one
           line on this panel that is about *this* creature rather than about its
@@ -516,21 +471,8 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
             opacity: 0.8,
           }}
         >
-          {biography(inspected, bp, blueprints)}
+          {biography(inspected, bp)}
         </div>
-
-        {inspected.lastMealX !== null && inspected.lastMealY !== null && (
-          <div
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              color: 'var(--cc-text-muted)',
-              opacity: 0.7,
-            }}
-          >
-            Last ate at tile ({inspected.lastMealX}, {inspected.lastMealY})
-          </div>
-        )}
 
         <Meter
           label="Full"

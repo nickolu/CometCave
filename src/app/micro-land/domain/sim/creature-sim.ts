@@ -176,7 +176,7 @@ export interface SimEvent {
    * hunter's side and carries who it caught. Both fire for a single kill — the
    * UI wants the hunter's framing, the extinction check wants the victim's.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'frosted' | 'overheated'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -355,8 +355,6 @@ export function tickCreatures(
   tickMoisture(w, tickCount, dt, rng)
   w.eggs ??= []
   w.nextEggId ??= 1
-  // Migration: worlds loaded from a save before fog-of-war shipped won't have visited.
-  w.visited ??= new Uint8Array(WORLD_W * WORLD_H)
 
   // Seasonal factor — a slow sine wave that modulates plant growth and seeding.
   // 1.0 at both the start (t=0) and equinoxes; peaks in summer, troughs in winter.
@@ -554,73 +552,15 @@ export function tickCreatures(
       c.distress = Math.max(0, c.distress - dt * 1.5)
     }
 
-    // Temperature stress: creatures with strong thermophily out of their zone
-    // take slow health damage. Only active when temperatureGradient > 0.
-    if (TUNING.temperatureGradient > 0 && Math.abs(c.traits.thermophily ?? 0) > 0.3) {
-      const worldTemp = c.y / WORLD_H   // 0 at top (cold), 1 at bottom (hot)
-      const pref = ((c.traits.thermophily ?? 0) + 1) / 2  // map [-1,1] to [0,1]
-      const mismatch = Math.abs(worldTemp - pref)
-      if (mismatch > 0.3) {
-        const stress = (mismatch - 0.3) * TUNING.temperatureGradient * dt * 0.003
-        c.hunger = Math.min(1, c.hunger + stress)
-        c.starving += stress
-        if (c.starving >= bp.diet.starveSeconds) {
-          const cause = (c.traits.thermophily ?? 0) > 0 ? 'frosted' : 'overheated'
-          kill(w, c, bp, dead, events, cause)
-          continue
-        }
-      }
-    }
-
-    // --- diurnal dormancy -----------------------------------------------
-    // Strongly nocturnal creatures (diurnal <= -0.7) go dormant in full daylight
-    // and strongly diurnal ones (diurnal >= 0.7) go dormant at night. Dormant
-    // creatures skip senses, rest in place, and neither hunt nor flee.
-    const diurnalTrait = (c.traits as { diurnal?: number }).diurnal ?? 0
-    const isDormant = TUNING.dayLengthSeconds > 0 && Math.abs(diurnalTrait) >= 0.7 && (() => {
-      const nightFactor = (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
-      // nightFactor: 0 = full day, 1 = full night
-      const offPhase = diurnalTrait > 0 ? nightFactor : (1 - nightFactor)
-      // offPhase: how far into the inactive period this creature is (0..1)
-      return offPhase < 0.25  // dormant when well into the active-opposite phase
-    })()
-
-    if (isDormant) {
-      c.mood = 'rest'
-      c.targetId = null
-    } else {
-      // --- senses ---------------------------------------------------------
-      if ((tickCount + c.id) % SENSE_EVERY === 0) {
-        look(w, c, bp, bw, bh, dead, events, rng)
-      }
+    // --- senses ---------------------------------------------------------
+    if ((tickCount + c.id) % SENSE_EVERY === 0) {
+      look(w, c, bp, bw, bh, dead, events, rng)
     }
 
     // --- movement -------------------------------------------------------
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
-    }
-
-    // --- fog of war: reveal tiles near this creature --------------------
-    //
-    // Runs once per creature per tick (not per physics sub-step), so a busy
-    // world pays the scan 60 times a second per creature rather than once per
-    // integration step. The visited array is optional so old saves still work.
-    if (w.visited) {
-      const visRadius = 3
-      const vcx = Math.floor(c.x + bw / 2)
-      const vcy = Math.floor(c.y + bh / 2)
-      for (let dy = -visRadius; dy <= visRadius; dy++) {
-        const row = vcy + dy
-        if (row < 0 || row >= WORLD_H) continue
-        for (let dx = -visRadius; dx <= visRadius; dx++) {
-          const col = vcx + dx
-          if (col < 0 || col >= WORLD_W) continue
-          if (dx * dx + dy * dy <= visRadius * visRadius) {
-            w.visited[row * WORLD_W + col] = 1
-          }
-        }
-      }
     }
 
     // --- fatigue --------------------------------------------------------
@@ -741,21 +681,6 @@ export function tickCreatures(
           }
         }
       }
-
-      // --- seed dispersal trail ------------------------------------------
-      // Pollinators occasionally leave a small fading particle as they move,
-      // visualizing pollen/seed dispersal paths.
-      if (Math.random() < 0.05 * dt && w.particles.length < MAX_PARTICLES) {
-        w.particles.push({
-          x: c.x + (Math.random() - 0.5) * bw,
-          y: c.y + (Math.random() - 0.5) * bh,
-          vx: (Math.random() - 0.5) * 0.1,
-          vy: -0.1 - Math.random() * 0.1,
-          life: 2 + Math.random(),
-          maxLife: 3,
-          color: '#90ee90',
-        })
-      }
     }
 
     // --- what it does to the world around it -----------------------------
@@ -789,33 +714,28 @@ export function tickCreatures(
         const ox = mate ? (c.x + mate.x) / 2 : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
         if (bp.egglayer && !isPlant) {
-          // Egg-layer: drop a clutch of inherited eggs rather than spawning live.
+          // Egg-layer: drop an egg with inherited traits rather than spawning live.
+          const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
           const generation = Math.max(c.generation, mate?.generation ?? 0) + 1
-          const clutch = Math.max(1, Math.round((c.traits as { clutchSize?: number }).clutchSize ?? 1))
-          for (let egg = 0; egg < clutch; egg++) {
-            const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
-            // Scatter eggs slightly so they don't all pile on the same tile.
-            const scatter = clutch > 1 ? (rng() * 2 - 1) * 2 : 0
-            w.eggs.push({
-              id: w.nextEggId++,
-              x: ox + scatter,
-              y: oy,
-              blueprintId: bp.id,
-              traits: childTraits,
-              generation,
-              hatchIn: TUNING.eggHatchSeconds,
-            })
-          }
-          c.children += clutch
-          if (c.children === clutch) logLife(c, w.elapsed, 'First offspring')
-          else if (Math.floor(c.children / 10) > Math.floor((c.children - clutch) / 10)) logLife(c, w.elapsed, `${c.children} offspring`)
-          speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + clutch
+          w.eggs.push({
+            id: w.nextEggId++,
+            x: ox,
+            y: oy,
+            blueprintId: bp.id,
+            traits: childTraits,
+            generation,
+            hatchIn: TUNING.eggHatchSeconds,
+          })
+          c.children++
+          if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
+          else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
+          speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
           c.breedCooldown = TUNING.breedCooldown * ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
-            mate.children += clutch
-            if (mate.children === clutch) logLife(mate, w.elapsed, 'First offspring')
-            else if (Math.floor(mate.children / 10) > Math.floor((mate.children - clutch) / 10)) logLife(mate, w.elapsed, `${mate.children} offspring`)
+            mate.children++
+            if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
+            else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
@@ -835,7 +755,6 @@ export function tickCreatures(
             // genuinely different things.
             child.traits = inherit(c.traits, mate?.traits ?? null, rng)
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
-            child.parentBlueprintIds = [c.blueprintId, mate?.blueprintId ?? null] as const
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -1046,12 +965,7 @@ function look(
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const inPhaseBonus = Math.max(0, (diurnal > 0 ? diurnal * (1 - nightFactor * 2) : -diurnal * (nightFactor * 2 - 1)) * 0.5)
-  // Echolocation bypasses light-dependent penalties and adds a sight bonus.
-  const echo = (c.traits as { echolocation?: number }).echolocation ?? 0
-  const echoPenaltyBypass = echo >= 0.5 ? diurnalPenalty : 0
-  const echoBonus = Math.max(0, echo - 0.3) * 1.5
-  const sight = sightOf(c, bp) * (1 - diurnalPenalty + echoPenaltyBypass) * (1 + inPhaseBonus + echoBonus)
+  const sight = sightOf(c, bp) * (1 - diurnalPenalty)
   const sight2 = sight * sight
 
   /**
@@ -1121,8 +1035,6 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
-        c.lastMealX = Math.floor(c.x)
-        c.lastMealY = Math.floor(c.y)
         car.decaySeconds = 0 // mark for removal at end of tick
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
         return
@@ -1147,8 +1059,6 @@ function look(
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         c.mood = 'eat'
         c.targetId = null
-        c.lastMealX = Math.floor(c.x)
-        c.lastMealY = Math.floor(c.y)
         egg.hatchIn = -1 // mark for removal by the hatching block
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: eggBp.id, x: c.x, y: c.y })
         return
@@ -1218,10 +1128,7 @@ function look(
       continue
     }
 
-    // Prey must not be more than 1.4× the predator's size — wide enough to let
-    // normal predation work but narrow enough that small creatures can't tackle
-    // large ones, and large creatures gain a clear dietary advantage.
-    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.4) {
+    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -1248,8 +1155,6 @@ function look(
         }
         c.mood = 'eat'
         c.targetId = null
-        c.lastMealX = Math.floor(c.x)
-        c.lastMealY = Math.floor(c.y)
         // Toxic plants slow the eater — the meal lands, but at a cost.
         if (obp.toxicity) {
           c.poisoned = Math.max(c.poisoned, obp.toxicity * 5)
@@ -1281,13 +1186,10 @@ function look(
         Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
       // Camouflage: trait scales how hard this creature is to spot.
       // Still creatures benefit most; moving gives most of it away.
-      // Small body size also reduces detectability (harder to see a tiny creature).
       const camouflage = (other.traits as { camouflage?: number }).camouflage ?? 0.2
-      const sizeFactor = Math.min(1, sizeOf(other))  // 0.5..1.0 — tiny creatures are half as visible
-      const detFactor = (still
+      const detFactor = still
         ? Math.max(0.15, 0.5 - camouflage * 0.375)  // 0.5 (camo=0) → 0.2 (camo=0.8)
         : 1 - camouflage * 0.3                        // 1.0 (camo=0) → 0.76 (camo=0.8)
-      ) * sizeFactor
       const efs2 = foodSight2 * detFactor * detFactor
       if (d2 <= efs2 && d2 < preyDist) {
         preyDist = d2
@@ -1853,34 +1755,6 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     const sign = c.mood === 'flee' ? -1 : 1
     wantX = (dx / len) * sign
     wantY = (dy / len) * sign
-    // Shelter-seeking: when fleeing, redirect toward the nearest stone or
-    // wood tile within 6 tiles. Creatures use solid objects as safe spots.
-    if (c.mood === 'flee') {
-      const STONE = MATERIAL_INDEX['stone']
-      const WOOD = MATERIAL_INDEX['wood']
-      const SHELTER_R = 6
-      const x0 = Math.max(0, Math.floor(cx - SHELTER_R))
-      const x1 = Math.min(w.width - 1, Math.ceil(cx + SHELTER_R))
-      const y0 = Math.max(0, Math.floor(cy - SHELTER_R))
-      const y1 = Math.min(w.height - 1, Math.ceil(cy + SHELTER_R))
-      let nearX = -1, nearY = -1, nearDist = Infinity
-      for (let ty = y0; ty <= y1; ty++) {
-        for (let tx = x0; tx <= x1; tx++) {
-          const t = w.tiles[ty * w.width + tx]
-          if (t === STONE || t === WOOD) {
-            const d = (tx - cx) ** 2 + (ty - cy) ** 2
-            if (d > 0 && d < nearDist) { nearDist = d; nearX = tx; nearY = ty }
-          }
-        }
-      }
-      if (nearX >= 0) {
-        const sdx = nearX - cx
-        const sdy = nearY - cy
-        const slen = Math.hypot(sdx, sdy) || 1
-        wantX = sdx / slen
-        wantY = sdy / slen
-      }
-    }
   } else if (c.mood === 'rest') {
     // Resting — no active movement. `wantX` and `wantY` stay at 0, so physics
     // runs without any locomotion drive: gravity keeps walkers grounded, drag
@@ -1930,33 +1804,19 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Rate-limited via rng() so the tile scan fires ~once per second
     // rather than every tick — about 0.017 per tick at 60 Hz.
     if (c.migrateTimer > TUNING.migrationThreshold && bp.move.kind !== 'root' && rng() < 0.017) {
-      const baseX = Math.round(c.x)
-      const baseY = Math.round(c.y)
+      const grassIdx = MATERIAL_INDEX.grass
+      const mossIdx = MATERIAL_INDEX.moss
       let leftScore = 0
       let rightScore = 0
-      // If the player has painted corridor paths, prefer those over terrain scan.
-      const corr = w.corridors
-      if (corr) {
-        for (let dy = -15; dy <= 15; dy += 5) {
-          const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
-          for (let dx = 12; dx <= 200; dx += 20) {
-            if (corr[sy * WORLD_W + Math.max(0, baseX - dx)]) leftScore++
-            if (corr[sy * WORLD_W + Math.min(WORLD_W - 1, baseX + dx)]) rightScore++
-          }
-        }
-      }
-      // Fall back to grass/moss scan if no corridor preference found.
-      if (leftScore === rightScore) {
-        const grassIdx = MATERIAL_INDEX.grass
-        const mossIdx = MATERIAL_INDEX.moss
-        for (let dy = -20; dy <= 20; dy += 10) {
-          const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
-          for (let dx = 12; dx <= 160; dx += 12) {
-            const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
-            const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
-            if (lMat === grassIdx || lMat === mossIdx) leftScore++
-            if (rMat === grassIdx || rMat === mossIdx) rightScore++
-          }
+      const baseX = Math.round(c.x)
+      const baseY = Math.round(c.y)
+      for (let dy = -20; dy <= 20; dy += 10) {
+        const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
+        for (let dx = 12; dx <= 160; dx += 12) {
+          const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
+          const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
+          if (lMat === grassIdx || lMat === mossIdx) leftScore++
+          if (rMat === grassIdx || rMat === mossIdx) rightScore++
         }
       }
       if (leftScore !== rightScore) {
@@ -2000,13 +1860,8 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const nightFactor = TUNING.dayLengthSeconds > 0
     ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
     : 0
-  // Off-phase penalty (0..0.5) — reduced speed during inactive period.
   const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  // Active-phase bonus: up to +50% speed during peak active hours.
-  // inPhase = 1 when fully in active period; 0 at transition; negative in off-phase.
-  const inPhase = diurnal > 0 ? diurnal * (1 - nightFactor * 2) : -diurnal * (nightFactor * 2 - 1)
-  const diurnalBonus = Math.max(0, inPhase * 0.5)
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty) * (1 + diurnalBonus)
+  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty)
   const accel = speed * 6
 
   switch (bp.move.kind) {

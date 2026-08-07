@@ -16,9 +16,7 @@ import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
 import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
-import { CreatureTooltip } from '@/app/micro-land/components/creature-tooltip'
 import { Inspector } from '@/app/micro-land/components/inspector'
-import { PinnedPortrait } from '@/app/micro-land/components/creature-portrait'
 import { Notices } from '@/app/micro-land/components/notices'
 import { PanControls } from '@/app/micro-land/components/pan-controls'
 import { HistoryPanel } from '@/app/micro-land/components/history-panel'
@@ -103,7 +101,6 @@ export function MicroLandGame() {
       unsubscribe = useMicroLand.subscribe((state, previous) => {
         if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
         if (state.reshuffleToken !== previous.reshuffleToken) game?.reshuffle()
-        if (state.viewScale !== previous.viewScale) game?.setViewScale(state.viewScale)
         if (state.locateRequest !== previous.locateRequest && state.locateRequest && game) {
           const found = game.locateSpecies(state.locateRequest.blueprintId)
           if (!found) {
@@ -181,31 +178,6 @@ export function MicroLandGame() {
   // Storage state into the store, so any panel can render it like other state.
   useEffect(() => onSaveState(useMicroLand.getState().setSaveState), [])
   useEffect(() => onShelf(useMicroLand.getState().setShelf), [])
-
-  // Load a blueprint from URL param and spawn it when the game is ready
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const blueprintId = params.get('blueprint')
-    if (!blueprintId) return
-    // Wait for game to be ready, then spawn
-    const trySpawn = async () => {
-      for (let i = 0; i < 20; i++) {
-        if (gameRef.current) break
-        await new Promise(r => setTimeout(r, 300))
-      }
-      if (!gameRef.current) return
-      try {
-        const res = await fetch(`/api/v1/micro-land/blueprints/${blueprintId}`)
-        if (!res.ok) return
-        const { shared } = await res.json() as { shared: { blueprintJson: string; name: string; creatorNickname: string } }
-        const blueprint = JSON.parse(shared.blueprintJson) as import('./domain/types').CreatureBlueprint
-        useMicroLand.getState().requestWorkshopSpawn(blueprint, blueprint.traitDefaults ?? {})
-        useMicroLand.getState().notify(`Spawning "${shared.name}" by ${shared.creatorNickname}`)
-      } catch { /* best effort */ }
-    }
-    void trySpawn()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   const adoptedRef = useRef<string | null>(null)
   useEffect(() => {
@@ -468,8 +440,6 @@ export function MicroLandGame() {
             <ZoomControls onZoom={handleZoom} />
             <Notices />
             <Inspector onName={handleName} />
-            <PinnedPortrait />
-            <CreatureTooltip />
           </div>
           <Toolbar onRemoveSpecies={handleRemoveSpecies} />
         </div>
