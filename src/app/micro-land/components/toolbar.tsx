@@ -480,35 +480,6 @@ export function Toolbar({
             })}
           </div>
 
-          {/* Migration corridor brush */}
-          <div className="-mx-1 flex flex-wrap items-center gap-1.5 px-1 pb-1">
-            <span style={label}>Corridors</span>
-            <button
-              type="button"
-              className="cc-btn shrink-0"
-              onClick={() => setTool({ kind: 'corridor' })}
-              aria-pressed={tool.kind === 'corridor'}
-              title="Paint migration corridors — hungry creatures follow these paths"
-              style={swatchStyle(tool.kind === 'corridor')}
-            >
-              <span
-                aria-hidden
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 3,
-                  background: '#ffe066',
-                  boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.35)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 14,
-                }}
-              >→</span>
-              <span style={swatchLabel}>Path</span>
-            </button>
-          </div>
-
           {family && (
             <div
               className="-mx-1 flex flex-wrap items-center gap-1.5 px-1 pb-1"
@@ -924,10 +895,6 @@ function heldTool(
 
   if (tool.kind === 'inspect') {
     return { name: 'Inspect', swatch: <span style={{ fontSize: 13 }}>⌕</span> }
-  }
-
-  if (tool.kind === 'corridor') {
-    return { name: 'Corridor path', swatch: null }
   }
 
   if (tool.kind === 'biome') {

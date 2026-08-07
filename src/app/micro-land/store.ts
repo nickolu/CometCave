@@ -28,8 +28,6 @@ export interface SpeedRunState {
   /** World elapsed time (seconds) when the run started — so countdown = timeLimit - (elapsed - startElapsed). */
   startElapsed: number
   result: 'none' | 'won' | 'lost'
-  /** Seconds taken when result is 'won'. Null otherwise. */
-  wonSeconds: number | null
 }
 
 import type { SaveState } from './chronicle/chronicle'
@@ -50,7 +48,6 @@ export type Tool =
   | { kind: 'material'; material: MaterialId }
   | { kind: 'erase' }
   | { kind: 'biome'; biomeId: string }
-  | { kind: 'corridor' }
   | { kind: 'creature'; blueprintId: string }
   | { kind: 'inspect' }
 
@@ -85,8 +82,6 @@ export interface Inspected {
   targetName: string | null
   /** How far back its line goes; 1 means it was placed rather than born. */
   generation: number
-  /** BlueprintIds of the parents, if this creature was born here (not placed). */
-  parentBlueprintIds?: readonly [string, string | null] | null
   /** What it inherited, as multipliers on its species. Neutral at generation 1. */
   traits: Traits
   /** Player-given name, if this one earned the right to have one. */
@@ -98,14 +93,6 @@ export interface Inspected {
   lifeLog: Array<{ elapsed: number; text: string }>
   packSize: number
   hostName: string | null
-  /** Rolling history of recent mood states, oldest first, max 40 entries. */
-  moodHistory: string[]
-  /** Tile X where the creature last ate successfully. null = never eaten. */
-  lastMealX: number | null
-  /** Tile Y where the creature last ate successfully. null = never eaten. */
-  lastMealY: number | null
-  /** Position history — up to 30 samples taken every sim-second. Oldest first. */
-  trail: { x: number; y: number }[]
 }
 
 /** One column of the guide's record book — see `KindRecord`. */
@@ -210,10 +197,6 @@ export interface PopulationSnapshot {
   elapsed: number
   /** Creature count per blueprintId at this moment. */
   counts: Record<string, number>
-  /** Per-species births since previous snapshot. */
-  births?: Record<string, number>
-  /** Per-species deaths since previous snapshot. */
-  deaths?: Record<string, number>
 }
 
 /** One sample in the trait evolution history for a species. */
@@ -282,8 +265,6 @@ interface MicroLandState {
   blueprints: CreatureBlueprint[]
   population: PopulationEntry[]
   totalCreatures: number
-  /** Number of distinct non-air material types currently present in the world tiles. */
-  activeMaterials: number
   elapsed: number
   /** Rolling history for the population graph. Cleared on world load. */
   populationHistory: PopulationSnapshot[]
@@ -296,18 +277,6 @@ interface MicroLandState {
    * Updated on every eat event (live prey and carcasses).
    */
   foodWeb: Record<string, string[]>
-  /**
-   * Cumulative seconds each symbiosis pair has spent in active proximity.
-   *
-   * Key = `"${bpA}:${bpB}"` where bpA < bpB alphabetically.
-   * Value = total sim-seconds of active symbiosis between that pair.
-   */
-  mutualismBonds: Record<string, number>
-  /**
-   * World-time (elapsed seconds) when each species was first observed alive.
-   * Key = blueprintId.
-   */
-  speciesFirstSeen: Record<string, number>
   worldStats: WorldStats
   namedCreatures: NamedCreatureEntry[]
 
@@ -343,7 +312,7 @@ interface MicroLandState {
   requestWorkshopSpawn: (blueprint: CreatureBlueprint, traits: Traits) => void
   clearWorkshopSpawnRequest: () => void
   startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
-  endSpeedRun: (result: 'won' | 'lost', wonSeconds?: number) => void
+  endSpeedRun: (result: 'won' | 'lost') => void
   cancelSpeedRun: () => void
   requestReshuffle: () => void
   /**
@@ -394,17 +363,6 @@ interface MicroLandState {
    */
   canZoomIn: boolean
   canZoomOut: boolean
-  /** Player's preferred zoom preset. Controls the canvas zoom level. */
-  viewScale: 'wide' | 'standard' | 'close'
-  setViewScale: (scale: 'wide' | 'standard' | 'close') => void
-
-  /** Creature under the cursor when not actively interacting. */
-  hoveredCreature: { id: number; mood: string; hunger: number; name: string; screenX: number; screenY: number } | null
-  setHoveredCreature: (c: { id: number; mood: string; hunger: number; name: string; screenX: number; screenY: number } | null) => void
-
-  /** Global leaderboard fetched after a speed run win. Null = not yet fetched. */
-  speedRunLeaderboard: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null
-  setSpeedRunLeaderboard: (entries: Array<{ displayName: string; theme: string; seconds: number; completedAt: number }> | null) => void
 
   notices: Notice[]
 
@@ -474,17 +432,6 @@ interface MicroLandState {
   setFocusedSpeciesStats: (stats: FocusedSpeciesStats | null) => void
   trailsEnabled: boolean
   setTrailsEnabled: (on: boolean) => void
-  scentsEnabled: boolean
-  setScentsEnabled: (on: boolean) => void
-  /**
-   * Whether the fog-of-war overlay is on.
-   *
-   * When enabled, tiles that no creature has ever visited are covered by a dark
-   * overlay. Players who find it distracting can toggle it off in the field
-   * guide. Defaults to true so new sessions start in fog.
-   */
-  fogEnabled: boolean
-  setFogEnabled: (on: boolean) => void
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
@@ -507,17 +454,13 @@ interface MicroLandState {
   setBlueprints: (list: CreatureBlueprint[]) => void
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
-  setStats: (population: PopulationEntry[], total: number, elapsed: number, births?: Record<string, number>, deaths?: Record<string, number>) => void
-  setActiveMaterials: (n: number) => void
+  setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
   updateWorldStats: (patch: Partial<WorldStats>) => void
   resetWorldStats: () => void
   logEat: (eaterId: string, preyId: string) => void
   clearFoodWeb: () => void
-  recordMutualismTime: (pairKey: string, seconds: number) => void
-  clearMutualismBonds: () => void
-  setSpeciesFirstSeen: (firstSeen: Record<string, number>) => void
   setNamedCreatures: (entries: NamedCreatureEntry[]) => void
   setSummonOpen: (open: boolean) => void
   setSummonBusy: (busy: boolean) => void
@@ -613,13 +556,10 @@ export const useMicroLand = create<MicroLandState>(set => ({
   blueprints: [],
   population: [],
   totalCreatures: 0,
-  activeMaterials: 0,
   elapsed: 0,
   populationHistory: [],
   extinctions: [],
   foodWeb: {},
-  mutualismBonds: {},
-  speciesFirstSeen: {},
   worldStats: { ...EMPTY_STATS },
   namedCreatures: [],
 
@@ -637,7 +577,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   challengeActive: null,
   workshopOpen: false,
   workshopSpawnRequest: null,
-  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none', wonSeconds: null },
+  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
   reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
@@ -645,9 +585,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
   canPan: true,
   canZoomIn: true,
   canZoomOut: true,
-  speedRunLeaderboard: null,
-  viewScale: 'standard',
-  hoveredCreature: null,
 
   records: EMPTY_RECORDS,
   archive: [],
@@ -670,8 +607,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replaySnapshots: null,
   replayIndex: 0,
   trailsEnabled: false,
-  scentsEnabled: false,
-  fogEnabled: true,
   heatmapBlueprintId: null,
   soundEnabled: false,
 
@@ -681,24 +616,19 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBrushShape: brushShape => set({ brushShape }),
   togglePaused: () => set(s => ({ paused: !s.paused })),
   setSpeed: speed => set({ speed }),
-  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, mutualismBonds: {}, speciesFirstSeen: {}, historyLog: [] }),
+  setBlueprints: blueprints => set({ blueprints, populationHistory: [], extinctions: [], worldStats: { ...EMPTY_STATS }, foodWeb: {}, historyLog: [] }),
   addBlueprint: bp =>
     set(s => ({
       blueprints: s.blueprints.some(b => b.id === bp.id)
         ? s.blueprints.map(b => (b.id === bp.id ? bp : b))
         : [...s.blueprints, bp],
     })),
-  setStats: (population, totalCreatures, elapsed, births, deaths) =>
+  setStats: (population, totalCreatures, elapsed) =>
     set(s => {
       const last = s.populationHistory[s.populationHistory.length - 1]
       const shouldSnapshot = !last || elapsed - last.elapsed >= 1
       const snapshot: PopulationSnapshot | undefined = shouldSnapshot
-        ? {
-            elapsed,
-            counts: Object.fromEntries(population.map(p => [p.blueprintId, p.count])),
-            ...(births && Object.keys(births).length > 0 && { births }),
-            ...(deaths && Object.keys(deaths).length > 0 && { deaths }),
-          }
+        ? { elapsed, counts: Object.fromEntries(population.map(p => [p.blueprintId, p.count])) }
         : undefined
       return {
         population,
@@ -719,11 +649,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
     return { foodWeb: { ...s.foodWeb, [eaterId]: [...existing, preyId] } }
   }),
   clearFoodWeb: () => set({ foodWeb: {} }),
-  recordMutualismTime: (pairKey, seconds) => set(s => ({
-    mutualismBonds: { ...s.mutualismBonds, [pairKey]: (s.mutualismBonds[pairKey] ?? 0) + seconds },
-  })),
-  clearMutualismBonds: () => set({ mutualismBonds: {} }),
-  setSpeciesFirstSeen: firstSeen => set({ speciesFirstSeen: firstSeen }),
   setNamedCreatures: entries => set({ namedCreatures: entries }),
   setSummonOpen: summonOpen => set({ summonOpen }),
   setSummonBusy: summonBusy => set({ summonBusy }),
@@ -748,9 +673,9 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set(s => ({ workshopSpawnRequest: { blueprint, traits, serial: (s.workshopSpawnRequest?.serial ?? 0) + 1 } })),
   clearWorkshopSpawnRequest: () => set({ workshopSpawnRequest: null }),
   startSpeedRun: (targetGeneration, timeLimitSeconds, currentElapsed) =>
-    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none', wonSeconds: null } }),
-  endSpeedRun: (result, wonSeconds) =>
-    set(s => ({ speedRun: { ...s.speedRun, active: false, result, wonSeconds: wonSeconds ?? null } })),
+    set({ speedRun: { active: true, targetGeneration, timeLimitSeconds, startElapsed: currentElapsed, result: 'none' } }),
+  endSpeedRun: result =>
+    set(s => ({ speedRun: { ...s.speedRun, active: false, result } })),
   cancelSpeedRun: () =>
     set(s => ({ speedRun: { ...s.speedRun, active: false, result: 'none' } })),
   requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
@@ -783,9 +708,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setMilestones: milestones => set({ milestones }),
   setCanPan: canPan => set({ canPan }),
   setZoomState: (canZoomIn, canZoomOut) => set({ canZoomIn, canZoomOut }),
-  setSpeedRunLeaderboard: entries => set({ speedRunLeaderboard: entries }),
-  setViewScale: viewScale => set({ viewScale }),
-  setHoveredCreature: c => set({ hoveredCreature: c }),
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
@@ -793,7 +715,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
   setPopulationItems: items => set({ populationItems: items }),
-  setActiveMaterials: n => set({ activeMaterials: n }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
@@ -802,8 +723,6 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setGraphFocusId: id => set({ graphFocusId: id, ...(id === null && { focusedSpeciesStats: null }) }),
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
-  setScentsEnabled: on => set({ scentsEnabled: on }),
-  setFogEnabled: on => set({ fogEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 

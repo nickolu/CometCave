@@ -4,7 +4,7 @@
  * Deliberately outside React: the world mutates 60 times a second and React
  * only hears about it through a small summary pushed a few times a second.
  */
-import { AIR, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   type SanitizedTerrain,
   sanitizeTerrain,
@@ -42,25 +42,19 @@ import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creatu
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
 import {
-  applyMassExtinction,
-  applyStorm,
   applyTheme,
   applyThemeObject,
-  applyTide,
   boxHitsSolid,
   boxLiquidFraction,
   clearCreatures,
   countByBlueprint,
   createWorld,
-  erodeTile,
   paintBiomeCircle,
   paintBiomeSquare,
   paintCircle,
   paintSquare,
   registerBlueprint,
-  restoreGrass,
   seedStarters,
-  setTile,
   spawnCreature,
   spawnSomewhereSensible,
 } from './domain/sim/world'
@@ -169,8 +163,6 @@ export class GameInstance {
   private accumulator = 0
   private tileCounter = 0
   private statsTimer = 0
-  private pendingBirths: Record<string, number> = {}
-  private pendingDeaths: Record<string, number> = {}
 
   /** Species that existed last time we checked, for extinction notices. */
   private knownSpecies = new Set<string>()
@@ -212,42 +204,8 @@ export class GameInstance {
   private kindElderIds = new Map<LifeKind, number>()
   /** World-clock time the current no-extinction streak began. */
   private steadySince = 0
-  /**
-   * Prey species to watch for trophic-cascade blooms after their predator went
-   * extinct. Maps blueprintId → creature count at the moment of extinction.
-   */
-  private trophicWatch = new Map<string, number>()
-  /** Flips to true permanently once a cascade bloom has been confirmed. */
-  private trophicCascadeDetected = false
   /** Archive size at the last push, so the guide is only re-sent when it grows. */
   private lastArchiveSize = -1
-  /** World-time of the last mass extinction cataclysm. */
-  private lastMassExtinction = -Infinity
-  /** World-time of the last storm. */
-  private lastStorm = -Infinity
-
-  // --- terrain erosion ---
-  /**
-   * Per-tile creature visit counter. Incremented on each erosion update;
-   * reset to 0 when the tile degrades. Uint16Array keeps it cheap.
-   */
-  private erosionTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
-  private erosionTickCounter = 0
-
-  // --- graze depletion ---
-  /** Per-tile count of plant-eating events; triggers grass→dirt when it overflows the threshold. */
-  private grazeTraffic: Uint16Array = new Uint16Array(WORLD_W * WORLD_H)
-  /** Marks tiles that were converted to dirt by overgrazing, so they know to recover. */
-  private grazeDepleted: Uint8Array = new Uint8Array(WORLD_W * WORLD_H)
-  /** Counts erosion ticks between graze-traffic decay steps. */
-  private grazeDecayTick = 0
-
-  // --- mood history for inspector sparkline ---
-  private moodHistory: string[] = []
-  private moodHistoryCreatureId: number | null = null
-  /** Position samples for the memory trail; reset when inspectedId changes. */
-  private inspectedTrail: { x: number; y: number }[] = []
-  private trailLastSample = -999
 
   // --- heatmap ---
   private heatmap: Float32Array | null = null
@@ -494,142 +452,11 @@ export class GameInstance {
     if (this.tileCounter >= TILE_TICK_EVERY) {
       this.tileCounter = 0
       tickTiles(w)
-      applyTide(w)
       // Tiles moved, so the cached tile image is stale.
       this.renderer.markTilesDirty()
     }
 
-    // --- mass extinction cataclysm ---
-    if (
-      TUNING.massExtinctionInterval > 0 &&
-      w.elapsed - this.lastMassExtinction >= TUNING.massExtinctionInterval
-    ) {
-      this.lastMassExtinction = w.elapsed
-      const { cx, cy } = applyMassExtinction(w, this.rng)
-      this.renderer.markTilesDirty()
-      // Scatter a burst of dark particles at the blast centre.
-      for (let i = 0; i < 20; i++) {
-        const angle = this.rng() * Math.PI * 2
-        const speed = 0.5 + this.rng() * 1.5
-        w.particles.push({
-          x: cx + (this.rng() - 0.5) * 6,
-          y: cy + (this.rng() - 0.5) * 6,
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed - 0.5,
-          life: 2 + this.rng() * 2,
-          maxLife: 4,
-          color: this.rng() < 0.5 ? '#6b7280' : '#374151',
-        })
-      }
-      useMicroLand.getState().notify('A cataclysm strikes. The land remembers nothing.')
-      this.breakSteadyStreak()
-    }
-
-    // --- storm event ---
-    if (
-      TUNING.stormInterval > 0 &&
-      w.elapsed - this.lastStorm >= TUNING.stormInterval
-    ) {
-      this.lastStorm = w.elapsed
-      const { x0, x1 } = applyStorm(w, this.rng)
-      this.renderer.markTilesDirty()
-      // Scatter blue-grey rain particles across the storm column.
-      const stormW = x1 - x0
-      for (let i = 0; i < Math.min(30, stormW); i++) {
-        const rx = x0 + Math.floor(this.rng() * stormW)
-        const ry = this.rng() * 8
-        w.particles.push({
-          x: rx,
-          y: ry,
-          vx: (this.rng() - 0.5) * 0.3,
-          vy: 1.5 + this.rng() * 2,
-          life: 1.5 + this.rng() * 1.5,
-          maxLife: 3,
-          color: this.rng() < 0.6 ? '#93c5fd' : '#60a5fa',
-        })
-      }
-      useMicroLand.getState().notify('A storm sweeps through, stripping the land and flooding the banks.')
-    }
-
     tickCreatures(w, TICK_S, this.rng, gravity, events)
-
-    // --- graze depletion: stamp plant-eating events onto the tile they happened on ---
-    for (const event of events) {
-      if (event.kind !== 'ate') continue
-      const victimBp = w.blueprints[event.victimId ?? '']
-      if (!victimBp || victimBp.move.kind !== 'root') continue
-      const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(event.x)))
-      const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(event.y)))
-      const gi = ty * WORLD_W + tx
-      if (this.grazeTraffic[gi] < 65000) this.grazeTraffic[gi]++
-    }
-
-    // --- terrain erosion (every 30 ticks ≈ every 0.5 s at 60 fps) ---
-    this.erosionTickCounter++
-    if (this.erosionTickCounter >= 30) {
-      this.erosionTickCounter = 0
-      const w = this.world
-      // Stamp each creature's current tile.
-      for (const c of w.creatures) {
-        const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(c.x)))
-        const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(c.y)))
-        const i = ty * WORLD_W + tx
-        if (this.erosionTraffic[i] < 65000) this.erosionTraffic[i]++
-      }
-      // Degrade any tile that has seen enough traffic.
-      const THRESHOLD = 80
-      for (let i = 0; i < this.erosionTraffic.length; i++) {
-        if (this.erosionTraffic[i] >= THRESHOLD) {
-          const x = i % WORLD_W
-          const y = Math.floor(i / WORLD_W)
-          erodeTile(w, x, y)
-          this.erosionTraffic[i] = 0
-        }
-      }
-
-      // --- graze depletion: convert over-grazed grass to dirt and recover idle tiles ---
-      const GRAZE_THRESHOLD = 12
-      const grassVal = MATERIAL_INDEX['grass']
-      const dirtVal = MATERIAL_INDEX['dirt']
-      let grazeTilesDirty = false
-      for (let i = 0; i < this.grazeTraffic.length; i++) {
-        if (this.grazeTraffic[i] >= GRAZE_THRESHOLD) {
-          if (w.tiles[i] === grassVal) {
-            const x = i % WORLD_W
-            const y = Math.floor(i / WORLD_W)
-            setTile(w, x, y, dirtVal)
-            this.grazeDepleted[i] = 1
-            grazeTilesDirty = true
-          }
-          // Reset to just below threshold so recovery countdown starts.
-          this.grazeTraffic[i] = GRAZE_THRESHOLD - 1
-        }
-      }
-      // Decay graze traffic every 20 erosion ticks (~10 sim-seconds).
-      this.grazeDecayTick++
-      if (this.grazeDecayTick >= 20) {
-        this.grazeDecayTick = 0
-        for (let i = 0; i < this.grazeTraffic.length; i++) {
-          if (this.grazeTraffic[i] > 0) {
-            this.grazeTraffic[i]--
-          } else if (this.grazeDepleted[i]) {
-            // Traffic has fully cleared — restore grass on this depleted tile.
-            if (w.tiles[i] === dirtVal) {
-              restoreGrass(w, i % WORLD_W, Math.floor(i / WORLD_W))
-              grazeTilesDirty = true
-            }
-            this.grazeDepleted[i] = 0
-          }
-        }
-      }
-      if (grazeTilesDirty) this.renderer.markTilesDirty()
-    }
-
-    // --- rain ---
-    if (TUNING.rainRate > 0 && this.rng() < TUNING.rainRate) {
-      const rx = Math.floor(this.rng() * WORLD_W)
-      paintCircle(this.world, rx, 0, 1, 'water')
-    }
 
     // --- heatmap update (every 5 ticks) ---
     this.heatmapTickCounter++
@@ -683,7 +510,7 @@ export class GameInstance {
     }
 
     for (const event of events) {
-      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased' && event.kind !== 'frosted' && event.kind !== 'overheated') continue
+      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased') continue
       const bp = this.world.blueprints[event.blueprintId]
       if (!bp) continue
       // Was that the last one? Only interesting for species we'd seen alive.
@@ -694,28 +521,15 @@ export class GameInstance {
       // Record extinction in store for the field guide memorial.
       {
         const firstSeen = this.speciesFirstSeen.get(bp.id) ?? this.world.elapsed
-        const livedFor = this.world.elapsed - firstSeen
-        const maxGeneration = this.world.creatures.reduce(
-          (max, c) => c.blueprintId === bp.id ? Math.max(max, c.generation) : max,
-          1
-        )
         useMicroLand.getState().addExtinction({
           blueprintId: bp.id,
           name: bp.name,
           elapsed: this.world.elapsed,
-          livedFor,
-          maxGeneration,
-        })
-        // Drop a fossil where the last creature of this species died.
-        this.world.fossils.push({
-          id: this.world.nextFossilId++,
-          x: event.x,
-          y: event.y,
-          blueprintId: bp.id,
-          name: bp.name,
-          livedFor,
-          maxGeneration,
-          elapsed: this.world.elapsed,
+          livedFor: this.world.elapsed - firstSeen,
+          maxGeneration: this.world.creatures.reduce(
+            (max, c) => c.blueprintId === bp.id ? Math.max(max, c.generation) : max,
+            1
+          ),
         })
       }
       // An extinction is exactly what the steady streak measures the absence of
@@ -727,55 +541,8 @@ export class GameInstance {
         : event.kind === 'drowned' ? `The last ${bp.name} drowned.`
         : event.kind === 'burned' ? `The last ${bp.name} burned.`
         : event.kind === 'aged' ? `The last ${bp.name} lived to old age.`
-        : event.kind === 'frosted' ? `The last ${bp.name} froze.`
-        : event.kind === 'overheated' ? `The last ${bp.name} overheated.`
         : `The last ${bp.name} was eaten.`
       )
-      // Trophic cascade: note the food web ripple from this extinction.
-      {
-        const foodWeb = useMicroLand.getState().foodWeb
-        const eatsMeat = bp.diet.eats.includes('meat')
-        const eatsPlants = bp.diet.eats.includes('plant')
-
-        if (eatsMeat) {
-          // A predator went extinct — surviving prey species may now multiply unchecked.
-          const preyIds = foodWeb[bp.id] ?? []
-          const alivePrey = preyIds
-            .map(id => this.world.blueprints[id]?.name)
-            .filter((name): name is string =>
-              !!name && this.world.creatures.some(c => this.world.blueprints[c.blueprintId]?.name === name)
-            )
-          if (alivePrey.length === 1) {
-            notify(`Without ${bp.name}, the ${alivePrey[0]} have nothing to fear.`)
-          } else if (alivePrey.length >= 2) {
-            notify(`Without ${bp.name}, the ${alivePrey[0]} and ${alivePrey[1]} have nothing to fear.`)
-          }
-          // Record prey counts now for trophic-cascade bloom detection.
-          if (!this.trophicCascadeDetected) {
-            const counts = countByBlueprint(this.world)
-            for (const preyId of preyIds) {
-              const c = counts[preyId] ?? 0
-              if (c > 0 && !this.trophicWatch.has(preyId)) {
-                this.trophicWatch.set(preyId, c)
-              }
-            }
-          }
-        } else if (eatsPlants) {
-          // A herbivore went extinct — surviving predators that ate it lose a food source.
-          const predatorIds = Object.keys(foodWeb).filter(predId =>
-            foodWeb[predId].includes(bp.id)
-          )
-          const alivePredNames = predatorIds
-            .filter(id => this.world.creatures.some(c => c.blueprintId === id))
-            .map(id => this.world.blueprints[id]?.name)
-            .filter((name): name is string => !!name)
-          if (alivePredNames.length === 1) {
-            notify(`The ${alivePredNames[0]} lost their prey.`)
-          } else if (alivePredNames.length >= 2) {
-            notify(`The ${alivePredNames[0]} and ${alivePredNames[1]} lost their prey.`)
-          }
-        }
-      }
       if (isSoundEnabled()) playExtinction()
     }
 
@@ -806,18 +573,6 @@ export class GameInstance {
         mostProlificName,
         mostProlificChildren,
       })
-    }
-
-    // Track per-species births/deaths for the population graph.
-    for (const event of events) {
-      if (event.kind === 'born') {
-        this.pendingBirths[event.blueprintId] = (this.pendingBirths[event.blueprintId] ?? 0) + 1
-      } else if (
-        event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' ||
-        event.kind === 'burned' || event.kind === 'aged' || event.kind === 'diseased'
-      ) {
-        this.pendingDeaths[event.blueprintId] = (this.pendingDeaths[event.blueprintId] ?? 0) + 1
-      }
     }
 
     // Play sounds for aggregate events this tick
@@ -960,19 +715,7 @@ export class GameInstance {
       }
     }
 
-    const births = { ...this.pendingBirths }
-    const deaths = { ...this.pendingDeaths }
-    this.pendingBirths = {}
-    this.pendingDeaths = {}
-    useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed, births, deaths)
-
-    // Count distinct non-air tile materials for biome diversity score.
-    const seenMaterials = new Set<number>()
-    for (let i = 0; i < this.world.tiles.length; i++) {
-      const m = this.world.tiles[i]
-      if (m !== AIR) seenMaterials.add(m)
-    }
-    useMicroLand.getState().setActiveMaterials(seenMaterials.size)
+    useMicroLand.getState().setStats(population, this.world.creatures.length, this.world.elapsed)
 
     // Per-creature thumbnails for the Field Guide population viewer.
     const thumbs: CreatureThumb[] = this.world.creatures
@@ -991,7 +734,7 @@ export class GameInstance {
       const deepestGen = population.reduce((max, p) => Math.max(max, p.maxGeneration), 0)
       const timeUsed = this.world.elapsed - sr.startElapsed
       if (deepestGen >= sr.targetGeneration) {
-        useMicroLand.getState().endSpeedRun('won', Math.round(timeUsed))
+        useMicroLand.getState().endSpeedRun('won')
         saveSpeedRunRecord({
           theme: useMicroLand.getState().themeId,
           targetGen: sr.targetGeneration,
@@ -1077,23 +820,6 @@ export class GameInstance {
       const flat: Record<string, TraitHistoryEntry[]> = {}
       for (const [id, hist] of this.traitHistory) flat[id] = hist
       useMicroLand.getState().setTraitHistory(flat)
-    }
-
-    // Push species first-seen times to the store for the lineage timeline.
-    {
-      const flat: Record<string, number> = {}
-      for (const [id, t] of this.speciesFirstSeen) flat[id] = t
-      useMicroLand.getState().setSpeciesFirstSeen(flat)
-    }
-
-    // Accumulate mutualism bond time for species pairs in active symbiosis.
-    const STATS_DT = STATS_EVERY_MS / 1000
-    for (const c of this.world.creatures) {
-      if (c.symbiosisTimer <= 0) continue
-      const bp = this.world.blueprints[c.blueprintId]
-      if (!bp?.symbiosisPartnerId) continue
-      const [a, b] = [c.blueprintId, bp.symbiosisPartnerId].sort()
-      useMicroLand.getState().recordMutualismTime(`${a}:${b}`, STATS_DT)
     }
 
     // A running world is different every tick, so there is no cheaper signal
@@ -1300,18 +1026,6 @@ export class GameInstance {
       .filter(cr => w.blueprints[cr.blueprintId]?.diet.eats.includes('meat'))
       .reduce((m, cr) => Math.max(m, (cr.traits as Traits).immunity ?? 0), 0)
 
-    // Trophic cascade bloom check: has any watched prey species doubled?
-    if (!this.trophicCascadeDetected && this.trophicWatch.size > 0) {
-      const counts = countByBlueprint(this.world)
-      for (const [preyId, countAtExtinction] of this.trophicWatch) {
-        const current = counts[preyId] ?? 0
-        if (current >= countAtExtinction * 2 && current >= 10) {
-          this.trophicCascadeDetected = true
-          break
-        }
-      }
-    }
-
     this.checkMilestones(archive, {
       elapsed: w.elapsed,
       steadySeconds,
@@ -1321,7 +1035,6 @@ export class GameInstance {
       total: w.creatures.length,
       maxToxicity,
       maxPredatorImmunity,
-      trophicCascadeDetected: this.trophicCascadeDetected,
     })
 
     this.syncArchive(archive)
@@ -1486,8 +1199,6 @@ export class GameInstance {
     const store = useMicroLand.getState()
     if (this.inspectedId === null) {
       if (store.inspected !== null) store.setInspected(null)
-      this.inspectedTrail = []
-      this.trailLastSample = -999
       return
     }
 
@@ -1508,22 +1219,6 @@ export class GameInstance {
 
     const bp = this.world.blueprints[c.blueprintId]
     if (!bp) return
-    // Accumulate mood history for the sparkline.
-    if (c.id !== this.moodHistoryCreatureId) {
-      this.moodHistory = [c.mood]
-      this.moodHistoryCreatureId = c.id
-      this.inspectedTrail = []
-      this.trailLastSample = -999
-    } else {
-      this.moodHistory.push(c.mood)
-      if (this.moodHistory.length > 40) this.moodHistory.shift()
-    }
-    // Sample position every sim-second for the memory trail.
-    if (this.world.elapsed - this.trailLastSample >= 1) {
-      this.trailLastSample = this.world.elapsed
-      this.inspectedTrail.push({ x: c.x, y: c.y })
-      if (this.inspectedTrail.length > 30) this.inspectedTrail.shift()
-    }
     const { w: bw, h: bh } = artSize(bp)
 
     const target =
@@ -1551,7 +1246,6 @@ export class GameInstance {
       grounded: c.grounded,
       targetName: targetBp?.name ?? null,
       generation: c.generation,
-      parentBlueprintIds: (c as { parentBlueprintIds?: readonly [string, string | null] }).parentBlueprintIds ?? null,
       // Copied, like everything else here. Traits are replaced wholesale rather
       // than mutated, so the reference would in fact be safe today — but that is
       // a fact about `inherit`, and this panel shouldn't depend on it.
@@ -1567,10 +1261,6 @@ export class GameInstance {
         const host = this.world.creatures.find(x => x.id === hid)
         return host ? (this.world.blueprints[host.blueprintId]?.name ?? null) : null
       })(),
-      moodHistory: [...this.moodHistory],
-      lastMealX: c.lastMealX,
-      lastMealY: c.lastMealY,
-      trail: [...this.inspectedTrail],
     })
   }
 
@@ -2132,14 +1822,6 @@ export class GameInstance {
     if (this.renderer.resetZoom()) this.pushCamera()
   }
 
-  setViewScale(preset: 'wide' | 'standard' | 'close'): void {
-    const target =
-      preset === 'wide' ? this.renderer.minZoomLevel :
-      preset === 'close' ? 2 :
-      1
-    if (this.renderer.setZoom(target)) this.pushCamera()
-  }
-
   /**
    * Tell the UI what the camera can currently do.
    *
@@ -2209,10 +1891,6 @@ export class GameInstance {
       this.grabTrail = []
     }
     this.pendingInspect = null
-  }
-
-  private onPointerLeave = () => {
-    useMicroLand.getState().setHoveredCreature(null)
   }
 
   private onPointerDown = (e: PointerEvent) => {
@@ -2310,42 +1988,6 @@ export class GameInstance {
       const perPixel = this.renderer.tilesPerClientPixel()
       this.renderer.panTo(this.panAnchorCam - dx * perPixel, this.panAnchorCamY - dy * perPixel)
       return
-    }
-
-    // Hover tooltip: track which creature is under the cursor when not painting or panning.
-    if (e.isPrimary && !this.pointerDown && !this.panning && this.pointers.size <= 1) {
-      const hp = this.renderer.screenToWorld(e.clientX, e.clientY)
-      const hovered = this.creatureAt(hp.x, hp.y)
-      const hState = useMicroLand.getState()
-      const currentId = hState.hoveredCreature?.id ?? null
-      const newId = hovered?.id ?? null
-      if (newId !== currentId) {
-        if (hovered) {
-          const bp = this.world.blueprints[hovered.blueprintId]
-          hState.setHoveredCreature({
-            id: hovered.id,
-            mood: hovered.mood,
-            hunger: hovered.hunger,
-            name: bp?.name ?? hovered.blueprintId,
-            screenX: e.clientX,
-            screenY: e.clientY,
-          })
-        } else {
-          hState.setHoveredCreature(null)
-        }
-      } else if (hovered && hState.hoveredCreature) {
-        // Keep position and stats fresh even without id change.
-        const cur = hState.hoveredCreature
-        if (Math.abs(e.clientX - cur.screenX) > 4 || Math.abs(e.clientY - cur.screenY) > 4 ||
-            cur.mood !== hovered.mood || Math.abs(cur.hunger - hovered.hunger) > 0.05) {
-          const bp = this.world.blueprints[hovered.blueprintId]
-          hState.setHoveredCreature({
-            id: hovered.id, mood: hovered.mood, hunger: hovered.hunger,
-            name: bp?.name ?? hovered.blueprintId,
-            screenX: e.clientX, screenY: e.clientY,
-          })
-        }
-      }
     }
 
     if (!this.pointerDown || !e.isPrimary) return
@@ -2475,23 +2117,6 @@ export class GameInstance {
 
     // Inspecting is resolved on pointerdown; it never paints.
     if (tool.kind === 'inspect') return
-
-    if (tool.kind === 'corridor') {
-      if (!this.world.corridors) this.world.corridors = new Uint8Array(WORLD_W * WORLD_H)
-      const r = state.brush
-      const x0 = Math.max(0, Math.round(x) - r)
-      const x1 = Math.min(WORLD_W - 1, Math.round(x) + r)
-      const y0 = Math.max(0, Math.round(y) - r)
-      const y1 = Math.min(WORLD_H - 1, Math.round(y) + r)
-      for (let cy = y0; cy <= y1; cy++) {
-        for (let cx = x0; cx <= x1; cx++) {
-          const dx = cx - x, dy = cy - y
-          if (state.brushShape !== 'square' && dx * dx + dy * dy > r * r) continue
-          this.world.corridors[cy * WORLD_W + cx] = 1
-        }
-      }
-      return
-    }
 
     if (tool.kind === 'biome') {
       const biome = BIOME_BY_ID[tool.biomeId]
@@ -2675,7 +2300,6 @@ export class GameInstance {
     this.canvas.addEventListener('pointermove', this.onPointerMove)
     this.canvas.addEventListener('pointerup', this.onPointerUp)
     this.canvas.addEventListener('pointercancel', this.onPointerUp)
-    this.canvas.addEventListener('pointerleave', this.onPointerLeave)
     this.canvas.addEventListener('wheel', this.onWheel, { passive: false })
     this.canvas.addEventListener('keydown', this.onKeyDown)
     this.canvas.addEventListener('keyup', this.onKeyUp)
@@ -2687,7 +2311,6 @@ export class GameInstance {
     this.canvas.removeEventListener('pointermove', this.onPointerMove)
     this.canvas.removeEventListener('pointerup', this.onPointerUp)
     this.canvas.removeEventListener('pointercancel', this.onPointerUp)
-    this.canvas.removeEventListener('pointerleave', this.onPointerLeave)
     this.canvas.removeEventListener('wheel', this.onWheel)
     this.canvas.removeEventListener('keydown', this.onKeyDown)
     this.canvas.removeEventListener('keyup', this.onKeyUp)

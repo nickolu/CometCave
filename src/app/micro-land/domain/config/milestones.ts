@@ -33,11 +33,6 @@ export interface MilestoneContext {
   maxToxicity: number
   /** Highest immunity trait value among living meat-eaters. */
   maxPredatorImmunity: number
-  /**
-   * True once a prey species has doubled in population after its last predator
-   * went extinct — a trophic cascade in the classic sense.
-   */
-  trophicCascadeDetected: boolean
 }
 
 export interface Milestone {
@@ -121,26 +116,6 @@ export const MILESTONES: Milestone[] = [
     id: 'toxicity-arms-race',
     text: 'A venomous lineage and an immune one, locked in step.',
     reached: c => c.maxToxicity >= 0.7 && c.maxPredatorImmunity >= 0.5,
-  },
-  {
-    id: 'trophic-cascade',
-    text: 'The hunters are gone. Their prey bloom in the silence.',
-    reached: c => c.trophicCascadeDetected,
-  },
-  {
-    id: 'grade-c',
-    text: 'Grade C — four kinds of life, finding their niches.',
-    reached: c => c.speciesAlive >= 4,
-  },
-  {
-    id: 'grade-b',
-    text: 'Grade B — six kinds. Each one needed.',
-    reached: c => c.speciesAlive >= 6,
-  },
-  {
-    id: 'grade-a',
-    text: 'Grade A — nine kinds, all holding. The cave is old and it approves.',
-    reached: c => c.speciesAlive >= 9,
   },
 ]
 

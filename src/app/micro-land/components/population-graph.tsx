@@ -224,51 +224,6 @@ export function PopulationGraph() {
       ctx.stroke()
       ctx.globalAlpha = 1
     }
-
-    // Birth/death rate lines — green for births, red for deaths
-    const allBirthValues = history.flatMap(s => Object.values(s.births ?? {}))
-    const allDeathValues = history.flatMap(s => Object.values(s.deaths ?? {}))
-    const maxBirthDeath = Math.max(1, ...allBirthValues, ...allDeathValues)
-
-    if (allBirthValues.length > 0 || allDeathValues.length > 0) {
-      for (const id of ids) {
-        const isFocused = id === graphFocusId
-        const hasFocus = graphFocusId !== null
-        const baseAlpha = hasFocus && !isFocused ? 0.08 : 0.5
-
-        ctx.setLineDash([3, 3])
-        ctx.lineWidth = 1
-
-        // Births line — green dashed
-        ctx.strokeStyle = '#22c55e'
-        ctx.globalAlpha = baseAlpha
-        ctx.beginPath()
-        let firstB = true
-        for (const snap of history) {
-          const b = snap.births?.[id] ?? 0
-          const x = PAD.left + ((snap.elapsed - elMin) / elSpan) * chartW
-          const y = PAD.top + chartH - (b / maxBirthDeath) * chartH
-          if (firstB) { ctx.moveTo(x, y); firstB = false }
-          else ctx.lineTo(x, y)
-        }
-        ctx.stroke()
-
-        // Deaths line — red dashed
-        ctx.strokeStyle = '#ef4444'
-        let firstD = true
-        ctx.beginPath()
-        for (const snap of history) {
-          const d = snap.deaths?.[id] ?? 0
-          const x = PAD.left + ((snap.elapsed - elMin) / elSpan) * chartW
-          const y = PAD.top + chartH - (d / maxBirthDeath) * chartH
-          if (firstD) { ctx.moveTo(x, y); firstD = false }
-          else ctx.lineTo(x, y)
-        }
-        ctx.stroke()
-      }
-      ctx.setLineDash([])
-      ctx.globalAlpha = 1
-    }
   }, [graphOpen, history, population, blueprints, graphFocusId])
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -356,7 +311,7 @@ export function PopulationGraph() {
           color: 'rgba(255,255,255,0.5)',
         }}
       >
-        Population / activity over time
+        Population over time
         <button
           type="button"
           onClick={() => setGraphOpen(false)}

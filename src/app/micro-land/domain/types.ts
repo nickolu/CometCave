@@ -448,29 +448,6 @@ export interface Traits {
    * Neutral at 1. Range [TRAIT_MIN, TRAIT_MAX].
    */
   reproductionCooldown: number
-  /**
-   * Thermal preference: -1 = craves cold (top rows), +1 = craves heat (bottom
-   * rows), 0 = indifferent. Heritable — a line consistently exposed to harsh
-   * temperatures drifts toward tolerance over generations.
-   */
-  thermophily: number
-  /**
-   * How many eggs this creature lays per breeding event (egg-layers only).
-   *
-   * Range 1..4; heritable. A line in a food-rich patch with few predators can
-   * drift toward larger clutches over generations; one under heavy predation may
-   * not gain enough from multiple eggs to outweigh the breeding cost.
-   * Ignored for live-bearing species.
-   */
-  clutchSize: number
-  /**
-   * Ability to navigate by emitting sound pulses (0..1).
-   *
-   * Range 0..1. When ≥ 0.5, this creature bypasses light-dependent vision
-   * penalties (diurnal darkness, cave fog) and gains a proportional sight
-   * bonus — echolocation is not affected by the time of day or ambient light.
-   */
-  echolocation: number
 }
 
 /** One living thing in the world. */
@@ -533,11 +510,6 @@ export interface Creature {
    * can dwindle to a single individual and its line keeps its depth.
    */
   generation: number
-  /**
-   * BlueprintIds of the two parents at live birth. Null/absent for placed creatures.
-   * The second entry is null for self-fertilisation or unknown mate.
-   */
-  parentBlueprintIds?: readonly [string, string | null]
   /**
    * What this one inherited, as multipliers on its species.
    *
@@ -636,10 +608,6 @@ export interface Creature {
    * no fatigue data default to 0.
    */
   fatigue?: number
-  /** Tile X where the creature last ate successfully. null = never eaten. */
-  lastMealX: number | null
-  /** Tile Y where the creature last ate successfully. null = never eaten. */
-  lastMealY: number | null
 }
 
 /**
@@ -677,29 +645,6 @@ export interface Tombstone {
   generation: number   // which generation
   mealsEaten: number
   children: number
-}
-
-/**
- * A permanent fossil marker left where the last creature of a species died.
- * Records the extinction position and final stats. Never decays — the cave
- * keeps a record of every extinction.
- */
-export interface Fossil {
-  id: number
-  /** World-tile x coordinate where the last individual died. */
-  x: number
-  /** World-tile y coordinate where the last individual died. */
-  y: number
-  /** Blueprint id of the extinct species. */
-  blueprintId: string
-  /** Species name, cached here so the renderer needs no blueprint lookup. */
-  name: string
-  /** How long this species survived (sim-seconds). */
-  livedFor: number
-  /** Highest generation reached by this species. */
-  maxGeneration: number
-  /** World elapsed time when extinction happened. */
-  elapsed: number
 }
 
 /** A named creature — may be alive or dead. */
@@ -794,8 +739,6 @@ export interface WorldState {
   carcasses: Carcass[]
   tombstones: Tombstone[]
   nextTombstoneId: number
-  fossils: Fossil[]
-  nextFossilId: number
   nextCarcassId: number
   scents: Scent[]
   /**
@@ -833,20 +776,6 @@ export interface WorldState {
    * generative — painting, placing, summoning, changing theme — wakes it again.
    */
   dormant: boolean
-  /**
-   * Per-tile corridor markers, painted by the player. Migrating creatures
-   * prefer moving toward marked tiles over bare terrain scanning.
-   * Optional so old serialised worlds without it don't crash.
-   */
-  corridors?: Uint8Array
-  /**
-   * Which tiles have been seen by at least one living creature this session.
-   *
-   * A 1 means visited; 0 means fog. Length = width × height. Transient — not
-   * persisted in WorldSave. Optional so worlds loaded from a save still work
-   * before the first tick initialises it.
-   */
-  visited?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------

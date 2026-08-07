@@ -133,16 +133,6 @@ export class Renderer {
   private shadowCanvas: HTMLCanvasElement
   private shadowCtx: CanvasRenderingContext2D
 
-  /**
-   * Fog-of-war overlay, world resolution.
-   *
-   * Tiles not yet visited by any creature are painted black with partial
-   * opacity. The canvas is full world width so we only blit the visible slice.
-   */
-  private fogCanvas: HTMLCanvasElement
-  private fogCtx: CanvasRenderingContext2D
-  private fogImage: ImageData
-
   private light = new Float32Array(LW * LH)
   private lightScratch = new Float32Array(LW * LH)
   private skyDepth = new Int16Array(WORLD_W)
@@ -207,12 +197,6 @@ export class Renderer {
     this.shadowCanvas.height = WORLD_H
     this.shadowCtx = this.shadowCanvas.getContext('2d')!
     this.shadowImage = this.shadowCtx.createImageData(WORLD_W, WORLD_H)
-
-    this.fogCanvas = document.createElement('canvas')
-    this.fogCanvas.width = WORLD_W
-    this.fogCanvas.height = WORLD_H
-    this.fogCtx = this.fogCanvas.getContext('2d')!
-    this.fogImage = this.fogCtx.createImageData(WORLD_W, WORLD_H)
 
     this.mapCanvas = document.createElement('canvas')
     this.mapCanvas.width = MW
@@ -394,11 +378,6 @@ export class Renderer {
     return this.setZoom(1)
   }
 
-  /** The minimum zoom — shows the full world width. */
-  get minZoomLevel(): number {
-    return this.minZoom
-  }
-
   /**
    * Slide just far enough to bring a point back on screen.
    *
@@ -518,27 +497,17 @@ export class Renderer {
     this.drawCarcasses(w, vx, vw)
     this.drawNests(w, vx, vw)
     this.drawTombstones(w, vx, vw)
-    this.drawFossils(w, vx, vw)
     if (heatmap) this.drawHeatmap(heatmap, vx, vw)
-    if (w.corridors) this.drawCorridors(w.corridors, vx, vw)
-    if (TUNING.temperatureGradient > 0) this.drawTemperatureGradient(vx, vw)
-    this.drawTerritorialStains(w, vx, vw)
     this.drawEggs(w, vx, vw)
     this.drawCreatures(w, vx, vw)
     this.drawStatusDots(w, vx, vw)
     this.drawPollinatorAuras(w, vx, vw)
-    this.drawGlowAuras(w, vx, vw)
-    this.drawEcholocationPulses(w, vx, vw)
-    if (useMicroLand.getState().scentsEnabled) this.drawScentBeacons(w, vx, vw)
     this.drawParticles(w, vx, vw)
     wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
     // goes first so the selection brackets sit on top when you inspect an elder.
     if (elderId !== null) this.drawElder(w, elderId)
-    if (highlightId !== null) {
-      this.drawMemoryTrail(vx)
-      this.drawHighlight(w, highlightId)
-    }
+    if (highlightId !== null) this.drawHighlight(w, highlightId)
 
     // Day/night cycle: gradually darkens during the night phase.
     if (TUNING.dayLengthSeconds > 0) {
@@ -549,41 +518,6 @@ export class Renderer {
         wctx.fillRect(vx, 0, vw, WORLD_H)
         wctx.globalAlpha = 1
       }
-    }
-
-    // Seasonal colour tint — a soft wash that shifts with the season knob.
-    // Spring: muted green, Summer: warm gold, Autumn: amber, Winter: cold blue.
-    if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
-      const p = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
-      const p4 = p * 4
-      const qi = Math.floor(p4) % 4
-      const t = p4 - Math.floor(p4)
-      const SEASON_TINTS: [number, number, number][] = [
-        [58,  160,  80],  // spring — green
-        [212, 160,  22],  // summer — amber gold
-        [185,  90,  20],  // autumn — orange
-        [ 26,  62, 140],  // winter — cold blue
-      ]
-      const c1 = SEASON_TINTS[qi]
-      const c2 = SEASON_TINTS[(qi + 1) % 4]
-      const r = Math.round(c1[0] * (1 - t) + c2[0] * t)
-      const g = Math.round(c1[1] * (1 - t) + c2[1] * t)
-      const b = Math.round(c1[2] * (1 - t) + c2[2] * t)
-      const alpha = 0.10 * TUNING.seasonAmplitude  // max 0.10 at full amplitude
-      if (alpha > 0.005) {
-        wctx.globalAlpha = alpha
-        wctx.fillStyle = `rgb(${r},${g},${b})`
-        wctx.fillRect(vx, 0, vw, WORLD_H)
-        wctx.globalAlpha = 1
-      }
-    }
-
-    // Fog of war: paint darkness over tiles no creature has ever visited.
-    // Read the store directly — the renderer already reads TUNING and
-    // trailsEnabled this same way rather than threading them as props.
-    if (w.visited && useMicroLand.getState().fogEnabled) {
-      this.updateFog(w.visited, vx, vw)
-      wctx.drawImage(this.fogCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
     }
 
     // One scaled blit. Nearest-neighbour keeps the pixels crisp.
@@ -605,9 +539,7 @@ export class Renderer {
 
     this.drawMinimap(w, theme, vx)
     this.drawNameLabels(w, vx, vw, elderId)
-    this.drawThoughtBubbles(w, vx, vw)
     this.drawTombstoneLabels(w, vx, vw)
-    this.drawFossilLabels(w, vx, vw)
   }
 
   // -------------------------------------------------------------------------
@@ -808,114 +740,6 @@ export class Renderer {
   }
 
   /**
-   * Soft amber tint over the territory each high-territoriality creature has
-   * claimed around its home position. Fades with distance from home; purely
-   * visual — no effect on the sim.
-   *
-   * Iterates per-creature (not per-tile) to keep cost proportional to the
-   * number of territorial animals rather than world area.
-   */
-  private drawTerritorialStains(w: WorldState, vx: number, vw: number): void {
-    const ctx = this.wctx
-    ctx.fillStyle = '#c4913a'
-
-    for (const c of w.creatures) {
-      if (c.traits.territoriality <= 0.4) continue
-      const radius = c.traits.territoriality * 10
-      const hx = Math.round(c.homeX)
-      const hy = Math.round(c.homeY)
-      // Cull: skip if the bounding box of this territory is entirely off-screen.
-      if (hx + radius < vx || hx - radius > vx + vw) continue
-
-      const strength = (c.traits.territoriality - 0.4) / 1.0  // 0..1
-      const r = Math.ceil(radius)
-      for (let dy = -r; dy <= r; dy++) {
-        const y = hy + dy
-        if (y < 0 || y >= WORLD_H) continue
-        for (let dx = -r; dx <= r; dx++) {
-          const x = hx + dx
-          if (x < vx || x >= vx + vw) continue
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist >= radius) continue
-          const influence = strength * (1 - dist / radius)
-          if (influence < 0.02) continue
-          ctx.globalAlpha = Math.min(0.20, influence * 0.28)
-          ctx.fillRect(x, y, 1, 1)
-        }
-      }
-    }
-    ctx.globalAlpha = 1
-  }
-
-  /**
-   * Subtle warm-to-cool tint across the world height.
-   * Bottom rows get a red-orange wash; top rows get a blue wash.
-   * Only called when temperatureGradient > 0.
-   */
-  private drawTemperatureGradient(vx: number, vw: number): void {
-    const ctx = this.wctx
-    const strength = TUNING.temperatureGradient
-    // Hot bottom: warm orange-red rows.
-    const hotRows = Math.round(WORLD_H * 0.25)
-    for (let y = WORLD_H - hotRows; y < WORLD_H; y++) {
-      const t = (y - (WORLD_H - hotRows)) / hotRows  // 0 at zone top, 1 at bottom
-      ctx.globalAlpha = t * strength * 0.12
-      ctx.fillStyle = '#f97316'  // orange-500
-      ctx.fillRect(vx, y, vw, 1)
-    }
-    // Cold top: blue rows.
-    const coldRows = Math.round(WORLD_H * 0.25)
-    for (let y = 0; y < coldRows; y++) {
-      const t = 1 - y / coldRows  // 1 at very top, 0 at zone bottom
-      ctx.globalAlpha = t * strength * 0.10
-      ctx.fillStyle = '#60a5fa'  // blue-400
-      ctx.fillRect(vx, y, vw, 1)
-    }
-    ctx.globalAlpha = 1
-  }
-
-  private drawCorridors(corridors: Uint8Array, vx: number, vw: number): void {
-    const ctx = this.wctx
-    for (let x = vx; x < vx + vw; x++) {
-      for (let y = 0; y < WORLD_H; y++) {
-        if (!corridors[y * WORLD_W + x]) continue
-        ctx.globalAlpha = 0.38
-        ctx.fillStyle = '#ffe066'
-        ctx.fillRect(x, y, 1, 1)
-      }
-    }
-    ctx.globalAlpha = 1
-  }
-
-  /**
-   * Paint fog-of-war over unvisited tiles.
-   *
-   * Writes only the vx..vx+vw column slice of the ImageData so the scan is
-   * proportional to viewport width rather than the full world width. Visited
-   * tiles are transparent; everything else gets a dark overlay.
-   */
-  private updateFog(visited: Uint8Array, vx: number, vw: number): void {
-    const data = this.fogImage.data
-    for (let y = 0; y < WORLD_H; y++) {
-      const rowBase = y * WORLD_W
-      for (let x = vx; x < vx + vw; x++) {
-        const o = (rowBase + x) * 4
-        if (visited[rowBase + x]) {
-          // Visited — transparent so the world shows through.
-          data[o + 3] = 0
-        } else {
-          // Unvisited — nearly-opaque dark fill.
-          data[o] = 0
-          data[o + 1] = 0
-          data[o + 2] = 0
-          data[o + 3] = 210
-        }
-      }
-    }
-    this.fogCtx.putImageData(this.fogImage, 0, 0, vx, 0, vw, WORLD_H)
-  }
-
-  /**
    * Burrow entrances dug by territorial creatures at their home positions.
    *
    * Drawn as a small dark mound with a black entrance hole. Fades in as the
@@ -999,130 +823,6 @@ export class Renderer {
   }
 
   /**
-   * Soft bioluminescence aura around creatures with glow > 0.
-   *
-   * Drawn on the world canvas before the shadow overlay so it shows through
-   * darkness in dark caves — a creature with glow > 0 already brightens the
-   * shadow system; this adds a visible cyan-teal wash so players can see
-   * bioluminescent animals even in dim conditions. Pulses gently over time.
-   */
-  private drawGlowAuras(w: WorldState, vx: number, vw: number): void {
-    const ctx = this.wctx
-    ctx.fillStyle = '#67e8f9'  // cyan-200 — cool bioluminescent blue-green
-
-    for (const c of w.creatures) {
-      const bp = w.blueprints[c.blueprintId]
-      if (!bp || bp.glow <= 0) continue
-
-      const rows = bp.art.frames[0]
-      const bw = rows[0].length
-      const bh = rows.length
-      if (c.x + bw < vx || c.x > vx + vw) continue
-
-      const cx = Math.round(c.x + bw / 2)
-      const cy = Math.round(c.y + bh / 2)
-      const r = Math.ceil(bp.glow * 5) + 2   // radius 2..7 tiles
-      // Gentle pulse: amplitude ±15% of the base alpha.
-      const pulse = 1 + 0.15 * Math.sin(w.elapsed * 2.5 + cx * 0.3)
-
-      for (let dy = -r; dy <= r; dy++) {
-        const y = cy + dy
-        if (y < 0 || y >= WORLD_H) continue
-        for (let dx = -r; dx <= r; dx++) {
-          const x = cx + dx
-          if (x < vx || x >= vx + vw) continue
-          const dist = Math.sqrt(dx * dx + dy * dy)
-          if (dist >= r) continue
-          ctx.globalAlpha = Math.min(0.45, bp.glow * 0.4 * (1 - dist / r) * pulse)
-          ctx.fillRect(x, y, 1, 1)
-        }
-      }
-    }
-    ctx.globalAlpha = 1
-  }
-
-  /**
-   * Expanding sonar-ring pulses for creatures with high echolocation trait.
-   *
-   * Each pulse is a thin ring that expands outward from the creature and fades.
-   * Multiple offset pulses per creature simulate the periodic ping of real sonar.
-   * Drawn on the world canvas in amber so it reads as "sound" vs. the cyan of bioluminescence.
-   */
-  private drawEcholocationPulses(w: WorldState, vx: number, vw: number): void {
-    const ctx = this.wctx
-    const PULSE_PERIOD = 2.5   // seconds between pings
-    const MAX_RADIUS = 10       // max ring radius in tiles
-    ctx.strokeStyle = '#f59e0b' // amber-400 — warm sonar colour
-
-    for (const c of w.creatures) {
-      const echo = (c.traits as { echolocation?: number }).echolocation ?? 0
-      if (echo < 0.4) continue
-      const bp = w.blueprints[c.blueprintId]
-      if (!bp) continue
-      const rows = bp.art.frames[0]
-      const bw = rows[0].length
-      const bh = rows.length
-      if (c.x + bw < vx || c.x > vx + vw) continue
-
-      const cx = c.x + bw / 2
-      const cy = c.y + bh / 2
-      const phase = (w.elapsed % PULSE_PERIOD) / PULSE_PERIOD
-      // Draw two staggered rings per creature so there is always one in motion.
-      for (const offset of [0, 0.5]) {
-        const t = (phase + offset) % 1  // 0..1, 0 = just emitted, 1 = fully expanded
-        const r = t * MAX_RADIUS * echo
-        const alpha = (1 - t) * echo * 0.6
-        if (r < 0.5 || alpha < 0.02) continue
-        ctx.globalAlpha = alpha
-        ctx.lineWidth = 0.6
-        ctx.beginPath()
-        ctx.arc(cx, cy, r, 0, Math.PI * 2)
-        ctx.stroke()
-      }
-    }
-    ctx.globalAlpha = 1
-    ctx.lineWidth = 1
-  }
-
-  private drawScentBeacons(w: WorldState, vx: number, vw: number): void {
-    const ctx = this.wctx
-    for (const scent of w.scents) {
-      if (scent.x < vx || scent.x >= vx + vw) continue
-      const alpha = Math.max(0.1, scent.decaySeconds / 15)
-      ctx.save()
-      ctx.globalAlpha = alpha * 0.7
-      ctx.fillStyle = '#22c55e'
-      ctx.beginPath()
-      ctx.arc(scent.x + 0.5, scent.y + 0.5, 0.4, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.restore()
-    }
-  }
-
-  /**
-   * Tiny bone-colored cross markers where species went extinct.
-   * Drawn on the world canvas so they scale with zoom like terrain features.
-   */
-  private drawFossils(w: WorldState, vx: number, vw: number): void {
-    if (!w.fossils || w.fossils.length === 0) return
-    const ctx = this.wctx
-    ctx.fillStyle = '#c8b89a'
-    ctx.globalAlpha = 0.7
-
-    for (const fossil of w.fossils) {
-      const fx = Math.round(fossil.x)
-      const fy = Math.round(fossil.y)
-      if (fx + 3 < vx || fx - 3 > vx + vw) continue
-
-      // Cross / × marker: horizontal bar + vertical bar, 3×1 and 1×3.
-      ctx.fillRect(fx - 1, fy,     3, 1)  // horizontal
-      ctx.fillRect(fx,     fy - 1, 1, 3)  // vertical
-    }
-
-    ctx.globalAlpha = 1
-  }
-
-  /**
    * Pixel-art headstones where named creatures died.
    *
    * Drawn on the world canvas so they sit in the world at tile scale and get
@@ -1150,41 +850,6 @@ export class Renderer {
     }
 
     ctx.globalAlpha = 1
-  }
-
-  /**
-   * Species name above each fossil, drawn on the display canvas so text stays
-   * legible at any zoom — same approach as drawTombstoneLabels.
-   */
-  private drawFossilLabels(w: WorldState, vx: number, vw: number): void {
-    if (!w.fossils || w.fossils.length === 0) return
-
-    const ctx = this.ctx
-    const scale = this.scale
-    const offsetX = this.offsetX
-    const offsetY = this.offsetY
-    const viewTop = this.viewTop()
-
-    ctx.font = '8px monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
-
-    for (const fossil of w.fossils) {
-      if (fossil.x + 3 < vx || fossil.x - 3 > vx + vw) continue
-
-      const dx = (fossil.x - vx) * scale + offsetX
-      const dy = (fossil.y - 3 - viewTop) * scale + offsetY
-
-      ctx.globalAlpha = 0.5
-      ctx.fillStyle = 'rgba(0,0,0,0.4)'
-      ctx.fillText(`✦ ${fossil.name}`, dx + 1, dy + 1)
-      ctx.fillStyle = '#c8b89a'
-      ctx.fillText(`✦ ${fossil.name}`, dx, dy)
-    }
-
-    ctx.globalAlpha = 1
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'alphabetic'
   }
 
   /**
@@ -1429,26 +1094,6 @@ export class Renderer {
     ctx.globalAlpha = 1
   }
 
-  /**
-   * Fading dot trail showing where the inspected creature has been.
-   * Oldest dots are most transparent; newest are brightest.
-   */
-  private drawMemoryTrail(vx: number): void {
-    const trail = useMicroLand.getState().inspected?.trail
-    if (!trail || trail.length < 2) return
-    const ctx = this.wctx
-    for (let i = 0; i < trail.length; i++) {
-      const pt = trail[i]
-      const t = (i + 1) / trail.length  // 0 = oldest, 1 = newest
-      ctx.globalAlpha = t * 0.55
-      ctx.fillStyle = '#5eead4'
-      const px = Math.round(pt.x) - vx
-      const py = Math.round(pt.y)
-      ctx.fillRect(px, py, 1, 1)
-    }
-    ctx.globalAlpha = 1
-  }
-
   /** Ring around the creature the inspector is watching. */
   private drawHighlight(w: WorldState, id: number): void {
     const c = w.creatures.find(x => x.id === id)
@@ -1570,54 +1215,6 @@ export class Renderer {
    * regardless of zoom. Only named creatures get a tag, which keeps the world
    * uncluttered — a name is notable, not a default label.
    */
-  /**
-   * Tiny colour-coded state labels above creatures in notable moods.
-   * Idle wandering shows nothing; only hunt / flee / eat / mate / sick are shown.
-   */
-  private drawThoughtBubbles(w: WorldState, vx: number, vw: number): void {
-    const ctx = this.ctx
-    const scale = this.scale
-    const offsetX = this.offsetX
-    const offsetY = this.offsetY
-    const viewTop = this.viewTop()
-
-    const BUBBLE: Record<string, { label: string; color: string }> = {
-      hunt:  { label: 'hunt',  color: '#f59e0b' },
-      flee:  { label: 'run!',  color: '#f87171' },
-      eat:   { label: 'eat',   color: '#4ade80' },
-      mate:  { label: 'love',  color: '#f9a8d4' },
-    }
-
-    ctx.font = '8px monospace'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'bottom'
-
-    for (const c of w.creatures) {
-      // Skip moods that don't warrant a label.
-      const sick = (c as { sick?: number }).sick ?? 0
-      const bubble = BUBBLE[c.mood] ?? (sick > 0 ? { label: 'sick', color: '#a78bfa' } : null)
-      if (!bubble) continue
-
-      const bp = w.blueprints[c.blueprintId]
-      if (!bp) continue
-      if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
-
-      const bw = bp.art.frames[0][0].length
-      const dx = (c.x + bw / 2 - vx) * scale + offsetX
-      const dy = (c.y - viewTop) * scale + offsetY - 4
-
-      ctx.globalAlpha = 0.85
-      ctx.fillStyle = 'rgba(0,0,0,0.6)'
-      ctx.fillText(bubble.label, dx + 1, dy + 1)
-      ctx.fillStyle = bubble.color
-      ctx.fillText(bubble.label, dx, dy)
-    }
-
-    ctx.globalAlpha = 1
-    ctx.textAlign = 'left'
-    ctx.textBaseline = 'alphabetic'
-  }
-
   private drawNameLabels(w: WorldState, vx: number, vw: number, elderId: number | null): void {
     const elder = elderId !== null ? w.creatures.find(x => x.id === elderId) ?? null : null
     const namedCreatures = w.creatures.filter(c => c.name !== null)

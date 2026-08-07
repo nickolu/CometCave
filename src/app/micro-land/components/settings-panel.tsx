@@ -37,44 +37,6 @@ function show(knob: Knob, value: number): string {
   return knob.unit ? `${text}${knob.unit === 's' ? 's' : ` ${knob.unit}`}` : text
 }
 
-function ViewScaleButtons() {
-  const viewScale = useMicroLand(s => s.viewScale)
-  const setViewScale = useMicroLand(s => s.setViewScale)
-  const options: Array<{ key: 'wide' | 'standard' | 'close'; label: string }> = [
-    { key: 'wide', label: 'Wide' },
-    { key: 'standard', label: 'Standard' },
-    { key: 'close', label: 'Close' },
-  ]
-  return (
-    <div style={{ display: 'flex', gap: 8 }}>
-      {options.map(({ key, label }) => (
-        <button
-          key={key}
-          type="button"
-          className="cc-btn"
-          onClick={() => setViewScale(key)}
-          aria-pressed={viewScale === key}
-          style={{
-            flex: 1,
-            padding: '6px 4px',
-            minHeight: 32,
-            borderRadius: 6,
-            border: `1px solid ${viewScale === key ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
-            background: viewScale === key ? 'rgba(100,220,180,0.12)' : 'transparent',
-            color: viewScale === key ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-            fontFamily: 'var(--cc-font-mono)',
-            fontSize: 11,
-            letterSpacing: 1,
-            textTransform: 'uppercase' as const,
-          }}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
 /**
  * The knobs, out of the way.
  *
@@ -289,21 +251,6 @@ export function SettingsPanel() {
             </div>
           </section>
         ))}
-
-        <section
-          className="px-4 py-3"
-          style={{ borderTop: '1px solid var(--cc-panel-divider)', marginTop: 12 }}
-        >
-          <h3 style={heading}>Canvas view</h3>
-          <p
-            className="pb-2 pt-1"
-            style={{ fontSize: 11, color: 'var(--cc-text-muted)', opacity: 0.8, lineHeight: 1.5 }}
-          >
-            How much of the world is visible at once. Wide shows the whole land; Close shows fine
-            detail.
-          </p>
-          <ViewScaleButtons />
-        </section>
 
         <div className="h-4" />
       </div>
