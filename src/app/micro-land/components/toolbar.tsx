@@ -5,12 +5,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   CREATURE_GROUPS,
   type CreatureGroup,
+  MOVE_WORDS,
   creatureGroup,
 } from '@/app/micro-land/domain/blueprint'
 import { BIOMES } from '@/app/micro-land/domain/config/biomes'
 import { MATERIALS, PAINTABLE, TINTS, tintedId } from '@/app/micro-land/domain/config/materials'
 import {
   type CreatureFilter,
+  DIET_LABELS,
+  type DietKind,
   EMPTY_FILTER,
   describeFilter,
   filterOptions,
@@ -137,7 +140,7 @@ export function Toolbar({
   // while it was empty hid the loading state on the one summon that most needs
   // it — the very first, when there is nothing else in "Yours" to keep it open.
   const tabs = CREATURE_GROUPS.filter(
-    g => (grouped.get(g.id)?.length ?? 0) > 0 || (g.id === 'yours' && pending.length > 0)
+    g => g.id === 'yours' || (grouped.get(g.id)?.length ?? 0) > 0
   )
   const [group, setGroup] = useState<CreatureGroup>('plants')
   /**
@@ -423,30 +426,33 @@ export function Toolbar({
                   </button>
                 )
               })}
+              {/* Show more / show less toggle — inside the chip row so it appears at the end of the first visible row */}
+              <button
+                type="button"
+                className="cc-btn shrink-0"
+                onClick={() => setTerrainExpanded(x => !x)}
+                aria-expanded={terrainExpanded}
+                aria-label={terrainExpanded ? 'Show fewer terrain types' : `Show all ${PAINTABLE.length + 1} terrain types`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '6px 8px',
+                  minWidth: 54,
+                  minHeight: 44,
+                  borderRadius: 5,
+                  border: `1px solid ${terrainExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                  background: terrainExpanded ? 'var(--cc-mint-soft)' : 'rgba(255,255,255,0.02)',
+                  color: 'var(--cc-text-muted)',
+                }}
+              >
+                <span style={{ height: 22, display: 'grid', placeItems: 'center' }}>
+                  <Chevron up={terrainExpanded} />
+                </span>
+                <span style={swatchLabel}>{terrainExpanded ? 'Less' : `+${PAINTABLE.length - 1}`}</span>
+              </button>
             </div>
-            {/* Show more / show less toggle — sits BELOW the clipped area */}
-            <button
-              type="button"
-              className="cc-btn shrink-0"
-              onClick={() => setTerrainExpanded(x => !x)}
-              aria-expanded={terrainExpanded}
-              aria-label={terrainExpanded ? 'Show fewer terrain types' : `Show all ${PAINTABLE.length + 1} terrain types`}
-              style={{
-                alignSelf: 'flex-start',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 2,
-                padding: '4px 7px',
-                borderRadius: 4,
-                border: `1px solid ${terrainExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
-                background: terrainExpanded ? 'var(--cc-mint-soft)' : 'transparent',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              <Chevron up={terrainExpanded} />
-              <span style={swatchLabel}>{terrainExpanded ? 'Less' : `+${PAINTABLE.length - 1}`}</span>
-            </button>
           </div>
 
           {/* Biome brushes — paint mixed terrain themes in one stroke */}
@@ -626,7 +632,89 @@ export function Toolbar({
             </span>
           </div>
 
-          <CreatureFilterBar filter={filter} setFilter={setFilter} options={options} />
+          {/* Compact movement + diet filter — replaces the standalone filter bar */}
+          {(options.moves.length > 1 || options.diet.length > 1) && (
+            <div className="-mx-1 flex flex-wrap items-center gap-1 px-1">
+              {options.moves.length > 1 && options.moves.map(kind => (
+                <button
+                  key={kind}
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setFilter({ ...filter, moves: filter.moves.includes(kind) ? filter.moves.filter(k => k !== kind) : [...filter.moves, kind] })}
+                  aria-pressed={filter.moves.includes(kind)}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    fontWeight: filter.moves.includes(kind) ? 700 : 400,
+                    padding: '4px 8px',
+                    minHeight: 24,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderStyle: 'solid',
+                    borderColor: filter.moves.includes(kind) ? 'var(--cc-mint)' : 'var(--cc-mint-line)',
+                    background: filter.moves.includes(kind) ? 'var(--cc-mint-soft)' : 'transparent',
+                    color: filter.moves.includes(kind) ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {MOVE_WORDS[kind]}
+                </button>
+              ))}
+              {options.moves.length > 1 && options.diet.length > 1 && (
+                <span aria-hidden style={{ opacity: 0.2, fontSize: 10 }}>|</span>
+              )}
+              {options.diet.length > 1 && options.diet.map(kind => (
+                <button
+                  key={kind}
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setFilter({ ...filter, diet: filter.diet.includes(kind) ? filter.diet.filter(k => k !== kind) : [...filter.diet, kind] })}
+                  aria-pressed={filter.diet.includes(kind)}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    fontWeight: filter.diet.includes(kind) ? 700 : 400,
+                    padding: '4px 8px',
+                    minHeight: 24,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderStyle: 'solid',
+                    borderColor: filter.diet.includes(kind) ? 'var(--cc-mint)' : 'var(--cc-mint-line)',
+                    background: filter.diet.includes(kind) ? 'var(--cc-mint-soft)' : 'transparent',
+                    color: filter.diet.includes(kind) ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {DIET_LABELS[kind]}
+                </button>
+              ))}
+              {filtering && (
+                <button
+                  type="button"
+                  className="cc-btn ml-auto shrink-0"
+                  onClick={() => setFilter(EMPTY_FILTER)}
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 9,
+                    letterSpacing: 1.2,
+                    textTransform: 'uppercase',
+                    padding: '4px 8px',
+                    minHeight: 24,
+                    borderRadius: 999,
+                    border: '1px solid var(--cc-mint-line)',
+                    background: 'transparent',
+                    color: 'var(--cc-text-muted)',
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
 
           {/* The edit toggle sits beside the tabs but outside the tablist — it is
           not a tab, and a stray child in there confuses assistive tech. */}
