@@ -354,76 +354,83 @@ export function Toolbar({
         <div id="micro-land-tools" className="flex flex-col gap-1.5">
           {/* Terrain palette — fills full width, clips to one row when collapsed */}
           <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
-            {/* All materials: clipped to one swatch row when collapsed */}
-            <div
-              className="flex flex-wrap gap-1.5"
-              style={terrainExpanded ? undefined : { maxHeight: 44, overflow: 'hidden' }}
-            >
-              <button
-                type="button"
-                className="cc-btn shrink-0"
-                onClick={() => setTool({ kind: 'erase' })}
-                aria-pressed={tool.kind === 'erase'}
-                style={swatchStyle(tool.kind === 'erase')}
+            {/*
+              Outer row: swatch list (flex-1, clipped) + expand button (shrink-0, always visible).
+              The button must live OUTSIDE the overflow:hidden container — if it were
+              inside and the swatches filled the first row, it would wrap to row 2
+              and be clipped, becoming unreachable.
+            */}
+            <div className="flex items-start gap-1.5">
+              <div
+                className="flex flex-1 flex-wrap gap-1.5"
+                style={terrainExpanded ? undefined : { maxHeight: 44, overflow: 'hidden' }}
               >
-                <span
-                  aria-hidden
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 3,
-                    border: '1px dashed var(--cc-text-muted)',
-                  }}
-                />
-                <span style={swatchLabel}>Erase</span>
-              </button>
-              {PAINTABLE.map(id => {
-                const inHand = family === id && tool.kind === 'material' ? tool.material : id
-                const material = MATERIALS[inHand]
-                const selected = tool.kind === 'material' && (tool.material === id || family === id)
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    className="cc-btn shrink-0"
-                    onClick={() => setTool({ kind: 'material', material: inHand })}
-                    aria-pressed={selected}
-                    style={swatchStyle(selected)}
-                  >
-                    <span
-                      aria-hidden
-                      style={{
-                        position: 'relative',
-                        display: 'block',
-                        width: 22,
-                        height: 22,
-                        borderRadius: 3,
-                        background: material.color,
-                        boxShadow:
-                          material.glow > 0
-                            ? `0 0 10px ${material.color}`
-                            : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
-                      }}
+                <button
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setTool({ kind: 'erase' })}
+                  aria-pressed={tool.kind === 'erase'}
+                  style={swatchStyle(tool.kind === 'erase')}
+                >
+                  <span
+                    aria-hidden
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 3,
+                      border: '1px dashed var(--cc-text-muted)',
+                    }}
+                  />
+                  <span style={swatchLabel}>Erase</span>
+                </button>
+                {PAINTABLE.map(id => {
+                  const inHand = family === id && tool.kind === 'material' ? tool.material : id
+                  const material = MATERIALS[inHand]
+                  const selected = tool.kind === 'material' && (tool.material === id || family === id)
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className="cc-btn shrink-0"
+                      onClick={() => setTool({ kind: 'material', material: inHand })}
+                      aria-pressed={selected}
+                      style={swatchStyle(selected)}
                     >
-                      {MATERIALS[id].tintable && (
-                        <span
-                          style={{
-                            position: 'absolute',
-                            right: 1,
-                            bottom: 1,
-                            width: 0,
-                            height: 0,
-                            borderLeft: '6px solid transparent',
-                            borderBottom: '6px solid rgba(255,255,255,0.75)',
-                          }}
-                        />
-                      )}
-                    </span>
-                    <span style={swatchLabel}>{MATERIALS[id].name}</span>
-                  </button>
-                )
-              })}
-              {/* Show more / show less toggle — inside the chip row so it appears at the end of the first visible row */}
+                      <span
+                        aria-hidden
+                        style={{
+                          position: 'relative',
+                          display: 'block',
+                          width: 22,
+                          height: 22,
+                          borderRadius: 3,
+                          background: material.color,
+                          boxShadow:
+                            material.glow > 0
+                              ? `0 0 10px ${material.color}`
+                              : 'inset 0 0 0 1px rgba(0,0,0,0.35)',
+                        }}
+                      >
+                        {MATERIALS[id].tintable && (
+                          <span
+                            style={{
+                              position: 'absolute',
+                              right: 1,
+                              bottom: 1,
+                              width: 0,
+                              height: 0,
+                              borderLeft: '6px solid transparent',
+                              borderBottom: '6px solid rgba(255,255,255,0.75)',
+                            }}
+                          />
+                        )}
+                      </span>
+                      <span style={swatchLabel}>{MATERIALS[id].name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Expand/collapse — outside the clipped container so it is always reachable */}
               <button
                 type="button"
                 className="cc-btn shrink-0"
