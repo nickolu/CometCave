@@ -16,6 +16,7 @@ import { tickCreatures } from '@/app/micro-land/domain/sim/creature-sim'
 import type { SimEvent } from '@/app/micro-land/domain/sim/creature-sim'
 import { makeRng } from '@/app/micro-land/domain/sim/prng'
 import { createWorld, registerBlueprint, spawnCreature } from '@/app/micro-land/domain/sim/world'
+import { lifespanOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
@@ -55,10 +56,19 @@ function grazer(overrides: Record<string, unknown> = {}): CreatureBlueprint {
   )
 }
 
-/** Grown up, off cooldown, and as full as it gets. */
-function readyAdult(c: Creature): Creature {
+/**
+ * Grown up, off cooldown, and as full as it gets.
+ *
+ * The age is derived, not a constant. An animal is grown at a fifth of its own
+ * *scaled* lifespan (`breedingAge` in creature-sim), so any hard-coded age
+ * silently becomes "a child" the moment anyone moves `lifespanScale` — and what
+ * that looks like from here is every breeding test failing at once, which reads
+ * as the mechanic being broken rather than the fixture being stale. Three tenths
+ * of a lifespan is half again past maturity and nowhere near dying of it.
+ */
+function readyAdult(c: Creature, bp: CreatureBlueprint): Creature {
   c.hunger = 0
-  c.ageSeconds = 120
+  c.ageSeconds = lifespanOf(c, bp) * TUNING.lifespanScale * 0.3
   c.breedCooldown = 0
   return c
 }
@@ -76,7 +86,7 @@ function placeAdults(w: WorldState, bp: CreatureBlueprint, count: number): Creat
   const out: Creature[] = []
   for (let i = 0; i < count; i++) {
     const c = spawnCreature(w, bp, 40 + i * 2, WORLD_H - 16)
-    if (c) out.push(readyAdult(c))
+    if (c) out.push(readyAdult(c, bp))
   }
   return out
 }
@@ -107,8 +117,8 @@ describe('an animal needs a partner', () => {
     const b = grazer({ name: 'Beta' })
     registerBlueprint(w, a)
     registerBlueprint(w, b)
-    readyAdult(spawnCreature(w, a, 40, WORLD_H - 16)!)
-    readyAdult(spawnCreature(w, b, 42, WORLD_H - 16)!)
+    readyAdult(spawnCreature(w, a, 40, WORLD_H - 16)!, a)
+    readyAdult(spawnCreature(w, b, 42, WORLD_H - 16)!, b)
 
     expect(run(w, 30)).toHaveLength(0)
   })
@@ -119,8 +129,8 @@ describe('an animal needs a partner', () => {
     // rule from the walking that normally satisfies it.
     const bp = grazer()
     registerBlueprint(w, bp)
-    readyAdult(spawnCreature(w, bp, 40, WORLD_H - 16)!)
-    readyAdult(spawnCreature(w, bp, 40 + TUNING.mateRadius * 3, WORLD_H - 16)!)
+    readyAdult(spawnCreature(w, bp, 40, WORLD_H - 16)!, bp)
+    readyAdult(spawnCreature(w, bp, 40 + TUNING.mateRadius * 3, WORLD_H - 16)!, bp)
 
     expect(run(w, 30)).toHaveLength(0)
   })
@@ -163,10 +173,13 @@ describe('both of them have to be well fed', () => {
     registerBlueprint(w, bp)
     const parents = placeAdults(w, bp, 2)
 
-    // Two seconds, not thirty: the pair meets within a few ticks, and the whole
-    // point is to look at them while the cooldown they were charged is still
-    // running rather than after it has quietly expired.
-    expect(run(w, 2)).toHaveLength(1)
+    // Half a cooldown, not thirty seconds: the pair meets within a few ticks
+    // (pairing is decided at 10Hz), and the whole point is to look at them while
+    // the cooldown they were charged is still running rather than after it has
+    // quietly expired. Derived from the knob rather than written as a number,
+    // because a window longer than `breedCooldown` turns this into an assertion
+    // that the cooldown was never charged at all.
+    expect(run(w, TUNING.breedCooldown * 0.5)).toHaveLength(1)
     for (const p of parents) {
       expect(p.children).toBe(1)
       expect(p.hunger).toBeGreaterThanOrEqual(TUNING.breedCost)
@@ -189,7 +202,7 @@ describe('plants spread alone', () => {
       { summoned: true }
     )
     registerBlueprint(w, moss)
-    readyAdult(spawnCreature(w, moss, 40, WORLD_H - 15)!)
+    readyAdult(spawnCreature(w, moss, 40, WORLD_H - 15)!, moss)
 
     expect(run(w, 30).length).toBeGreaterThan(0)
   })
@@ -217,7 +230,7 @@ describe('plants spread alone', () => {
       { summoned: true }
     )
     registerBlueprint(w, flower)
-    readyAdult(spawnCreature(w, flower, 40, WORLD_H - 20)!)
+    readyAdult(spawnCreature(w, flower, 40, WORLD_H - 20)!, flower)
 
     expect(run(w, 30).length).toBeGreaterThan(0)
   })
