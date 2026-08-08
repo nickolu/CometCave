@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 
 import { disableSound, enableSound } from '@/app/micro-land/audio/sound-engine'
-import { THEMES } from '@/app/micro-land/domain/config/themes'
 import { STEADY_SHOW_SECONDS } from '@/app/micro-land/domain/constants'
 import { TUNING_DEFAULTS, type TuningKey } from '@/app/micro-land/domain/tuning'
 import { formatDuration } from '@/app/micro-land/format'
-import { type PopulationEntry, SUMMONED_THEME_ID, useMicroLand, type Tool } from '@/app/micro-land/store'
+import { type PopulationEntry, type SidebarView, useMicroLand } from '@/app/micro-land/store'
 import { SparkleIcon } from '@/app/micro-land/components/sparkle-icon'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -96,31 +95,19 @@ function SlidersIcon() {
   )
 }
 
-export function Hud({
-  onReshuffle,
-  onClearLife,
-  onOpenHistory,
-}: {
-  onReshuffle: () => void
-  onClearLife: () => void
-  onOpenHistory: () => void
-}) {
-  const themeId = useMicroLand(s => s.themeId)
-  const setTheme = useMicroLand(s => s.setTheme)
+export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
   const paused = useMicroLand(s => s.paused)
   const togglePaused = useMicroLand(s => s.togglePaused)
   const speed = useMicroLand(s => s.speed)
   const setSpeed = useMicroLand(s => s.setSpeed)
   const total = useMicroLand(s => s.totalCreatures)
   const population = useMicroLand(s => s.population)
-  const setGuideOpen = useMicroLand(s => s.setGuideOpen)
-  const summonedLand = useMicroLand(s => s.summonedLand)
   const steadySeconds = useMicroLand(s => s.records.steadySeconds)
   const elapsed = useMicroLand(s => s.elapsed)
-  const setWorldsOpen = useMicroLand(s => s.setWorldsOpen)
   const activeWorldId = useMicroLand(s => s.shelf.activeId)
-  const settingsOpen = useMicroLand(s => s.settingsOpen)
-  const setSettingsOpen = useMicroLand(s => s.setSettingsOpen)
+  const sidebar = useMicroLand(s => s.sidebar)
+  const setSidebar = useMicroLand(s => s.setSidebar)
+  const toggleSidebar = useMicroLand(s => s.toggleSidebar)
   const tuning = useMicroLand(s => s.tuning)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
@@ -131,7 +118,6 @@ export function Hud({
   const soundEnabled = useMicroLand(s => s.soundEnabled)
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
 
-  const setHistoryOpen = useMicroLand(s => s.setHistoryOpen)
   const setSummonOpen = useMicroLand(s => s.setSummonOpen)
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
@@ -194,6 +180,13 @@ export function Hud({
       window.removeEventListener('resize', place)
     }
   }, [overflowOpen])
+
+  // Every panel item in the menu does the same two things: show the panel and
+  // put the menu away. The menu is a launcher, not a place to stand.
+  const openSidebar = (view: SidebarView) => {
+    setSidebar(view)
+    setOverflowOpen(false)
+  }
 
   // Shared style for items inside the overflow dropdown.
   const overflowItem: React.CSSProperties = {
@@ -375,8 +368,9 @@ export function Hud({
         <button
           type="button"
           className="cc-btn"
-          onClick={() => setGuideOpen(true)}
-          style={chipBase}
+          onClick={() => toggleSidebar('guide')}
+          style={{ ...chipBase, ...(sidebar === 'guide' ? activeChip : {}) }}
+          aria-pressed={sidebar === 'guide'}
           title="Open the field guide"
         >
           {species} kinds · {total} alive
@@ -484,45 +478,38 @@ export function Hud({
                 boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
               }}
             >
-              {/* Theme selector */}
-              <label className="sr-only" htmlFor="micro-land-theme-overflow">
-                Choose a world
-              </label>
-              <select
-                id="micro-land-theme-overflow"
-                value={themeId}
-                onChange={e => { setTheme(e.target.value); setOverflowOpen(false) }}
-                style={{
-                  ...overflowItem,
-                  color: 'var(--cc-text-default)',
-                  background: 'var(--cc-panel-grad-to)',
-                }}
-              >
-                {THEMES.map(theme => (
-                  <option key={theme.id} value={theme.id}>
-                    {theme.name}
-                  </option>
-                ))}
-                {summonedLand && <option value={SUMMONED_THEME_ID}>✦ {summonedLand}</option>}
-              </select>
-
-              {/* Reshape */}
+              {/* Making things — the reason anyone opens this menu twice. */}
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { onReshuffle(); setOverflowOpen(false) }}
-                style={overflowItem}
-                title="Build this world again, differently"
+                onClick={() => openSidebar('creatures')}
+                style={{ ...overflowItem, ...(sidebar === 'creatures' ? activeChip : {}) }}
+                title="Draw a creature, or build one from a species already here"
               >
-                Reshape world
+                Creatures
               </button>
 
-              {/* Worlds */}
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { setWorldsOpen(true); setOverflowOpen(false) }}
-                style={{ ...overflowItem, ...(activeWorldId ? activeChip : {}) }}
+                onClick={() => openSidebar('challenges')}
+                style={{ ...overflowItem, ...(sidebar === 'challenges' ? activeChip : {}) }}
+                title="Run this land against a set of rules"
+              >
+                Challenges
+              </button>
+
+              <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+
+              {/* Worlds — keeping this one, opening a kept one, starting a new one */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => openSidebar('worlds')}
+                style={{
+                  ...overflowItem,
+                  ...(sidebar === 'worlds' || activeWorldId ? activeChip : {}),
+                }}
                 aria-label={activeWorldId ? 'Worlds — this world is saved' : 'Worlds — open or save a world'}
                 title={activeWorldId ? 'This world is saved' : 'Save this world, or open one you saved'}
               >
@@ -531,35 +518,35 @@ export function Hud({
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
 
-              {/* Field Guide */}
+              {/* Field Guide — also on the stats chip, but the chip reads as a
+                  readout and plenty of people never think to press it. */}
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { setGuideOpen(true); setOverflowOpen(false) }}
-                style={overflowItem}
+                onClick={() => openSidebar('guide')}
+                style={{ ...overflowItem, ...(sidebar === 'guide' ? activeChip : {}) }}
                 title="Open the field guide"
               >
                 Field Guide
               </button>
 
-              {/* History */}
+              {/* Looking back */}
               <button
                 type="button"
                 className="cc-btn"
                 onClick={() => { onOpenHistory(); setOverflowOpen(false) }}
                 disabled={!!replaySnapshots}
                 style={overflowItem}
-                title="View ecosystem history"
+                title="Wind the world back and watch it again"
               >
-                History
+                Replay
               </button>
 
-              {/* Log */}
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { setHistoryOpen(true); setOverflowOpen(false) }}
-                style={overflowItem}
+                onClick={() => openSidebar('log')}
+                style={{ ...overflowItem, ...(sidebar === 'log' ? activeChip : {}) }}
                 title="View the event log"
               >
                 Log
@@ -593,15 +580,15 @@ export function Hud({
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { setSettingsOpen(!settingsOpen); setOverflowOpen(false) }}
+                onClick={() => openSidebar('settings')}
                 style={{
                   ...overflowItem,
-                  ...(settingsOpen ? activeChip : {}),
-                  ...(tuned && !settingsOpen
+                  ...(sidebar === 'settings' ? activeChip : {}),
+                  ...(tuned && sidebar !== 'settings'
                     ? { borderColor: 'var(--cc-gold)', color: 'var(--cc-gold)' }
                     : {}),
                 }}
-                aria-pressed={settingsOpen}
+                aria-pressed={sidebar === 'settings'}
                 aria-label="World settings"
                 title={tuned ? 'The laws of this land have been changed' : 'Change the laws of this land'}
               >
@@ -611,19 +598,19 @@ export function Hud({
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
 
-              {/* Clear all — destructive */}
+              {/* Clear — its own panel, because "clear" is more than one question */}
               <button
                 type="button"
                 className="cc-btn"
-                onClick={() => { onClearLife(); setOverflowOpen(false) }}
+                onClick={() => openSidebar('clear')}
                 style={{
                   ...overflowItem,
                   borderColor: 'var(--cc-pink-border)',
                   color: 'var(--cc-pink)',
                 }}
-                title="Remove every living thing"
+                title="Take away the living things, or the whole land"
               >
-                Clear all
+                Clear…
               </button>
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />

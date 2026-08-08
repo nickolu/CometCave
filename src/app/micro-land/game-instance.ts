@@ -36,7 +36,7 @@ import {
 } from './domain/blueprint'
 import { BIOME_BY_ID } from './domain/config/biomes'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
-import { DEFAULT_THEME, THEME_BY_ID, type Theme } from './domain/config/themes'
+import { DEFAULT_THEME, EMPTY_THEME_ID, THEME_BY_ID, type Theme } from './domain/config/themes'
 import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
 import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creature-sim'
 import { makeRng } from './domain/sim/prng'
@@ -1576,6 +1576,33 @@ export class GameInstance {
     // Emptying the world is an extinction of everything, so the streak goes with
     // it — but silently, since the player did it on purpose.
     this.beginLand()
+    this.pushStats()
+  }
+
+  /**
+   * Take the land back to nothing — no ground, no water, no creatures.
+   *
+   * The store's theme is moved *first*: a theme change comes back through the
+   * subscriber as another `setTheme` on this instance, and that rebuild would
+   * undo the dormancy set at the end. Letting it land before the wipe leaves
+   * this method with the last word.
+   *
+   * Not just the store call on its own, either. It only fires the subscriber
+   * when the theme actually changes, so a player who has been painting on the
+   * empty theme would tap this and watch nothing happen.
+   *
+   * `summonedLand` deliberately survives. It is not a fact about the land on
+   * screen, it is the one template a player cannot get back any other way, and
+   * switching to a built-in theme has never dropped it either.
+   */
+  clearWorld(): void {
+    useMicroLand.getState().setTheme(EMPTY_THEME_ID)
+    this.setTheme(EMPTY_THEME_ID)
+    // Same reason as `clearLife`: without this the soil's seed bank puts plants
+    // back within seconds, and "empty" would not survive being looked at. There
+    // is no fertile ground left to seed from here, but painting some in is the
+    // obvious next move and that is exactly when it would surprise someone.
+    this.world.dormant = true
     this.pushStats()
   }
 

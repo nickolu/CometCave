@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { type HistoryEntry, type HistoryEventKind } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
@@ -88,9 +88,14 @@ function kindToFilter(kind: HistoryEventKind): FilterKey {
   return 'sick'
 }
 
-export function HistoryPanel() {
-  const open = useMicroLand(s => s.historyOpen)
-  const setOpen = useMicroLand(s => s.setHistoryOpen)
+/**
+ * Everything that has happened, as it happened.
+ *
+ * Lives in the shared right-hand column rather than over the world: the point of
+ * reading the log is to look up from it and see the thing it is describing still
+ * going on.
+ */
+export function LogPane() {
   const historyLog = useMicroLand(s => s.historyLog)
   const blueprints = useMicroLand(s => s.blueprints)
 
@@ -125,18 +130,6 @@ export function HistoryPanel() {
   const activeKeys = (Object.keys(active) as FilterKey[]).filter(k => active[k])
   const maxCount = Math.max(1, ...activeKeys.flatMap(k => bucketCounts[k]))
 
-  // Escape closes the panel.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, setOpen])
-
-  if (!open) return null
-
   const filtered = historyLog.filter(e => active[kindToFilter(e.kind)])
 
   function toggleFilter(key: FilterKey) {
@@ -144,56 +137,7 @@ export function HistoryPanel() {
   }
 
   return (
-    <div
-      role="dialog"
-      aria-label="Event Log"
-      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[72dvh] flex-col rounded-t-xl sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[400px] sm:max-h-none sm:rounded-none"
-      style={{
-        background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
-        borderTop: '1px solid var(--cc-modal-border)',
-        borderLeft: '1px solid var(--cc-modal-border)',
-      }}
-    >
-      {/* Header */}
-      <div
-        className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--cc-panel-divider)',
-          background: 'var(--cc-modal-bg-from)',
-        }}
-      >
-        <h2
-          style={{
-            fontFamily: 'var(--cc-font-mono)',
-            fontSize: 11,
-            letterSpacing: 2.5,
-            textTransform: 'uppercase',
-            color: 'var(--cc-mint)',
-          }}
-        >
-          Event Log
-        </h2>
-        <button
-          type="button"
-          className="cc-btn"
-          onClick={() => setOpen(false)}
-          style={{
-            fontFamily: 'var(--cc-font-mono)',
-            fontSize: 10,
-            letterSpacing: 1.2,
-            textTransform: 'uppercase',
-            padding: '6px 10px',
-            minHeight: 32,
-            borderRadius: 4,
-            border: '1px solid var(--cc-mint-line)',
-            color: 'var(--cc-text-muted)',
-          }}
-          aria-label="Close event log"
-        >
-          Close
-        </button>
-      </div>
-
+    <>
       {/* Filter toggles */}
       <div
         className="flex shrink-0 flex-wrap gap-1.5 px-4 py-2"
@@ -312,7 +256,9 @@ export function HistoryPanel() {
       )}
 
       {/* Entry list */}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      {/* The sidebar shell owns the scroll — a second scroller in here would
+          trap the wheel over the list and strand the filters above it. */}
+      <div className="px-4 py-3">
         {historyLog.length === 0 ? (
           <p
             style={{
@@ -343,7 +289,7 @@ export function HistoryPanel() {
           </ul>
         )}
       </div>
-    </div>
+    </>
   )
 }
 

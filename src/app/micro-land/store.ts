@@ -21,6 +21,27 @@ import {
   setTuning,
 } from './domain/tuning'
 
+/**
+ * The panels that share the one column down the right-hand side.
+ *
+ * One slot rather than a boolean each, because they occupy the same strip of
+ * screen: two of them open at once used to mean a settings drawer floating over
+ * the field guide, and closing the top one revealed a panel the player had
+ * forgotten was there. A single value makes "open the log" and "close whatever
+ * was open" the same action.
+ */
+export type SidebarView =
+  | 'guide'
+  | 'worlds'
+  | 'creatures'
+  | 'challenges'
+  | 'log'
+  | 'settings'
+  | 'clear'
+
+/** The two ways into a new creature, side by side until they become one. */
+export type CreaturesTab = 'draw' | 'blueprints'
+
 export interface SpeedRunState {
   active: boolean
   targetGeneration: number
@@ -313,20 +334,18 @@ interface MicroLandState {
    * summon panel being opened and closed around it.
    */
   builderOpen: boolean
-  guideOpen: boolean
-  settingsOpen: boolean
+  /** Which panel the right-hand column is showing, or `null` for none. */
+  sidebar: SidebarView | null
+  /** Which half of the creatures panel is in front. */
+  creaturesTab: CreaturesTab
   graphOpen: boolean
-  challengesOpen: boolean
   challengeActive: { name: string; goal: string } | null
-  workshopOpen: boolean
   workshopSpawnRequest: WorkshopSpawnRequest | null
   speedRun: SpeedRunState
   adaptiveRun: AdaptiveRunState
   /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
   reshuffleToken: number
-  setChallengesOpen: (open: boolean) => void
   setChallengeActive: (c: { name: string; goal: string } | null) => void
-  setWorkshopOpen: (open: boolean) => void
   requestWorkshopSpawn: (blueprint: CreatureBlueprint, traits: Traits) => void
   clearWorkshopSpawnRequest: () => void
   startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
@@ -389,7 +408,6 @@ interface MicroLandState {
 
   /** Event history log, newest first, capped at 500 entries. */
   historyLog: HistoryEntry[]
-  historyOpen: boolean
 
   /**
    * What the chronicle's storage layer is doing.
@@ -410,11 +428,10 @@ interface MicroLandState {
    * copy so panels can render it like any other state.
    */
   shelf: ShelfState
-  worldsOpen: boolean
 
   /** Set when the field guide asks to find a species in the world. */
   locateRequest: { blueprintId: string; serial: number } | null
-  /** Close the guide and emit a locate request for the game instance to handle. */
+  /** Close the sidebar and emit a locate request for the game instance to handle. */
   requestLocate: (blueprintId: string) => void
 
   /**
@@ -492,8 +509,11 @@ interface MicroLandState {
   addPendingSummon: (prompt: string) => number
   removePendingSummon: (id: number) => void
   setBuilderOpen: (open: boolean) => void
-  setGuideOpen: (open: boolean) => void
-  setSettingsOpen: (open: boolean) => void
+  /** Show a panel in the right-hand column, or `null` to close it. */
+  setSidebar: (view: SidebarView | null) => void
+  /** Open a panel, or close it if it is the one already showing. */
+  toggleSidebar: (view: SidebarView) => void
+  setCreaturesTab: (tab: CreaturesTab) => void
   setGraphOpen: (open: boolean) => void
   /** Roll the tool drawer up or down. Remembered for the next visit. */
   setToolbarOpen: (open: boolean) => void
@@ -527,11 +547,9 @@ interface MicroLandState {
   setZoomState: (canZoomIn: boolean, canZoomOut: boolean) => void
   setSaveState: (state: SaveState) => void
   setShelf: (shelf: ShelfState) => void
-  setWorldsOpen: (open: boolean) => void
   notify: (text: string, action?: Notice['action']) => void
   dismissNotice: (id: number) => void
   addHistoryEntry: (entry: Omit<HistoryEntry, 'id'>) => void
-  setHistoryOpen: (open: boolean) => void
 }
 
 let noticeId = 0
@@ -591,12 +609,10 @@ export const useMicroLand = create<MicroLandState>(set => ({
   summonError: null,
   pendingSummons: [],
   builderOpen: false,
-  guideOpen: false,
-  settingsOpen: false,
+  sidebar: null,
+  creaturesTab: 'draw',
   graphOpen: false,
-  challengesOpen: false,
   challengeActive: null,
-  workshopOpen: false,
   workshopSpawnRequest: null,
   speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none', wonSeconds: null },
   adaptiveRun: { active: false, targetPopulation: 10, sustainedSeconds: 0, sustainGoal: 60, result: 'none' },
@@ -614,10 +630,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
 
   notices: [],
   historyLog: [],
-  historyOpen: false,
   saveState: { kind: 'idle' },
   shelf: { worlds: [], activeId: null, busy: false, error: null },
-  worldsOpen: false,
   locateRequest: null,
   populationItems: [],
   locateCreatureRequest: null,
@@ -685,12 +699,11 @@ export const useMicroLand = create<MicroLandState>(set => ({
   removePendingSummon: id =>
     set(s => ({ pendingSummons: s.pendingSummons.filter(p => p.id !== id) })),
   setBuilderOpen: builderOpen => set({ builderOpen }),
-  setGuideOpen: guideOpen => set({ guideOpen }),
-  setSettingsOpen: settingsOpen => set({ settingsOpen }),
+  setSidebar: sidebar => set({ sidebar }),
+  toggleSidebar: view => set(s => ({ sidebar: s.sidebar === view ? null : view })),
+  setCreaturesTab: creaturesTab => set({ creaturesTab }),
   setGraphOpen: graphOpen => set({ graphOpen }),
-  setChallengesOpen: open => set({ challengesOpen: open }),
   setChallengeActive: c => set({ challengeActive: c }),
-  setWorkshopOpen: open => set({ workshopOpen: open }),
   requestWorkshopSpawn: (blueprint, traits) =>
     set(s => ({ workshopSpawnRequest: { blueprint, traits, serial: (s.workshopSpawnRequest?.serial ?? 0) + 1 } })),
   clearWorkshopSpawnRequest: () => set({ workshopSpawnRequest: null }),
@@ -739,9 +752,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
 
   setSaveState: saveState => set({ saveState }),
   setShelf: shelf => set({ shelf }),
-  setWorldsOpen: worldsOpen => set({ worldsOpen }),
   requestLocate: blueprintId =>
-    set({ locateRequest: { blueprintId, serial: ++locateSerial }, guideOpen: false }),
+    set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setPopulationItems: items => set({ populationItems: items }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
@@ -769,5 +781,4 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set(s => ({
       historyLog: [{ ...entry, id: ++historyEntryId }, ...s.historyLog].slice(0, 500),
     })),
-  setHistoryOpen: historyOpen => set({ historyOpen }),
 }))

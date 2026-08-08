@@ -1921,4 +1921,14 @@ export const THEMES: Theme[] = [
 
 export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(THEMES.map(t => [t.id, t]))
 
-export const DEFAULT_THEME = 'empty'
+/**
+ * The land with nothing in it.
+ *
+ * Named separately from `DEFAULT_THEME` even though they are the same string
+ * today: one is "where a new player starts", the other is "what clearing the
+ * world means", and a decision to open somewhere less bare should not silently
+ * redefine empty.
+ */
+export const EMPTY_THEME_ID = 'empty'
+
+export const DEFAULT_THEME = EMPTY_THEME_ID
