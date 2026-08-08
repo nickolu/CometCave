@@ -1451,6 +1451,18 @@ export class GameInstance {
     return true
   }
 
+  /**
+   * Dismiss the inspector on request from the UI (e.g. the ✕ button).
+   *
+   * `setInspected(null)` only clears the React store; without also clearing
+   * `inspectedId` here, `pushInspected()` would repopulate the store on its
+   * next run and reopen the panel.
+   */
+  dismissInspect(): void {
+    this.inspectedId = null
+    this.following = false
+  }
+
   /** Put a removed species back on the shelf. Undo for `removeSpecies`. */
   restoreSpecies(record: SpeciesRecord): void {
     restoreSpeciesRecord(record)
