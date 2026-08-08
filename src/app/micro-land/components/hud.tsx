@@ -207,11 +207,10 @@ export function Hud({
 
   return (
     <header
-      className="flex items-center gap-2 px-3 py-2 pl-14"
+      className="flex flex-wrap items-center gap-2 px-3 py-2 pl-14"
       style={{
         borderBottom: '1px solid var(--cc-panel-divider)',
         background: 'linear-gradient(180deg, var(--cc-panel-grad-from), transparent)',
-        overflow: 'hidden',
       }}
     >
       <h1
