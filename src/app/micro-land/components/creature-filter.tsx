@@ -5,6 +5,8 @@ import { useId, useState } from 'react'
 import { MOVE_WORDS } from '@/app/micro-land/domain/blueprint'
 import {
   type CreatureFilter,
+  type DietKind,
+  DIET_LABELS,
   EMPTY_FILTER,
   type FilterOptions,
   SIZE_BANDS,
@@ -80,12 +82,13 @@ export function CreatureFilterBar({
   // species of plant on an empty map has no second way of moving and no size to
   // contrast with. Offering a filter there is a control that cannot do anything.
   const anythingToAsk =
-    options.moves.length > 1 || options.sizes.length > 1 || options.glows || options.lavaProof
+    options.moves.length > 1 || options.sizes.length > 1 || options.diet.length > 1 || options.glows || options.lavaProof
   if (!anythingToAsk && !active) return null
 
   const setMoves = (kind: LocomotionKind) =>
     setFilter({ ...filter, moves: toggle(filter.moves, kind) })
   const setSizes = (band: SizeBandId) => setFilter({ ...filter, sizes: toggle(filter.sizes, band) })
+  const setDiets = (kind: DietKind) => setFilter({ ...filter, diet: toggle(filter.diet, kind) })
 
   return (
     <div className="-mx-1 flex flex-col gap-1.5 px-1">
@@ -159,6 +162,28 @@ export function CreatureFilterBar({
                   style={chipStyle(filter.moves.includes(kind))}
                 >
                   {MOVE_WORDS[kind]}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {options.diet.length > 1 && (
+            <div
+              className="flex flex-wrap items-center gap-1"
+              role="group"
+              aria-label="What it eats"
+            >
+              <span style={{ ...label, width: 44 }}>Diet</span>
+              {options.diet.map(kind => (
+                <button
+                  key={kind}
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setDiets(kind)}
+                  aria-pressed={filter.diet.includes(kind)}
+                  style={chipStyle(filter.diet.includes(kind))}
+                >
+                  {DIET_LABELS[kind]}
                 </button>
               ))}
             </div>

@@ -34,6 +34,21 @@ export const SIZE_BANDS: { id: SizeBandId; label: string; min: number; max: numb
 /** Locomotion chips, in the order they appear. Ground first, then off it. */
 export const MOVE_ORDER: LocomotionKind[] = ['walk', 'crawl', 'fly', 'drift', 'swim', 'root']
 
+export type DietKind = 'autotroph' | 'herbivore' | 'carnivore'
+
+export const DIET_LABELS: Record<DietKind, string> = {
+  autotroph: 'Grows',
+  herbivore: 'Grazes',
+  carnivore: 'Hunts',
+}
+
+/** Which diet category a creature falls into. */
+export function dietKind(bp: CreatureBlueprint): DietKind {
+  if (bp.diet.eats.length === 0) return 'autotroph'
+  if (bp.diet.eats.every(t => t === 'plant')) return 'herbivore'
+  return 'carnivore'
+}
+
 /**
  * A filter is empty until the player narrows it.
  *
@@ -45,6 +60,7 @@ export const MOVE_ORDER: LocomotionKind[] = ['walk', 'crawl', 'fly', 'drift', 's
 export interface CreatureFilter {
   moves: LocomotionKind[]
   sizes: SizeBandId[]
+  diet: DietKind[]
   /** Keep only creatures that cast their own light. */
   glows: boolean
   /** Keep only creatures lava can't hurt. */
@@ -54,6 +70,7 @@ export interface CreatureFilter {
 export const EMPTY_FILTER: CreatureFilter = {
   moves: [],
   sizes: [],
+  diet: [],
   glows: false,
   lavaProof: false,
 }
@@ -83,13 +100,13 @@ export function sizeBand(bp: CreatureBlueprint): SizeBandId | null {
 
 /** True if any axis is asking something. */
 export function isFilterActive(filter: CreatureFilter): boolean {
-  return filter.moves.length > 0 || filter.sizes.length > 0 || filter.glows || filter.lavaProof
+  return filter.moves.length > 0 || filter.sizes.length > 0 || filter.diet.length > 0 || filter.glows || filter.lavaProof
 }
 
 /** How many conditions are on — the number badged on the collapsed control. */
 export function activeConditionCount(filter: CreatureFilter): number {
   return (
-    filter.moves.length + filter.sizes.length + (filter.glows ? 1 : 0) + (filter.lavaProof ? 1 : 0)
+    filter.moves.length + filter.sizes.length + filter.diet.length + (filter.glows ? 1 : 0) + (filter.lavaProof ? 1 : 0)
   )
 }
 
@@ -99,6 +116,7 @@ export function matchesFilter(bp: CreatureBlueprint, filter: CreatureFilter): bo
     const band = sizeBand(bp)
     if (!band || !filter.sizes.includes(band)) return false
   }
+  if (filter.diet.length > 0 && !filter.diet.includes(dietKind(bp))) return false
   if (filter.glows && !isGlowing(bp)) return false
   if (filter.lavaProof && !isLavaProof(bp)) return false
   return true
@@ -117,6 +135,7 @@ export function matchesFilter(bp: CreatureBlueprint, filter: CreatureFilter): bo
 export interface FilterOptions {
   moves: LocomotionKind[]
   sizes: SizeBandId[]
+  diet: DietKind[]
   glows: boolean
   lavaProof: boolean
 }
@@ -124,18 +143,21 @@ export interface FilterOptions {
 export function filterOptions(roster: CreatureBlueprint[]): FilterOptions {
   const moves = new Set<LocomotionKind>()
   const sizes = new Set<SizeBandId>()
+  const diets = new Set<DietKind>()
   let glows = false
   let lavaProof = false
   for (const bp of roster) {
     moves.add(bp.move.kind)
     const band = sizeBand(bp)
     if (band) sizes.add(band)
+    diets.add(dietKind(bp))
     if (isGlowing(bp)) glows = true
     if (isLavaProof(bp)) lavaProof = true
   }
   return {
     moves: MOVE_ORDER.filter(k => moves.has(k)),
     sizes: SIZE_BANDS.filter(b => sizes.has(b.id)).map(b => b.id),
+    diet: (['autotroph', 'herbivore', 'carnivore'] as DietKind[]).filter(d => diets.has(d)),
     glows,
     lavaProof,
   }
@@ -157,6 +179,7 @@ export function describeFilter(filter: CreatureFilter): string {
     )
     parts.push(names.join(' or '))
   }
+  if (filter.diet.length > 0) parts.push(filter.diet.map(d => DIET_LABELS[d]).join(' or '))
   if (filter.glows) parts.push('glows in the dark')
   if (filter.lavaProof) parts.push('lava-proof')
   return parts.join(' · ')

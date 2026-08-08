@@ -384,11 +384,12 @@ export function Hud({
           {steady && (
             <>
               {' · '}
-              <span style={{ color: 'var(--cc-gold)' }}>{steady} steady</span>
+              <span className="hidden sm:inline" style={{ color: 'var(--cc-gold)' }}>{steady} steady</span>
             </>
           )}
           {' · '}
           <span
+            className="hidden sm:inline"
             style={{
               color: ageLabel === 'Young'
                 ? 'var(--cc-text-muted)'
@@ -404,6 +405,7 @@ export function Hud({
           const status = ecosystemHealth(population, total)
           return (
             <span
+              className="hidden sm:inline-flex"
               title={HEALTH_TOOLTIP[status]}
               style={{
                 ...chipBase,
@@ -419,9 +421,10 @@ export function Hud({
           )
         })()}
 
-        {/* Auth — always accessible */}
+        {/* Auth — hidden on mobile, accessible via overflow menu */}
         {!authLoading && (
           <Link
+            className="hidden sm:block"
             href="/auth"
             style={{
               ...chipBase,
@@ -623,6 +626,21 @@ export function Hud({
               >
                 Clear all
               </button>
+
+              <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+              {!authLoading && (
+                <Link
+                  href="/auth"
+                  style={{
+                    ...overflowItem,
+                    ...(isSignedIn
+                      ? { color: 'var(--cc-text-default)' }
+                      : { color: 'var(--cc-mint)', borderColor: 'var(--cc-mint)' }),
+                  }}
+                >
+                  {authLabel}
+                </Link>
+              )}
             </div>
           )}
         </div>
