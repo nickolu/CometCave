@@ -9,11 +9,15 @@ import { formatDuration } from '@/app/micro-land/format'
 const ADAPTIVE_INITIAL_TARGET = 10
 
 /**
- * The challenges content — usable both inside the field guide sidebar
- * (where `onClose` returns to the guide view) and inside the standalone
- * modal (`ChallengesPanel`).
+ * Ways to make the land harder, in the shared right-hand column.
+ *
+ * Every one of these ends by closing the panel. A challenge is a change to the
+ * world — new ground, new numbers, a clock started — and the thing you want to
+ * be looking at the moment you start one is the world, not the list you started
+ * it from.
  */
-export function ChallengesPane({ onClose }: { onClose: () => void }) {
+export function ChallengesPane() {
+  const setSidebar = useMicroLand(s => s.setSidebar)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
   const requestReshuffle = useMicroLand(s => s.requestReshuffle)
   const startAdaptiveRun = useMicroLand(s => s.startAdaptiveRun)
@@ -32,23 +36,11 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
     setTuning(preset.tuning)
     setChallengeActive({ name: preset.name, goal: preset.goal })
     requestReshuffle()
-    onClose()
+    setSidebar(null)
   }
 
   return (
     <div style={{ padding: '16px 16px 20px' }}>
-      <h2
-        style={{
-          fontFamily: 'var(--cc-font-mono)',
-          fontSize: 11,
-          letterSpacing: 1.6,
-          textTransform: 'uppercase',
-          color: 'var(--cc-text-muted)',
-          marginBottom: 16,
-        }}
-      >
-        Challenges
-      </h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {CHALLENGES.map(c => (
           <button
@@ -145,7 +137,7 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
           onClick={() => {
             startSpeedRun(targetGen, timeLimitOptions[timeLimitIdx].seconds, elapsed)
             setRecordsEpoch(e => e + 1)
-            onClose()
+            setSidebar(null)
           }}
           style={{
             fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
@@ -202,7 +194,7 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
           className="cc-btn"
           onClick={() => {
             startAdaptiveRun(ADAPTIVE_INITIAL_TARGET)
-            onClose()
+            setSidebar(null)
           }}
           style={{
             fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
@@ -216,61 +208,6 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      <button
-        type="button"
-        className="cc-btn"
-        onClick={onClose}
-        style={{
-          marginTop: 14,
-          fontFamily: 'var(--cc-font-mono)',
-          fontSize: 9,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          padding: '4px 10px',
-          border: '1px solid var(--cc-panel-divider)',
-          color: 'var(--cc-text-muted)',
-        }}
-      >
-        Close
-      </button>
-    </div>
-  )
-}
-
-/** Standalone modal — opens from the Challenges keyboard shortcut or the toolbar. */
-export function ChallengesPanel() {
-  const open = useMicroLand(s => s.challengesOpen)
-  const setChallengesOpen = useMicroLand(s => s.setChallengesOpen)
-
-  if (!open) return null
-
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onClick={() => setChallengesOpen(false)}
-    >
-      <div
-        style={{
-          background: 'var(--cc-panel-bg)',
-          border: '1px solid var(--cc-panel-divider)',
-          borderRadius: 8,
-          maxWidth: 420,
-          width: '90vw',
-          overflowY: 'auto',
-          maxHeight: '90vh',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <ChallengesPane onClose={() => setChallengesOpen(false)} />
-      </div>
     </div>
   )
 }

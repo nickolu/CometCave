@@ -39,11 +39,15 @@ function defaultTraits(): Traits {
   }
 }
 
-/** The workshop content, usable both inline (inside the Field Guide) and inside the modal wrapper. */
-export function WorkshopPane({ onClose }: { onClose: () => void }) {
+/**
+ * Build a creature out of one already here: pick a base, then move its numbers.
+ *
+ * Lives inside the creatures panel, which owns the tab row and the way out — so
+ * this is only ever the middle of a column and has no chrome of its own.
+ */
+export function WorkshopPane() {
   const blueprints = useMicroLand(s => s.blueprints)
   const requestWorkshopSpawn = useMicroLand(s => s.requestWorkshopSpawn)
-  const setBuilderOpen = useMicroLand(s => s.setBuilderOpen)
 
   const [step, setStep] = useState<'pick' | 'configure'>('pick')
   const [base, setBase] = useState<CreatureBlueprint | null>(null)
@@ -92,8 +96,11 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
     }
     const finalTraits: Traits = { ...traits, hue, shade }
     requestWorkshopSpawn(finalBlueprint, finalTraits)
-    onClose()
+    // Back to the top of the panel rather than closing it. The creature is
+    // already in the world, and the thing anyone does after making one is make
+    // another.
     setStep('pick')
+    setBase(null)
   }
 
   const chipBase = {
@@ -109,31 +116,7 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
 
   return (
     <div style={{ padding: '16px 16px 20px' }}>
-      {/* Tab row + header */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 12 }}>
-          <span style={{
-            fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
-            textTransform: 'uppercase', padding: '3px 10px', borderRadius: 4,
-            border: '1px solid var(--cc-mint)', color: 'var(--cc-mint)',
-            background: 'rgba(100,220,200,0.08)',
-          }}>
-            Configure
-          </span>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => { setBuilderOpen(true); onClose() }}
-            style={{
-              ...chipBase,
-              border: '1px solid var(--cc-panel-divider)',
-              color: 'var(--cc-text-muted)',
-            }}
-            title="Switch to the pixel drawing tool"
-          >
-            ✎ Draw
-          </button>
-        </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{
             fontFamily: 'var(--cc-font-mono)', fontSize: 11,
@@ -186,9 +169,17 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
                 </div>
               </button>
             ))}
+            {/*
+              Only ever true for the first frames of a session. The roster is
+              seeded with every built-in the moment the world is created, so
+              there is no state a player can reach where this list is genuinely
+              empty — it just has not been pushed into the store yet. The old
+              copy here said "place some creatures first", which sent whoever
+              read it off to do something that would not have helped.
+            */}
             {displayList.length === 0 && (
               <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
-                No species in the world yet. Place some creatures first.
+                The roster is still waking up…
               </p>
             )}
           </div>
@@ -362,7 +353,7 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               className="cc-btn"
-              onClick={onClose}
+              onClick={() => { setStep('pick'); setBase(null) }}
               style={{
                 ...chipBase,
                 border: '1px solid var(--cc-panel-divider)',
@@ -388,58 +379,6 @@ export function WorkshopPane({ onClose }: { onClose: () => void }) {
         </>
       )}
 
-      {step === 'pick' && (
-        <button
-          type="button"
-          className="cc-btn"
-          onClick={onClose}
-          style={{
-            marginTop: 14,
-            ...chipBase,
-            border: '1px solid var(--cc-panel-divider)',
-            color: 'var(--cc-text-muted)',
-          }}
-        >
-          Close
-        </button>
-      )}
-    </div>
-  )
-}
-
-export function BlueprintWorkshop() {
-  const open = useMicroLand(s => s.workshopOpen)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
-
-  if (!open) return null
-
-  return (
-    <div
-      style={{
-        position: 'fixed', inset: 0, zIndex: 50,
-        background: 'rgba(0,0,0,0.7)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflowY: 'auto',
-      }}
-      onClick={() => setWorkshopOpen(false)}
-    >
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Blueprint Workshop"
-        style={{
-          background: 'var(--cc-panel-bg)',
-          border: '1px solid var(--cc-panel-divider)',
-          borderRadius: 8,
-          maxWidth: 460,
-          width: '90vw',
-          maxHeight: '85vh',
-          overflowY: 'auto',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-        <WorkshopPane onClose={() => setWorkshopOpen(false)} />
-      </div>
     </div>
   )
 }

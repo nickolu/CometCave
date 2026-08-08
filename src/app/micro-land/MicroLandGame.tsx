@@ -9,21 +9,16 @@ import {
   initChronicle,
   onSaveState,
 } from '@/app/micro-land/chronicle/chronicle'
-import { BlueprintWorkshop } from '@/app/micro-land/components/blueprint-workshop'
-import { ChallengesPanel } from '@/app/micro-land/components/challenges-panel'
 import { SpeedRunOverlay } from '@/app/micro-land/components/speed-run-overlay'
 import { CreatureBuilder } from '@/app/micro-land/components/creature-builder'
 import { ReplayBar } from '@/app/micro-land/components/replay-bar'
-import { FieldGuide } from '@/app/micro-land/components/field-guide'
 import { Hud } from '@/app/micro-land/components/hud'
 import { Inspector } from '@/app/micro-land/components/inspector'
 import { Notices } from '@/app/micro-land/components/notices'
 import { PanControls } from '@/app/micro-land/components/pan-controls'
-import { HistoryPanel } from '@/app/micro-land/components/history-panel'
-import { SettingsPanel } from '@/app/micro-land/components/settings-panel'
+import { Sidebar } from '@/app/micro-land/components/sidebar'
 import { SummonPanel } from '@/app/micro-land/components/summon-panel'
 import { Toolbar } from '@/app/micro-land/components/toolbar'
-import { WorldsPanel } from '@/app/micro-land/components/worlds-panel'
 import { ZoomControls } from '@/app/micro-land/components/zoom-controls'
 import { THEME_BY_ID } from '@/app/micro-land/domain/config/themes'
 import { hasFertileGround } from '@/app/micro-land/domain/terrain'
@@ -53,7 +48,6 @@ export function MicroLandGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const gameRef = useRef<GameInstance | null>(null)
   const notify = useMicroLand(s => s.notify)
-  const guideOpen = useMicroLand(s => s.guideOpen)
   const { user } = useAuth()
 
   /**
@@ -305,14 +299,14 @@ export function MicroLandGame() {
     useMicroLand.getState().enterReplay(snapshots)
   }, [])
 
-  const handleReshuffle = useCallback(() => {
-    gameRef.current?.reshuffle()
-    notify('The ground shifts and settles somewhere new.')
-  }, [notify])
-
   const handleClearLife = useCallback(() => {
     gameRef.current?.clearLife()
     notify('Everything living is gone. The land waits.')
+  }, [notify])
+
+  const handleClearWorld = useCallback(() => {
+    gameRef.current?.clearWorld()
+    notify('The land is gone too. Nothing but sky.')
   }, [notify])
 
   const handleIntroduce = useCallback((raw: unknown, count: number) => {
@@ -368,33 +362,31 @@ export function MicroLandGame() {
           store.setTool({ kind: 'inspect' })
           break
         case 'f':
-          store.setGuideOpen(!store.guideOpen)
+          store.toggleSidebar('guide')
           break
         case 'l':
-          store.setHistoryOpen(!store.historyOpen)
+          store.toggleSidebar('log')
           break
         case 's':
-          store.setSettingsOpen(!store.settingsOpen)
+          store.toggleSidebar('settings')
           break
         case 'w':
-          store.setWorldsOpen(!store.worldsOpen)
+          store.toggleSidebar('worlds')
           break
         case 'b':
-          store.setBuilderOpen(!store.builderOpen)
+          store.setCreaturesTab('draw')
+          store.toggleSidebar('creatures')
           break
         case 'c':
-          store.setChallengesOpen(!store.challengesOpen)
+          store.toggleSidebar('challenges')
           break
         case 'Escape':
           // Close whichever panel is open, in priority order (most modal first).
+          // The sidebar goes last: it sits beside the world rather than over it,
+          // so it is the least likely thing anyone is trying to get out of.
           if (store.summonOpen) { store.setSummonOpen(false); break }
           if (store.builderOpen) { store.setBuilderOpen(false); break }
-          if (store.workshopOpen) { store.setWorkshopOpen(false); break }
-          if (store.challengesOpen) { store.setChallengesOpen(false); break }
-          if (store.worldsOpen) { store.setWorldsOpen(false); break }
-          if (store.settingsOpen) { store.setSettingsOpen(false); break }
-          if (store.historyOpen) { store.setHistoryOpen(false); break }
-          if (store.guideOpen) { store.setGuideOpen(false); break }
+          if (store.sidebar) { store.setSidebar(null); break }
           break
         case '+':
         case '=':
@@ -417,12 +409,12 @@ export function MicroLandGame() {
 
   return (
     <div className="micro-land-shell flex h-full w-full flex-col overflow-hidden">
-      <Hud onReshuffle={handleReshuffle} onClearLife={handleClearLife} onOpenHistory={handleOpenHistory} />
+      <Hud onOpenHistory={handleOpenHistory} />
 
-      {/* Two-column layout: world column (canvas + toolbar) | field guide column.
-          The toolbar stays anchored at the bottom of the world column whether
-          the guide is open or closed. The divider between columns is draggable
-          (handled by FieldGuide's internal resize logic). */}
+      {/* Two-column layout: world column (canvas + toolbar) | sidebar column.
+          The toolbar stays anchored at the bottom of the world column whether a
+          panel is open or closed. The divider between columns is draggable
+          (handled by the sidebar's own resize logic). */}
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* World column: canvas fills remaining space, toolbar always at bottom */}
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -443,18 +435,19 @@ export function MicroLandGame() {
           </div>
           <Toolbar onRemoveSpecies={handleRemoveSpecies} />
         </div>
-        {/* Field guide column — renders null when closed */}
-        <FieldGuide />
+        {/* Sidebar column — renders null when nothing is open */}
+        <Sidebar
+          onKeep={handleKeepWorld}
+          onOpenWorld={handleOpenWorld}
+          onForget={handleForgetWorld}
+          onClearLife={handleClearLife}
+          onClearWorld={handleClearWorld}
+        />
       </div>
 
       <SummonPanel onIntroduce={handleIntroduce} onApplyTerrain={handleApplyTerrain} />
-      <WorldsPanel onKeep={handleKeepWorld} onOpen={handleOpenWorld} onForget={handleForgetWorld} />
-      <ChallengesPanel />
-      <BlueprintWorkshop />
       <SpeedRunOverlay />
       <CreatureBuilder onIntroduce={handleIntroduce} onRevise={handleRevise} />
-      <SettingsPanel />
-      <HistoryPanel />
       <ReplayBar />
     </div>
   )

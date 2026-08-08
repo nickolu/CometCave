@@ -29,7 +29,6 @@ import { type Tool, useMicroLand } from '@/app/micro-land/store'
 
 import { CreaturePortrait } from './creature-chip'
 import { CreatureFilterBar } from './creature-filter'
-import { SparkleIcon } from './sparkle-icon'
 import { SummonSand } from './summon-sand'
 
 const BRUSHES = [2, 4, 8, 14]
@@ -89,8 +88,6 @@ export function Toolbar({
   const setBrushShape = useMicroLand(s => s.setBrushShape)
   const blueprints = useMicroLand(s => s.blueprints)
   const pending = useMicroLand(s => s.pendingSummons)
-  const setSummonOpen = useMicroLand(s => s.setSummonOpen)
-  const setBuilderOpen = useMicroLand(s => s.setBuilderOpen)
   const open = useMicroLand(s => s.toolbarOpen)
   const setOpen = useMicroLand(s => s.setToolbarOpen)
 
@@ -537,84 +534,12 @@ export function Toolbar({
             </div>
           )}
 
-          {/* --- creatures --- */}
-          {/* Wraps: Generate, Draw and Inspect together overflow a 360px phone. */}
+          {/* Generate, Draw and Inspect used to sit here as well as up in the
+              header — the same three verbs twice, on the surface that is meant
+              to be about what is in your hand right now. Generate and Inspect
+              live in the header; Draw lives in the creatures panel. What is left
+              is the hint. */}
           <div className="flex flex-wrap items-center gap-2">
-            <span style={label}>Creatures</span>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setSummonOpen(true)}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                letterSpacing: 1.6,
-                textTransform: 'uppercase',
-                fontWeight: 700,
-                padding: '6px 14px',
-                minHeight: 32,
-                borderRadius: 4,
-                background: 'linear-gradient(180deg, var(--cc-mint), var(--cc-mint-hi))',
-                border: '1px solid var(--cc-mint)',
-                color: 'var(--cc-on-mint)',
-                boxShadow: 'var(--cc-mint-glow)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6,
-              }}
-            >
-              <SparkleIcon size={12} />
-              Generate
-            </button>
-            {/* Secondary to Generate on purpose: one primary-action colour per
-            screen, and drawing is the slower, more deliberate of the two. */}
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setBuilderOpen(true)}
-              title="Colour in a creature yourself, square by square"
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                letterSpacing: 1.6,
-                textTransform: 'uppercase',
-                padding: '6px 12px',
-                minHeight: 32,
-                borderRadius: 4,
-                border: '1px solid var(--cc-mint-line)',
-                background: 'transparent',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              ✎ Draw
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() =>
-                setTool(
-                  tool.kind === 'inspect'
-                    ? { kind: 'material', material: 'dirt' }
-                    : { kind: 'inspect' }
-                )
-              }
-              aria-pressed={tool.kind === 'inspect'}
-              title="Tap a creature to see how it is doing"
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 10,
-                letterSpacing: 1.6,
-                textTransform: 'uppercase',
-                padding: '6px 12px',
-                minHeight: 32,
-                borderRadius: 4,
-                border: `1px solid ${tool.kind === 'inspect' ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
-                background: tool.kind === 'inspect' ? 'var(--cc-mint-soft)' : 'transparent',
-                color: tool.kind === 'inspect' ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-              }}
-            >
-              ⌕ Inspect
-            </button>
             <span
               style={{
                 fontFamily: 'var(--cc-font-mono)',

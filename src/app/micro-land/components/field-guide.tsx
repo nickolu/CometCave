@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
@@ -10,8 +10,6 @@ import { useMicroLand, type PopulationSnapshot, type TraitHistoryEntry } from '@
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
-import { WorkshopPane } from './blueprint-workshop'
-import { ChallengesPane } from './challenges-panel'
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -56,10 +54,13 @@ const recordCell: React.CSSProperties = {
  * rather than anywhere on the main screen. That is deliberate: the world stays a
  * world, and everything the game has been quietly counting is one tap away for
  * whoever wants it.
+ *
+ * Nothing else hangs off it. The guide used to carry the workshop and the
+ * challenges behind two tabs in its own header, which made "look something up"
+ * and "make something new" the same door — those live in the main menu now, and
+ * the guide is only ever a guide.
  */
-export function FieldGuide() {
-  const open = useMicroLand(s => s.guideOpen)
-  const setOpen = useMicroLand(s => s.setGuideOpen)
+export function FieldGuidePane() {
   const blueprints = useMicroLand(s => s.blueprints)
   const population = useMicroLand(s => s.population)
   const records = useMicroLand(s => s.records)
@@ -88,41 +89,7 @@ export function FieldGuide() {
   const [compact, setCompact] = useState(() => {
     try { return localStorage.getItem('fg-compact') === '1' } catch { return false }
   })
-  const [guideWidth, setGuideWidth] = useState(() => {
-    try { return Number(localStorage.getItem('fg-width')) || 300 } catch { return 300 }
-  })
-  const isDragging = useRef(false)
-
-  const MIN_WIDTH = 240
-  const MAX_WIDTH = 600
-
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    isDragging.current = true
-    const onMove = (ev: MouseEvent) => {
-      if (!isDragging.current) return
-      setGuideWidth(prev => {
-        const next = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, prev - ev.movementX))
-        return next
-      })
-    }
-    const onUp = () => {
-      isDragging.current = false
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-      setGuideWidth(prev => {
-        try { localStorage.setItem('fg-width', String(prev)) } catch {}
-        return prev
-      })
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  }, [])
-
-  const [view, setView] = useState<'guide' | 'workshop' | 'challenges'>('guide')
   const [compareTarget, setCompareTarget] = useState<string | null>(null)
-
-  if (!open) return null
 
   const counts = new Map(population.map(p => [p.blueprintId, p.count]))
   const genByBp = new Map(population.map(p => [p.blueprintId, p.maxGeneration]))
@@ -154,526 +121,397 @@ export function FieldGuide() {
   }
 
   return (
-    <aside
-      aria-label="Field guide"
-      style={{
-        width: guideWidth,
-        flexShrink: 0,
-        borderLeft: '1px solid var(--cc-panel-divider)',
-        background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        position: 'relative',
-      }}
-    >
-      {/* Drag handle — left edge of the guide */}
-      <div
-        aria-hidden
-        onMouseDown={handleDragStart}
-        style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 5,
-          cursor: 'ew-resize',
-          zIndex: 1,
-          background: 'transparent',
-        }}
-      />
-      <div style={{ overflowY: 'auto', flex: 1 }}>
-        <div
-          className="sticky top-0 flex flex-col gap-1.5 px-3 py-2.5"
-          style={{
-            borderBottom: '1px solid var(--cc-panel-divider)',
-            background: 'var(--cc-modal-bg-from)',
-          }}
+    <>
+      {compareTarget !== null && compareId !== null && (
+        <ComparisonPanel
+          bpA={blueprints.find(b => b.id === compareId)!}
+          bpB={blueprints.find(b => b.id === compareTarget)!}
+          onDismiss={() => { setCompareTarget(null); setCompareId(null) }}
+        />
+      )}
+
+      {compareTarget === null && hasRecords && (
+        <section
+          className="flex flex-col gap-2.5 px-4 py-3"
+          style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
         >
-          {/* Title row + close */}
-          <div className="flex items-center justify-between">
-            <h2
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 11,
-                letterSpacing: 2.5,
-                textTransform: 'uppercase',
-                color: 'var(--cc-mint)',
-              }}
-            >
-              Field Guide
-            </h2>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setOpen(false)}
-              aria-label="Close field guide"
-              style={{ minWidth: 32, minHeight: 28, color: 'var(--cc-text-muted)' }}
-            >
-              ✕
-            </button>
-          </div>
-          {/* Action buttons row */}
-          <div className="flex flex-wrap gap-1">
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setView('workshop')}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                minHeight: 26,
-                borderRadius: 4,
-                border: '1px solid var(--cc-panel-divider)',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              Workshop
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setView('challenges')}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1.2,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                minHeight: 26,
-                borderRadius: 4,
-                border: '1px solid var(--cc-panel-divider)',
-                color: 'var(--cc-text-muted)',
-              }}
-            >
-              Challenges
-            </button>
-          </div>
-        </div>
+          <h3 style={sectionHeading}>This land&rsquo;s records</h3>
 
-        {view === 'workshop' && (
-          <WorkshopPane onClose={() => setView('guide')} />
-        )}
+          {/*
+            Two columns rather than one list, because one list is a plant
+            leaderboard. Nothing rooted is ever chased or ever has to find a
+            meal, so moss out-lives and out-breeds every animal in the world by
+            an order of magnitude and took both records on every land, every
+            session — leaving the creatures the player actually watches move
+            with nothing to win. Both columns show at all times, empty ones
+            included: an Animals column that only appeared once an animal had
+            earned something would hide the very thing worth chasing.
+          */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <thead>
+              <tr>
+                {/* Empty corner cell — the row labels below are the row headers. */}
+                <td />
+                <th scope="col" style={columnHeading}>
+                  Plants
+                </th>
+                <th scope="col" style={columnHeading}>
+                  Animals
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
+                  Longest life
+                </th>
+                {LIFE_KINDS.map(kind => (
+                  <td key={kind} style={recordCell}>
+                    <ElderCell elder={records.byKind[kind].elder} />
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
+                  Deepest family line
+                </th>
+                {LIFE_KINDS.map(kind => (
+                  <td key={kind} style={recordCell}>
+                    <LineCell
+                      generations={records.byKind[kind].bestGenerations}
+                      speciesName={records.byKind[kind].bestGenerationsSpeciesName}
+                    />
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
 
-        {view === 'challenges' && (
-          <ChallengesPane onClose={() => setView('guide')} />
-        )}
+          {records.bestSteadySeconds > 0 && (
+            <div className="flex flex-col gap-0.5">
+              <span style={recordLabel}>Longest without losing a kind</span>
+              <span style={{ fontSize: 13, color: 'var(--cc-text-default)' }}>
+                {formatDuration(records.bestSteadySeconds)}
+                {records.steadySeconds >= records.bestSteadySeconds &&
+                  records.steadySeconds > 0 && (
+                    <span style={{ color: 'var(--cc-gold)' }}> — going now</span>
+                  )}
+              </span>
+            </div>
+          )}
+        </section>
+      )}
 
-        {view === 'guide' && compareTarget !== null && compareId !== null && (
-          <ComparisonPanel
-            bpA={blueprints.find(b => b.id === compareId)!}
-            bpB={blueprints.find(b => b.id === compareTarget)!}
-            onDismiss={() => { setCompareTarget(null); setCompareId(null) }}
-          />
-        )}
+      {compareTarget === null && <>
 
-        {view === 'guide' && compareTarget === null && hasRecords && (
-          <section
-            className="flex flex-col gap-2.5 px-4 py-3"
-            style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
-          >
-            <h3 style={sectionHeading}>This land&rsquo;s records</h3>
-
-            {/*
-              Two columns rather than one list, because one list is a plant
-              leaderboard. Nothing rooted is ever chased or ever has to find a
-              meal, so moss out-lives and out-breeds every animal in the world by
-              an order of magnitude and took both records on every land, every
-              session — leaving the creatures the player actually watches move
-              with nothing to win. Both columns show at all times, empty ones
-              included: an Animals column that only appeared once an animal had
-              earned something would hide the very thing worth chasing.
-            */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-              <thead>
-                <tr>
-                  {/* Empty corner cell — the row labels below are the row headers. */}
-                  <td />
-                  <th scope="col" style={columnHeading}>
-                    Plants
-                  </th>
-                  <th scope="col" style={columnHeading}>
-                    Animals
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
-                    Longest life
-                  </th>
-                  {LIFE_KINDS.map(kind => (
-                    <td key={kind} style={recordCell}>
-                      <ElderCell elder={records.byKind[kind].elder} />
-                    </td>
-                  ))}
-                </tr>
-                <tr>
-                  <th scope="row" style={{ ...recordLabel, textAlign: 'left', paddingRight: 8 }}>
-                    Deepest family line
-                  </th>
-                  {LIFE_KINDS.map(kind => (
-                    <td key={kind} style={recordCell}>
-                      <LineCell
-                        generations={records.byKind[kind].bestGenerations}
-                        speciesName={records.byKind[kind].bestGenerationsSpeciesName}
-                      />
-                    </td>
-                  ))}
-                </tr>
-              </tbody>
-            </table>
-
-            {records.bestSteadySeconds > 0 && (
-              <div className="flex flex-col gap-0.5">
-                <span style={recordLabel}>Longest without losing a kind</span>
-                <span style={{ fontSize: 13, color: 'var(--cc-text-default)' }}>
-                  {formatDuration(records.bestSteadySeconds)}
-                  {records.steadySeconds >= records.bestSteadySeconds &&
-                    records.steadySeconds > 0 && (
-                      <span style={{ color: 'var(--cc-gold)' }}> — going now</span>
+      {namedCreatures.some(e => e.alive) && (
+        <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+            Named · {namedCreatures.filter(e => e.alive).length}
+          </h3>
+          <ul className="flex flex-col">
+            {namedCreatures
+              .filter(e => e.alive)
+              .slice()
+              .sort((a, b) => b.ageSeconds - a.ageSeconds)
+              .map((entry, i) => {
+                const bp = blueprints.find(b => b.id === entry.blueprintId)
+                return (
+                  <li
+                    key={entry.name + entry.blueprintId + i}
+                    className="flex gap-3 px-4 py-2.5"
+                    style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+                  >
+                    {bp && (
+                      <div className="shrink-0 pt-0.5">
+                        <CreaturePortrait blueprint={bp} size={30} />
+                      </div>
                     )}
-                </span>
-              </div>
-            )}
-          </section>
-        )}
-
-        {view === 'guide' && compareTarget === null && <>
-
-        {namedCreatures.some(e => e.alive) && (
-          <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
-              Named · {namedCreatures.filter(e => e.alive).length}
-            </h3>
-            <ul className="flex flex-col">
-              {namedCreatures
-                .filter(e => e.alive)
-                .slice()
-                .sort((a, b) => b.ageSeconds - a.ageSeconds)
-                .map((entry, i) => {
-                  const bp = blueprints.find(b => b.id === entry.blueprintId)
-                  return (
-                    <li
-                      key={entry.name + entry.blueprintId + i}
-                      className="flex gap-3 px-4 py-2.5"
-                      style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
-                    >
+                    <div className="min-w-0 flex-1">
+                      <span
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 12,
+                          letterSpacing: 1.4,
+                          textTransform: 'uppercase',
+                          color: 'var(--cc-mint)',
+                        }}
+                      >
+                        {entry.name}
+                      </span>
                       {bp && (
-                        <div className="shrink-0 pt-0.5">
-                          <CreaturePortrait blueprint={bp} size={30} />
-                        </div>
+                        <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
+                          {bp.name}
+                        </p>
                       )}
-                      <div className="min-w-0 flex-1">
+                      <p
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 10,
+                          color: 'var(--cc-text-muted)',
+                          opacity: 0.75,
+                          marginTop: 4,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        alive · {formatDuration(entry.ageSeconds)}
+                        {entry.generation > 1 && ` · gen ${entry.generation}`}
+                        {entry.children > 0 && ` · ${entry.children} offspring`}
+                        {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+          </ul>
+        </section>
+      )}
+
+      {namedCreatures.some(e => !e.alive) && (
+        <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+            Graveyard · {namedCreatures.filter(e => !e.alive).length}
+          </h3>
+          <ul className="flex flex-col">
+            {namedCreatures
+              .filter(e => !e.alive)
+              .slice()
+              .sort((a, b) => b.ageSeconds - a.ageSeconds)
+              .map((entry, i) => {
+                const bp = blueprints.find(b => b.id === entry.blueprintId)
+                return (
+                  <li
+                    key={entry.name + entry.blueprintId + i}
+                    className="flex gap-3 px-4 py-2.5"
+                    style={{
+                      borderBottom: '1px solid var(--cc-panel-divider)',
+                      opacity: 0.65,
+                    }}
+                  >
+                    {/* Pixel tombstone */}
+                    <div className="shrink-0" style={{ paddingTop: 2 }}>
+                      <svg
+                        width="30"
+                        height="30"
+                        viewBox="0 0 8 8"
+                        style={{ imageRendering: 'pixelated', display: 'block' }}
+                        aria-hidden
+                      >
+                        {/* stone body */}
+                        <rect x="1" y="3" width="6" height="4" fill="#6b7280" />
+                        {/* rounded top — two rows forming an arch */}
+                        <rect x="2" y="1" width="4" height="3" fill="#6b7280" />
+                        <rect x="1" y="2" width="6" height="1" fill="#6b7280" />
+                        {/* highlight edge */}
+                        <rect x="1" y="1" width="1" height="5" fill="#9ca3af" />
+                        <rect x="2" y="1" width="4" height="1" fill="#9ca3af" />
+                        {/* cross */}
+                        <rect x="3" y="2" width="2" height="4" fill="#374151" />
+                        <rect x="2" y="3" width="4" height="1" fill="#374151" />
+                        {/* base ground */}
+                        <rect x="0" y="7" width="8" height="1" fill="#4b5563" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline gap-1.5">
                         <span
                           style={{
                             fontFamily: 'var(--cc-font-mono)',
                             fontSize: 12,
                             letterSpacing: 1.4,
                             textTransform: 'uppercase',
-                            color: 'var(--cc-mint)',
+                            color: 'var(--cc-text-muted)',
                           }}
                         >
                           {entry.name}
                         </span>
-                        {bp && (
-                          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
-                            {bp.name}
-                          </p>
-                        )}
-                        <p
+                        <span
                           style={{
                             fontFamily: 'var(--cc-font-mono)',
-                            fontSize: 10,
+                            fontSize: 9,
                             color: 'var(--cc-text-muted)',
-                            opacity: 0.75,
-                            marginTop: 4,
-                            lineHeight: 1.6,
+                            opacity: 0.55,
                           }}
                         >
-                          alive · {formatDuration(entry.ageSeconds)}
-                          {entry.generation > 1 && ` · gen ${entry.generation}`}
-                          {entry.children > 0 && ` · ${entry.children} offspring`}
-                          {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                          †
+                        </span>
+                      </div>
+                      {bp && (
+                        <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
+                          {bp.name}
                         </p>
-                      </div>
-                    </li>
-                  )
-                })}
-            </ul>
-          </section>
-        )}
+                      )}
+                      <p
+                        style={{
+                          fontFamily: 'var(--cc-font-mono)',
+                          fontSize: 10,
+                          color: 'var(--cc-text-muted)',
+                          opacity: 0.65,
+                          marginTop: 4,
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        lived {formatDuration(entry.ageSeconds)}
+                        {entry.generation > 1 && ` · gen ${entry.generation}`}
+                        {entry.children > 0 && ` · ${entry.children} offspring`}
+                        {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
+                      </p>
+                    </div>
+                  </li>
+                )
+              })}
+          </ul>
+        </section>
+      )}
 
-        {namedCreatures.some(e => !e.alive) && (
-          <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
-              Graveyard · {namedCreatures.filter(e => !e.alive).length}
-            </h3>
-            <ul className="flex flex-col">
-              {namedCreatures
-                .filter(e => !e.alive)
-                .slice()
-                .sort((a, b) => b.ageSeconds - a.ageSeconds)
-                .map((entry, i) => {
-                  const bp = blueprints.find(b => b.id === entry.blueprintId)
-                  return (
-                    <li
-                      key={entry.name + entry.blueprintId + i}
-                      className="flex gap-3 px-4 py-2.5"
-                      style={{
-                        borderBottom: '1px solid var(--cc-panel-divider)',
-                        opacity: 0.65,
-                      }}
-                    >
-                      {/* Pixel tombstone */}
-                      <div className="shrink-0" style={{ paddingTop: 2 }}>
-                        <svg
-                          width="30"
-                          height="30"
-                          viewBox="0 0 8 8"
-                          style={{ imageRendering: 'pixelated', display: 'block' }}
-                          aria-hidden
-                        >
-                          {/* stone body */}
-                          <rect x="1" y="3" width="6" height="4" fill="#6b7280" />
-                          {/* rounded top — two rows forming an arch */}
-                          <rect x="2" y="1" width="4" height="3" fill="#6b7280" />
-                          <rect x="1" y="2" width="6" height="1" fill="#6b7280" />
-                          {/* highlight edge */}
-                          <rect x="1" y="1" width="1" height="5" fill="#9ca3af" />
-                          <rect x="2" y="1" width="4" height="1" fill="#9ca3af" />
-                          {/* cross */}
-                          <rect x="3" y="2" width="2" height="4" fill="#374151" />
-                          <rect x="2" y="3" width="4" height="1" fill="#374151" />
-                          {/* base ground */}
-                          <rect x="0" y="7" width="8" height="1" fill="#4b5563" />
-                        </svg>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline gap-1.5">
-                          <span
-                            style={{
-                              fontFamily: 'var(--cc-font-mono)',
-                              fontSize: 12,
-                              letterSpacing: 1.4,
-                              textTransform: 'uppercase',
-                              color: 'var(--cc-text-muted)',
-                            }}
-                          >
-                            {entry.name}
-                          </span>
-                          <span
-                            style={{
-                              fontFamily: 'var(--cc-font-mono)',
-                              fontSize: 9,
-                              color: 'var(--cc-text-muted)',
-                              opacity: 0.55,
-                            }}
-                          >
-                            †
-                          </span>
-                        </div>
-                        {bp && (
-                          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginTop: 1 }}>
-                            {bp.name}
-                          </p>
-                        )}
-                        <p
-                          style={{
-                            fontFamily: 'var(--cc-font-mono)',
-                            fontSize: 10,
-                            color: 'var(--cc-text-muted)',
-                            opacity: 0.65,
-                            marginTop: 4,
-                            lineHeight: 1.6,
-                          }}
-                        >
-                          lived {formatDuration(entry.ageSeconds)}
-                          {entry.generation > 1 && ` · gen ${entry.generation}`}
-                          {entry.children > 0 && ` · ${entry.children} offspring`}
-                          {entry.mealsEaten > 0 && ` · ${entry.mealsEaten} meals`}
-                        </p>
-                      </div>
-                    </li>
-                  )
-                })}
-            </ul>
-          </section>
-        )}
-
-        {/* Filter row — sits right above the list it affects so it reads as a
-            list control rather than a navigation option. */}
-        <div
-          className="flex items-center justify-between px-3 py-1.5"
-          style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+      {/* Filter row — sits right above the list it affects so it reads as a
+          list control rather than a navigation option. */}
+      <div
+        className="flex items-center justify-between px-3 py-1.5"
+        style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+      >
+        <span
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            color: 'var(--cc-text-muted)',
+          }}
         >
-          <span
+          {ordered.length} {ordered.length === 1 ? 'species' : 'species'} in this land
+        </span>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => {
+              setCompact(c => {
+                const next = !c
+                try { localStorage.setItem('fg-compact', next ? '1' : '0') } catch {}
+                return next
+              })
+            }}
+            aria-pressed={compact}
+            title={compact ? 'Switch to full view' : 'Switch to compact view'}
             style={{
               fontFamily: 'var(--cc-font-mono)',
               fontSize: 9,
-              letterSpacing: 1.5,
+              letterSpacing: 1,
               textTransform: 'uppercase',
-              color: 'var(--cc-text-muted)',
+              padding: '2px 7px',
+              minHeight: 22,
+              borderRadius: 3,
+              border: compact ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+              color: compact ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
             }}
           >
-            {ordered.length} {ordered.length === 1 ? 'species' : 'species'} in this land
-          </span>
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => {
-                setCompact(c => {
-                  const next = !c
-                  try { localStorage.setItem('fg-compact', next ? '1' : '0') } catch {}
-                  return next
-                })
-              }}
-              aria-pressed={compact}
-              title={compact ? 'Switch to full view' : 'Switch to compact view'}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                padding: '2px 7px',
-                minHeight: 22,
-                borderRadius: 3,
-                border: compact ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-                color: compact ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-              }}
-            >
-              {compact ? '≡ Full' : '≡ Compact'}
-            </button>
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setPlantsHidden(h => !h)}
-              aria-pressed={plantsHidden}
-              style={{
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                padding: '2px 7px',
-                minHeight: 22,
-                borderRadius: 3,
-                border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
-                color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-              }}
-            >
-              {plantsHidden ? 'Plants hidden' : 'Hide plants'}
-            </button>
-          </div>
+            {compact ? '≡ Full' : '≡ Compact'}
+          </button>
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setPlantsHidden(h => !h)}
+            aria-pressed={plantsHidden}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              padding: '2px 7px',
+              minHeight: 22,
+              borderRadius: 3,
+              border: plantsHidden ? '1px solid var(--cc-mint)' : '1px solid var(--cc-panel-divider)',
+              color: plantsHidden ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+            }}
+          >
+            {plantsHidden ? 'Plants hidden' : 'Hide plants'}
+          </button>
         </div>
-        <ul className="flex flex-col">
-          {ordered.map(bp => (
-            <GuideEntry
-              key={bp.id}
-              bp={bp}
-              alive={counts.get(bp.id) ?? 0}
-              maxGeneration={genByBp.get(bp.id) ?? 1}
-              blueprints={blueprints}
-              thumbs={populationItems.filter(t => t.blueprintId === bp.id)}
-              onLocateCreature={requestLocateCreature}
-              onCompare={() => handleCompare(bp.id)}
-              isComparePin={compareId === bp.id}
-              traitHistory={traitHistory[bp.id]}
-              compact={compact}
-              isHeatmap={heatmapBlueprintId === bp.id}
-              onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
-            />
-          ))}
-        </ul>
+      </div>
+      <ul className="flex flex-col">
+        {ordered.map(bp => (
+          <GuideEntry
+            key={bp.id}
+            bp={bp}
+            alive={counts.get(bp.id) ?? 0}
+            maxGeneration={genByBp.get(bp.id) ?? 1}
+            blueprints={blueprints}
+            thumbs={populationItems.filter(t => t.blueprintId === bp.id)}
+            onLocateCreature={requestLocateCreature}
+            onCompare={() => handleCompare(bp.id)}
+            isComparePin={compareId === bp.id}
+            traitHistory={traitHistory[bp.id]}
+            compact={compact}
+            isHeatmap={heatmapBlueprintId === bp.id}
+            onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
+          />
+        ))}
+      </ul>
 
-        {remembered.length > 0 && (
-          <section style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
-              Remembered · {remembered.length}
-            </h3>
-            <p
-              className="px-4 pb-2"
-              style={{ fontSize: 12, color: 'var(--cc-text-muted)', opacity: 0.8 }}
-            >
-              Kinds you have met before. None of them are in this land.
-            </p>
-            <ul className="flex flex-col">
-              {remembered.map(record => (
-                <RememberedEntry key={record.blueprint.id} record={record} />
-              ))}
-            </ul>
-          </section>
-        )}
+      {remembered.length > 0 && (
+        <section style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
+            Remembered · {remembered.length}
+          </h3>
+          <p
+            className="px-4 pb-2"
+            style={{ fontSize: 12, color: 'var(--cc-text-muted)', opacity: 0.8 }}
+          >
+            Kinds you have met before. None of them are in this land.
+          </p>
+          <ul className="flex flex-col">
+            {remembered.map(record => (
+              <RememberedEntry key={record.blueprint.id} record={record} />
+            ))}
+          </ul>
+        </section>
+      )}
 
-        {milestones.length > 0 && (
-          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="pb-2" style={sectionHeading}>
-              Things that have happened
-            </h3>
-            <ul className="flex flex-col gap-1.5">
-              {milestones.map(m => (
-                <li
-                  key={m.id}
-                  className="flex items-baseline justify-between gap-3"
-                  style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}
-                >
-                  <span>{m.text}</span>
-                  <span
-                    style={{
-                      fontFamily: 'var(--cc-font-mono)',
-                      fontSize: 10,
-                      opacity: 0.6,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {new Date(m.at).toLocaleDateString()}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-        <PopulationGraph history={populationHistory} blueprints={blueprints} />
-
+      {milestones.length > 0 && (
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
           <h3 className="pb-2" style={sectionHeading}>
-            Evolution view
+            Things that have happened
           </h3>
-          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.5, marginBottom: 8, opacity: 0.8 }}>
-            Color creatures by trait — blue is below average, red is above.
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {(['speed', 'sight', 'lifespan', 'roam'] as const).map(trait => (
-              <button
-                key={trait}
-                type="button"
-                className="cc-btn"
-                onClick={() => setTraitOverlay(trait)}
-                style={{
-                  fontFamily: 'var(--cc-font-mono)',
-                  fontSize: 9,
-                  letterSpacing: 1.2,
-                  textTransform: 'uppercase',
-                  padding: '4px 10px',
-                  minHeight: 28,
-                  borderRadius: 4,
-                  border: traitOverlay === trait
-                    ? '1px solid var(--cc-mint)'
-                    : '1px solid var(--cc-mint-line)',
-                  color: traitOverlay === trait ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                  background: traitOverlay === trait ? 'rgba(100,220,200,0.1)' : 'transparent',
-                }}
+          <ul className="flex flex-col gap-1.5">
+            {milestones.map(m => (
+              <li
+                key={m.id}
+                className="flex items-baseline justify-between gap-3"
+                style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}
               >
-                {trait === 'lifespan' ? 'Life' : trait.charAt(0).toUpperCase() + trait.slice(1)}
-              </button>
+                <span>{m.text}</span>
+                <span
+                  style={{
+                    fontFamily: 'var(--cc-font-mono)',
+                    fontSize: 10,
+                    opacity: 0.6,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {new Date(m.at).toLocaleDateString()}
+                </span>
+              </li>
             ))}
+          </ul>
+        </section>
+      )}
+      <PopulationGraph history={populationHistory} blueprints={blueprints} />
+
+      <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+        <h3 className="pb-2" style={sectionHeading}>
+          Evolution view
+        </h3>
+        <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', lineHeight: 1.5, marginBottom: 8, opacity: 0.8 }}>
+          Color creatures by trait — blue is below average, red is above.
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {(['speed', 'sight', 'lifespan', 'roam'] as const).map(trait => (
             <button
+              key={trait}
               type="button"
               className="cc-btn"
-              onClick={() => setTrailsEnabled(!trailsEnabled)}
+              onClick={() => setTraitOverlay(trait)}
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -682,134 +520,155 @@ export function FieldGuide() {
                 padding: '4px 10px',
                 minHeight: 28,
                 borderRadius: 4,
-                border: trailsEnabled
+                border: traitOverlay === trait
                   ? '1px solid var(--cc-mint)'
                   : '1px solid var(--cc-mint-line)',
-                color: trailsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
-                background: trailsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+                color: traitOverlay === trait ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                background: traitOverlay === trait ? 'rgba(100,220,200,0.1)' : 'transparent',
               }}
             >
-              Trails
+              {trait === 'lifespan' ? 'Life' : trait.charAt(0).toUpperCase() + trait.slice(1)}
             </button>
-          </div>
-          {traitOverlay && (
-            <button
-              type="button"
-              className="cc-btn"
-              onClick={() => setTraitOverlay(null)}
-              style={{
-                marginTop: 8,
-                fontFamily: 'var(--cc-font-mono)',
-                fontSize: 9,
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                padding: '3px 8px',
-                color: 'var(--cc-text-muted)',
-                border: '1px solid var(--cc-panel-divider)',
-              }}
-            >
-              Clear
-            </button>
-          )}
-        </section>
-
-        {extinctions.length > 0 && (
-          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="pb-2" style={sectionHeading}>
-              Extinctions
-            </h3>
-            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
-              Species that lived and died in this land.
-            </p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {[...extinctions].reverse().map(ext => (
-                <li
-                  key={ext.blueprintId + ext.elapsed}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    padding: '3px 0',
-                    opacity: 0.6,
-                    fontSize: 11,
-                    fontFamily: 'var(--cc-font-mono)',
-                  }}
-                >
-                  <span>🦴 {ext.name}</span>
-                  <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
-                    gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          ))}
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setTrailsEnabled(!trailsEnabled)}
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.2,
+              textTransform: 'uppercase',
+              padding: '4px 10px',
+              minHeight: 28,
+              borderRadius: 4,
+              border: trailsEnabled
+                ? '1px solid var(--cc-mint)'
+                : '1px solid var(--cc-mint-line)',
+              color: trailsEnabled ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+              background: trailsEnabled ? 'rgba(100,220,200,0.1)' : 'transparent',
+            }}
+          >
+            Trails
+          </button>
+        </div>
+        {traitOverlay && (
+          <button
+            type="button"
+            className="cc-btn"
+            onClick={() => setTraitOverlay(null)}
+            style={{
+              marginTop: 8,
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              padding: '3px 8px',
+              color: 'var(--cc-text-muted)',
+              border: '1px solid var(--cc-panel-divider)',
+            }}
+          >
+            Clear
+          </button>
         )}
+      </section>
 
-        {Object.keys(foodWeb).length > 0 && (
-          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
-            <h3 className="pb-2" style={sectionHeading}>
-              Food web
-            </h3>
-            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
-              Who ate whom — observed in this world so far.
-            </p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {Object.entries(foodWeb).map(([eaterId, preyIds]) => (
-                <li
-                  key={eaterId}
-                  style={{
-                    fontSize: 11,
-                    fontFamily: 'var(--cc-font-mono)',
-                    padding: '3px 0',
-                    lineHeight: 1.6,
-                  }}
-                >
-                  <span style={{ color: 'var(--cc-text-default)' }}>
-                    {allBlueprintNames[eaterId] ?? eaterId}
-                  </span>
-                  <span style={{ color: 'var(--cc-text-muted)' }}>{' → '}</span>
-                  <span style={{ color: 'var(--cc-text-muted)' }}>
-                    {preyIds.map(id => allBlueprintNames[id] ?? id).join(', ')}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* World Statistics */}
+      {extinctions.length > 0 && (
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
           <h3 className="pb-2" style={sectionHeading}>
-            This session
+            Extinctions
           </h3>
-          <table style={{ width: '100%', fontSize: 11, fontFamily: 'var(--cc-font-mono)', borderCollapse: 'collapse' }}>
-            <tbody>
-              {(
-                [
-                  ['Born', worldStats.totalBorn],
-                  ['Died', worldStats.totalDeaths],
-                  ['Predation events', worldStats.totalEats],
-                  ['Peak population', worldStats.peakPopulation],
-                  ['Longest life', worldStats.longestLived > 0 ? `${Math.round(worldStats.longestLived)}s` : '—'],
-                  ['Most prolific', worldStats.mostProlificName
-                    ? `${worldStats.mostProlificName} (${worldStats.mostProlificChildren} offspring)`
-                    : '—'],
-                ] as [string, string | number][]
-              ).map(([label, value]) => (
-                <tr key={label} style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
-                  <td style={{ padding: '4px 0', color: 'var(--cc-text-muted)', width: '55%' }}>{label}</td>
-                  <td style={{ padding: '4px 0', textAlign: 'right' }}>{value}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+            Species that lived and died in this land.
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {[...extinctions].reverse().map(ext => (
+              <li
+                key={ext.blueprintId + ext.elapsed}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  padding: '3px 0',
+                  opacity: 0.6,
+                  fontSize: 11,
+                  fontFamily: 'var(--cc-font-mono)',
+                }}
+              >
+                <span>🦴 {ext.name}</span>
+                <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
+                  gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
+                </span>
+              </li>
+            ))}
+          </ul>
         </section>
+      )}
 
-        <ImportSection addBlueprint={addBlueprint} />
+      {Object.keys(foodWeb).length > 0 && (
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>
+            Food web
+          </h3>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+            Who ate whom — observed in this world so far.
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {Object.entries(foodWeb).map(([eaterId, preyIds]) => (
+              <li
+                key={eaterId}
+                style={{
+                  fontSize: 11,
+                  fontFamily: 'var(--cc-font-mono)',
+                  padding: '3px 0',
+                  lineHeight: 1.6,
+                }}
+              >
+                <span style={{ color: 'var(--cc-text-default)' }}>
+                  {allBlueprintNames[eaterId] ?? eaterId}
+                </span>
+                <span style={{ color: 'var(--cc-text-muted)' }}>{' → '}</span>
+                <span style={{ color: 'var(--cc-text-muted)' }}>
+                  {preyIds.map(id => allBlueprintNames[id] ?? id).join(', ')}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
-        </>}
-      </div>
-    </aside>
+      {/* World Statistics */}
+      <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+        <h3 className="pb-2" style={sectionHeading}>
+          This session
+        </h3>
+        <table style={{ width: '100%', fontSize: 11, fontFamily: 'var(--cc-font-mono)', borderCollapse: 'collapse' }}>
+          <tbody>
+            {(
+              [
+                ['Born', worldStats.totalBorn],
+                ['Died', worldStats.totalDeaths],
+                ['Predation events', worldStats.totalEats],
+                ['Peak population', worldStats.peakPopulation],
+                ['Longest life', worldStats.longestLived > 0 ? `${Math.round(worldStats.longestLived)}s` : '—'],
+                ['Most prolific', worldStats.mostProlificName
+                  ? `${worldStats.mostProlificName} (${worldStats.mostProlificChildren} offspring)`
+                  : '—'],
+              ] as [string, string | number][]
+            ).map(([label, value]) => (
+              <tr key={label} style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
+                <td style={{ padding: '4px 0', color: 'var(--cc-text-muted)', width: '55%' }}>{label}</td>
+                <td style={{ padding: '4px 0', textAlign: 'right' }}>{value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <ImportSection addBlueprint={addBlueprint} />
+
+      </>}
+    </>
   )
 }
 
