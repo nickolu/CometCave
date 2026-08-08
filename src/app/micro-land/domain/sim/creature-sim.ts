@@ -35,6 +35,7 @@ import {
 import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
+import { deltaX, distX, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 
 import {
   boxDeadlyMaterial,
@@ -319,7 +320,7 @@ function findMate(
   // there is no need to ask `artSize` about either of them.
   if (other.blueprintId !== c.blueprintId) return null
   if (!readyToBreed(other, bp)) return null
-  const dx = other.x - c.x
+  const dx = deltaX(c.x, other.x)
   const dy = other.y - c.y
   return dx * dx + dy * dy <= TUNING.mateRadius * TUNING.mateRadius ? other : null
 }
@@ -334,6 +335,61 @@ function lowerBound(list: Creature[], x: number): number {
     else hi = mid
   }
   return lo
+}
+
+/**
+ * Neighbours found by the last `gather`. Module scope for the same reason `byX`
+ * is: this is refilled several times per creature per sense pass and handing the
+ * collector a fresh array each time would cost more than the search does.
+ */
+const found: Creature[] = []
+
+/**
+ * Everything whose left edge lies within `reach` of column `cx`, the short way
+ * round, left in `found`. Returns how many.
+ *
+ * A sight window used to be one contiguous slice of the x-sorted population, and
+ * on a cylinder it is two: a creature standing at 670 with eighteen tiles of
+ * sight can see something at 5, and the slice it needs runs off the end of the
+ * array and continues at the start. Hence the buffer — the four scans in `look`
+ * have quite different bodies, one of which returns out of `look` mid-loop, and
+ * a two-range iteration open-coded four times is four chances to get the second
+ * range subtly wrong.
+ *
+ * The seam case is rare by construction: only creatures within roughly a sight
+ * radius of column zero straddle it at all, so the overwhelming majority of the
+ * population still takes one binary search and one walk, exactly as before.
+ *
+ * **One buffer, so callers must be done before gathering again.** The scans in
+ * `look` run strictly one after another today. Nesting one inside another would
+ * corrupt the outer loop's view of the world without any error being raised.
+ */
+function gather(cx: number, reach: number): number {
+  found.length = 0
+  const span = reach + SIGHT_PAD_LEFT + SIGHT_PAD_RIGHT
+
+  /**
+   * A window wider than the world sees everything, and asking for it as two
+   * ranges would double-count the overlap. A starving migrator on four times
+   * its normal sight is the realistic way to get here.
+   */
+  if (span >= WORLD_W) {
+    for (let i = 0; i < byX.length; i++) found.push(byX[i])
+    return found.length
+  }
+
+  const lo = wrapX(cx - reach - SIGHT_PAD_LEFT)
+  const hi = wrapX(cx + reach + SIGHT_PAD_RIGHT)
+
+  if (lo <= hi) {
+    for (let i = lowerBound(byX, lo); i < byX.length && byX[i].x <= hi; i++) found.push(byX[i])
+  } else {
+    // Straddling the seam: [lo, WORLD_W) then [0, hi]. Disjoint because the
+    // whole-world case above has already been dealt with.
+    for (let i = lowerBound(byX, lo); i < byX.length; i++) found.push(byX[i])
+    for (let i = 0; i < byX.length && byX[i].x <= hi; i++) found.push(byX[i])
+  }
+  return found.length
 }
 
 export function tickCreatures(
@@ -433,7 +489,11 @@ export function tickCreatures(
     if (hdt.homeDriftTimer <= 0) {
       const wellFed = Math.max(0, 0.5 - c.hunger)  // 0 when hungry, up to 0.5 when stuffed
       const pull = wellFed * 0.3                    // at most 15% shift per 30s tick
-      c.homeX += (c.x - c.homeX) * pull
+      // Drift toward where it has actually been living, the short way round — an
+      // animal that crossed the seam has not moved six hundred tiles from home,
+      // and a plain subtraction here would haul its territory back across the
+      // entire world one 15% step at a time.
+      c.homeX = wrapX(c.homeX + deltaX(c.homeX, c.x) * pull)
       c.homeY += (c.y - c.homeY) * pull
       hdt.homeDriftTimer = 30
     }
@@ -561,6 +621,23 @@ export function tickCreatures(
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
+    } else if (!hasFooting(w, c, body)) {
+      /**
+       * A plant whose ground went away falls to the next one down.
+       *
+       * Rooting is permanent — `settleOnGround` places a seedling on fertile
+       * ground and nothing ever looks at that ground again — but the ground
+       * itself is not: lava drains, ash and sand settle, ice melts, acid eats
+       * through. On the volcanic theme a fifth of the flora ended up hanging in
+       * mid-air within the first minute, which reads as green pixels stuck to
+       * the sky. Everything else in the world falls when it has nothing under
+       * it, so a stranded plant falls too — through `integrate`, which is the
+       * one piece of code that knows how to land a body on a tile. `steer` is
+       * still skipped, and a rooted creature has no `vx`, so this is a straight
+       * drop rather than the plant learning to walk.
+       */
+      c.vy = Math.max(0, c.vy)
+      integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
     }
 
     // --- fatigue --------------------------------------------------------
@@ -603,7 +680,7 @@ export function tickCreatures(
         nest = {
           id: w.nextNestId++,
           creatureId: c.id,
-          x: Math.round(c.homeX),
+          x: wrapCol(Math.round(c.homeX)),
           y: Math.round(c.homeY),
           progress: 0,
           decaySeconds: NEST_DECAY_SECONDS,
@@ -613,7 +690,7 @@ export function tickCreatures(
       // Advance build progress; a completed nest stays at 1.
       if (nest.progress < 1) nest.progress = Math.min(1, nest.progress + dt / NEST_BUILD_TIME)
       // Track the creature's current home (it drifts slightly over time).
-      nest.x = Math.round(c.homeX)
+      nest.x = wrapCol(Math.round(c.homeX))
       nest.y = Math.round(c.homeY)
       // Refresh decay: the owner is here, so the burrow doesn't collapse.
       nest.decaySeconds = NEST_DECAY_SECONDS
@@ -671,7 +748,7 @@ export function tickCreatures(
             const obp = w.blueprints[other.blueprintId]
             if (!obp || obp.move.kind !== 'root') continue
             const { w: ow, h: oh } = artSize(obp)
-            const dx = cx - (other.x + ow / 2)
+            const dx = deltaX(other.x + ow / 2, cx)
             const dy = cy - (other.y + oh / 2)
             if (dx * dx + dy * dy < 9) { // within ~3 tiles
               c.carryingSeed = other.blueprintId
@@ -711,7 +788,13 @@ export function tickCreatures(
       if (!wantsMate || mate) {
         // Born between the two of them, which is the whole point of having made
         // them walk to each other.
-        const ox = mate ? (c.x + mate.x) / 2 : c.x
+        //
+        // Half the *wrapped* gap, not half the sum. A pair that met across the
+        // seam — one at 5, one at 670 — averages to 337, which is the far side
+        // of the world from either parent: the child would be born alone in the
+        // middle of nowhere, and `reproduce` would spend all twelve of its
+        // attempts failing to find ground there.
+        const ox = mate ? wrapX(c.x + deltaX(c.x, mate.x) / 2) : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
         if (bp.egglayer && !isPlant) {
           // Egg-layer: drop an egg with inherited traits rather than spawning live.
@@ -779,7 +862,7 @@ export function tickCreatures(
               let crowdCount = 0
               for (const other of w.creatures) {
                 if (other === c || other.blueprintId !== bp.id) continue
-                const cdx = other.x - c.x
+                const cdx = deltaX(c.x, other.x)
                 const cdy = other.y - c.y
                 if (cdx * cdx + cdy * cdy < crowdRadius * crowdRadius) crowdCount++
               }
@@ -1019,7 +1102,7 @@ function look(
     for (const car of w.carcasses) {
       const carBp = w.blueprints[car.blueprintId]
       if (!carBp || !canEat(bp, carBp)) continue
-      const dx = car.x - cx
+      const dx = deltaX(cx, car.x)
       const dy = car.y - cy
       // Gap between creature sprite edge and the carcass point.
       const gapX = Math.max(0, Math.abs(dx) - bw / 2)
@@ -1048,7 +1131,7 @@ function look(
       if (egg.hatchIn <= 0) continue // already eaten or hatched
       const eggBp = w.blueprints[egg.blueprintId]
       if (!eggBp || !canEat(bp, eggBp)) continue
-      const dx = egg.x - cx
+      const dx = deltaX(cx, egg.x)
       const dy = egg.y - cy
       const gapX = Math.max(0, Math.abs(dx) - bw / 2)
       const gapY = Math.max(0, Math.abs(dy) - bh / 2)
@@ -1071,16 +1154,18 @@ function look(
   // *food* reach, which is the larger of the two whenever the creature is hungry
   // enough for it to matter — so a fed animal pays exactly what it always did.
   const reach = Math.max(sight, foodSight) + bw / 2
-  const last = cx + reach + SIGHT_PAD_RIGHT
-  for (let i = lowerBound(byX, cx - reach - SIGHT_PAD_LEFT); i < byX.length; i++) {
-    const other = byX[i]
-    if (other.x > last) break
+  const nearby = gather(cx, reach)
+  for (let i = 0; i < nearby; i++) {
+    const other = found[i]
     if (other.id === c.id || dead.has(other.id)) continue
     const obp = w.blueprints[other.blueprintId]
     if (!obp) continue
 
     const { w: ow, h: oh } = artSize(obp)
-    const dx = other.x + ow / 2 - cx
+    // The short way round, so a creature by the seam hunts across it rather than
+    // reading its neighbour as six hundred tiles away and ignoring it. The sign
+    // is also the direction `preyDir` sets off in below.
+    const dx = deltaX(cx, other.x + ow / 2)
     const dy = other.y + oh / 2 - cy
 
     /**
@@ -1236,7 +1321,7 @@ function look(
     let nearestScent: Scent | null = null
     for (const s of w.scents) {
       if (s.blueprintId !== c.blueprintId) continue
-      const sdx = s.x - midX
+      const sdx = deltaX(midX, s.x)
       const sdy = s.y - midY
       const d2 = sdx * sdx + sdy * sdy
       if (d2 < nearestD2 && d2 < scentReach2) {
@@ -1249,7 +1334,7 @@ function look(
       // commitment. Cooperation scales the strength — a barely-cooperative
       // creature barely follows, a highly cooperative one follows reliably.
       const weight = cooperationVal * 0.3
-      c.drift = nearestScent.x > midX ? weight : -weight
+      c.drift = deltaX(midX, nearestScent.x) > 0 ? weight : -weight
       ;(c as { followingScent?: boolean }).followingScent = true
     }
   }
@@ -1286,16 +1371,15 @@ function look(
   // Disease spread: an infected creature spreads to non-plant neighbours within 4 tiles.
   if (c.sick > 0 && bp.move.kind !== 'root') {
     const spreadReach = 4
-    const last2 = cx + spreadReach + bw / 2 + SIGHT_PAD_RIGHT
-    for (let i = lowerBound(byX, cx - spreadReach - SIGHT_PAD_LEFT); i < byX.length; i++) {
-      const other = byX[i]
-      if (other.x > last2) break
+    const sickNearby = gather(cx, spreadReach + bw / 2)
+    for (let i = 0; i < sickNearby; i++) {
+      const other = found[i]
       if (other.id === c.id || dead.has(other.id)) continue
       if ((other as { sick?: number }).sick) continue // already sick
       const obp = w.blueprints[other.blueprintId]
       if (!obp || obp.move.kind === 'root') continue
       const { w: ow, h: oh } = artSize(obp)
-      const gdx = Math.max(0, Math.abs(other.x + ow / 2 - cx) - (bw + ow) / 2)
+      const gdx = Math.max(0, Math.abs(deltaX(cx, other.x + ow / 2)) - (bw + ow) / 2)
       const gdy = Math.max(0, Math.abs(other.y + oh / 2 - (c.y + bh / 2)) - (bh + oh) / 2)
       if (gdx * gdx + gdy * gdy > spreadReach * spreadReach) continue
       const otherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
@@ -1313,15 +1397,14 @@ function look(
   // disease — enough to slow them, not kill them outright).
   if (bp.move.kind !== 'root') {
     const sporeReach = 3
-    const sporeLast = cx + sporeReach + SIGHT_PAD_RIGHT
-    for (let si = lowerBound(byX, cx - sporeReach - SIGHT_PAD_LEFT); si < byX.length; si++) {
-      const plant = byX[si]
-      if (plant.x > sporeLast) break
+    const sporeNearby = gather(cx, sporeReach)
+    for (let si = 0; si < sporeNearby; si++) {
+      const plant = found[si]
       if (plant.blueprintId !== 'sporecap') continue
       const pbp = w.blueprints[plant.blueprintId]
       if (!pbp || pbp.move.kind !== 'root') continue
       const { w: pw, h: ph } = artSize(pbp)
-      const gdx = Math.max(0, Math.abs(plant.x + pw / 2 - cx) - (bw + pw) / 2)
+      const gdx = Math.max(0, Math.abs(deltaX(cx, plant.x + pw / 2)) - (bw + pw) / 2)
       const gdy = Math.max(0, Math.abs(plant.y + ph / 2 - (c.y + bh / 2)) - (bh + ph) / 2)
       if (gdx * gdx + gdy * gdy > sporeReach * sporeReach) continue
       if (rng() < TUNING.diseaseSpreadChance * 0.2) {
@@ -1340,11 +1423,10 @@ function look(
   const packCooperation = (c.traits as { cooperation?: number }).cooperation ?? 0.3
   if (prey !== null && packCooperation >= 0.2) {
     const packReach = sight + bw / 2
-    const packLast = cx + packReach + SIGHT_PAD_RIGHT
+    const packNearby = gather(cx, packReach)
     let packCount = 0
-    for (let pi = lowerBound(byX, cx - packReach - SIGHT_PAD_LEFT); pi < byX.length; pi++) {
-      const pk = byX[pi]
-      if (pk.x > packLast) break
+    for (let pi = 0; pi < packNearby; pi++) {
+      const pk = found[pi]
       if (pk.id === c.id) continue
       if (pk.blueprintId !== c.blueprintId) continue
       const pkCoop = (pk.traits as { cooperation?: number }).cooperation ?? 0.3
@@ -1439,7 +1521,9 @@ function clearRun(
   toY: number
 ): boolean {
   const needsWater = bp.move.kind === 'swim' || !!bp.habitat.needs?.includes('water')
-  const dx = toX - fromX
+  // The run is sampled along the shorter way round; the tile reads below wrap on
+  // their own, so a line that leaves the right edge carries on from the left.
+  const dx = deltaX(fromX, toX)
   const dy = toY - fromY
   const steps = Math.min(24, Math.max(2, Math.ceil(Math.hypot(dx, dy) / 2)))
   for (let i = 1; i < steps; i++) {
@@ -1466,7 +1550,9 @@ function devour(
   if (victimBp.move.kind !== 'root') {
     w.carcasses.push({
       id: w.nextCarcassId++,
-      x: victim.x + vw / 2,
+      // Wrapped, like every stored x — half a sprite past the last column is
+      // column zero, not column 673, and `deltaX` is entitled to assume it.
+      x: wrapX(victim.x + vw / 2),
       y: victim.y + vh / 2,
       decaySeconds: 15,
       blueprintId: victim.blueprintId,
@@ -1549,7 +1635,7 @@ function auraBoost(
     const hbp = w.blueprints[helper.blueprintId]
     if (!hbp) continue
     const { w: hw, h: hh } = artSize(hbp)
-    const dx = helper.x + hw / 2 - cx
+    const dx = deltaX(cx, helper.x + hw / 2)
     const dy = helper.y + hh / 2 - cy
     if (dx * dx + dy * dy > aura.radius * aura.radius) continue
     // Best helper wins rather than stacking — twenty bees in one flowerbed
@@ -1749,7 +1835,10 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   if (target) {
     const tbp = w.blueprints[target.blueprintId]
     const size = tbp ? artSize(tbp) : { w: 1, h: 1 }
-    const dx = target.x + size.w / 2 - cx
+    // Chase (or flee) by the shorter route. This is the line that makes a hunter
+    // step across the seam after its prey instead of turning round and running
+    // the long way to the same place.
+    const dx = deltaX(cx, target.x + size.w / 2)
     const dy = target.y + size.h / 2 - cy
     const len = Math.hypot(dx, dy) || 1
     const sign = c.mood === 'flee' ? -1 : 1
@@ -1796,8 +1885,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // has exhausted its local food must be free to range until it finds more.
     // Roam multiplies the leash so wide-ranging creatures drift further.
     if ((c.traits.territorial ?? 0.5) > 0.2 && c.hunger <= 0.6 &&
-        Math.abs(c.homeX - c.x) > 15 * (c.traits.roam ?? 1)) {
-      c.drift = c.homeX > c.x ? 1 : -1
+        distX(c.homeX, c.x) > 15 * (c.traits.roam ?? 1)) {
+      // Head home the short way. Straight comparison would send an animal that
+      // wandered a few tiles past the seam marching away from a home it is
+      // standing almost on top of.
+      c.drift = deltaX(c.x, c.homeX) > 0 ? 1 : -1
     }
     // Migration: when hunger has gone unmet for long enough, steer toward
     // plant-richer terrain instead of wandering or returning home.
@@ -1813,8 +1905,12 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       for (let dy = -20; dy <= 20; dy += 10) {
         const sy = Math.max(0, Math.min(WORLD_H - 1, baseY + dy))
         for (let dx = 12; dx <= 160; dx += 12) {
-          const lMat = tileAt(w, Math.max(0, baseX - dx), sy)
-          const rMat = tileAt(w, Math.min(WORLD_W - 1, baseX + dx), sy)
+          // No clamping any more: the scan runs off either side and comes back
+          // in on the other. Clamping used to pile every sample past the edge
+          // onto the same column, so an animal near the end of the world scored
+          // one tile fourteen times and migrated on the strength of it.
+          const lMat = tileAt(w, baseX - dx, sy)
+          const rMat = tileAt(w, baseX + dx, sy)
           if (lMat === grassIdx || lMat === mossIdx) leftScore++
           if (rMat === grassIdx || rMat === mossIdx) rightScore++
         }
@@ -2001,6 +2097,26 @@ function touchesSurface(w: WorldState, c: Creature, body: BodyBox): boolean {
 // Physics
 // ---------------------------------------------------------------------------
 
+/**
+ * Is there anything solid directly under this body?
+ *
+ * The row below a box at `y` with height `h` is `floor(y + h - 0.001) + 1` —
+ * the same arithmetic `settleOnGround` owns and for the same reason: the naive
+ * `floor(y + h)` asks about a row the box is already standing in, which
+ * collision has just proven empty, so it always answers "no ground" and every
+ * plant in the world would think it was falling.
+ */
+function hasFooting(w: WorldState, c: Creature, body: BodyBox): boolean {
+  const y = Math.floor(c.y + body.dy + body.h - 0.001) + 1
+  if (y >= WORLD_H) return true
+  const x0 = Math.floor(c.x + body.dx)
+  const x1 = Math.floor(c.x + body.dx + body.w - 0.001)
+  for (let x = x0; x <= x1; x++) {
+    if (solidAt(w, x, y)) return true
+  }
+  return false
+}
+
 function integrate(
   w: WorldState,
   c: Creature,
@@ -2109,8 +2225,17 @@ function integrate(
   // Ground friction, so walkers don't skate.
   if (c.grounded && kind === 'walk') c.vx *= Math.pow(0.02, dt)
 
-  // Belt and braces: never let anything escape the box.
-  c.x = Math.max(0, Math.min(WORLD_W - bw, c.x))
+  /**
+   * Round the cylinder, and never out of the top or the bottom.
+   *
+   * This is the line that makes the world loop. Everything above it works in
+   * unwrapped coordinates — a creature stepping off the right edge is briefly at
+   * x = 672.4, and the collision resolution just above needs it to stay that way
+   * so its push-out arithmetic lands on the tile it actually hit. Normalising
+   * once, here, at the end, is what keeps the invariant in `domain/wrap.ts` true
+   * without any of the movement code having to think about the seam.
+   */
+  c.x = wrapX(c.x)
   c.y = Math.max(0, Math.min(WORLD_H - bh, c.y))
 }
 
@@ -2161,7 +2286,7 @@ function reproduce(
     const y = isPlant
       ? oy + signY * (yMin + rng() * (ySpread - yMin))
       : oy + (rng() * 2 - 1) * ySpread
-    const cx = Math.max(0, Math.min(WORLD_W - bw, x))
+    const cx = wrapX(x)
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
 
     if (boxHitsSolid(w, cx + body.dx, cy + body.dy, body.w, body.h)) continue
@@ -2210,7 +2335,7 @@ function kill(
   if (bp.move.kind !== 'root') {
     w.carcasses.push({
       id: w.nextCarcassId++,
-      x: c.x + bw / 2,
+      x: wrapX(c.x + bw / 2),
       y: c.y + bh / 2,
       decaySeconds: 15,
       blueprintId: c.blueprintId,
@@ -2221,7 +2346,7 @@ function kill(
   if (c.name !== null) {
     w.tombstones.push({
       id: w.nextTombstoneId++,
-      x: c.x + bw / 2,
+      x: wrapX(c.x + bw / 2),
       y: c.y + bh / 2,
       name: c.name,
       blueprintId: c.blueprintId,
@@ -2231,11 +2356,62 @@ function kill(
       children: c.children,
     })
   }
-  emitParticles(w, c.x + bw / 2, c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)
+  emitParticles(w, wrapX(c.x + bw / 2), c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)
   if (bp.death.becomes) {
-    setTile(w, Math.floor(c.x + bw / 2), Math.floor(c.y + bh / 2), MATERIAL_INDEX[bp.death.becomes])
+    dropRemains(w, c.x + bw / 2, c.y + bh / 2, MATERIAL_INDEX[bp.death.becomes])
   }
   events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children, creatureName: c.name ?? null })
+}
+
+/**
+ * How far the remains of a creature look for ground to land on, in tiles.
+ *
+ * Generous enough to cover a fall from the top of a hill or the bottom of a
+ * pond, short enough that something that dies high in open sky leaves nothing
+ * behind rather than dropping a rock onto a world it was never standing over.
+ */
+const REMAINS_DROP = 24
+
+/**
+ * Put the tile a creature leaves behind on the ground under where it died.
+ *
+ * This used to write the material straight into the tile under the creature's
+ * *centre*, which is half a body height above its feet — so a Grumblestone that
+ * died standing on flat soil left a stone block hanging three tiles up, and a
+ * Rustbot left steel at head height. Stone, crystal, metal, obsidian and bone
+ * are all static solids: nothing in the tile sim ever makes them fall, so each
+ * one stayed there forever, and creatures collide with tiles, so a long-running
+ * world slowly filled up with invisible-looking walls at exactly walking
+ * height. Ten minutes of the volcanic theme grew 27 of them.
+ *
+ * Dropping to the first ground beneath instead is what the effect was always
+ * meant to look like — the lavafish leaves obsidian *on the floor* — and it
+ * keeps the flavour intact rather than deleting it. A creature that dies inside
+ * terrain still replaces what it was buried in; one that dies over open air too
+ * far from any floor leaves no trace at all.
+ */
+function dropRemains(w: WorldState, x: number, y: number, mat: number): void {
+  const tx = Math.floor(x)
+  const ty = Math.floor(y)
+  if (!inBounds(tx, ty)) return
+
+  // Died inside the ground — the remains take the place of what buried it.
+  if (solidAt(w, tx, ty)) {
+    setTile(w, tx, ty, mat)
+    return
+  }
+
+  for (let d = 1; d <= REMAINS_DROP; d++) {
+    const below = ty + d
+    // Fell past the bottom of the world: it comes to rest on the last row.
+    if (below >= WORLD_H) {
+      setTile(w, tx, WORLD_H - 1, mat)
+      return
+    }
+    if (!solidAt(w, tx, below)) continue
+    setTile(w, tx, below - 1, mat)
+    return
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -2271,9 +2447,11 @@ function tickParticles(w: WorldState, dt: number, gravityScale: number): void {
     p.life -= dt
     if (p.life <= 0) continue
     p.vy += TUNING.gravity * 0.35 * gravityScale * dt
-    p.x += p.vx * dt
+    p.x = wrapX(p.x + p.vx * dt)
     p.y += p.vy * dt
-    if (p.x < 0 || p.y < 0 || p.x >= WORLD_W || p.y >= WORLD_H) continue
+    // Only the ceiling and the floor can swallow a particle now — sideways it
+    // just keeps going and comes back round.
+    if (p.y < 0 || p.y >= WORLD_H) continue
     if (solidAt(w, Math.floor(p.x), Math.floor(p.y))) {
       p.vx *= 0.4
       p.vy = -p.vy * 0.2

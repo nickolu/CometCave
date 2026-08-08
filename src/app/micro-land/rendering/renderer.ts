@@ -14,9 +14,17 @@
  * The world is wider than the screen, so there is a camera, and it only ever
  * sits on whole tiles: a camera at x = 12.4 would resample every tile in the
  * world onto a half-pixel and undo the one thing this renderer exists to
- * protect. Every per-frame pass below — tiles, light, shadow, sprites — is
- * clipped to the visible column range, which is what keeps a world three times
- * the size costing about what one screen used to.
+ * protect.
+ *
+ * The world also *wraps*, which is what most of the awkwardness below is about.
+ * The camera can sit on the seam, so the visible range is not always one
+ * contiguous run of columns; sprites can hang over the seam, so they are drawn
+ * twice, once at each end. The passes whose cost is per visible pixel — the tile
+ * bake, the shadow bake, every sprite — are still clipped to what you can see,
+ * which is what keeps a world three times the size costing about what one screen
+ * used to. The passes that are cheap enough not to matter (the sky fill, the
+ * light field) simply cover the whole world, because a wrapped window would have
+ * cost more in bookkeeping than it ever saved in arithmetic.
  *
  * Zoom moves the size of a tile, never the size of the backbuffer: the world is
  * always composed at one pixel per tile and the zoom lives entirely in the final
@@ -31,12 +39,21 @@ import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { WorldState } from '@/app/micro-land/domain/types'
+import { deltaX, overlapsView, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 import { useMicroLand } from '@/app/micro-land/store'
 
 import { getSprites } from './sprite-cache'
 
 /** Light is computed on a coarse grid and blurred — no need for per-pixel. */
 const LIGHT_SCALE = 4
+/**
+ * Spare backbuffer width, so a view straddling the seam is still one blit.
+ *
+ * A whole world, because that is the widest the view can ever be — fully zoomed
+ * out it shows every column, and the camera is free to sit anywhere.
+ */
+const OVERHANG = WORLD_W
+
 const LW = Math.ceil(WORLD_W / LIGHT_SCALE)
 const LH = Math.ceil(WORLD_H / LIGHT_SCALE)
 
@@ -51,17 +68,6 @@ const SKY_FALLOFF = 16
  * while paused, where panning would otherwise re-bake on every single frame.
  */
 const TILE_MARGIN = 32
-
-/**
- * Light bleeds sideways through the blur, so it's gathered a little wider.
- *
- * Has to cover more than the blur reaches. Each of the three passes pulls in one
- * coarse cell from outside the gathered range — which is stale, because nothing
- * out there was computed — so the outermost three cells of the margin are wrong
- * by the end. At 4 tiles per cell this leaves three clean cells of slack beyond
- * that before the visible edge starts.
- */
-const LIGHT_MARGIN = 24
 
 /** The minimap is a whole-world thumbnail at this many tiles per pixel. */
 const MAP_SCALE = 4
@@ -175,14 +181,33 @@ export class Renderer {
   /** How many world rows the display is tall at the current scale. */
   private viewRows = WORLD_H
 
+  /** Visible span for this frame, in world columns. Read by `onScreen`. */
+  private spanLeft = 0
+  private spanWide = VIEW_W
+  /**
+   * Which copy of the world is being drawn right now: 0 for the world itself,
+   * `-WORLD_W` for the pass that catches things hanging over the seam.
+   */
+  private drawOffset = 0
+
   constructor(display: HTMLCanvasElement) {
     this.display = display
     const ctx = display.getContext('2d')
     if (!ctx) throw new Error('micro-land: 2d canvas context unavailable')
     this.ctx = ctx
 
+    /**
+     * One world wide plus a whole view of overhang.
+     *
+     * The view can now straddle column zero, and a blit of a range that runs off
+     * the end of the backbuffer would come back with the right-hand two thirds
+     * of the screen blank. Rather than splitting every frame into two blits and
+     * two of everything else, the head of the world is copied into the overhang
+     * once per frame (see the end of `render`) and the blit stays a single
+     * contiguous read, exactly as it always was.
+     */
     this.world = document.createElement('canvas')
-    this.world.width = WORLD_W
+    this.world.width = WORLD_W + OVERHANG
     this.world.height = WORLD_H
     this.wctx = this.world.getContext('2d')!
 
@@ -385,10 +410,21 @@ export class Renderer {
    * the edge of the view and leaving you looking at nothing.
    */
   keepInView(worldX: number, margin: number, maxTiles: number): void {
-    const left = this.camX + margin
-    const right = this.camX + this.viewTiles - margin
-    if (worldX < left) this.panBy(Math.max(-maxTiles, worldX - left))
-    else if (worldX > right) this.panBy(Math.min(maxTiles, worldX - right))
+    /**
+     * How far the point is from the left of the view, signed, the short way.
+     *
+     * This is the only change the seam forces here, and it is exactly the
+     * substitution of `deltaX` for a subtraction: `worldX - camX` stopped being
+     * a distance the moment the world wrapped. A creature at column 3 followed
+     * by a camera at column 660 reads as 657 tiles to the *left* under plain
+     * arithmetic, and the camera would set off across the entire world after
+     * something sitting a few tiles off the right of the screen.
+     */
+    const off = deltaX(this.camX, worldX)
+    const left = margin
+    const right = this.viewTiles - margin
+    if (off < left) this.panBy(Math.max(-maxTiles, off - left))
+    else if (off > right) this.panBy(Math.min(maxTiles, off - right))
   }
 
   /** The same, up and down. A no-op while the world still fits vertically. */
@@ -401,10 +437,14 @@ export class Renderer {
   }
 
   private clampCam(): void {
-    // `max(0, …)` on the limit as well as the value: pulled out far enough that
-    // the world is letterboxed, `WORLD_W - viewTiles` is negative and the naive
-    // clamp would pin the camera to a negative column.
-    this.camX = clamp(this.camX, 0, Math.max(0, WORLD_W - this.viewTiles))
+    /**
+     * Sideways the camera no longer has ends to be stopped at — it wraps, so
+     * panning right forever is a thing you can now do. Vertically nothing has
+     * changed: `max(0, …)` on the limit as well as the value, because pulled out
+     * far enough that the world is letterboxed `WORLD_H - viewRows` is negative
+     * and the naive clamp would pin the camera to a negative row.
+     */
+    this.camX = wrapX(this.camX)
     this.camY = clamp(this.camY, 0, Math.max(0, WORLD_H - this.viewRows))
   }
 
@@ -424,7 +464,40 @@ export class Renderer {
 
   /** Whole-tile left edge. Everything drawn this frame is measured from here. */
   private viewLeft(): number {
-    return Math.floor(this.camX)
+    return wrapCol(Math.floor(this.camX))
+  }
+
+  /**
+   * Does an object occupying world columns `[x, x + width)` need drawing?
+   *
+   * Two questions in one, because the seam makes them inseparable. The first is
+   * ordinary culling: most of the population is off screen in a world this wide,
+   * and skipping it is what ties the draw cost to what you can see. The second
+   * is which *copy* of the object is being asked about — anything overlapping
+   * column zero exists at two places on the backbuffer at once, and is drawn
+   * once at each, so a creature standing on the seam appears as one animal
+   * rather than as two halves with a gap between them.
+   *
+   * The second pass has nothing to do for an object that fits inside the world,
+   * which is nearly all of them, so it costs a comparison and a `continue`.
+   */
+  private onScreen(x: number, width: number): boolean {
+    if (this.drawOffset !== 0 && x + width <= WORLD_W) return false
+    return overlapsView(x, width, this.spanLeft, this.spanWide)
+  }
+
+  /**
+   * How far into the view a world column falls, in tiles.
+   *
+   * For the two label passes, which draw straight onto the display rather than
+   * into the world backbuffer and so convert world coordinates to screen pixels
+   * themselves. `x - camX` stopped being that number the moment the view could
+   * straddle the seam: a label on a creature at column 3, seen from a camera at
+   * column 660, belongs 15 tiles into the view and not 657 tiles to the left of
+   * it.
+   */
+  private intoView(x: number): number {
+    return wrapX(x - this.spanLeft)
   }
 
   /** Whole-tile top edge. Same reason as `viewLeft`. */
@@ -439,7 +512,11 @@ export class Renderer {
     const px = (clientX - rect.left) * dpr
     const py = (clientY - rect.top) * dpr
     return {
-      x: this.viewLeft() + (px - this.offsetX) / this.scale,
+      // Wrapped, because the view can run off the end of the world: a tap on
+      // the right of a screen straddling the seam is a tap on column 3, and
+      // every caller — painting, placing, picking a creature up — compares this
+      // against wrapped world coordinates.
+      x: wrapX(this.viewLeft() + (px - this.offsetX) / this.scale),
       y: this.viewTop() + (py - this.offsetY) / this.scale,
     }
   }
@@ -477,7 +554,9 @@ export class Renderer {
     heatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
-    const vw = Math.min(WORLD_W - vx, Math.ceil(this.viewTiles))
+    const vw = Math.ceil(this.viewTiles)
+    this.spanLeft = vx
+    this.spanWide = vw
 
     this.ensureTiles(w, vx, vw)
     this.buildLight(w, theme, vx, vw)
@@ -485,29 +564,63 @@ export class Renderer {
     const wctx = this.wctx
     wctx.imageSmoothingEnabled = false
 
-    // Sky behind everything (air tiles are transparent in the tile layer).
+    /**
+     * The full-width layers are drawn whole rather than clipped to the view.
+     *
+     * Clipping them used to be the optimisation; with a view that can straddle
+     * the seam it would have to become two of everything, and the saving was
+     * never real — these are four rectangle operations over 88k pixels, which is
+     * nothing next to the per-sprite work below. Drawing the world once and
+     * letting the blit choose the window is both simpler and honest about where
+     * the frame budget actually goes.
+     */
     const sky = wctx.createLinearGradient(0, 0, 0, WORLD_H)
     sky.addColorStop(0, theme.sky[0])
     sky.addColorStop(1, theme.sky[1])
     wctx.fillStyle = sky
-    wctx.fillRect(vx, 0, vw, WORLD_H)
+    wctx.fillRect(0, 0, WORLD_W, WORLD_H)
 
-    wctx.drawImage(this.tileCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
+    wctx.drawImage(this.tileCanvas, 0, 0, WORLD_W, WORLD_H, 0, 0, WORLD_W, WORLD_H)
 
-    this.drawCarcasses(w, vx, vw)
-    this.drawNests(w, vx, vw)
-    this.drawTombstones(w, vx, vw)
-    if (heatmap) this.drawHeatmap(heatmap, vx, vw)
-    this.drawEggs(w, vx, vw)
-    this.drawCreatures(w, vx, vw)
-    this.drawStatusDots(w, vx, vw)
-    this.drawPollinatorAuras(w, vx, vw)
-    this.drawParticles(w, vx, vw)
-    wctx.drawImage(this.shadowCanvas, vx, 0, vw, WORLD_H, vx, 0, vw, WORLD_H)
+    /**
+     * Everything with a position is drawn twice: once as itself, once shifted a
+     * world to the left so that whatever hangs over the right-hand edge lands in
+     * column zero where it belongs. `onScreen` rejects the second copy for
+     * anything that does not reach the seam, which is nearly everything, so the
+     * extra pass costs one comparison per object and no drawing at all.
+     */
+    for (const offset of [0, -WORLD_W]) {
+      this.drawOffset = offset
+      wctx.save()
+      wctx.translate(offset, 0)
+
+      this.drawCarcasses(w)
+      this.drawNests(w)
+      this.drawTombstones(w)
+      if (heatmap) this.drawHeatmap(heatmap, vx, vw)
+      this.drawEggs(w)
+      this.drawCreatures(w)
+      this.drawStatusDots(w)
+      this.drawPollinatorAuras(w)
+      this.drawParticles(w)
+
+      wctx.restore()
+    }
+    this.drawOffset = 0
+
+    wctx.drawImage(this.shadowCanvas, 0, 0, WORLD_W, WORLD_H, 0, 0, WORLD_W, WORLD_H)
     // Both drawn after the shadow so they stay legible in a dark cave. The halo
     // goes first so the selection brackets sit on top when you inspect an elder.
-    if (elderId !== null) this.drawElder(w, elderId)
-    if (highlightId !== null) this.drawHighlight(w, highlightId)
+    // Each draws its own wrapped copy for the same reason as the block above.
+    for (const offset of [0, -WORLD_W]) {
+      this.drawOffset = offset
+      wctx.save()
+      wctx.translate(offset, 0)
+      if (elderId !== null) this.drawElder(w, elderId)
+      if (highlightId !== null) this.drawHighlight(w, highlightId)
+      wctx.restore()
+    }
+    this.drawOffset = 0
 
     // Day/night cycle: gradually darkens during the night phase.
     if (TUNING.dayLengthSeconds > 0) {
@@ -515,9 +628,26 @@ export class Renderer {
       if (nightFactor > 0.05) {
         wctx.globalAlpha = Math.min(0.5, nightFactor * 0.55)
         wctx.fillStyle = '#000a1f'
-        wctx.fillRect(vx, 0, vw, WORLD_H)
+        wctx.fillRect(0, 0, WORLD_W, WORLD_H)
         wctx.globalAlpha = 1
       }
+    }
+
+    /**
+     * Copy the head of the world into the overhang, so a view that runs off the
+     * end reads real pixels instead of blank canvas. Drawing a canvas onto
+     * itself is defined to behave as though the source were snapshotted first,
+     * so the overlap is not a problem.
+     *
+     * Last, after the shadow and the night wash, or the wrapped edge of the
+     * screen would be lit differently from the rest of it. And only as many
+     * columns as actually hang over — nothing at all in the common case where
+     * the camera is not on the seam, which is most of the time.
+     */
+    const overhang = vx + this.viewTiles - WORLD_W
+    if (overhang > 0) {
+      const cols = Math.min(OVERHANG, Math.ceil(overhang))
+      wctx.drawImage(this.world, 0, 0, cols, WORLD_H, WORLD_W, 0, cols, WORLD_H)
     }
 
     // One scaled blit. Nearest-neighbour keeps the pixels crisp.
@@ -538,14 +668,45 @@ export class Renderer {
     )
 
     this.drawMinimap(w, theme, vx)
-    this.drawNameLabels(w, vx, vw, elderId)
-    this.drawTombstoneLabels(w, vx, vw)
+    this.drawNameLabels(w, elderId)
+    this.drawTombstoneLabels(w)
   }
 
   // -------------------------------------------------------------------------
 
+  /**
+   * The visible columns, as one span or two.
+   *
+   * Two whenever the camera is sitting on the seam: the tail of the world, then
+   * the head of it. Everything that walks the visible range column by column has
+   * to go through here, because a single `for (x = vx; x < vx + vw)` runs off the
+   * end of every row-indexed array in the renderer.
+   */
+  private forEachSpan(vx: number, vw: number, fn: (x0: number, width: number) => void): void {
+    const head = Math.min(vw, WORLD_W - vx)
+    fn(vx, head)
+    if (vw > head) fn(0, vw - head)
+  }
+
   /** Re-bake the tile colours if the view has left the range we baked last. */
   private ensureTiles(w: WorldState, vx: number, vw: number): void {
+    /**
+     * A view straddling the seam wants columns from both ends of the grid, which
+     * one baked range cannot describe. Rather than carry two sets of bookkeeping
+     * for a state that lasts as long as it takes to pan past column zero, bake
+     * the lot — it is 88k tiles, which is what the margin below is already
+     * approximating the cost of, and it makes the covered-check trivially true
+     * until something actually changes.
+     */
+    if (vx + vw > WORLD_W) {
+      if (!this.tilesDirty && this.builtX0 === 0 && this.builtX1 === WORLD_W) return
+      this.buildTiles(w, 0, WORLD_W)
+      this.builtX0 = 0
+      this.builtX1 = WORLD_W
+      this.tilesDirty = false
+      return
+    }
+
     const covered = !this.tilesDirty && vx >= this.builtX0 && vx + vw <= this.builtX1
     if (covered) return
 
@@ -589,21 +750,28 @@ export class Renderer {
     this.tileCtx.putImageData(this.tileImage, 0, 0, x0, 0, x1 - x0, WORLD_H)
   }
 
+  /**
+   * The light field, then the shadow overlay baked from it.
+   *
+   * The field is now computed for the whole world rather than for a window
+   * around the view. On a cylinder the window wraps, and every step of this —
+   * the gather, the three blur passes, the bilinear sample — would have needed
+   * its own two-range version, with the blur additionally having to pull
+   * neighbours across the seam or leave a dark stripe down column zero.
+   * Computing the lot removes all of that: the field is 168×33 cells, which is
+   * about a third of one percent of the pixels the shadow bake below touches.
+   *
+   * The bake itself stays clipped to the visible span, because *that* one is
+   * genuinely expensive — a pixel per visible tile per frame — and it is the
+   * only part of this function that ever showed up in a frame budget.
+   */
   private buildLight(w: WorldState, theme: Theme, vx: number, vw: number): void {
-    // Light spreads sideways as it blurs, so it is gathered a little beyond the
-    // view — otherwise the lava just off screen stops lighting the cave mouth
-    // you can see, and the edge of the screen visibly darkens as you pan.
-    const gx0 = Math.max(0, vx - LIGHT_MARGIN)
-    const gx1 = Math.min(WORLD_W, vx + vw + LIGHT_MARGIN)
-    const lx0 = Math.floor(gx0 / LIGHT_SCALE)
-    const lx1 = Math.min(LW, Math.ceil(gx1 / LIGHT_SCALE))
-
     const light = this.light
-    for (let ly = 0; ly < LH; ly++) light.fill(0, ly * LW + lx0, ly * LW + lx1)
+    light.fill(0)
 
     // --- daylight: how far below the first solid tile is each column? ---
     const tiles = w.tiles
-    for (let x = gx0; x < gx1; x++) {
+    for (let x = 0; x < WORLD_W; x++) {
       let y = 0
       while (y < WORLD_H && MATERIAL_BY_INDEX[tiles[y * WORLD_W + x]].solid === false) {
         y++
@@ -613,7 +781,7 @@ export class Renderer {
 
     for (let ly = 0; ly < LH; ly++) {
       const wy = ly * LIGHT_SCALE + LIGHT_SCALE / 2
-      for (let lx = lx0; lx < lx1; lx++) {
+      for (let lx = 0; lx < LW; lx++) {
         const wx = Math.min(WORLD_W - 1, lx * LIGHT_SCALE + (LIGHT_SCALE >> 1))
         const surface = this.skyDepth[wx]
         const below = wy - surface
@@ -627,7 +795,7 @@ export class Renderer {
     // --- emitters: glowing tiles ---
     // Sampled every other tile; the blur smooths over the gaps.
     for (let y = 0; y < WORLD_H; y += 2) {
-      for (let x = gx0; x < gx1; x += 2) {
+      for (let x = 0; x < WORLD_W; x += 2) {
         const mat = MATERIAL_BY_INDEX[tiles[y * WORLD_W + x]]
         if (mat.glow <= 0) continue
         const li = Math.floor(y / LIGHT_SCALE) * LW + Math.floor(x / LIGHT_SCALE)
@@ -641,69 +809,68 @@ export class Renderer {
       if (!bp || bp.glow <= 0) continue
       const lx = Math.floor(c.x / LIGHT_SCALE)
       const ly = Math.floor(c.y / LIGHT_SCALE)
-      if (lx < lx0 || ly < 0 || lx >= lx1 || ly >= LH) continue
-      const li = ly * LW + lx
+      if (ly < 0 || ly >= LH) continue
+      const li = ly * LW + wrapCol(lx)
       light[li] = Math.min(1.8, light[li] + bp.glow * 1.4)
     }
 
     // --- blur, so light pools instead of forming squares ---
-    for (let pass = 0; pass < 3; pass++) this.blurLight(lx0, lx1)
+    for (let pass = 0; pass < 3; pass++) this.blurLight()
 
     // --- bake into the shadow overlay ---
     const gloom = theme.gloom
     const data = this.shadowImage.data
-    for (let y = 0; y < WORLD_H; y++) {
-      const ly = y / LIGHT_SCALE
-      const row = y * WORLD_W
-      for (let x = vx; x < vx + vw; x++) {
-        const value = this.sampleLight(x / LIGHT_SCALE, ly)
-        const alpha = Math.max(0, Math.min(1, 1 - value)) * gloom
-        const o = (row + x) * 4
-        data[o] = 4
-        data[o + 1] = 3
-        data[o + 2] = 12
-        data[o + 3] = Math.round(alpha * 255)
+    this.forEachSpan(vx, vw, (x0, width) => {
+      for (let y = 0; y < WORLD_H; y++) {
+        const ly = y / LIGHT_SCALE
+        const row = y * WORLD_W
+        for (let x = x0; x < x0 + width; x++) {
+          const value = this.sampleLight(x / LIGHT_SCALE, ly)
+          const alpha = Math.max(0, Math.min(1, 1 - value)) * gloom
+          const o = (row + x) * 4
+          data[o] = 4
+          data[o + 1] = 3
+          data[o + 2] = 12
+          data[o + 3] = Math.round(alpha * 255)
+        }
       }
-    }
-    this.shadowCtx.putImageData(this.shadowImage, 0, 0, vx, 0, vw, WORLD_H)
+      this.shadowCtx.putImageData(this.shadowImage, 0, 0, x0, 0, width, WORLD_H)
+    })
   }
 
-  private blurLight(lx0: number, lx1: number): void {
+  /** One box-blur pass over the whole field, wrapping sideways. */
+  private blurLight(): void {
     const src = this.light
     const dst = this.lightScratch
     for (let y = 0; y < LH; y++) {
-      for (let x = lx0; x < lx1; x++) {
+      for (let x = 0; x < LW; x++) {
         let sum = 0
         let count = 0
         for (let dy = -1; dy <= 1; dy++) {
           const ny = y + dy
           if (ny < 0 || ny >= LH) continue
           for (let dx = -1; dx <= 1; dx++) {
-            const nx = x + dx
-            if (nx < 0 || nx >= LW) continue
-            sum += src[ny * LW + nx]
+            // Wraps, so a torch at column 671 lights the cave at column 0 and
+            // there is no dark seam for the blur to leave behind.
+            sum += src[ny * LW + wrapCol(x + dx)]
             count++
           }
         }
         dst[y * LW + x] = sum / count
       }
     }
-    for (let y = 0; y < LH; y++) {
-      const a = y * LW + lx0
-      const b = y * LW + lx1
-      src.set(dst.subarray(a, b), a)
-    }
+    src.set(dst)
   }
 
-  /** Bilinear sample of the coarse light field. */
+  /** Bilinear sample of the coarse light field. Wraps horizontally. */
   private sampleLight(fx: number, fy: number): number {
     const x0 = Math.floor(fx)
     const y0 = Math.floor(fy)
     const tx = fx - x0
     const ty = fy - y0
-    const cx0 = Math.max(0, Math.min(LW - 1, x0))
+    const cx0 = wrapCol(x0)
     const cy0 = Math.max(0, Math.min(LH - 1, y0))
-    const cx1 = Math.min(LW - 1, cx0 + 1)
+    const cx1 = wrapCol(cx0 + 1)
     const cy1 = Math.min(LH - 1, cy0 + 1)
     const l = this.light
     const a = l[cy0 * LW + cx0]
@@ -716,26 +883,34 @@ export class Renderer {
   }
 
   private drawHeatmap(heatmap: Float32Array, vx: number, vw: number): void {
+    // Only ever drawn on the un-offset pass: it is a full-column wash rather
+    // than a sprite, so it has nothing hanging over the seam to duplicate.
+    if (this.drawOffset !== 0) return
+
     // Find the peak value over visible tiles for normalization.
     let peak = 0
-    for (let x = vx; x < vx + vw; x++) {
-      for (let y = 0; y < WORLD_H; y++) {
-        const v = heatmap[y * WORLD_W + x]
-        if (v > peak) peak = v
+    this.forEachSpan(vx, vw, (x0, width) => {
+      for (let x = x0; x < x0 + width; x++) {
+        for (let y = 0; y < WORLD_H; y++) {
+          const v = heatmap[y * WORLD_W + x]
+          if (v > peak) peak = v
+        }
       }
-    }
+    })
     if (peak < 0.5) return
 
     const ctx = this.wctx
-    for (let x = vx; x < vx + vw; x++) {
-      for (let y = 0; y < WORLD_H; y++) {
-        const v = heatmap[y * WORLD_W + x]
-        if (v < 0.5) continue
-        ctx.globalAlpha = Math.min(0.5, v / peak)
-        ctx.fillStyle = '#ff3200'
-        ctx.fillRect(x, y, 1, 1)
+    this.forEachSpan(vx, vw, (x0, width) => {
+      for (let x = x0; x < x0 + width; x++) {
+        for (let y = 0; y < WORLD_H; y++) {
+          const v = heatmap[y * WORLD_W + x]
+          if (v < 0.5) continue
+          ctx.globalAlpha = Math.min(0.5, v / peak)
+          ctx.fillStyle = '#ff3200'
+          ctx.fillRect(x, y, 1, 1)
+        }
       }
-    }
+    })
     ctx.globalAlpha = 1
   }
 
@@ -745,11 +920,11 @@ export class Renderer {
    * Drawn as a small dark mound with a black entrance hole. Fades in as the
    * nest is built and fades out when it begins to decay.
    */
-  private drawNests(w: WorldState, vx: number, vw: number): void {
+  private drawNests(w: WorldState): void {
     if (!w.nests?.length) return
     const ctx = this.wctx
     for (const nest of w.nests) {
-      if (nest.x + 3 < vx || nest.x - 3 > vx + vw) continue
+      if (!this.onScreen(nest.x - 3, 6)) continue
       const x = Math.round(nest.x)
       const y = Math.round(nest.y)
       // Fade in during construction; fade out when abandoned (last 10 s of decay).
@@ -767,12 +942,12 @@ export class Renderer {
     ctx.globalAlpha = 1
   }
 
-  private drawCarcasses(w: WorldState, vx: number, vw: number): void {
+  private drawCarcasses(w: WorldState): void {
     if (w.carcasses.length === 0) return
     const ctx = this.wctx
     ctx.fillStyle = '#5a2e10'
     for (const car of w.carcasses) {
-      if (car.x + 1 < vx || car.x > vx + vw) continue
+      if (!this.onScreen(car.x - 1, 2)) continue
       // Fade out during the last 3 seconds of decay.
       ctx.globalAlpha = Math.min(1, car.decaySeconds / 3) * 0.8
       ctx.fillRect(car.x - 0.75, car.y - 0.75, 1.5, 1.5)
@@ -784,7 +959,7 @@ export class Renderer {
    * Orbiting pollen motes around creatures with a plant-helping aura.
    * Drawn on the world canvas so they scale with zoom like everything else.
    */
-  private drawPollinatorAuras(w: WorldState, vx: number, vw: number): void {
+  private drawPollinatorAuras(w: WorldState): void {
     const ctx = this.wctx
     for (const c of w.creatures) {
       const bp = w.blueprints[c.blueprintId]
@@ -793,7 +968,7 @@ export class Renderer {
       const rows = bp.art.frames[0]
       const bw = rows[0].length
       const bh = rows.length
-      if (c.x + bw < vx || c.x > vx + vw) continue
+      if (!this.onScreen(c.x, bw)) continue
 
       const cx = c.x + bw / 2
       const cy = c.y + bh / 2
@@ -829,7 +1004,7 @@ export class Renderer {
    * scaled up with everything else. Names are drawn separately on the display
    * canvas so they stay legible at any zoom.
    */
-  private drawTombstones(w: WorldState, vx: number, vw: number): void {
+  private drawTombstones(w: WorldState): void {
     if (!w.tombstones || w.tombstones.length === 0) return
     const ctx = this.wctx
     ctx.fillStyle = '#9a8878'
@@ -838,7 +1013,7 @@ export class Renderer {
     for (const tomb of w.tombstones) {
       const cx = Math.round(tomb.x)
       const cy = Math.round(tomb.y)
-      if (cx + 2 < vx || cx - 2 > vx + vw) continue
+      if (!this.onScreen(cx - 2, 4)) continue
 
       // Headstone shape: 1-wide cap, then 3-wide body rising upward from centre.
       //  .█.   cy-4
@@ -856,7 +1031,7 @@ export class Renderer {
    * Name tags for tombstones, drawn on the display canvas so they stay
    * legible regardless of zoom — same approach as drawNameLabels.
    */
-  private drawTombstoneLabels(w: WorldState, vx: number, vw: number): void {
+  private drawTombstoneLabels(w: WorldState): void {
     if (!w.tombstones || w.tombstones.length === 0) return
 
     const ctx = this.ctx
@@ -870,10 +1045,10 @@ export class Renderer {
     ctx.textBaseline = 'bottom'
 
     for (const tomb of w.tombstones) {
-      if (tomb.x + 2 < vx || tomb.x - 2 > vx + vw) continue
+      if (!this.onScreen(tomb.x - 2, 4)) continue
 
       // Position: above the headstone top (cy-4 in world coords, then convert).
-      const dx = (tomb.x - vx) * scale + offsetX
+      const dx = this.intoView(tomb.x) * scale + offsetX
       const dy = (tomb.y - 5 - viewTop) * scale + offsetY
 
       // Dim shadow + muted warm-gray text (more memorial than the white creature labels).
@@ -887,14 +1062,14 @@ export class Renderer {
     ctx.textBaseline = 'alphabetic'
   }
 
-  private drawEggs(w: WorldState, vx: number, vw: number): void {
+  private drawEggs(w: WorldState): void {
     if (!w.eggs?.length) return
     const ctx = this.wctx
     ctx.strokeStyle = '#f5e642'
     ctx.lineWidth = 1
     for (const egg of w.eggs) {
       if (egg.hatchIn <= 0) continue
-      if (egg.x + 2 < vx || egg.x - 2 > vx + vw) continue
+      if (!this.onScreen(egg.x - 2, 4)) continue
       const rx = 1.5
       const ry = 2
       ctx.beginPath()
@@ -903,7 +1078,7 @@ export class Renderer {
     }
   }
 
-  private drawCreatures(w: WorldState, vx: number, vw: number): void {
+  private drawCreatures(w: WorldState): void {
     const ctx = this.wctx
     const traitKey = useMicroLand.getState().traitOverlay
     const trailsEnabled = useMicroLand.getState().trailsEnabled
@@ -932,7 +1107,7 @@ export class Renderer {
       for (const c of w.creatures) {
         const trail = trailMap.get(c.id)
         if (!trail || trail.length < 2) continue
-        if (c.x + 4 < vx || c.x > vx + vw) continue  // rough cull
+        if (!this.onScreen(c.x, 4)) continue  // rough cull
         const hue = c.traits.hue ?? 0
         ctx.fillStyle = `hsl(${hue}, 55%, 68%)`
         for (const pt of trail) {
@@ -957,7 +1132,7 @@ export class Renderer {
       // Most of the population is off screen in a world this wide. Culling here
       // is what keeps the draw cost tied to what you can see rather than to how
       // many things happen to be alive.
-      if (c.x + sprites.width < vx || c.x > vx + vw) continue
+      if (!this.onScreen(c.x, sprites.width)) continue
       const frameCount = sprites.frames.length
       const frame = frameCount === 1 ? 0 : Math.floor(c.animMs / sprites.frameMs) % frameCount
       const source =
@@ -1023,7 +1198,7 @@ export class Renderer {
    * Multiple effects stack left-to-right. The dots sit above the top edge of
    * the sprite so they never overlap the creature body.
    */
-  private drawStatusDots(w: WorldState, vx: number, vw: number): void {
+  private drawStatusDots(w: WorldState): void {
     const ctx = this.wctx
     const DOT = 3
     const GAP = 1
@@ -1031,7 +1206,7 @@ export class Renderer {
     for (const c of w.creatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
-      if (c.x + 8 < vx || c.x - 8 > vx + vw) continue
+      if (!this.onScreen(c.x - 8, 16)) continue
 
       const dots: string[] = []
       if ((c as { sick?: number }).sick) dots.push('#a855f7')
@@ -1130,10 +1305,10 @@ export class Renderer {
     ctx.globalAlpha = 1
   }
 
-  private drawParticles(w: WorldState, vx: number, vw: number): void {
+  private drawParticles(w: WorldState): void {
     const ctx = this.wctx
     for (const p of w.particles) {
-      if (p.x < vx || p.x > vx + vw) continue
+      if (!this.onScreen(p.x, 1)) continue
       ctx.globalAlpha = Math.max(0, Math.min(1, p.life / p.maxLife))
       ctx.fillStyle = p.color
       ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1)
@@ -1187,20 +1362,38 @@ export class Renderer {
     ctx.drawImage(this.mapCanvas, 0, 0, MW, MH, x, y, width, height)
     ctx.globalAlpha = 1
 
-    // The view, marked. Kept at least a couple of pixels each way so it can't
-    // vanish on a narrow screen — or, zoomed right in, collapse to a line.
-    const vxPx = x + Math.round((vx / WORLD_W) * width)
+    /**
+     * The view, marked — in two pieces when it straddles the seam.
+     *
+     * The minimap has to cut the cylinder somewhere, and it cuts it at column
+     * zero. A camera sitting on that cut is genuinely at both ends of the
+     * thumbnail at once, so it is drawn as a box running off the right edge and
+     * a second one coming back in at the left. One clamped box instead would
+     * either jump the whole width of the map as you panned past the seam or sit
+     * there claiming the camera was somewhere it is not.
+     */
     const vwPx = Math.max(3, Math.round((this.viewTiles / WORLD_W) * width))
     const vyPx = y + Math.round((this.viewTop() / WORLD_H) * height)
     const vhPx = Math.max(3, Math.round((this.viewRows / WORLD_H) * height))
     ctx.strokeStyle = '#5eead4'
     ctx.lineWidth = Math.max(1, Math.round(width / 220))
-    ctx.strokeRect(
-      vxPx + ctx.lineWidth / 2,
-      vyPx + ctx.lineWidth / 2,
-      Math.min(vwPx, width - (vxPx - x)) - ctx.lineWidth,
-      Math.min(vhPx, height - (vyPx - y)) - ctx.lineWidth
-    )
+    const boxH = Math.min(vhPx, height - (vyPx - y)) - ctx.lineWidth
+    const startPx = Math.round((vx / WORLD_W) * width)
+    const headPx = Math.min(vwPx, width - startPx)
+    for (const [offPx, wPx] of headPx < vwPx
+      ? [
+          [startPx, headPx],
+          [0, vwPx - headPx],
+        ]
+      : [[startPx, headPx]]) {
+      if (wPx <= 0) continue
+      ctx.strokeRect(
+        x + offPx + ctx.lineWidth / 2,
+        vyPx + ctx.lineWidth / 2,
+        wPx - ctx.lineWidth,
+        boxH
+      )
+    }
 
     ctx.strokeStyle = 'rgba(94, 234, 212, 0.35)'
     ctx.lineWidth = border
@@ -1215,7 +1408,7 @@ export class Renderer {
    * regardless of zoom. Only named creatures get a tag, which keeps the world
    * uncluttered — a name is notable, not a default label.
    */
-  private drawNameLabels(w: WorldState, vx: number, vw: number, elderId: number | null): void {
+  private drawNameLabels(w: WorldState, elderId: number | null): void {
     const elder = elderId !== null ? w.creatures.find(x => x.id === elderId) ?? null : null
     const namedCreatures = w.creatures.filter(c => c.name !== null)
     const showUnnamed = elder !== null && elder.name === null
@@ -1235,11 +1428,11 @@ export class Renderer {
     for (const c of namedCreatures) {
       const bp = w.blueprints[c.blueprintId]
       if (!bp) continue
-      if (c.x + bp.art.frames[0][0].length < vx || c.x > vx + vw) continue
+      if (!this.onScreen(c.x, bp.art.frames[0][0].length)) continue
 
       const rows = bp.art.frames[0]
       const bw = rows[0].length
-      const dx = (c.x + bw / 2 - vx) * scale + offsetX
+      const dx = this.intoView(c.x + bw / 2) * scale + offsetX
       const dy = (c.y - viewTop) * scale + offsetY - 3
 
       ctx.fillStyle = 'rgba(0,0,0,0.7)'
@@ -1251,9 +1444,9 @@ export class Renderer {
     // Unnamed elder: dim placeholder so the player knows it can be named.
     if (showUnnamed && elder) {
       const bp = w.blueprints[elder.blueprintId]
-      if (bp && !(elder.x + bp.art.frames[0][0].length < vx || elder.x > vx + vw)) {
+      if (bp && this.onScreen(elder.x, bp.art.frames[0][0].length)) {
         const bw = bp.art.frames[0][0].length
-        const dx = (elder.x + bw / 2 - vx) * scale + offsetX
+        const dx = this.intoView(elder.x + bw / 2) * scale + offsetX
         const dy = (elder.y - viewTop) * scale + offsetY - 3
         ctx.fillStyle = 'rgba(255,255,255,0.3)'
         ctx.fillText('unnamed', dx, dy)

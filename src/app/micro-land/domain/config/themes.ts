@@ -7,8 +7,9 @@
  * creatures survive the change.
  */
 import { WIDTH_SCALE, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
-import { type Rng, fbm, makeNoise2D } from '@/app/micro-land/domain/sim/prng'
+import { type Rng, fbm3, makeNoise3D } from '@/app/micro-land/domain/sim/prng'
 import type { MaterialId } from '@/app/micro-land/domain/types'
+import { ringXY, wrapCol } from '@/app/micro-land/domain/wrap'
 
 import { MATERIAL_INDEX } from './materials'
 
@@ -41,26 +42,84 @@ function across(n: number): number {
   return Math.round(n * WIDTH_SCALE)
 }
 
+/**
+ * A surface height that meets itself at the seam.
+ *
+ * Drop-in for `fbm(noise, x * freq, layer, octaves)`. `layer` keeps its old
+ * meaning — a fixed offset picking out one slice of the field, which is how the
+ * themes get several unrelated-looking curves out of a single noise object.
+ */
+function ring1(
+  noise: (x: number, y: number, z: number) => number,
+  x: number,
+  freq: number,
+  layer: number,
+  octaves = 3
+): number {
+  const { u, v } = ringXY(x, freq)
+  return fbm3(noise, u, v, layer, octaves)
+}
+
+/**
+ * A 2-D field — caves, ore, cloud banks — periodic in x and free in y.
+ *
+ * The circle uses up two dimensions, so depth gets the third. That is the whole
+ * reason `makeNoise3D` exists.
+ */
+function ring2(
+  noise: (x: number, y: number, z: number) => number,
+  x: number,
+  freq: number,
+  y: number,
+  yFreq: number,
+  octaves = 3
+): number {
+  const { u, v } = ringXY(x, freq)
+  return fbm3(noise, u, v, y * yFreq, octaves)
+}
+
+/** `ring2` without the octave stack, for the single-sample call sites. */
+function ring2Raw(
+  noise: (x: number, y: number, z: number) => number,
+  x: number,
+  freq: number,
+  y: number,
+  yFreq: number
+): number {
+  const { u, v } = ringXY(x, freq)
+  return noise(u, v, y * yFreq)
+}
+
 function fill(tiles: Uint8Array, id: MaterialId) {
   tiles.fill(M[id])
 }
 
+/**
+ * Write one tile. Columns wrap; rows do not.
+ *
+ * Every scattered feature in every theme goes through here, so wrapping at this
+ * one point is what lets a lava fall, a tree or a geode straddle column zero and
+ * come out whole. Clipping them instead would leave a strip down the seam where
+ * nothing generated — subtler than a cliff, and still a tell.
+ */
 function set(tiles: Uint8Array, x: number, y: number, id: MaterialId) {
-  if (x < 0 || y < 0 || x >= WORLD_W || y >= WORLD_H) return
-  tiles[y * WORLD_W + x] = M[id]
+  if (y < 0 || y >= WORLD_H) return
+  tiles[y * WORLD_W + wrapCol(x)] = M[id]
 }
 
+/** Filled block. `x0 > x1` is not a thing; a rect that runs off the right edge
+ *  simply carries on from the left. */
 function rect(tiles: Uint8Array, x0: number, y0: number, x1: number, y1: number, id: MaterialId) {
   for (let y = Math.max(0, y0); y <= Math.min(WORLD_H - 1, y1); y++) {
-    for (let x = Math.max(0, x0); x <= Math.min(WORLD_W - 1, x1); x++) {
-      tiles[y * WORLD_W + x] = M[id]
+    for (let x = x0; x <= x1; x++) {
+      tiles[y * WORLD_W + wrapCol(x)] = M[id]
     }
   }
 }
 
 function tileAt(tiles: Uint8Array, x: number, y: number): number {
-  if (x < 0 || y < 0 || x >= WORLD_W || y >= WORLD_H) return -1
-  return tiles[y * WORLD_W + x]
+  if (y < 0 || y >= WORLD_H) return -1
+  return tiles[y * WORLD_W + wrapCol(x)]
 }
 
 /**
@@ -73,8 +132,9 @@ function tileAt(tiles: Uint8Array, x: number, y: number): number {
  * floor of the hole.
  */
 function surfaceY(tiles: Uint8Array, x: number): number {
+  const col = wrapCol(x)
   let y = 0
-  while (y < WORLD_H && tiles[y * WORLD_W + x] === M.air) y++
+  while (y < WORLD_H && tiles[y * WORLD_W + col] === M.air) y++
   return y
 }
 
@@ -176,10 +236,10 @@ const EARTH: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const treasureNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const treasureNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.3)
     // Anything this far above the average hilltop keeps its snow.
@@ -187,7 +247,7 @@ const EARTH: Theme = {
 
     for (let x = 0; x < WORLD_W; x++) {
       // Rolling hills: a couple of octaves is enough at this width.
-      const h = fbm(surfaceNoise, x * 0.035, 0.5, 3)
+      const h = ring1(surfaceNoise, x, 0.035, 0.5, 3)
       const surface = Math.floor(skyDepth + (h - 0.5) * 18)
       const snowy = surface < snowLine
       const snowDepth = snowy ? 3 + Math.floor((snowLine - surface) / 3) : 0
@@ -206,12 +266,12 @@ const EARTH: Theme = {
 
         // Carve caves out of the rock, but never out of the top crust.
         if (mat === 'stone' && depth < 0.88) {
-          const c = fbm(caveNoise, x * 0.06, y * 0.09, 3)
+          const c = ring2(caveNoise, x, 0.06, y, 0.09, 3)
           if (c > 0.62) mat = 'air'
         }
         // Occasional water pockets and sand seams.
         if (mat === 'stone' && depth > 0.35 && depth < 0.7) {
-          const o = oreNoise(x * 0.12, y * 0.12)
+          const o = ring2Raw(oreNoise, x, 0.12, y, 0.12)
           if (o > 0.88) mat = 'water'
           else if (o < 0.08) mat = 'sand'
         }
@@ -219,7 +279,7 @@ const EARTH: Theme = {
         // gold and crystal sit below the lava-adjacent rock, so getting there
         // costs something.
         if (mat === 'stone') {
-          const t = treasureNoise(x * 0.19, y * 0.19)
+          const t = ring2Raw(treasureNoise, x, 0.19, y, 0.19)
           if (depth > 0.6 && t > 0.93) mat = 'gold'
           else if (depth > 0.7 && t < 0.05) mat = 'crystal'
           else if (depth > 0.45 && t > 0.895 && t <= 0.93) mat = 'gem'
@@ -236,7 +296,6 @@ const EARTH: Theme = {
       const cx = Math.floor(rng() * WORLD_W)
       const w = 8 + Math.floor(rng() * 14)
       for (let x = cx - w; x <= cx + w; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         // Find the surface at this column, then scoop a bowl into it.
         const surface = surfaceY(tiles, x)
         const t = 1 - Math.abs(x - cx) / (w + 1)
@@ -386,13 +445,13 @@ const TIDEPOOL: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const floorNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const shelfNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const floorNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const shelfNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const waterLine = Math.floor(WORLD_H * 0.34)
 
     for (let x = 0; x < WORLD_W; x++) {
-      const f = fbm(floorNoise, x * 0.045, 2.5, 3)
+      const f = ring1(floorNoise, x, 0.045, 2.5, 3)
       const floor = Math.floor(WORLD_H * 0.66 + (f - 0.5) * 26)
 
       for (let y = waterLine; y < floor; y++) set(tiles, x, y, 'water')
@@ -403,7 +462,7 @@ const TIDEPOOL: Theme = {
       }
 
       // Rock shelves that break the surface — the tide leaves these dry.
-      const s = fbm(shelfNoise, x * 0.03, 8.5, 2)
+      const s = ring1(shelfNoise, x, 0.03, 8.5, 2)
       if (s > 0.66) {
         const top = waterLine - Math.floor((s - 0.66) * 34)
         for (let y = top; y < floor; y++) {
@@ -463,13 +522,13 @@ const VOLCANIC: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.28)
 
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(surfaceNoise, x * 0.05, 1.5, 4)
+      const h = ring1(surfaceNoise, x, 0.05, 1.5, 4)
       const surface = Math.floor(skyDepth + (h - 0.5) * 30)
 
       for (let y = surface; y < WORLD_H; y++) {
@@ -480,7 +539,7 @@ const VOLCANIC: Theme = {
         else mat = depth > 0.55 ? 'obsidian' : 'stone'
 
         if ((mat === 'stone' || mat === 'obsidian') && depth < 0.82) {
-          const c = fbm(caveNoise, x * 0.07, y * 0.1, 3)
+          const c = ring2(caveNoise, x, 0.07, y, 0.1, 3)
           if (c > 0.6) mat = 'air'
           else if (c < 0.16 && depth > 0.4) mat = 'lava'
         }
@@ -552,8 +611,8 @@ const SKYLANDS: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const cloudNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const groundNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const cloudNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     /**
      * The floor of the world, and it has to be a living one.
@@ -566,7 +625,7 @@ const SKYLANDS: Theme = {
      */
     const underTop = Math.floor(WORLD_H * 0.84)
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(groundNoise, x * 0.03, 4.5, 3)
+      const h = ring1(groundNoise, x, 0.03, 4.5, 3)
       const surface = underTop + Math.floor((h - 0.5) * 10)
       for (let y = surface; y < WORLD_H; y++) {
         const depth = y - surface
@@ -634,7 +693,7 @@ const SKYLANDS: Theme = {
       const density = 0.4 + Math.sin(t * Math.PI) * 0.32
       for (let x = 0; x < WORLD_W; x++) {
         if (tileAt(tiles, x, y) !== M.air) continue
-        if (fbm(cloudNoise, x * 0.05, y * 0.11, 2) < density) set(tiles, x, y, 'cloud')
+        if (ring2(cloudNoise, x, 0.05, y, 0.11, 2) < density) set(tiles, x, y, 'cloud')
       }
     }
 
@@ -672,9 +731,9 @@ const DUNES: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const seamNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const tableNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const seamNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const tableNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.36)
     // Where the rock stops being dry. Everything interesting in this world is
@@ -691,7 +750,7 @@ const DUNES: Theme = {
        * gentle is what makes the settling look like weather instead of like
        * the world falling over.
        */
-      const h = fbm(surfaceNoise, x * 0.018, 7.5, 3)
+      const h = ring1(surfaceNoise, x, 0.018, 7.5, 3)
       const surface = Math.floor(skyDepth + (h - 0.5) * 16)
 
       for (let y = surface; y < WORLD_H; y++) {
@@ -710,10 +769,10 @@ const DUNES: Theme = {
         let mat: MaterialId = depth < 0.62 ? 'sand' : 'stone'
         // Rock shelves the sand has drifted up against, so the sea has
         // something in it besides sand.
-        if (mat === 'sand' && d > 6 && seamNoise(x * 0.05, y * 0.085) > 0.8) mat = 'stone'
+        if (mat === 'sand' && d > 6 && ring2Raw(seamNoise, x, 0.05, y, 0.085) > 0.8) mat = 'stone'
         // The water table: porous rock down here, and the pockets join up into
         // something a well can reach.
-        if (y > waterTable && tableNoise(x * 0.06, y * 0.14) > 0.42) mat = 'water'
+        if (y > waterTable && ring2Raw(tableNoise, x, 0.06, y, 0.14) > 0.42) mat = 'water'
         set(tiles, x, y, mat)
       }
     }
@@ -790,13 +849,11 @@ const DUNES: Theme = {
       // loudest thing on the screen, and bone is fertile, so the shore it makes
       // is somewhere a root can take hold.
       for (let x = cx - w - 4; x <= cx + w + 4; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         const t = 1 - Math.abs(x - cx) / (w + 5)
         const top = surfaceY(tiles, x)
         for (let d = 0; d < Math.floor(t * 14); d++) set(tiles, x, top + d, 'bone')
       }
       for (let x = cx - w; x <= cx + w; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         const t = 1 - Math.abs(x - cx) / (w + 1)
         const depth = Math.floor(t * 9)
         const top = surfaceY(tiles, x)
@@ -858,20 +915,20 @@ const WINTER: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const caveNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const veinNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const caveNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const veinNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.34)
 
     for (let x = 0; x < WORLD_W; x++) {
       // `fbm` only spans about 0.2–0.72, so the multiplier buys roughly half
       // its face value in tiles: this is an eighteen-tile range, not thirty.
-      const h = fbm(surfaceNoise, x * 0.03, 2.5, 3)
+      const h = ring1(surfaceNoise, x, 0.03, 2.5, 3)
       const surface = Math.floor(skyDepth + (h - 0.5) * 34)
       // Where the glacier gives out and rock begins. A constant would draw a
       // ruler-straight seam from one end of the world to the other.
-      const iceFloor = 0.42 + fbm(surfaceNoise, x * 0.012, 30.5, 2) * 0.2
+      const iceFloor = 0.42 + ring1(surfaceNoise, x, 0.012, 30.5, 2) * 0.2
 
       for (let y = surface; y < WORLD_H; y++) {
         const d = y - surface
@@ -890,13 +947,13 @@ const WINTER: Theme = {
         // Caves, cut through the ice as much as the rock — glacier caves, so
         // they show blue rather than black.
         if (depth < 0.86 && d > 6) {
-          const c = fbm(caveNoise, x * 0.065, y * 0.095, 3)
+          const c = ring2(caveNoise, x, 0.065, y, 0.095, 3)
           if (c > 0.63) mat = 'air'
         }
         // Sparingly. At the thresholds this started on, the rock came out
         // flecked pink and cyan from end to end and read as static.
         if (mat === 'stone') {
-          const v = veinNoise(x * 0.17, y * 0.17)
+          const v = ring2Raw(veinNoise, x, 0.17, y, 0.17)
           if (depth > 0.6 && v > 0.95) mat = 'crystal'
           else if (depth > 0.5 && v < 0.035) mat = 'bone'
           else if (depth > 0.55 && v > 0.93 && v <= 0.95) mat = 'gem'
@@ -916,7 +973,6 @@ const WINTER: Theme = {
       const cx = Math.floor(rng() * WORLD_W)
       const w = 7 + Math.floor(rng() * 12)
       for (let x = cx - w; x <= cx + w; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         const surface = surfaceY(tiles, x)
         const t = 1 - Math.abs(x - cx) / (w + 1)
         const depth = Math.floor(t * 8)
@@ -985,8 +1041,8 @@ const PEAKS: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const floorNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const cloudNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const floorNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const cloudNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const valley = Math.floor(WORLD_H * 0.84)
     // Above this, rock goes white. It sits above both cloud bands, so the snow
@@ -994,7 +1050,7 @@ const PEAKS: Theme = {
     const snowLine = Math.floor(WORLD_H * 0.28)
 
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(floorNoise, x * 0.04, 1.5, 3)
+      const h = ring1(floorNoise, x, 0.04, 1.5, 3)
       const surface = valley + Math.floor((h - 0.5) * 8)
       for (let y = surface; y < WORLD_H; y++) {
         const d = y - surface
@@ -1069,7 +1125,11 @@ const PEAKS: Theme = {
         const t = 1 - Math.abs(y - cy) / 6
         for (let x = 0; x < WORLD_W; x++) {
           if (tileAt(tiles, x, y) !== M.air) continue
-          if (fbm(cloudNoise, x * 0.04, y * 0.13 + band * 10, 2) < 0.32 + t * 0.3) {
+          // Not `ring2`: the depth coordinate carries a per-band offset as well,
+          // which is what stops the two cloud decks coming out as copies of each
+          // other. Built by hand rather than widening `ring2` for one caller.
+          const { u, v } = ringXY(x, 0.04)
+          if (fbm3(cloudNoise, u, v, y * 0.13 + band * 10, 2) < 0.32 + t * 0.3) {
             set(tiles, x, y, 'cloud')
           }
         }
@@ -1120,14 +1180,14 @@ const CASTLE: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const groundNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     // Flatter than any other land here, on purpose: people build on the level,
     // and rolling hills would leave every house half-buried on one side.
     const groundLine = Math.floor(WORLD_H * 0.52)
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(groundNoise, x * 0.02, 3.5, 2)
+      const h = ring1(groundNoise, x, 0.02, 3.5, 2)
       const surface = groundLine + Math.floor((h - 0.5) * 6)
       for (let y = surface; y < WORLD_H; y++) {
         const d = y - surface
@@ -1137,7 +1197,7 @@ const CASTLE: Theme = {
         // confettied from end to end and the treasure stopped reading as
         // treasure.
         if (mat === 'stone') {
-          const o = oreNoise(x * 0.15, y * 0.15)
+          const o = ring2Raw(oreNoise, x, 0.15, y, 0.15)
           if (depth > 0.6 && o > 0.965) mat = 'gold'
           else if (depth > 0.45 && o < 0.03) mat = 'bone'
           else if (depth > 0.5 && o > 0.945 && o <= 0.965) mat = 'gem'
@@ -1210,7 +1270,6 @@ const CASTLE: Theme = {
       const mx = mid + side * (keepHalf + 24)
       const half = 14
       for (let x = mx - half; x <= mx + half; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         const top = surfaceY(tiles, x)
         if (top >= WORLD_H - 4) continue
         const t = 1 - Math.abs(x - mx) / (half + 1)
@@ -1325,9 +1384,9 @@ const CANDY: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const seamNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const flossNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const seamNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const flossNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.36)
     const STRIPES: MaterialId[] = [
@@ -1338,7 +1397,7 @@ const CANDY: Theme = {
     ]
 
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(surfaceNoise, x * 0.028, 6.5, 3)
+      const h = ring1(surfaceNoise, x, 0.028, 6.5, 3)
       const surface = Math.floor(skyDepth + (h - 0.5) * 20)
 
       for (let y = surface; y < WORLD_H; y++) {
@@ -1359,8 +1418,8 @@ const CANDY: Theme = {
         else if (d < 6) mat = 'wood'
         else mat = STRIPES[Math.floor((d - 6) / 5) % STRIPES.length]
 
-        if (d >= 6 && seamNoise(x * 0.1, y * 0.1) > 0.85) mat = 'sand'
-        if (d >= 12 && seamNoise(x * 0.24, y * 0.24) < 0.055) {
+        if (d >= 6 && ring2Raw(seamNoise, x, 0.1, y, 0.1) > 0.85) mat = 'sand'
+        if (d >= 12 && ring2Raw(seamNoise, x, 0.24, y, 0.24) < 0.055) {
           mat = rng() < 0.5 ? 'gem-green' : 'gem-purple'
         }
         set(tiles, x, y, mat)
@@ -1374,7 +1433,6 @@ const CANDY: Theme = {
       const cx = 14 + Math.floor(rng() * (WORLD_W - 28))
       const w = 4 + Math.floor(rng() * 5)
       for (let x = cx - w; x <= cx + w; x++) {
-        if (x < 0 || x >= WORLD_W) continue
         const top = surfaceY(tiles, x)
         const t = 1 - Math.abs(x - cx) / (w + 1)
         const depth = Math.floor(t * 8)
@@ -1413,8 +1471,8 @@ const CANDY: Theme = {
     for (let y = 3; y < skyDepth - 8; y++) {
       for (let x = 0; x < WORLD_W; x++) {
         if (tileAt(tiles, x, y) !== M.air) continue
-        if (fbm(flossNoise, x * 0.022, y * 0.07, 2) > 0.6) {
-          set(tiles, x, y, fbm(flossNoise, x * 0.008, 40.5, 1) > 0.5 ? 'cloud-pink' : 'cloud-white')
+        if (ring2(flossNoise, x, 0.022, y, 0.07, 2) > 0.6) {
+          set(tiles, x, y, ring1(flossNoise, x, 0.008, 40.5, 1) > 0.5 ? 'cloud-pink' : 'cloud-white')
         }
       }
     }
@@ -1450,8 +1508,8 @@ const BIOME_WORLD: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const surfaceNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const featureNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const featureNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const THIRD = Math.floor(WORLD_W / 3)
     const skyDepth = Math.floor(WORLD_H * 0.30)
@@ -1473,13 +1531,13 @@ const BIOME_WORLD: Theme = {
         : (x - (rightBorder - BLEND)) / BLEND
 
       // Terrain height per biome
-      const forestH = fbm(surfaceNoise, x * 0.030, 0.5, 3)
+      const forestH = ring1(surfaceNoise, x, 0.030, 0.5, 3)
       const forestSurf = skyDepth + (forestH - 0.5) * 22
 
-      const plainsH = fbm(surfaceNoise, x * 0.014 + 100, 0.5, 2)
+      const plainsH = ring1(surfaceNoise, x, 0.014, 100.5, 2)
       const plainsSurf = skyDepth + (plainsH - 0.5) * 8 + 4
 
-      const desertH = fbm(surfaceNoise, x * 0.020 + 300, 0.5, 2)
+      const desertH = ring1(surfaceNoise, x, 0.020, 300.5, 2)
       const desertSurf = skyDepth + (desertH - 0.5) * 16 + 6
 
       // Blend surface heights at borders
@@ -1522,7 +1580,7 @@ const BIOME_WORLD: Theme = {
 
     // Forest trees: wood columns above ground with moss canopy
     for (let x = 4; x < THIRD - 4; x++) {
-      if (featureNoise(x * 0.18, 0.2) > 0.52) {
+      if (ring1(featureNoise, x, 0.18, 0.2, 1) > 0.52) {
         const sy = surfaceY(tiles, x)
         const height = 4 + Math.floor(rng() * 5)
         for (let dy = 1; dy <= height; dy++) {
@@ -1591,14 +1649,14 @@ const MUSHROOM_FOREST: Theme = {
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
-    const groundNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const treeNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const groundNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const treeNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     const skyDepth = Math.floor(WORLD_H * 0.44)
 
     // Muddy ground: shallow surface layer is mud, then dirt, then stone.
     for (let x = 0; x < WORLD_W; x++) {
-      const h = fbm(groundNoise, x * 0.022, 4.5, 2)
+      const h = ring1(groundNoise, x, 0.022, 4.5, 2)
       const surface = Math.floor(skyDepth + (h - 0.5) * 12)
       for (let y = surface; y < WORLD_H; y++) {
         const d = y - surface
@@ -1612,7 +1670,7 @@ const MUSHROOM_FOREST: Theme = {
     for (let pass = 0; pass < 2; pass++) {
       for (let x = 2; x < WORLD_W - 2; x++) {
         const thresh = pass === 0 ? 0.52 : 0.40
-        if (treeNoise(x * 0.13 + pass * 50, 0.7 + pass * 0.3) < thresh) continue
+        if (ring1(treeNoise, x, 0.13, 0.7 + pass * 50, 1) < thresh) continue
         const sy = surfaceY(tiles, x)
         if (sy >= WORLD_H - 4) continue
         const height = pass === 0
@@ -1702,8 +1760,8 @@ const CAVE: Theme = {
     // The whole world is stone to start; everything is carved out of it.
     fill(tiles, 'stone')
 
-    const edgeNoise = makeNoise2D(Math.floor(rng() * 1e9))
-    const oreNoise = makeNoise2D(Math.floor(rng() * 1e9))
+    const edgeNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const oreNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
     // BSP carves connected cave chambers — same trick as STATION but organic.
     interface CaveBox { x0: number; y0: number; x1: number; y1: number }
@@ -1749,7 +1807,7 @@ const CAVE: Theme = {
           const ny = (y - cy) / (ry + 1)
           const dist = Math.sqrt(nx * nx + ny * ny)
           // Edge noise makes the boundary rough rather than a perfect ellipse.
-          const noise = edgeNoise(x * 0.07, y * 0.07) * 0.38
+          const noise = ring2Raw(edgeNoise, x, 0.07, y, 0.07) * 0.38
           if (dist < 0.64 + noise) set(tiles, x, y, 'air')
         }
       }
@@ -1823,7 +1881,7 @@ const CAVE: Theme = {
     for (let i = 0; i < across(14); i++) {
       const cx = Math.floor(rng() * WORLD_W)
       const cy = Math.floor(WORLD_H * (0.08 + rng() * 0.84))
-      const t = oreNoise(cx * 0.05, cy * 0.05)
+      const t = ring2Raw(oreNoise, cx, 0.05, cy, 0.05)
       const id: MaterialId = t < 0.4 ? 'crystal' : t < 0.75 ? 'gem' : 'gold'
       blob(tiles, cx, cy, 2 + Math.floor(rng() * 3), id, rng, ['stone'])
     }

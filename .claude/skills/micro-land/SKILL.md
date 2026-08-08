@@ -118,17 +118,40 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
     one thing the renderer exists to protect. `camX` is kept fractional so slow
     pans accumulate, but `viewLeft()` floors it before anything is drawn.
 
-11. **Records are high-water marks.** That is why the chronicle can be sampled a
+11. **The world is a cylinder, and every stored x is wrapped.** Walk off the
+    right edge and you come back on the left; top and bottom are still walls,
+    because a wrapped ceiling in falling sand rains powder out of the sky
+    forever. `domain/wrap.ts` owns the whole idea. Two consequences bite
+    constantly:
+
+    - **`b - a` is not a distance.** Use `deltaX` (signed, and its sign is a
+      direction) or `distX`. A plain subtraction compiles, looks right, and
+      produces a creature that can *see* across the seam but walks the long way
+      round to get there — which reads as bad AI, not as a wrap bug. The same
+      trap catches any *midpoint*: half of `a + b` is the far side of the world
+      from both parents when they meet across the seam.
+    - **Terrain has to meet itself.** Generators sample noise around a *ring*
+      (`ringXY`, plus `makeNoise3D`/`fbm3` when depth is involved), never along a
+      line from x=0 to x=671, which has no reason to arrive back where it
+      started. `world-wrap.test.ts` measures the surface jump at column zero
+      against each theme's own roughness — that test is the only thing standing
+      between you and a visible cliff down the seam.
+
+    Culling and drawing are the renderer's version of the same problem:
+    `overlapsView` decides visibility on a circle, and anything overlapping
+    column zero is drawn twice, once at each end.
+
+12. **Records are high-water marks.** That is why the chronicle can be sampled a
     few times a second instead of per frame, why `mergeChronicles` needs no
     conflict resolution, and why banking a streak early is safe. Keep any new
     record monotonic.
 
-12. **Anonymous-first (CLAUDE.md #1).** The game starts on `localBackend` and
+13. **Anonymous-first (CLAUDE.md #1).** The game starts on `localBackend` and
     never waits for the network. Auth resolving later calls `adoptAccount`,
     which merges rather than choosing. A player with no account and no
     connection still gets a complete game.
 
-13. **The ecosystem numbers are read off `TUNING`, not off `constants.ts`.**
+14. **The ecosystem numbers are read off `TUNING`, not off `constants.ts`.**
     Plant seeding, population caps, breeding costs and gravity live in
     `domain/tuning.ts` as a mutable object the settings panel moves while the
     world runs; `constants.ts` holds their defaults and the reasoning for them.

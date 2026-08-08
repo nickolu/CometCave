@@ -22,9 +22,10 @@ All paths relative to `src/app/micro-land/` unless noted. LOC approximate.
 | File | ~LOC | Role |
 |------|------|------|
 | `world.ts` | 685 | World construction, tile access helpers, spawning, native plants, seed rain |
+| `wrap.ts` (in `domain/`) | 130 | The world is a cylinder. `wrapX`/`wrapCol` normalise a column, `deltaX`/`distX` measure the short way round, `overlapsView` culls on a circle, `ringXY` maps a column onto the noise ring |
 | `creature-sim.ts` | 931 | Hunger, senses, steering, physics, digging, breeding, death, particles |
 | `tile-sim.ts` | 293 | Falling sand: powders, liquids, quenching, melting, corrosion |
-| `prng.ts` | 78 | Seeded RNG, value noise, fbm |
+| `prng.ts` | 142 | Seeded RNG, value noise, fbm — plus the 3D lattice (`makeNoise3D`/`fbm3`) the ring sampling needs when depth is also in play |
 
 ### Domain
 | File | ~LOC | Role |
@@ -226,6 +227,16 @@ lit, 1 = only glowing things visible), `gravity` multiplier, `starters[]`, and a
 `across(n)` inside `themes.ts` is the `WIDTH_SCALE` multiplier for scattered
 features. Theme starter counts get the same treatment in `seedStarters`.
 
+**Every generator samples noise around a ring, not along a line.** `ring1` for a
+surface height, `ring2` for a field that also varies with depth, `ring2Raw` for a
+single unlayered sample — all built on `ringXY` + `fbm3`. A circle closes on
+itself, so a continuous field read along one is periodic by construction: no
+blending band, and no requirement that the noise lattice divide evenly into the
+world width. Writing `fbm(noise, x * 0.03, …)` again is what puts the cliff back.
+One trap worth knowing: on a ring an **x-offset is only a rotation of the same
+circle**, so the old trick of decorrelating two curves with `x * f + 100` does
+nothing — offset the *layer* instead.
+
 `SUMMONED_THEME_ID` (`'summoned'`) is a pseudo-theme: `GameInstance` holds the
 summoned `Theme` object in `summonedTheme` and `resolveTheme` prefers it.
 
@@ -259,25 +270,45 @@ re-keys the records to the summoned land's name.
 Terrain painting (`paintTerrain`): a coarse character map, ground level fitted
 by `fitGroundLevel` (models draw the horizon two-thirds up, which plays badly —
 pad empty rows on top until the surface sits 30–50% up), then sampled with fbm
-noise jitter so cell edges come out ragged. Cells are kept **square**; a map too
-narrow to cross the world repeats mirrored rather than stretching.
+noise jitter so cell edges come out ragged. The map is walked **mirrored, out and
+back**, and the world now always spans a **whole number of those round trips** —
+a fractional one met itself part-way through and put a hard vertical cut down the
+seam, in the very place the reflection was there to avoid one. Rounding to the
+nearest whole trip is what keeps cells near-square. The jitter is ring-sampled
+for the same reason as the themes.
 
 ---
 
 ## Rendering
 
-One canvas pixel per world tile into a `WORLD_W × WORLD_H` backbuffer, then one
-scaled blit with `imageSmoothingEnabled = false`. Zoom is fixed by `VIEW_W`
+One canvas pixel per world tile into a backbuffer, then one scaled blit with
+`imageSmoothingEnabled = false`.
+
+The backbuffer is **`WORLD_W + WORLD_W` wide**. The camera wraps, so the visible
+range can run off the end of the world; rather than splitting the frame into two
+of everything, the head of the world is copied into that overhang once per frame
+(only as many columns as actually hang over) and the blit stays a single
+contiguous read. Content is drawn twice, at offset `0` and `-WORLD_W`, so a
+sprite hanging over the seam lands in column zero as well — `overlapsView`
+rejects the second copy for anything that does not reach the seam, which is
+nearly everything. Zoom is fixed by `VIEW_W`
 (224), not by the world width, so a hopper is the same size it has always been;
 a wide display simply sees more tiles.
 
 Per frame, all clipped to visible columns:
 1. `ensureTiles` — re-bake tile colors if the view left the baked range
-   (`TILE_MARGIN` 32 columns of slack, which earns its keep while paused)
-2. `buildLight` — quarter-res light field: daylight by column depth below the
-   first solid tile (`SKY_FALLOFF` 16), glowing tiles sampled every other tile,
-   glowing creatures, three blur passes, baked into a shadow overlay scaled by
-   `theme.gloom`. Gathered `LIGHT_MARGIN` 24 columns wide because blur bleeds
+   (`TILE_MARGIN` 32 columns of slack, which earns its keep while paused). A view
+   straddling the seam bakes the whole world instead: one baked range cannot
+   describe two ends of the grid, and the state lasts only as long as it takes to
+   pan past column zero
+2. `buildLight` — quarter-res light field, computed for the **whole world**:
+   daylight by column depth below the first solid tile (`SKY_FALLOFF` 16),
+   glowing tiles sampled every other tile, glowing creatures, three blur passes
+   that wrap sideways. A windowed version would have needed a two-range variant
+   of the gather, the blur and the bilinear sample, to save a field of 168×33
+   cells. The **shadow bake** it feeds is still clipped to the visible span
+   (`forEachSpan`), because that one is a pixel per visible tile per frame and is
+   the only part that ever showed up in a frame budget
 3. Sky gradient → tile layer → creatures (culled off-screen; flicker when
    starving or distressed) → particles → **shadow** → elder halo → inspect
    brackets. Shadow goes after sprites so creatures are dimmed by the same
