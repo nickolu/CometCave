@@ -1898,25 +1898,204 @@ const CAVE: Theme = {
   },
 }
 
+const GRASSLAND: Theme = {
+  id: 'grassland',
+  name: 'Grassland Meadow',
+  blurb: 'Rolling hills, shallow ponds, and a simple food chain finding its balance.',
+  sky: ['#a8d8f0', '#e8f4d4'],
+  gloom: 0.08,
+  gravity: 1,
+  starters: [
+    // Plants
+    { id: 'sunleaf', count: 18 },
+    { id: 'bramble', count: 12 },
+    { id: 'skybloom', count: 8 },
+    // Plant eaters (× 3 species, ~16 total)
+    { id: 'mite', count: 7 },
+    { id: 'hopper', count: 6 },
+    { id: 'woolly', count: 5 },
+    // Pollinator
+    { id: 'dustbee', count: 4 },
+    // Predators
+    { id: 'stalker', count: 2 },
+    { id: 'sunhawk', count: 1 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.35)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = ring1(surfaceNoise, x, 0.03, 0.5, 2)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 14)
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        const mat: MaterialId =
+          y === surface ? 'grass' :
+          depth < 0.28  ? 'dirt'  :
+          'stone'
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Shallow ponds
+    const ponds = across(2) + Math.floor(rng() * across(1))
+    for (let p = 0; p < ponds; p++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const w = 7 + Math.floor(rng() * 10)
+      for (let x = cx - w; x <= cx + w; x++) {
+        const sy = surfaceY(tiles, x)
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const d = Math.floor(t * 4)
+        for (let i = 0; i < d; i++) set(tiles, x, sy + i, 'water')
+        if (tileAt(tiles, x, sy + d) === M.dirt) set(tiles, x, sy + d, 'mud')
+      }
+    }
+
+    mossify(tiles, rng, 0.3, ['dirt'])
+  },
+}
+
+const TROPICAL_ISLAND: Theme = {
+  id: 'tropical-island',
+  name: 'Tropical Island',
+  blurb: 'Sandy shores, warm shallows, and creatures that thrive where land meets sea.',
+  sky: ['#5bc8f5', '#1a6fa8'],
+  gloom: 0.06,
+  gravity: 1,
+  starters: [
+    // Plants
+    { id: 'sunleaf', count: 14 },
+    { id: 'kelp', count: 16 },
+    { id: 'skybloom', count: 6 },
+    // Plant eaters (× 3 species, ~17 total)
+    { id: 'mite', count: 7 },
+    { id: 'finling', count: 6 },
+    { id: 'crystal-snail', count: 4 },
+    // Pollinator
+    { id: 'fluttermoth', count: 3 },
+    // Predators
+    { id: 'gulper', count: 3 },
+    { id: 'sunhawk', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.38)
+    const waterLine = skyDepth + 5
+
+    // Terrain pass
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = ring1(surfaceNoise, x, 0.022, 5.0, 3)
+      const landY = Math.floor(skyDepth + (h - 0.5) * 22)
+      const surface = Math.min(landY, waterLine)
+
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        const aboveWater = landY <= waterLine
+        const mat: MaterialId =
+          y < landY                   ? 'sand'  :
+          y === landY && aboveWater   ? (landY <= waterLine - 3 ? 'grass' : 'sand') :
+          y === landY                 ? 'sand'  :
+          depth < 0.22                ? (aboveWater ? 'dirt' : 'sand') :
+          'stone'
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Fill water in low valleys up to the waterLine
+    for (let x = 0; x < WORLD_W; x++) {
+      const sy = surfaceY(tiles, x)
+      if (sy >= waterLine) {
+        for (let y = waterLine; y < sy; y++) set(tiles, x, y, 'water')
+      }
+    }
+  },
+}
+
+const VERDANT_FOREST: Theme = {
+  id: 'verdant-forest',
+  name: 'Verdant Forest',
+  blurb: 'Ancient trees, soft earth, and a canopy thick enough to make its own weather.',
+  sky: ['#2d5a27', '#0e1f0c'],
+  gloom: 0.35,
+  gravity: 1,
+  starters: [
+    // Plants
+    { id: 'sunleaf', count: 16 },
+    { id: 'glowvine', count: 10 },
+    { id: 'bramble', count: 8 },
+    // Plant eaters (× 3 species, ~18 total)
+    { id: 'mote', count: 7 },
+    { id: 'loamworm', count: 6 },
+    { id: 'woolly', count: 5 },
+    // Pollinator
+    { id: 'seedmite', count: 2 },
+    // Predators
+    { id: 'stalker', count: 3 },
+    { id: 'grumblestone', count: 2 },
+  ],
+  build: (tiles, rng) => {
+    fill(tiles, 'air')
+    const groundNoise = makeNoise3D(Math.floor(rng() * 1e9))
+    const treeNoise = makeNoise3D(Math.floor(rng() * 1e9))
+
+    const skyDepth = Math.floor(WORLD_H * 0.33)
+
+    for (let x = 0; x < WORLD_W; x++) {
+      const h = ring1(groundNoise, x, 0.028, 2.0, 2)
+      const surface = Math.floor(skyDepth + (h - 0.5) * 12)
+      for (let y = surface; y < WORLD_H; y++) {
+        const depth = (y - surface) / (WORLD_H - surface)
+        const mat: MaterialId =
+          y === surface ? 'mud'  :
+          depth < 0.2   ? 'dirt' :
+          'stone'
+        set(tiles, x, y, mat)
+      }
+    }
+
+    // Tree trunks — scattered wood columns rising from the surface
+    const treeCount = across(10) + Math.floor(rng() * across(4))
+    for (let t = 0; t < treeCount; t++) {
+      const tx = Math.floor(rng() * WORLD_W)
+      const sy = surfaceY(tiles, tx)
+      const height = 5 + Math.floor(rng() * 8)
+      for (let i = 0; i < height; i++) set(tiles, tx, sy - 1 - i, 'wood')
+    }
+
+    // A couple of ponds
+    const ponds = across(2) + Math.floor(rng() * across(1))
+    for (let p = 0; p < ponds; p++) {
+      const cx = Math.floor(rng() * WORLD_W)
+      const w = 6 + Math.floor(rng() * 8)
+      for (let x = cx - w; x <= cx + w; x++) {
+        const sy = surfaceY(tiles, x)
+        const t = 1 - Math.abs(x - cx) / (w + 1)
+        const d = Math.floor(t * 4)
+        for (let i = 0; i < d; i++) set(tiles, x, sy + i, 'water')
+        if (tileAt(tiles, x, sy + d) === M.mud || tileAt(tiles, x, sy + d) === M.dirt) {
+          set(tiles, x, sy + d, 'mud')
+        }
+      }
+    }
+
+    mossify(tiles, rng, 0.45, ['dirt', 'mud'])
+  },
+}
+
 /**
  * Order is the order of the picker, and it is a reading order: nothing, then
  * the world most like ours, then the ones that bend it further and further.
  */
 export const THEMES: Theme[] = [
   EMPTY,
-  EARTH,
-  BIOME_WORLD,
-  PEAKS,
-  WINTER,
-  DUNES,
-  MUSHROOM_FOREST,
+  GRASSLAND,
+  TROPICAL_ISLAND,
+  VERDANT_FOREST,
   TIDEPOOL,
-  SKYLANDS,
-  VOLCANIC,
-  CAVE,
-  CASTLE,
-  STATION,
-  CANDY,
 ]
 
 export const THEME_BY_ID: Record<string, Theme> = Object.fromEntries(THEMES.map(t => [t.id, t]))
