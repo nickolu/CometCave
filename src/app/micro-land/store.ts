@@ -30,6 +30,23 @@ export interface SpeedRunState {
   result: 'none' | 'won' | 'lost'
 }
 
+/**
+ * Adaptive challenge: dynamically shifts its population target to keep the
+ * player stretched — raises the bar when things are going well, lowers it
+ * when the ecosystem is struggling. Win by sustaining the current target for
+ * 60 consecutive seconds.
+ */
+export interface AdaptiveRunState {
+  active: boolean
+  /** Current dynamic target — creature count you must sustain. */
+  targetPopulation: number
+  /** Seconds spent continuously at or above the target. */
+  sustainedSeconds: number
+  /** Seconds of sustained target needed to win. */
+  sustainGoal: number
+  result: 'none' | 'won'
+}
+
 import type { SaveState } from './chronicle/chronicle'
 import type { ElderRecord, SpeciesRecord } from './chronicle/types'
 import type { Creature, CreatureBlueprint, CreatureThumb, HistoryEntry, LifeKind, MaterialId, NamedCreatureEntry, Traits } from './domain/types'
@@ -304,6 +321,7 @@ interface MicroLandState {
   workshopOpen: boolean
   workshopSpawnRequest: WorkshopSpawnRequest | null
   speedRun: SpeedRunState
+  adaptiveRun: AdaptiveRunState
   /** Incremented each time a world reshuffle is needed; watched by MicroLandGame. */
   reshuffleToken: number
   setChallengesOpen: (open: boolean) => void
@@ -314,6 +332,9 @@ interface MicroLandState {
   startSpeedRun: (targetGeneration: number, timeLimitSeconds: number, currentElapsed: number) => void
   endSpeedRun: (result: 'won' | 'lost') => void
   cancelSpeedRun: () => void
+  startAdaptiveRun: (initialTarget: number) => void
+  endAdaptiveRun: () => void
+  updateAdaptiveRun: (targetPopulation: number, sustainedSeconds: number) => void
   requestReshuffle: () => void
   /**
    * Whether the tool drawer along the bottom is unrolled.
@@ -577,7 +598,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   challengeActive: null,
   workshopOpen: false,
   workshopSpawnRequest: null,
-  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none' },
+  speedRun: { active: false, targetGeneration: 10, timeLimitSeconds: 300, startElapsed: 0, result: 'none', wonSeconds: null },
+  adaptiveRun: { active: false, targetPopulation: 10, sustainedSeconds: 0, sustainGoal: 60, result: 'none' },
   reshuffleToken: 0,
   toolbarOpen: true,
   tuning: { ...TUNING },
@@ -678,6 +700,12 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set(s => ({ speedRun: { ...s.speedRun, active: false, result } })),
   cancelSpeedRun: () =>
     set(s => ({ speedRun: { ...s.speedRun, active: false, result: 'none' } })),
+  startAdaptiveRun: initialTarget =>
+    set({ adaptiveRun: { active: true, targetPopulation: initialTarget, sustainedSeconds: 0, sustainGoal: 60, result: 'none' } }),
+  endAdaptiveRun: () =>
+    set(s => ({ adaptiveRun: { ...s.adaptiveRun, active: false, result: 'won' } })),
+  updateAdaptiveRun: (targetPopulation, sustainedSeconds) =>
+    set(s => ({ adaptiveRun: { ...s.adaptiveRun, targetPopulation, sustainedSeconds } })),
   requestReshuffle: () => set(s => ({ reshuffleToken: s.reshuffleToken + 1 })),
   setToolbarOpen: toolbarOpen => {
     storeToolbarOpen(toolbarOpen)

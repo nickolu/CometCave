@@ -6,6 +6,8 @@ import { resetTuning, setTuning } from '@/app/micro-land/domain/tuning'
 import { useMicroLand } from '@/app/micro-land/store'
 import { formatDuration } from '@/app/micro-land/format'
 
+const ADAPTIVE_INITIAL_TARGET = 10
+
 /**
  * The challenges content — usable both inside the field guide sidebar
  * (where `onClose` returns to the guide view) and inside the standalone
@@ -14,6 +16,8 @@ import { formatDuration } from '@/app/micro-land/format'
 export function ChallengesPane({ onClose }: { onClose: () => void }) {
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
   const requestReshuffle = useMicroLand(s => s.requestReshuffle)
+  const startAdaptiveRun = useMicroLand(s => s.startAdaptiveRun)
+  const adaptiveRun = useMicroLand(s => s.adaptiveRun)
   const [targetGen, setTargetGen] = useState(10)
   const timeLimitOptions = [{ label: '3 min', seconds: 180 }, { label: '5 min', seconds: 300 }, { label: '10 min', seconds: 600 }]
   const [timeLimitIdx, setTimeLimitIdx] = useState(1)
@@ -180,6 +184,38 @@ export function ChallengesPane({ onClose }: { onClose: () => void }) {
           </div>
         )}
       </div>
+
+      {/* Adaptive Mode */}
+      <div style={{ marginTop: 18, borderTop: '1px solid var(--cc-panel-divider)', paddingTop: 14 }}>
+        <div style={{
+          fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.6,
+          textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 10,
+        }}>
+          Adaptive Mode
+        </div>
+        <div style={{ fontSize: 12, color: 'var(--cc-text-muted)', marginBottom: 10 }}>
+          The world sets a target population and adjusts it as your ecosystem grows or struggles.
+          Sustain the goal for 60 seconds to win.
+        </div>
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={() => {
+            startAdaptiveRun(ADAPTIVE_INITIAL_TARGET)
+            onClose()
+          }}
+          style={{
+            fontFamily: 'var(--cc-font-mono)', fontSize: 10, letterSpacing: 1.2,
+            textTransform: 'uppercase', padding: '5px 14px',
+            border: `1px solid ${adaptiveRun.active ? 'var(--cc-gold)' : 'var(--cc-mint)'}`,
+            color: adaptiveRun.active ? 'var(--cc-gold)' : 'var(--cc-mint)',
+            display: 'block',
+          }}
+        >
+          {adaptiveRun.active ? 'Restart Adaptive Mode' : 'Start Adaptive Mode'}
+        </button>
+      </div>
+
       <button
         type="button"
         className="cc-btn"

@@ -51,11 +51,6 @@ function ecosystemHealth(population: PopulationEntry[], total: number): HealthSt
   return 'Collapsing'
 }
 
-const SPEEDS = [
-  { value: 0.5, label: '½×' },
-  { value: 1, label: '1×' },
-  { value: 3, label: '3×' },
-]
 
 const chipBase: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -129,6 +124,8 @@ export function Hud({
   const tuning = useMicroLand(s => s.tuning)
   const challengeActive = useMicroLand(s => s.challengeActive)
   const setChallengeActive = useMicroLand(s => s.setChallengeActive)
+  const adaptiveRun = useMicroLand(s => s.adaptiveRun)
+  const endAdaptiveRun = useMicroLand(s => s.endAdaptiveRun)
 
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const soundEnabled = useMicroLand(s => s.soundEnabled)
@@ -267,7 +264,7 @@ export function Hud({
         Inspect
       </button>
 
-      <div className="flex shrink-0 items-center gap-1" role="group" aria-label="Speed">
+      <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Speed">
         <button
           type="button"
           className="cc-btn"
@@ -277,23 +274,27 @@ export function Hud({
         >
           {paused ? 'Paused' : 'Pause'}
         </button>
-        {SPEEDS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            className="cc-btn"
-            onClick={() => setSpeed(option.value)}
-            style={{
-              ...chipBase,
-              padding: '7px 9px',
-              ...(speed === option.value ? activeChip : {}),
-            }}
-            aria-pressed={speed === option.value}
-            aria-label={`Speed ${option.label}`}
-          >
-            {option.label}
-          </button>
-        ))}
+        <input
+          type="range"
+          min={0.5}
+          max={7}
+          step={0.5}
+          value={speed}
+          onChange={e => setSpeed(parseFloat(e.target.value))}
+          aria-label="Simulation speed"
+          style={{ width: 72, accentColor: 'var(--cc-mint)', cursor: 'pointer' }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            letterSpacing: 1,
+            color: 'var(--cc-text-muted)',
+            minWidth: 22,
+          }}
+        >
+          {speed % 1 === 0 ? `${speed}×` : `${speed}×`}
+        </span>
       </div>
 
       {/* ── Right side ────────────────────────────────────────────────────── */}
@@ -323,6 +324,41 @@ export function Hud({
               className="cc-btn"
               onClick={() => setChallengeActive(null)}
               title="End challenge"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                padding: '2px 6px',
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              ×
+            </button>
+          </>
+        )}
+
+        {/* Adaptive challenge HUD badge */}
+        {(adaptiveRun.active || adaptiveRun.result === 'won') && (
+          <>
+            <span
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 9,
+                letterSpacing: 1,
+                color: adaptiveRun.result === 'won' ? 'var(--cc-gold)' : 'var(--cc-mint)',
+                opacity: 0.9,
+              }}
+              title="Adaptive challenge: sustain this population to win"
+            >
+              {adaptiveRun.result === 'won'
+                ? `Adaptive complete!`
+                : `≥${adaptiveRun.targetPopulation} alive · ${Math.floor(adaptiveRun.sustainedSeconds)}/${adaptiveRun.sustainGoal}s`}
+            </span>
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={endAdaptiveRun}
+              title="End adaptive challenge"
               style={{
                 fontFamily: 'var(--cc-font-mono)',
                 fontSize: 9,
@@ -492,6 +528,17 @@ export function Hud({
               </button>
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
+
+              {/* Field Guide */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { setGuideOpen(true); setOverflowOpen(false) }}
+                style={overflowItem}
+                title="Open the field guide"
+              >
+                Field Guide
+              </button>
 
               {/* History */}
               <button

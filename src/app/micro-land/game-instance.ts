@@ -179,6 +179,14 @@ export class GameInstance {
   private traitHistory = new Map<string, TraitHistoryEntry[]>()
   private lastTraitSample = -30
 
+  // --- adaptive challenge ---
+  /** When the current population first reached/exceeded the adaptive target. */
+  private adaptiveSustainStart: number | null = null
+  /** World-seconds of the last adaptive target adjustment. */
+  private adaptiveLastAdjust = -30
+  /** Recent population samples for trend detection (up to 10 entries). */
+  private adaptivePopSamples: number[] = []
+
   // --- records ---
   /** Which land's records are being written to. See `landId()`. */
   private currentLand = DEFAULT_THEME
@@ -744,6 +752,43 @@ export class GameInstance {
       } else if (timeUsed >= sr.timeLimitSeconds || this.world.creatures.length === 0) {
         useMicroLand.getState().endSpeedRun('lost')
       }
+    }
+
+    // Adaptive challenge: dynamically shift the population target.
+    const ar = useMicroLand.getState().adaptiveRun
+    if (ar.active && ar.result === 'none') {
+      const pop = this.world.creatures.length
+      // Sample population for trend detection.
+      this.adaptivePopSamples.push(pop)
+      if (this.adaptivePopSamples.length > 10) this.adaptivePopSamples.shift()
+      // Every 30 world-seconds: adjust target based on trend.
+      let newTarget = ar.targetPopulation
+      if (this.world.elapsed - this.adaptiveLastAdjust >= 30 && this.adaptivePopSamples.length >= 3) {
+        this.adaptiveLastAdjust = this.world.elapsed
+        const avg = this.adaptivePopSamples.reduce((a, b) => a + b, 0) / this.adaptivePopSamples.length
+        if (avg > newTarget * 1.3) {
+          newTarget = Math.round(newTarget * 1.3)
+          useMicroLand.getState().notify(`Population thriving — target raised to ${newTarget}.`)
+        } else if (avg < newTarget * 0.5 && newTarget > 5) {
+          newTarget = Math.max(5, Math.round(newTarget * 0.75))
+          useMicroLand.getState().notify(`Ecosystem struggling — target eased to ${newTarget}.`)
+        }
+      }
+      // Track sustained time at or above target.
+      let sustained = ar.sustainedSeconds
+      const STATS_DT = STATS_EVERY_MS / 1000
+      if (pop >= newTarget) {
+        if (this.adaptiveSustainStart === null) this.adaptiveSustainStart = this.world.elapsed
+        sustained = this.world.elapsed - this.adaptiveSustainStart
+        if (sustained >= ar.sustainGoal) {
+          useMicroLand.getState().endAdaptiveRun()
+          useMicroLand.getState().notify(`Adaptive challenge complete! You sustained ${newTarget} creatures.`)
+        }
+      } else {
+        this.adaptiveSustainStart = null
+        sustained = Math.max(0, sustained - STATS_DT)
+      }
+      useMicroLand.getState().updateAdaptiveRun(newTarget, sustained)
     }
 
     const currentStats = useMicroLand.getState().worldStats
