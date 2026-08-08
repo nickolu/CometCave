@@ -530,6 +530,17 @@ export function Hud({
 
               <div style={{ height: 1, background: 'var(--cc-panel-divider)', margin: '2px 0' }} />
 
+              {/* Field Guide */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => { setGuideOpen(true); setOverflowOpen(false) }}
+                style={overflowItem}
+                title="Open the field guide"
+              >
+                Field Guide
+              </button>
+
               {/* History */}
               <button
                 type="button"
