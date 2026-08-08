@@ -345,7 +345,7 @@ export const KNOBS: Knob[] = [
     key: 'mealValue',
     group: 'creatures',
     label: 'How filling a meal is',
-    help: 'How much of an empty stomach one bite fills. A meal is always kept a little short of a baby — otherwise everything breeds on every mouthful and eats the world.',
+    help: 'How much of an empty stomach one bite fills. If this exceeds the breed cost, well-fed animals will breed on every meal — which can overshoot the plant supply quickly.',
     min: 0.05,
     max: 0.95,
     step: 0.01,
@@ -456,16 +456,6 @@ const KNOB_BY_KEY: Record<TuningKey, Knob> = Object.fromEntries(
  */
 export const TUNING: Tuning = { ...TUNING_DEFAULTS }
 
-/**
- * The one relationship between two knobs that isn't allowed to break.
- *
- * If a meal more than pays for a child, grazers breed on every full stomach,
- * overshoot the plants, and take the entire food chain down with them — a
- * failure that looks like a thriving world for about ninety seconds. The panel
- * says so in the help text; this makes sure it stays true regardless.
- */
-const MEAL_HEADROOM = 0.05
-
 function clampKnob(key: TuningKey, value: number): number {
   const knob = KNOB_BY_KEY[key]
   if (!knob || !Number.isFinite(value)) return TUNING_DEFAULTS[key]
@@ -475,18 +465,12 @@ function clampKnob(key: TuningKey, value: number): number {
   return knob.step >= 1 ? Math.round(clamped) : clamped
 }
 
-function enforceInvariants(t: Tuning): void {
-  t.mealValue = Math.min(t.mealValue, t.breedCost - MEAL_HEADROOM)
-  t.mealValue = Math.max(KNOB_BY_KEY.mealValue.min, t.mealValue)
-}
-
 /** Move one or more knobs. Values outside a knob's range are clamped, not rejected. */
 export function setTuning(patch: Partial<Tuning>): void {
   for (const [key, value] of Object.entries(patch)) {
     if (!(key in TUNING_DEFAULTS)) continue
     TUNING[key as TuningKey] = clampKnob(key as TuningKey, value as number)
   }
-  enforceInvariants(TUNING)
 }
 
 export function resetTuning(): void {
