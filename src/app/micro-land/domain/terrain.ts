@@ -16,7 +16,8 @@ import { z } from 'zod'
 
 import { BASE_MATERIAL_IDS, MATERIALS, MATERIAL_IDS } from './config/materials'
 import { WORLD_H, WORLD_W } from './constants'
-import { type Rng, fbm, makeNoise2D } from './sim/prng'
+import { type Rng, fbm3, makeNoise3D } from './sim/prng'
+import { ringXY } from './wrap'
 
 import type { Theme } from './config/themes'
 import type { MaterialId } from './types'
@@ -260,33 +261,58 @@ export function paintTerrain(
   const map = fitGroundLevel(terrain.map, rng)
   const rows = map.length
   const cols = map[0].length
-  const noise = makeNoise2D(Math.floor(rng() * 1e9))
+  const noise = makeNoise3D(Math.floor(rng() * 1e9))
 
   const scaleY = rows / WORLD_H
-  // How many columns a map would need to cross the world with square cells.
-  const squareCols = WORLD_W * scaleY
-  const repeats = cols < squareCols - 0.5
-  // A map drawn *wider* than that is squeezed to fit instead of repeated. There
-  // is no third option — the rows have to span the world's full height, which
-  // fixes the vertical scale — and squeezing is much the gentler failure: it
-  // makes hills steeper, where the old stretch made them into plateaus.
-  const scaleX = repeats ? scaleY : cols / WORLD_W
+
   // Out and back again, so the joins are reflections rather than hard cuts.
   const period = cols * 2
+
+  /**
+   * How many out-and-back trips over the map the world contains — a whole
+   * number, always, because the world wraps.
+   *
+   * The mirrored walk is a triangle wave of period `2 * cols`, so it only comes
+   * back to where it started if the world spans a whole number of them. It used
+   * to span whatever the square-cell scale happened to give, which is almost
+   * never a whole number, and the map therefore met itself at column zero
+   * part-way through a trip — a hard vertical cut down the seam, in the one
+   * place the reflection trick was there to avoid one.
+   *
+   * Rounding to the nearest whole trip is what keeps cells near-square: it moves
+   * the horizontal scale by at most half a trip's worth, and never below one
+   * trip, so a map still crosses the world at least once.
+   */
+  const trips = Math.max(1, Math.round((WORLD_W * scaleY) / period))
+
+  /**
+   * A map drawn wider than square would once have been squeezed to fit across
+   * the world exactly once, which cannot wrap — its left edge is map column 0
+   * and its right edge is map column `cols - 1`, and those are different
+   * pictures. It now takes the same mirrored path as every other map, at one
+   * trip, so a wide scene reads out and back rather than running off a cliff.
+   * The cost is that a very wide map is squeezed about twice as hard as before;
+   * the alternative was the seam it was drawn to hide.
+   */
+  const scaleX = (trips * period) / WORLD_W
 
   // Roughen by about half a map cell, in world tiles.
   const wobble = Math.max(1, Math.min(1 / scaleX, 1 / scaleY) * 0.65)
 
   for (let y = 0; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
-      const nx = (fbm(noise, x * 0.09, y * 0.09, 2) - 0.5) * 2 * wobble
-      const ny = (fbm(noise, x * 0.09 + 31.7, y * 0.09 - 12.3, 2) - 0.5) * 2 * wobble
+      // Sampled around a ring rather than along a line, so the roughening meets
+      // itself at the seam instead of leaving a tile of jitter down column zero.
+      // The second sample is offset in *depth*, not in x: on a ring an x offset
+      // is only a rotation of the same circle and would decorrelate nothing.
+      const { u, v } = ringXY(x, 0.09)
+      const nx = (fbm3(noise, u, v, y * 0.09, 2) - 0.5) * 2 * wobble
+      const ny = (fbm3(noise, u, v, y * 0.09 + 31.7, 2) - 0.5) * 2 * wobble
 
-      let cx = Math.floor((x + nx) * scaleX)
-      if (repeats) {
-        const p = ((cx % period) + period) % period
-        cx = p < cols ? p : period - 1 - p
-      }
+      // Always mirrored now, whatever the map's shape — see `trips`.
+      const raw = Math.floor((x + nx) * scaleX)
+      const p = ((raw % period) + period) % period
+      const cx = p < cols ? p : period - 1 - p
       const cy = Math.floor((y + ny) * scaleY)
       const row = map[Math.max(0, Math.min(rows - 1, cy))]
       const ch = row[Math.max(0, Math.min(cols - 1, cx))] ?? '.'

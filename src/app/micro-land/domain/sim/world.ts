@@ -27,6 +27,7 @@ import type {
   MaterialId,
   WorldState,
 } from '@/app/micro-land/domain/types'
+import { wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 
 import { type Rng, makeRng } from './prng'
 
@@ -72,43 +73,55 @@ export function createWorld(seed = 1337): WorldState {
 // ---------------------------------------------------------------------------
 
 export function idx(x: number, y: number): number {
-  return y * WORLD_W + x
+  return y * WORLD_W + wrapCol(x)
 }
 
-export function inBounds(x: number, y: number): boolean {
-  return x >= 0 && y >= 0 && x < WORLD_W && y < WORLD_H
+/**
+ * Is this a real tile?
+ *
+ * Only a question about `y` now. The world wraps horizontally, so there is no
+ * such thing as an x that is out of bounds — every column resolves to a real one.
+ * The argument is kept so the dozens of call sites still read as a bounds check
+ * on a point rather than on a row, and so that any caller which one day cares
+ * about x again has somewhere to put it.
+ */
+export function inBounds(_x: number, y: number): boolean {
+  return y >= 0 && y < WORLD_H
 }
 
-/** Material index at a tile. Out of bounds reads as stone — the world is a box. */
+/**
+ * Material index at a tile. Above the sky and below the floor reads as stone —
+ * the world is a cylinder, capped top and bottom.
+ */
 export function tileAt(w: WorldState, x: number, y: number): number {
-  if (!inBounds(x, y)) return MATERIAL_INDEX.stone
-  return w.tiles[y * WORLD_W + x]
+  if (y < 0 || y >= WORLD_H) return MATERIAL_INDEX.stone
+  return w.tiles[y * WORLD_W + wrapCol(x)]
 }
 
-/** Out of bounds counts as solid, so nothing can wander out of the world. */
+/** The ceiling and the floor count as solid, so nothing falls out of the world. */
 export function solidAt(w: WorldState, x: number, y: number): boolean {
-  if (!inBounds(x, y)) return true
-  return IS_SOLID[w.tiles[y * WORLD_W + x]] === 1
+  if (y < 0 || y >= WORLD_H) return true
+  return IS_SOLID[w.tiles[y * WORLD_W + wrapCol(x)]] === 1
 }
 
 export function liquidAt(w: WorldState, x: number, y: number): boolean {
-  if (!inBounds(x, y)) return false
-  return IS_LIQUID[w.tiles[y * WORLD_W + x]] === 1
+  if (y < 0 || y >= WORLD_H) return false
+  return IS_LIQUID[w.tiles[y * WORLD_W + wrapCol(x)]] === 1
 }
 
 export function deadlyAt(w: WorldState, x: number, y: number): boolean {
-  if (!inBounds(x, y)) return false
-  return IS_DEADLY[w.tiles[y * WORLD_W + x]] === 1
+  if (y < 0 || y >= WORLD_H) return false
+  return IS_DEADLY[w.tiles[y * WORLD_W + wrapCol(x)]] === 1
 }
 
 export function fertileAt(w: WorldState, x: number, y: number): boolean {
-  if (!inBounds(x, y)) return false
-  return IS_FERTILE[w.tiles[y * WORLD_W + x]] === 1
+  if (y < 0 || y >= WORLD_H) return false
+  return IS_FERTILE[w.tiles[y * WORLD_W + wrapCol(x)]] === 1
 }
 
 export function setTile(w: WorldState, x: number, y: number, mat: number): void {
-  if (!inBounds(x, y)) return
-  w.tiles[y * WORLD_W + x] = mat
+  if (y < 0 || y >= WORLD_H) return
+  w.tiles[y * WORLD_W + wrapCol(x)] = mat
 }
 
 /**
@@ -240,7 +253,7 @@ export function boxDrownFraction(
     for (let tx = x0; tx <= x1; tx++) {
       total++
       if (!inBounds(tx, ty)) continue
-      if (IS_DROWNING[w.tiles[ty * WORLD_W + tx]] === 1) submerged++
+      if (IS_DROWNING[w.tiles[ty * WORLD_W + wrapCol(tx)]] === 1) submerged++
     }
   }
   return total === 0 ? 0 : submerged / total
@@ -261,7 +274,7 @@ export function boxViscosity(w: WorldState, x: number, y: number, bw: number, bh
   for (let ty = y0; ty <= y1; ty++) {
     for (let tx = x0; tx <= x1; tx++) {
       if (!inBounds(tx, ty)) continue
-      const v = VISCOSITY[w.tiles[ty * WORLD_W + tx]]
+      const v = VISCOSITY[w.tiles[ty * WORLD_W + wrapCol(tx)]]
       if (v > worst) worst = v
     }
   }
@@ -432,6 +445,12 @@ export function spawnCreature(
   if (w.creatures.length >= TUNING.maxCreatures) return null
   if (!w.blueprints[bp.id]) w.blueprints[bp.id] = bp
 
+  // Every stored x is a wrapped x — see `domain/wrap.ts`. This is the one funnel
+  // every creature in the game comes through (placed by hand, seeded by the
+  // ground, born, dropped by a theme), so normalising here is what makes that
+  // invariant true rather than merely intended.
+  x = wrapX(x)
+
   // Species-specific trait baselines: fly/swim range naturally farther;
   // meat-eaters are naturally more territorial about their hunting grounds.
   const spawnBaseTraits = {
@@ -472,7 +491,10 @@ export function spawnCreature(
     name: null,
     huntPassCount: 0,
     poisoned: 0,
-    homeX: Math.round(x),
+    // `wrapCol` and not a bare round: rounding a wrapped x can land exactly on
+    // WORLD_W, which is one past the last column and would read as a home the
+    // creature can never quite reach.
+    homeX: wrapCol(Math.round(x)),
     homeY: Math.round(y),
     migrateTimer: 0,
     packTimer: 0,
@@ -540,14 +562,18 @@ export function findSpawnSpot(
       // Water plants are excluded because the checks below judge the spot
       // *before* it settles: kelp asked about an empty sky reads as beached and
       // rejects all 120 attempts, which would quietly wipe kelp out of tidepool.
-      x = rng() * (WORLD_W - bw)
+      x = rng() * WORLD_W
       y = 0
       fromSky = true
     } else {
-      x = rng() * (WORLD_W - bw)
+      x = rng() * WORLD_W
       y = rng() * (WORLD_H - bh)
     }
-    x = Math.max(0, Math.min(WORLD_W - bw, x))
+    // The whole width is fair game now: a sprite hanging over the seam is drawn
+    // and collided in two pieces rather than being pushed back inside, so the
+    // old `WORLD_W - bw` limit would only have left a creature-shaped gap in the
+    // spawn distribution either side of column zero.
+    x = wrapX(x)
     y = Math.max(0, Math.min(WORLD_H - bh, y))
 
     if (!fits(x, y)) continue
@@ -598,7 +624,7 @@ export function findSpawnSpot(
   // rather than the whole sprite — a dragon's wingtips overlapping a hill must
   // not be the reason a summon lands nowhere.
   if (near && fits(near.x - bw / 2, near.y - bh / 2)) {
-    return { x: near.x - bw / 2, y: near.y - bh / 2 }
+    return { x: wrapX(near.x - bw / 2), y: near.y - bh / 2 }
   }
   return null
 }
@@ -791,10 +817,13 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
     for (let x = 0; x < WORLD_W; x++) {
       const i = y * WORLD_W + x
       w.moisture[i] = Math.max(0, w.moisture[i] - 0.005 * timePassed)
+      // Sideways neighbours wrap, so a shoreline at column zero is as damp as
+      // one in the middle of the map. Up and down still stop at the walls.
+      const rowStart = y * WORLD_W
       const hasWater =
         w.tiles[i] === waterIdx ||
-        (x > 0 && w.tiles[i - 1] === waterIdx) ||
-        (x < WORLD_W - 1 && w.tiles[i + 1] === waterIdx) ||
+        w.tiles[rowStart + (x === 0 ? WORLD_W - 1 : x - 1)] === waterIdx ||
+        w.tiles[rowStart + (x === WORLD_W - 1 ? 0 : x + 1)] === waterIdx ||
         (y > 0 && w.tiles[i - WORLD_W] === waterIdx) ||
         (y < WORLD_H - 1 && w.tiles[i + WORLD_W] === waterIdx)
       if (hasWater) {
@@ -809,9 +838,9 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
     const radius = 15 + Math.floor(rng() * 25)
     for (let dy2 = -radius; dy2 <= radius; dy2++) {
       for (let dx2 = -radius; dx2 <= radius; dx2++) {
-        const tx = rx + dx2
+        const tx = wrapCol(rx + dx2)
         const ty = ry + dy2
-        if (tx < 0 || tx >= WORLD_W || ty < 0 || ty >= WORLD_H) continue
+        if (ty < 0 || ty >= WORLD_H) continue
         if (dx2 * dx2 + dy2 * dy2 > radius * radius) continue
         const mi = ty * WORLD_W + tx
         w.moisture[mi] = Math.min(1, (w.moisture[mi] || 0) + 0.25)

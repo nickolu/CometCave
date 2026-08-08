@@ -22,6 +22,7 @@ import {
 } from '@/app/micro-land/domain/config/materials'
 import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import type { WorldState } from '@/app/micro-land/domain/types'
+import { wrapCol } from '@/app/micro-land/domain/wrap'
 
 const AIR = MATERIAL_INDEX.air
 const WATER = MATERIAL_INDEX.water
@@ -139,8 +140,18 @@ function hash3(x: number, y: number, z: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296
 }
 
+/**
+ * Tile index, wrapping horizontally.
+ *
+ * Every read and write in the tile sim goes through here, which is what makes
+ * the whole falling-sand pass wrap for free: a grain of sand pushed off column
+ * 671 lands in column 0 because that is where its index points. The `nx` bounds
+ * checks that used to guard each caller are gone for the horizontal axis — they
+ * were the walls, and the walls are what we are removing. Vertical guards stay
+ * exactly where they were: the ceiling and the floor are still real.
+ */
 function cell(x: number, y: number): number {
-  return y * WORLD_W + x
+  return y * WORLD_W + wrapCol(x)
 }
 
 function passableForPowder(mat: number): boolean {
@@ -174,9 +185,7 @@ function stepPowder(
   // Blocked straight down — try the diagonals so it forms a slope.
   const first = leftToRight ? -1 : 1
   for (const dir of [first, -first]) {
-    const nx = x + dir
-    if (nx < 0 || nx >= WORLD_W) continue
-    const diag = cell(nx, y + 1)
+    const diag = cell(x + dir, y + 1)
     if (passableForPowder(tiles[diag])) {
       swap(tiles, at, diag)
       return
@@ -207,7 +216,6 @@ function seekDrop(tiles: Uint8Array, x: number, y: number, dir: number): number 
   if (y + 1 >= WORLD_H) return 0
   for (let step = 1; step <= FLOW_SEARCH; step++) {
     const nx = x + dir * step
-    if (nx < 0 || nx >= WORLD_W) return 0
     if (tiles[cell(nx, y)] !== AIR) return 0
     if (tiles[cell(nx, y + 1)] === AIR) return step
   }
@@ -247,9 +255,8 @@ function stepLiquid(
   const first = hash3(x, y, phase) < 0.5 ? -1 : 1
 
   for (const dir of [first, -first]) {
-    const nx = x + dir
-    if (nx < 0 || nx >= WORLD_W || y + 1 >= WORLD_H) continue
-    const diag = cell(nx, y + 1)
+    if (y + 1 >= WORLD_H) continue
+    const diag = cell(x + dir, y + 1)
     if (tiles[diag] === AIR) {
       swap(tiles, at, diag)
       return
@@ -284,10 +291,9 @@ function quench(tiles: Uint8Array, x: number, y: number, at: number): boolean {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue
-      const nx = x + dx
       const ny = y + dy
-      if (nx < 0 || ny < 0 || nx >= WORLD_W || ny >= WORLD_H) continue
-      const n = cell(nx, ny)
+      if (ny < 0 || ny >= WORLD_H) continue
+      const n = cell(x + dx, ny)
       if (tiles[n] === WATER) {
         tiles[n] = AIR
         found = true
@@ -322,10 +328,9 @@ function corrode(tiles: Uint8Array, x: number, y: number, at: number, phase: num
     [1, 0],
     [0, -1],
   ]) {
-    const nx = x + dx
     const ny = y + dy
-    if (nx < 0 || ny < 0 || nx >= WORLD_W || ny >= WORLD_H) continue
-    const n = cell(nx, ny)
+    if (ny < 0 || ny >= WORLD_H) continue
+    const n = cell(x + dx, ny)
     const target = tiles[n]
     if (IS_SOLID[target] !== 1 || IS_ACID_PROOF[target] === 1) continue
     tiles[n] = AIR
@@ -341,10 +346,9 @@ function touchesHeat(tiles: Uint8Array, x: number, y: number): boolean {
   for (let dy = -1; dy <= 1; dy++) {
     for (let dx = -1; dx <= 1; dx++) {
       if (dx === 0 && dy === 0) continue
-      const nx = x + dx
       const ny = y + dy
-      if (nx < 0 || ny < 0 || nx >= WORLD_W || ny >= WORLD_H) continue
-      if (tiles[cell(nx, ny)] === LAVA) return true
+      if (ny < 0 || ny >= WORLD_H) continue
+      if (tiles[cell(x + dx, ny)] === LAVA) return true
     }
   }
   return false

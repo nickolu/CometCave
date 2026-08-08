@@ -71,6 +71,7 @@ import {
   type Traits,
   type WorldState,
 } from './domain/types'
+import { wrapCol, wrapX } from './domain/wrap'
 import { playBorn, playDeath, playEat, playExtinction, isSoundEnabled } from './audio/sound-engine'
 import { formatDuration } from './format'
 import { Renderer } from './rendering/renderer'
@@ -394,9 +395,13 @@ export class GameInstance {
       const view = this.renderer.viewWidth
       const cam = this.renderer.cameraX
       const held = this.grabbed.x
+      // Where in the view the carried creature is, measured the short way round.
+      // Absolute comparisons against the camera stop meaning anything once the
+      // view can straddle the seam.
+      const into = wrapX(held - cam)
       let dir = 0
-      if (held < cam + view * EDGE_BAND) dir = -1
-      else if (held > cam + view * (1 - EDGE_BAND)) dir = 1
+      if (into < view * EDGE_BAND) dir = -1
+      else if (into < view && into > view * (1 - EDGE_BAND)) dir = 1
 
       // The same band top and bottom, but only once zoom has put world off
       // screen that way — otherwise dragging something down to the floor, which
@@ -419,7 +424,7 @@ export class GameInstance {
         const movedY = this.renderer.cameraY - camY
         const bp = this.world.blueprints[this.grabbed.blueprintId]
         const art = bp ? artSize(bp) : { w: 0, h: 0 }
-        this.grabbed.x = Math.max(0, Math.min(this.world.width - art.w, held + moved))
+        this.grabbed.x = wrapX(held + moved)
         this.grabbed.y = Math.max(0, Math.min(this.world.height - art.h, heldY + movedY))
       }
     }
@@ -473,7 +478,7 @@ export class GameInstance {
         // Stamp each creature of the tracked species.
         for (const c of w.creatures) {
           if (c.blueprintId !== bpId) continue
-          const tx = Math.max(0, Math.min(WORLD_W - 1, Math.round(c.x)))
+          const tx = wrapCol(Math.round(c.x))
           const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(c.y)))
           this.heatmap[ty * WORLD_W + tx] += 1
         }
@@ -2255,7 +2260,12 @@ export class GameInstance {
     if (e.key === 'Home' || e.key === 'End') {
       e.preventDefault()
       this.following = false
-      this.renderer.panToLeft(e.key === 'Home' ? 0 : this.world.width)
+      // There is no far end any more, so End means "half a world from here" —
+      // the furthest point from where you are standing, which is the only thing
+      // "the other end" can still mean on a loop.
+      this.renderer.panToLeft(
+        e.key === 'Home' ? 0 : this.renderer.cameraX + this.world.width / 2
+      )
       return
     }
 
