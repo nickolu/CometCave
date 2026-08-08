@@ -164,17 +164,38 @@ export function Hud({
 
   const [overflowOpen, setOverflowOpen] = useState(false)
   const overflowRef = useRef<HTMLDivElement>(null)
+  const overflowBtnRef = useRef<HTMLButtonElement>(null)
 
-  // Close the overflow menu when clicking outside it.
+  // The header clips its own overflow so a crowded chip row can never push the
+  // page sideways on a phone. That clipping also swallowed this dropdown whole:
+  // it hangs *below* the header, so an absolutely positioned menu opened, sat
+  // outside the header's box, and was painted nowhere — the button looked dead.
+  // CSS can't clip one axis and spill the other (a visible axis paired with a
+  // hidden one computes to auto), so the menu is positioned fixed instead and
+  // anchored to the button's measured rect. Nothing above it is transformed, so
+  // fixed genuinely escapes the clip.
+  const [menuPos, setMenuPos] = useState<{ top: number; right: number } | null>(null)
+
   useEffect(() => {
     if (!overflowOpen) return
+
+    const place = () => {
+      const rect = overflowBtnRef.current?.getBoundingClientRect()
+      if (rect) setMenuPos({ top: rect.bottom + 4, right: window.innerWidth - rect.right })
+    }
+    place()
+
     const onDown = (e: MouseEvent) => {
       if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
         setOverflowOpen(false)
       }
     }
     document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
+    window.addEventListener('resize', place)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      window.removeEventListener('resize', place)
+    }
   }, [overflowOpen])
 
   // Shared style for items inside the overflow dropdown.
@@ -382,6 +403,7 @@ export function Hud({
         {/* Overflow menu — secondary actions */}
         <div ref={overflowRef} style={{ position: 'relative' }}>
           <button
+            ref={overflowBtnRef}
             type="button"
             className="cc-btn"
             onClick={() => setOverflowOpen(v => !v)}
@@ -401,13 +423,18 @@ export function Hud({
             ···
           </button>
 
-          {overflowOpen && (
+          {overflowOpen && menuPos && (
             <div
               style={{
-                position: 'absolute',
-                right: 0,
-                top: 'calc(100% + 4px)',
+                position: 'fixed',
+                right: menuPos.right,
+                top: menuPos.top,
                 minWidth: 200,
+                // Micro Land is played landscape, so on a short phone the full
+                // list is taller than what's left below the header — scroll it
+                // rather than run the last items off the bottom of the screen.
+                maxHeight: `calc(100vh - ${menuPos.top + 8}px)`,
+                overflowY: 'auto',
                 background: 'var(--cc-modal-bg-to, #1b1b2e)',
                 border: '1px solid var(--cc-panel-divider)',
                 borderRadius: 6,
