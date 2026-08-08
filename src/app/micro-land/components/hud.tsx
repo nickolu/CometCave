@@ -51,11 +51,6 @@ function ecosystemHealth(population: PopulationEntry[], total: number): HealthSt
   return 'Collapsing'
 }
 
-const SPEEDS = [
-  { value: 0.5, label: '½×' },
-  { value: 1, label: '1×' },
-  { value: 3, label: '3×' },
-]
 
 const chipBase: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -269,7 +264,7 @@ export function Hud({
         Inspect
       </button>
 
-      <div className="flex shrink-0 items-center gap-1" role="group" aria-label="Speed">
+      <div className="flex shrink-0 items-center gap-2" role="group" aria-label="Speed">
         <button
           type="button"
           className="cc-btn"
@@ -279,23 +274,27 @@ export function Hud({
         >
           {paused ? 'Paused' : 'Pause'}
         </button>
-        {SPEEDS.map(option => (
-          <button
-            key={option.value}
-            type="button"
-            className="cc-btn"
-            onClick={() => setSpeed(option.value)}
-            style={{
-              ...chipBase,
-              padding: '7px 9px',
-              ...(speed === option.value ? activeChip : {}),
-            }}
-            aria-pressed={speed === option.value}
-            aria-label={`Speed ${option.label}`}
-          >
-            {option.label}
-          </button>
-        ))}
+        <input
+          type="range"
+          min={0.5}
+          max={7}
+          step={0.5}
+          value={speed}
+          onChange={e => setSpeed(parseFloat(e.target.value))}
+          aria-label="Simulation speed"
+          style={{ width: 72, accentColor: 'var(--cc-mint)', cursor: 'pointer' }}
+        />
+        <span
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            letterSpacing: 1,
+            color: 'var(--cc-text-muted)',
+            minWidth: 22,
+          }}
+        >
+          {speed % 1 === 0 ? `${speed}×` : `${speed}×`}
+        </span>
       </div>
 
       {/* ── Right side ────────────────────────────────────────────────────── */}
