@@ -1924,7 +1924,7 @@ const GRASSLAND: Theme = {
     fill(tiles, 'air')
     const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
-    const skyDepth = Math.floor(WORLD_H * 0.35)
+    const skyDepth = Math.floor(WORLD_H * 0.62)
 
     for (let x = 0; x < WORLD_W; x++) {
       const h = ring1(surfaceNoise, x, 0.03, 0.5, 2)
@@ -1983,7 +1983,7 @@ const TROPICAL_ISLAND: Theme = {
     fill(tiles, 'air')
     const surfaceNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
-    const skyDepth = Math.floor(WORLD_H * 0.38)
+    const skyDepth = Math.floor(WORLD_H * 0.58)
     const waterLine = skyDepth + 5
 
     // Terrain pass
@@ -2042,7 +2042,7 @@ const VERDANT_FOREST: Theme = {
     const groundNoise = makeNoise3D(Math.floor(rng() * 1e9))
     const treeNoise = makeNoise3D(Math.floor(rng() * 1e9))
 
-    const skyDepth = Math.floor(WORLD_H * 0.33)
+    const skyDepth = Math.floor(WORLD_H * 0.60)
 
     for (let x = 0; x < WORLD_W; x++) {
       const h = ring1(groundNoise, x, 0.028, 2.0, 2)
