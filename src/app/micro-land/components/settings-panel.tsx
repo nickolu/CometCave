@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
-
 import {
   KNOBS,
   KNOB_GROUPS,
@@ -40,18 +38,16 @@ function show(knob: Knob, value: number): string {
 /**
  * The knobs, out of the way.
  *
- * A drawer down the side rather than a modal over the middle, and with no scrim
+ * A column down the side rather than a dialog over the middle, and with no scrim
  * behind it, because the whole reason to open it is to watch the world while you
- * drag. A dialog that dims what you are trying to look at would make every
+ * drag. Anything that dims what you are trying to look at would make every
  * setting a guess followed by a close-and-check.
  *
  * Every change lands on the next tick — there is no Apply. Ecosystem numbers are
  * not the kind of thing anyone can pick correctly in the abstract; you find the
  * right one by moving it until the meadow looks the way you meant.
  */
-export function SettingsPanel() {
-  const open = useMicroLand(s => s.settingsOpen)
-  const setOpen = useMicroLand(s => s.setSettingsOpen)
+export function SettingsPane() {
   const tuning = useMicroLand(s => s.tuning)
   const setKnob = useMicroLand(s => s.setTuningKnob)
   const reset = useMicroLand(s => s.resetTuningKnobs)
@@ -94,129 +90,66 @@ export function SettingsPanel() {
     }
   }
 
-  // Escape closes, wherever focus happens to be — the panel deliberately does
-  // not take focus away from the world, so it can't rely on catching the key
-  // itself.
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, setOpen])
-
-  if (!open) return null
-
   const changed = (Object.keys(TUNING_DEFAULTS) as TuningKey[]).filter(
     key => tuning[key] !== TUNING_DEFAULTS[key]
   ).length
 
+  const toolButton: React.CSSProperties = {
+    fontFamily: 'var(--cc-font-mono)',
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    padding: '6px 10px',
+    minHeight: 32,
+    borderRadius: 4,
+    border: '1px solid var(--cc-mint-line)',
+    color: 'var(--cc-text-muted)',
+  }
+
   return (
-    <div
-      role="dialog"
-      aria-label="World settings"
-      // Bottom sheet on a phone, drawer down the right on anything wider. The
-      // height cap has to come off on desktop or `inset-y-0` would pin a
-      // three-quarter-height panel to the top edge and leave a gap under it.
-      className="fixed inset-x-0 bottom-0 z-50 flex max-h-[72dvh] flex-col rounded-t-xl sm:inset-y-0 sm:left-auto sm:right-0 sm:w-[350px] sm:max-h-none sm:rounded-none"
-      style={{
-        background: 'linear-gradient(180deg, var(--cc-modal-bg-from), var(--cc-modal-bg-to))',
-        borderTop: '1px solid var(--cc-modal-border)',
-        borderLeft: '1px solid var(--cc-modal-border)',
-      }}
-    >
+    <>
+      {/* Copy, paste and reset act on every knob at once, so they sit above all
+          of them rather than beside any one of them. */}
       <div
-        className="flex shrink-0 items-center justify-between gap-2 px-4 py-3"
-        style={{
-          borderBottom: '1px solid var(--cc-panel-divider)',
-          background: 'var(--cc-modal-bg-from)',
-        }}
+        className="flex flex-wrap items-center gap-1 px-4 py-2"
+        style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
       >
-        <h2
-          style={{
-            fontFamily: 'var(--cc-font-mono)',
-            fontSize: 11,
-            letterSpacing: 2.5,
-            textTransform: 'uppercase',
-            color: 'var(--cc-mint)',
-          }}
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={copySettings}
+          style={toolButton}
+          title="Copy all settings to clipboard as JSON"
         >
-          Laws of the land
-        </h2>
-        <div className="flex items-center gap-1">
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={copySettings}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '6px 8px',
-              minHeight: 32,
-              borderRadius: 4,
-              border: '1px solid var(--cc-mint-line)',
-              color: 'var(--cc-text-muted)',
-            }}
-            title="Copy all settings to clipboard as JSON"
-          >
-            Copy
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={pasteSettings}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '6px 8px',
-              minHeight: 32,
-              borderRadius: 4,
-              border: '1px solid var(--cc-mint-line)',
-              color: 'var(--cc-text-muted)',
-            }}
-            title="Paste settings from clipboard"
-          >
-            Paste
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={reset}
-            disabled={changed === 0}
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 10,
-              letterSpacing: 1.2,
-              textTransform: 'uppercase',
-              padding: '6px 8px',
-              minHeight: 32,
-              borderRadius: 4,
-              border: '1px solid var(--cc-mint-line)',
-              color: changed === 0 ? 'var(--cc-text-muted)' : 'var(--cc-gold)',
-              opacity: changed === 0 ? 0.4 : 1,
-            }}
-            title="Put every setting back to the way the game shipped"
-          >
-            Reset{changed > 0 ? ` (${changed})` : ''}
-          </button>
-          <button
-            type="button"
-            className="cc-btn"
-            onClick={() => setOpen(false)}
-            aria-label="Close settings"
-            style={{ minWidth: 40, minHeight: 32, color: 'var(--cc-text-muted)' }}
-          >
-            ✕
-          </button>
-        </div>
+          Copy
+        </button>
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={pasteSettings}
+          style={toolButton}
+          title="Paste settings from clipboard"
+        >
+          Paste
+        </button>
+        <button
+          type="button"
+          className="cc-btn"
+          onClick={reset}
+          disabled={changed === 0}
+          style={{
+            ...toolButton,
+            color: changed === 0 ? 'var(--cc-text-muted)' : 'var(--cc-gold)',
+            opacity: changed === 0 ? 0.4 : 1,
+          }}
+          title="Put every setting back to the way the game shipped"
+        >
+          Reset{changed > 0 ? ` (${changed})` : ''}
+        </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div>
+
         <p
           className="px-4 pt-3"
           style={{ fontSize: 12, color: 'var(--cc-text-muted)', lineHeight: 1.5 }}
@@ -254,7 +187,7 @@ export function SettingsPanel() {
 
         <div className="h-4" />
       </div>
-    </div>
+    </>
   )
 }
 

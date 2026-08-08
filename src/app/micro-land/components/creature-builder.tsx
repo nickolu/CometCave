@@ -127,7 +127,8 @@ export function CreatureBuilder({
   const blueprints = useMicroLand(s => s.blueprints)
   const setTool = useMicroLand(s => s.setTool)
   const notify = useMicroLand(s => s.notify)
-  const setWorkshopOpen = useMicroLand(s => s.setWorkshopOpen)
+  const setSidebar = useMicroLand(s => s.setSidebar)
+  const setCreaturesTab = useMicroLand(s => s.setCreaturesTab)
 
   const [draft, setDraft] = useState<Draft | null>(null)
   const [seed, setSeed] = useState<CreatureBlueprint | null>(null)
@@ -471,7 +472,8 @@ export function CreatureBuilder({
               className="cc-btn"
               onClick={() => {
                 abortRef.current?.abort()
-                setWorkshopOpen(true)
+                setCreaturesTab('blueprints')
+                setSidebar('creatures')
                 setOpen(false)
               }}
               style={{
