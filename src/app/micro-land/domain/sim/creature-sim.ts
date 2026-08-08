@@ -1448,7 +1448,10 @@ function look(
     c.packSize = 0
   }
 
-  if (threat) {
+  // A starving creature ignores threats — the instinct to eat overrides the
+  // instinct to survive. Hunger >= 1 means the starvation timer is already
+  // running, so the animal has nothing left to lose by charging toward food.
+  if (threat && c.hunger < 1) {
     c.mood = 'flee'
     c.targetId = threat.id
   } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
