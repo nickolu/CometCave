@@ -599,6 +599,23 @@ export class GameInstance {
       }
     }
 
+    // If any creatures died this batch, immediately flush the per-creature
+    // thumbnail list and the inspector so the Field Guide never shows a
+    // creature that is no longer in the world. The full pushStats() path runs
+    // on the 300 ms timer and is too heavy to call here; this is the minimal
+    // subset needed to kill the ghost-plant symptom.
+    const hadDeath = events.some(e =>
+      e.kind === 'eaten' || e.kind === 'starved' || e.kind === 'drowned' ||
+      e.kind === 'burned' || e.kind === 'aged' || e.kind === 'diseased'
+    )
+    if (hadDeath) {
+      const thumbs = this.world.creatures
+        .map(c => ({ id: c.id, blueprintId: c.blueprintId, ageSeconds: c.ageSeconds, name: c.name }))
+        .sort((a, b) => b.ageSeconds - a.ageSeconds)
+      useMicroLand.getState().setPopulationItems(thumbs)
+      this.pushInspected()
+    }
+
     // Push entries to the event history log.
     const { addHistoryEntry } = useMicroLand.getState()
     const simTime = this.world.elapsed
