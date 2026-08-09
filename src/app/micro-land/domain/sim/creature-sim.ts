@@ -1108,7 +1108,7 @@ function look(
       const gapX = Math.max(0, Math.abs(dx) - bw / 2)
       const gapY = Math.max(0, Math.abs(dy) - bh / 2)
       if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
-        c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
+        c.hunger = Math.max(0, c.hunger - mealFill(c, bp, carBp))
         c.starving = 0
         c.huntBlockedId = null
         c.mealsEaten++
@@ -1137,7 +1137,7 @@ function look(
       const gapX = Math.max(0, Math.abs(dx) - bw / 2)
       const gapY = Math.max(0, Math.abs(dy) - bh / 2)
       if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
-        c.hunger = Math.max(0, c.hunger - TUNING.mealValue * 0.6) // eggs are smaller meals
+        c.hunger = Math.max(0, c.hunger - mealFill(c, bp, eggBp) * 0.6) // eggs are smaller meals
         c.starving = 0
         c.huntBlockedId = null
         c.mealsEaten++
@@ -1232,7 +1232,7 @@ function look(
       }
       if (touching) {
         devour(w, other, obp, dead, events)
-        c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
+        c.hunger = Math.max(0, c.hunger - mealFill(c, bp, obp, sizeOf(other)))
         c.starving = 0
         c.huntBlockedId = null
         c.mealsEaten++
@@ -1552,6 +1552,27 @@ function clearRun(
     if (needsWater && !liquidAt(w, x, y)) return false
   }
   return true
+}
+
+/**
+ * How much eating one prey item reduces the eater's hunger.
+ * - Base: TUNING.mealValue
+ * - Size ratio: prey mass / eater mass, clamped [0.3, 3.0]
+ *   A mite eating a sunleaf gets a fraction; a gulper eating a hopper gets a bonus.
+ * - Plant penalty: plants have low caloric density (−15% of base)
+ */
+function mealFill(
+  eater: Creature,
+  eaterBp: CreatureBlueprint,
+  preyBp: CreatureBlueprint,
+  preyTraitSize = 1
+): number {
+  const preyMass = preyBp.size * preyTraitSize
+  const eaterMass = eaterBp.size * sizeOf(eater)
+  const sizeFactor = Math.max(0.3, Math.min(3.0, preyMass / eaterMass))
+  let fill = TUNING.mealValue * sizeFactor
+  if (preyBp.move.kind === 'root') fill -= TUNING.mealValue * 0.15
+  return Math.max(0, fill)
 }
 
 function devour(
