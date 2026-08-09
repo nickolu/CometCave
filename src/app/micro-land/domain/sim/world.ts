@@ -490,6 +490,7 @@ export function spawnCreature(
     traits: bp.traitDefaults ? { ...spawnBaseTraits, ...bp.traitDefaults } : spawnBaseTraits,
     name: null,
     huntPassCount: 0,
+    huntBlockedId: null,
     poisoned: 0,
     // `wrapCol` and not a bare round: rounding a wrapped x can land exactly on
     // WORLD_W, which is one past the last column and would read as a home the
