@@ -1110,6 +1110,7 @@ function look(
       if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
+        c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
@@ -1138,6 +1139,7 @@ function look(
       if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue * 0.6) // eggs are smaller meals
         c.starving = 0
+        c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         c.mood = 'eat'
@@ -1232,6 +1234,7 @@ function look(
         devour(w, other, obp, dead, events)
         c.hunger = Math.max(0, c.hunger - TUNING.mealValue)
         c.starving = 0
+        c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
@@ -1355,6 +1358,10 @@ function look(
     if (c.mood === 'hunt' && c.targetId === prey.id) {
       c.huntPassCount++
       if (c.huntPassCount >= STUCK_SENSE_PASSES) {
+        // Record the blocked target so the mood block below treats it as
+        // "smelled, not seen" after the cooldown — preventing the creature
+        // from immediately re-locking and oscillating.
+        c.huntBlockedId = prey.id
         prey = null
         // Reverse the committed direction so the next foraging leg actively
         // moves away from the obstacle rather than pressing back against it.
@@ -1454,12 +1461,20 @@ function look(
   if (threat && c.hunger < 1) {
     c.mood = 'flee'
     c.targetId = threat.id
-  } else if (prey && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
+  } else if (prey && prey.id !== c.huntBlockedId && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
+    // Lock onto reachable prey. Clearing huntBlockedId here means the creature
+    // gets a clean slate whenever it finds a *different* target — it only
+    // ignores the specific prey it recently bounced off.
+    c.huntBlockedId = null
     c.mood = 'hunt'
     c.targetId = prey.id
   } else if (prey) {
     /**
      * Smelled, not seen — food inside the hunger reach but past plain sight.
+     * Also used when the prey is the one we last got stuck on (huntBlockedId):
+     * steer toward it via drift rather than hard-locking, so the hazard check
+     * still applies and the creature turns at walls instead of pressing against
+     * them forever.
      *
      * A bearing to set off on, not a thing to lock onto. Locking on is what the
      * first cut of this did, and it was worse than not finding the food at all:
@@ -1881,8 +1896,15 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       c.drift = c.drift >= 0 ? 1 : -1
     }
     // Committing to a heading is only an improvement if the heading isn't fatal.
+    // If both directions are lethal (trapped between two hazards), stop rather
+    // than flip every tick — oscillating between two walls looks broken.
     if (c.drift !== 0 && unliveableAhead(w, c, bp, body, c.drift > 0 ? 1 : -1)) {
-      c.drift = -c.drift
+      const opposite = -c.drift as 1 | -1
+      if (!unliveableAhead(w, c, bp, body, opposite > 0 ? 1 : -1)) {
+        c.drift = opposite
+      } else {
+        c.drift = 0
+      }
     }
     // Pull toward home when far away — but not when starving. A creature that
     // has exhausted its local food must be free to range until it finds more.

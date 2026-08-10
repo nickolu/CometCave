@@ -535,6 +535,18 @@ export interface Creature {
    */
   huntPassCount: number
   /**
+   * Id of the last prey this creature got physically stuck trying to reach.
+   *
+   * When set, the creature treats that prey as "smelled, not seen" — it steers
+   * toward it via `drift` instead of hard-locking `targetId`. This prevents the
+   * oscillation loop where the stuck detector fires, cools down, and the creature
+   * immediately re-locks on the same unreachable target.
+   *
+   * Cleared when the creature locks onto a *different* prey (fresh slate for the
+   * new hunt) or successfully eats something.
+   */
+  huntBlockedId: number | null
+  /**
    * Seconds of poison remaining after eating a toxic plant.
    *
    * While above zero the creature moves at half its normal speed. Counts down
