@@ -465,12 +465,55 @@ function clampKnob(key: TuningKey, value: number): number {
   return knob.step >= 1 ? Math.round(clamped) : clamped
 }
 
+/**
+ * How far under the breed cost a meal is held.
+ *
+ * Small on purpose. This is a floor on the gap, not a target for it — the
+ * shipped pair sits exactly this far apart, and anything wider is a balance
+ * decision rather than a safety one.
+ */
+export const MEAL_HEADROOM = 0.05
+
+/**
+ * The one relationship between two knobs that the world cannot survive.
+ *
+ * If a meal more than pays for a child, grazers breed on every full stomach,
+ * overshoot the plants, and take the entire food chain down with them. Both
+ * numbers are sliders, so this cannot be left as something the defaults merely
+ * happen to satisfy — a player dragging either one past the other would do it
+ * in a single notch, and the collapse arrives a minute later looking like the
+ * ecosystem's fault rather than the slider's.
+ *
+ * Whichever knob moved is the one that gets respected: pushing the meal up
+ * carries the cost up ahead of it, and pulling the cost down drags the meal
+ * down with it, so neither edit is silently ignored. `moved` names the keys the
+ * caller actually set; without it, dragging one would be indistinguishable from
+ * dragging the other and one of the two sliders would feel stuck.
+ */
+function enforceInvariants(moved: Set<TuningKey>): void {
+  if (TUNING.mealValue < TUNING.breedCost) return
+  if (moved.has('mealValue')) {
+    TUNING.breedCost = clampKnob('breedCost', TUNING.mealValue + MEAL_HEADROOM)
+    // The cost has a ceiling of its own, so a meal dragged to the very top can
+    // still end up level with it. Give way in the other direction rather than
+    // leaving the pair inverted.
+    if (TUNING.mealValue >= TUNING.breedCost) {
+      TUNING.mealValue = clampKnob('mealValue', TUNING.breedCost - MEAL_HEADROOM)
+    }
+    return
+  }
+  TUNING.mealValue = clampKnob('mealValue', TUNING.breedCost - MEAL_HEADROOM)
+}
+
 /** Move one or more knobs. Values outside a knob's range are clamped, not rejected. */
 export function setTuning(patch: Partial<Tuning>): void {
+  const moved = new Set<TuningKey>()
   for (const [key, value] of Object.entries(patch)) {
     if (!(key in TUNING_DEFAULTS)) continue
     TUNING[key as TuningKey] = clampKnob(key as TuningKey, value as number)
+    moved.add(key as TuningKey)
   }
+  enforceInvariants(moved)
 }
 
 export function resetTuning(): void {

@@ -121,13 +121,20 @@ export const FORAGE_HUNGER = 0.55
 /**
  * Global multiplier on every creature's per-species hunger rate.
  *
- * 1 = shipped balance. 0 = creatures never get hungry (hunger is effectively
- * disabled). Values above 1 make every animal drain faster, compressing the
- * window between a full stomach and a starving one without touching the amount
- * a meal restores — so a world set to 2× goes through the same boom-and-crash
- * cycles on a tighter clock.
+ * 1 = the per-species rates as written. 0 = creatures never get hungry (hunger
+ * is effectively disabled). Values above 1 make every animal drain faster,
+ * compressing the window between a full stomach and a starving one without
+ * touching the amount a meal restores — so a world set to 2× goes through the
+ * same boom-and-crash cycles on a tighter clock.
+ *
+ * Down to 0.1 from 0.25. Starvation was the dominant cause of death in every
+ * theme and it was a *reach* problem, not a shortage — the meadow sat at its
+ * species caps while animals died a screen away from it. Draining ten times
+ * slower than the blueprints assume gives a hungry animal long enough to
+ * actually cross the distance, which is the same thing MIGRATION_THRESHOLD and
+ * MATE_RADIUS were lowered/raised for.
  */
-export const HUNGER_RATE_SCALE = 0.25
+export const HUNGER_RATE_SCALE = 0.1
 
 /**
  * Hard population ceiling. Past this, nothing new is born (summoning still works).
@@ -151,15 +158,29 @@ export const MAX_CREATURES = Math.round(340 * WIDTH_SCALE)
  * Raised from 150 when the roster grew to seven plant species: the ceiling is
  * shared, so every species added to a world takes its share out of everything
  * else's, and a crowded world was starving its grazers rather than feeding more
- * of them.
+ * of them. Raised again to 650 whole-world when NATIVE_PLANT_SPECIES went to 8 —
+ * eight species at PLANT_SPECIES_CAP is 560, so the global ceiling has to sit
+ * above that or it becomes the binding limit and the mix collapses back to
+ * whichever plant spreads fastest.
+ *
+ * Written per screen and scaled, like every other count here, but the number was
+ * found on the slider in the full 672-wide world: 650 there, ~217 per screen.
  */
-export const MAX_PLANTS = Math.round(195 * WIDTH_SCALE)
+export const MAX_PLANTS = Math.round(216.7 * WIDTH_SCALE)
 
 /** Seconds a drowning creature survives underwater. */
 export const BREATH_SECONDS = 9
 
-/** Cooldown after breeding, seconds. */
-export const BREED_COOLDOWN = 20
+/**
+ * Cooldown after breeding, seconds.
+ *
+ * One second, down from twenty. The cooldown is no longer what paces breeding —
+ * BREED_COST is, and at a hunger rate of 0.1 refilling a stomach to the point
+ * where a parent can afford another child takes far longer than any cooldown
+ * would. Leaving the timer at twenty on top of that was double-charging for the
+ * same thing and it was part of why no animal population could hold itself up.
+ */
+export const BREED_COOLDOWN = 1
 
 /**
  * How close two animals of the same kind have to be to have a baby, in tiles.
@@ -171,18 +192,21 @@ export const BREED_COOLDOWN = 20
  * sight and then walks over. This is only the distance at which the walking
  * stops being necessary.
  *
- * Six tiles is a body-length or three apart — close enough that the pair is
- * visibly together when the baby appears, far enough that two walkers steering
- * at each other actually converge instead of jittering past one another. Making
- * it much tighter reads as broken: you watch two well-fed hoppers stand next to
- * each other and nothing happens.
+ * Ten tiles is a few body-lengths apart — close enough that the pair is visibly
+ * together when the baby appears, far enough that two walkers steering at each
+ * other actually converge instead of jittering past one another. Making it much
+ * tighter reads as broken: you watch two well-fed hoppers stand next to each
+ * other and nothing happens.
  *
  * The real cost of this whole mechanic is paid here. A species down to its last
  * individual can no longer recover, and a species scattered thinly across three
  * screens breeds far more slowly than the same headcount in one meadow. That is
- * the intended shape — it is also why this is a knob.
+ * the intended shape — but at six tiles the penalty for being thinly spread was
+ * steep enough that no animal species was self-sustaining in a three-screen
+ * world at all, so this went to ten: a pair that has walked into the same
+ * neighbourhood counts as having met.
  */
-export const MATE_RADIUS = 6
+export const MATE_RADIUS = 10
 
 /**
  * How far a child's heritable traits may fall from its parents'.
@@ -222,9 +246,15 @@ export const TRAIT_DRIFT = 0.12
  * back — the plants vanish, then everything that eats plants starves, then
  * everything that eats *those* starves. Plants mature in seconds and spread
  * often, and MAX_PLANT_SHARE is what stops that from becoming a green carpet.
+ *
+ * Maturity halved to 20 and the cooldown nudged to 26: the doubling time barely
+ * moves (40+20 = 60s, 20+26 = 46s), but the front-loaded half means a sprout the
+ * ground has just placed contributes to the recovery much sooner, which is what
+ * the seed bank is for. The cooldown carries the rest, and PLANT_CROWDING_STRENGTH
+ * lengthens it wherever a species is already dense.
  */
-export const PLANT_MATURITY = 40
-export const PLANT_SPREAD_COOLDOWN = 20
+export const PLANT_MATURITY = 20
+export const PLANT_SPREAD_COOLDOWN = 26
 
 /**
  * How much fullness a meal restores, and what breeding costs.
@@ -232,9 +262,16 @@ export const PLANT_SPREAD_COOLDOWN = 20
  * Keep the cost above the meal: if one meal more than pays for a child, grazers
  * breed on every full stomach, overshoot the plants, and take the whole food
  * chain down with them.
+ *
+ * Both roughly halved (0.54/0.69 → 0.26/0.31) so more of the world's pacing sits
+ * in eating and less in the timers. A parent now needs two bites per child rather
+ * than one-and-a-bit, which is what lets BREED_COOLDOWN drop to a second without
+ * turning every full stomach into a litter. Note the margin is exactly
+ * MEAL_HEADROOM (0.05) — `enforceInvariants` in tuning.ts holds it there, so
+ * lowering the cost any further will pull the meal down with it.
  */
-export const MEAL_VALUE = 0.54
-export const BREED_COST = 0.69
+export const MEAL_VALUE = 0.26
+export const BREED_COST = 0.31
 
 /**
  * Native plants — the ground's own seed bank, and the only regrowth there is.
@@ -261,21 +298,36 @@ export const BREED_COST = 0.69
  * all and plants spread the ordinary way; the further below it the world falls,
  * the harder the seed comes in. That asymmetry is deliberate — a constant
  * trickle would just pin every world at MAX_PLANTS and turn it into a carpet.
+ *
+ * 115 whole-world, up from 15. Fifteen plants across three screens is a floor
+ * only in the most literal sense: it got the count off zero and left the meadow
+ * to rebuild itself from five sprouts per screen, which took longer than the
+ * grazers waiting on it had. This still sits well under MAX_PLANTS (650), so the
+ * ground goes quiet in a grown-in world and plants do their own spreading —
+ * it is just a floor a food chain can actually stand on.
+ *
+ * Per screen this is ~38; the number itself was found on the slider in the full
+ * 672-wide world.
  */
-export const NATIVE_PLANT_TARGET = Math.round(5 * WIDTH_SCALE)
+export const NATIVE_PLANT_TARGET = Math.round(38.3 * WIDTH_SCALE)
 /**
  * How long the ground waits between seedings.
  *
- * Slow on purpose — 30s, up from 3s. At three seconds the soil was doing the
- * work the plants are supposed to do: a grazed patch filled back in while you
- * were still watching it be grazed, so nothing the animals did to the meadow
- * ever showed. Thirty seconds makes the seed bank a floor under a crash rather
- * than a groundskeeper. Recovery still happens, because plants that exist
- * spread on their own (PLANT_MATURITY + PLANT_SPREAD_COOLDOWN, ~15s per
- * doubling) — all the ground has to do is get the count off zero and then stay
- * out of the way.
+ * Slow on purpose — this was 35s, up from an original 3s. At three seconds the
+ * soil was doing the work the plants are supposed to do: a grazed patch filled
+ * back in while you were still watching it be grazed, so nothing the animals did
+ * to the meadow ever showed. Recovery is meant to come from plants that exist
+ * spreading on their own (PLANT_MATURITY + PLANT_SPREAD_COOLDOWN, ~46s per
+ * doubling) — all the ground has to do is get the count off zero.
+ *
+ * Back down to 13s, which at PLANT_SEED_BATCH 1 is the entire rate: one sprout
+ * every thirteen seconds, or about 4.5 a minute, and none at all once the world
+ * is at NATIVE_PLANT_TARGET. That is still a trickle against a 650-plant ceiling
+ * — what it stops being is slower than the thing it is a floor under. At 35s the
+ * ground needed nearly an hour to walk a stripped world back to a target of 115,
+ * by which time everything that ate plants had already died of it.
  */
-export const PLANT_SEED_INTERVAL = 35
+export const PLANT_SEED_INTERVAL = 13
 /**
  * Most plants a single seeding may place, when the world is at zero.
  *
@@ -289,10 +341,16 @@ export const PLANT_SEED_BATCH = 1
 /**
  * How many species the ground picks when it establishes its natives.
  *
- * Fewer than are viable, on purpose: two worlds painted with the same soil
- * should not grow the same flora.
+ * This used to be fewer than are viable on purpose, so that two worlds painted
+ * with the same soil would not grow the same flora. That variety cost more than
+ * it bought: three species is three ways for a grazer to be looking at a plant it
+ * cannot eat, and a picky eater in a world whose soil happened not to pick its
+ * food starved through no fault of its own. Eight takes essentially every viable
+ * plant, so the flora a world grows is now decided by what its *soil* can support
+ * rather than by a shuffle — which is the more legible answer anyway, since the
+ * player chose the soil.
  */
-export const NATIVE_PLANT_SPECIES = 3
+export const NATIVE_PLANT_SPECIES = 8
 
 /**
  * How often a seed is dropped from the sky rather than from a random height.
@@ -333,8 +391,18 @@ export const SPECIES_SOFT_CAP = Math.round(70 * WIDTH_SCALE)
  * one happens to spread fastest takes the entire allowance and the world becomes
  * a monoculture — which then starves out every grazer too small to eat it.
  * Keeping this well under MAX_PLANTS is what leaves room for a mixed meadow.
+ *
+ * Down to 70 whole-world from 138, alongside NATIVE_PLANT_SPECIES 3 → 8. The
+ * meadow is about the same size in total (8 × 70 = 560 against the old 3 × 138 =
+ * 414, both under the 650 ceiling) but it is spread across every plant the soil
+ * can carry instead of concentrated in three. A grazer's own food is scarcer per
+ * species and the world as a whole is greener, which pushes animals to range for
+ * it rather than sit in one patch — and makes it far less likely that the one
+ * plant a species eats is the one that got shuffled out.
+ *
+ * Per screen this is ~23; the number was found on the slider at whole-world scale.
  */
-export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
+export const PLANT_SPECIES_CAP = Math.round(23.3 * WIDTH_SCALE)
 
 /**
  * How long a pollinator can carry a seed before it auto-drops, seconds.
@@ -343,8 +411,13 @@ export const PLANT_SPECIES_CAP = Math.round(46 * WIDTH_SCALE)
  * clusters, short enough that a seed does not ride forever on a creature that
  * never lands. The 2-second minimum-carry guard in creature-sim prevents
  * the seed from dropping right back at the pickup plant.
+ *
+ * Ten, down from fifteen. With eight native species sharing the meadow the gaps
+ * a bee has to cross are shorter, and a shorter carry means a seed lands nearer
+ * the cluster it came from, which keeps a species from being smeared so thin that
+ * PLANT_SPREAD_MIN and the crowding penalty are the only things placing it.
  */
-export const POLLINATION_CARRY_SECONDS = 15
+export const POLLINATION_CARRY_SECONDS = 10
 
 /**
  * When 1, plants cannot spread on their own — they may only reproduce via
@@ -352,8 +425,16 @@ export const POLLINATION_CARRY_SECONDS = 15
  */
 export const POLLINATION_ONLY = 0
 
-/** Multiplier added to spread cooldown per same-species plant within crowding radius. */
-export const PLANT_CROWDING_STRENGTH = 2
+/**
+ * Multiplier added to spread cooldown per same-species plant within crowding radius.
+ *
+ * 0.6, down from 2. At 2 a plant with three neighbours took seven times as long
+ * to spread again, which was strong enough to be the real cap on the flora — the
+ * meadow stopped growing long before PLANT_SPECIES_CAP had anything to say about
+ * it, and a species knocked back to a single clump could barely restart. Now the
+ * caps do the limiting and this only biases *where* the growth goes.
+ */
+export const PLANT_CROWDING_STRENGTH = 0.6
 
 /** Minimum tiles a plant seed must travel from its parent. */
 export const PLANT_SPREAD_MIN = 11
@@ -387,8 +468,16 @@ export const ELDER_MIN_SECONDS = 60
  */
 export const STEADY_SHOW_SECONDS = 120
 
-/** Base probability per tick that a sick creature infects a healthy neighbour. */
-export const DISEASE_SPREAD_CHANCE = 0.01
+/**
+ * Base probability per tick that a sick creature infects a healthy neighbour.
+ *
+ * Off by default (0). Disease is a second pressure on populations that cannot yet
+ * reliably hold themselves up against the first one, and a contagion running
+ * through a species that is already thin is just a faster extinction with a
+ * different name in the death log. The mechanic stays — the knob is there, and
+ * Sporecap spores are unaffected by this — but it is opt-in.
+ */
+export const DISEASE_SPREAD_CHANCE = 0
 
 /**
  * How long a creature stays sick after catching a disease, in sim-seconds.
@@ -401,10 +490,14 @@ export const DISEASE_DURATION = 10
  * Seconds a creature must be hungry with no food in sight before it abandons
  * its home range and migrates toward richer terrain.
  *
- * Shorter than 30 would override the already-working expanded-sight-range
- * mechanic. Sixty gives a creature two full minutes to find food locally first.
+ * Fifteen, down from sixty. Sixty was set to give the expanded-sight-range
+ * mechanic room to work first, but the harness showed sight was not the binding
+ * problem — food was a median of 45-55 tiles away from animals about to starve,
+ * which is past any sight range hunger can buy. What they needed was to be walking
+ * in a direction, sooner. Fifteen seconds of local searching before committing to
+ * a move makes populations nomadic, and a nomadic species finds the meadow.
  */
-export const MIGRATION_THRESHOLD = 60
+export const MIGRATION_THRESHOLD = 15
 
 /**
  * How many seconds of resting it takes to build a nest from scratch.
@@ -427,5 +520,13 @@ export const NEST_DECAY_SECONDS = 120
  * Global lifespan multiplier applied on top of each species' base lifespanSeconds
  * and each creature's inherited lifespan trait. 2 = twice as long-lived as the
  * per-species defaults, which were tuned at 1× for a faster-paced world.
+ *
+ * Now 10. Lifespan is the budget an animal has to solve the reach problem in: at
+ * 2× a grazer had about nine minutes to find a mate, close MATE_RADIUS with it,
+ * and eat twice over in a world three screens wide, and most of them ran out of
+ * clock rather than out of food. Ten makes a natural death something that happens
+ * to a creature that already bred, which is the difference between a population
+ * and a queue. It also means `old age` should be a visible cause of death in the
+ * harness — if starvation still dominates, the reach problem is not solved.
  */
-export const LIFESPAN_SCALE = 2
+export const LIFESPAN_SCALE = 10
