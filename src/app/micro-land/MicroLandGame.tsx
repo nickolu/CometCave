@@ -95,6 +95,10 @@ export function MicroLandGame() {
       unsubscribe = useMicroLand.subscribe((state, previous) => {
         if (state.themeId !== previous.themeId) game?.setTheme(state.themeId)
         if (state.reshuffleToken !== previous.reshuffleToken) game?.reshuffle()
+        // When the UI dismisses the inspector (✕ button / setInspected(null)),
+        // clear the game-side inspectedId so pushInspected() doesn't immediately
+        // reopen the panel.
+        if (state.inspected === null && previous.inspected !== null) game?.dismissInspect()
         if (state.locateRequest !== previous.locateRequest && state.locateRequest && game) {
           const found = game.locateSpecies(state.locateRequest.blueprintId)
           if (!found) {
