@@ -86,6 +86,8 @@ import {
   MIN_DISPOSITION,
   PRESSURES,
   type Pressure,
+  RECONCILE_EDGES,
+  RECONCILE_TOUCH,
   RESOLUTIONS,
   type Resolution,
   type World,
@@ -93,6 +95,7 @@ import {
   describeClock,
   ensurePlayer,
   openThreads,
+  reconcileWorld,
 } from '@/app/dicebound/domain/world'
 import { verifyRequestAuth } from '@/lib/api/auth'
 import {
@@ -110,7 +113,7 @@ import {
   toolSchema,
   toolUses,
 } from '@/lib/dicebound/anthropic'
-import { loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
+import { archiveChapter, loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
 
 /** The DM can be slow, and a scene worth waiting for is worth the headroom. */
 export const maxDuration = 120
@@ -478,7 +481,7 @@ export async function POST(request: NextRequest) {
     const apiKey = requireApiKey()
     const result = isOpening
       ? await openStory(apiKey, campaign, controller.signal)
-      : await playTurn(apiKey, campaign, action, controller.signal)
+      : await playTurn(apiKey, campaign, action, controller.signal, uid)
 
     // Anonymous-first (CLAUDE.md #1). `uid` is null only when there is no
     // Firebase at all, and that player still gets their turn — they just apply
@@ -586,16 +589,45 @@ async function playTurn(
   apiKey: string,
   campaign: Campaign,
   action: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  uid: string | null
 ): Promise<TurnResult> {
   // Condense before building the prompt, so a long campaign sends a bounded
   // window and the synopsis the model reads is already current.
   let synopsis: string | undefined
   let dropped: number | undefined
+  let chapters: number | undefined
+  let repaired: World | undefined
+
   if (campaign.transcript.length > CONDENSE_AT) {
     const cut = campaign.transcript.length - TRANSCRIPT_WINDOW
+    const older = campaign.transcript.slice(0, cut)
+
     synopsis = await condense(apiKey, campaign, cut, signal)
     dropped = cut
+
+    // Archived before anything else touches it. `condense` used to be the only
+    // lossy operation in the game; the chapter is what makes the loss a change
+    // of address rather than a deletion, and it has to happen even if the
+    // reconciliation below falls over.
+    if (uid) {
+      try {
+        await archiveChapter(uid, {
+          index: campaign.chapters,
+          entries: older,
+          synopsis: synopsis || campaign.synopsis,
+          archivedAt: campaign.world.clock.elapsed,
+        })
+        chapters = campaign.chapters + 1
+      } catch (error) {
+        // A failed archive must not cost the player their turn. It does cost
+        // this slice of transcript, which is why it is logged loudly rather
+        // than swallowed silently like a save.
+        console.error('dicebound chapter archive failed:', error)
+      }
+    }
+
+    repaired = await reconcile(apiKey, campaign, older, signal)
   }
 
   const history = campaign.transcript.slice(dropped ?? 0)
@@ -621,7 +653,7 @@ Resolve it, then call narrate with what happens.`,
   // The player is seeded before the first delta so that edges pointing at them
   // have somewhere to land. An `owes(guard -> you)` with no `you` is dropped for
   // having a missing endpoint, and that is most of what the graph is for.
-  let world = ensurePlayer(campaign.world, campaign.character.name)
+  let world = ensurePlayer(repaired ?? campaign.world, campaign.character.name)
   // A fuse is allowed to reopen the turn exactly once. Without the flag a
   // thread that fires on the interruption's own elapsed minutes could keep
   // reopening it, and a turn that never stops is a turn that never comes back.
@@ -730,7 +762,7 @@ Resolve it, then call narrate with what happens.`,
   }
 
   entries.push({ kind: 'narration', text: narration })
-  return { entries, synopsis, dropped, world }
+  return { entries, synopsis, dropped, world, chapters }
 }
 
 /**
@@ -907,6 +939,106 @@ function transcriptBlock(entries: TranscriptEntry[]): string {
   })
 
   return `RECENT PLAY:\n${lines.join('\n\n')}`
+}
+
+const ReconcileSchema = z.object({
+  touch: z
+    .array(
+      z.object({
+        id: z.string().describe('Stable lowercase slug.'),
+        kind: z.enum(ENTITY_KINDS as unknown as [EntityKind, ...EntityKind[]]),
+        name: z.string(),
+        note: z.string().optional(),
+        state: z.string().optional().describe('How it stands at the END of this stretch.'),
+      })
+    )
+    .max(RECONCILE_TOUCH)
+    .optional(),
+  edges: z
+    .array(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        kind: z.enum(EDGE_KINDS as unknown as [EdgeKind, ...EdgeKind[]]),
+        note: z.string().optional(),
+      })
+    )
+    .max(RECONCILE_EDGES)
+    .optional(),
+})
+
+/**
+ * Rebuild the graph from the prose, then tidy what is left.
+ *
+ * The DM maintains the index in passing, two or three entities at a time, while
+ * doing something else. It drifts — people get named and never registered,
+ * relationships get described and never drawn — and that drift is the price of
+ * not making it run a simulation every turn. This is where the price is paid,
+ * inside `condense`, because that is the one moment the game has already
+ * accepted a slow call and the player is already waiting.
+ *
+ * The transcript is the authority here, not the graph. That is the whole
+ * premise: the index is rebuilt from the story, never the other way round.
+ *
+ * A failure is survivable by construction. The caller keeps the previous world
+ * and the turn proceeds, which reads as a DM whose notes are slightly behind —
+ * exactly how a failed `condense` already reads.
+ */
+async function reconcile(
+  apiKey: string,
+  campaign: Campaign,
+  older: TranscriptEntry[],
+  signal: AbortSignal
+): Promise<World> {
+  const now = campaign.world.clock.elapsed
+
+  try {
+    const input = (await callForTool({
+      apiKey,
+      model: UTILITY_MODEL,
+      system: `You keep the table's index. You are given a stretch of play and the entities already on file, and you list what the story actually contains: the people, places, things and loose ends that matter, and how they are connected.
+
+Reuse an existing id whenever the story means the same thing — matching an id is the entire point, and a second id for the same person is worse than a missing one. Invent an id only for something genuinely absent from the file. Use lowercase-hyphenated ids.
+
+Register only what the story would notice going missing. A tavern the player slept in once is worth keeping; the bowl they ate from is not. Describe state as it stands at the END of this stretch, not as it was in the middle.`,
+      maxTokens: 2000,
+      signal,
+      messages: [
+        {
+          role: 'user',
+          content: `ALREADY ON FILE:
+${
+  Object.values(campaign.world.entities)
+    .map(entity => `  ${entity.id} (${entity.kind}) — ${entity.name}`)
+    .join('\n') || '  nothing yet'
+}
+
+THE STRETCH OF PLAY:
+${transcriptBlock(older)}`,
+        },
+      ],
+      tool: {
+        name: 'index_world',
+        description: 'Record what this stretch of story contains.',
+        input_schema: toolSchema(ReconcileSchema),
+      },
+    })) as Record<string, unknown>
+
+    // Applied through the same path a turn's deltas take, so reconciliation
+    // cannot write anything a turn could not have written. `elapsed: 0` because
+    // this is bookkeeping about time that has already passed — advancing the
+    // clock here would move the story forward for having tidied its notes.
+    const { world } = applyWorldDelta(
+      campaign.world,
+      { elapsed: 0, touch: input.touch, edges: input.edges },
+      { touch: RECONCILE_TOUCH, edges: RECONCILE_EDGES }
+    )
+    return reconcileWorld(world, now)
+  } catch (error) {
+    console.error('dicebound reconcile failed:', error)
+    // Still worth the pure pass: dormancy and cold threads need no model.
+    return reconcileWorld(campaign.world, now)
+  }
 }
 
 /**

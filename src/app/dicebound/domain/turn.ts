@@ -78,6 +78,13 @@ export interface TurnResult {
    * treating a missing field as an emptied graph.
    */
   world?: World
+  /**
+   * The chapter counter after an archive. Set only on a turn that condensed and
+   * successfully wrote what it dropped — a failed archive leaves the counter
+   * alone, so the next condense reuses the index and overwrites rather than
+   * leaving a gap where a chapter should be.
+   */
+  chapters?: number
 }
 
 export function tallyChecks(stats: CampaignStats, entries: TranscriptEntry[]): CampaignStats {
@@ -137,6 +144,7 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
     title: result.title ?? campaign.title,
     synopsis: result.synopsis ?? campaign.synopsis,
     world: result.world ?? campaign.world,
+    chapters: result.chapters ?? campaign.chapters,
     character,
     transcript: [...kept, ...entries],
     stats: tallyChecks(campaign.stats, entries),

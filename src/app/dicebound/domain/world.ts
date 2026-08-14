@@ -330,6 +330,26 @@ export function fireThreads(world: World, fired: readonly EntityId[]): World {
 export const MAX_TOUCH_PER_TURN = 6
 export const MAX_EDGES_PER_TURN = 6
 
+/**
+ * The same caps for the reconciliation pass, which is allowed to be much
+ * bigger.
+ *
+ * A turn touching forty entities is a DM that has stopped telling a story and
+ * started filing. A *reconciliation* touching forty is the repair pass reading
+ * twenty turns of prose at once, which is exactly its job — it is rebuilding
+ * the index, not maintaining it.
+ */
+export const RECONCILE_TOUCH = 40
+export const RECONCILE_EDGES = 40
+
+/** How much of the world one call to `applyWorldDelta` may rewrite. */
+export interface DeltaLimits {
+  touch: number
+  edges: number
+}
+
+const TURN_LIMITS: DeltaLimits = { touch: MAX_TOUCH_PER_TURN, edges: MAX_EDGES_PER_TURN }
+
 /** How far a single turn may move an actor's opinion of the player. */
 export const MAX_DISPOSITION_STEP = 1
 
@@ -398,7 +418,11 @@ export function ensurePlayer(world: World, name: string): World {
   }
 }
 
-export function applyWorldDelta(world: World, delta: WorldDelta): AppliedDelta {
+export function applyWorldDelta(
+  world: World,
+  delta: WorldDelta,
+  limits: DeltaLimits = TURN_LIMITS
+): AppliedDelta {
   const { clock, fired, interrupted } = advance(world.clock, delta.elapsed, world)
 
   // The clock is set before threads fire, because `fireThreads` re-arms the
@@ -407,21 +431,21 @@ export function applyWorldDelta(world: World, delta: WorldDelta): AppliedDelta {
   let next = fireThreads({ ...world, clock }, fired)
   const now = clock.elapsed
 
-  next = applyTouches(next, delta.touch, now)
-  next = applyThreadUpdates(next, delta.threads, now)
-  next = applyEdges(next, delta.edges, now)
+  next = applyTouches(next, delta.touch, now, limits.touch)
+  next = applyThreadUpdates(next, delta.threads, now, limits.touch)
+  next = applyEdges(next, delta.edges, now, limits.edges)
 
   return { world: pruneWorld(next), fired, interrupted }
 }
 
-function applyTouches(world: World, touch: unknown, now: number): World {
+function applyTouches(world: World, touch: unknown, now: number, limit: number): World {
   if (!Array.isArray(touch)) return world
 
   const entities = { ...world.entities }
   let applied = 0
 
   for (const raw of touch) {
-    if (applied >= MAX_TOUCH_PER_TURN) break
+    if (applied >= limit) break
     if (!isPlainObject(raw)) continue
 
     const id = slug(raw.id)
@@ -465,14 +489,14 @@ function applyTouches(world: World, touch: unknown, now: number): World {
   return { ...world, entities }
 }
 
-function applyThreadUpdates(world: World, threads: unknown, now: number): World {
+function applyThreadUpdates(world: World, threads: unknown, now: number, limit: number): World {
   if (!Array.isArray(threads)) return world
 
   const entities = { ...world.entities }
   let applied = 0
 
   for (const raw of threads) {
-    if (applied >= MAX_TOUCH_PER_TURN) break
+    if (applied >= limit) break
     if (!isPlainObject(raw)) continue
 
     const id = slug(raw.id)
@@ -503,14 +527,14 @@ function applyThreadUpdates(world: World, threads: unknown, now: number): World 
   return { ...world, entities }
 }
 
-function applyEdges(world: World, edges: unknown, now: number): World {
+function applyEdges(world: World, edges: unknown, now: number, limit: number): World {
   if (!Array.isArray(edges)) return world
 
   const out = [...world.edges]
   let applied = 0
 
   for (const raw of edges) {
-    if (applied >= MAX_EDGES_PER_TURN) break
+    if (applied >= limit) break
 
     // `since` is stamped here and never read from the model. It is what makes
     // "an edge must predate this turn to grant a bonus" enforceable — without
@@ -537,6 +561,61 @@ function applyEdges(world: World, edges: unknown, now: number): World {
   }
 
   return { ...world, edges: out }
+}
+
+/**
+ * How long an entity may go unmentioned before it stops being sent to the DM.
+ *
+ * Three days of fiction, matching the patient fuse window. Dormant is not gone:
+ * the entity is still there to be pulled back, which is how "wait, that's the
+ * man from the harbour" works twelve chapters later. What this buys is a prompt
+ * that describes the scene the player is in rather than every scene they have
+ * ever been in.
+ */
+export const DORMANT_AFTER = 3 * 24 * 60
+
+/**
+ * The repair pass, run when `condense` runs.
+ *
+ * The graph is an index the DM maintains in passing, two or three entities at a
+ * time, while doing something else. It drifts: things get mentioned and never
+ * registered, people stay `active` for a week of fiction after walking out of
+ * the story, threads go cold and keep sitting in the loose-ends list. None of
+ * that is a bug in the DM — it is the cost of not making it maintain a
+ * simulation, and this is where it gets paid.
+ *
+ * Pure. The half that needs a model — reading prose for entities that were
+ * never registered — happens in the route and arrives here already applied.
+ */
+export function reconcileWorld(world: World, now: number): World {
+  const entities: Record<EntityId, Entity> = {}
+
+  for (const entity of Object.values(world.entities)) {
+    // The player never goes dormant, and neither does open business. A debt
+    // nobody has mentioned for a week is exactly the thing that should still
+    // be in front of the DM.
+    const open = entity.kind === 'thread' && entity.resolution === 'open'
+    const stale = entity.status === 'active' && now - entity.lastSeen > DORMANT_AFTER
+
+    let next = entity
+    if (stale && !open && entity.id !== PLAYER_ID) {
+      next = { ...entity, status: 'dormant' }
+    }
+
+    // A cold thread has fired its allowance without the story engaging it.
+    // Retiring it here is what stops the loose-ends list becoming a list of
+    // things the player has decided not to care about.
+    if (next.kind === 'thread' && next.resolution === 'cold') {
+      next = { ...next, status: 'dormant', due: null }
+    }
+
+    entities[next.id] = next
+  }
+
+  // pruneWorld drops edges whose endpoints did not survive, which is the other
+  // half of the repair — an edge pointing at a deleted entity renders as a
+  // relationship with a hole in it.
+  return pruneWorld({ ...world, entities })
 }
 
 // ------------------------------------------------------------ housekeeping
