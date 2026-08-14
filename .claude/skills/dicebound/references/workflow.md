@@ -1,20 +1,29 @@
 # Working through the phase 2 issues
 
 The tree is [#3516](https://github.com/nickolu/CometCave/issues/3516) — one
-parent, six sprint epics, eleven child issues. `docs/dicebound-phase-2.md` is the
-spec every issue points at.
+parent, six sprint epics. `docs/dicebound-phase-2.md` is the spec every issue
+points at.
 
-## Before anything: is Dicebound on `main`?
+## Where the tree stands
 
-```
-git ls-tree -r HEAD --name-only | grep -c dicebound
-```
+All eleven original child issues are merged, and four of the six sprint epics are
+closed: #3517 (GM moves and a word budget), #3518 (a sheet that isn't blank),
+#3519 (the world model, the clock, server-authoritative campaigns) and #3520
+(threads, fuses and loose ends).
 
-If that returns `0`, **stop**. The whole game lived only in a working tree at the
-time this skill was written, and every issue in the tree assumes code that is not
-there. Landing it is issue
-[#3529](https://github.com/nickolu/CometCave/issues/3529), and nothing else can
-start until it does.
+Two remain, and neither had child issues written for it, deliberately — their
+shape depended on what the graph looked like once real campaigns had run through
+it. That gate has now cleared: the graph populates from play, reconciles from
+prose, and survives a campaign deep enough to condense.
+
+- **#3521 inventory, species and traits.** Item granting and the kit ceiling have
+  landed. Species at creation and the inventory UI have not.
+- **#3522 powers, classes and levels.** Not started. Blocked on the tier/level
+  table, which is Nick's to settle.
+
+Two problems found by measurement rather than by reading are still open, and
+neither is fixed by anything above: run `gh issue list --search dicebound` before
+assuming a bug is new.
 
 ## Picking one up
 
@@ -30,18 +39,38 @@ plausible-looking broke the game once already.
 Check the epic's sub-issue list for ordering. Several issues say "depends on X";
 those are real, not advisory.
 
-## Lanes — what may run in parallel
+## Lanes — draw them by file, not by theme
 
-`src/app/api/v1/dicebound/turn/route.ts` is touched by seven of the eleven
-issues. Running those concurrently spends the parallelism on merge conflicts in
-the file where all the subtle logic lives.
+`src/app/api/v1/dicebound/turn/route.ts` is where nearly all the subtle logic
+lives, and nearly every server-side issue wants it. That file is the constraint,
+so lanes are drawn around **who owns which files** rather than around what the
+work is about.
 
-| Lane | Issues | Rule |
-| --- | --- | --- |
-| **A** | #3523, #3524, #3525, #3530, #3531, #3532, #3533 | strictly serial, in that order |
-| **B** | #3526 (voice harness), #3527 + #3528 (starting skills) | safe alongside lane A |
+| Lane        | Owns                                                    | Runs beside                                |
+| ----------- | ------------------------------------------------------- | ------------------------------------------ |
+| **UI**      | `components/*.tsx`, `DiceboundGame.tsx`                 | anything                                   |
+| **Turn**    | `turn/route.ts`, `domain/turn.ts`                       | UI only — one issue at a time              |
+| **Kit**     | `domain/kit.ts`, `domain/dice.ts`, `character/route.ts` | UI; contends with Turn when it adds a tool |
+| **Harness** | `scripts/`, `lib/dicebound/`                            | anything                                   |
 
-Lane B touches `scripts/`, `character/route.ts` and `sheet.tsx` only.
+The sustainable shape of a batch is therefore **two issues, not four**: one from
+the UI lane, one from whichever server lane is active.
+
+## Never stack PRs
+
+Branch every issue off `main`. Not off the branch before it, however tempting the
+dependency makes it look.
+
+Four stacked PRs were once merged seven seconds apart, which is faster than
+GitHub retargets a stacked PR's base after its base branch merges. All four
+reported MERGED; three had gone into intermediate branches and only the first
+reached `main`, so the game shipped without its narrate tool, its measurement
+harness or its word budget until someone noticed. Recovering it meant
+cherry-picking three commits and proving the result byte-identical to the
+reviewed stack tip.
+
+If two issues genuinely cannot be parallel, do them in sequence off `main` and
+merge each before starting the next. Waiting is cheaper than that recovery.
 
 ## Doing the work
 
@@ -51,7 +80,7 @@ Lane B touches `scripts/`, `character/route.ts` and `sheet.tsx` only.
   `src/app/dicebound/domain/`, pure and tested, before it is wired into a route
   or a component. The domain modules are where this game is actually specified.
 - **Write the test as a sentence about the rule.** `it('advances on use, not on
-  success — failing still teaches')`, not `it('works')`. Several existing tests
+success — failing still teaches')`, not `it('works')`. Several existing tests
   are the only record of why a number is what it is.
 - **If the issue contradicts the design doc, say so.** Do not silently pick one.
   An issue that fights an invariant is a bug in the issue.
@@ -111,12 +140,17 @@ And because `accountBackend` swallows every persistence error, a missing deploy
 looks exactly like a working game that has quietly stopped saving: confirm the
 write landed in Firestore rather than trusting the absence of an error.
 
-## Sprints 4–6
+## The two remaining sprints
 
-[#3520](https://github.com/nickolu/CometCave/issues/3520),
 [#3521](https://github.com/nickolu/CometCave/issues/3521) and
-[#3522](https://github.com/nickolu/CometCave/issues/3522) deliberately have **no
-child issues yet**. Their shape depends on what the world graph is like once real
-campaigns have run through it, and writing fifteen detailed issues against a
-schema that has never run produces fifteen issues that need rewriting. Do not
-start them. Do not invent children for them without Nick.
+[#3522](https://github.com/nickolu/CometCave/issues/3522) still have **no child
+issues**, and the original reason has expired — the graph has now run through
+real campaigns, so their shape is knowable.
+
+What has not expired is who writes them. Do not invent children for either
+without Nick, and #3522 in particular cannot start until the tier/level table is
+settled, because that number decides how long a campaign takes to feel powerful.
+
+#3520 closed without ever needing children: two of its three scope items arrived
+as a side effect of the world epic, and the third was a UI job. Check whether an
+epic is already built before writing issues for it.
