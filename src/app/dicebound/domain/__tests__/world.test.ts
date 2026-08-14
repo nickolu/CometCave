@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   DORMANT_AFTER,
+  type Edge,
   type Entity,
   FUSE_WINDOWS,
   MAX_DISPOSITION,
@@ -13,17 +14,22 @@ import {
   MAX_TURN_MINUTES,
   PLAYER_ID,
   type ThreadEntity,
+  WINDOW_EDGES,
+  WINDOW_ENTITIES,
   type World,
   advance,
   applyWorldDelta,
+  currentPlace,
   describeClock,
   emptyClock,
   emptyWorld,
   ensurePlayer,
+  findEntities,
   fireThreads,
   openThreads,
   pruneWorld,
   reconcileWorld,
+  relevanceWindow,
   timeOfDay,
   validateEdge,
   validateEntity,
@@ -578,5 +584,185 @@ describe('reconcileWorld', () => {
     const before = worldOf(now, actor('ferryman', 0))
     reconcileWorld(before, now)
     expect(before.entities.ferryman.status).toBe('active')
+  })
+})
+
+describe('the relevance window', () => {
+  function person(id: string, over: Partial<Entity> = {}): Entity {
+    return {
+      id,
+      kind: 'actor',
+      name: id,
+      note: '',
+      state: '',
+      status: 'active',
+      disposition: 0,
+      scale: 'person',
+      firstSeen: 0,
+      lastSeen: 0,
+      ...over,
+    } as Entity
+  }
+
+  function place(id: string): Entity {
+    return {
+      id,
+      kind: 'place',
+      name: id,
+      region: '',
+      note: '',
+      state: '',
+      status: 'active',
+      firstSeen: 0,
+      lastSeen: 0,
+    }
+  }
+
+  function build(entities: Entity[], edges: Edge[] = []): World {
+    return {
+      clock: { elapsed: 100, startHour: 9 },
+      entities: Object.fromEntries(entities.map(e => [e.id, e])),
+      edges,
+    }
+  }
+
+  it('stays bounded no matter how large the graph gets', () => {
+    // The whole reason this exists: a campaign four hundred turns deep must
+    // send the same amount of world as one twenty turns deep.
+    const crowd = Array.from({ length: 200 }, (_, i) => person(`p${i}`, { lastSeen: i }))
+    const edges: Edge[] = crowd.slice(0, 150).map((p, i) => ({
+      from: p.id,
+      to: crowd[(i + 1) % 150].id,
+      kind: 'knows',
+      note: '',
+      since: i,
+    }))
+
+    const window = relevanceWindow(build(crowd, edges))
+    expect(window.entities.length).toBeLessThanOrEqual(WINDOW_ENTITIES)
+    expect(window.edges.length).toBeLessThanOrEqual(WINDOW_EDGES)
+  })
+
+  it('always carries the player', () => {
+    const crowd = Array.from({ length: 100 }, (_, i) => person(`p${i}`, { lastSeen: 999 }))
+    const window = relevanceWindow(build([person(PLAYER_ID, { lastSeen: 0 }), ...crowd]))
+    expect(window.entities.map(e => e.id)).toContain(PLAYER_ID)
+  })
+
+  it('carries something the player just named, however long ago it mattered', () => {
+    const crowd = Array.from({ length: 100 }, (_, i) => person(`p${i}`, { lastSeen: 999 }))
+    const old = person('the-ferryman', { lastSeen: 0, name: 'The Ferryman' })
+    const window = relevanceWindow(build([old, ...crowd]), ['ferryman'])
+    expect(window.entities.map(e => e.id)).toContain('the-ferryman')
+  })
+
+  it('keeps every open thread ahead of a bystander', () => {
+    const crowd = Array.from({ length: 100 }, (_, i) => person(`p${i}`, { lastSeen: 999 }))
+    const debt = thread({ id: 'debt', resolution: 'open', pressure: 'urgent', lastSeen: 0 })
+    const window = relevanceWindow(build([debt, ...crowd]))
+    expect(window.entities.map(e => e.id)).toContain('debt')
+  })
+
+  it('leaves dormant entities out unless they were named', () => {
+    const asleep = person('the-ferryman', { status: 'dormant', name: 'The Ferryman' })
+    expect(relevanceWindow(build([asleep])).entities).toEqual([])
+    expect(relevanceWindow(build([asleep]), ['ferryman']).entities.map(e => e.id)).toEqual([
+      'the-ferryman',
+    ])
+  })
+
+  it('finds where the player is standing from the newest at-edge', () => {
+    const world = build(
+      [person(PLAYER_ID), place('quay'), place('tavern')],
+      [
+        { from: PLAYER_ID, to: 'quay', kind: 'at', note: '', since: 10 },
+        { from: PLAYER_ID, to: 'tavern', kind: 'at', note: '', since: 90 },
+      ]
+    )
+    // Walking somewhere new does not delete having been somewhere old, so the
+    // most recent edge is the answer rather than the only one.
+    expect(currentPlace(world)?.id).toBe('tavern')
+  })
+
+  it('drops an edge whose other end did not make the window', () => {
+    const crowd = Array.from({ length: 100 }, (_, i) => person(`p${i}`, { lastSeen: 999 }))
+    const asleep = person('asleep', { status: 'dormant' })
+    const world = build(
+      [person(PLAYER_ID), asleep, ...crowd],
+      [{ from: PLAYER_ID, to: 'asleep', kind: 'knows', note: '', since: 1 }]
+    )
+    expect(relevanceWindow(world).edges).toEqual([])
+  })
+})
+
+describe('findEntities', () => {
+  const ferryman: Entity = {
+    id: 'the-ferryman',
+    kind: 'actor',
+    name: 'Old Cassa',
+    note: 'The man who works the harbour crossing.',
+    state: '',
+    status: 'dormant',
+    disposition: 0,
+    scale: 'person',
+    firstSeen: 0,
+    lastSeen: 5,
+  }
+  const world: World = {
+    clock: { elapsed: 0, startHour: 9 },
+    entities: { [ferryman.id]: ferryman },
+    edges: [],
+  }
+
+  it('reaches things that have gone quiet — that is the whole point', () => {
+    // "Wait, that's the man from the harbour", twelve chapters later. Searching
+    // only active entities would return what the DM could already see.
+    expect(findEntities(world, 'harbour').map(e => e.id)).toEqual(['the-ferryman'])
+  })
+
+  it('matches on the name as well as the note', () => {
+    expect(findEntities(world, 'Cassa').map(e => e.id)).toEqual(['the-ferryman'])
+  })
+
+  it('returns nothing rather than inventing a near miss', () => {
+    // A lookup that guesses is worse than one that admits it has none: the DM
+    // narrates a stranger as an old friend and only the player notices.
+    expect(findEntities(world, 'the queen of thieves')).toEqual([])
+    expect(findEntities(world, '')).toEqual([])
+    expect(findEntities(world, undefined)).toEqual([])
+  })
+
+  it('offers a candidate on one significant word rather than nothing', () => {
+    // Deliberately loose. "The man from the harbour" has exactly one word worth
+    // matching, and handing back nothing tells the DM to invent someone who
+    // already exists. A candidate can be looked at and rejected; an empty
+    // result has already made the decision.
+    expect(findEntities(world, 'harbour').map(e => e.id)).toEqual(['the-ferryman'])
+    expect(findEntities(world, 'the man from the harbour').map(e => e.id)).toEqual(['the-ferryman'])
+  })
+
+  it('ranks a name match above a description match', () => {
+    const other: Entity = {
+      ...ferryman,
+      id: 'harbour-gate',
+      name: 'Harbour Gate',
+      kind: 'place',
+      region: '',
+      note: '',
+    } as Entity
+    const two: World = { ...world, entities: { [ferryman.id]: ferryman, [other.id]: other } }
+    expect(findEntities(two, 'harbour').map(e => e.id)[0]).toBe('harbour-gate')
+  })
+
+  it('strips punctuation before searching', () => {
+    // The first live run searched for `cassa,` with the comma still attached,
+    // found nothing, and told the DM to invent someone who already existed.
+    expect(findEntities(world, 'Old Cassa, the harbour crossing').map(e => e.id)).toEqual([
+      'the-ferryman',
+    ])
+  })
+
+  it('is not carried by common words alone', () => {
+    expect(findEntities(world, 'the man from the place')).toEqual([])
   })
 })

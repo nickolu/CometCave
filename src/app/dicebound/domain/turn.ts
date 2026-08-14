@@ -19,11 +19,17 @@ export interface ToolCall {
 
 export const ROLL_CHECK_TOOL = 'roll_check'
 export const NARRATE_TOOL = 'narrate'
+export const RECALL_TOOL = 'recall'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
   /** `roll_check` calls, to resolve against the die in the order they arrived. */
   rolls: T[]
+  /**
+   * `recall` lookups. Answered and the turn continues — a lookup is not a move,
+   * so it neither ends the turn nor spends one of its checks.
+   */
+  recalls: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -52,13 +58,19 @@ export interface TurnCalls<T extends ToolCall> {
  */
 export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T> {
   const rolls = calls.filter(call => call.name === ROLL_CHECK_TOOL)
+  const recalls = calls.filter(call => call.name === RECALL_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
-  if (rolls.length > 0) return { rolls, ending: null, premature: narrations }
+  // A narration sent alongside a lookup is as blind as one sent alongside a
+  // roll: it was written before the answer came back, so whatever the DM asked
+  // for cannot be in it.
+  if (rolls.length > 0 || recalls.length > 0) {
+    return { rolls, recalls, ending: null, premature: narrations }
+  }
 
   // Only the first narration ends the turn. A second one is a duplicate, not a
   // continuation, and appending both would read as the DM saying it twice.
-  return { rolls, ending: narrations[0] ?? null, premature: narrations.slice(1) }
+  return { rolls, recalls, ending: narrations[0] ?? null, premature: narrations.slice(1) }
 }
 
 /** What a turn produced, before it has been written down anywhere. */

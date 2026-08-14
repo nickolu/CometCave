@@ -67,6 +67,7 @@ import {
 } from '@/app/dicebound/domain/dice'
 import {
   NARRATE_TOOL,
+  RECALL_TOOL,
   ROLL_CHECK_TOOL,
   type TurnResult,
   applyTurn,
@@ -84,18 +85,23 @@ import {
   MAX_TOUCH_PER_TURN,
   MAX_TURN_MINUTES,
   MIN_DISPOSITION,
+  PLAYER_ID,
   PRESSURES,
   type Pressure,
   RECONCILE_EDGES,
   RECONCILE_TOUCH,
   RESOLUTIONS,
   type Resolution,
+  type ThreadEntity,
   type World,
   applyWorldDelta,
+  currentPlace,
   describeClock,
+  edgesFor,
   ensurePlayer,
-  openThreads,
+  findEntities,
   reconcileWorld,
+  relevanceWindow,
 } from '@/app/dicebound/domain/world'
 import { verifyRequestAuth } from '@/lib/api/auth'
 import {
@@ -220,6 +226,12 @@ Every narrate call also reports what changed. This is an index of the story, not
 - touch: the two or three things that changed or first appeared. Reuse the same id for the same thing forever — "harbour-guard" stays "harbour-guard". Do not restate what did not change.
 - edges: connections that formed or changed. Both ends must be things you registered in touch.
 - threads: loose ends that moved. Close one only when the story is genuinely finished with it.
+REMEMBERING
+What you are shown is a window on the story, not the whole of it. Places, people and promises that have gone quiet are still there and are not listed.
+- If the player refers to someone or something you cannot see in the list, call recall BEFORE you answer. Do not decide it is new because it is not in front of you.
+- Recall is free and costs the player nothing. Inventing a stranger over the top of somebody the story already contains is the one mistake a player always catches, and it is the mistake that makes a long campaign feel disposable.
+- If recall comes back with nothing, then it really is new, and you should invent it with a free hand.
+
 You report what happened. The server decides what it is worth — how far a disposition moves, when a relationship becomes old enough to matter, how much time a turn may consume. Do not try to set those.
 
 TONE
@@ -376,6 +388,21 @@ function narrateTool(rolled: boolean): ToolDef {
     description: `Tell the player what happens, and end your turn. This is the last thing you do. ${budget} If the attempt was uncertain, call roll_check first and wait for the result — narration sent in the same message as a roll was written before the dice were known, and is discarded.`,
     input_schema: toolSchema(NarrateSchema),
   }
+}
+
+const RecallSchema = z.object({
+  query: z
+    .string()
+    .describe(
+      'What you are trying to remember, in the player\'s words: "the man from the harbour", "the debt to Maren".'
+    ),
+})
+
+const RECALL: ToolDef = {
+  name: RECALL_TOOL,
+  description:
+    'Look something up that is not in front of you. Use this when the player refers to a person, place or promise you cannot see listed — the story may well contain it. Returns nothing if there is genuinely no match, and nothing means it is new.',
+  input_schema: toolSchema(RecallSchema),
 }
 
 const OpeningSchema = z.object({
@@ -636,7 +663,7 @@ async function playTurn(
       role: 'user',
       content: `${sheetBlock(campaign)}
 
-${worldBlock(campaign.world)}
+${worldBlock(campaign.world, mentionedIn(action))}
 
 PREMISE: "${campaign.premise}"
 ${(synopsis ?? campaign.synopsis) ? `\nTHE STORY SO FAR:\n${synopsis ?? campaign.synopsis}\n` : ''}
@@ -678,11 +705,11 @@ Resolve it, then call narrate with what happens.`,
       // which is a harder guarantee than asking nicely for prose. There is no
       // fourth roll available to reach for, and finishing is the only move
       // left on the board.
-      tools: lastStep ? [narrate] : [ROLL_CHECK, narrate],
+      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, ending, premature } = partitionTurnCalls(toolUses(data))
+    const { rolls, recalls, ending, premature } = partitionTurnCalls(toolUses(data))
 
     if (ending) {
       const text = narrationOf(ending.input)
@@ -729,7 +756,7 @@ Resolve it, then call narrate with what happens.`,
       break
     }
 
-    if (rolls.length === 0 && premature.length === 0) {
+    if (rolls.length === 0 && recalls.length === 0 && premature.length === 0) {
       // The model answered in prose instead of declaring the end of the turn.
       // Take it anyway. The turn is over either way, and spending a round trip
       // teaching the model the ceremony would cost the player fifteen seconds
@@ -745,6 +772,16 @@ Resolve it, then call narrate with what happens.`,
       const { entry, brief } = rollFor(campaign, call.input)
       entries.push(entry)
       results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
+    }
+    // A lookup costs a pass but not a check: it is the DM checking its notes,
+    // not the story moving. `MAX_CHECKS` still bounds the loop, so a model that
+    // did nothing but recall would still be forced to narrate at the end.
+    for (const call of recalls) {
+      results.push({
+        type: 'tool_result',
+        tool_use_id: call.id,
+        content: recallFor(world, call.input),
+      })
     }
     // Answered, not honoured. The API requires a result for every tool_use
     // block, and this is the one place the model is told why its narration was
@@ -794,6 +831,39 @@ function fuseBrief(world: World, fired: readonly string[]): string {
 function narrationOf(input: unknown): string {
   const raw = (input ?? {}) as { text?: unknown }
   return typeof raw.text === 'string' ? raw.text.trim() : ''
+}
+
+/**
+ * Answer a `recall`.
+ *
+ * Says so plainly when there is no match, because the alternative is a DM that
+ * narrates a stranger as an old acquaintance and a player who is the only one
+ * who notices. "Nothing" is a useful answer here — it means the thing is new,
+ * and inventing it is then the right move rather than a mistake.
+ */
+function recallFor(world: World, input: unknown): string {
+  const query = (input ?? {}) as { query?: unknown }
+  const found = findEntities(world, query.query)
+
+  if (found.length === 0) {
+    return 'Nothing in the story so far matches that. It is new — invent it freely.'
+  }
+
+  return found
+    .map(entity => {
+      const ties = edgesFor(world, entity.id)
+        .slice(0, 4)
+        .map(edge => `${edge.from} ${edge.kind} ${edge.to}${edge.note ? ` (${edge.note})` : ''}`)
+      return [
+        `${entity.name} (${entity.id}, ${entity.kind})`,
+        entity.note,
+        entity.state ? `Currently: ${entity.state}` : '',
+        ties.length ? `Ties: ${ties.join('; ')}` : '',
+      ]
+        .filter(Boolean)
+        .join(' ')
+    })
+    .join('\n')
 }
 
 /** Resolve one `roll_check` call into a transcript entry and a model briefing. */
@@ -869,34 +939,69 @@ function rollFor(campaign: Campaign, input: unknown): { entry: CheckEntry; brief
 }
 
 /**
- * The world, as much of it as the DM needs to stay consistent.
+ * The world as the DM reads it: prose, not JSON.
  *
- * Deliberately small. The point is that the model can reuse an id it has used
- * before and knows what time it is; the full relevance window — who is nearby,
- * what is dormant, what can be recalled — is #3533's problem, and sending the
- * whole graph every turn would undo the prompt budget #3525 just bought.
+ * Bounded by `relevanceWindow` rather than by the size of the graph, which is
+ * the point — a campaign four hundred turns deep sends the same amount of world
+ * as one twenty turns deep, because what it sends is the scene rather than the
+ * archive. Everything outside the window stays in the campaign and is reachable
+ * with `recall`.
+ *
+ * Rendered as sentences because the model reads them better than it reads a
+ * data structure, and because a prompt full of JSON teaches it to answer in the
+ * same register.
  */
-function worldBlock(world: World): string {
-  const known = Object.values(world.entities)
-    .filter(entity => entity.status === 'active')
-    .sort((a, b) => b.lastSeen - a.lastSeen)
-    .slice(0, 12)
-    .map(
-      entity =>
-        `  ${entity.id} (${entity.kind}) — ${entity.name}${entity.state ? `: ${entity.state}` : ''}`
-    )
+function worldBlock(world: World, mentioned: readonly string[]): string {
+  const { entities, edges } = relevanceWindow(world, mentioned)
+  const here = currentPlace(world)
 
-  const threads = openThreads(world)
-    .slice(0, 5)
-    .map(thread => `  ${thread.id} — ${thread.name} [${thread.pressure}]`)
+  const byId = new Map(entities.map(entity => [entity.id, entity]))
+  const name = (id: string) => byId.get(id)?.name ?? id
+
+  const people = entities
+    .filter(entity => entity.kind === 'actor' && entity.id !== PLAYER_ID)
+    .map(entity => `  ${entity.name} (${entity.id})${entity.state ? ` — ${entity.state}` : ''}`)
+
+  const things = entities
+    .filter(entity => entity.kind === 'place' || entity.kind === 'thing')
+    .filter(entity => entity.id !== here?.id)
+    .map(entity => `  ${entity.name} (${entity.id})${entity.state ? ` — ${entity.state}` : ''}`)
+
+  const threads = entities
+    .filter((entity): entity is ThreadEntity => entity.kind === 'thread')
+    .map(entity => `  ${entity.name} (${entity.id}) — ${entity.pressure}`)
+
+  const ties = edges.map(
+    edge =>
+      `  ${name(edge.from)} ${edge.kind} ${name(edge.to)}${edge.note ? ` — ${edge.note}` : ''}`
+  )
 
   return [
     `TIME: ${describeClock(world.clock)}`,
-    known.length ? `KNOWN (reuse these ids):\n${known.join('\n')}` : '',
+    here ? `WHERE YOU ARE: ${here.name} (${here.id})${here.state ? ` — ${here.state}` : ''}` : '',
+    people.length ? `WHO IS AROUND (reuse these ids):\n${people.join('\n')}` : '',
+    things.length ? `WHAT IS AROUND:\n${things.join('\n')}` : '',
+    ties.length ? `HOW THEY STAND:\n${ties.join('\n')}` : '',
     threads.length ? `LOOSE ENDS:\n${threads.join('\n')}` : '',
+    'Anyone or anything not listed here may still exist. If the player refers to something you do not see, call recall before deciding it is new.',
   ]
     .filter(Boolean)
     .join('\n\n')
+}
+
+/**
+ * The words in the player's action worth trying to match against the graph.
+ *
+ * Crude on purpose. It is a hint to the ranking, not a parser: the cost of a
+ * false positive is one extra entity in a twenty-entity window, and the cost of
+ * a false negative is the DM forgetting someone the player just named.
+ */
+function mentionedIn(action: string): string[] {
+  return action
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(word => word.length >= 4)
+    .slice(0, 24)
 }
 
 /** The character sheet, as the DM sees it every turn. */

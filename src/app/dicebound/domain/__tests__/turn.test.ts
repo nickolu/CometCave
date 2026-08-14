@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   NARRATE_TOOL,
+  RECALL_TOOL,
   ROLL_CHECK_TOOL,
   type ToolCall,
   partitionTurnCalls,
@@ -82,5 +83,36 @@ describe('partitionTurnCalls', () => {
     expect(rolls).toEqual([])
     expect(ending).toBeNull()
     expect(premature).toEqual([])
+  })
+})
+
+describe('recall in the turn loop', () => {
+  const recall = (id: string): ToolCall & { id: string } => ({
+    id,
+    name: RECALL_TOOL,
+    input: { query: 'the man from the harbour' },
+  })
+
+  it('answers a lookup without ending the turn — checking your notes is not a move', () => {
+    const { recalls, ending } = partitionTurnCalls([recall('a')])
+
+    expect(recalls.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+  })
+
+  it('discards narration written alongside a lookup, for the same reason as a roll', () => {
+    // Whatever the DM asked to remember cannot be in prose it wrote before the
+    // answer came back.
+    const { recalls, ending, premature } = partitionTurnCalls([recall('a'), narrate('b')])
+
+    expect(recalls.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+    expect(premature.map(c => c.id)).toEqual(['b'])
+  })
+
+  it('still lets a plain narration end the turn', () => {
+    const { recalls, ending } = partitionTurnCalls([narrate('a')])
+    expect(recalls).toEqual([])
+    expect(ending?.id).toBe('a')
   })
 })
