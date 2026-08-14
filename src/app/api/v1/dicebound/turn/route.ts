@@ -72,6 +72,28 @@ import {
   applyTurn,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
+import {
+  EDGE_KINDS,
+  ENTITY_KINDS,
+  ENTITY_STATUSES,
+  type EdgeKind,
+  type EntityKind,
+  type EntityStatus,
+  MAX_DISPOSITION,
+  MAX_EDGES_PER_TURN,
+  MAX_TOUCH_PER_TURN,
+  MAX_TURN_MINUTES,
+  MIN_DISPOSITION,
+  PRESSURES,
+  type Pressure,
+  RESOLUTIONS,
+  type Resolution,
+  type World,
+  applyWorldDelta,
+  describeClock,
+  ensurePlayer,
+  openThreads,
+} from '@/app/dicebound/domain/world'
 import { verifyRequestAuth } from '@/lib/api/auth'
 import {
   type ContentBlock,
@@ -188,6 +210,15 @@ NARRATING
 - Let failure move the story rather than stall it. A failed attempt should change the situation, not repeat it.
 - Keep the world consistent. Names, places and promises from earlier still hold.
 
+KEEPING THE WORLD
+Every narrate call also reports what changed. This is an index of the story, not a copy of it — the transcript is still the record, and anything you miss gets picked up later.
+- elapsed: how many minutes of story this turn actually took. Most turns are minutes. Be honest about long ones; you cannot skip past trouble by claiming a week went by.
+- safe: true only if the character could have rested here uninterrupted.
+- touch: the two or three things that changed or first appeared. Reuse the same id for the same thing forever — "harbour-guard" stays "harbour-guard". Do not restate what did not change.
+- edges: connections that formed or changed. Both ends must be things you registered in touch.
+- threads: loose ends that moved. Close one only when the story is genuinely finished with it.
+You report what happened. The server decides what it is worth — how far a disposition moves, when a relationship becomes old enough to matter, how much time a turn may consume. Do not try to set those.
+
 TONE
 - All ages. Adventure, danger, mystery and real stakes are welcome. Gore, cruelty and horror are not.
 - Take the player's premise completely seriously, however silly it is. "Pirates but everyone is a cat" is a real pirate story, and the cats are real pirates.
@@ -240,6 +271,74 @@ const NarrateSchema = z.object({
     .describe(
       'What happens. Second person, present tense. Open on the fiction and close on the fiction, within the word budget given for this turn. Never state the outcome in the abstract ("you fail", "you succeed") — show the thing itself.'
     ),
+  elapsed: z
+    .number()
+    .int()
+    .min(0)
+    .max(MAX_TURN_MINUTES)
+    .describe(
+      'Minutes of story this turn consumed. A conversation is 5, crossing a town is 30, a night is 480. Be honest and be small — most turns are minutes, not hours.'
+    ),
+  safe: z
+    .boolean()
+    .describe('True only if the character could have rested here without being interrupted.'),
+  touch: z
+    .array(
+      z.object({
+        id: z.string().describe('Stable lowercase slug. Reuse the same id for the same thing.'),
+        kind: z.enum(ENTITY_KINDS as unknown as [EntityKind, ...EntityKind[]]),
+        name: z.string().describe('What the player would call it.'),
+        note: z.string().optional().describe('One line, the first time you meet it.'),
+        state: z
+          .string()
+          .optional()
+          .describe('What is true about it NOW: "the bridge is burned", "hiding in the cellar".'),
+        status: z.enum(ENTITY_STATUSES as unknown as [EntityStatus, ...EntityStatus[]]).optional(),
+        disposition: z
+          .number()
+          .int()
+          .min(MIN_DISPOSITION)
+          .max(MAX_DISPOSITION)
+          .optional()
+          .describe(
+            'Actors only. Where this person now stands toward the player. Move it by one at most; the server will not take a larger step.'
+          ),
+      })
+    )
+    .max(MAX_TOUCH_PER_TURN)
+    .optional()
+    .describe(
+      'Only the two or three things that actually changed or first appeared this turn. This is an index, not a world state — do not restate what is unchanged.'
+    ),
+  edges: z
+    .array(
+      z.object({
+        from: z.string(),
+        to: z.string(),
+        kind: z.enum(EDGE_KINDS as unknown as [EdgeKind, ...EdgeKind[]]),
+        note: z.string().optional().describe('Why, in a few words: "for the boat he lost".'),
+      })
+    )
+    .max(MAX_EDGES_PER_TURN)
+    .optional()
+    .describe('New or changed connections. Both ends must be things you have registered in touch.'),
+  threads: z
+    .array(
+      z.object({
+        id: z.string(),
+        resolution: z
+          .enum(RESOLUTIONS as unknown as [Resolution, ...Resolution[]])
+          .optional()
+          .describe('Close a thread when the story has actually finished with it.'),
+        pressure: z
+          .enum(PRESSURES as unknown as [Pressure, ...Pressure[]])
+          .optional()
+          .describe('How soon this presses again.'),
+      })
+    )
+    .max(MAX_TOUCH_PER_TURN)
+    .optional()
+    .describe('Loose ends that moved. Register the thread itself in touch first.'),
 })
 
 const ROLL_CHECK: ToolDef = {
@@ -505,6 +604,8 @@ async function playTurn(
       role: 'user',
       content: `${sheetBlock(campaign)}
 
+${worldBlock(campaign.world)}
+
 PREMISE: "${campaign.premise}"
 ${(synopsis ?? campaign.synopsis) ? `\nTHE STORY SO FAR:\n${synopsis ?? campaign.synopsis}\n` : ''}
 ${transcriptBlock(history)}
@@ -517,6 +618,14 @@ Resolve it, then call narrate with what happens.`,
 
   const entries: TranscriptEntry[] = [{ kind: 'player', text: action }]
   let narration = ''
+  // The player is seeded before the first delta so that edges pointing at them
+  // have somewhere to land. An `owes(guard -> you)` with no `you` is dropped for
+  // having a missing endpoint, and that is most of what the graph is for.
+  let world = ensurePlayer(campaign.world, campaign.character.name)
+  // A fuse is allowed to reopen the turn exactly once. Without the flag a
+  // thread that fires on the interruption's own elapsed minutes could keep
+  // reopening it, and a turn that never stops is a turn that never comes back.
+  let fuseAnswered = false
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
@@ -544,7 +653,47 @@ Resolve it, then call narrate with what happens.`,
     const { rolls, ending, premature } = partitionTurnCalls(toolUses(data))
 
     if (ending) {
-      narration = narrationOf(ending.input)
+      const text = narrationOf(ending.input)
+      if (text) {
+        // Two narrations can happen in one turn — the action, then the thing
+        // that interrupted it — and both are the player's to read.
+        narration = narration ? `${narration}\n\n${text}` : text
+      }
+
+      const applied = applyWorldDelta(world, (ending.input ?? {}) as Record<string, unknown>)
+      world = applied.world
+
+      // The clock ran into an open thread's fuse. The turn is not over: the
+      // player asked for a week and got four hours, and they are owed the
+      // reason. This is the one place `narrate` is not terminal, and it costs a
+      // pass only when a fuse actually fires.
+      if (applied.interrupted && !fuseAnswered && !lastStep) {
+        fuseAnswered = true
+        // The narration is discarded, not kept, and this is the same rule that
+        // governs a `narrate` sent alongside a roll: it was written before a
+        // fact it depends on. The model narrated the whole span the player
+        // asked for — "dawn finds you still moving, by the second afternoon" —
+        // and then reported an `elapsed` that ran into a fuse forty-five
+        // minutes in. Keeping both gives the player two days of walking
+        // followed by an ambush that happened before breakfast. It could not
+        // have known where the clock would stop, so it does not get to describe
+        // the time that did not pass.
+        narration = ''
+
+        messages.push({ role: 'assistant', content: data.content ?? [] })
+        messages.push({
+          role: 'user',
+          content: [
+            {
+              type: 'tool_result',
+              tool_use_id: ending.id,
+              content: fuseBrief(world, applied.fired),
+            },
+          ],
+        })
+        continue
+      }
+
       break
     }
 
@@ -581,7 +730,26 @@ Resolve it, then call narrate with what happens.`,
   }
 
   entries.push({ kind: 'narration', text: narration })
-  return { entries, synopsis, dropped }
+  return { entries, synopsis, dropped, world }
+}
+
+/**
+ * What the DM is told when the clock ran into a fuse.
+ *
+ * It is handed a move to make, not a fact to mention. The thread caught up with
+ * the player; that is a hard move by definition, and the alternative — noting
+ * that time passed and carrying on — is how a deadline becomes scenery.
+ */
+function fuseBrief(world: World, fired: readonly string[]): string {
+  const names = fired
+    .map(id => world.entities[id])
+    .filter(entity => entity !== undefined)
+    .map(entity => `${entity.name}${entity.state ? ` (${entity.state})` : ''}`)
+
+  return [
+    `Your narration has been discarded — it described time that did not happen. The player did not get the span they asked for: ${names.join('; ') || 'something they had been ignoring'} caught up with them first, and it is now ${describeClock(world.clock)}.`,
+    'Narrate the whole turn again from the start, short, ending on that interruption as a hard move. Begin where they began, cover only the time that actually passed, and never mention a clock or say that less time went by than they wanted — just let the thing arrive.',
+  ].join(' ')
 }
 
 /**
@@ -666,6 +834,37 @@ function rollFor(campaign: Campaign, input: unknown): { entry: CheckEntry; brief
   ].join(' ')
 
   return { entry, brief }
+}
+
+/**
+ * The world, as much of it as the DM needs to stay consistent.
+ *
+ * Deliberately small. The point is that the model can reuse an id it has used
+ * before and knows what time it is; the full relevance window — who is nearby,
+ * what is dormant, what can be recalled — is #3533's problem, and sending the
+ * whole graph every turn would undo the prompt budget #3525 just bought.
+ */
+function worldBlock(world: World): string {
+  const known = Object.values(world.entities)
+    .filter(entity => entity.status === 'active')
+    .sort((a, b) => b.lastSeen - a.lastSeen)
+    .slice(0, 12)
+    .map(
+      entity =>
+        `  ${entity.id} (${entity.kind}) — ${entity.name}${entity.state ? `: ${entity.state}` : ''}`
+    )
+
+  const threads = openThreads(world)
+    .slice(0, 5)
+    .map(thread => `  ${thread.id} — ${thread.name} [${thread.pressure}]`)
+
+  return [
+    `TIME: ${describeClock(world.clock)}`,
+    known.length ? `KNOWN (reuse these ids):\n${known.join('\n')}` : '',
+    threads.length ? `LOOSE ENDS:\n${threads.join('\n')}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
 }
 
 /** The character sheet, as the DM sees it every turn. */

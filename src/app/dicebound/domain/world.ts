@@ -317,6 +317,228 @@ export function fireThreads(world: World, fired: readonly EntityId[]): World {
   return { ...world, entities }
 }
 
+// ----------------------------------------------------------- turn deltas
+
+/**
+ * How much of the world one turn may touch.
+ *
+ * A turn that rewrites the world is a bug, not a big turn. The DM is indexing
+ * the two or three things that mattered this minute, not maintaining a
+ * simulation — anything it misses is `condense`'s problem to reconcile from the
+ * transcript, which is the authoritative record either way.
+ */
+export const MAX_TOUCH_PER_TURN = 6
+export const MAX_EDGES_PER_TURN = 6
+
+/** How far a single turn may move an actor's opinion of the player. */
+export const MAX_DISPOSITION_STEP = 1
+
+/** The state half of a `narrate` call, exactly as the model sent it. */
+export interface WorldDelta {
+  elapsed?: unknown
+  touch?: unknown
+  edges?: unknown
+  threads?: unknown
+}
+
+export interface AppliedDelta {
+  world: World
+  /** Threads whose fuse the clock ran into. The DM is told to make a move. */
+  fired: EntityId[]
+  /** True when a fuse cut the turn short. */
+  interrupted: boolean
+}
+
+/**
+ * Fold one turn's state report into the world.
+ *
+ * Every number here is the server's. The model says *that* an hour passed and
+ * *that* the innkeeper warmed to you; it does not get to say that the hour was
+ * a year or that the warming was +3. That split is the same one `roll_check`
+ * enforces for dice, and it matters more here, because a disposition or an
+ * `owes` edge is a modifier on a future roll — a model allowed to write those
+ * directly would be setting its own bonuses one turn in advance.
+ *
+ * Order is load-bearing. The clock moves first, because everything stamped this
+ * turn — `lastSeen`, `firstSeen`, `Edge.since`, a re-armed fuse — is stamped
+ * from where the clock actually stopped, which may be earlier than where the
+ * turn asked to go.
+ */
+/**
+ * Make sure the player is in their own world.
+ *
+ * Everything interesting the graph holds is a relationship *to the player* —
+ * who is owed what, who is afraid of whom. Without an entity to point at, every
+ * one of those edges is dropped for having a missing endpoint, and the graph
+ * fills up with places and NPCs who have nothing to do with anybody. It is
+ * seeded here rather than in `newCampaign` so that campaigns migrated from v1,
+ * which never had a world at all, get it too.
+ */
+export function ensurePlayer(world: World, name: string): World {
+  const existing = world.entities[PLAYER_ID]
+  if (existing) return world
+
+  return {
+    ...world,
+    entities: {
+      ...world.entities,
+      [PLAYER_ID]: {
+        id: PLAYER_ID,
+        kind: 'actor',
+        name: str(name, MAX_NAME).trim() || 'You',
+        note: 'The player.',
+        state: '',
+        status: 'active',
+        disposition: 0,
+        scale: 'person',
+        firstSeen: world.clock.elapsed,
+        lastSeen: world.clock.elapsed,
+      },
+    },
+  }
+}
+
+export function applyWorldDelta(world: World, delta: WorldDelta): AppliedDelta {
+  const { clock, fired, interrupted } = advance(world.clock, delta.elapsed, world)
+
+  // The clock is set before threads fire, because `fireThreads` re-arms the
+  // next fuse from `world.clock.elapsed`. Firing against the old clock would
+  // schedule the next pressing from a moment that has already passed.
+  let next = fireThreads({ ...world, clock }, fired)
+  const now = clock.elapsed
+
+  next = applyTouches(next, delta.touch, now)
+  next = applyThreadUpdates(next, delta.threads, now)
+  next = applyEdges(next, delta.edges, now)
+
+  return { world: pruneWorld(next), fired, interrupted }
+}
+
+function applyTouches(world: World, touch: unknown, now: number): World {
+  if (!Array.isArray(touch)) return world
+
+  const entities = { ...world.entities }
+  let applied = 0
+
+  for (const raw of touch) {
+    if (applied >= MAX_TOUCH_PER_TURN) break
+    if (!isPlainObject(raw)) continue
+
+    const id = slug(raw.id)
+    // An entity whose id normalises to nothing is dropped rather than given a
+    // generated one. An entity nobody can name is an entity no edge can point
+    // at, and a generated id would be a different name every turn.
+    if (!id) continue
+
+    const existing = entities[id]
+    const merged = validateEntity({
+      ...existing,
+      ...raw,
+      id,
+      // A name is required by `validateEntity`, so a touch that only updates
+      // state on a known entity keeps the name it already had.
+      name: str(raw.name, MAX_NAME).trim() || existing?.name,
+      kind: existing?.kind ?? raw.kind,
+      firstSeen: existing?.firstSeen ?? now,
+      lastSeen: now,
+    })
+    if (!merged) continue
+
+    if (merged.kind === 'actor') {
+      // The model proposes a nudge; this applies it. Clamped to one step per
+      // turn and to the overall range, so nobody goes from stranger to sworn
+      // ally in a single sentence — and so the DM cannot hand itself a +3
+      // relationship bonus to spend on the next roll.
+      const before = existing?.kind === 'actor' ? existing.disposition : 0
+      const proposed = boundedInt(raw.disposition, MIN_DISPOSITION, MAX_DISPOSITION)
+      const step = Math.max(
+        -MAX_DISPOSITION_STEP,
+        Math.min(MAX_DISPOSITION_STEP, proposed - before)
+      )
+      merged.disposition = boundedInt(before + step, MIN_DISPOSITION, MAX_DISPOSITION)
+    }
+
+    entities[id] = merged
+    applied += 1
+  }
+
+  return { ...world, entities }
+}
+
+function applyThreadUpdates(world: World, threads: unknown, now: number): World {
+  if (!Array.isArray(threads)) return world
+
+  const entities = { ...world.entities }
+  let applied = 0
+
+  for (const raw of threads) {
+    if (applied >= MAX_TOUCH_PER_TURN) break
+    if (!isPlainObject(raw)) continue
+
+    const id = slug(raw.id)
+    const thread = entities[id]
+    if (!thread || thread.kind !== 'thread') continue
+
+    const resolution = oneOf(raw.resolution, RESOLUTIONS, thread.resolution)
+    const pressure = oneOf(raw.pressure, PRESSURES, thread.pressure)
+    const stillOpen = resolution === 'open'
+
+    entities[id] = {
+      ...thread,
+      resolution,
+      pressure,
+      // A closed thread loses its fuse. Leaving `due` set on a kept promise is
+      // how a resolved story keeps interrupting the one being told now.
+      due: stillOpen
+        ? pressure === thread.pressure
+          ? thread.due
+          : now + FUSE_WINDOWS[pressure]
+        : null,
+      status: stillOpen ? thread.status : 'dormant',
+      lastSeen: now,
+    }
+    applied += 1
+  }
+
+  return { ...world, entities }
+}
+
+function applyEdges(world: World, edges: unknown, now: number): World {
+  if (!Array.isArray(edges)) return world
+
+  const out = [...world.edges]
+  let applied = 0
+
+  for (const raw of edges) {
+    if (applied >= MAX_EDGES_PER_TURN) break
+
+    // `since` is stamped here and never read from the model. It is what makes
+    // "an edge must predate this turn to grant a bonus" enforceable — without
+    // it the DM could invent `owes(guard → you)` and cash it in the same
+    // breath, which is situational modifiers with extra steps.
+    const edge = validateEdge({ ...(isPlainObject(raw) ? raw : {}), since: now })
+    if (!edge) continue
+
+    // Both endpoints must exist. An edge pointing at nothing renders as a
+    // relationship with a hole in it, and reconciliation can rebuild it later
+    // from the transcript if it was real.
+    if (!world.entities[edge.from] || !world.entities[edge.to]) continue
+
+    const at = out.findIndex(e => e.from === edge.from && e.to === edge.to && e.kind === edge.kind)
+    if (at === -1) {
+      out.push(edge)
+    } else {
+      // Re-asserting an edge keeps the original `since`. Restamping it to now
+      // would silently withdraw a bonus the player had already earned, just
+      // because the DM mentioned the relationship again.
+      out[at] = { ...edge, since: Math.min(out[at].since, edge.since) }
+    }
+    applied += 1
+  }
+
+  return { ...world, edges: out }
+}
+
 // ------------------------------------------------------------ housekeeping
 
 /** Open threads, most pressing first. This is the player's "loose ends". */
