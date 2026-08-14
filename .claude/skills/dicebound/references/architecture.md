@@ -39,19 +39,30 @@ is a loop rather than a single call.
 player action
       │
       ▼
-build prompt ── sheet + premise + synopsis + recent transcript (+ world window, phase 2)
+load campaign for the caller's uid   ← the body is a sentence, not a save file
       │
       ▼
-┌─► call model with [roll_check, …]        pass 0 … MAX_CHECKS-1
+build prompt ── sheet + world window + premise + synopsis + recent transcript
+      │
+      ▼
+┌─► call model with [roll_check, recall, grant_item, narrate]   pass 0 … MAX_CHECKS-1
 │         │
-│         ├── no tool call ──► narration, turn ends
+│         ├── narrate ──► apply world delta, save, turn ends
+│         │                 └─ unless a fuse fired: discard that narration and
+│         │                    give the DM a hard move to make (once per turn)
 │         │
-│         └── roll_check ──► rollFor(): look up attribute rank, applicableSkill rank,
-│                            clamp situational, resolveCheck() rolls the d20
+│         ├── roll_check ──► rollFor(): attribute rank, applicableSkill rank,
+│         │                  kitModifiers (capped separately), clamped situational,
+│         │                  resolveCheck() rolls the d20
+│         │
+│         ├── recall ──► findEntities(): searches dormant entities too
+│         │
+│         └── grant_item ──► itemFromGrant(): code prices it, and the reply
+│                            tells the DM what it turned out to be worth
 │                                  │
-└──────────────── tool_result ◄────┘   "Rolled 14, +3 = 17 against DC 15…"
+└──────────────── tool_result ◄────┘
 
-final pass: tool withdrawn (phase 1) / narrate forced (phase 2) — the model must finish
+final pass: only narrate is offered, and it is forced — the model must finish
 ```
 
 The model commits to the DC before it learns the number. That is the entire
@@ -99,7 +110,7 @@ a future home page or share card needs must become a scalar here.
 A campaign is its transcript. Past `CONDENSE_AT` (60) entries the oldest are
 compressed into `synopsis` and dropped, leaving `TRANSCRIPT_WINDOW` (40) behind.
 
-`condense` is asked for *continuity* rather than summary — names, debts,
+`condense` is asked for _continuity_ rather than summary — names, debts,
 promises, wounds, how things stand — because those are what a player notices
 going missing, and a synopsis that reads like a plot outline loses exactly them.
 
@@ -148,7 +159,7 @@ condition is the one the model cannot wave away.
 Three primitives, and everything else is a package of them with a name on it:
 
 - **Trait** — always-on, conditional, ±1 or ±2
-- **Item** — a carried thing holding 0–2 traits; *most items are +0*, because a
+- **Item** — a carried thing holding 0–2 traits; _most items are +0_, because a
   rope is a permission, not a bonus
 - **Power** — costs a charge, and either `permits` something or grants
   `advantage` (2d20 keep highest)
