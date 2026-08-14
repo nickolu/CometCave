@@ -10,6 +10,56 @@ import { type Character, recordSkillUse } from './character'
 
 import type { Campaign, CampaignStats, CheckEntry, TranscriptEntry } from './campaign'
 
+/** A tool call as the turn loop sees it: a name, and whatever the model sent. */
+export interface ToolCall {
+  name: string
+  input: unknown
+}
+
+export const ROLL_CHECK_TOOL = 'roll_check'
+export const NARRATE_TOOL = 'narrate'
+
+/** One pass's tool calls, sorted into what the loop does with each. */
+export interface TurnCalls<T extends ToolCall> {
+  /** `roll_check` calls, to resolve against the die in the order they arrived. */
+  rolls: T[]
+  /** The `narrate` call that ends the turn, or null while the turn continues. */
+  ending: T | null
+  /**
+   * `narrate` calls that must be answered on the wire but must not be used.
+   * The API requires a `tool_result` for every `tool_use` block, so these are
+   * replied to and thrown away.
+   */
+  premature: T[]
+}
+
+/**
+ * Sort one pass's tool calls into rolls, an ending, and narration to discard.
+ *
+ * The rule worth protecting is the third bucket. A model may emit `roll_check`
+ * and `narrate` in the same response — the tools are offered together, and
+ * parallel tool use is the API's default. That narration was composed before
+ * the die existed, which is precisely the failure `roll_check` was built to
+ * prevent: a difficulty and an outcome chosen in the same breath by something
+ * that wants the story to go well. Whether the model *meant* to peek is beside
+ * the point. It could not have known the number, so its narration is not about
+ * the number, and using it would let the turn resolve without the dice.
+ *
+ * So a pass with any roll in it never ends. The rolls resolve, the blind
+ * narration is answered and dropped, and the model narrates again on the next
+ * pass — this time reading a result it cannot edit.
+ */
+export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T> {
+  const rolls = calls.filter(call => call.name === ROLL_CHECK_TOOL)
+  const narrations = calls.filter(call => call.name === NARRATE_TOOL)
+
+  if (rolls.length > 0) return { rolls, ending: null, premature: narrations }
+
+  // Only the first narration ends the turn. A second one is a duplicate, not a
+  // continuation, and appending both would read as the DM saying it twice.
+  return { rolls, ending: narrations[0] ?? null, premature: narrations.slice(1) }
+}
+
 /** What a turn produced, before it has been written down anywhere. */
 export interface TurnResult {
   entries: TranscriptEntry[]
