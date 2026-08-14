@@ -21,6 +21,7 @@ import {
   applyWorldDelta,
   currentPlace,
   describeClock,
+  describeDisposition,
   emptyClock,
   emptyWorld,
   ensurePlayer,
@@ -764,5 +765,25 @@ describe('findEntities', () => {
 
   it('is not carried by common words alone', () => {
     expect(findEntities(world, 'the man from the place')).toEqual([])
+  })
+})
+
+describe('describeDisposition', () => {
+  it('says nothing at all about someone the story has no opinion of', () => {
+    // Not "neutral" — a label saying there is nothing to say is still a label,
+    // and it fills the sheet with rows that mean nothing.
+    expect(describeDisposition(0)).toBeNull()
+  })
+
+  it('gives words rather than a number, in both directions', () => {
+    // A visible +2 turns a person into a stat to farm: the player optimises the
+    // NPC instead of talking to them.
+    expect(describeDisposition(2)).toBe('on your side')
+    expect(describeDisposition(-2)).toBe('wants nothing to do with you')
+  })
+
+  it('holds at the ends rather than falling through to nothing', () => {
+    expect(describeDisposition(99)).toBe('would take a risk for you')
+    expect(describeDisposition(-99)).toBe('would see you suffer')
   })
 })
