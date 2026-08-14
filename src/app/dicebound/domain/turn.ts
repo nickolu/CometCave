@@ -9,6 +9,7 @@
 import { type Character, recordSkillUse } from './character'
 
 import type { Campaign, CampaignStats, CheckEntry, TranscriptEntry } from './campaign'
+import type { World } from './world'
 
 /** A tool call as the turn loop sees it: a name, and whatever the model sent. */
 export interface ToolCall {
@@ -69,6 +70,14 @@ export interface TurnResult {
   synopsis?: string
   /** How many leading transcript entries the synopsis replaced. */
   dropped?: number
+  /**
+   * The world after the turn's deltas, clock included.
+   *
+   * Absent on the opening turn and on any path that did not reach a `narrate`
+   * — `applyTurn` keeps the campaign's existing world in that case rather than
+   * treating a missing field as an emptied graph.
+   */
+  world?: World
 }
 
 export function tallyChecks(stats: CampaignStats, entries: TranscriptEntry[]): CampaignStats {
@@ -127,6 +136,7 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
     ...campaign,
     title: result.title ?? campaign.title,
     synopsis: result.synopsis ?? campaign.synopsis,
+    world: result.world ?? campaign.world,
     character,
     transcript: [...kept, ...entries],
     stats: tallyChecks(campaign.stats, entries),

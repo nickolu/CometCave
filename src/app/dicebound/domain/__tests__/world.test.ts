@@ -3,16 +3,22 @@ import { describe, expect, it } from 'vitest'
 import {
   type Entity,
   FUSE_WINDOWS,
+  MAX_DISPOSITION,
+  MAX_DISPOSITION_STEP,
+  MAX_EDGES_PER_TURN,
   MAX_ENTITIES,
   MAX_FIRINGS,
+  MAX_TOUCH_PER_TURN,
   MAX_TURN_MINUTES,
   PLAYER_ID,
   type ThreadEntity,
   type World,
   advance,
+  applyWorldDelta,
   describeClock,
   emptyClock,
   emptyWorld,
+  ensurePlayer,
   fireThreads,
   openThreads,
   pruneWorld,
@@ -272,5 +278,223 @@ describe('validateWorld', () => {
     // The second edge points at an entity that never validated, so it goes too.
     expect(parsed.edges).toEqual([])
     expect(parsed.clock.elapsed).toBe(300)
+  })
+})
+
+describe('applyWorldDelta', () => {
+  function worldWith(...entities: Entity[]): World {
+    return {
+      ...emptyWorld(),
+      entities: Object.fromEntries(entities.map(e => [e.id, e])),
+    }
+  }
+
+  const innkeeper: Entity = {
+    id: 'innkeeper',
+    name: 'Bel',
+    kind: 'actor',
+    disposition: 0,
+    scale: 'person',
+    note: '',
+    state: '',
+    status: 'active',
+    firstSeen: 0,
+    lastSeen: 0,
+  }
+
+  it('survives a turn where the model returned nothing but text', () => {
+    // The commonest delta in practice. Nothing said is nothing changed, not an
+    // emptied world.
+    const before = worldWith(innkeeper)
+    const { world, fired, interrupted } = applyWorldDelta(before, {})
+
+    expect(world.entities.innkeeper).toEqual(innkeeper)
+    expect(fired).toEqual([])
+    expect(interrupted).toBe(false)
+  })
+
+  it('does not skip a year when the model asks for one', () => {
+    const { world } = applyWorldDelta(emptyWorld(), { elapsed: 525_600 })
+    expect(world.clock.elapsed).toBe(MAX_TURN_MINUTES)
+  })
+
+  it('stops the clock at a fuse and names the thread that caught up', () => {
+    const before: World = {
+      ...emptyWorld(),
+      entities: {
+        debt: thread({ id: 'debt', due: 240, pressure: 'pressing', resolution: 'open' }),
+      },
+    }
+    // "We travel for a week" — four hours in, the thing being ignored arrives.
+    const { world, fired, interrupted } = applyWorldDelta(before, { elapsed: MAX_TURN_MINUTES })
+
+    expect(world.clock.elapsed).toBe(240)
+    expect(fired).toEqual(['debt'])
+    expect(interrupted).toBe(true)
+  })
+
+  it('stamps Edge.since from the clock, never from the model', () => {
+    // The rule this protects: an edge must predate a turn to grant a bonus.
+    // Reading `since` from the model would let the DM invent a debt and cash it
+    // in the same breath.
+    const before = worldWith(innkeeper, { ...innkeeper, id: 'you', name: 'You' })
+    const { world } = applyWorldDelta(before, {
+      elapsed: 60,
+      edges: [{ from: 'innkeeper', to: 'you', kind: 'owes', note: 'for the boat', since: 0 }],
+    })
+
+    expect(world.edges).toHaveLength(1)
+    expect(world.edges[0].since).toBe(60)
+  })
+
+  it('keeps the original since when an edge is mentioned again', () => {
+    // Restamping would silently withdraw a bonus the player had already earned
+    // just because the DM brought the relationship up a second time.
+    const before = worldWith(innkeeper, { ...innkeeper, id: 'you', name: 'You' })
+    const first = applyWorldDelta(before, {
+      elapsed: 60,
+      edges: [{ from: 'innkeeper', to: 'you', kind: 'owes', note: 'for the boat' }],
+    })
+    const second = applyWorldDelta(first.world, {
+      elapsed: 600,
+      edges: [{ from: 'innkeeper', to: 'you', kind: 'owes', note: 'for the boat, still' }],
+    })
+
+    expect(second.world.edges).toHaveLength(1)
+    expect(second.world.edges[0].since).toBe(60)
+  })
+
+  it('drops an edge pointing at an entity that does not exist', () => {
+    // Worse than no edge: it renders as a relationship with a hole in it.
+    const { world } = applyWorldDelta(worldWith(innkeeper), {
+      edges: [{ from: 'innkeeper', to: 'nobody', kind: 'knows' }],
+    })
+    expect(world.edges).toEqual([])
+  })
+
+  it('moves disposition one step at a time, however far the model reached', () => {
+    // The model proposes a nudge; code applies it. A stranger does not become a
+    // sworn ally in one sentence, and the DM cannot hand itself a relationship
+    // bonus to spend on the next roll.
+    let world = worldWith(innkeeper)
+    world = applyWorldDelta(world, { touch: [{ id: 'innkeeper', disposition: 3 }] }).world
+
+    const after = world.entities.innkeeper
+    expect(after.kind === 'actor' && after.disposition).toBe(MAX_DISPOSITION_STEP)
+  })
+
+  it('takes several turns of warming to reach the ceiling, and stops there', () => {
+    let world = worldWith(innkeeper)
+    for (let i = 0; i < 10; i++) {
+      world = applyWorldDelta(world, { touch: [{ id: 'innkeeper', disposition: 3 }] }).world
+    }
+    const after = world.entities.innkeeper
+    expect(after.kind === 'actor' && after.disposition).toBe(MAX_DISPOSITION)
+  })
+
+  it('caps how much of the world one turn may touch', () => {
+    const touch = Array.from({ length: 20 }, (_, i) => ({
+      id: `place-${i}`,
+      name: `Place ${i}`,
+      kind: 'place',
+    }))
+    const { world } = applyWorldDelta(emptyWorld(), { touch })
+    expect(Object.keys(world.entities)).toHaveLength(MAX_TOUCH_PER_TURN)
+  })
+
+  it('caps how many edges one turn may draw', () => {
+    const touch = Array.from({ length: MAX_TOUCH_PER_TURN }, (_, i) => ({
+      id: `p${i}`,
+      name: `P${i}`,
+      kind: 'place',
+    }))
+    const edges = Array.from({ length: 20 }, (_, i) => ({
+      from: 'p0',
+      to: `p${(i % (MAX_TOUCH_PER_TURN - 1)) + 1}`,
+      kind: 'leads-to',
+    }))
+    const { world } = applyWorldDelta(emptyWorld(), { touch, edges })
+    expect(world.edges.length).toBeLessThanOrEqual(MAX_EDGES_PER_TURN)
+  })
+
+  it('drops an entity whose id normalises to nothing rather than inventing one', () => {
+    // An entity nobody can name is an entity no edge can point at, and a
+    // generated id would be a different name every turn.
+    const { world } = applyWorldDelta(emptyWorld(), {
+      touch: [{ id: '!!!', name: 'The Nameless', kind: 'place' }],
+    })
+    expect(Object.keys(world.entities)).toEqual([])
+  })
+
+  it('keeps the name an entity already had when a touch only updates its state', () => {
+    const { world } = applyWorldDelta(worldWith(innkeeper), {
+      touch: [{ id: 'innkeeper', state: 'behind the bar, wary' }],
+    })
+    expect(world.entities.innkeeper.name).toBe('Bel')
+    expect(world.entities.innkeeper.state).toBe('behind the bar, wary')
+  })
+
+  it('takes the fuse off a thread the story has finished with', () => {
+    // A kept promise that keeps its due time is how a resolved story goes on
+    // interrupting the one being told now.
+    const before: World = {
+      ...emptyWorld(),
+      entities: { debt: thread({ id: 'debt', due: 500, resolution: 'open' }) },
+    }
+    const { world } = applyWorldDelta(before, { threads: [{ id: 'debt', resolution: 'kept' }] })
+
+    const after = world.entities.debt as ThreadEntity
+    expect(after.resolution).toBe('kept')
+    expect(after.due).toBeNull()
+  })
+
+  it('re-arms the fuse when a thread is made more pressing', () => {
+    const before: World = {
+      ...emptyWorld(),
+      entities: {
+        debt: thread({ id: 'debt', due: 5000, pressure: 'patient', resolution: 'open' }),
+      },
+    }
+    const { world } = applyWorldDelta(before, {
+      elapsed: 30,
+      threads: [{ id: 'debt', pressure: 'urgent' }],
+    })
+
+    const after = world.entities.debt as ThreadEntity
+    expect(after.pressure).toBe('urgent')
+    expect(after.due).toBe(30 + FUSE_WINDOWS.urgent)
+  })
+
+  it('ignores a thread update naming something that is not a thread', () => {
+    const { world } = applyWorldDelta(worldWith(innkeeper), {
+      threads: [{ id: 'innkeeper', resolution: 'kept' }],
+    })
+    expect(world.entities.innkeeper).toEqual(innkeeper)
+  })
+})
+
+describe('ensurePlayer', () => {
+  it('puts the player in the world so edges have somewhere to land', () => {
+    // Without this every owes/fears/wants edge aimed at the player is dropped
+    // for a missing endpoint, and the graph fills with NPCs connected to
+    // nobody.
+    const world = ensurePlayer(emptyWorld(), 'Sir Pellam Crumb')
+    expect(world.entities[PLAYER_ID]?.name).toBe('Sir Pellam Crumb')
+  })
+
+  it('does not overwrite the player once they exist', () => {
+    const first = ensurePlayer(emptyWorld(), 'Bel')
+    const withState = {
+      ...first,
+      entities: {
+        ...first.entities,
+        [PLAYER_ID]: { ...first.entities[PLAYER_ID], state: 'bleeding' },
+      },
+    }
+    expect(ensurePlayer(withState, 'Bel').entities[PLAYER_ID].state).toBe('bleeding')
+  })
+
+  it('falls back to a name rather than an entity nobody can address', () => {
+    expect(ensurePlayer(emptyWorld(), '   ').entities[PLAYER_ID]?.name).toBe('You')
   })
 })
