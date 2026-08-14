@@ -199,6 +199,79 @@ export const BAND_BRIEF: Record<OutcomeBand, string> = {
     'NATURAL 1. It fails badly and something new goes wrong — but never something that ends the story outright.',
 }
 
+/**
+ * Every band, best to worst.
+ *
+ * The type is a union and unions have no order, but anything that renders all
+ * six — the move table in the prompt, and any future legend on the die card —
+ * needs them in the order a reader expects. Declaring it once means adding a
+ * band is a type error here rather than a row silently missing from a table.
+ */
+export const BAND_ORDER: readonly OutcomeBand[] = [
+  'critical-success',
+  'strong-success',
+  'success',
+  'failure',
+  'strong-failure',
+  'critical-failure',
+]
+
+/**
+ * What the dungeon master should actually *do* with each band.
+ *
+ * `BAND_BRIEF` says what the die meant; this says what to write. They are
+ * separate strings because they answer different questions, but they must never
+ * disagree — a model told "it fails and the situation gets worse" in one breath
+ * and "give them what they wanted" in the next will split the difference, and
+ * the split always lands in the player's favour.
+ *
+ * The way they are kept honest is that this record is the *only* source for
+ * both places the moves appear: the table in the system prompt is rendered from
+ * it, and the tool result at the point of the roll quotes the same entry. There
+ * is no second copy to fall out of date, which is the whole reason this lives
+ * in the domain next to the band it belongs to rather than being written out
+ * again inside the prompt.
+ *
+ * Six bands, not the five in the issue that asked for this. The issue's table
+ * was written against Dungeon World's three tiers and its row names collide
+ * with the band ids here — its "near miss" is this file's `success` (a success
+ * that costs something), and its "failure" is `strong-failure`. Mapping its
+ * five moves onto six bands rather than collapsing the bands keeps
+ * `resolveCheck` untouched and keeps the die card honest.
+ */
+export const BAND_MOVE: Record<OutcomeBand, string> = {
+  'critical-success':
+    'Give them what they were reaching for, and one thing more they never asked for — an opening, someone deciding to trust them, a way through that was not there a moment ago.',
+  'strong-success':
+    'Give them what they wanted, cleanly, and then get out of the way. A sentence is usually enough. Spend the rest of the turn on what is happening next, not on admiring the result.',
+  success:
+    'They get it, and it costs. Noise, time, something broken, somebody noticing. Put the cost in the fiction where they can see it, and do not soften it afterwards.',
+  failure:
+    'A soft move. Show the trouble arriving rather than landing — a hand closing on the latch, the rope starting to give, the sound getting nearer — and leave them room to answer it.',
+  'strong-failure':
+    'A hard move. Pick one from the list and let it happen. Do not replay the attempt back at them; the situation they are in afterwards must be a different situation.',
+  'critical-failure':
+    'A hard move that changes the scene: the floor gives way, the door shuts behind them, the thing they were avoiding is simply here now. Never one that ends the story.',
+}
+
+/**
+ * The hard moves, named so the model reaches for one instead of improvising a
+ * paragraph of consequence.
+ *
+ * Paraphrased from Dungeon World's GM moves rather than pasted. It is CC-BY so
+ * lifting would be permitted, but its register is not this game's — Dicebound is
+ * played at all ages and the list has to read that way.
+ */
+export const HARD_MOVES: readonly string[] = [
+  'Use up something they were relying on.',
+  'Put someone they care about in a bad spot.',
+  'Show a threat getting closer.',
+  'Offer them what they want, at a price.',
+  'Turn their own move back on them.',
+  'Separate them from someone or something.',
+  'Tell them an unwelcome truth about where they are.',
+]
+
 /** Player-facing label on the die card. */
 export const BAND_LABEL: Record<OutcomeBand, string> = {
   'critical-success': 'Critical success',
