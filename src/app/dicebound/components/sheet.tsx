@@ -25,6 +25,8 @@ import {
 import type { Campaign } from '@/app/dicebound/domain/campaign'
 import { RANK_THRESHOLDS, type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
 
+import { WorldPanel } from './world'
+
 function sign(value: number): string {
   return value >= 0 ? `+${value}` : `${value}`
 }
@@ -92,6 +94,8 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
           </ul>
         )}
       </section>
+
+      <WorldPanel campaign={campaign} />
 
       <section>
         <h3 className="font-label text-label-caps uppercase tracking-widest text-on-surface-variant">

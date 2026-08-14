@@ -21,6 +21,7 @@ export default defineConfig({
       'src/app/micro-land/**/*.test.ts',
       'src/lib/micro-land/**/*.test.ts',
       'src/app/dicebound/**/*.test.ts',
+      'src/app/dicebound/**/*.test.tsx',
       'src/lib/dicebound/**/*.test.ts',
     ],
     coverage: {

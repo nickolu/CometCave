@@ -618,6 +618,38 @@ export function reconcileWorld(world: World, now: number): World {
   return pruneWorld({ ...world, entities })
 }
 
+/**
+ * How a person stands toward the player, in words.
+ *
+ * Never a number, and this is the only function that is allowed to say it out
+ * loud. A visible +2 turns a person into a stat to farm: the player starts
+ * optimising an NPC instead of talking to one, and picks dialogue for the
+ * increment rather than because they mean it. Words keep it a relationship.
+ *
+ * Zero returns null rather than "neutral" — someone the story has no opinion
+ * about yet should have nothing written next to their name, not a label saying
+ * so.
+ */
+export function describeDisposition(value: number): string | null {
+  const level = boundedInt(value, MIN_DISPOSITION, MAX_DISPOSITION)
+  switch (level) {
+    case 3:
+      return 'would take a risk for you'
+    case 2:
+      return 'on your side'
+    case 1:
+      return 'warming to you'
+    case -1:
+      return 'wary of you'
+    case -2:
+      return 'wants nothing to do with you'
+    case -3:
+      return 'would see you suffer'
+    default:
+      return null
+  }
+}
+
 // ------------------------------------------------------ the relevance window
 
 /**
