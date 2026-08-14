@@ -21,6 +21,18 @@ export interface CampaignBackend {
   load(): Promise<Campaign | null>
   save(campaign: Campaign): Promise<void>
   clear(): Promise<void>
+  /**
+   * A bearer token for the turn route, or null when this backend has no server
+   * side to speak of.
+   *
+   * This is what tells the store which of two games it is playing. With a token
+   * the server owns the campaign: it loads its own copy, resolves the turn,
+   * saves, and hands back what it saved. Without one — no Firebase configured,
+   * so nothing is stored anywhere but this browser — the client still sends its
+   * campaign and applies the result itself, because there is no server-side
+   * story to be authoritative about.
+   */
+  token(): Promise<string | null>
 }
 
 const STORAGE_KEY = 'dicebound:campaign'
@@ -60,6 +72,11 @@ export const localBackend: CampaignBackend = {
       // As above.
     }
   },
+
+  // No account, so no server-authoritative turn. This browser is the authority.
+  async token() {
+    return null
+  },
 }
 
 /** Remembers nothing. For server rendering and tests. */
@@ -69,6 +86,9 @@ export const nullBackend: CampaignBackend = {
   },
   async save() {},
   async clear() {},
+  async token() {
+    return null
+  },
 }
 
 const ENDPOINT = '/api/v1/dicebound/campaign'
@@ -127,5 +147,10 @@ export function accountBackend(getToken: () => Promise<string | null>): Campaign
         // As above.
       }
     },
+
+    // Handed straight to the turn route. Null here means the user is not signed
+    // in yet — including anonymously — and the caller falls back to sending its
+    // own campaign rather than failing the turn.
+    token: getToken,
   }
 }

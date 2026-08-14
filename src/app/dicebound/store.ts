@@ -86,11 +86,17 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       // attached is a form the player just filled in; the first paragraph is
       // what makes it a person.
       set({ campaign, phase: 'playing' })
-      const result = await takeTurn(campaign, '')
-      const opened = applyTurn(campaign, result, Date.now())
+
+      const token = await get().backend.token()
+      const { result, campaign: authoritative } = await takeTurn('', { token, campaign })
+      const opened = authoritative ?? applyTurn(campaign, result, Date.now())
 
       set({ campaign: opened, pending: false })
-      void get().backend.save(opened)
+      // Only the local path still writes from here. On the authoritative path
+      // the server already saved before it answered, and saving again would
+      // send the whole campaign straight back to the endpoint this change
+      // exists to stop trusting.
+      if (!authoritative) void get().backend.save(opened)
     } catch (error) {
       set({
         pending: false,
@@ -117,10 +123,15 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
     })
 
     try {
-      const result = await takeTurn(campaign, text)
-      const next = applyTurn(campaign, result, Date.now())
+      const token = await get().backend.token()
+      // `campaign` here is the pre-optimistic one on purpose. On the local path
+      // it is what the result gets applied to, and applying a turn to a
+      // campaign that already contains the player's line would record it twice.
+      const { result, campaign: authoritative } = await takeTurn(text, { token, campaign })
+      const next = authoritative ?? applyTurn(campaign, result, Date.now())
+
       set({ campaign: next, pending: false })
-      void get().backend.save(next)
+      if (!authoritative) void get().backend.save(next)
     } catch (error) {
       // Roll the optimistic line back out, so the player can edit and resend
       // rather than staring at an action the story never received.
