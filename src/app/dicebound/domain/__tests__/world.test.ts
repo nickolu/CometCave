@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  DORMANT_AFTER,
   type Entity,
   FUSE_WINDOWS,
   MAX_DISPOSITION,
@@ -22,6 +23,7 @@ import {
   fireThreads,
   openThreads,
   pruneWorld,
+  reconcileWorld,
   timeOfDay,
   validateEdge,
   validateEntity,
@@ -496,5 +498,85 @@ describe('ensurePlayer', () => {
 
   it('falls back to a name rather than an entity nobody can address', () => {
     expect(ensurePlayer(emptyWorld(), '   ').entities[PLAYER_ID]?.name).toBe('You')
+  })
+})
+
+describe('reconcileWorld', () => {
+  const actor = (id: string, lastSeen: number): Entity => ({
+    id,
+    kind: 'actor',
+    name: id,
+    note: '',
+    state: '',
+    status: 'active',
+    disposition: 0,
+    scale: 'person',
+    firstSeen: 0,
+    lastSeen,
+  })
+
+  function worldOf(now: number, ...entities: Entity[]): World {
+    return {
+      clock: { elapsed: now, startHour: 9 },
+      entities: Object.fromEntries(entities.map(e => [e.id, e])),
+      edges: [],
+    }
+  }
+
+  it('lets someone who walked out of the story go dormant', () => {
+    const now = DORMANT_AFTER * 2
+    const world = reconcileWorld(worldOf(now, actor('ferryman', 0)), now)
+    expect(world.entities.ferryman.status).toBe('dormant')
+  })
+
+  it('keeps someone who was just here active', () => {
+    const now = DORMANT_AFTER * 2
+    const world = reconcileWorld(worldOf(now, actor('bel', now - 10)), now)
+    expect(world.entities.bel.status).toBe('active')
+  })
+
+  it('never lets the player go dormant in their own story', () => {
+    const now = DORMANT_AFTER * 5
+    const world = reconcileWorld(worldOf(now, actor(PLAYER_ID, 0)), now)
+    expect(world.entities[PLAYER_ID].status).toBe('active')
+  })
+
+  it('keeps an unmentioned open thread in front of the DM', () => {
+    // A debt nobody has spoken of for a week is exactly the thing that should
+    // still be pressing. Going dormant would quietly forgive it.
+    const now = DORMANT_AFTER * 3
+    const world = reconcileWorld(
+      worldOf(now, thread({ id: 'debt', resolution: 'open', lastSeen: 0 })),
+      now
+    )
+    expect(world.entities.debt.status).toBe('active')
+  })
+
+  it('retires a thread that fired its allowance without ever being engaged', () => {
+    const now = 100
+    const world = reconcileWorld(
+      worldOf(now, thread({ id: 'old-promise', resolution: 'cold', due: 500, lastSeen: now })),
+      now
+    )
+    const after = world.entities['old-promise'] as ThreadEntity
+    expect(after.status).toBe('dormant')
+    expect(after.due).toBeNull()
+  })
+
+  it('drops an edge whose endpoint did not survive the pass', () => {
+    const now = 0
+    const base = worldOf(now, actor('bel', 0))
+    const world = reconcileWorld(
+      { ...base, edges: [{ from: 'bel', to: 'ghost', kind: 'knows', note: '', since: 0 }] },
+      now
+    )
+    expect(world.edges).toEqual([])
+  })
+
+  it('does not mutate the world it was given', () => {
+    const now = DORMANT_AFTER * 2
+    const before = worldOf(now, actor('ferryman', 0))
+    reconcileWorld(before, now)
+    expect(before.entities.ferryman.status).toBe('active')
   })
 })
