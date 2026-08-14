@@ -36,6 +36,14 @@ service cloud.firestore {
       // holding a whole terrarium mid-simulation. Owner-only, accessed via
       // /api/v1/micro-land/worlds.
       match /microLandWorlds/{docId} { allow read, write: if false; }
+
+      // Dicebound campaign — the character sheet, the world graph and the live
+      // transcript. Owner-only, accessed via /api/v1/dicebound/campaign.
+      match /dicebound/{docId} { allow read, write: if false; }
+
+      // Dicebound chapters — transcript that condense has archived out of the
+      // live campaign. Write-once, never read during a turn, owner-only.
+      match /diceboundChapters/{docId} { allow read, write: if false; }
     }
 
     // Nicknames uniqueness index — server only

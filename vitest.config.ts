@@ -20,6 +20,8 @@ export default defineConfig({
       'src/app/trivia/**/*.test.ts',
       'src/app/micro-land/**/*.test.ts',
       'src/lib/micro-land/**/*.test.ts',
+      'src/app/dicebound/**/*.test.ts',
+      'src/lib/dicebound/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],
