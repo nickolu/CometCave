@@ -618,6 +618,206 @@ export function reconcileWorld(world: World, now: number): World {
   return pruneWorld({ ...world, entities })
 }
 
+// ------------------------------------------------------ the relevance window
+
+/**
+ * How much of the graph reaches the prompt.
+ *
+ * Two hundred entities will not fit, and sending them would make every turn
+ * cost more in tokens than the rest of the game put together. These numbers are
+ * what keep prompt size flat as a campaign grows — a story four hundred turns
+ * deep sends the same amount of world as one twenty turns deep, because what it
+ * sends is the scene rather than the archive.
+ */
+export const WINDOW_ENTITIES = 20
+export const WINDOW_EDGES = 30
+
+export interface WorldWindow {
+  entities: Entity[]
+  edges: Edge[]
+}
+
+/**
+ * Where the player is standing, if the graph knows.
+ *
+ * `at(you → somewhere)` is the edge that answers it. The most recently formed
+ * one wins, because walking somewhere new does not delete the memory of having
+ * been somewhere old.
+ */
+export function currentPlace(world: World): PlaceEntity | null {
+  const here = world.edges
+    .filter(edge => edge.from === PLAYER_ID && edge.kind === 'at')
+    .sort((a, b) => b.since - a.since)[0]
+
+  const place = here ? world.entities[here.to] : undefined
+  return place?.kind === 'place' ? place : null
+}
+
+/**
+ * Choose the slice of world the DM actually needs this turn.
+ *
+ * Ranked rather than filtered, because every rule here is a preference and none
+ * of them is a hard boundary: an open thread outranks a bystander, the place
+ * you are standing in outranks the place you left, and something the player
+ * just named outranks almost everything, because they are about to act on it.
+ *
+ * Dormant entities are excluded unless the player named one — that is what
+ * `recall` is for, and letting them back in by default would undo the whole
+ * point of going dormant.
+ */
+export function relevanceWindow(world: World, mentioned: readonly string[] = []): WorldWindow {
+  // Matched on slug *parts*, not whole slugs. The player types "the ferryman"
+  // and the entity is `the-ferryman`; comparing the whole slug misses it, and
+  // missing it is exactly the case this scoring exists for. Parts rather than
+  // substrings so that "man" does not match every ferryman in the story.
+  const named = new Set(mentioned.map(word => slug(word)).filter(word => word.length >= 3))
+
+  function wasNamed(entity: Entity): boolean {
+    const id = entity.id
+    const name = slug(entity.name)
+    const parts = new Set([id, name, ...id.split('-'), ...name.split('-')])
+    for (const word of named) if (parts.has(word)) return true
+    return false
+  }
+
+  const place = currentPlace(world)
+
+  const hereIds = new Set(
+    world.edges
+      .filter(edge => place && edge.kind === 'at' && edge.to === place.id)
+      .map(edge => edge.from)
+  )
+
+  const pressure: Record<Pressure, number> = { urgent: 3, pressing: 2, patient: 1 }
+
+  function score(entity: Entity): number {
+    if (entity.id === PLAYER_ID) return 1000
+    // A name the player just used. They are about to act on it, and it is the
+    // one thing they will notice the DM having forgotten.
+    if (wasNamed(entity)) return 900
+    if (place && entity.id === place.id) return 800
+    if (entity.kind === 'thread' && entity.resolution === 'open') {
+      return 600 + pressure[entity.pressure]
+    }
+    if (hereIds.has(entity.id)) return 400
+    if (entity.status === 'dormant') return -1
+    if (entity.status === 'gone') return 0
+    return 200
+  }
+
+  const entities = Object.values(world.entities)
+    .map(entity => ({ entity, rank: score(entity) }))
+    .filter(scored => scored.rank >= 0)
+    .sort((a, b) => b.rank - a.rank || b.entity.lastSeen - a.entity.lastSeen)
+    .slice(0, WINDOW_ENTITIES)
+    .map(scored => scored.entity)
+
+  const inWindow = new Set(entities.map(entity => entity.id))
+
+  // Only edges whose both ends are in the window. An edge to something the DM
+  // cannot see reads as a relationship with a hole in it, which is worse than
+  // silence.
+  const edges = world.edges
+    .filter(edge => inWindow.has(edge.from) && inWindow.has(edge.to))
+    .sort((a, b) => {
+      const player =
+        Number(b.from === PLAYER_ID || b.to === PLAYER_ID) -
+        Number(a.from === PLAYER_ID || a.to === PLAYER_ID)
+      return player || b.since - a.since
+    })
+    .slice(0, WINDOW_EDGES)
+
+  return { entities, edges }
+}
+
+/**
+ * Look something up by name, including things that have gone quiet.
+ *
+ * This is the half of the graph that pays for the other half: *"wait, that's
+ * the man from the harbour"* twelve chapters later. It searches dormant
+ * entities on purpose — active ones are already in the window, so a search that
+ * skipped the dormant would only ever return what the DM could already see.
+ *
+ * Returns nothing rather than a near-miss when there is no match. A lookup that
+ * invents an answer is worse than one that admits it has none: the DM would
+ * narrate a stranger as an old acquaintance, and the player would be the only
+ * one who noticed.
+ */
+export function findEntities(world: World, query: unknown, limit = 5): Entity[] {
+  const needle = str(query, MAX_NAME).trim().toLowerCase()
+  if (needle.length < 2) return []
+
+  // Split on anything that is not a letter or digit. Splitting on whitespace
+  // alone leaves the punctuation attached, and the first live run of this
+  // searched for `cassa,` — comma included — against a story containing Cassa,
+  // found nothing, and told the DM to invent someone who already existed.
+  const words = needle.split(/[^a-z0-9]+/).filter(word => word.length > 2 && !STOPWORDS.has(word))
+  if (words.length === 0) return []
+
+  return Object.values(world.entities)
+    .map(entity => {
+      const label = `${entity.id} ${entity.name}`.toLowerCase()
+      const haystack = `${label} ${entity.note} ${entity.state}`.toLowerCase()
+
+      // A hit on the name or id is worth more than a hit in the note. "Cassa"
+      // naming someone called Cassa is an identification; "harbour" appearing
+      // in their description is a coincidence waiting to happen.
+      const named = words.filter(word => label.includes(word)).length
+      const hits = words.filter(word => haystack.includes(word)).length
+
+      // One significant word is enough, and the ranking sorts out the rest.
+      //
+      // The stricter rule — two words unless one is the name — was tried first
+      // and broke the case this whole tool exists for: "the man from the
+      // harbour" has exactly one significant word in it, and being handed
+      // nothing tells the DM to invent someone who already exists. The two
+      // failures are not symmetrical. A search that offers a candidate lets the
+      // model look at it and decide it is not the one; a search that offers
+      // nothing has already made the decision, wrongly, and nobody but the
+      // player will notice.
+      return { entity, rank: hits === 0 ? 0 : named * 10 + hits }
+    })
+    .filter(scored => scored.rank > 0)
+    .sort((a, b) => b.rank - a.rank || b.entity.lastSeen - a.entity.lastSeen)
+    .slice(0, limit)
+    .map(scored => scored.entity)
+}
+
+/**
+ * Words too common to identify anything.
+ *
+ * Short list on purpose: this is here so "the man from the harbour" is not
+ * carried by "the", not to do linguistics.
+ */
+const STOPWORDS = new Set([
+  'the',
+  'and',
+  'for',
+  'from',
+  'with',
+  'that',
+  'this',
+  'his',
+  'her',
+  'him',
+  'she',
+  'they',
+  'them',
+  'who',
+  'was',
+  'were',
+  'had',
+  'has',
+  'about',
+  'man',
+  'woman',
+  'person',
+  'thing',
+  'place',
+  'old',
+  'new',
+])
+
 // ------------------------------------------------------------ housekeeping
 
 /** Open threads, most pressing first. This is the player's "loose ends". */
