@@ -94,6 +94,24 @@ export const maxDuration = 120
  */
 const MAX_CHECKS = 3
 
+/**
+ * Output ceiling for a pass of the turn loop. Was 2000, which is permission to
+ * write an essay.
+ *
+ * This is a backstop, not the mechanism — the budget on the `narrate` tool is
+ * what actually shortens a turn. It has to stay clear of the ceiling because
+ * truncation here is not a shorter paragraph, it is a `tool_use` block whose
+ * JSON stops mid-string: unparseable input, a turn that resolves to the
+ * fallback narration, and a player who gets "the moment resolves" instead of
+ * their scene. Two short paragraphs is roughly 200 tokens and a pass may also
+ * carry several `roll_check` calls, so this leaves several times the headroom
+ * the budget asks for while still refusing an essay.
+ *
+ * `openStory` keeps the old ceiling. The opening is the one place the game is
+ * allowed to be expansive.
+ */
+const TURN_TOKENS = 900
+
 /** Sent back for a `narrate` the model wrote before it could have known the die. */
 const PREMATURE_NARRATION =
   'That narration was written in the same message as a roll, before the dice were known, so it has been discarded. Read the roll result above and narrate what actually happened.'
@@ -131,10 +149,12 @@ ${SKILL_LINES}
 Naming a skill matters mechanically: skills are EARNED by being called on, so the skills you name are the ones the character slowly becomes good at. Name the honest one. Do not spread them around to be generous, and do not reach for an exotic skill when the plain attribute is what is really being tested.
 
 NARRATING
-- Deliver every scene through a tool call — narrate during play, begin_story when opening. Never answer with bare prose.
+- Deliver every scene through a tool call — narrate during play, begin_story when opening. Never answer with bare prose. The narrate tool tells you your length budget for that turn. It is a budget, not a target: coming in far under it is good.
 - Second person, present tense. "You push the door; it gives an inch and stops."
-- Short. Two or three paragraphs at the very most, usually one. This is a conversation, not a novel — the player is waiting to act.
-- End on a situation, not a question. Do not write "What do you do?" — just stop somewhere that obviously wants an answer.
+- Begin and end with the fiction. No recap, no summary, no scene-setting preamble, no stepping outside to comment. The player was there last turn; do not replay it for them.
+- Never speak the name of your move. Do not write "you fail" or "you succeed". Do not name the DC, the margin, or how well the roll went. Do not announce a setback as a setback — just let the thing happen and let the player work out what it cost them.
+- Once play is under way, you may ask the player a question about their world and treat the answer as true: "Which of these guards do you already owe money to?" "What did your sister tell you about this place?" A question is two lines where description would take twelve, and it makes the player a co-author instead of an audience. Use it sparingly — at most one turn in four, and never twice running.
+- Two hard limits on that. It is never available in the opening scene: the first thing a new player reads must be a world, not a request for one. And it is never a question about what they do next — "What do you do?" and every variant of it are banned outright. Stop on a situation that obviously wants an answer instead.
 - NEVER decide what the player's character does, says, thinks or feels. That is theirs. You control the world and everyone else in it.
 - Let failure move the story rather than stall it. A failed attempt should change the situation, not repeat it.
 - Keep the world consistent. Names, places and promises from earlier still hold.
@@ -189,7 +209,7 @@ const NarrateSchema = z.object({
   text: z
     .string()
     .describe(
-      'What happens. Second person, present tense, short — usually one paragraph. End on a situation, not a question.'
+      'What happens. Second person, present tense. Open on the fiction and close on the fiction, within the word budget given for this turn. Never state the outcome in the abstract ("you fail", "you succeed") — show the thing itself.'
     ),
 })
 
@@ -200,11 +220,31 @@ const ROLL_CHECK: ToolDef = {
   input_schema: toolSchema(RollCheckSchema),
 }
 
-const NARRATE: ToolDef = {
-  name: NARRATE_TOOL,
-  description:
-    'Tell the player what happens, and end your turn. This is the last thing you do. If the attempt was uncertain, call roll_check first and wait for the result — narration sent in the same message as a roll was written before the dice were known, and is discarded.',
-  input_schema: toolSchema(NarrateSchema),
+/**
+ * The word budget, and why it lives on the tool rather than in the system
+ * prompt.
+ *
+ * A turn that resolved a roll has more to carry than a turn that did not — the
+ * player is owed the outcome of the thing they attempted, which is a beat the
+ * quiet turn simply does not have. One budget for both would either strangle
+ * the roll turn or licence the quiet one, so the budget is built per pass and
+ * stated on the tool the model is about to fill in.
+ *
+ * It also cannot live in SYSTEM, because SYSTEM is shared with `openStory`, and
+ * the opening scene is the one moment the game is allowed to be expansive.
+ * Putting 70 words in the shared prompt would quietly shrink the first thing a
+ * new player ever reads.
+ */
+function narrateTool(rolled: boolean): ToolDef {
+  const budget = rolled
+    ? 'The dice have been rolled, so you have a little more room: two short paragraphs at the very most, and one is usually better.'
+    : 'Nothing was rolled, so this is a small turn. Keep it under about 70 words — one short paragraph.'
+
+  return {
+    name: NARRATE_TOOL,
+    description: `Tell the player what happens, and end your turn. This is the last thing you do. ${budget} If the attempt was uncertain, call roll_check first and wait for the result — narration sent in the same message as a roll was written before the dice were known, and is discarded.`,
+    input_schema: toolSchema(NarrateSchema),
+  }
 }
 
 const OpeningSchema = z.object({
@@ -214,7 +254,7 @@ const OpeningSchema = z.object({
   opening: z
     .string()
     .describe(
-      'The opening scene. Put the character somewhere specific, with something already happening, and stop somewhere that wants a decision. Two or three short paragraphs. Second person.'
+      'The opening scene. Put the character somewhere specific, with something already happening, and stop somewhere that wants a decision. Two or three short paragraphs. Second person. Do not ask the player a question here — the co-authoring question is a move for later turns, and the first thing a new player reads should be a world, not a request for one.'
     ),
 })
 
@@ -370,18 +410,24 @@ Resolve it, then call narrate with what happens.`,
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
+    // Whether anything has actually been rolled this turn, which is what sets
+    // the word budget. Derived from the entries rather than the step counter: a
+    // model that spent a pass on nothing has not earned the longer budget.
+    const rolled = entries.some(entry => entry.kind === 'check')
+    const narrate = narrateTool(rolled)
+
     const data = await callModel({
       apiKey,
       model: DM_MODEL,
       system: SYSTEM,
       messages,
-      maxTokens: 2000,
+      maxTokens: TURN_TOKENS,
       signal,
       // On the final pass `roll_check` is withdrawn and `narrate` is forced,
       // which is a harder guarantee than asking nicely for prose. There is no
       // fourth roll available to reach for, and finishing is the only move
       // left on the board.
-      tools: lastStep ? [NARRATE] : [ROLL_CHECK, NARRATE],
+      tools: lastStep ? [narrate] : [ROLL_CHECK, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
