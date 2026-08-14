@@ -15,4 +15,5 @@ export const ROUTE_CONSTANTS = {
   SPECK_WARS: '/speck-wars',
   DISNEYLAND_HUNT: '/disneyland-hunt',
   MICRO_LAND: '/micro-land',
+  DICEBOUND: '/dicebound',
 }

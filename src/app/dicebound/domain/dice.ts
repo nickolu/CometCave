@@ -1,0 +1,210 @@
+/**
+ * The die.
+ *
+ * This file is the reason the game is trustworthy. The dungeon master model
+ * decides *whether* a check happens, *which* attribute it leans on, and *how
+ * hard* it is — and then it stops. The roll itself happens here, in code the
+ * model cannot see the result of before it commits to the difficulty, and the
+ * outcome is handed back to it as a fact it has to narrate around.
+ *
+ * A model asked to roll its own dice will let the player win. Not maliciously —
+ * it is agreeable, the story is going well, and a 4 is inconvenient. But the
+ * whole tension of "describe what you attempt" collapses the moment attempts
+ * stop being able to fail, so the split is structural rather than a matter of
+ * prompting.
+ *
+ * Everything here is pure and synchronous so it can be tested exhaustively and
+ * so the same resolution runs on the server today and could run on the client
+ * tomorrow without changing a number.
+ */
+
+/** The player's own table, verbatim. The DM is shown this and picks a row. */
+export interface DifficultyRow {
+  dc: number
+  label: string
+  example: string
+}
+
+export const DC_TABLE: readonly DifficultyRow[] = [
+  { dc: 0, label: 'trivial', example: 'operate an elevator' },
+  { dc: 5, label: 'easy', example: 'tie your shoes, catch a ball' },
+  {
+    dc: 10,
+    label: 'medium',
+    example: 'balance on a wide log across a river, convince an ally to do a favor',
+  },
+  {
+    dc: 12,
+    label: 'kinda hard',
+    example: 'balance on a skinny log across a river, convince an ally to do something dangerous',
+  },
+  {
+    dc: 15,
+    label: 'hard',
+    example: 'carry a person over your shoulders, convince a neutral stranger to help you',
+  },
+  {
+    dc: 18,
+    label: 'really hard',
+    example: 'bend an iron bar, convince a neutral stranger to do something dangerous',
+  },
+  { dc: 20, label: 'extremely difficult', example: 'hold up a huge iron door for a moment' },
+  { dc: 25, label: 'impossible for a regular person', example: 'lift a giant boulder' },
+  { dc: 30, label: 'impossible', example: 'jump to the moon' },
+]
+
+export const MIN_DC = 0
+export const MAX_DC = 30
+
+/**
+ * How far a single situational nudge may move the odds.
+ *
+ * Wide enough for "the floor is wet" and "you just mentioned his daughter" to
+ * matter, tight enough that a stack of them cannot quietly turn a hard check
+ * into a formality — which is the failure mode when a model is allowed to
+ * invent its own arithmetic in the player's favour.
+ */
+export const MAX_SITUATIONAL = 4
+export const MAX_SITUATIONAL_TOTAL = 6
+
+export type OutcomeBand =
+  | 'critical-success'
+  | 'strong-success'
+  | 'success'
+  | 'failure'
+  | 'strong-failure'
+  | 'critical-failure'
+
+export interface Modifier {
+  label: string
+  value: number
+}
+
+export interface CheckOutcome {
+  roll: number
+  /** Everything added to the roll, itemised, so the die card can show its work. */
+  modifiers: Modifier[]
+  modifier: number
+  total: number
+  dc: number
+  dcLabel: string
+  /** total − dc. Negative is a miss. The DM narrates by how much. */
+  margin: number
+  band: OutcomeBand
+  succeeded: boolean
+}
+
+export interface CheckRequest {
+  dc: number
+  modifiers: Modifier[]
+}
+
+export type Rng = () => number
+
+export function rollD20(rng: Rng = Math.random): number {
+  return 1 + Math.floor(rng() * 20)
+}
+
+export function clampDc(dc: unknown): number {
+  const n = typeof dc === 'number' && Number.isFinite(dc) ? Math.round(dc) : 10
+  return Math.min(MAX_DC, Math.max(MIN_DC, n))
+}
+
+/** The nearest table row at or below `dc`, for labelling an off-table number. */
+export function difficultyLabel(dc: number): string {
+  let row = DC_TABLE[0]
+  for (const candidate of DC_TABLE) {
+    if (candidate.dc <= dc) row = candidate
+  }
+  return row.label
+}
+
+/**
+ * Trim a set of situational modifiers to what the table can bear.
+ *
+ * Each one is clamped on its own and then the *sum* of the situational nudges
+ * is clamped again, because three plausible +3s are how a DC 18 becomes a
+ * coin flip without anyone deciding that it should.
+ */
+export function clampSituational(modifiers: Modifier[]): Modifier[] {
+  const clamped = modifiers
+    .filter(m => Number.isFinite(m.value) && m.value !== 0)
+    .map(m => ({
+      label: m.label,
+      value: Math.max(-MAX_SITUATIONAL, Math.min(MAX_SITUATIONAL, Math.round(m.value))),
+    }))
+
+  const total = clamped.reduce((sum, m) => sum + m.value, 0)
+  if (Math.abs(total) <= MAX_SITUATIONAL_TOTAL) return clamped
+
+  // Scale the whole set toward the ceiling rather than dropping entries, so
+  // every reason the DM gave the player still appears on the die card.
+  const scale = MAX_SITUATIONAL_TOTAL / Math.abs(total)
+  return clamped.map(m => ({
+    label: m.label,
+    value: Math.round(m.value * scale) || (m.value > 0 ? 1 : -1),
+  }))
+}
+
+/**
+ * Resolve one check.
+ *
+ * A natural 20 and a natural 1 are decided by the die alone, before the
+ * arithmetic — a character good enough that a 1 still clears the DC should
+ * still have the moment where it all goes wrong, and a character who cannot
+ * mathematically reach the DC should still have the moment where it doesn't
+ * matter. That is the part of the table people actually tell stories about.
+ */
+export function resolveCheck(request: CheckRequest, rng: Rng = Math.random): CheckOutcome {
+  const roll = rollD20(rng)
+  const dc = clampDc(request.dc)
+  // Modifiers are kept exactly as given, zeroes included: the die card shows
+  // its work, and "Dexterity +0" is information the player wants — it tells
+  // them which attribute the DM thought this was about.
+  const modifiers = request.modifiers
+  const modifier = modifiers.reduce((sum, m) => sum + m.value, 0)
+  const total = roll + modifier
+  const margin = total - dc
+
+  let band: OutcomeBand
+  if (roll === 20) band = 'critical-success'
+  else if (roll === 1) band = 'critical-failure'
+  else if (margin >= 5) band = 'strong-success'
+  else if (margin >= 0) band = 'success'
+  else if (margin > -5) band = 'failure'
+  else band = 'strong-failure'
+
+  return {
+    roll,
+    modifiers,
+    modifier,
+    total,
+    dc,
+    dcLabel: difficultyLabel(dc),
+    margin,
+    band,
+    succeeded: band.endsWith('success'),
+  }
+}
+
+/** What the DM is told the roll means, so its narration matches the die card. */
+export const BAND_BRIEF: Record<OutcomeBand, string> = {
+  'critical-success':
+    'NATURAL 20. It goes better than they had any right to expect — give them something extra they did not ask for.',
+  'strong-success': 'Clear success. It works, and it works cleanly.',
+  success: 'Success, but only just. It works with a cost, a complication, or a scare.',
+  failure: 'A near miss. It fails, but the failure is small and the situation is still workable.',
+  'strong-failure': 'A real failure. It fails and the situation gets worse.',
+  'critical-failure':
+    'NATURAL 1. It fails badly and something new goes wrong — but never something that ends the story outright.',
+}
+
+/** Player-facing label on the die card. */
+export const BAND_LABEL: Record<OutcomeBand, string> = {
+  'critical-success': 'Critical success',
+  'strong-success': 'Success',
+  success: 'Narrow success',
+  failure: 'Near miss',
+  'strong-failure': 'Failure',
+  'critical-failure': 'Critical failure',
+}
