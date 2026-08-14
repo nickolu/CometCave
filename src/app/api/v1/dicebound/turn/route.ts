@@ -66,6 +66,16 @@ import {
   resolveCheck,
 } from '@/app/dicebound/domain/dice'
 import {
+  type Kit,
+  MAX_ITEMS,
+  QUALITIES,
+  type Quality,
+  addItem,
+  itemFromGrant,
+  kitModifiers,
+} from '@/app/dicebound/domain/kit'
+import {
+  GRANT_ITEM_TOOL,
   NARRATE_TOOL,
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
@@ -229,6 +239,12 @@ Every narrate call also reports what changed. This is an index of the story, not
 - touch: the two or three things that changed or first appeared. Reuse the same id for the same thing forever — "harbour-guard" stays "harbour-guard". Do not restate what did not change.
 - edges: connections that formed or changed. Both ends must be things you registered in touch.
 - threads: loose ends that moved. Close one only when the story is genuinely finished with it.
+WHAT THEY CARRY
+- When the fiction actually hands something over — they pick it up, are given it, take it — call grant_item. Not for scenery, and not for things they merely saw.
+- Almost everything is plain. A rope is a permission, not a bonus: it turns "you cannot climb that" into a roll you can make. Reserve the better bands for things the story made a moment of.
+- You say what a thing is. The game says what it is worth, and the answer is usually nothing. Do not describe an ordinary object as though it improved them.
+- When something they carry genuinely bears on an attempt, name it in roll_check's items. Name it because it is true, not to help — most named items add nothing to the number and appear on the card anyway.
+
 REMEMBERING
 What you are shown is a window on the story, not the whole of it. Places, people and promises that have gone quiet are still there and are not listed.
 - If the player refers to someone or something you cannot see in the list, call recall BEFORE you answer. Do not decide it is new because it is not in front of you.
@@ -261,6 +277,13 @@ const RollCheckSchema = z.object({
     .string()
     .describe(
       'What could actually go wrong here, in a clause, and why that failure would be interesting. "The rope is old and he is heavier than he looks." If you cannot fill this in without straining, do not call this tool — narrate it happening instead.'
+    ),
+  items: z
+    .array(z.string())
+    .max(4)
+    .optional()
+    .describe(
+      'Ids of things the character is carrying that genuinely bear on THIS attempt. Name them and the game decides what they are worth — most are worth nothing, and are named on the card anyway because the reason is real even when the number is not.'
     ),
   dc: z.number().int().min(0).max(30).describe('The difficulty, from the table. Be honest.'),
   situational: z
@@ -411,6 +434,51 @@ const RECALL: ToolDef = {
   description:
     'Look something up that is not in front of you. Use this when the player refers to a person, place or promise you cannot see listed — the story may well contain it. Returns nothing if there is genuinely no match, and nothing means it is new.',
   input_schema: toolSchema(RecallSchema),
+}
+
+const GrantItemSchema = z.object({
+  id: z.string().describe('Stable lowercase slug. Reuse it if the character already has this.'),
+  name: z.string().describe('What the player would call it.'),
+  note: z.string().optional().describe('One line: what it is and where it came from.'),
+  quality: z
+    .enum(QUALITIES as unknown as [Quality, ...Quality[]])
+    .describe(
+      'How good it is. Almost everything is plain — a rope is a permission, not a bonus. Reserve storied for things the story made a moment of.'
+    ),
+  origin: z
+    .string()
+    .optional()
+    .describe('The id of the person, place or thing it came from, if the world knows one.'),
+  consumable: z.boolean().optional().describe('True if using it uses it up.'),
+  uses: z.number().int().min(1).max(9).optional().describe('For a consumable, how many.'),
+  traits: z
+    .array(
+      z.object({
+        label: z
+          .string()
+          .describe(
+            'What is true because they have it, as the player would say it: "you have rope".'
+          ),
+        applies: z
+          .object({
+            attributes: z.array(AttributeEnum).optional(),
+            skills: z.array(SkillEnum).optional(),
+          })
+          .optional()
+          .describe(
+            'Leave empty when it bears on everything. Name attributes or skills to narrow it.'
+          ),
+      })
+    )
+    .max(2)
+    .optional(),
+})
+
+const GRANT_ITEM: ToolDef = {
+  name: GRANT_ITEM_TOOL,
+  description:
+    'Give the character something to carry. Call this only when the fiction actually hands it over — they picked it up, were given it, took it. Do not call it to describe scenery. The game decides what the thing is worth; you decide what it is.',
+  input_schema: toolSchema(GrantItemSchema),
 }
 
 const OpeningSchema = z.object({
@@ -693,6 +761,7 @@ Resolve it, then call narrate with what happens.`,
   // thread that fires on the interruption's own elapsed minutes could keep
   // reopening it, and a turn that never stops is a turn that never comes back.
   let fuseAnswered = false
+  let kit = campaign.kit
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
@@ -713,11 +782,11 @@ Resolve it, then call narrate with what happens.`,
       // which is a harder guarantee than asking nicely for prose. There is no
       // fourth roll available to reach for, and finishing is the only move
       // left on the board.
-      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, narrate],
+      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, GRANT_ITEM, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, recalls, ending, premature } = partitionTurnCalls(toolUses(data))
+    const { rolls, recalls, grants, ending, premature } = partitionTurnCalls(toolUses(data))
 
     if (ending) {
       const text = narrationOf(ending.input)
@@ -764,7 +833,12 @@ Resolve it, then call narrate with what happens.`,
       break
     }
 
-    if (rolls.length === 0 && recalls.length === 0 && premature.length === 0) {
+    if (
+      rolls.length === 0 &&
+      recalls.length === 0 &&
+      grants.length === 0 &&
+      premature.length === 0
+    ) {
       // The model answered in prose instead of declaring the end of the turn.
       // Take it anyway. The turn is over either way, and spending a round trip
       // teaching the model the ceremony would cost the player fifteen seconds
@@ -777,9 +851,14 @@ Resolve it, then call narrate with what happens.`,
 
     const results: ContentBlock[] = []
     for (const call of rolls) {
-      const { entry, brief } = rollFor(campaign, call.input)
+      const { entry, brief } = rollFor(campaign, kit, call.input)
       entries.push(entry)
       results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
+    }
+    for (const call of grants) {
+      const { kit: next, note } = grantFor(kit, world.clock.elapsed, call.input)
+      kit = next
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
     // A lookup costs a pass but not a check: it is the DM checking its notes,
     // not the story moving. `MAX_CHECKS` still bounds the loop, so a model that
@@ -807,7 +886,7 @@ Resolve it, then call narrate with what happens.`,
   }
 
   entries.push({ kind: 'narration', text: narration })
-  return { entries, synopsis, dropped, world, chapters }
+  return { entries, synopsis, dropped, world, chapters, kit }
 }
 
 /**
@@ -874,14 +953,49 @@ function recallFor(world: World, input: unknown): string {
     .join('\n')
 }
 
+/**
+ * Hand something over, and tell the DM what it turned out to be worth.
+ *
+ * The reply matters as much as the write. A model that grants a sword and is
+ * told nothing will describe it as mighty; told the sword is plain and worth
+ * nothing on the die, it describes a sword. That is the same loop `roll_check`
+ * runs — commit first, then narrate around a number you did not choose.
+ */
+function grantFor(kit: Kit, now: number, input: unknown): { kit: Kit; note: string } {
+  const item = itemFromGrant((input ?? {}) as Record<string, unknown>, now)
+  if (!item)
+    return { kit, note: 'That did not describe a thing anyone could pick up. Nothing was added.' }
+
+  const { kit: next, added } = addItem(kit, item)
+  if (!added) {
+    return {
+      kit,
+      note: `They are carrying ${MAX_ITEMS} things already and cannot take ${item.name} as well. Say so in the fiction and let them choose what to put down.`,
+    }
+  }
+
+  const worth = item.traits.filter(trait => trait.bonus !== 0)
+  return {
+    kit: next,
+    note: worth.length
+      ? `${item.name} is theirs. On the die it is worth ${worth.map(t => `${t.label} ${t.bonus > 0 ? '+' : ''}${t.bonus}`).join(', ')} — no more than that. Narrate it as the thing it is, not as an upgrade.`
+      : `${item.name} is theirs, and it is worth nothing on the die. That is the common case: it is a permission, not a bonus. It may make things possible that were not; it does not make them easier.`,
+  }
+}
+
 /** Resolve one `roll_check` call into a transcript entry and a model briefing. */
-function rollFor(campaign: Campaign, input: unknown): { entry: CheckEntry; brief: string } {
+function rollFor(
+  campaign: Campaign,
+  kit: Kit,
+  input: unknown
+): { entry: CheckEntry; brief: string } {
   const raw = (input ?? {}) as {
     attempt?: unknown
     attribute?: unknown
     skill?: unknown
     dc?: unknown
     situational?: unknown
+    items?: unknown
   }
 
   const attribute: AttributeId = isAttributeId(raw.attribute) ? raw.attribute : 'wisdom'
@@ -911,6 +1025,9 @@ function rollFor(campaign: Campaign, input: unknown): { entry: CheckEntry; brief
   // though they were average. A rank of 0 is left off because an unearned
   // skill has nothing to say — the attribute row already covers it.
   if (skill && rank !== 0) modifiers.push({ label: SKILLS[skill].name, value: rank })
+  // Kit is capped on its own, before the situational set is added, so a full
+  // pack cannot eat the ±6 budget the scene is entitled to.
+  modifiers.push(...kitModifiers(kit, raw.items, attribute, skill))
   modifiers.push(...situational)
 
   const outcome = resolveCheck({ dc, modifiers })

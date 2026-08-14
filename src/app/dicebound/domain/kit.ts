@@ -143,6 +143,37 @@ export function emptyKit(): Kit {
  */
 export const KIT_BONUS_CAP = 3
 
+/**
+ * How good a thing is, and what that is worth.
+ *
+ * The model picks the band; this decides the numbers. That is the same split
+ * `roll_check` runs on, and it matters more here than it looks: an item is
+ * permanent, so a model allowed to write its own bonus is a model writing a
+ * bonus onto every future roll.
+ *
+ * Adapted from `tap-tap-adventure`'s rarity table, which has the right instinct
+ * — common is 55% of drops and its multiplier is 1.0 — but the wrong vocabulary.
+ * "Epic" and "legendary" are loot-game words and this is a game about a story,
+ * so the bands are named the way a person at the table would describe a thing
+ * they were handed.
+ *
+ * **Most items are +0.** A rope is not a bonus, it is a permission: it turns
+ * "you cannot climb that" into a DC 15. If every item were +1 then a
+ * well-packed character would stop rolling, which is the failure this whole
+ * table exists to prevent. Rarity mostly buys *more traits* — more situations
+ * the thing is good in — rather than a bigger number in any one of them.
+ */
+export type Quality = 'plain' | 'fine' | 'remarkable' | 'storied'
+
+export const QUALITIES: readonly Quality[] = ['plain', 'fine', 'remarkable', 'storied']
+
+export const QUALITY_BANDS: Record<Quality, { bonus: number; traits: number }> = {
+  plain: { bonus: 0, traits: 1 },
+  fine: { bonus: 1, traits: 1 },
+  remarkable: { bonus: 1, traits: 2 },
+  storied: { bonus: 2, traits: 2 },
+}
+
 /** Levels. `1 + earned ranks / 3` — ranks are earned on use, so level cannot be granted. */
 export const RANKS_PER_LEVEL = 3
 export const MAX_LEVEL = 10
@@ -318,4 +349,178 @@ export function validateKit(value: unknown): Kit {
     species: validateSpecies(value.species),
     className: str(value.className, 60).trim() || null,
   }
+}
+
+// ------------------------------------------------------------ carrying things
+
+/** One item as the dungeon master proposes it, before code prices it. */
+export interface ItemGrant {
+  id?: unknown
+  name?: unknown
+  note?: unknown
+  quality?: unknown
+  origin?: unknown
+  consumable?: unknown
+  uses?: unknown
+  traits?: unknown
+}
+
+/**
+ * Turn a proposed item into a carried one.
+ *
+ * The model says what the thing is, what it is good for, and roughly how good.
+ * Every number comes from here: the bonus off the quality band, how many traits
+ * survive, how many uses a consumable gets. A model that wrote its own bonus
+ * would be writing a modifier onto every future roll, which is the one thing
+ * the whole architecture is arranged to prevent.
+ *
+ * `now` is the clock minute, passed in rather than read, so this stays pure.
+ */
+export function itemFromGrant(grant: ItemGrant, now: number): Item | null {
+  const id = slug(grant.id)
+  const name = str(grant.name, 80).trim()
+  // No id and no name is not an item, it is a sentence. Dropped rather than
+  // repaired: an item nobody can name is one the DM can never call on again.
+  if (!id || !name) return null
+
+  const quality = oneOf(grant.quality, QUALITIES, 'plain')
+  const band = QUALITY_BANDS[quality]
+
+  const proposed = Array.isArray(grant.traits) ? grant.traits : []
+  const traits: Trait[] = proposed
+    .filter(isPlainObject)
+    .slice(0, band.traits)
+    .map(raw => ({
+      label: str(raw.label, 80).trim() || name,
+      // The band decides, not the proposal. A trait the model wanted at +2 on a
+      // plain item is worth +0, and the player still sees it named on the die
+      // card — the reason is real even when the number is nothing.
+      bonus: band.bonus,
+      applies: validateApplicability(raw.applies),
+    }))
+    .filter(trait => trait.label.length > 0)
+
+  const consumable = bool(grant.consumable)
+  const uses = boundedInt(grant.uses, 1, 9, 1)
+
+  return {
+    id,
+    name,
+    note: str(grant.note, 240),
+    traits,
+    ...(consumable ? { charges: { now: uses, max: uses } } : {}),
+    consumable,
+    origin: slug(grant.origin) || null,
+    gainedAt: Math.max(0, now),
+  }
+}
+
+/**
+ * Add an item to a pack that may already be full.
+ *
+ * Slots, not weight: twelve, because a limit that forces a choice makes a story
+ * and a limit that requires arithmetic does not. A full pack refuses the new
+ * thing rather than silently dropping something the player was carrying — being
+ * told "you have no room" is a decision handed back to them, and waking up to
+ * find your rope gone is a bug as far as anyone at the table can tell.
+ */
+export function addItem(kit: Kit, item: Item): { kit: Kit; added: boolean } {
+  const existing = kit.items.findIndex(held => held.id === item.id)
+  if (existing !== -1) {
+    const items = [...kit.items]
+    items[existing] = item
+    return { kit: { ...kit, items }, added: true }
+  }
+
+  if (kit.items.length >= MAX_ITEMS) return { kit, added: false }
+  return { kit: { ...kit, items: [...kit.items, item] }, added: true }
+}
+
+/**
+ * What the named items are worth on this particular check.
+ *
+ * The DM says *that the rope applies*; this says what the rope is worth, which
+ * is usually nothing. Three rules do the work.
+ *
+ * A trait only counts where it claims to count. An item good at seeing does not
+ * help you lift, and the applicability check here is the same discipline
+ * `applicableSkill` enforces for skills — a mismatch is dropped silently rather
+ * than refused, because the check should still happen.
+ *
+ * A trait with an empty applicability applies to everything. That is deliberate
+ * and it is why `plain` exists: a rope that is good in general is good for +0.
+ *
+ * The total is capped at `KIT_BONUS_CAP`, separately from the ±6 situational
+ * budget. Situational modifiers come and go with the scene; a pack is
+ * permanent, so without its own ceiling a well-equipped character stops rolling
+ * altogether.
+ */
+export function kitModifiers(
+  kit: Kit,
+  named: unknown,
+  attribute: AttributeId,
+  skill: SkillId | null
+): { label: string; value: number }[] {
+  if (!Array.isArray(named)) return []
+
+  const wanted = new Set(named.map(id => slug(id)).filter(Boolean))
+  const out: { label: string; value: number }[] = []
+
+  for (const item of kit.items) {
+    if (!wanted.has(item.id)) continue
+    // A consumable with nothing left is a thing you are still carrying and can
+    // no longer use. It stays in the pack; it just stops helping.
+    if (item.charges && item.charges.now <= 0) continue
+
+    for (const trait of item.traits) {
+      if (trait.bonus === 0) continue
+      if (!traitApplies(trait, attribute, skill)) continue
+      out.push({ label: trait.label, value: trait.bonus })
+    }
+  }
+
+  return capKit(out)
+}
+
+function traitApplies(trait: Trait, attribute: AttributeId, skill: SkillId | null): boolean {
+  const { attributes, skills } = trait.applies
+  const claimsSomething = (attributes?.length ?? 0) > 0 || (skills?.length ?? 0) > 0
+  if (!claimsSomething) return true
+
+  if (attributes?.includes(attribute)) return true
+  if (skill && skills?.includes(skill)) return true
+  return false
+}
+
+/**
+ * Hold the set under the ceiling without hiding any of it.
+ *
+ * Trimmed from the smallest upward rather than truncated, so the thing the
+ * player thought was helping most still appears on the die card. A card that
+ * silently omits a reason teaches the player that the fiction does not affect
+ * the odds, which is the opposite of what it is for.
+ */
+function capKit(modifiers: { label: string; value: number }[]): { label: string; value: number }[] {
+  const total = modifiers.reduce((sum, m) => sum + m.value, 0)
+  if (Math.abs(total) <= KIT_BONUS_CAP) return modifiers
+
+  const ordered = [...modifiers].sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
+  const kept: { label: string; value: number }[] = []
+  let running = 0
+
+  for (const modifier of ordered) {
+    const next = running + modifier.value
+    if (Math.abs(next) > KIT_BONUS_CAP) {
+      const room = KIT_BONUS_CAP - Math.abs(running)
+      if (room <= 0) break
+      const trimmed = modifier.value > 0 ? room : -room
+      kept.push({ label: modifier.label, value: trimmed })
+      running += trimmed
+      break
+    }
+    kept.push(modifier)
+    running = next
+  }
+
+  return kept
 }

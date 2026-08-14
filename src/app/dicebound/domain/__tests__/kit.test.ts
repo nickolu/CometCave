@@ -6,10 +6,14 @@ import {
   MAX_LEVEL,
   MAX_POWERS,
   MAX_TRAIT,
+  QUALITY_BANDS,
   REST_MINUTES,
   TIER_CHARGES,
+  addItem,
   emptyKit,
   isRest,
+  itemFromGrant,
+  kitModifiers,
   levelFor,
   maxPowersAt,
   maxTierAt,
@@ -168,5 +172,169 @@ describe('validateKit', () => {
     // And even two maxed traits cannot outrun the kit ceiling.
     const total = (item?.traits ?? []).reduce((sum, t) => sum + t.bonus, 0)
     expect(total).toBeLessThanOrEqual(KIT_BONUS_CAP)
+  })
+})
+
+describe('itemFromGrant', () => {
+  const rope = {
+    id: 'coil-of-rope',
+    name: 'Coil of rope',
+    quality: 'plain',
+    traits: [{ label: 'you have rope' }],
+  }
+
+  it('prices the item from the band, never from the proposal', () => {
+    // An item is permanent, so a model allowed to write its own bonus is a
+    // model writing a bonus onto every future roll.
+    const item = itemFromGrant({ ...rope, traits: [{ label: 'you have rope', bonus: 2 }] }, 100)
+    expect(item?.traits[0].bonus).toBe(QUALITY_BANDS.plain.bonus)
+    expect(item?.traits[0].bonus).toBe(0)
+  })
+
+  it('gives a plain thing a named trait worth nothing — a permission, not a bonus', () => {
+    const item = itemFromGrant(rope, 100)
+    expect(item?.traits).toHaveLength(1)
+    expect(item?.traits[0].label).toBe('you have rope')
+    expect(item?.traits[0].bonus).toBe(0)
+  })
+
+  it('buys extra traits with rarity rather than a bigger number', () => {
+    const storied = itemFromGrant(
+      {
+        id: 'lamp',
+        name: 'The Lamp',
+        quality: 'storied',
+        traits: [{ label: 'lit' }, { label: 'warm' }, { label: 'third' }],
+      },
+      0
+    )
+    expect(storied?.traits).toHaveLength(QUALITY_BANDS.storied.traits)
+    expect(storied?.traits[0].bonus).toBe(2)
+  })
+
+  it('refuses a thing with no name — an item nobody can call on again', () => {
+    expect(itemFromGrant({ id: '!!!', name: 'Ghost' }, 0)).toBeNull()
+    expect(itemFromGrant({ id: 'thing', name: '  ' }, 0)).toBeNull()
+  })
+
+  it('gives a consumable its uses and stamps when it was gained', () => {
+    const item = itemFromGrant({ id: 'draught', name: 'Draught', consumable: true, uses: 3 }, 480)
+    expect(item?.charges).toEqual({ now: 3, max: 3 })
+    expect(item?.gainedAt).toBe(480)
+  })
+})
+
+describe('addItem', () => {
+  const make = (id: string) => itemFromGrant({ id, name: id }, 0)!
+
+  it('refuses a full pack rather than dropping something you were carrying', () => {
+    // Being told "you have no room" hands the decision back. Waking up to find
+    // your rope gone is a bug as far as anyone at the table can tell.
+    let kit = emptyKit()
+    for (let i = 0; i < MAX_ITEMS; i++) kit = addItem(kit, make(`item-${i}`)).kit
+
+    const { kit: after, added } = addItem(kit, make('one-too-many'))
+    expect(added).toBe(false)
+    expect(after.items).toHaveLength(MAX_ITEMS)
+  })
+
+  it('replaces rather than duplicates when the same thing is granted twice', () => {
+    const kit = addItem(addItem(emptyKit(), make('rope')).kit, make('rope')).kit
+    expect(kit.items).toHaveLength(1)
+  })
+})
+
+describe('kitModifiers', () => {
+  function kitWith(...grants: Parameters<typeof itemFromGrant>[0][]) {
+    let kit = emptyKit()
+    for (const g of grants) kit = addItem(kit, itemFromGrant(g, 0)!).kit
+    return kit
+  }
+
+  it('says what the rope is worth, which is usually nothing', () => {
+    const kit = kitWith({
+      id: 'rope',
+      name: 'Rope',
+      quality: 'plain',
+      traits: [{ label: 'you have rope' }],
+    })
+    // A +0 trait is real in the fiction and adds no row to the die card.
+    expect(kitModifiers(kit, ['rope'], 'dexterity', null)).toEqual([])
+  })
+
+  it('only counts a trait where it claims to count', () => {
+    // An item good at seeing does not help you lift — the same discipline
+    // applicableSkill enforces for skills.
+    const kit = kitWith({
+      id: 'lantern',
+      name: 'Lantern',
+      quality: 'fine',
+      traits: [{ label: 'the lantern is lit', applies: { attributes: ['wisdom'] } }],
+    })
+    expect(kitModifiers(kit, ['lantern'], 'wisdom', null)).toEqual([
+      { label: 'the lantern is lit', value: 1 },
+    ])
+    expect(kitModifiers(kit, ['lantern'], 'strength', null)).toEqual([])
+  })
+
+  it('lets a trait that claims nothing apply anywhere', () => {
+    const kit = kitWith({
+      id: 'boots',
+      name: 'Boots',
+      quality: 'fine',
+      traits: [{ label: 'good boots' }],
+    })
+    expect(kitModifiers(kit, ['boots'], 'strength', null)).toHaveLength(1)
+  })
+
+  it('ignores an item the DM did not name', () => {
+    const kit = kitWith({
+      id: 'boots',
+      name: 'Boots',
+      quality: 'fine',
+      traits: [{ label: 'good boots' }],
+    })
+    expect(kitModifiers(kit, ['rope'], 'strength', null)).toEqual([])
+    expect(kitModifiers(kit, undefined, 'strength', null)).toEqual([])
+  })
+
+  it('stops a spent consumable helping, without taking it off you', () => {
+    let kit = kitWith({
+      id: 'draught',
+      name: 'Draught',
+      quality: 'storied',
+      consumable: true,
+      uses: 1,
+      traits: [{ label: 'the draught burns' }],
+    })
+    kit = {
+      ...kit,
+      items: kit.items.map(i => ({ ...i, charges: { now: 0, max: 1 } })),
+    }
+    expect(kitModifiers(kit, ['draught'], 'strength', null)).toEqual([])
+    expect(kit.items).toHaveLength(1)
+  })
+
+  it('holds a well-packed character under the ceiling', () => {
+    // Kit is permanent, so without its own cap a well-equipped character simply
+    // stops rolling.
+    const kit = kitWith(
+      { id: 'a', name: 'A', quality: 'storied', traits: [{ label: 'a' }, { label: 'a2' }] },
+      { id: 'b', name: 'B', quality: 'storied', traits: [{ label: 'b' }, { label: 'b2' }] }
+    )
+    const mods = kitModifiers(kit, ['a', 'b'], 'strength', null)
+    const total = mods.reduce((sum, m) => sum + m.value, 0)
+    expect(total).toBeLessThanOrEqual(KIT_BONUS_CAP)
+  })
+
+  it('trims the smallest first, so the thing that helped most still shows', () => {
+    const kit = kitWith(
+      { id: 'big', name: 'Big', quality: 'storied', traits: [{ label: 'the great sword' }] },
+      { id: 'small', name: 'Small', quality: 'fine', traits: [{ label: 'a good grip' }] },
+      { id: 'small2', name: 'Small2', quality: 'fine', traits: [{ label: 'dry hands' }] }
+    )
+    const mods = kitModifiers(kit, ['big', 'small', 'small2'], 'strength', null)
+    expect(mods.map(m => m.label)).toContain('the great sword')
+    expect(mods.reduce((sum, m) => sum + m.value, 0)).toBeLessThanOrEqual(KIT_BONUS_CAP)
   })
 })

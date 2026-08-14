@@ -9,6 +9,7 @@
 import { type Character, recordSkillUse } from './character'
 
 import type { Campaign, CampaignStats, CheckEntry, TranscriptEntry } from './campaign'
+import type { Kit } from './kit'
 import type { World } from './world'
 
 /** A tool call as the turn loop sees it: a name, and whatever the model sent. */
@@ -20,6 +21,7 @@ export interface ToolCall {
 export const ROLL_CHECK_TOOL = 'roll_check'
 export const NARRATE_TOOL = 'narrate'
 export const RECALL_TOOL = 'recall'
+export const GRANT_ITEM_TOOL = 'grant_item'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
@@ -30,6 +32,8 @@ export interface TurnCalls<T extends ToolCall> {
    * so it neither ends the turn nor spends one of its checks.
    */
   recalls: T[]
+  /** `grant_item` calls. Like a lookup: answered, and the turn carries on. */
+  grants: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -59,18 +63,19 @@ export interface TurnCalls<T extends ToolCall> {
 export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T> {
   const rolls = calls.filter(call => call.name === ROLL_CHECK_TOOL)
   const recalls = calls.filter(call => call.name === RECALL_TOOL)
+  const grants = calls.filter(call => call.name === GRANT_ITEM_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
   // A narration sent alongside a lookup is as blind as one sent alongside a
   // roll: it was written before the answer came back, so whatever the DM asked
   // for cannot be in it.
-  if (rolls.length > 0 || recalls.length > 0) {
-    return { rolls, recalls, ending: null, premature: narrations }
+  if (rolls.length > 0 || recalls.length > 0 || grants.length > 0) {
+    return { rolls, recalls, grants, ending: null, premature: narrations }
   }
 
   // Only the first narration ends the turn. A second one is a duplicate, not a
   // continuation, and appending both would read as the DM saying it twice.
-  return { rolls, recalls, ending: narrations[0] ?? null, premature: narrations.slice(1) }
+  return { rolls, recalls, grants, ending: narrations[0] ?? null, premature: narrations.slice(1) }
 }
 
 /** What a turn produced, before it has been written down anywhere. */
@@ -90,6 +95,8 @@ export interface TurnResult {
    * treating a missing field as an emptied graph.
    */
   world?: World
+  /** The pack after anything the turn handed over. */
+  kit?: Kit
   /**
    * The chapter counter after an archive. Set only on a turn that condensed and
    * successfully wrote what it dropped — a failed archive leaves the counter
@@ -156,6 +163,7 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
     title: result.title ?? campaign.title,
     synopsis: result.synopsis ?? campaign.synopsis,
     world: result.world ?? campaign.world,
+    kit: result.kit ?? campaign.kit,
     chapters: result.chapters ?? campaign.chapters,
     character,
     transcript: [...kept, ...entries],
