@@ -5,6 +5,7 @@ import {
   ATTRIBUTE_BUDGET,
   type Character,
   MAX_ATTRIBUTE,
+  MAX_STARTING_SKILLS,
   MIN_ATTRIBUTE,
   RANK_THRESHOLDS,
   blankAttributes,
@@ -12,6 +13,7 @@ import {
   normalizeAttributes,
   rankFor,
   recordSkillUse,
+  startingSkills,
   usesToNextRank,
 } from '@/app/dicebound/domain/character'
 
@@ -180,5 +182,63 @@ describe('earnedSkills', () => {
       },
     })
     expect(earnedSkills(subject).map(entry => entry.skill)).toEqual(['balance', 'humor'])
+  })
+})
+
+describe('startingSkills', () => {
+  it('seeds at the first threshold, so the stored rank is one rankFor already agrees with', () => {
+    // Seeded at uses 0 the record would claim rank 1 while rankFor(0) says 0,
+    // and the first time the skill came up it would silently correct itself
+    // downward — the player would watch a skill they started with get worse.
+    const skills = startingSkills(['hand-eye'])
+    expect(skills['hand-eye']).toEqual({ uses: RANK_THRESHOLDS[0], rank: 1 })
+    expect(rankFor(skills['hand-eye']!.uses)).toBe(1)
+  })
+
+  it('carries on from the head start rather than restarting the climb', () => {
+    // The next rank arrives at RANK_THRESHOLDS[1] total uses, not at
+    // RANK_THRESHOLDS[1] uses beyond the head start.
+    let sheet = character({ skills: startingSkills(['hand-eye']) })
+    const needed = RANK_THRESHOLDS[1] - RANK_THRESHOLDS[0]
+
+    for (let i = 0; i < needed; i++) {
+      sheet = recordSkillUse(sheet, 'hand-eye').character
+    }
+    expect(sheet.skills['hand-eye']).toEqual({ uses: RANK_THRESHOLDS[1], rank: 2 })
+  })
+
+  it('grants three when a model proposes six — the model proposes, code decides how many', () => {
+    const skills = startingSkills([
+      'hand-eye',
+      'humor',
+      'observation',
+      'balance',
+      'stealth',
+      'engineering',
+    ])
+    expect(Object.keys(skills)).toHaveLength(MAX_STARTING_SKILLS)
+  })
+
+  it('drops a skill the game does not have rather than storing it', () => {
+    const skills = startingSkills(['telekinesis', 'hand-eye'])
+    expect(Object.keys(skills)).toEqual(['hand-eye'])
+  })
+
+  it('refuses innate skills — they are what you are, not what you have practised', () => {
+    // Spending a starting slot on Size would also mean a character described as
+    // very small got fewer things they are good at for being described.
+    const skills = startingSkills(['size', 'looks', 'hand-eye'])
+    expect(Object.keys(skills)).toEqual(['hand-eye'])
+  })
+
+  it('does not let a repeated skill eat two of the three slots', () => {
+    const skills = startingSkills(['humor', 'humor', 'hand-eye', 'observation'])
+    expect(Object.keys(skills).sort()).toEqual(['hand-eye', 'humor', 'observation'])
+  })
+
+  it('returns nothing for a model that sent nothing usable, rather than throwing', () => {
+    expect(startingSkills(undefined)).toEqual({})
+    expect(startingSkills('hand-eye')).toEqual({})
+    expect(startingSkills([null, 42, {}])).toEqual({})
   })
 })

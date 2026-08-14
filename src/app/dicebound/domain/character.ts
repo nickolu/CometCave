@@ -95,6 +95,51 @@ export function normalizeAttributes(
   return result
 }
 
+/**
+ * How many skills a sentence may be worth at creation.
+ *
+ * Three, and enforced here rather than asked for in the prompt, for the same
+ * reason the attribute budget is: a model in a generous mood will hand out six,
+ * and a character who starts good at six things has spent the interesting part
+ * of the game before the first turn. The model proposes; this decides how many.
+ */
+export const MAX_STARTING_SKILLS = 3
+
+/**
+ * Turn the skills a creation model proposed into real records.
+ *
+ * Each is seeded at the first rank threshold rather than at zero uses. That is
+ * the difference between "you start at rank 1" and "you start at rank 1 and the
+ * next time you use it, it drops back to where an untrained character would
+ * be" — `rankFor` is the authority on rank, so a record whose `uses` disagrees
+ * with its `rank` is a record that will silently correct itself downward the
+ * first time the skill comes up. Seeding at the threshold makes the stored rank
+ * one `rankFor` already agrees with, and the next use counts toward rank 2
+ * instead of starting the climb over.
+ *
+ * Innate skills are dropped rather than granted. `size` and `looks` are set
+ * separately and describe what the character *is*; letting them also be spent
+ * out of the starting budget would mean a very small character got fewer things
+ * they are good at as a consequence of being described accurately.
+ */
+export function startingSkills(proposed: unknown): Partial<Record<SkillId, SkillRecord>> {
+  if (!Array.isArray(proposed)) return {}
+
+  const out: Partial<Record<SkillId, SkillRecord>> = {}
+  for (const value of proposed) {
+    if (!isSkillId(value)) continue
+    if (SKILLS[value].innate) continue
+    // Deduped by construction: a model naming the same skill twice should not
+    // consume two of the three slots.
+    if (out[value]) continue
+    if (Object.keys(out).length >= MAX_STARTING_SKILLS) break
+
+    out[value] = { uses: RANK_THRESHOLDS[0], rank: 1 }
+  }
+
+  return out
+}
+
 export function rankFor(uses: number): number {
   let rank = 0
   for (const threshold of RANK_THRESHOLDS) {
