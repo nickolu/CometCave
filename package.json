@@ -22,6 +22,7 @@
     "eval:trivia:smoke": "tsx --env-file=.env.local scripts/eval-trivia.ts --smoke",
     "seed-ai-questions": "tsx --env-file=.env.local scripts/seed-ai-questions.ts",
     "sim:micro-land": "tsx scripts/micro-land-sim.ts",
+    "voice:dicebound": "tsx --env-file-if-exists=.env.local scripts/dicebound-voice-check.ts",
     "migrate:daily-trivia": "tsx --env-file=.env.local scripts/migrate-daily-trivia-to-firestore.ts"
   },
   "dependencies": {
