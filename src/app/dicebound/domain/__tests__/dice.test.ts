@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  BAND_BRIEF,
+  BAND_LABEL,
+  BAND_MOVE,
+  BAND_ORDER,
+  HARD_MOVES,
   MAX_SITUATIONAL,
   MAX_SITUATIONAL_TOTAL,
   clampDc,
@@ -142,5 +147,48 @@ describe('resolveCheck', () => {
     expect(outcome.band).toBe('critical-failure')
     expect(outcome.succeeded).toBe(false)
     expect(outcome.margin).toBe(2)
+  })
+})
+
+describe('the move list', () => {
+  it('names a move for every band the dice can actually produce', () => {
+    // The failure this protects against is silent: add a band, forget a move,
+    // and the table in the prompt is simply missing a row for an outcome the
+    // player can still roll.
+    for (const band of BAND_ORDER) {
+      expect(BAND_MOVE[band], `no move for ${band}`).toBeTruthy()
+      expect(BAND_BRIEF[band], `no brief for ${band}`).toBeTruthy()
+      expect(BAND_LABEL[band], `no label for ${band}`).toBeTruthy()
+    }
+  })
+
+  it('orders every band exactly once, so the rendered table cannot skip or repeat one', () => {
+    expect(BAND_ORDER).toHaveLength(Object.keys(BAND_MOVE).length)
+    expect(new Set(BAND_ORDER).size).toBe(BAND_ORDER.length)
+  })
+
+  it('agrees with the brief about which bands succeeded and which did not', () => {
+    // The acceptance criterion this exists for: the model is given BAND_BRIEF
+    // and BAND_MOVE for the same roll, and if one says the attempt worked while
+    // the other calls for a hard move, it splits the difference — always in the
+    // player's favour. A success band must never be told to make a hard move.
+    const succeeded = BAND_ORDER.filter(band => band.endsWith('success'))
+    const failed = BAND_ORDER.filter(band => band.endsWith('failure'))
+
+    for (const band of succeeded) {
+      expect(BAND_MOVE[band].toLowerCase(), band).not.toContain('hard move')
+    }
+    for (const band of failed.filter(b => b !== 'failure')) {
+      // 'failure' is the near miss and gets the soft move; the other two are hard.
+      expect(BAND_MOVE[band].toLowerCase(), band).toContain('hard move')
+    }
+    expect(BAND_MOVE.failure.toLowerCase()).toContain('soft move')
+  })
+
+  it('gives the hard moves as concrete things to do, not adjectives', () => {
+    expect(HARD_MOVES.length).toBeGreaterThan(3)
+    for (const move of HARD_MOVES) {
+      expect(move.endsWith('.'), move).toBe(true)
+    }
   })
 })

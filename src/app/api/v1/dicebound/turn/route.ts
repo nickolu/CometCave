@@ -53,7 +53,11 @@ import {
 import { attributeRank, earnedSkills, skillRank } from '@/app/dicebound/domain/character'
 import {
   BAND_BRIEF,
+  BAND_LABEL,
+  BAND_MOVE,
+  BAND_ORDER,
   DC_TABLE,
+  HARD_MOVES,
   MAX_SITUATIONAL,
   type Modifier,
   clampDc,
@@ -118,6 +122,18 @@ const PREMATURE_NARRATION =
 
 const DC_LINES = DC_TABLE.map(row => `  DC ${row.dc} — ${row.label} (${row.example})`).join('\n')
 
+/**
+ * The move table, rendered from the same record the tool result quotes.
+ *
+ * Written out by hand in the prompt it would be a second copy of `BAND_MOVE`,
+ * and the acceptance criterion on this is precisely that the two must not
+ * drift — a model given one instruction in the table and a different one at the
+ * moment of the roll resolves the contradiction in the player's favour.
+ */
+const MOVE_LINES = BAND_ORDER.map(band => `  ${BAND_LABEL[band]} — ${BAND_MOVE[band]}`).join('\n')
+
+const HARD_MOVE_LINES = HARD_MOVES.map(move => `  - ${move}`).join('\n')
+
 const SKILL_LINES = ATTRIBUTE_IDS.map(
   id =>
     `  ${ATTRIBUTES[id].name} — ${skillsOf(id)
@@ -133,7 +149,16 @@ You describe the situation. The player says what their character attempts. You d
 DECIDING OUTCOMES
 - If the attempt is trivial, or success is guaranteed for this character, it simply works. Describe it happening and move on. Do NOT call for a roll. Walking through an open door is not a Dexterity check, and asking for one is the fastest way to make a game feel like paperwork.
 - If the attempt is uncertain — if it could plausibly fail, and failing would be interesting — call roll_check. Then narrate the result you are given.
-- Narrate by DEGREE. A near miss and a disaster are different stories; so are a narrow success and a spectacular one. The tool tells you which you got.
+- Narrate by DEGREE. The tool tells you which band you got, and the band tells you which move to make. You do not get to pick the band.
+
+WHEN THE DICE HAVE SPOKEN
+Every roll comes back in one of six bands. Each band has a move. Make that move — do not improvise a different one, and do not blend two because the result was close.
+${MOVE_LINES}
+
+THE HARD MOVES
+When a band calls for a hard move, take one of these. One is enough for a turn.
+${HARD_MOVE_LINES}
+A hard move is not a punishment and it is never the end of the story. It changes the situation and hands the ball back. If the player is in the same position after your move as before it, you did not make one.
 
 DIFFICULTY
 ${DC_LINES}
@@ -546,7 +571,12 @@ function rollFor(campaign: Campaign, input: unknown): { entry: CheckEntry; brief
   const brief = [
     `Rolled ${outcome.roll} on a d20, ${outcome.modifier >= 0 ? '+' : ''}${outcome.modifier} = ${outcome.total} against DC ${outcome.dc}.`,
     `Margin ${sign}${outcome.margin}.`,
-    BAND_BRIEF[outcome.band],
+    `${BAND_LABEL[outcome.band]}. ${BAND_BRIEF[outcome.band]}`,
+    // The same string the move table in the prompt was rendered from, repeated
+    // at the one moment it is actually being acted on. A table read once at the
+    // top of a long prompt loses to whatever the model feels like doing by the
+    // time a roll comes back; the move quoted next to the number does not.
+    `YOUR MOVE: ${BAND_MOVE[outcome.band]}`,
     'Narrate this outcome. Do not restate the numbers — the player can already see them.',
   ].join(' ')
 
