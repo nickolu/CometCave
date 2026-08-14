@@ -5,12 +5,12 @@
  * the dungeon master may stop and ask for a die roll — and that is the whole
  * architecture of this file.
  *
- * The model is given exactly one tool, `roll_check`. It decides *whether* the
- * attempt is uncertain, *which* attribute and skill it leans on, *how hard* it
- * is, and *what* in the scene makes it easier or harder. Then it stops, because
- * it has to: the tool returns the result, and the model has already committed
- * to the difficulty by the time it learns the number. It narrates around a fact
- * it cannot edit.
+ * The model is given two tools. `roll_check` decides *whether* the attempt is
+ * uncertain, *which* attribute and skill it leans on, *how hard* it is, and
+ * *what* in the scene makes it easier or harder. Then it stops, because it has
+ * to: the tool returns the result, and the model has already committed to the
+ * difficulty by the time it learns the number. It narrates around a fact it
+ * cannot edit.
  *
  * If instead the model rolled its own dice, the difficulty and the outcome
  * would be chosen at the same instant by something that wants the story to go
@@ -18,8 +18,14 @@
  * problem to be solved with a stern instruction; it is why `resolveCheck` lives
  * in code and this route is a loop rather than a single call.
  *
- * The loop runs at most MAX_CHECKS times, then forces a final text-only call —
- * a turn that never stops rolling is a turn that never comes back.
+ * `narrate` is the other tool, and it ends the turn. The terminal state is
+ * *declared* rather than inferred from an absence of tool calls, which matters
+ * for two reasons: the model saying "I am done" is a stronger signal than it
+ * happening not to call anything, and sprint 3 needs somewhere to hang the
+ * clock and the world deltas that a finished turn also produces.
+ *
+ * The loop runs at most MAX_CHECKS times, then forces `narrate` — a turn that
+ * never stops rolling is a turn that never comes back.
  */
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
@@ -54,13 +60,19 @@ import {
   clampSituational,
   resolveCheck,
 } from '@/app/dicebound/domain/dice'
-import type { TurnResult } from '@/app/dicebound/domain/turn'
+import {
+  NARRATE_TOOL,
+  ROLL_CHECK_TOOL,
+  type TurnResult,
+  partitionTurnCalls,
+} from '@/app/dicebound/domain/turn'
 import {
   type ContentBlock,
   DM_MODEL,
   type Message,
   NoApiKeyError,
   RefusedError,
+  type ToolDef,
   UTILITY_MODEL,
   callForTool,
   callModel,
@@ -81,6 +93,10 @@ export const maxDuration = 120
  * swallowed a whole scene, which robs the player of the decisions in between.
  */
 const MAX_CHECKS = 3
+
+/** Sent back for a `narrate` the model wrote before it could have known the die. */
+const PREMATURE_NARRATION =
+  'That narration was written in the same message as a roll, before the dice were known, so it has been discarded. Read the roll result above and narrate what actually happened.'
 
 const DC_LINES = DC_TABLE.map(row => `  DC ${row.dc} — ${row.label} (${row.example})`).join('\n')
 
@@ -115,6 +131,7 @@ ${SKILL_LINES}
 Naming a skill matters mechanically: skills are EARNED by being called on, so the skills you name are the ones the character slowly becomes good at. Name the honest one. Do not spread them around to be generous, and do not reach for an exotic skill when the plain attribute is what is really being tested.
 
 NARRATING
+- Deliver every scene through a tool call — narrate during play, begin_story when opening. Never answer with bare prose.
 - Second person, present tense. "You push the door; it gives an inch and stops."
 - Short. Two or three paragraphs at the very most, usually one. This is a conversation, not a novel — the player is waiting to act.
 - End on a situation, not a question. Do not write "What do you do?" — just stop somewhere that obviously wants an answer.
@@ -160,6 +177,35 @@ const RollCheckSchema = z.object({
       'Bonuses and penalties from the current scene. Omit when nothing in particular applies.'
     ),
 })
+
+/**
+ * Text only, for now.
+ *
+ * Sprint 3 extends this same tool with the clock and the world deltas a
+ * finished turn also produces (#3531). Landing it text-only first is what makes
+ * that a schema change rather than a rewrite of the loop.
+ */
+const NarrateSchema = z.object({
+  text: z
+    .string()
+    .describe(
+      'What happens. Second person, present tense, short — usually one paragraph. End on a situation, not a question.'
+    ),
+})
+
+const ROLL_CHECK: ToolDef = {
+  name: ROLL_CHECK_TOOL,
+  description:
+    'Roll the dice for an uncertain attempt. Returns the roll, the total, and how far above or below the DC it landed. Call this BEFORE narrating an uncertain outcome — you do not know whether it works until you do.',
+  input_schema: toolSchema(RollCheckSchema),
+}
+
+const NARRATE: ToolDef = {
+  name: NARRATE_TOOL,
+  description:
+    'Tell the player what happens, and end your turn. This is the last thing you do. If the attempt was uncertain, call roll_check first and wait for the result — narration sent in the same message as a roll was written before the dice were known, and is discarded.',
+  input_schema: toolSchema(NarrateSchema),
+}
 
 const OpeningSchema = z.object({
   title: z
@@ -315,7 +361,7 @@ ${transcriptBlock(history)}
 
 The player says: "${action}"
 
-Resolve it and narrate what happens.`,
+Resolve it, then call narrate with what happens.`,
     },
   ]
 
@@ -331,25 +377,26 @@ Resolve it and narrate what happens.`,
       messages,
       maxTokens: 2000,
       signal,
-      // On the final pass the tool is withdrawn entirely, which is a harder
-      // guarantee than asking nicely for prose. The model has to finish.
-      ...(lastStep
-        ? {}
-        : {
-            tools: [
-              {
-                name: 'roll_check',
-                description:
-                  'Roll the dice for an uncertain attempt. Returns the roll, the total, and how far above or below the DC it landed. Call this BEFORE narrating an uncertain outcome — you do not know whether it works until you do.',
-                input_schema: toolSchema(RollCheckSchema),
-              },
-            ],
-            toolChoice: { type: 'auto' as const },
-          }),
+      // On the final pass `roll_check` is withdrawn and `narrate` is forced,
+      // which is a harder guarantee than asking nicely for prose. There is no
+      // fourth roll available to reach for, and finishing is the only move
+      // left on the board.
+      tools: lastStep ? [NARRATE] : [ROLL_CHECK, NARRATE],
+      toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const calls = toolUses(data)
-    if (calls.length === 0) {
+    const { rolls, ending, premature } = partitionTurnCalls(toolUses(data))
+
+    if (ending) {
+      narration = narrationOf(ending.input)
+      break
+    }
+
+    if (rolls.length === 0 && premature.length === 0) {
+      // The model answered in prose instead of declaring the end of the turn.
+      // Take it anyway. The turn is over either way, and spending a round trip
+      // teaching the model the ceremony would cost the player fifteen seconds
+      // to arrive at the same paragraph.
       narration = textOf(data)
       break
     }
@@ -357,10 +404,16 @@ Resolve it and narrate what happens.`,
     messages.push({ role: 'assistant', content: data.content ?? [] })
 
     const results: ContentBlock[] = []
-    for (const call of calls) {
+    for (const call of rolls) {
       const { entry, brief } = rollFor(campaign, call.input)
       entries.push(entry)
       results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
+    }
+    // Answered, not honoured. The API requires a result for every tool_use
+    // block, and this is the one place the model is told why its narration was
+    // dropped rather than being left to wonder.
+    for (const call of premature) {
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: PREMATURE_NARRATION })
     }
     messages.push({ role: 'user', content: results })
   }
@@ -373,6 +426,18 @@ Resolve it and narrate what happens.`,
 
   entries.push({ kind: 'narration', text: narration })
   return { entries, synopsis, dropped }
+}
+
+/**
+ * The text out of a `narrate` call.
+ *
+ * Returns '' rather than a placeholder when the model sends a `narrate` with
+ * nothing in it, so the caller's existing fallback narration is what the player
+ * actually reads. A tool call is not a promise that the field arrived.
+ */
+function narrationOf(input: unknown): string {
+  const raw = (input ?? {}) as { text?: unknown }
+  return typeof raw.text === 'string' ? raw.text.trim() : ''
 }
 
 /** Resolve one `roll_check` call into a transcript entry and a model briefing. */
