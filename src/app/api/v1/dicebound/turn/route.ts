@@ -48,6 +48,7 @@ import {
   MAX_ACTION,
   TRANSCRIPT_WINDOW,
   type TranscriptEntry,
+  trimToFit,
   validateCampaign,
 } from '@/app/dicebound/domain/campaign'
 import { attributeRank, earnedSkills, skillRank } from '@/app/dicebound/domain/character'
@@ -68,8 +69,10 @@ import {
   NARRATE_TOOL,
   ROLL_CHECK_TOOL,
   type TurnResult,
+  applyTurn,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
+import { verifyRequestAuth } from '@/lib/api/auth'
 import {
   type ContentBlock,
   DM_MODEL,
@@ -85,6 +88,7 @@ import {
   toolSchema,
   toolUses,
 } from '@/lib/dicebound/anthropic'
+import { loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
 
 /** The DM can be slow, and a scene worth waiting for is worth the headroom. */
 export const maxDuration = 120
@@ -288,6 +292,56 @@ interface TurnRequest {
   action?: unknown
 }
 
+/**
+ * Find the campaign this turn runs against, and say whether the server owns it.
+ *
+ * Two callers, and the difference is not cosmetic.
+ *
+ * A request carrying a token gets the *stored* campaign, whatever it sent. That
+ * is the whole point of this issue: the mechanical facts of a saved game — skill
+ * ranks, and soon items, powers and edges — stop being something the client can
+ * assert and become something only a resolved turn can produce. The body's
+ * campaign is ignored outright once a stored one exists.
+ *
+ * The exception is a player who has no stored campaign yet, whose first turn
+ * carries the campaign that character creation just built. That is a creation,
+ * not an edit, and it is no weaker than the `PUT /campaign` the client would
+ * otherwise have called a moment earlier.
+ *
+ * A request with no token is the local-only backend — Firebase unconfigured, so
+ * there is no server-side story to protect and nothing to load. It keeps the old
+ * shape. Sending no token buys an attacker nothing: without a uid there is
+ * nowhere to persist the result, and they already own their own localStorage.
+ */
+async function campaignFor(
+  request: NextRequest,
+  body: TurnRequest
+): Promise<
+  { campaign: Campaign; uid: string | null } | { error: NextResponse } | { notFound: true }
+> {
+  const hasToken = /^Bearer\s+.+$/i.test(
+    request.headers.get('authorization') ?? request.headers.get('Authorization') ?? ''
+  )
+
+  if (!hasToken) {
+    const campaign = validateCampaign(body.campaign)
+    if (!campaign) {
+      return { error: NextResponse.json({ error: 'That is not a campaign.' }, { status: 400 }) }
+    }
+    return { campaign, uid: null }
+  }
+
+  const auth = await verifyRequestAuth(request)
+  if ('error' in auth) return { error: auth.error }
+
+  const stored = await loadCampaign(auth.claims.uid)
+  if (stored) return { campaign: stored, uid: auth.claims.uid }
+
+  const created = validateCampaign(body.campaign)
+  if (!created) return { notFound: true }
+  return { campaign: created, uid: auth.claims.uid }
+}
+
 export async function POST(request: NextRequest) {
   let body: TurnRequest
   try {
@@ -296,10 +350,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Expected a JSON body.' }, { status: 400 })
   }
 
-  const campaign = validateCampaign(body.campaign)
-  if (!campaign) {
-    return NextResponse.json({ error: 'That is not a campaign.' }, { status: 400 })
+  let found: Awaited<ReturnType<typeof campaignFor>>
+  try {
+    found = await campaignFor(request, body)
+  } catch (error) {
+    console.error('dicebound turn could not load the campaign:', error)
+    return NextResponse.json({ error: 'Could not find your story.' }, { status: 500 })
   }
+
+  if ('error' in found) return found.error
+  if ('notFound' in found) {
+    return NextResponse.json({ error: 'There is no story here yet.' }, { status: 404 })
+  }
+
+  const { campaign, uid } = found
 
   const action = typeof body.action === 'string' ? body.action.trim().slice(0, MAX_ACTION) : ''
   const isOpening = campaign.transcript.length === 0
@@ -316,7 +380,28 @@ export async function POST(request: NextRequest) {
     const result = isOpening
       ? await openStory(apiKey, campaign, controller.signal)
       : await playTurn(apiKey, campaign, action, controller.signal)
-    return NextResponse.json({ result })
+
+    // Anonymous-first (CLAUDE.md #1). `uid` is null only when there is no
+    // Firebase at all, and that player still gets their turn — they just apply
+    // and store it themselves, exactly as before.
+    if (uid === null) return NextResponse.json({ result })
+
+    // The server folds the turn in and hands back what it saved. Returning the
+    // whole campaign rather than a diff is deliberate: the client applying its
+    // own `applyTurn` to a result is precisely the client-side authority this
+    // issue removes, and two implementations of that arithmetic is two chances
+    // for the sheet and the save file to disagree. The request is a sentence;
+    // it is the response that carries the story.
+    const next = applyTurn(campaign, result, Date.now())
+    try {
+      await saveCampaign(uid, trimToFit(next))
+    } catch (error) {
+      // The turn happened and the player is owed it. A failed save reads as a
+      // dropped turn next reload, which is worse than nothing but far better
+      // than throwing away narration the model has already been paid for.
+      console.error('dicebound turn save failed:', error)
+    }
+    return NextResponse.json({ result, campaign: next })
   } catch (error) {
     clearTimeout(timeout)
 

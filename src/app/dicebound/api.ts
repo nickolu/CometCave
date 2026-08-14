@@ -40,17 +40,50 @@ export async function createCharacter(concept: string, premise: string): Promise
   return body.character
 }
 
-export async function takeTurn(campaign: Campaign, action: string): Promise<TurnResult> {
+export interface TurnResponse {
+  result: TurnResult
+  /**
+   * The campaign the server saved. Present only on the authoritative path —
+   * when it is here, it replaces whatever the client was holding, and the
+   * client does not apply the result itself.
+   */
+  campaign?: Campaign
+}
+
+/**
+ * Take a turn.
+ *
+ * With a token the body is a sentence: the server loads its own campaign,
+ * resolves against that, saves, and returns what it saved.
+ *
+ * The one exception is the opening turn, which carries the campaign character
+ * creation just built, because the server has nothing to load yet. Every turn
+ * after that sends the action alone — which is the point, since a campaign
+ * grows to six figures of bytes and was being uploaded on every line the player
+ * typed.
+ *
+ * Without a token there is no server-side story, so the old shape stands: send
+ * the campaign, get a result, apply it here.
+ */
+export async function takeTurn(
+  action: string,
+  { token, campaign }: { token: string | null; campaign: Campaign }
+): Promise<TurnResponse> {
+  const creating = campaign.transcript.length === 0
+  const body = token ? (creating ? { action, campaign } : { action }) : { campaign, action }
+
   const response = await fetch('/api/v1/dicebound/turn', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ campaign, action }),
+    headers: {
+      'content-type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {
     throw await errorFrom(response, 'The telling faltered. Try that again.')
   }
 
-  const body = (await response.json()) as { result: TurnResult }
-  return body.result
+  return (await response.json()) as TurnResponse
 }
