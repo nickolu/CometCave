@@ -94,33 +94,113 @@ export interface CallOptions {
   signal?: AbortSignal
 }
 
-export async function callModel(options: CallOptions): Promise<ModelResponse> {
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    signal: options.signal,
-    headers: {
-      'x-api-key': options.apiKey,
-      'anthropic-version': '2023-06-01',
-      'content-type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: options.model ?? DM_MODEL,
-      max_tokens: options.maxTokens,
-      system: options.system,
-      messages: options.messages,
-      ...(options.tools ? { tools: options.tools } : {}),
-      ...(options.toolChoice ? { tool_choice: options.toolChoice } : {}),
-    }),
-  })
+/**
+ * Statuses worth trying again.
+ *
+ * 529 is the one that actually bites: a 20-turn measured run lost 8 of its
+ * turns to `overloaded_error` in a single afternoon, and each one reached the
+ * player as "The telling faltered." Overload is a statement about the next few
+ * seconds, not about the request, so the request is still good.
+ *
+ * 429 is here because a rate limit answers the same way, and the 5xx family
+ * because a gateway that could not reach the model has told us nothing about
+ * whether the model would have answered. Everything else — 400, 401, 403 — is
+ * a fact about the request, and sending it again is just a slower failure.
+ */
+const RETRY_STATUSES = new Set([429, 500, 502, 503, 504, 529])
 
-  if (!response.ok) {
+/** Attempts in total, not retries after the first. */
+const MAX_ATTEMPTS = 3
+
+/** Doubling from here. Short, because a turn is already the slowest thing here. */
+const RETRY_BASE_MS = 600
+
+/** The longest any single wait may be, however long the server asks for. */
+const RETRY_CAP_MS = 2_000
+
+function retryDelay(attempt: number, header: string | null): number {
+  // `retry-after` is the server saying how long it actually needs. Prefer it
+  // over guessing, but cap it hard. A turn can make several model calls, each
+  // of which may retry, inside a 105-second deadline — so an honest 600-second
+  // hint is simply not usable here, and waiting even five would eat the budget
+  // the player is actually waiting on.
+  const advised = Number(header)
+  if (Number.isFinite(advised) && advised > 0) return Math.min(advised * 1000, RETRY_CAP_MS)
+  return RETRY_BASE_MS * 2 ** attempt
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'))
+      return
+    }
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    function onAbort() {
+      clearTimeout(timer)
+      reject(new DOMException('Aborted', 'AbortError'))
+    }
+    signal?.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/**
+ * One call to the model, retried when the failure was about the moment rather
+ * than the request.
+ *
+ * Retrying lives here rather than in the turn loop because every path through
+ * the game funnels through this function — a turn, a condense, a
+ * reconciliation, building a character — and a transient failure in any of them
+ * is equally recoverable and equally invisible to the player. The alternative
+ * was four call sites each deciding for themselves.
+ *
+ * The caller's abort signal still bounds the whole thing. A turn has a hard
+ * deadline, and a retry that would land after it is worse than no retry: the
+ * player has already been waiting, and the answer would arrive to nobody.
+ */
+export async function callModel(options: CallOptions): Promise<ModelResponse> {
+  let lastError: Error | undefined
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      signal: options.signal,
+      headers: {
+        'x-api-key': options.apiKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: options.model ?? DM_MODEL,
+        max_tokens: options.maxTokens,
+        system: options.system,
+        messages: options.messages,
+        ...(options.tools ? { tools: options.tools } : {}),
+        ...(options.toolChoice ? { tool_choice: options.toolChoice } : {}),
+      }),
+    })
+
+    if (response.ok) {
+      const data = (await response.json()) as ModelResponse
+      // A refusal is a decision, not a hiccup. Asking again would get the same
+      // answer more slowly, and the caller already answers it in voice.
+      if (data.stop_reason === 'refusal') throw new RefusedError()
+      return data
+    }
+
     const detail = await response.text()
-    throw new Error(`anthropic ${response.status}: ${detail.slice(0, 300)}`)
+    lastError = new Error(`anthropic ${response.status}: ${detail.slice(0, 300)}`)
+
+    const last = attempt === MAX_ATTEMPTS - 1
+    if (!RETRY_STATUSES.has(response.status) || last) break
+
+    await sleep(retryDelay(attempt, response.headers.get('retry-after')), options.signal)
   }
 
-  const data = (await response.json()) as ModelResponse
-  if (data.stop_reason === 'refusal') throw new RefusedError()
-  return data
+  throw lastError ?? new Error('anthropic call failed')
 }
 
 /** Force one tool call and hand back its input verbatim. */
