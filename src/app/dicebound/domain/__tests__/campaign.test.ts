@@ -151,6 +151,46 @@ describe('validateCampaign', () => {
     expect(result?.character.skills.balance).not.toHaveProperty('seeded')
     expect(result?.character.skills.humor).not.toHaveProperty('seeded')
   })
+
+  it('round-trips a die that was thrown twice', () => {
+    const result = validateCampaign({
+      ...campaign(),
+      transcript: [
+        { ...check(), twice: { direction: 'advantage', reason: 'the torch', discarded: 4 } },
+      ],
+    })
+    const entry = result?.transcript[0]
+    expect(entry && 'twice' in entry && entry.twice).toEqual({
+      direction: 'advantage',
+      reason: 'the torch',
+      discarded: 4,
+    })
+  })
+
+  it('drops a malformed second die rather than inventing one', () => {
+    // There is no sensible default for "which die did we throw away". A repair
+    // would print a number on the die card that never came off a die — and
+    // `boundedInt` would happily turn a missing one into a 1, which reads as a
+    // real roll the player got lucky to escape.
+    const result = validateCampaign({
+      ...campaign(),
+      transcript: [
+        { ...check(), twice: { direction: 'advantage', reason: 'the torch' } },
+        { ...check(), twice: { direction: 'sideways', discarded: 4 } },
+        { ...check(), twice: 'advantage' },
+      ],
+    })
+    for (const entry of result?.transcript ?? []) {
+      expect(entry).not.toHaveProperty('twice')
+    }
+  })
+
+  it('leaves an ordinary check without the key at all', () => {
+    // Absent, not undefined — it keeps the field out of every stored blob, and
+    // nearly every check ever rolled is an ordinary one.
+    const result = validateCampaign({ ...campaign(), transcript: [check()] })
+    expect(result?.transcript[0]).not.toHaveProperty('twice')
+  })
 })
 
 describe('withVisit', () => {

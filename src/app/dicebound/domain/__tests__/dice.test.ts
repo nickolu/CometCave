@@ -11,6 +11,7 @@ import {
   clampDc,
   clampSituational,
   difficultyLabel,
+  netAdvantage,
   resolveCheck,
   rollD20,
 } from '@/app/dicebound/domain/dice'
@@ -190,5 +191,125 @@ describe('the move list', () => {
     for (const move of HARD_MOVES) {
       expect(move.endsWith('.'), move).toBe(true)
     }
+  })
+})
+
+/** A d20 that shows each value in turn, so a two-die roll is exactly known. */
+function sequence(...values: number[]) {
+  let index = 0
+  return () => {
+    const value = values[Math.min(index++, values.length - 1)]
+    return (value - 1) / 20 + 0.001
+  }
+}
+
+describe('netAdvantage', () => {
+  it('is nothing when nothing is pulling', () => {
+    expect(netAdvantage([])).toBeNull()
+  })
+
+  it('advantage and disadvantage together are neither', () => {
+    // Not a tally. Two advantages against one disadvantage is still neither,
+    // because a flag that can be out-voted is a magnitude, and a magnitude is
+    // the thing this is built to not be.
+    expect(
+      netAdvantage([
+        { direction: 'advantage', reason: 'the fire is behind you' },
+        { direction: 'advantage', reason: 'you have the high ground' },
+        { direction: 'disadvantage', reason: 'your arm is broken' },
+      ])
+    ).toBeNull()
+  })
+
+  it('keeps every reason on the winning side, so the player is told all of them', () => {
+    const net = netAdvantage([
+      { direction: 'advantage', reason: 'the fire is behind you' },
+      { direction: 'advantage', reason: 'you have the high ground' },
+    ])
+    expect(net?.direction).toBe('advantage')
+    expect(net?.reason).toBe('the fire is behind you + you have the high ground')
+  })
+})
+
+describe('resolveCheck with advantage', () => {
+  it('advantage keeps the higher die and shows the one it threw away', () => {
+    const outcome = resolveCheck(
+      { dc: 10, modifiers: [], advantage: [{ direction: 'advantage', reason: 'the torch' }] },
+      sequence(4, 17)
+    )
+    expect(outcome.roll).toBe(17)
+    expect(outcome.twice).toEqual({ direction: 'advantage', reason: 'the torch', discarded: 4 })
+  })
+
+  it('disadvantage keeps the lower die', () => {
+    const outcome = resolveCheck(
+      { dc: 10, modifiers: [], advantage: [{ direction: 'disadvantage', reason: 'the dark' }] },
+      sequence(4, 17)
+    )
+    expect(outcome.roll).toBe(4)
+    expect(outcome.twice?.discarded).toBe(17)
+  })
+
+  it('a natural 1 on the kept die is still a critical failure', () => {
+    // Decided on the kept die, never on either die thrown. Reading the naturals
+    // off both would make advantage double a character's chance of a critical
+    // failure, which is the reverse of what advantage is for.
+    const outcome = resolveCheck(
+      {
+        dc: 5,
+        modifiers: [{ label: 'Dexterity', value: 3 }],
+        advantage: [{ direction: 'disadvantage', reason: 'the dark' }],
+      },
+      sequence(1, 20)
+    )
+    expect(outcome.roll).toBe(1)
+    expect(outcome.band).toBe('critical-failure')
+  })
+
+  it('a natural 20 discarded is not a critical success', () => {
+    const outcome = resolveCheck(
+      { dc: 30, modifiers: [], advantage: [{ direction: 'disadvantage', reason: 'the dark' }] },
+      sequence(20, 2)
+    )
+    expect(outcome.twice?.discarded).toBe(20)
+    expect(outcome.band).not.toBe('critical-success')
+  })
+
+  it('advantage does not touch the situational budget', () => {
+    // It moves the odds without moving a number, which is why it sits outside
+    // the ±6 total and the +3 kit ceiling. Nothing about the arithmetic changes.
+    const modifiers = [{ label: 'Dexterity', value: 2 }]
+    const plain = resolveCheck({ dc: 10, modifiers }, sequence(11))
+    const lucky = resolveCheck(
+      { dc: 10, modifiers, advantage: [{ direction: 'advantage', reason: 'the torch' }] },
+      sequence(11, 3)
+    )
+    expect(lucky.modifier).toBe(plain.modifier)
+    expect(lucky.modifiers).toEqual(plain.modifiers)
+    expect(lucky.total).toBe(plain.total)
+  })
+
+  it('throws one die when nothing is pulling, so an ordinary check is unchanged', () => {
+    // The second value in the sequence must never be reached. If it were, every
+    // seeded test in this file would silently start rolling something else.
+    const outcome = resolveCheck({ dc: 10, modifiers: [], advantage: [] }, sequence(11, 20))
+    expect(outcome.roll).toBe(11)
+    expect(outcome.twice).toBeNull()
+  })
+
+  it('cancelled sources throw one die, not two', () => {
+    const outcome = resolveCheck(
+      {
+        dc: 10,
+        modifiers: [],
+        advantage: [
+          { direction: 'advantage', reason: 'the torch' },
+          { direction: 'disadvantage', reason: 'the dark' },
+        ],
+      },
+      sequence(11, 20)
+    )
+    expect(outcome.roll).toBe(11)
+    expect(outcome.twice).toBeNull()
   })
 })
