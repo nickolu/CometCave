@@ -1540,7 +1540,7 @@ function sheetBlock(campaign: Campaign): string {
   return `THE CHARACTER
 ${c.name} — ${c.concept}
 Attributes: ${attributes}
-Earned skills: ${skills}${windowBlock(campaign)}${powersBlock(campaign.kit)}`
+Earned skills: ${skills}${windowBlock(campaign)}${powersBlock(campaign.kit)}${packBlock(campaign.kit)}`
 }
 
 /**
@@ -1604,6 +1604,38 @@ function powersBlock(kit: Kit): string {
   })
 
   return `\nThings they can do (call use_power with the id, and they still roll afterwards):\n${lines.join('\n')}`
+}
+
+/**
+ * What the character is carrying, shown to the DM so it can name items in roll_check.
+ *
+ * Trait labels are shown; their numbers are not. A DM shown "+2" narrates around
+ * the +2; one shown "the edge is sharp" narrates around a knife.
+ */
+function packBlock(kit: Kit): string {
+  const lines: string[] = []
+
+  if (kit.species) {
+    const { name, note, trait, drawback } = kit.species
+    lines.push(
+      `\nSpecies: ${name} — ${note}. ${trait.label} (upside). ${drawback.label} (drawback — applies automatically, always).`
+    )
+  }
+
+  if (kit.items.length === 0) return lines.join('')
+
+  const itemLines = kit.items.map(item => {
+    const traitList = item.traits.map(t => t.label).join(', ')
+    const traitsStr = traitList ? ` — ${traitList}` : ''
+    const charges = item.charges ? ` (${item.charges.now}/${item.charges.max} uses)` : ''
+    return `  ${item.id} "${item.name}"${charges}${traitsStr}`
+  })
+
+  lines.push(
+    `\nThey are carrying (name the id in roll_check's items when it genuinely applies — the game decides what it is worth):\n${itemLines.join('\n')}`
+  )
+
+  return lines.join('')
 }
 
 function format(value: number): string {

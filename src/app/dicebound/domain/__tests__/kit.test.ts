@@ -345,6 +345,43 @@ describe('kitModifiers', () => {
     expect(mods.map(m => m.label)).toContain('the great sword')
     expect(mods.reduce((sum, m) => sum + m.value, 0)).toBeLessThanOrEqual(KIT_BONUS_CAP)
   })
+
+  it('applies a species trait automatically, without naming it', () => {
+    const kit = emptyKit()
+    const kitWithSpecies = {
+      ...kit,
+      species: validateSpecies({
+        name: 'Forest Cat',
+        note: 'grew up in trees',
+        trait: { label: 'nimble on branches', bonus: 1, applies: { attributes: ['dexterity'] } },
+        drawback: { label: 'easily distracted by birds', bonus: 1, applies: { attributes: ['wisdom'] } },
+      })!,
+    }
+    // Trait applies to dexterity even with no items named.
+    expect(kitModifiers(kitWithSpecies, [], 'dexterity', null)).toEqual([
+      { label: 'nimble on branches', value: 1 },
+    ])
+    // Drawback applies to wisdom.
+    expect(kitModifiers(kitWithSpecies, [], 'wisdom', null)).toEqual([
+      { label: 'easily distracted by birds', value: -1 },
+    ])
+    // Neither applies to strength.
+    expect(kitModifiers(kitWithSpecies, [], 'strength', null)).toEqual([])
+  })
+
+  it('shows all four reasons when four items are at the ceiling', () => {
+    const kit = kitWith(
+      { id: 'a', name: 'A', quality: 'fine', traits: [{ label: 'reason-a' }] },
+      { id: 'b', name: 'B', quality: 'fine', traits: [{ label: 'reason-b' }] },
+      { id: 'c', name: 'C', quality: 'fine', traits: [{ label: 'reason-c' }] },
+      { id: 'd', name: 'D', quality: 'fine', traits: [{ label: 'reason-d' }] },
+    )
+    const mods = kitModifiers(kit, ['a', 'b', 'c', 'd'], 'strength', null)
+    // All four labels must appear.
+    expect(mods.map(m => m.label)).toEqual(expect.arrayContaining(['reason-a', 'reason-b', 'reason-c', 'reason-d']))
+    // Total must not exceed the cap.
+    expect(mods.reduce((s, m) => s + m.value, 0)).toBeLessThanOrEqual(KIT_BONUS_CAP)
+  })
 })
 
 /** A world holding one actor the player met an hour into the story. */

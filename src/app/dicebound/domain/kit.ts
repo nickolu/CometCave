@@ -519,6 +519,18 @@ export function kitModifiers(
     }
   }
 
+  // Species applies automatically — no id required.
+  // The trait and the drawback both count, on every check they apply to.
+  if (kit.species) {
+    const { trait, drawback } = kit.species
+    if (traitApplies(trait, attribute, skill)) {
+      out.push({ label: trait.label, value: trait.bonus })
+    }
+    if (traitApplies(drawback, attribute, skill)) {
+      out.push({ label: drawback.label, value: drawback.bonus })
+    }
+  }
+
   return capKit(out)
 }
 
@@ -563,19 +575,29 @@ function capKit(modifiers: { label: string; value: number }[]): { label: string;
   const ordered = [...modifiers].sort((a, b) => Math.abs(b.value) - Math.abs(a.value))
   const kept: { label: string; value: number }[] = []
   let running = 0
+  let capped = false
 
   for (const modifier of ordered) {
+    if (capped) {
+      kept.push({ label: modifier.label, value: 0 })
+      continue
+    }
     const next = running + modifier.value
     if (Math.abs(next) > KIT_BONUS_CAP) {
       const room = KIT_BONUS_CAP - Math.abs(running)
-      if (room <= 0) break
+      if (room <= 0) {
+        kept.push({ label: modifier.label, value: 0 })
+        capped = true
+        continue
+      }
       const trimmed = modifier.value > 0 ? room : -room
       kept.push({ label: modifier.label, value: trimmed })
       running += trimmed
-      break
+      capped = true
+    } else {
+      kept.push(modifier)
+      running = next
     }
-    kept.push(modifier)
-    running = next
   }
 
   return kept
