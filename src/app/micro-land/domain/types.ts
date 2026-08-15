@@ -760,6 +760,29 @@ export interface Spawner {
   maxLocal: number
 }
 
+/**
+ * Per-species world-generator config.
+ *
+ * Determines which species the ground seeds automatically, how often, and
+ * whether it does so at all. Plant generators are enabled by default (they
+ * replace the current seedNativePlants batch logic); animal generators are
+ * off by default and exist so the player can opt into background seeding.
+ */
+export interface WorldGeneratorEntry {
+  blueprintId: string
+  /** Whether the world actively seeds this species on its timer. */
+  enabled: boolean
+  /** Seconds between seeding attempts. */
+  intervalSeconds: number
+  /**
+   * World-clock time of the next seeding attempt.
+   *
+   * Runtime only — never saved; resets to 0 on restore so the world starts
+   * seeding immediately after a load rather than waiting out a stale timer.
+   */
+  nextSeed: number
+}
+
 export interface WorldState {
   width: number
   height: number
@@ -812,6 +835,8 @@ export interface WorldState {
   /** Placed spawner objects. Emit one creature of their species on a timer. */
   spawners: Spawner[]
   nextSpawnerId: number
+  /** Per-species background-seeding config. Plants default to enabled. */
+  generators: WorldGeneratorEntry[]
 }
 
 // ---------------------------------------------------------------------------

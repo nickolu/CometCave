@@ -14,6 +14,7 @@ import {
 import type { Biome } from '../config/biomes'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
+  PLANT_SEED_INTERVAL,
   SURFACE_SEEDING_BIAS,
   WIDTH_SCALE,
   WORLD_H,
@@ -25,6 +26,7 @@ import type {
   Creature,
   CreatureBlueprint,
   MaterialId,
+  WorldGeneratorEntry,
   WorldState,
 } from '@/app/micro-land/domain/types'
 import { wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
@@ -67,6 +69,7 @@ export function createWorld(seed = 1337): WorldState {
     dormant: false,
     spawners: [],
     nextSpawnerId: 1,
+    generators: [],
   }
 }
 
@@ -435,6 +438,17 @@ export function registerBlueprint(w: WorldState, bp: CreatureBlueprint): void {
   w.blueprints[bp.id] = bp
   // Summoned creatures become native too, so the world can bring them back.
   if (!w.natives.includes(bp.id)) w.natives.push(bp.id)
+  // Each native species gets a generator entry — enabled for plants, off for
+  // animals. Summoning a species twice leaves its config unchanged.
+  if (!w.generators.some((g: WorldGeneratorEntry) => g.blueprintId === bp.id)) {
+    const isPlant = bp.move.kind === 'root'
+    w.generators.push({
+      blueprintId: bp.id,
+      enabled: isPlant,
+      intervalSeconds: isPlant ? PLANT_SEED_INTERVAL : 30,
+      nextSeed: 0,
+    })
+  }
 }
 
 /** Make a creature at an exact spot, no questions asked. */

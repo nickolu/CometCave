@@ -18,13 +18,14 @@
  * it can be tested, which is where the interesting failures are.
  */
 import { MATERIAL_IDS } from '@/app/micro-land/domain/config/materials'
-import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
+import { PLANT_SEED_INTERVAL, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { sanitizeTerrain } from '@/app/micro-land/domain/terrain'
 import { SHADE_MAX, SHADE_MIN, TRAIT_MAX, TRAIT_MIN } from '@/app/micro-land/domain/traits'
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 
 import {
   type SavedCreature,
+  type SavedGenerator,
   type SavedSpawner,
   WORLD_SAVE_VERSION,
   type WorldSave,
@@ -238,6 +239,19 @@ function validSnapshot(value: unknown): WorldSnapshot | null {
     }
   }
 
+  const generators: SavedGenerator[] = []
+  if (Array.isArray(value.generators)) {
+    for (const raw of value.generators) {
+      if (!isPlainObject(raw)) continue
+      if (typeof raw.blueprintId !== 'string' || raw.blueprintId.length === 0) continue
+      generators.push({
+        blueprintId: raw.blueprintId.slice(0, 120),
+        enabled: raw.enabled === true,
+        intervalSeconds: clamp(raw.intervalSeconds, 1, 3600, PLANT_SEED_INTERVAL),
+      })
+    }
+  }
+
   return {
     materials,
     width: WORLD_W,
@@ -257,6 +271,7 @@ function validSnapshot(value: unknown): WorldSnapshot | null {
     blueprints,
     spawners,
     nextSpawnerId: Math.max(1, Math.floor(num(value.nextSpawnerId, spawners.length + 1))),
+    generators,
   }
 }
 
