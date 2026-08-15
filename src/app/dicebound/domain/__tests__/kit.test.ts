@@ -22,6 +22,7 @@ import {
   maxTierAt,
   powerEffect,
   powerFromGrant,
+  restFor,
   restore,
   spendPower,
   validateItem,
@@ -642,5 +643,94 @@ describe('powerEffect', () => {
     // nothing claims it — and the charge above is still gone.
     expect(appliesTo(effect.advantage!.applies, 'dexterity', 'balance')).toBe(false)
     expect(spent.kit.powers[0].charges.now).toBe(TIER_CHARGES[1] - 1)
+  })
+})
+
+describe('restFor', () => {
+  const spentKit = (refresh: 'rest' | 'chapter' = 'rest') => ({
+    ...emptyKit(),
+    powers: [
+      {
+        ...powerFromGrant(grant(), 1, 600)!,
+        refresh,
+        charges: { now: 0, max: 3 },
+      },
+    ],
+  })
+
+  const thread = (pressure: 'urgent' | 'pressing' | 'patient'): Entity =>
+    ({
+      id: `thread-${pressure}`,
+      kind: 'thread',
+      name: 'the thing catching up',
+      note: '',
+      state: '',
+      status: 'active',
+      firstSeen: 0,
+      lastSeen: 0,
+      threadKind: 'threat',
+      resolution: 'open',
+      due: null,
+      pressure,
+      firings: 0,
+    }) as Entity
+
+  it('six hours in a safe place with nothing urgent is a rest', () => {
+    const result = restFor(spentKit(), worldWith({}), REST_MINUTES, true)
+    expect(result.rested).toBe(true)
+    expect(result.kit.powers[0].charges.now).toBe(3)
+    expect(result.restored).toBe(3)
+  })
+
+  it('six hours with an urgent thread open is not a rest, however safe the turn claimed to be', () => {
+    // The condition the model cannot talk its way around: an open thread at
+    // urgent pressure is a fact about the graph, not a claim.
+    const world = worldWith({ 'thread-urgent': thread('urgent') })
+    const result = restFor(spentKit(), world, REST_MINUTES, true)
+    expect(result.rested).toBe(false)
+    expect(result.kit.powers[0].charges.now).toBe(0)
+  })
+
+  it('a thread that is merely pressing does not stop a rest', () => {
+    const world = worldWith({ 'thread-pressing': thread('pressing') })
+    expect(restFor(spentKit(), world, REST_MINUTES, true).rested).toBe(true)
+  })
+
+  it('a chapter refresh does not come back on a rest', () => {
+    const result = restFor(spentKit('chapter'), worldWith({}), REST_MINUTES, true)
+    // The span qualified — but nothing this character has refreshes on it.
+    expect(result.rested).toBe(true)
+    expect(result.kit.powers[0].charges.now).toBe(0)
+    expect(result.restored).toBe(0)
+  })
+
+  it('a rest refresh does not wait for a chapter', () => {
+    const kit = spentKit('rest')
+    expect(restore(kit, 'chapter').powers[0].charges.now).toBe(0)
+    expect(restore(kit, 'rest').powers[0].charges.now).toBe(3)
+  })
+
+  it('a week of travel refills once, not seven times', () => {
+    // Nothing here counts spans. One call, one refill, and the caller latches
+    // `rested` so a turn that narrates twice cannot rest twice — restoring to
+    // `max` is idempotent, which is the other half of the guarantee.
+    const week = 7 * 24 * 60
+    const once = restFor(spentKit(), worldWith({}), week, true)
+    expect(once.restored).toBe(3)
+
+    const again = restFor(once.kit, worldWith({}), week, true)
+    expect(again.restored).toBe(0)
+    expect(again.kit.powers[0].charges.now).toBe(3)
+  })
+
+  it('says nothing came back when nothing was spent', () => {
+    const full = { ...emptyKit(), powers: [powerFromGrant(grant(), 1, 600)!] }
+    const result = restFor(full, worldWith({}), REST_MINUTES, true)
+    expect(result.rested).toBe(true)
+    expect(result.restored).toBe(0)
+  })
+
+  it('an unsafe span is not a rest even with time and quiet', () => {
+    expect(restFor(spentKit(), worldWith({}), REST_MINUTES, false).rested).toBe(false)
   })
 })

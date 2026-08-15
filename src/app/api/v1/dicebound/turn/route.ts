@@ -85,11 +85,14 @@ import {
   addPower,
   appliesTo,
   canGrantPower,
+  chargesRestored,
   itemFromGrant,
   kitModifiers,
   levelFor,
   powerEffect,
   powerFromGrant,
+  restFor,
+  restore,
   spendPower,
 } from '@/app/dicebound/domain/kit'
 import {
@@ -103,6 +106,7 @@ import {
   applyTurn,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
+import { bool } from '@/app/dicebound/domain/validate'
 import {
   EDGE_KINDS,
   ENTITY_KINDS,
@@ -801,6 +805,7 @@ async function playTurn(
   let dropped: number | undefined
   let chapters: number | undefined
   let repaired: World | undefined
+  let chapterTurned = false
 
   if (campaign.transcript.length > CONDENSE_AT) {
     const cut = campaign.transcript.length - TRANSCRIPT_WINDOW
@@ -822,6 +827,12 @@ async function playTurn(
           archivedAt: campaign.world.clock.elapsed,
         })
         chapters = campaign.chapters + 1
+        // A chapter boundary is the rarer refresh, and it is tied to the
+        // archive *landing* rather than to the condense being attempted. A
+        // failed archive already costs the player a slice of transcript; it
+        // must not also hand them back charges for a chapter that was never
+        // written, or the counter and the sheet start disagreeing.
+        chapterTurned = true
       } catch (error) {
         // A failed archive must not cost the player their turn. It does cost
         // this slice of transcript, which is why it is logged loudly rather
@@ -878,6 +889,21 @@ Resolve it, then call narrate with what happens.`,
   // Spent powers, held for the length of the turn. Anything still pending when
   // the turn ends is discarded with its charge already gone.
   const powers: TurnPowers = { permissions: [], pending: [], spent: new Set() }
+  // Latched for the turn. A fuse-interrupted turn narrates twice, and without
+  // this the second narration could rest again off the same span — "a week of
+  // travel is not seven rests" has to survive the one path that runs the clock
+  // more than once.
+  let rested = false
+  let restoredCharges = 0
+
+  // The chapter refresh happens here rather than inside the condense block
+  // because `kit` does not exist yet up there, and because a refill that
+  // happened before the turn ran would be invisible to anything the turn did.
+  if (chapterTurned) {
+    const refreshed = restore(kit, 'chapter')
+    restoredCharges += chargesRestored(kit, refreshed)
+    kit = refreshed
+  }
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
@@ -915,8 +941,23 @@ Resolve it, then call narrate with what happens.`,
         narration = narration ? `${narration}\n\n${text}` : text
       }
 
-      const applied = applyWorldDelta(world, (ending.input ?? {}) as Record<string, unknown>)
+      const delta = (ending.input ?? {}) as Record<string, unknown>
+      const before = world.clock.elapsed
+      const applied = applyWorldDelta(world, delta)
       world = applied.world
+
+      // Measured from the clock the server actually moved, not from the
+      // `elapsed` the model asked for. `advance` stops at a fuse, so a DM that
+      // claims a week and runs into something four hours in has had four hours
+      // — and four hours is not a rest. The world is read after the deltas so a
+      // thread that fired during the span is already urgent by the time this
+      // asks.
+      if (!rested) {
+        const outcome = restFor(kit, world, world.clock.elapsed - before, bool(delta.safe))
+        kit = outcome.kit
+        rested = outcome.rested
+        restoredCharges += outcome.restored
+      }
 
       // The clock ran into an open thread's fuse. The turn is not over: the
       // player asked for a week and got four hours, and they are owed the
@@ -1026,6 +1067,26 @@ Resolve it, then call narrate with what happens.`,
   }
 
   entries.push({ kind: 'narration', text: narration })
+
+  // A quiet line, in the game's own voice, and only when something actually
+  // came back. Not a toast and not a banner: the cave is light and ceremony
+  // lives inside the game (CLAUDE.md #2), and this is a small thing that
+  // happened in the fiction rather than an achievement. A rest that restored
+  // nothing — because nothing was spent — says nothing at all, or the player
+  // learns to read it as noise.
+  //
+  // It goes in the transcript rather than into a field, which is also how the
+  // DM finds out: next turn it reads this line back, and the powers block in
+  // the prompt already shows the refilled counts.
+  if (restoredCharges > 0) {
+    entries.push({
+      kind: 'narration',
+      text: rested
+        ? 'You sleep, and it is a real one. Whatever it is you spend doing the thing only you can do, it is back where you left it.'
+        : 'Something settles, the way it does when one part of a story finishes and another has not started yet. What you spent has come back.',
+    })
+  }
+
   return { entries, synopsis, dropped, world, chapters, kit }
 }
 

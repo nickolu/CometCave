@@ -29,9 +29,21 @@ export const DM_MODEL = 'claude-opus-5'
 /**
  * Condensing old turns into a synopsis is bookkeeping the player never reads
  * directly, and it happens on a turn that is already slow. A smaller model is
- * the right trade here and nowhere else in this game.
+ * the right trade here, and nowhere else that writes the story.
  */
 export const UTILITY_MODEL = 'claude-sonnet-5'
+
+/**
+ * The three lines offered beside the composer.
+ *
+ * The smallest model in the family, and not a compromise. The job is to read
+ * one scene and write three sentences a player might plausibly type — a
+ * fraction of what the dungeon master is doing, with none of the arithmetic and
+ * none of the world to keep. What it needs instead is speed: these arrive after
+ * the narration the player is still reading, and a suggestion that lands after
+ * they have already started typing may as well not have come at all.
+ */
+export const SUGGEST_MODEL = 'claude-haiku-4-5-20251001'
 
 export interface ToolDef {
   name: string
