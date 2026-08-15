@@ -599,6 +599,7 @@ export class Renderer {
       this.drawTombstones(w)
       if (heatmap) this.drawHeatmap(heatmap, vx, vw)
       this.drawEggs(w)
+      this.drawSpawners(w)
       this.drawCreatures(w)
       this.drawStatusDots(w)
       this.drawPollinatorAuras(w)
@@ -1060,6 +1061,64 @@ export class Renderer {
 
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
+  }
+
+  /**
+   * Draw placed spawners as discreet beacon markers.
+   *
+   * Each spawner is a small filled circle in the species' primary color with a
+   * pulsing ring around it — "this place is special" without being a UI widget.
+   * The ring pulse skips when `prefers-reduced-motion` is active (static at
+   * half opacity instead).
+   */
+  private drawSpawners(w: WorldState): void {
+    if (!w.spawners?.length) return
+    const ctx = this.wctx
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+
+    for (const spawner of w.spawners) {
+      if (!this.onScreen(spawner.x - 4, 8)) continue
+
+      // Primary color: first non-transparent pixel in the blueprint palette.
+      // Falls back to a neutral cosmic tint if the blueprint is missing.
+      let color = '#88aaff'
+      const bp = w.blueprints[spawner.blueprintId]
+      if (bp?.art?.palette && bp.art.frames.length > 0) {
+        outer: for (const frame of bp.art.frames) {
+          for (const row of frame) {
+            for (const ch of row) {
+              if (ch !== '.' && bp.art.palette[ch]) {
+                color = bp.art.palette[ch]
+                break outer
+              }
+            }
+          }
+        }
+      }
+
+      const x = Math.round(spawner.x)
+      const y = Math.round(spawner.y)
+
+      // Solid inner circle — always visible.
+      ctx.globalAlpha = 0.85
+      ctx.fillStyle = color
+      ctx.beginPath()
+      ctx.arc(x, y, 2, 0, Math.PI * 2)
+      ctx.fill()
+
+      // Pulsing ring at ~1 Hz. Static at half opacity on prefers-reduced-motion.
+      const ringAlpha = reducedMotion
+        ? 0.45
+        : 0.25 + 0.35 * (Math.sin(w.elapsed * Math.PI * 2) * 0.5 + 0.5)
+      ctx.globalAlpha = ringAlpha
+      ctx.strokeStyle = color
+      ctx.lineWidth = 0.5
+      ctx.beginPath()
+      ctx.arc(x, y, 3.5, 0, Math.PI * 2)
+      ctx.stroke()
+
+      ctx.globalAlpha = 1
+    }
   }
 
   private drawEggs(w: WorldState): void {
