@@ -101,6 +101,12 @@ export function DieCard({ entry, fresh = false }: { entry: CheckEntry; fresh?: b
   const tone = TONE[entry.band]
   const shown = tumbling ?? entry.roll
   const skillName = entry.skill ? SKILLS[entry.skill].name : null
+  // The struck-through die is aria-hidden, so the announcement has to carry it
+  // in words — otherwise a screen reader user is told a 17 was rolled and never
+  // told a 3 was thrown away, and the sighted card says more than the spoken one.
+  const twiceSaid = entry.twice
+    ? ` Rolled twice with ${entry.twice.direction}${entry.twice.reason ? `, ${entry.twice.reason}` : ''}, discarding ${entry.twice.discarded}.`
+    : ''
 
   return (
     <div
@@ -117,12 +123,30 @@ export function DieCard({ entry, fresh = false }: { entry: CheckEntry; fresh?: b
 
       <div className="mt-3 flex items-center gap-4">
         {/* The die itself. aria-hidden while tumbling so a screen reader is
-            told the outcome once, at the end, rather than twenty times. */}
-        <div
-          aria-hidden={!settled}
-          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-ds-sm border-2 bg-surface-container-high font-headline text-2xl font-extrabold tabular-nums ${tone.border} ${tone.text}`}
-        >
-          {shown}
+            told the outcome once, at the end, rather than twenty times.
+
+            When the die was thrown twice, the discarded one sits beside the
+            kept one, struck through and dimmed. It is laid out as a plain flex
+            row with no animation of its own, so it reads the same whether the
+            card just arrived or is being scrolled back through under
+            prefers-reduced-motion — the two-dice arrangement must not depend on
+            the roll animation to make sense. A discarded 17 is the most
+            interesting number on the card and it is never hidden. */}
+        <div className="flex shrink-0 items-center gap-2">
+          <div
+            aria-hidden={!settled}
+            className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-ds-sm border-2 bg-surface-container-high font-headline text-2xl font-extrabold tabular-nums ${tone.border} ${tone.text}`}
+          >
+            {shown}
+          </div>
+          {settled && entry.twice && (
+            <div
+              aria-hidden
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-ds-sm border border-outline-variant bg-surface-container font-headline text-base font-bold tabular-nums text-on-surface-variant line-through opacity-60"
+            >
+              {entry.twice.discarded}
+            </div>
+          )}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -139,6 +163,17 @@ export function DieCard({ entry, fresh = false }: { entry: CheckEntry; fresh?: b
                 ({entry.margin >= 0 ? '+' : ''}
                 {entry.margin})
               </span>
+            </p>
+          )}
+          {/* Deliberately not a modifier chip. Advantage has no number, and
+              putting it in the row of ±values would invite the player — and the
+              next person editing this — to think of it as one. */}
+          {settled && entry.twice && (
+            <p className="mt-0.5 text-xs text-on-surface-variant">
+              <span className="font-semibold uppercase tracking-wide">
+                {entry.twice.direction === 'advantage' ? 'Advantage' : 'Disadvantage'}
+              </span>
+              {entry.twice.reason ? ` · ${entry.twice.reason}` : ''}
             </p>
           )}
         </div>
@@ -172,7 +207,7 @@ export function DieCard({ entry, fresh = false }: { entry: CheckEntry; fresh?: b
       {/* Announced once, after the die settles, as a single sentence. */}
       <p className="sr-only" aria-live="polite">
         {settled
-          ? `${entry.attempt}. ${skillName ?? ATTRIBUTES[entry.attribute].name} check, difficulty ${entry.dc}. Rolled ${entry.roll}, total ${entry.total}. ${BAND_LABEL[entry.band]}.`
+          ? `${entry.attempt}. ${skillName ?? ATTRIBUTES[entry.attribute].name} check, difficulty ${entry.dc}.${twiceSaid} Rolled ${entry.roll}, total ${entry.total}. ${BAND_LABEL[entry.band]}.`
           : ''}
       </p>
     </div>

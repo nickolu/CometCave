@@ -27,7 +27,7 @@ import { type World, emptyWorld, validateWorld } from './world'
 
 import type { AttributeId, SkillId } from './attributes'
 import type { Character, SkillRecord } from './character'
-import type { Modifier, OutcomeBand } from './dice'
+import type { Modifier, OutcomeBand, RolledTwice } from './dice'
 
 /**
  * Bump only when an old campaign would be *misread* by the current code, not
@@ -70,6 +70,16 @@ export interface CheckEntry {
   total: number
   margin: number
   band: OutcomeBand
+  /**
+   * Present only when the die was thrown twice.
+   *
+   * Optional rather than nullable so that every check ever stored stays valid
+   * without a version bump — and because nothing can set it yet. Nothing in
+   * play grants advantage until `use_power` exists; the resolver and the card
+   * are built first so that when it does, there is nowhere for a magnitude to
+   * sneak in.
+   */
+  twice?: RolledTwice
 }
 
 /** The moment a skill becomes real. Rendered as a beat, not a toast. */
@@ -341,10 +351,41 @@ function validateEntry(value: unknown): TranscriptEntry | null {
         total: int(value.total),
         margin: int(value.margin),
         band: isBand(value.band) ? value.band : 'failure',
+        ...validateTwice(value.twice),
       }
     }
     default:
       return null
+  }
+}
+
+/**
+ * Read back the record of a die thrown twice, or nothing at all.
+ *
+ * Spread into the entry rather than assigned, so a check that was rolled once
+ * has no `twice` key rather than an explicit undefined — which keeps it out of
+ * every stored blob and out of the way of `toEqual` in the tests that already
+ * describe a plain check.
+ *
+ * A malformed one is dropped rather than repaired. There is no sensible default
+ * for "which die did we throw away": inventing one would put a number on the
+ * die card that never came off a die.
+ */
+function validateTwice(value: unknown): { twice: RolledTwice } | Record<string, never> {
+  if (!isPlainObject(value)) return {}
+  if (value.direction !== 'advantage' && value.direction !== 'disadvantage') return {}
+
+  // Checked before clamping rather than after: `boundedInt` would turn a
+  // missing die into a 1, and a 1 is a number a player would read as a real
+  // roll they got lucky to escape.
+  if (typeof value.discarded !== 'number' || !Number.isFinite(value.discarded)) return {}
+
+  return {
+    twice: {
+      direction: value.direction,
+      reason: str(value.reason, 120),
+      discarded: boundedInt(value.discarded, 1, 20),
+    },
   }
 }
 

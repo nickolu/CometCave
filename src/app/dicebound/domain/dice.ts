@@ -80,6 +80,62 @@ export interface Modifier {
   value: number
 }
 
+export type AdvantageDirection = 'advantage' | 'disadvantage'
+
+/**
+ * One reason the die gets thrown twice.
+ *
+ * Advantage is a **flag, not a number**, and that is the whole point of it. The
+ * alternative — the DM saying "give them +4 for the fire" — is the exact fudge
+ * this architecture exists to prevent, because a number can be argued up,
+ * scaled and stacked. This cannot: it is on or it is off, and only code turns
+ * it on. It also sits deliberately outside the ±6 situational budget and the +3
+ * kit ceiling, because it moves the odds without moving any number anyone can
+ * point at.
+ *
+ * A list rather than a tri-state field, because sources arrive independently —
+ * a power grants advantage while the scene imposes disadvantage, and neither
+ * knows about the other. Making the caller collapse that into one value would
+ * put the cancelling rule wherever the request happens to be assembled; here it
+ * is in `netAdvantage`, once.
+ */
+export interface AdvantageSource {
+  direction: AdvantageDirection
+  /** Why, in the fiction. Shown on the die card beside the discarded die. */
+  reason: string
+}
+
+/** What actually happened when a check was rolled twice. */
+export interface RolledTwice {
+  direction: AdvantageDirection
+  reason: string
+  /** The die that was thrown away — the most interesting number on the card. */
+  discarded: number
+}
+
+/**
+ * Collapse every source into the one thing that happens to the die.
+ *
+ * Pulled in both directions is *neither*, regardless of how many sources are on
+ * each side. Counting them and taking the difference would let a stack of small
+ * advantages out-vote a disadvantage, which is a magnitude — and the reason
+ * this is a flag is that it has no magnitude to argue about.
+ */
+export function netAdvantage(sources: readonly AdvantageSource[]): AdvantageSource | null {
+  const up = sources.filter(s => s.direction === 'advantage')
+  const down = sources.filter(s => s.direction === 'disadvantage')
+  if (up.length === 0 && down.length === 0) return null
+  if (up.length > 0 && down.length > 0) return null
+
+  const winning = up.length > 0 ? up : down
+  return {
+    direction: winning[0].direction,
+    // Every reason is kept. Two powers both granting advantage is one extra
+    // die, but the player is owed both of the reasons it happened.
+    reason: [...new Set(winning.map(s => s.reason).filter(Boolean))].join(' + '),
+  }
+}
+
 export interface CheckOutcome {
   roll: number
   /** Everything added to the roll, itemised, so the die card can show its work. */
@@ -92,11 +148,15 @@ export interface CheckOutcome {
   margin: number
   band: OutcomeBand
   succeeded: boolean
+  /** Null on an ordinary check, which is very nearly all of them. */
+  twice: RolledTwice | null
 }
 
 export interface CheckRequest {
   dc: number
   modifiers: Modifier[]
+  /** Everything pulling the die in either direction. See `netAdvantage`. */
+  advantage?: readonly AdvantageSource[]
 }
 
 export type Rng = () => number
@@ -154,9 +214,26 @@ export function clampSituational(modifiers: Modifier[]): Modifier[] {
  * still have the moment where it all goes wrong, and a character who cannot
  * mathematically reach the DC should still have the moment where it doesn't
  * matter. That is the part of the table people actually tell stories about.
+ *
+ * With advantage the naturals are decided on the **kept** die, not on either
+ * die that was thrown. Otherwise advantage would double a character's chance of
+ * a critical failure, which is the opposite of what it is for.
  */
 export function resolveCheck(request: CheckRequest, rng: Rng = Math.random): CheckOutcome {
-  const roll = rollD20(rng)
+  const net = netAdvantage(request.advantage ?? [])
+  const first = rollD20(rng)
+  // The second die is only thrown when something is actually pulling, so an
+  // ordinary check consumes exactly one value from the rng and every existing
+  // seeded test keeps rolling what it always rolled.
+  const second = net ? rollD20(rng) : null
+
+  const [roll, twice] =
+    net && second !== null
+      ? net.direction === 'advantage'
+        ? ([Math.max(first, second), { ...net, discarded: Math.min(first, second) }] as const)
+        : ([Math.min(first, second), { ...net, discarded: Math.max(first, second) }] as const)
+      : ([first, null] as const)
+
   const dc = clampDc(request.dc)
   // Modifiers are kept exactly as given, zeroes included: the die card shows
   // its work, and "Dexterity +0" is information the player wants — it tells
@@ -184,6 +261,7 @@ export function resolveCheck(request: CheckRequest, rng: Rng = Math.random): Che
     margin,
     band,
     succeeded: band.endsWith('success'),
+    twice,
   }
 }
 
