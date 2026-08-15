@@ -281,6 +281,12 @@ export function validateCharacter(value: unknown): Character | null {
         // the character was still described as very small, the sheet still said
         // so, and the die stopped agreeing with both of them.
         rank: boundedInt(record.rank, -MAX_SKILL_RANK, MAX_SKILL_RANK),
+        // Absent stays absent rather than becoming `seeded: false`. A character
+        // saved before this marker existed has to keep the level they already
+        // had, so unmarked reads as earned — see `earnedRanks`. Writing the key
+        // only when it is true also keeps it out of every campaign blob that
+        // has no seeded skills.
+        ...(record.seeded === true ? { seeded: true as const } : {}),
       }
     }
   }

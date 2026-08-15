@@ -174,7 +174,13 @@ export const QUALITY_BANDS: Record<Quality, { bonus: number; traits: number }> =
   storied: { bonus: 2, traits: 2 },
 }
 
-/** Levels. `1 + earned ranks / 3` — ranks are earned on use, so level cannot be granted. */
+/**
+ * Levels. `1 + earned ranks / 3` — ranks are earned on use, so level cannot be
+ * granted. Feed this `earnedRanks(character)` and nothing else: it counts only
+ * ranks reached in play, and the three a sentence buys at creation do not
+ * count. Summing raw ranks instead makes a character level 2 before their
+ * first roll, which makes a tier 1 power grantable on turn 1.
+ */
 export const RANKS_PER_LEVEL = 3
 export const MAX_LEVEL = 10
 

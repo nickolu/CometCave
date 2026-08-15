@@ -45,6 +45,17 @@ export const RANK_THRESHOLDS: readonly number[] = [3, 8, 18]
 export interface SkillRecord {
   uses: number
   rank: number
+  /**
+   * True when this rank was handed over at creation rather than earned in play.
+   *
+   * `startingSkills` seeds up to three skills at rank 1 for writing a sentence,
+   * and level is meant to be a record of what the character actually did — so
+   * the seeded rank has to be distinguishable from the identical-looking rank
+   * the next character ground out over three real checks. Optional rather than
+   * always-present because a character saved before this marker existed has to
+   * keep reading as valid; see `earnedRanks` for what absent means.
+   */
+  seeded?: true
 }
 
 export interface Character {
@@ -134,7 +145,11 @@ export function startingSkills(proposed: unknown): Partial<Record<SkillId, Skill
     if (out[value]) continue
     if (Object.keys(out).length >= MAX_STARTING_SKILLS) break
 
-    out[value] = { uses: RANK_THRESHOLDS[0], rank: 1 }
+    // Marked as seeded, permanently. The rank is real — it adds to every check
+    // from turn one — but it is not an achievement, and `earnedRanks` subtracts
+    // it back out so that a character who has written a sentence and nothing
+    // else is level 1.
+    out[value] = { uses: RANK_THRESHOLDS[0], rank: 1, seeded: true }
   }
 
   return out
@@ -188,25 +203,48 @@ export function recordSkillUse(
   return {
     character: {
       ...character,
-      skills: { ...character.skills, [skill]: { uses, rank } },
+      // `before` is spread rather than rebuilt so the seeded marker survives
+      // being used. Rebuilding the record from `{ uses, rank }` would clear it
+      // on the first check, and the head start would quietly become an
+      // achievement the moment the player touched the skill.
+      skills: { ...character.skills, [skill]: { ...before, uses, rank } },
     },
     earned: rank > before.rank ? { skill, rank } : null,
   }
 }
 
 /**
- * Total earned skill ranks — the number that level is computed from.
+ * Ranks the character earned by playing — the number level is computed from.
  *
- * Only positive ranks count. An innate Size of −2 is mechanically real on every
- * Size check, but it is something the character *is*, not something they have
- * achieved, and letting it subtract from level would mean a small character
- * levelled more slowly for being described accurately at creation.
+ * Three things are deliberately excluded, and each was a way of being handed a
+ * level rather than reaching one.
+ *
+ * Negative ranks do not subtract. An innate Size of −2 is mechanically real on
+ * every Size check, but it is something the character *is*, not something they
+ * failed to achieve, and letting it drag on level would mean a small character
+ * levelled more slowly for having been described accurately at creation.
+ *
+ * Seeded ranks do not count. `startingSkills` grants up to three of them for
+ * writing a sentence, and counting them made `levelFor` return 2 for a
+ * character who had not yet rolled a die — which made tier 1 powers grantable
+ * on turn 1 and fired class discovery on a histogram containing nothing but
+ * the three skills the player was handed at the door.
+ *
+ * A seeded skill that grows in play earns the difference: rank 2 on a seeded
+ * skill is one earned rank, the same as rank 1 on a skill nobody gave you. The
+ * head start is not taxed twice.
+ *
+ * **Migration.** A record saved before the marker existed has no `seeded`, and
+ * is read as earned. That is knowingly generous to the handful of live
+ * campaigns — the alternative is every existing player losing a level on
+ * deploy, which is a worse thing to be right about.
  */
-export function totalRanks(character: Character): number {
-  return Object.values(character.skills).reduce(
-    (sum, record) => sum + Math.max(0, record?.rank ?? 0),
-    0
-  )
+export function earnedRanks(character: Character): number {
+  return Object.values(character.skills).reduce((sum, record) => {
+    if (!record) return sum
+    const rank = Math.max(0, record.rank)
+    return sum + Math.max(0, rank - (record.seeded ? 1 : 0))
+  }, 0)
 }
 
 /** Every skill the character has actually earned, best first. */

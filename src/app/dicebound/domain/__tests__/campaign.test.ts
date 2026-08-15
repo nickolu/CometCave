@@ -114,6 +114,43 @@ describe('validateCampaign', () => {
     expect(result?.character.attributes.strength).toBeLessThanOrEqual(3)
     expect(result?.character.skills.balance?.rank).toBe(3)
   })
+
+  it('round-trips the seeded marker, so a head start stays a head start', () => {
+    // Losing it on the wire would hand every stored character a level the
+    // moment their campaign was loaded.
+    const result = validateCampaign({
+      ...campaign(),
+      character: {
+        name: 'Ilda',
+        concept: '',
+        reading: '',
+        attributes: {},
+        skills: { balance: { uses: 3, rank: 1, seeded: true } },
+      },
+    })
+    expect(result?.character.skills.balance?.seeded).toBe(true)
+  })
+
+  it('leaves a pre-marker record unmarked rather than inventing an answer', () => {
+    // Absent means earned, deliberately — see earnedRanks. A campaign stored
+    // before the marker existed must not lose a level on deploy, and a stray
+    // `seeded: 'yes'` from a hostile wire must not gain one.
+    const result = validateCampaign({
+      ...campaign(),
+      character: {
+        name: 'Ilda',
+        concept: '',
+        reading: '',
+        attributes: {},
+        skills: {
+          balance: { uses: 3, rank: 1 },
+          humor: { uses: 3, rank: 1, seeded: 'yes' },
+        },
+      },
+    })
+    expect(result?.character.skills.balance).not.toHaveProperty('seeded')
+    expect(result?.character.skills.humor).not.toHaveProperty('seeded')
+  })
 })
 
 describe('withVisit', () => {
