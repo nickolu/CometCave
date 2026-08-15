@@ -22,9 +22,10 @@
  */
 import { isAttributeId, isSkillId } from './attributes'
 import { bool, boundedInt, isPlainObject, oneOf, slug, str } from './validate'
+import { PLAYER_ID } from './world'
 
 import type { AttributeId, SkillId } from './attributes'
-import type { EntityId } from './world'
+import type { EntityId, World } from './world'
 
 /** When a trait or power applies. Empty means "the DM decides, in the fiction". */
 export interface Applicability {
@@ -529,4 +530,173 @@ function capKit(modifiers: { label: string; value: number }[]): { label: string;
   }
 
   return kept
+}
+
+/**
+ * Whether the fiction may hand this power over, and what it is actually worth.
+ *
+ * A verdict rather than a throw, and a *reason* rather than a boolean, because
+ * every one of these refusals happens in ordinary play. The DM asks for
+ * something the character is not ready for, or names a teacher the story has
+ * not introduced, or grants the same trick twice under a second name. None of
+ * that is an error — the turn carries on, the DM narrates around it, and the
+ * player never learns a tool call was rejected.
+ *
+ * The reason is written to be read by the model, because a refusal it cannot
+ * understand is a refusal it will simply repeat next turn.
+ */
+export interface PowerVerdict {
+  granted: boolean
+  /** Addressed to the DM. Always set, on a grant as well as a refusal. */
+  reason: string
+  /** The tier it may actually have — clamped down, never up. Zero when refused. */
+  tier: number
+}
+
+/**
+ * Has the player actually encountered this?
+ *
+ * The gate with judgement in it, so it is written down rather than left to the
+ * next reader to infer. Three conditions, and each one closes a different door:
+ *
+ * The entity must **exist in the graph**. That is invariant 12 doing its work —
+ * a power must come from something the world already knows about, and "nothing"
+ * fails a lookup. An id the model minted while writing this turn is not in the
+ * graph, so it fails here without needing a rule of its own.
+ *
+ * It must not be `gone`. A teacher who is dead and a vault that has collapsed
+ * are both still in the graph, deliberately, because the story remembers them —
+ * but neither can hand anything over now.
+ *
+ * It must **predate this turn**. This is the same rule `Edge.since` enforces for
+ * relationship bonuses, and for the same reason: without it the DM could
+ * introduce a mysterious stranger and have them teach fireball in the same
+ * breath, which is granting a power to yourself with extra steps. `firstSeen`
+ * is a clock minute, and `turnStartedAt` is the clock as it stood before this
+ * turn touched anything.
+ *
+ * `you` is excluded on purpose. A power sourced from the player is a power with
+ * no provenance wearing an id that happens to resolve.
+ */
+export function hasMet(world: World, id: EntityId, turnStartedAt: number): boolean {
+  if (!id || id === PLAYER_ID) return false
+  const entity = world.entities[id]
+  if (!entity) return false
+  if (entity.status === 'gone') return false
+  return entity.firstSeen < turnStartedAt
+}
+
+export function canGrantPower(
+  kit: Kit,
+  world: World,
+  level: number,
+  proposal: { id: string; source: string; tier: unknown },
+  turnStartedAt: number
+): PowerVerdict {
+  const id = slug(proposal.id)
+  const source = slug(proposal.source)
+
+  if (!id) {
+    return {
+      granted: false,
+      reason: 'That did not name a power anyone could call on again.',
+      tier: 0,
+    }
+  }
+
+  // Checked before the slot, so a power they already have reads as "they
+  // already have it" rather than as "the pack is full".
+  if (kit.powers.some(power => power.id === id)) {
+    return {
+      granted: false,
+      reason: `They already have ${id}. If this is meant to be something new, it needs a different name and a different id.`,
+      tier: 0,
+    }
+  }
+
+  const ceiling = maxTierAt(level)
+  if (ceiling === 0) {
+    return {
+      granted: false,
+      reason: `At level ${level} they are not yet someone who has powers. Let the moment happen in the fiction without one — they will be ready sooner than you think.`,
+      tier: 0,
+    }
+  }
+
+  if (!hasMet(world, source, turnStartedAt)) {
+    return {
+      granted: false,
+      reason: `A power has to come from something the story already contains, and "${source || 'nothing'}" is not something they have met. Introduce it first, in its own scene, and it can hand this over later.`,
+      tier: 0,
+    }
+  }
+
+  const slots = Math.min(maxPowersAt(level), MAX_POWERS)
+  if (kit.powers.length >= slots) {
+    return {
+      granted: false,
+      reason: `They are holding ${kit.powers.length} powers, which is all a level ${level} character may carry. Nothing is added.`,
+      tier: 0,
+    }
+  }
+
+  // Clamped down, never up. That is the whole difference between the model
+  // describing something impressive and the model pricing it: a DM that wants
+  // the player to have a tier 3 power says "tier 3", and the answer is the tier
+  // their level actually allows.
+  const tier = Math.min(boundedInt(proposal.tier, MIN_TIER, MAX_TIER, MIN_TIER), ceiling)
+  return { granted: true, reason: '', tier }
+}
+
+/**
+ * Build the power, with every number coming from here.
+ *
+ * The model supplies the name, the note, the shape, what it permits or where it
+ * applies, the cost and the source. It supplies no magnitudes at all: the tier
+ * arrives already clamped by `canGrantPower`, the charges come from
+ * `TIER_CHARGES`, and `gainedAt` comes from the clock.
+ */
+export function powerFromGrant(
+  grant: Record<string, unknown>,
+  tier: number,
+  now: number
+): Power | null {
+  const id = slug(grant.id)
+  const name = str(grant.name, 80).trim()
+  const source = slug(grant.source)
+  if (!id || !name || !source) return null
+
+  const max = TIER_CHARGES[tier] ?? 1
+
+  return {
+    id,
+    name,
+    note: str(grant.note, 240),
+    tier,
+    shape: oneOf(grant.shape, POWER_SHAPES, 'permits'),
+    permits: str(grant.permits, 160),
+    applies: validateApplicability(grant.applies),
+    charges: { now: max, max },
+    // Fixed by tier, not chosen. A model asked how often its own power should
+    // come back has one answer, and it is "often".
+    refresh: tier >= MAX_TIER ? 'chapter' : 'rest',
+    cost: str(grant.cost, 160),
+    source,
+    gainedAt: Math.max(0, now),
+  }
+}
+
+/**
+ * Add a power to a character who has room for it.
+ *
+ * Deliberately dumber than `addItem`, which replaces a held item of the same id
+ * so a re-granted rope is refreshed rather than duplicated. A power is not a
+ * thing you can be handed twice — re-granting one would silently restore its
+ * charges, which is a rest the player did not take. `canGrantPower` refuses the
+ * duplicate before it reaches here; this is the second lock on the same door.
+ */
+export function addPower(kit: Kit, power: Power): { kit: Kit; added: boolean } {
+  if (kit.powers.some(held => held.id === power.id)) return { kit, added: false }
+  if (kit.powers.length >= MAX_POWERS) return { kit, added: false }
+  return { kit: { ...kit, powers: [...kit.powers, power] }, added: true }
 }

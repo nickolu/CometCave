@@ -51,7 +51,12 @@ import {
   trimToFit,
   validateCampaign,
 } from '@/app/dicebound/domain/campaign'
-import { attributeRank, earnedSkills, skillRank } from '@/app/dicebound/domain/character'
+import {
+  attributeRank,
+  earnedRanks,
+  earnedSkills,
+  skillRank,
+} from '@/app/dicebound/domain/character'
 import {
   BAND_BRIEF,
   BAND_LABEL,
@@ -68,14 +73,23 @@ import {
 import {
   type Kit,
   MAX_ITEMS,
+  MAX_TIER,
+  MIN_TIER,
+  POWER_SHAPES,
+  type PowerShape,
   QUALITIES,
   type Quality,
   addItem,
+  addPower,
+  canGrantPower,
   itemFromGrant,
   kitModifiers,
+  levelFor,
+  powerFromGrant,
 } from '@/app/dicebound/domain/kit'
 import {
   GRANT_ITEM_TOOL,
+  GRANT_POWER_TOOL,
   NARRATE_TOOL,
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
@@ -244,6 +258,12 @@ WHAT THEY CARRY
 - Almost everything is plain. A rope is a permission, not a bonus: it turns "you cannot climb that" into a roll you can make. Reserve the better bands for things the story made a moment of.
 - You say what a thing is. The game says what it is worth, and the answer is usually nothing. Do not describe an ordinary object as though it improved them.
 - When something they carry genuinely bears on an attempt, name it in roll_check's items. Name it because it is true, not to help — most named items add nothing to the number and appear on the card anyway.
+
+WHAT THEY CAN DO
+- A power is rare and it is earned. Somebody taught it, something changed them, a place left a mark. Call grant_power only when the story has actually spent a scene on that, and never more than once in a long while.
+- It has to come from something already in the story — name that thing's id in source. Someone you invented this turn does not count. If the teacher is new, introduce them properly first and let them teach it later.
+- A power never decides an outcome. It makes one available: it turns "you cannot hurt him from here" into a roll that can still miss. Write it as a permission, not as a result.
+- You say what it is and what it costs. The game says how strong it is and how often it comes back. You may be told the character is not ready, or that the source does not count — that is a normal answer. Narrate the moment without the power and carry on; do not mention that anything was refused.
 
 REMEMBERING
 What you are shown is a window on the story, not the whole of it. Places, people and promises that have gone quiet are still there and are not listed.
@@ -479,6 +499,59 @@ const GRANT_ITEM: ToolDef = {
   description:
     'Give the character something to carry. Call this only when the fiction actually hands it over — they picked it up, were given it, took it. Do not call it to describe scenery. The game decides what the thing is worth; you decide what it is.',
   input_schema: toolSchema(GrantItemSchema),
+}
+
+/**
+ * Note what is absent: charges, refresh, and any way to say how strong this is.
+ *
+ * `tier` is the only magnitude the model may touch and it is a request, not a
+ * setting — `canGrantPower` clamps it down to what the level allows and never
+ * up. Everything else that turns into a number comes from `TIER_CHARGES`.
+ */
+const GrantPowerSchema = z.object({
+  id: z.string().describe('Stable lowercase slug. Never reuse one they already have.'),
+  name: z.string().describe('What the player would call it.'),
+  note: z.string().optional().describe('One line: what it looks like when they use it.'),
+  source: z
+    .string()
+    .describe(
+      'The id of the person, place or thing this came from. It must already exist in the story — someone you introduce this turn does not count.'
+    ),
+  shape: z
+    .enum(POWER_SHAPES as unknown as [PowerShape, ...PowerShape[]])
+    .describe(
+      'permits: it makes something possible that was not, and they still roll for it. advantage: they roll twice and keep the better die, in the situations you name.'
+    ),
+  permits: z
+    .string()
+    .optional()
+    .describe('For permits: the capability in plain language. "throw fire, at range".'),
+  applies: z
+    .object({
+      attributes: z.array(AttributeEnum).optional(),
+      skills: z.array(SkillEnum).optional(),
+    })
+    .optional()
+    .describe(
+      'For advantage: where it applies. Narrow it — advantage on everything is not a power.'
+    ),
+  cost: z.string().optional().describe('What using it costs them, in the fiction, if anything.'),
+  tier: z
+    .number()
+    .int()
+    .min(MIN_TIER)
+    .max(MAX_TIER)
+    .optional()
+    .describe(
+      'How significant this is, 1 to 3. A request only — if they are not far enough along, they get a lesser version rather than this one.'
+    ),
+})
+
+const GRANT_POWER: ToolDef = {
+  name: GRANT_POWER_TOOL,
+  description:
+    'Give the character something they can do. Only when the story has earned it and only from a source it already contains. The game decides how strong it is, how many charges it has, and whether they are ready for it at all — and it may say no, which is a normal answer and not a problem to mention.',
+  input_schema: toolSchema(GrantPowerSchema),
 }
 
 const OpeningSchema = z.object({
@@ -762,6 +835,19 @@ Resolve it, then call narrate with what happens.`,
   // reopening it, and a turn that never stops is a turn that never comes back.
   let fuseAnswered = false
   let kit = campaign.kit
+  // Both fixed for the whole turn, on purpose.
+  //
+  // `level` is read once so a skill that ranks up mid-turn cannot also unlock a
+  // power on the same turn. Levelling is a beat the player should get to read
+  // before it starts changing what they are allowed to be handed.
+  //
+  // `turnStartedAt` is where the clock stood before this turn touched anything,
+  // and it is what the provenance gate measures against. Using the live clock
+  // would mean a fuse-interrupted turn — which advances time and then comes
+  // back for another pass — started accepting entities it had minted moments
+  // earlier as things the player had "already met".
+  const level = levelFor(earnedRanks(campaign.character))
+  const turnStartedAt = world.clock.elapsed
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
@@ -782,11 +868,13 @@ Resolve it, then call narrate with what happens.`,
       // which is a harder guarantee than asking nicely for prose. There is no
       // fourth roll available to reach for, and finishing is the only move
       // left on the board.
-      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, GRANT_ITEM, narrate],
+      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, GRANT_ITEM, GRANT_POWER, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, recalls, grants, ending, premature } = partitionTurnCalls(toolUses(data))
+    const { rolls, recalls, grants, powerGrants, ending, premature } = partitionTurnCalls(
+      toolUses(data)
+    )
 
     if (ending) {
       const text = narrationOf(ending.input)
@@ -837,6 +925,7 @@ Resolve it, then call narrate with what happens.`,
       rolls.length === 0 &&
       recalls.length === 0 &&
       grants.length === 0 &&
+      powerGrants.length === 0 &&
       premature.length === 0
     ) {
       // The model answered in prose instead of declaring the end of the turn.
@@ -857,6 +946,17 @@ Resolve it, then call narrate with what happens.`,
     }
     for (const call of grants) {
       const { kit: next, note } = grantFor(kit, world.clock.elapsed, call.input)
+      kit = next
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
+    }
+    for (const call of powerGrants) {
+      // `turnStartedAt` rather than the live clock. The provenance gate asks
+      // whether the source predates *this turn*, so it has to be measured
+      // against where the clock stood before the turn touched anything —
+      // otherwise a fuse-interrupted turn, which advances the clock and then
+      // comes back for another pass, would start accepting entities it minted
+      // moments ago.
+      const { kit: next, note } = grantPowerFor(kit, world, level, turnStartedAt, call.input)
       kit = next
       results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
@@ -980,6 +1080,66 @@ function grantFor(kit: Kit, now: number, input: unknown): { kit: Kit; note: stri
     note: worth.length
       ? `${item.name} is theirs. On the die it is worth ${worth.map(t => `${t.label} ${t.bonus > 0 ? '+' : ''}${t.bonus}`).join(', ')} — no more than that. Narrate it as the thing it is, not as an upgrade.`
       : `${item.name} is theirs, and it is worth nothing on the die. That is the common case: it is a permission, not a bonus. It may make things possible that were not; it does not make them easier.`,
+  }
+}
+
+/**
+ * Answer a `grant_power`, and say what it turned out to be.
+ *
+ * Every refusal here is a thing that happens in ordinary play — the character
+ * is not far enough along, the teacher was invented this turn, the trick has
+ * already been granted under another name — so none of them is an error. The
+ * turn continues, the DM narrates around the answer, and the player never
+ * learns a tool call was rejected. That is the same contract `grant_item` has
+ * for a full pack.
+ *
+ * The reply carries the tier and the charges for the reason `roll_check` and
+ * `grant_item` carry theirs: a model told nothing about a number narrates as
+ * though the number were enormous. A tier 1 power described as though it were
+ * tier 3 is a sheet and a story that disagree, and the player believes the
+ * story until the charges run out a scene early.
+ */
+function grantPowerFor(
+  kit: Kit,
+  world: World,
+  level: number,
+  turnStartedAt: number,
+  input: unknown
+): { kit: Kit; note: string } {
+  const grant = (input ?? {}) as Record<string, unknown>
+  const verdict = canGrantPower(
+    kit,
+    world,
+    level,
+    {
+      id: typeof grant.id === 'string' ? grant.id : '',
+      source: typeof grant.source === 'string' ? grant.source : '',
+      tier: grant.tier,
+    },
+    turnStartedAt
+  )
+
+  if (!verdict.granted) return { kit, note: verdict.reason }
+
+  const power = powerFromGrant(grant, verdict.tier, world.clock.elapsed)
+  if (!power) {
+    return { kit, note: 'That did not describe something anyone could do. Nothing was added.' }
+  }
+
+  const { kit: next, added } = addPower(kit, power)
+  if (!added) {
+    return { kit, note: `They cannot hold any more than the powers they already have.` }
+  }
+
+  const asked = typeof grant.tier === 'number' ? Math.round(grant.tier) : power.tier
+  const lowered =
+    asked > power.tier
+      ? ` You asked for tier ${asked}; they are not far enough along for that yet, so this is the lesser version of it.`
+      : ''
+
+  return {
+    kit: next,
+    note: `${power.name} is theirs, at tier ${power.tier} of ${MAX_TIER}.${lowered} It has ${power.charges.max} ${power.charges.max === 1 ? 'charge' : 'charges'} and they come back ${power.refresh === 'rest' ? 'after a real rest' : 'once a chapter'}. Narrate it as what it is at that size — it opens a door, it does not settle anything, and they still roll.`,
   }
 }
 

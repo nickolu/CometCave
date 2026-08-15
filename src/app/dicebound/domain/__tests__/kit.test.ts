@@ -10,6 +10,8 @@ import {
   REST_MINUTES,
   TIER_CHARGES,
   addItem,
+  addPower,
+  canGrantPower,
   emptyKit,
   isRest,
   itemFromGrant,
@@ -17,6 +19,7 @@ import {
   levelFor,
   maxPowersAt,
   maxTierAt,
+  powerFromGrant,
   restore,
   validateItem,
   validateKit,
@@ -24,6 +27,7 @@ import {
   validateSpecies,
   validateTrait,
 } from '@/app/dicebound/domain/kit'
+import { type Entity, type World, emptyWorld } from '@/app/dicebound/domain/world'
 
 describe('levels', () => {
   it('starts at 1 and advances every three earned ranks', () => {
@@ -336,5 +340,176 @@ describe('kitModifiers', () => {
     const mods = kitModifiers(kit, ['big', 'small', 'small2'], 'strength', null)
     expect(mods.map(m => m.label)).toContain('the great sword')
     expect(mods.reduce((sum, m) => sum + m.value, 0)).toBeLessThanOrEqual(KIT_BONUS_CAP)
+  })
+})
+
+/** A world holding one actor the player met an hour into the story. */
+function worldWith(entities: Record<string, Partial<Entity>> = {}, elapsed = 600): World {
+  const base = emptyWorld()
+  const built: Record<string, Entity> = {}
+  for (const [id, over] of Object.entries(entities)) {
+    built[id] = {
+      id,
+      kind: 'actor',
+      name: id,
+      note: '',
+      state: '',
+      status: 'active',
+      firstSeen: 60,
+      lastSeen: 60,
+      disposition: 0,
+      scale: 'person',
+      ...over,
+    } as Entity
+  }
+  return { ...base, clock: { ...base.clock, elapsed }, entities: built }
+}
+
+const grant = (over: Record<string, unknown> = {}) => ({
+  id: 'ember-hand',
+  name: 'Ember Hand',
+  source: 'maren',
+  shape: 'permits',
+  permits: 'throw fire, at short range',
+  ...over,
+})
+
+describe('canGrantPower', () => {
+  it('a power with a source the world has never heard of is refused', () => {
+    // Invariant 12 in one line: "nothing" fails a lookup. The DM cannot conjure
+    // fireball out of a teacher the story never contained.
+    const verdict = canGrantPower(
+      emptyKit(),
+      worldWith({ maren: {} }),
+      4,
+      { id: 'ember-hand', source: 'the-mountain', tier: 1 },
+      600
+    )
+    expect(verdict.granted).toBe(false)
+    expect(verdict.reason).toContain('the-mountain')
+  })
+
+  it('a source invented this turn does not count as an entity the player has met', () => {
+    // The same rule Edge.since enforces. Without it the DM introduces a
+    // mysterious stranger and has them teach fireball in the same breath, which
+    // is granting a power to yourself with extra steps.
+    const world = worldWith({ stranger: { firstSeen: 600 } }, 600)
+    const verdict = canGrantPower(
+      emptyKit(),
+      world,
+      4,
+      { id: 'ember-hand', source: 'stranger', tier: 1 },
+      600
+    )
+    expect(verdict.granted).toBe(false)
+  })
+
+  it('refuses a source the story has finished with', () => {
+    const world = worldWith({ maren: { status: 'gone' } })
+    expect(
+      canGrantPower(emptyKit(), world, 4, { id: 'ember-hand', source: 'maren', tier: 1 }, 600)
+        .granted
+    ).toBe(false)
+  })
+
+  it('refuses the player as their own provenance', () => {
+    // A power sourced from `you` is a power with no provenance wearing an id
+    // that happens to resolve.
+    const world = worldWith({ you: { firstSeen: 0 } })
+    expect(
+      canGrantPower(emptyKit(), world, 4, { id: 'ember-hand', source: 'you', tier: 1 }, 600).granted
+    ).toBe(false)
+  })
+
+  it('refuses outright below the level where powers exist at all', () => {
+    // maxTierAt(1) is 0 — they are not yet someone who has powers.
+    const verdict = canGrantPower(
+      emptyKit(),
+      worldWith({ maren: {} }),
+      1,
+      { id: 'ember-hand', source: 'maren', tier: 1 },
+      600
+    )
+    expect(verdict.granted).toBe(false)
+    expect(verdict.tier).toBe(0)
+  })
+
+  it('a tier the level cannot reach is clamped down, never up', () => {
+    const world = worldWith({ maren: {} })
+    // Level 4 reaches tier 2. Asking for 3 gets 2.
+    expect(
+      canGrantPower(emptyKit(), world, 4, { id: 'ember-hand', source: 'maren', tier: 3 }, 600).tier
+    ).toBe(2)
+    // Asking for 1 gets 1 — the clamp is a ceiling, not a floor that promotes.
+    expect(
+      canGrantPower(emptyKit(), world, 4, { id: 'ember-hand', source: 'maren', tier: 1 }, 600).tier
+    ).toBe(1)
+  })
+
+  it('the same power cannot be granted twice under the same id', () => {
+    const world = worldWith({ maren: {} })
+    const power = powerFromGrant(grant(), 1, 600)!
+    const { kit } = addPower(emptyKit(), power)
+    const verdict = canGrantPower(
+      kit,
+      world,
+      4,
+      { id: 'ember-hand', source: 'maren', tier: 1 },
+      600
+    )
+    expect(verdict.granted).toBe(false)
+    expect(verdict.reason).toContain('already')
+  })
+
+  it('refuses once the slots the level allows are full', () => {
+    const world = worldWith({ maren: {} })
+    // Level 4 allows maxPowersAt(4) = 3.
+    let kit = emptyKit()
+    for (const id of ['a', 'b', 'c']) {
+      kit = addPower(kit, powerFromGrant(grant({ id }), 1, 600)!).kit
+    }
+    expect(kit.powers).toHaveLength(maxPowersAt(4))
+    expect(
+      canGrantPower(kit, world, 4, { id: 'ember-hand', source: 'maren', tier: 1 }, 600).granted
+    ).toBe(false)
+  })
+})
+
+describe('powerFromGrant', () => {
+  it('charges come from the tier table, not from the model', () => {
+    const power = powerFromGrant({ ...grant(), charges: { now: 99, max: 99 }, tier: 3 }, 2, 600)!
+    expect(power.tier).toBe(2)
+    expect(power.charges).toEqual({ now: TIER_CHARGES[2], max: TIER_CHARGES[2] })
+  })
+
+  it('refuses a power with no provenance rather than repairing it', () => {
+    // A placeholder source would defeat the entire point of the field.
+    expect(powerFromGrant({ ...grant(), source: '' }, 1, 600)).toBeNull()
+    expect(powerFromGrant({ ...grant(), source: '  ' }, 1, 600)).toBeNull()
+  })
+
+  it('takes the clock for gainedAt rather than anything the model sent', () => {
+    const power = powerFromGrant({ ...grant(), gainedAt: 0 }, 1, 600)!
+    expect(power.gainedAt).toBe(600)
+  })
+})
+
+describe('addPower', () => {
+  it('refuses a duplicate rather than replacing it, so charges cannot be refilled by re-granting', () => {
+    // Unlike addItem, which replaces. Re-granting a power would silently
+    // restore its charges — a rest the player never took.
+    const spent = { ...powerFromGrant(grant(), 1, 600)!, charges: { now: 0, max: 3 } }
+    const kit = { ...emptyKit(), powers: [spent] }
+    const { kit: after, added } = addPower(kit, powerFromGrant(grant(), 1, 600)!)
+    expect(added).toBe(false)
+    expect(after.powers[0].charges.now).toBe(0)
+  })
+
+  it('never exceeds the hard ceiling, whatever the level says', () => {
+    let kit = emptyKit()
+    for (let i = 0; i < MAX_POWERS + 3; i++) {
+      kit = addPower(kit, powerFromGrant(grant({ id: `p${i}` }), 1, 600)!).kit
+    }
+    expect(kit.powers).toHaveLength(MAX_POWERS)
   })
 })

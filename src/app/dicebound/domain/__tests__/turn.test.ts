@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  GRANT_POWER_TOOL,
   NARRATE_TOOL,
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
@@ -114,5 +115,34 @@ describe('recall in the turn loop', () => {
     const { recalls, ending } = partitionTurnCalls([narrate('a')])
     expect(recalls).toEqual([])
     expect(ending?.id).toBe('a')
+  })
+})
+
+const grantPower = (id: string): ToolCall & { id: string } => ({
+  id,
+  name: GRANT_POWER_TOOL,
+  input: { id: 'ember-hand', source: 'maren' },
+})
+
+describe('partitionTurnCalls and grant_power', () => {
+  it('does not end the turn, so the DM narrates after learning what it got', () => {
+    const { powerGrants, ending } = partitionTurnCalls([grantPower('a')])
+
+    expect(powerGrants.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+  })
+
+  it('discards narration sent beside a power grant — the grant can be refused', () => {
+    // Sharper than the roll case. A grant may come back "they are not far
+    // enough along for that", and narration composed in the same breath
+    // describes a character learning something they did not get.
+    const { powerGrants, ending, premature } = partitionTurnCalls([
+      grantPower('a'),
+      narrate('b', 'Maren presses the ember into your palm and it takes.'),
+    ])
+
+    expect(powerGrants.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+    expect(premature.map(c => c.id)).toEqual(['b'])
   })
 })
