@@ -79,6 +79,22 @@ export interface SavedCreature {
   name: string | null
 }
 
+/**
+ * A spawner, frozen for storage.
+ *
+ * `cooldown` is deliberately omitted — it resets to 0 on restore so a
+ * spawner that was mid-countdown does not carry stale timer state across a
+ * save/load cycle.
+ */
+export interface SavedSpawner {
+  id: number
+  x: number
+  y: number
+  blueprintId: string
+  intervalSeconds: number
+  maxLocal: number
+}
+
 export interface WorldSnapshot {
   /**
    * How many materials existed when this grid was written.
@@ -113,6 +129,9 @@ export interface WorldSnapshot {
    * config, and `createWorld` already has them.
    */
   blueprints: CreatureBlueprint[]
+  /** Placed spawners. Cooldowns reset to 0 on restore. */
+  spawners?: SavedSpawner[]
+  nextSpawnerId?: number
 }
 
 /**

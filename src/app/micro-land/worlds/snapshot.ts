@@ -26,7 +26,7 @@ import { registerBlueprint } from '@/app/micro-land/domain/sim/world'
 import { neutralTraits } from '@/app/micro-land/domain/traits'
 import type { Creature, CreatureMood, WorldState } from '@/app/micro-land/domain/types'
 
-import type { SavedCreature, WorldSnapshot } from './types'
+import type { SavedCreature, SavedSpawner, WorldSnapshot } from './types'
 
 const MOODS: CreatureMood[] = ['wander', 'hunt', 'flee', 'eat', 'rest', 'mate']
 
@@ -167,6 +167,15 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
       name: c.name,
     })),
     blueprints,
+    spawners: w.spawners.map(s => ({
+      id: s.id,
+      x: round(s.x),
+      y: round(s.y),
+      blueprintId: s.blueprintId,
+      intervalSeconds: round(s.intervalSeconds),
+      maxLocal: s.maxLocal,
+    })),
+    nextSpawnerId: w.nextSpawnerId,
   }
 }
 
@@ -245,6 +254,18 @@ export function restoreSnapshot(w: WorldState, snap: WorldSnapshot): boolean {
   let nextId = snap.nextCreatureId
   for (const c of w.creatures) if (c.id >= nextId) nextId = c.id + 1
   w.nextCreatureId = nextId
+
+  w.spawners = (snap.spawners ?? []).map(s => ({
+    id: s.id,
+    x: s.x,
+    y: s.y,
+    blueprintId: s.blueprintId,
+    intervalSeconds: s.intervalSeconds,
+    cooldown: 0,  // reset on restore, per the contract
+    maxLocal: s.maxLocal,
+  }))
+  w.nextSpawnerId = Math.max(1, snap.nextSpawnerId ?? 1)
+  for (const s of w.spawners) if (s.id >= w.nextSpawnerId) w.nextSpawnerId = s.id + 1
 
   return true
 }

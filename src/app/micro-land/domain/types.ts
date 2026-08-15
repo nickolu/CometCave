@@ -739,6 +739,27 @@ export interface Nest {
   decaySeconds: number
 }
 
+/**
+ * An in-world object that continuously emits creatures of a chosen species.
+ *
+ * Placed by the player via the toolbar. Counts down a cooldown each tick and
+ * drops one creature when it reaches zero, subject to local and global
+ * population caps.
+ */
+export interface Spawner {
+  id: number
+  x: number
+  y: number
+  /** Which species this spawner emits. */
+  blueprintId: string
+  /** Seconds between emissions. */
+  intervalSeconds: number
+  /** Seconds remaining until the next emission. Counts down each tick. */
+  cooldown: number
+  /** Do not emit if this many creatures of the target species are within maxLocal tiles. */
+  maxLocal: number
+}
+
 export interface WorldState {
   width: number
   height: number
@@ -788,6 +809,9 @@ export interface WorldState {
    * generative — painting, placing, summoning, changing theme — wakes it again.
    */
   dormant: boolean
+  /** Placed spawner objects. Emit one creature of their species on a timer. */
+  spawners: Spawner[]
+  nextSpawnerId: number
 }
 
 // ---------------------------------------------------------------------------

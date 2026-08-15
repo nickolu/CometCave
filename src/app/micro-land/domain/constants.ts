@@ -530,3 +530,21 @@ export const NEST_DECAY_SECONDS = 120
  * harness — if starvation still dominates, the reach problem is not solved.
  */
 export const LIFESPAN_SCALE = 10
+
+/**
+ * Default interval between spawner emissions, in seconds.
+ *
+ * Ten seconds lets a new world populate without overwhelming the population
+ * caps, while still being fast enough to notice. Adjust per-spawner at
+ * placement time.
+ */
+export const SPAWNER_DEFAULT_INTERVAL = 10
+
+/**
+ * Default local-population cap for a spawner.
+ *
+ * A spawner suppresses its next emission if this many creatures of the same
+ * species are already within maxLocal tiles. Keeps each spawner from flooding
+ * a small area while still letting the species spread.
+ */
+export const SPAWNER_DEFAULT_MAX_LOCAL = 5
