@@ -39,6 +39,7 @@ import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, EMPTY_THEME_ID, THEME_BY_ID, type Theme } from './domain/config/themes'
 import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
 import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creature-sim'
+import { tickSpawners } from './domain/sim/spawner-sim'
 import { makeRng } from './domain/sim/prng'
 import { tickTiles } from './domain/sim/tile-sim'
 import {
@@ -470,6 +471,7 @@ export class GameInstance {
     }
 
     tickCreatures(w, TICK_S, this.rng, gravity, events)
+    tickSpawners(w, TICK_S, events)
 
     // --- heatmap update (every 5 ticks) ---
     this.heatmapTickCounter++
