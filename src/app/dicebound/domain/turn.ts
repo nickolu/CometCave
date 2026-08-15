@@ -22,6 +22,7 @@ export const ROLL_CHECK_TOOL = 'roll_check'
 export const NARRATE_TOOL = 'narrate'
 export const RECALL_TOOL = 'recall'
 export const GRANT_ITEM_TOOL = 'grant_item'
+export const GRANT_POWER_TOOL = 'grant_power'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
@@ -34,6 +35,13 @@ export interface TurnCalls<T extends ToolCall> {
   recalls: T[]
   /** `grant_item` calls. Like a lookup: answered, and the turn carries on. */
   grants: T[]
+  /**
+   * `grant_power` calls. Same shape as an item grant, and separate from it
+   * because the answer is different: an item grant reports what the thing is
+   * worth, a power grant reports the tier it actually got — or the reason it
+   * got nothing, which is a normal outcome rather than an error.
+   */
+  powerGrants: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -64,18 +72,28 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   const rolls = calls.filter(call => call.name === ROLL_CHECK_TOOL)
   const recalls = calls.filter(call => call.name === RECALL_TOOL)
   const grants = calls.filter(call => call.name === GRANT_ITEM_TOOL)
+  const powerGrants = calls.filter(call => call.name === GRANT_POWER_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
   // A narration sent alongside a lookup is as blind as one sent alongside a
   // roll: it was written before the answer came back, so whatever the DM asked
-  // for cannot be in it.
-  if (rolls.length > 0 || recalls.length > 0 || grants.length > 0) {
-    return { rolls, recalls, grants, ending: null, premature: narrations }
+  // for cannot be in it. A power grant belongs in this list for a sharper
+  // reason than the others — the grant can be *refused*, and narration written
+  // beside it describes the character learning something they did not get.
+  if (rolls.length > 0 || recalls.length > 0 || grants.length > 0 || powerGrants.length > 0) {
+    return { rolls, recalls, grants, powerGrants, ending: null, premature: narrations }
   }
 
   // Only the first narration ends the turn. A second one is a duplicate, not a
   // continuation, and appending both would read as the DM saying it twice.
-  return { rolls, recalls, grants, ending: narrations[0] ?? null, premature: narrations.slice(1) }
+  return {
+    rolls,
+    recalls,
+    grants,
+    powerGrants,
+    ending: narrations[0] ?? null,
+    premature: narrations.slice(1),
+  }
 }
 
 /** What a turn produced, before it has been written down anywhere. */
