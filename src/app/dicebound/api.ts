@@ -87,3 +87,44 @@ export async function takeTurn(
 
   return (await response.json()) as TurnResponse
 }
+
+/**
+ * Three things the player might try next.
+ *
+ * The one call in this file that cannot fail. Everything else here throws so
+ * the store can put an in-character line in front of the player; this returns
+ * an empty list instead, because there is no failure worth telling them about.
+ * The suggestions are an offer beside a working game, and a player who never
+ * finds out they were meant to be there has lost nothing — whereas "the cave
+ * could not think of anything" over a story that is fine would be pure noise.
+ *
+ * Same two shapes as a turn: with a token the server loads its own campaign and
+ * the body is empty, without one there is no server-side story to read.
+ */
+export async function fetchSuggestions({
+  token,
+  campaign,
+}: {
+  token: string | null
+  campaign: Campaign
+}): Promise<string[]> {
+  try {
+    const response = await fetch('/api/v1/dicebound/suggest', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(token ? {} : { campaign }),
+    })
+
+    if (!response.ok) return []
+
+    const body = (await response.json()) as { suggestions?: unknown }
+    return Array.isArray(body.suggestions)
+      ? body.suggestions.filter((line): line is string => typeof line === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
