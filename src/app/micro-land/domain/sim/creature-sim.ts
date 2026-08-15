@@ -32,7 +32,14 @@ import {
   WORLD_H,
   WORLD_W,
 } from '@/app/micro-land/domain/constants'
-import { inherit, lifespanOf, roamOf, sightOf, sizeOf, speedOf } from '@/app/micro-land/domain/traits'
+import {
+  inherit,
+  lifespanOf,
+  roamOf,
+  sightOf,
+  sizeOf,
+  speedOf,
+} from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
 import { deltaX, distX, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
@@ -93,6 +100,13 @@ const STUCK_COOLDOWN_PASSES = 6
 const BITE_PAD = 0.5
 
 /**
+ * Probability per tick that a soil-engineering creature converts the dirt tile
+ * it is standing on into mud. At 60Hz this gives a ~12% chance per second,
+ * meaning a typical tile takes roughly 8 seconds of contact to enrich.
+ */
+const SOIL_ENRICH_PROB = 0.002
+
+/**
  * Speed (|vx| + |vy|) below which a non-root animal counts as still.
  *
  * Still animals are harder to spot — camouflage. A creature pressed against a
@@ -100,7 +114,6 @@ const BITE_PAD = 0.5
  * isn't at literal zero, so the threshold is a small positive rather than zero.
  */
 const CAMOUFLAGE_STILL = 1.5
-
 
 /**
  * How fertile the soil is at a world position — a multiplier on plant spread rate.
@@ -250,7 +263,9 @@ function compareX(a: Creature, b: Creature): number {
  * breed. See `lifespanOf`.
  */
 function breedingAge(c: Creature, bp: CreatureBlueprint): number {
-  return bp.move.kind === 'root' ? TUNING.plantMaturity : lifespanOf(c, bp) * TUNING.lifespanScale * 0.2
+  return bp.move.kind === 'root'
+    ? TUNING.plantMaturity
+    : lifespanOf(c, bp) * TUNING.lifespanScale * 0.2
 }
 
 /**
@@ -476,7 +491,10 @@ export function tickCreatures(
     if (c.poisoned === undefined) c.poisoned = 0
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
     if (c.poisoned > 0) c.poisoned = Math.max(0, c.poisoned - dt)
-    if ((c as { homeX?: number }).homeX === undefined) { c.homeX = Math.round(c.x); c.homeY = Math.round(c.y) }
+    if ((c as { homeX?: number }).homeX === undefined) {
+      c.homeX = Math.round(c.x)
+      c.homeY = Math.round(c.y)
+    }
     if ((c as { migrateTimer?: number }).migrateTimer === undefined) c.migrateTimer = 0
     if ((c as { packTimer?: number }).packTimer === undefined) c.packTimer = 0
     if (c.packTimer > 0) c.packTimer = Math.max(0, c.packTimer - dt)
@@ -487,8 +505,8 @@ export function tickCreatures(
     if (hdt.homeDriftTimer === undefined) hdt.homeDriftTimer = 30
     hdt.homeDriftTimer = Math.max(0, hdt.homeDriftTimer - dt)
     if (hdt.homeDriftTimer <= 0) {
-      const wellFed = Math.max(0, 0.5 - c.hunger)  // 0 when hungry, up to 0.5 when stuffed
-      const pull = wellFed * 0.3                    // at most 15% shift per 30s tick
+      const wellFed = Math.max(0, 0.5 - c.hunger) // 0 when hungry, up to 0.5 when stuffed
+      const pull = wellFed * 0.3 // at most 15% shift per 30s tick
       // Drift toward where it has actually been living, the short way round — an
       // animal that crossed the seam has not moved six hundred tiles from home,
       // and a plain subtraction here would haul its territory back across the
@@ -544,7 +562,10 @@ export function tickCreatures(
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
 
     const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
-    c.hunger = Math.min(1, c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt)
+    c.hunger = Math.min(
+      1,
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt
+    )
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
@@ -648,7 +669,7 @@ export function tickCreatures(
       // Larger creatures have more stamina — high size trait slows fatigue build.
       const stamina = c.traits.size ?? 1
       if (isExerting) {
-        c.fatigue = Math.min(1, fatigue + dt * 0.15 / stamina)
+        c.fatigue = Math.min(1, fatigue + (dt * 0.15) / stamina)
       } else if (isResting) {
         c.fatigue = Math.max(0, fatigue - dt * 0.2)
       } else {
@@ -712,8 +733,11 @@ export function tickCreatures(
           (c.grounded && bp.move.kind === 'fly' && c.seedTimer < TUNING.pollinationCarrySeconds - 2)
         if (canDrop) {
           const seedBp = w.blueprints[c.carryingSeed]
-          if (seedBp && plantsAlive < TUNING.maxPlants &&
-              (speciesCount[seedBp.id] ?? 0) < TUNING.plantSpeciesCap) {
+          if (
+            seedBp &&
+            plantsAlive < TUNING.maxPlants &&
+            (speciesCount[seedBp.id] ?? 0) < TUNING.plantSpeciesCap
+          ) {
             const { w: sw, h: sh } = artSize(seedBp)
             const seedling = reproduce(w, seedBp, c.x, c.y + bh, sw, sh, rng)
             if (seedling) {
@@ -750,7 +774,8 @@ export function tickCreatures(
             const { w: ow, h: oh } = artSize(obp)
             const dx = deltaX(other.x + ow / 2, cx)
             const dy = cy - (other.y + oh / 2)
-            if (dx * dx + dy * dy < 9) { // within ~3 tiles
+            if (dx * dx + dy * dy < 9) {
+              // within ~3 tiles
               c.carryingSeed = other.blueprintId
               c.seedTimer = TUNING.pollinationCarrySeconds
               break
@@ -762,6 +787,20 @@ export function tickCreatures(
 
     // --- what it does to the world around it -----------------------------
     if (bp.aura?.converts) applyConversion(w, c, bp, bw, bh, dt, rng)
+
+    // Soil engineering: creatures with soilEngineer flag slowly enrich dirt
+    // tiles to mud as they walk through them (the "earthworm effect").
+    // Mud has 1.3× plant fertility vs dirt's 1.0×, so the enrichment persists
+    // in saves because it is a real tile-material change.
+    // Uses the foot tile (same as the quicksand check) because a walking
+    // creature's centre of mass is in the air above the ground.
+    if (bp.soilEngineer) {
+      const scx = Math.floor(c.x + body.dx + body.w / 2)
+      const scy = Math.floor(c.y + body.dy + body.h)
+      if (tileAt(w, scx, scy) === MATERIAL_INDEX.dirt && Math.random() < SOIL_ENRICH_PROB) {
+        setTile(w, scx, scy, MATERIAL_INDEX.mud)
+      }
+    }
 
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
@@ -813,12 +852,15 @@ export function tickCreatures(
           if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
           else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
-          c.breedCooldown = TUNING.breedCooldown * ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
+          c.breedCooldown =
+            TUNING.breedCooldown *
+            ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
             if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
-            else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
+            else if (mate.children % 10 === 0)
+              logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
@@ -882,7 +924,8 @@ export function tickCreatures(
               if (mate) {
                 mate.children++
                 if (mate.children === 1) logLife(mate, w.elapsed, 'First offspring')
-                else if (mate.children % 10 === 0) logLife(mate, w.elapsed, `${mate.children} offspring`)
+                else if (mate.children % 10 === 0)
+                  logLife(mate, w.elapsed, `${mate.children} offspring`)
                 payForChild(w, mate, bp, bw, bh, helpers)
               }
             }
@@ -1044,10 +1087,12 @@ function look(
   // This creature's sight, not its species' — everything downstream, including
   // the foraging reach and the window the loop below walks, is measured off it.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
-  const nightFactor = TUNING.dayLengthSeconds > 0
-    ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
-    : 0
-  const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const nightFactor =
+    TUNING.dayLengthSeconds > 0
+      ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
+      : 0
+  const diurnalPenalty =
+    Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
   const sight = sightOf(c, bp) * (1 - diurnalPenalty)
   const sight2 = sight * sight
 
@@ -1066,9 +1111,7 @@ function look(
   // A creature that has been hungry with nothing in sight for 30 s expands its
   // search to 4× normal range — enough to detect patches across the world.
   const migrating = c.migrateTimer > 30
-  const foodSight = migrating
-    ? sight * 4
-    : sight * (1 + HUNGER_REACH * desperation * roamOf(c))
+  const foodSight = migrating ? sight * 4 : sight * (1 + HUNGER_REACH * desperation * roamOf(c))
   const foodSight2 = foodSight * foodSight
 
   /**
@@ -1114,7 +1157,10 @@ function look(
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
-        if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
+        if (
+          ((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 &&
+          w.scents.length < 200
+        ) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
         }
         c.mood = 'eat'
@@ -1238,7 +1284,10 @@ function look(
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
         // Cooperative creatures signal food location to kin.
-        if (((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 && w.scents.length < 200) {
+        if (
+          ((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 &&
+          w.scents.length < 200
+        ) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
         }
         c.mood = 'eat'
@@ -1270,14 +1319,13 @@ function look(
       // Plants are exempt: the whole food chain depends on grazers finding them,
       // and roots never move anyway so they'd always benefit without this guard.
       const still =
-        obp.move.kind !== 'root' &&
-        Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
+        obp.move.kind !== 'root' && Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
       // Camouflage: trait scales how hard this creature is to spot.
       // Still creatures benefit most; moving gives most of it away.
       const camouflage = (other.traits as { camouflage?: number }).camouflage ?? 0.2
       const detFactor = still
-        ? Math.max(0.15, 0.5 - camouflage * 0.375)  // 0.5 (camo=0) → 0.2 (camo=0.8)
-        : 1 - camouflage * 0.3                        // 1.0 (camo=0) → 0.76 (camo=0.8)
+        ? Math.max(0.15, 0.5 - camouflage * 0.375) // 0.5 (camo=0) → 0.2 (camo=0.8)
+        : 1 - camouflage * 0.3 // 1.0 (camo=0) → 0.76 (camo=0.8)
       const efs2 = foodSight2 * detFactor * detFactor
       if (d2 <= efs2 && d2 < preyDist) {
         preyDist = d2
@@ -1293,9 +1341,9 @@ function look(
       !hungry &&
       (c.traits.territorial ?? 0.5) > 0.4 &&
       other.blueprintId !== c.blueprintId &&
-      !canEat(bp, obp) &&   // not our prey
-      !canEat(obp, bp) &&   // not our predator
-      obp.move.kind !== 'root'  // not a plant
+      !canEat(bp, obp) && // not our prey
+      !canEat(obp, bp) && // not our predator
+      obp.move.kind !== 'root' // not a plant
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
       const intruderCamo = (other.traits as { camouflage?: number }).camouflage ?? 0.2
@@ -1313,10 +1361,16 @@ function look(
   // Scent following: cooperative creatures follow food beacons left by kin.
   // Only when wandering and hungry — not while actively fleeing or hunting a
   // visible target. High cooperation → stronger pull (weight = cooperation × 0.3).
-  const cooperationVal = ((c.traits as { cooperation?: number }).cooperation ?? 0.3)
+  const cooperationVal = (c.traits as { cooperation?: number }).cooperation ?? 0.3
   ;(c as { followingScent?: boolean }).followingScent = false
-  if (hungry && !prey && !threat && c.mood === 'wander' && w.scents.length > 0 &&
-      cooperationVal > 0.5) {
+  if (
+    hungry &&
+    !prey &&
+    !threat &&
+    c.mood === 'wander' &&
+    w.scents.length > 0 &&
+    cooperationVal > 0.5
+  ) {
     const scentReach2 = sight * sight * 4
     const midX = cx
     const midY = c.y + bh / 2
@@ -1461,7 +1515,11 @@ function look(
   if (threat && c.hunger < 1) {
     c.mood = 'flee'
     c.targetId = threat.id
-  } else if (prey && prey.id !== c.huntBlockedId && (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))) {
+  } else if (
+    prey &&
+    prey.id !== c.huntBlockedId &&
+    (preyDist <= sight2 || clearRun(w, bp, cx, cy, preyCx, preyCy))
+  ) {
     // Lock onto reachable prey. Clearing huntBlockedId here means the creature
     // gets a clean slate whenever it finds a *different* target — it only
     // ignores the specific prey it recently bounced off.
@@ -1634,7 +1692,10 @@ function payForChild(
   helpers: Creature[]
 ): void {
   parent.hunger = Math.min(1, parent.hunger + TUNING.breedCost)
-  parent.breedCooldown = TUNING.breedCooldown * ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) / auraBoost(w, parent, bp, bw, bh, helpers)
+  parent.breedCooldown =
+    (TUNING.breedCooldown *
+      ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)) /
+    auraBoost(w, parent, bp, bw, bh, helpers)
   if (parent.mood === 'mate') {
     parent.mood = 'wander'
     parent.targetId = null
@@ -1817,13 +1878,7 @@ function unliveableAhead(
  * creature time to steer clear instead of bouncing. Only called for locomotion
  * that cares about terrain (walk/crawl); flyers and swimmers skip it.
  */
-function solidAhead(
-  w: WorldState,
-  c: Creature,
-  body: BodyBox,
-  dx: number,
-  dy: number
-): boolean {
+function solidAhead(w: WorldState, c: Creature, body: BodyBox, dx: number, dy: number): boolean {
   if (Math.abs(dx) < 0.01 && Math.abs(dy) < 0.01) return false
   const lookDist = 1.5
   const tx = c.x + body.dx + (dx > 0 ? body.w : 0) + dx * lookDist
@@ -1858,7 +1913,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   if (c.hostId != null) {
     const host = findCreature(w, c.hostId)
     if (host) {
-      c.x = host.x + 0.5  // small offset so they're not perfectly overlapping
+      c.x = host.x + 0.5 // small offset so they're not perfectly overlapping
       c.y = host.y - 0.3
       c.vx = 0
       c.vy = 0
@@ -1930,8 +1985,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Pull toward home when far away — but not when starving. A creature that
     // has exhausted its local food must be free to range until it finds more.
     // Roam multiplies the leash so wide-ranging creatures drift further.
-    if ((c.traits.territorial ?? 0.5) > 0.2 && c.hunger <= 0.6 &&
-        distX(c.homeX, c.x) > 15 * (c.traits.roam ?? 1)) {
+    if (
+      (c.traits.territorial ?? 0.5) > 0.2 &&
+      c.hunger <= 0.6 &&
+      distX(c.homeX, c.x) > 15 * (c.traits.roam ?? 1)
+    ) {
       // Head home the short way. Straight comparison would send an animal that
       // wandered a few tiles past the seam marching away from a home it is
       // standing almost on top of.
@@ -1999,11 +2057,22 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
-  const nightFactor = TUNING.dayLengthSeconds > 0
-    ? (1 - Math.cos(2 * Math.PI * w.elapsed / TUNING.dayLengthSeconds)) / 2
-    : 0
-  const diurnalPenalty = Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const speed = speedOf(c, bp) * (c.poisoned > 0 ? 0.5 : 1) * (c.packTimer > 0 ? 1.2 : 1) * (c.stunTimer > 0 ? 0.2 : 1) * (c.sick > 0 ? 0.7 : 1) * (c.symbiosisTimer > 0 ? 1.15 : 1) * (1 - Math.max(0, (c.fatigue ?? 0) - 0.5)) / sizeOf(c) * (1 - diurnalPenalty)
+  const nightFactor =
+    TUNING.dayLengthSeconds > 0
+      ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
+      : 0
+  const diurnalPenalty =
+    Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const speed =
+    ((speedOf(c, bp) *
+      (c.poisoned > 0 ? 0.5 : 1) *
+      (c.packTimer > 0 ? 1.2 : 1) *
+      (c.stunTimer > 0 ? 0.2 : 1) *
+      (c.sick > 0 ? 0.7 : 1) *
+      (c.symbiosisTimer > 0 ? 1.15 : 1) *
+      (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
+      sizeOf(c)) *
+    (1 - diurnalPenalty)
   const accel = speed * 6
 
   switch (bp.move.kind) {
@@ -2013,9 +2082,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       const footY = Math.floor(c.y + body.dy + body.h)
       const groundId = MATERIAL_BY_INDEX[tileAt(w, footX, footY)]?.id
       const groundMult =
-        groundId === 'mud' ? 0.5
-        : groundId === 'quicksand' ? Math.max(0.05, 1 - c.sinking / 8)
-        : 1
+        groundId === 'mud' ? 0.5 : groundId === 'quicksand' ? Math.max(0.05, 1 - c.sinking / 8) : 1
       c.vx += wantX * accel * dt
       c.vx = clampMag(c.vx, speed * groundMult)
 
@@ -2402,11 +2469,25 @@ function kill(
       children: c.children,
     })
   }
-  emitParticles(w, wrapX(c.x + bw / 2), c.y + bh / 2, bp.death.particleColor, bp.death.particleCount)
+  emitParticles(
+    w,
+    wrapX(c.x + bw / 2),
+    c.y + bh / 2,
+    bp.death.particleColor,
+    bp.death.particleCount
+  )
   if (bp.death.becomes) {
     dropRemains(w, c.x + bw / 2, c.y + bh / 2, MATERIAL_INDEX[bp.death.becomes])
   }
-  events.push({ kind: cause, blueprintId: bp.id, x: c.x, y: c.y, ageSeconds: c.ageSeconds, children: c.children, creatureName: c.name ?? null })
+  events.push({
+    kind: cause,
+    blueprintId: bp.id,
+    x: c.x,
+    y: c.y,
+    ageSeconds: c.ageSeconds,
+    children: c.children,
+    creatureName: c.name ?? null,
+  })
 }
 
 /**
