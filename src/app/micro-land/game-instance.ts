@@ -37,7 +37,7 @@ import {
 import { BIOME_BY_ID } from './domain/config/biomes'
 import { MILESTONES, type MilestoneContext } from './domain/config/milestones'
 import { DEFAULT_THEME, EMPTY_THEME_ID, THEME_BY_ID, type Theme } from './domain/config/themes'
-import { ELDER_MIN_SECONDS, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
+import { ELDER_MIN_SECONDS, SPAWNER_DEFAULT_INTERVAL, SPAWNER_DEFAULT_MAX_LOCAL, TICK_S, TILE_TICK_EVERY, WORLD_H, WORLD_W } from './domain/constants'
 import { type SimEvent, emitParticles, tickCreatures } from './domain/sim/creature-sim'
 import { tickSpawners } from './domain/sim/spawner-sim'
 import { makeRng } from './domain/sim/prng'
@@ -69,6 +69,7 @@ import {
   LIFE_KINDS,
   type LifeKind,
   type NamedCreatureEntry,
+  type Spawner,
   type Traits,
   type WorldState,
 } from './domain/types'
@@ -2245,6 +2246,38 @@ export class GameInstance {
         spawnCreature(this.world, bp, px, py)
       }
       this.pushStats()
+      return
+    }
+
+    if (tool.kind === 'spawner') {
+      const w = this.world
+      // Click on an existing spawner (within 4 tiles) → remove it.
+      const hitIdx = w.spawners.findIndex(s => {
+        const dx = s.x - x
+        const dy = s.y - y
+        return dx * dx + dy * dy <= 16
+      })
+      if (hitIdx !== -1) {
+        w.spawners.splice(hitIdx, 1)
+        return
+      }
+      // Place new spawner if cap not reached.
+      if (w.spawners.length >= TUNING.maxSpawners) {
+        state.notify('Spawner limit reached.')
+        return
+      }
+      const bp = w.blueprints[tool.blueprintId]
+      if (!bp) return
+      const spawner: Spawner = {
+        id: w.nextSpawnerId++,
+        x: Math.round(x),
+        y: Math.round(y),
+        blueprintId: tool.blueprintId,
+        intervalSeconds: SPAWNER_DEFAULT_INTERVAL,
+        cooldown: 0,
+        maxLocal: SPAWNER_DEFAULT_MAX_LOCAL,
+      }
+      w.spawners.push(spawner)
       return
     }
 

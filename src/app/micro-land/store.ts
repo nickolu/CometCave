@@ -88,6 +88,7 @@ export type Tool =
   | { kind: 'erase' }
   | { kind: 'biome'; biomeId: string }
   | { kind: 'creature'; blueprintId: string }
+  | { kind: 'spawner'; blueprintId: string }
   | { kind: 'inspect' }
 
 /**
