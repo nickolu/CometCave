@@ -55,6 +55,7 @@ import {
   attributeRank,
   earnedRanks,
   earnedSkills,
+  openWindows,
   skillRank,
 } from '@/app/dicebound/domain/character'
 import {
@@ -1506,7 +1507,37 @@ function sheetBlock(campaign: Campaign): string {
   return `THE CHARACTER
 ${c.name} — ${c.concept}
 Attributes: ${attributes}
-Earned skills: ${skills}${powersBlock(campaign.kit)}`
+Earned skills: ${skills}${windowBlock(campaign)}${powersBlock(campaign.kit)}`
+}
+
+/**
+ * A skill that has just matured, mentioned once and left alone.
+ *
+ * This is the other path to a power, and the one that makes them read as a
+ * story rather than as a level-up screen: you did the thing enough times.
+ *
+ * The wording is the entire issue. It is a **fact told to the DM**, not an
+ * instruction — "if the fiction offers a moment" and "may" are load-bearing,
+ * and so is the sentence saying outright that most turns should do nothing
+ * with it. A model handed "something may come of it" and nothing else reads it
+ * as "grant a power now", and then the power arrives because a counter said so
+ * rather than because the story had anywhere to put it.
+ *
+ * It sits in the sheet block, above the world and the transcript, so the DM has
+ * it before it decides what the turn is about rather than as a footnote it
+ * reaches after the scene is already planned.
+ *
+ * The provenance rule gets no exception here. Twenty turns of throwing burning
+ * things is not a source; the person who taught you, the thing you were
+ * throwing, or the place it happened is. That is stated in the line because the
+ * gate will otherwise refuse the grant and the DM will not know why.
+ */
+function windowBlock(campaign: Campaign): string {
+  const windows = openWindows(campaign.character, campaign.world.clock.elapsed)
+  if (windows.length === 0) return ''
+
+  const named = windows.map(w => SKILLS[w.skill].name).join(', ')
+  return `\nLately mastered: ${named}. They have done this enough times to be genuinely, unusually good at it, and the story has noticed. If a moment comes where that mastery turns into something they can DO — someone teaching them the last of it, a place that marks them, a thing that answers to it — take the moment and call grant_power, sourced from that person, place or thing. Do not manufacture one out of nothing. Do not mention any of this to the player.`
 }
 
 /**

@@ -160,7 +160,15 @@ export function tallyChecks(stats: CampaignStats, entries: TranscriptEntry[]): C
  */
 export function creditSkills(
   character: Character,
-  entries: TranscriptEntry[]
+  entries: TranscriptEntry[],
+  /**
+   * Clock minutes of fiction at the end of the turn.
+   *
+   * Story time, not wall time. It is only used to stamp the moment a skill
+   * matures, and a window measured in wall-clock minutes would close while the
+   * player was making a cup of tea.
+   */
+  now = 0
 ): { character: Character; entries: TranscriptEntry[] } {
   let current = character
   const out: TranscriptEntry[] = []
@@ -169,7 +177,7 @@ export function creditSkills(
     out.push(entry)
     if (entry.kind !== 'check' || !entry.skill) continue
 
-    const { character: next, earned } = recordSkillUse(current, entry.skill)
+    const { character: next, earned } = recordSkillUse(current, entry.skill, now)
     current = next
     if (earned) out.push({ kind: 'earned', skill: earned.skill, rank: earned.rank })
   }
@@ -184,7 +192,10 @@ export function creditSkills(
  * caller owns time; this owns state.
  */
 export function applyTurn(campaign: Campaign, result: TurnResult, now: number): Campaign {
-  const { character, entries } = creditSkills(campaign.character, result.entries)
+  // The clock as the turn left it, falling back to where it started when the
+  // turn never reached a narrate and so produced no world.
+  const clock = (result.world ?? campaign.world).clock.elapsed
+  const { character, entries } = creditSkills(campaign.character, result.entries, clock)
 
   const kept =
     result.dropped && result.dropped > 0

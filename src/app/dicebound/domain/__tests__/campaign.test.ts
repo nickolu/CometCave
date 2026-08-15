@@ -152,6 +152,38 @@ describe('validateCampaign', () => {
     expect(result?.character.skills.humor).not.toHaveProperty('seeded')
   })
 
+  it('round-trips the moment a skill matured, so its window does not vanish on save', () => {
+    const result = validateCampaign({
+      ...campaign(),
+      character: {
+        name: 'Ilda',
+        concept: '',
+        reading: '',
+        attributes: {},
+        skills: { balance: { uses: 18, rank: 3, maturedAt: 1000 } },
+      },
+    })
+    expect(result?.character.skills.balance?.maturedAt).toBe(1000)
+  })
+
+  it('leaves a skill that never matured without the key', () => {
+    // Absent, not zero. A character stored before windows existed must not read
+    // as one whose skills all matured at minute zero and closed before anyone
+    // looked — and must not read as one with a window open either.
+    const result = validateCampaign({
+      ...campaign(),
+      character: {
+        name: 'Ilda',
+        concept: '',
+        reading: '',
+        attributes: {},
+        skills: { balance: { uses: 18, rank: 3 }, humor: { uses: 3, rank: 1, maturedAt: 'soon' } },
+      },
+    })
+    expect(result?.character.skills.balance).not.toHaveProperty('maturedAt')
+    expect(result?.character.skills.humor).not.toHaveProperty('maturedAt')
+  })
+
   it('round-trips a die that was thrown twice', () => {
     const result = validateCampaign({
       ...campaign(),
