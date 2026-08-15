@@ -97,6 +97,13 @@ import {
   spendPower,
 } from '@/app/dicebound/domain/kit'
 import {
+  type ClassShape,
+  classShape,
+  fallbackClass,
+  readClass,
+  shouldNameClass,
+} from '@/app/dicebound/domain/klass'
+import {
   GRANT_ITEM_TOOL,
   GRANT_POWER_TOOL,
   NARRATE_TOOL,
@@ -105,6 +112,7 @@ import {
   type TurnResult,
   USE_POWER_TOOL,
   applyTurn,
+  creditSkills,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
 import { bool } from '@/app/dicebound/domain/validate'
@@ -1069,6 +1077,31 @@ Resolve it, then call narrate with what happens.`,
 
   entries.push({ kind: 'narration', text: narration })
 
+  // The cave forms an opinion, once.
+  //
+  // Level is recomputed from the character this turn produced rather than from
+  // `level`, which was read before the turn ran — the check that pushed them to
+  // level 2 usually happens *in* this turn, and reading the stale value would
+  // hold the name back until the next one for no reason the player could see.
+  //
+  // `className === null` is the whole of the once-ness. Nothing re-reads the
+  // histogram at level 3, and whether a class should ever be revisited is a
+  // decision this issue deliberately does not settle by accident.
+  if (kit.className === null) {
+    const { character: credited } = creditSkills(campaign.character, entries, world.clock.elapsed)
+    if (shouldNameClass(kit, levelFor(earnedRanks(credited)))) {
+      const shape = classShape(credited)
+      const named = await nameClass(apiKey, campaign, shape, signal)
+      kit = { ...kit, className: named.name }
+      // A line in the DM's voice, not a modal and not a congratulations. The
+      // cave noticed what they are; it does not need to celebrate it.
+      entries.push({
+        kind: 'narration',
+        text: `Somewhere in all of that, without anybody deciding it, you became this: ${named.name}.${named.note ? ` ${named.note}` : ''}`,
+      })
+    }
+  }
+
   // A quiet line, in the game's own voice, and only when something actually
   // came back. Not a toast and not a banner: the cave is light and ceremony
   // lives inside the game (CLAUDE.md #2), and this is a small thing that
@@ -1709,6 +1742,83 @@ ${transcriptBlock(older)}`,
  * plus a shorter window, which reads as the DM being slightly forgetful rather
  * than as an error.
  */
+const NameClassSchema = z.object({
+  name: z
+    .string()
+    .describe(
+      'Two or three words at most, the way people at a table would refer to this person. Not a job title and not a fantasy-game class. "Cat Burglar", "Ropewalker", "The One Who Asks".'
+    ),
+  note: z
+    .string()
+    .describe(
+      'One short line saying what they are, in the second person. No numbers, no mechanics.'
+    ),
+})
+
+const NAME_CLASS: ToolDef = {
+  name: 'name_class',
+  description: 'Give the character the name for what they have turned out to be.',
+  input_schema: toolSchema(NameClassSchema),
+}
+
+/**
+ * Put a name on what the player has already been doing.
+ *
+ * Code has done the reading: which skills, how often, which attributes
+ * underneath, and whether that is narrow or broad. All the model does is name
+ * it, and it is told not to invent mechanics because a class that carries a
+ * bonus is a class the player starts steering toward instead of playing the
+ * character.
+ *
+ * Never throws. A failed call falls back to a table, because play does not
+ * block on a model call (invariant 16) and a character told the cave could not
+ * form an opinion about them is worse off than one called a Wayfarer.
+ */
+async function nameClass(
+  apiKey: string,
+  campaign: Campaign,
+  shape: ClassShape,
+  signal: AbortSignal
+): Promise<{ name: string; note: string }> {
+  const doing = shape.skills
+    .map(entry => `${SKILLS[entry.skill].name} (${entry.uses} times)`)
+    .join(', ')
+  const under = shape.attributes.map(id => ATTRIBUTES[id].name).join(', ')
+
+  try {
+    const input = await callForTool({
+      apiKey,
+      model: UTILITY_MODEL,
+      tool: NAME_CLASS,
+      maxTokens: 400,
+      signal,
+      system:
+        'You name people by what they have been doing. You are given a character and a tally of what they actually spent their time on, and you return the name a person at the table would use for them. Do not invent abilities, bonuses, numbers or mechanics of any kind — you are describing what somebody already is, not granting them anything. Avoid stock fantasy classes: no Fighter, Rogue, Wizard, Cleric, Ranger, Bard.',
+      messages: [
+        {
+          role: 'user',
+          content: `${campaign.character.name} — ${campaign.character.concept}
+Story: "${campaign.premise}"
+
+What they have actually been doing, most first: ${doing}
+Which sits under: ${under}
+Their play is ${shape.narrow ? 'narrow — they keep returning to the same few things' : 'broad — they range across a lot of different things'}.
+
+Name what they have turned out to be.`,
+        },
+      ],
+    })
+
+    return readClass(input) ?? fallbackClass(shape)
+  } catch (error) {
+    // Logged rather than swallowed: unlike a save, this one is recoverable and
+    // the player still gets a name, but a generator that has quietly stopped
+    // working should be visible to whoever looks.
+    console.error('dicebound class naming failed:', error)
+    return fallbackClass(shape)
+  }
+}
+
 async function condense(
   apiKey: string,
   campaign: Campaign,
