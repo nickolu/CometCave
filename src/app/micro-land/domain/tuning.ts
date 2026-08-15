@@ -126,6 +126,8 @@ export const TUNING_DEFAULTS = {
    * 1.0 = default. 2.0 = half the seeding rate. 0.5 = double the rate.
    */
   generatorRateMultiplier: 1.0,
+  /** Max placed spawners the world can hold at once. */
+  maxSpawners: 20,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -308,6 +310,16 @@ export const KNOBS: Knob[] = [
     min: 20,
     max: 2000,
     step: 10,
+  },
+  {
+    key: 'maxSpawners',
+    group: 'creatures',
+    label: 'Max spawners',
+    help: 'Hard cap on placed creature generators. Reached cap silently ignores new placements.',
+    min: 1,
+    max: 100,
+    step: 1,
+    type: 'range',
   },
   {
     key: 'speciesSoftCap',
