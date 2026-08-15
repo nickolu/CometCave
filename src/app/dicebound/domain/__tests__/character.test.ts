@@ -5,13 +5,16 @@ import {
   ATTRIBUTE_BUDGET,
   type Character,
   MAX_ATTRIBUTE,
+  MAX_SKILL_RANK,
   MAX_STARTING_SKILLS,
   MIN_ATTRIBUTE,
   RANK_THRESHOLDS,
+  WINDOW_MINUTES,
   blankAttributes,
   earnedRanks,
   earnedSkills,
   normalizeAttributes,
+  openWindows,
   rankFor,
   recordSkillUse,
   startingSkills,
@@ -304,5 +307,64 @@ describe('earnedRanks', () => {
     })
     expect(earnedRanks(legacy)).toBe(3)
     expect(levelFor(earnedRanks(legacy))).toBe(2)
+  })
+})
+
+describe('openWindows', () => {
+  /** Use a skill until it tops out, at the given clock minute. */
+  function mastered(at: number): Character {
+    let sheet = character()
+    for (let i = 0; i < RANK_THRESHOLDS[2]; i++) {
+      sheet = recordSkillUse(sheet, 'balance', at).character
+    }
+    return sheet
+  }
+
+  it('a skill reaching rank 3 opens a window', () => {
+    const sheet = mastered(1000)
+    expect(sheet.skills.balance?.rank).toBe(MAX_SKILL_RANK)
+    expect(openWindows(sheet, 1000).map(w => w.skill)).toEqual(['balance'])
+  })
+
+  it('a skill short of the top rank opens nothing', () => {
+    let sheet = character()
+    for (let i = 0; i < RANK_THRESHOLDS[1]; i++) {
+      sheet = recordSkillUse(sheet, 'balance', 1000).character
+    }
+    expect(sheet.skills.balance?.rank).toBe(2)
+    expect(openWindows(sheet, 1000)).toEqual([])
+  })
+
+  it('a window opened long enough ago is closed and does not reopen', () => {
+    // A window that never closes is a standing instruction, and a standing
+    // instruction gets obeyed eventually just to make it stop.
+    const sheet = mastered(1000)
+    expect(openWindows(sheet, 1000 + WINDOW_MINUTES)).toHaveLength(1)
+    expect(openWindows(sheet, 1000 + WINDOW_MINUTES + 1)).toEqual([])
+  })
+
+  it('using the skill again does not reopen a closed window', () => {
+    // maturedAt is stamped once, on the crossing use. Re-stamping would make
+    // the window reopen every time the skill came up.
+    let sheet = mastered(1000)
+    sheet = recordSkillUse(sheet, 'balance', 99_000).character
+    expect(sheet.skills.balance?.maturedAt).toBe(1000)
+    expect(openWindows(sheet, 99_000)).toEqual([])
+  })
+
+  it('an innate skill never opens one, however often it comes up', () => {
+    // Innate ranks never advance, so nothing ever crosses the threshold.
+    let sheet = character({ skills: { size: { uses: 0, rank: -2 } } })
+    for (let i = 0; i < 40; i++) sheet = recordSkillUse(sheet, 'size', 500).character
+    expect(openWindows(sheet, 500)).toEqual([])
+  })
+
+  it('a matured skill is not by itself a source — it names a skill, never an entity', () => {
+    // Twenty turns of throwing burning things is not provenance. The window
+    // says what matured; canGrantPower still demands an entity the world holds,
+    // and this returns nothing that could be mistaken for one.
+    const window = openWindows(mastered(1000), 1000)[0]
+    expect(Object.keys(window).sort()).toEqual(['since', 'skill'])
+    expect(window.skill).toBe('balance')
   })
 })

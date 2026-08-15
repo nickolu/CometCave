@@ -56,6 +56,15 @@ export interface SkillRecord {
    * keep reading as valid; see `earnedRanks` for what absent means.
    */
   seeded?: true
+  /**
+   * Clock minute at which this reached the top rank, if it has.
+   *
+   * Only ever set once, and only on the use that crosses the last threshold.
+   * It exists so a matured skill can open a *window* rather than a standing
+   * fact — see `openWindows`. Optional because almost no skill has one and
+   * because every character stored before it existed has to keep reading.
+   */
+  maturedAt?: number
 }
 
 export interface Character {
@@ -192,13 +201,21 @@ export interface SkillAdvance {
  */
 export function recordSkillUse(
   character: Character,
-  skill: SkillId
+  skill: SkillId,
+  /** Clock minutes of fiction, for stamping the moment a skill matures. */
+  now = 0
 ): { character: Character; earned: SkillAdvance | null } {
   if (!isSkillId(skill)) return { character, earned: null }
 
   const before = character.skills[skill] ?? { uses: 0, rank: 0 }
   const uses = before.uses + 1
   const rank = SKILLS[skill].innate ? before.rank : rankFor(uses)
+  // Stamped once, on the use that crosses the top threshold, and never again.
+  // Re-stamping on later uses would make the window reopen every time the
+  // skill came up, which is the difference between a moment the story can use
+  // and a standing instruction nobody can turn off.
+  const matured =
+    rank >= MAX_SKILL_RANK && before.rank < MAX_SKILL_RANK ? { maturedAt: Math.max(0, now) } : {}
 
   return {
     character: {
@@ -207,7 +224,7 @@ export function recordSkillUse(
       // being used. Rebuilding the record from `{ uses, rank }` would clear it
       // on the first check, and the head start would quietly become an
       // achievement the moment the player touched the skill.
-      skills: { ...character.skills, [skill]: { ...before, uses, rank } },
+      skills: { ...character.skills, [skill]: { ...before, ...matured, uses, rank } },
     },
     earned: rank > before.rank ? { skill, rank } : null,
   }
@@ -259,4 +276,52 @@ export function earnedSkills(character: Character): { skill: SkillId; record: Sk
       .filter(entry => entry.record.rank !== 0)
       .sort((a, b) => b.record.rank - a.record.rank || b.record.uses - a.record.uses)
   )
+}
+
+/**
+ * How long a matured skill stays interesting, in minutes of fiction.
+ *
+ * Two days. The number is doing something specific: it has to be long enough
+ * that the moment can arrive in a *different scene* from the one where the rank
+ * landed — a night's sleep and the next day's business both fit inside it — and
+ * short enough that it cannot follow the character across a journey. A window
+ * that never closes is a standing instruction, and a standing instruction the
+ * DM reads every turn is nagging: it will eventually be obeyed just to make it
+ * stop, which is exactly how a power arrives because a counter said so rather
+ * than because the story had somewhere to put it.
+ *
+ * Two days rather than one because a single day is often a single scene, and
+ * the whole point is to give the fiction a chance to offer something.
+ */
+export const WINDOW_MINUTES = 2 * 24 * 60
+
+export interface MaturedSkill {
+  skill: SkillId
+  /** Clock minute it matured. */
+  since: number
+}
+
+/**
+ * Skills that matured recently enough to still be worth mentioning.
+ *
+ * The DM is *told*, never instructed — this returns the fact, and the prompt
+ * that renders it is careful to stay a fact. A power arrives when the story has
+ * somewhere to put it, or it does not arrive, and either is a correct turn.
+ *
+ * A window that closes unused stays closed: `maturedAt` is stamped once, so
+ * nothing here can reopen one. Innate skills never reach a rank they did not
+ * start with, so they never appear.
+ */
+export function openWindows(character: Character, now: number): MaturedSkill[] {
+  const out: MaturedSkill[] = []
+
+  for (const [skill, record] of Object.entries(character.skills)) {
+    if (!record || record.maturedAt === undefined) continue
+    if (now - record.maturedAt > WINDOW_MINUTES) continue
+    out.push({ skill: skill as SkillId, since: record.maturedAt })
+  }
+
+  // Most recent first: if two windows are somehow open at once, the one that
+  // just happened is the one the scene is more likely to be about.
+  return out.sort((a, b) => b.since - a.since)
 }

@@ -297,6 +297,12 @@ export function validateCharacter(value: unknown): Character | null {
         // only when it is true also keeps it out of every campaign blob that
         // has no seeded skills.
         ...(record.seeded === true ? { seeded: true as const } : {}),
+        // Same treatment, and for the same reason: absent stays absent. A
+        // character stored before windows existed has no matured skills rather
+        // than one that matured at minute zero and closed before anyone looked.
+        ...(typeof record.maturedAt === 'number' && Number.isFinite(record.maturedAt)
+          ? { maturedAt: Math.max(0, Math.round(record.maturedAt)) }
+          : {}),
       }
     }
   }
