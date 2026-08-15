@@ -1335,6 +1335,31 @@ export class GameInstance {
 
   private syncBlueprintsToStore(): void {
     useMicroLand.getState().setBlueprints(Object.values(this.world.blueprints))
+    this.syncGeneratorsToStore()
+  }
+
+  private syncGeneratorsToStore(): void {
+    useMicroLand.getState().setGenerators([...this.world.generators])
+  }
+
+  /**
+   * Apply a generator config change from the settings UI to the live world.
+   *
+   * Resets `nextSeed` to 0 when intervalSeconds changes so the next seeding
+   * attempt happens on the fresh interval rather than completing a partial one.
+   */
+  setGeneratorConfig(
+    blueprintId: string,
+    patch: { enabled?: boolean; intervalSeconds?: number }
+  ): void {
+    const gen = this.world.generators.find(g => g.blueprintId === blueprintId)
+    if (!gen) return
+    if (patch.enabled !== undefined) gen.enabled = patch.enabled
+    if (patch.intervalSeconds !== undefined) {
+      gen.intervalSeconds = patch.intervalSeconds
+      gen.nextSeed = 0
+    }
+    useMicroLand.getState().clearGeneratorConfigRequest()
   }
 
   /**

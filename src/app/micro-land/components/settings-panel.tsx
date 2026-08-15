@@ -7,6 +7,7 @@ import {
   TUNING_DEFAULTS,
   type TuningKey,
 } from '@/app/micro-land/domain/tuning'
+import type { CreatureBlueprint, WorldGeneratorEntry } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
 
 const heading: React.CSSProperties = {
@@ -52,6 +53,9 @@ export function SettingsPane() {
   const setKnob = useMicroLand(s => s.setTuningKnob)
   const reset = useMicroLand(s => s.resetTuningKnobs)
   const notify = useMicroLand(s => s.notify)
+  const generators = useMicroLand(s => s.generators)
+  const blueprints = useMicroLand(s => s.blueprints)
+  const updateGenerator = useMicroLand(s => s.updateGenerator)
 
   async function copySettings() {
     const text = JSON.stringify(tuning, null, 2)
@@ -185,6 +189,101 @@ export function SettingsPane() {
           </section>
         ))}
 
+        {/* ── World rhythms ──────────────────────────────────── */}
+        {generators.length > 0 && (
+          <section
+            className="px-4 py-3"
+            style={{ borderTop: '1px solid var(--cc-panel-divider)', marginTop: 12 }}
+          >
+            <h3 style={heading}>World rhythms</h3>
+            <p
+              className="pb-1 pt-1"
+              style={{ fontSize: 11, color: 'var(--cc-text-muted)', opacity: 0.8, lineHeight: 1.5 }}
+            >
+              The cave breathes these species into existence on a quiet timer. Plants are on by default;
+              animals wait for you to wake them.
+            </p>
+
+            {/* Plants */}
+            {(() => {
+              const plantGens = generators.filter(g => {
+                const bp = blueprints.find(b => b.id === g.blueprintId)
+                return bp?.move.kind === 'root'
+              })
+              if (plantGens.length === 0) return null
+              return (
+                <div style={{ marginTop: 8 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 6, fontFamily: 'var(--cc-font-mono)' }}>Plants</p>
+                  <div className="flex flex-col gap-3">
+                    {plantGens.map(g => (
+                      <GeneratorRow
+                        key={g.blueprintId}
+                        entry={g}
+                        blueprint={blueprints.find(b => b.id === g.blueprintId)}
+                        onChange={patch => updateGenerator(g.blueprintId, patch)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
+            {/* Animals */}
+            {(() => {
+              const animalGens = generators.filter(g => {
+                const bp = blueprints.find(b => b.id === g.blueprintId)
+                return bp && bp.move.kind !== 'root'
+              })
+              if (animalGens.length === 0) return null
+              return (
+                <div style={{ marginTop: 12 }}>
+                  <p style={{ fontSize: 10, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 6, fontFamily: 'var(--cc-font-mono)' }}>Animals</p>
+                  <div className="flex flex-col gap-3">
+                    {animalGens.map(g => (
+                      <GeneratorRow
+                        key={g.blueprintId}
+                        entry={g}
+                        blueprint={blueprints.find(b => b.id === g.blueprintId)}
+                        onChange={patch => updateGenerator(g.blueprintId, patch)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
+
+            <button
+              type="button"
+              className="cc-btn"
+              onClick={() => {
+                // Reset all generators to default (plants enabled, animals disabled)
+                for (const g of generators) {
+                  const bp = blueprints.find(b => b.id === g.blueprintId)
+                  const isPlant = bp?.move.kind === 'root'
+                  updateGenerator(g.blueprintId, {
+                    enabled: isPlant,
+                    intervalSeconds: isPlant ? 13 : 30,
+                  })
+                }
+              }}
+              style={{
+                marginTop: 12,
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 1.2,
+                textTransform: 'uppercase',
+                padding: '6px 10px',
+                minHeight: 32,
+                borderRadius: 4,
+                border: '1px solid var(--cc-mint-line)',
+                color: 'var(--cc-text-muted)',
+              }}
+            >
+              Reset to defaults
+            </button>
+          </section>
+        )}
+
         <div className="h-4" />
       </div>
     </>
@@ -265,6 +364,92 @@ function KnobRow({
       >
         {knob.help}
       </p>
+    </div>
+  )
+}
+
+/** Seconds-to-label mapping for the rate picker. */
+const RATE_PRESETS = [
+  { label: 'Slow', seconds: 60 },
+  { label: 'Normal', seconds: 30 },
+  { label: 'Fast', seconds: 10 },
+  { label: 'Relentless', seconds: 5 },
+] as const
+
+function GeneratorRow({
+  entry,
+  blueprint,
+  onChange,
+}: {
+  entry: WorldGeneratorEntry
+  blueprint: CreatureBlueprint | undefined
+  onChange: (patch: { enabled?: boolean; intervalSeconds?: number }) => void
+}) {
+  const name = blueprint?.name ?? entry.blueprintId
+  const activePreset = RATE_PRESETS.find(p => p.seconds === entry.intervalSeconds)
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 4,
+        opacity: entry.enabled ? 1 : 0.5,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <input
+          type="checkbox"
+          id={`gen-${entry.blueprintId}`}
+          checked={entry.enabled}
+          onChange={e => onChange({ enabled: e.target.checked })}
+          style={{ accentColor: 'var(--cc-mint)', width: 14, height: 14 }}
+        />
+        <label
+          htmlFor={`gen-${entry.blueprintId}`}
+          style={{ fontSize: 12, color: 'var(--cc-text-default)', cursor: 'pointer', flex: 1 }}
+        >
+          {name}
+        </label>
+        {entry.enabled && (
+          <span
+            style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 10,
+              color: 'var(--cc-text-muted)',
+            }}
+          >
+            {activePreset ? activePreset.label : `${entry.intervalSeconds}s`}
+          </span>
+        )}
+      </div>
+
+      {entry.enabled && (
+        <div style={{ display: 'flex', gap: 4, paddingLeft: 22 }}>
+          {RATE_PRESETS.map(preset => {
+            const active = entry.intervalSeconds === preset.seconds
+            return (
+              <button
+                key={preset.label}
+                type="button"
+                className="cc-btn"
+                onClick={() => onChange({ intervalSeconds: preset.seconds })}
+                aria-pressed={active}
+                style={{
+                  fontSize: 10,
+                  padding: '2px 6px',
+                  borderRadius: 3,
+                  border: `1px solid ${active ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                  color: active ? 'var(--cc-mint)' : 'var(--cc-text-muted)',
+                  background: active ? 'rgba(var(--cc-mint-rgb,80,200,160),0.08)' : 'transparent',
+                }}
+              >
+                {preset.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

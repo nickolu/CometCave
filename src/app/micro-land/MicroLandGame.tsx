@@ -125,6 +125,14 @@ export function MicroLandGame() {
           const { blueprint, traits } = state.workshopSpawnRequest
           queueMicrotask(() => game?.workshopIntroduce(blueprint, traits))
         }
+        if (
+          state.generatorConfigRequest !== previous.generatorConfigRequest &&
+          state.generatorConfigRequest &&
+          game
+        ) {
+          const req = state.generatorConfigRequest
+          queueMicrotask(() => game?.setGeneratorConfig(req.blueprintId, req))
+        }
       })
     })
 

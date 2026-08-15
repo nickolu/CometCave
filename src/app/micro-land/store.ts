@@ -10,6 +10,7 @@
 import { create } from 'zustand'
 
 import { DEFAULT_THEME } from './domain/config/themes'
+import type { WorldGeneratorEntry } from './domain/types'
 import {
   TUNING,
   type Tuning,
@@ -301,6 +302,13 @@ interface MicroLandState {
 
   /** Every creature that exists in this world, built-in and summoned. */
   blueprints: CreatureBlueprint[]
+  /** Current world generators, synced from game-instance after any world change. */
+  generators: WorldGeneratorEntry[]
+  /**
+   * Non-null when the UI has changed a generator; MicroLandGame.tsx watches
+   * this and applies the change to the live world.
+   */
+  generatorConfigRequest: { blueprintId: string; enabled?: boolean; intervalSeconds?: number } | null
   population: PopulationEntry[]
   totalCreatures: number
   elapsed: number
@@ -492,6 +500,9 @@ interface MicroLandState {
   setBlueprints: (list: CreatureBlueprint[]) => void
   /** Add a single blueprint without resetting population history. */
   addBlueprint: (bp: CreatureBlueprint) => void
+  setGenerators: (entries: WorldGeneratorEntry[]) => void
+  updateGenerator: (blueprintId: string, patch: { enabled?: boolean; intervalSeconds?: number }) => void
+  clearGeneratorConfigRequest: () => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   addExtinction: (record: ExtinctionRecord) => void
   clearExtinctions: () => void
@@ -593,6 +604,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   speed: 1,
 
   blueprints: [],
+  generators: [],
+  generatorConfigRequest: null,
   population: [],
   totalCreatures: 0,
   elapsed: 0,
@@ -659,6 +672,15 @@ export const useMicroLand = create<MicroLandState>(set => ({
         ? s.blueprints.map(b => (b.id === bp.id ? bp : b))
         : [...s.blueprints, bp],
     })),
+  setGenerators: entries => set({ generators: entries }),
+  updateGenerator: (blueprintId, patch) =>
+    set(state => ({
+      generators: state.generators.map(g =>
+        g.blueprintId === blueprintId ? { ...g, ...patch } : g
+      ),
+      generatorConfigRequest: { blueprintId, ...patch },
+    })),
+  clearGeneratorConfigRequest: () => set({ generatorConfigRequest: null }),
   setStats: (population, totalCreatures, elapsed) =>
     set(s => {
       const last = s.populationHistory[s.populationHistory.length - 1]
