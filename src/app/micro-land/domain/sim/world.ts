@@ -65,6 +65,8 @@ export function createWorld(seed = 1337): WorldState {
     natives: [],
     nextPlantSeed: 0,
     dormant: false,
+    spawners: [],
+    nextSpawnerId: 1,
   }
 }
 
@@ -666,6 +668,7 @@ export function seedStarters(w: WorldState, themeId: string, rng: Rng): void {
 export function clearCreatures(w: WorldState): void {
   w.creatures.length = 0
   w.particles.length = 0
+  w.spawners.length = 0
 }
 
 // ---------------------------------------------------------------------------

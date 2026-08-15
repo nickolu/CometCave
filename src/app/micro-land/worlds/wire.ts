@@ -25,6 +25,7 @@ import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 
 import {
   type SavedCreature,
+  type SavedSpawner,
   WORLD_SAVE_VERSION,
   type WorldSave,
   type WorldSnapshot,
@@ -221,6 +222,22 @@ function validSnapshot(value: unknown): WorldSnapshot | null {
       isPlainObject(bp) && typeof bp.id === 'string' && isPlainObject(bp.body)
   )
 
+  const spawners: SavedSpawner[] = []
+  if (Array.isArray(value.spawners)) {
+    for (const raw of value.spawners) {
+      if (!isPlainObject(raw)) continue
+      if (typeof raw.blueprintId !== 'string' || raw.blueprintId.length === 0) continue
+      spawners.push({
+        id: Math.max(1, Math.floor(num(raw.id, spawners.length + 1))),
+        x: clamp(raw.x, 0, WORLD_W, 0),
+        y: clamp(raw.y, 0, WORLD_H, 0),
+        blueprintId: raw.blueprintId.slice(0, 120),
+        intervalSeconds: clamp(raw.intervalSeconds, 1, 3600, 10),
+        maxLocal: clamp(raw.maxLocal, 0, 500, 5),
+      })
+    }
+  }
+
   return {
     materials,
     width: WORLD_W,
@@ -238,6 +255,8 @@ function validSnapshot(value: unknown): WorldSnapshot | null {
     tiles,
     creatures,
     blueprints,
+    spawners,
+    nextSpawnerId: Math.max(1, Math.floor(num(value.nextSpawnerId, spawners.length + 1))),
   }
 }
 
