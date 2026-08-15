@@ -22,7 +22,7 @@
  */
 import { isAttributeId, isSkillId } from './attributes'
 import { bool, boundedInt, isPlainObject, oneOf, slug, str } from './validate'
-import { PLAYER_ID } from './world'
+import { PLAYER_ID, openThreads } from './world'
 
 import type { AttributeId, SkillId } from './attributes'
 import type { AdvantageSource, Modifier } from './dice'
@@ -221,14 +221,46 @@ export function isRest(minutesElapsed: number, safe: boolean, urgentThreat: bool
   return minutesElapsed >= REST_MINUTES && safe && !urgentThreat
 }
 
-export function restore(kit: Kit): Kit {
+/**
+ * Refill the powers that refresh on this boundary, and only those.
+ *
+ * Two boundaries exist and they are deliberately different sizes. A rest is
+ * something a character can decide to have; a chapter is something the story
+ * does to them. A tier 3 power with one charge is meant to be the second kind —
+ * if a rest brought it back, "once a chapter" would be a label rather than a
+ * cost, and the whole reason the tier table is shaped the way it is would stop
+ * biting.
+ *
+ * Defaults to `'rest'` because that is what nearly every power does and because
+ * the previous signature took no argument at all: an existing call that has not
+ * been updated keeps meaning exactly what it used to.
+ */
+export function restore(kit: Kit, boundary: Refresh = 'rest'): Kit {
   return {
     ...kit,
-    powers: kit.powers.map(power => ({
-      ...power,
-      charges: { ...power.charges, now: power.charges.max },
-    })),
+    powers: kit.powers.map(power =>
+      power.refresh === boundary
+        ? { ...power, charges: { ...power.charges, now: power.charges.max } }
+        : power
+    ),
   }
+}
+
+/**
+ * How many charges came back, so the turn can say so only when it should.
+ *
+ * A rest that restored nothing — because nothing was spent, or because
+ * everything spent refreshes on a chapter instead — must not produce a line
+ * telling the player their powers returned. Counting is cheaper than making
+ * every caller diff two kits, and it keeps "did anything happen" out of the
+ * rendering.
+ */
+export function chargesRestored(before: Kit, after: Kit): number {
+  const was = new Map(before.powers.map(power => [power.id, power.charges.now]))
+  return after.powers.reduce(
+    (sum, power) => sum + Math.max(0, power.charges.now - (was.get(power.id) ?? power.charges.now)),
+    0
+  )
 }
 
 // -------------------------------------------------------------- validation
@@ -837,4 +869,39 @@ export function powerEffect(power: Power): PowerEffect {
     },
     advantage: null,
   }
+}
+
+export interface RestResult {
+  kit: Kit
+  /** True when the span qualified as a rest, whether or not anything refilled. */
+  rested: boolean
+  /** Charges that actually came back. Zero means the turn should say nothing. */
+  restored: number
+}
+
+/**
+ * Decide whether the span that just passed was a rest, and refill if it was.
+ *
+ * Three conditions, and the point of there being three is that the model
+ * controls at most two of them. It reports `elapsed` and it reports `safe` —
+ * both already constrained elsewhere, since `advance` will not step a fuse and
+ * the clock is the server's. The third it cannot touch at all: an open thread
+ * at `urgent` pressure is a fact about the graph, not a claim, so a DM cannot
+ * declare a peaceful evening while the thing chasing the player is one scene
+ * away.
+ *
+ * The world is read **after** the turn's deltas on purpose. A thread that fired
+ * during the span is exactly the case a rest must not survive, and reading the
+ * world as it stood before the turn would miss it.
+ *
+ * One qualifying span refills once. A week of travel is not seven rests — this
+ * is called once for the turn, and `rested` is what the caller latches so a
+ * turn that narrates twice cannot rest twice.
+ */
+export function restFor(kit: Kit, world: World, minutesElapsed: number, safe: boolean): RestResult {
+  const urgent = openThreads(world).some(thread => thread.pressure === 'urgent')
+  if (!isRest(minutesElapsed, safe, urgent)) return { kit, rested: false, restored: 0 }
+
+  const next = restore(kit, 'rest')
+  return { kit: next, rested: true, restored: chargesRestored(kit, next) }
 }
