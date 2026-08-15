@@ -26,7 +26,7 @@ import { registerBlueprint } from '@/app/micro-land/domain/sim/world'
 import { neutralTraits } from '@/app/micro-land/domain/traits'
 import type { Creature, CreatureMood, WorldState } from '@/app/micro-land/domain/types'
 
-import type { SavedCreature, SavedSpawner, WorldSnapshot } from './types'
+import type { SavedCreature, SavedGenerator, SavedSpawner, WorldSnapshot } from './types'
 
 const MOODS: CreatureMood[] = ['wander', 'hunt', 'flee', 'eat', 'rest', 'mate']
 
@@ -176,6 +176,11 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
       maxLocal: s.maxLocal,
     })),
     nextSpawnerId: w.nextSpawnerId,
+    generators: w.generators.map(g => ({
+      blueprintId: g.blueprintId,
+      enabled: g.enabled,
+      intervalSeconds: g.intervalSeconds,
+    })),
   }
 }
 
@@ -266,6 +271,19 @@ export function restoreSnapshot(w: WorldState, snap: WorldSnapshot): boolean {
   }))
   w.nextSpawnerId = Math.max(1, snap.nextSpawnerId ?? 1)
   for (const s of w.spawners) if (s.id >= w.nextSpawnerId) w.nextSpawnerId = s.id + 1
+
+  // Merge saved generator config over the defaults set by registerBlueprint
+  // above. nextSeed always starts at 0 on restore — see SavedGenerator comment.
+  if (snap.generators && snap.generators.length > 0) {
+    const byId = new Map(snap.generators.map((g: SavedGenerator) => [g.blueprintId, g]))
+    for (const gen of w.generators) {
+      const saved = byId.get(gen.blueprintId)
+      if (saved) {
+        gen.enabled = saved.enabled
+        gen.intervalSeconds = saved.intervalSeconds
+      }
+    }
+  }
 
   return true
 }

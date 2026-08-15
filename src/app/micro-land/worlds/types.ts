@@ -95,6 +95,18 @@ export interface SavedSpawner {
   maxLocal: number
 }
 
+/**
+ * One generator entry, frozen for storage.
+ *
+ * `nextSeed` is deliberately omitted — it resets to 0 on restore so the world
+ * starts seeding immediately after a load rather than waiting out a stale timer.
+ */
+export interface SavedGenerator {
+  blueprintId: string
+  enabled: boolean
+  intervalSeconds: number
+}
+
 export interface WorldSnapshot {
   /**
    * How many materials existed when this grid was written.
@@ -132,6 +144,8 @@ export interface WorldSnapshot {
   /** Placed spawners. Cooldowns reset to 0 on restore. */
   spawners?: SavedSpawner[]
   nextSpawnerId?: number
+  /** Per-species background-seeding config. nextSeed resets to 0 on restore. */
+  generators?: SavedGenerator[]
 }
 
 /**

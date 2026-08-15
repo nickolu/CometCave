@@ -121,6 +121,11 @@ export const TUNING_DEFAULTS = {
   pollinationOnly: POLLINATION_ONLY,
   plantCrowdingStrength: PLANT_CROWDING_STRENGTH,
   plantSpreadMin: PLANT_SPREAD_MIN,
+  /**
+   * Multiplies every world-generator's intervalSeconds at runtime.
+   * 1.0 = default. 2.0 = half the seeding rate. 0.5 = double the rate.
+   */
+  generatorRateMultiplier: 1.0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -187,6 +192,17 @@ export const KNOBS: Knob[] = [
     max: 60,
     step: 1,
     unit: 's',
+  },
+  {
+    key: 'generatorRateMultiplier',
+    group: 'plants',
+    label: 'Generator rate',
+    help: 'Scales how often world generators seed new creatures. 2× means half as often; 0.5× means twice as often.',
+    min: 0.1,
+    max: 5,
+    step: 0.1,
+    unit: '×',
+    type: 'range',
   },
   {
     key: 'plantSeedBatch',
