@@ -25,6 +25,7 @@ import {
   powerFromGrant,
   restFor,
   restore,
+  spendItemCharges,
   spendPower,
   validateItem,
   validateKit,
@@ -780,5 +781,90 @@ describe('restFor', () => {
 
   it('an unsafe span is not a rest even with time and quiet', () => {
     expect(restFor(spentKit(), worldWith({}), REST_MINUTES, false).rested).toBe(false)
+  })
+})
+
+describe('spendItemCharges', () => {
+  function kitWith(...grants: Parameters<typeof itemFromGrant>[0][]) {
+    let kit = emptyKit()
+    for (const g of grants) kit = addItem(kit, itemFromGrant(g, 0)!).kit
+    return kit
+  }
+
+  it('removes a consumable after it is named on a check', () => {
+    const kit = kitWith({
+      id: 'torch',
+      name: 'Torch',
+      quality: 'plain',
+      consumable: true,
+      uses: 1,
+      traits: [],
+    })
+    const { kit: after, consumed } = spendItemCharges(kit, ['torch'])
+    expect(after.items).toHaveLength(0)
+    expect(consumed).toContain('Torch')
+  })
+
+  it('decrements a charged non-consumable and leaves it in the pack', () => {
+    const kit = kitWith({
+      id: 'lantern',
+      name: 'Lantern',
+      quality: 'plain',
+      consumable: false,
+      uses: 3,
+      traits: [],
+    })
+    // Manually set it to have charges (itemFromGrant only adds charges when consumable)
+    const kitWithCharges = {
+      ...kit,
+      items: kit.items.map(i => ({ ...i, charges: { now: 2, max: 3 } })),
+    }
+    const { kit: after, consumed } = spendItemCharges(kitWithCharges, ['lantern'])
+    expect(after.items).toHaveLength(1)
+    expect(after.items[0].charges?.now).toBe(1)
+    expect(consumed).toHaveLength(0)
+  })
+
+  it('marks a non-consumable as out when the last charge goes', () => {
+    const kitWithCharges = {
+      ...emptyKit(),
+      items: [
+        {
+          id: 'lantern',
+          name: 'Lantern',
+          note: '',
+          traits: [],
+          charges: { now: 1, max: 3 },
+          consumable: false,
+          origin: null,
+          gainedAt: 0,
+        },
+      ],
+    }
+    const { kit: after, consumed } = spendItemCharges(kitWithCharges, ['lantern'])
+    expect(after.items[0].charges?.now).toBe(0)
+    expect(consumed.some(s => s.includes('Lantern'))).toBe(true)
+  })
+
+  it('naming the same consumable twice spends it once', () => {
+    const kit = kitWith({ id: 'draught', name: 'Draught', quality: 'plain', consumable: true, uses: 1, traits: [] })
+    const { kit: after } = spendItemCharges(kit, ['draught', 'draught'])
+    expect(after.items).toHaveLength(0)
+  })
+
+  it('does nothing when named item has no charges', () => {
+    const kit = kitWith({ id: 'rope', name: 'Rope', quality: 'plain', traits: [] })
+    const { kit: after, consumed } = spendItemCharges(kit, ['rope'])
+    expect(after.items).toHaveLength(1)
+    expect(consumed).toHaveLength(0)
+  })
+
+  it('ignores items not in the named list', () => {
+    const kit = kitWith(
+      { id: 'torch', name: 'Torch', quality: 'plain', consumable: true, uses: 1, traits: [] },
+      { id: 'rope', name: 'Rope', quality: 'plain', traits: [] }
+    )
+    const { kit: after } = spendItemCharges(kit, ['rope'])
+    expect(after.items).toHaveLength(2)
   })
 })

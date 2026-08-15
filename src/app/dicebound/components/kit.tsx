@@ -137,14 +137,17 @@ export function Items({ campaign }: { campaign: Campaign }) {
 
 function ItemRow({ item, world }: { item: Item; world: World }) {
   const from = item.origin ? (world.entities[item.origin]?.name ?? null) : null
+  const spent = !item.consumable && item.charges !== undefined && item.charges.now <= 0
 
   return (
-    <li className="border-l-2 border-outline-variant/40 pl-3">
+    <li className={`border-l-2 pl-3 ${spent ? 'border-outline-variant/20 opacity-60' : 'border-outline-variant/40'}`}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <p className="text-sm font-semibold text-on-surface">{item.name}</p>
         {item.charges && (
-          <span className="tabular-nums text-xs text-on-surface-variant">
-            {item.charges.now}/{item.charges.max} uses
+          <span
+            className={`tabular-nums text-xs ${item.charges.now <= 0 ? 'text-on-surface-variant/40' : 'text-on-surface-variant'}`}
+          >
+            {item.charges.now <= 0 ? 'out' : `${item.charges.now}/${item.charges.max} uses`}
           </span>
         )}
       </div>

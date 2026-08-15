@@ -258,4 +258,16 @@ describe('Items', () => {
     )
     expect(screen.queryByText(/keeper-imra/)).toBeNull()
   })
+
+  it('shows "out" and dims a non-consumable item at zero charges', () => {
+    const spentItem = item({
+      consumable: false,
+      charges: { now: 0, max: 3 },
+      traits: [{ label: 'the lantern lit', bonus: 1, applies: {} }],
+    })
+    render(
+      <Items campaign={campaignWith({ kit: { ...campaignWith().kit, items: [spentItem] } })} />
+    )
+    expect(screen.getByText('out')).toBeDefined()
+  })
 })
