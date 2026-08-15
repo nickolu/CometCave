@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  FALLBACK_SPECIES,
   KIT_BONUS_CAP,
   MAX_ITEMS,
   MAX_LEVEL,
@@ -143,6 +144,16 @@ describe('validateSpecies', () => {
 
   it('refuses a species missing either half', () => {
     expect(validateSpecies({ name: 'Cat', trait: { label: 'quick', bonus: 1 } })).toBeNull()
+  })
+})
+
+describe('FALLBACK_SPECIES', () => {
+  it('every fallback has name, trait, and drawback', () => {
+    for (const sp of FALLBACK_SPECIES) {
+      expect(sp.name).toBeTruthy()
+      expect(sp.trait.bonus).toBeGreaterThan(0)
+      expect(sp.drawback.bonus).toBeLessThan(0)
+    }
   })
 })
 

@@ -25,13 +25,16 @@ import {
   ATTRIBUTE_IDS,
   SKILLS,
   SKILL_IDS,
+  type AttributeId,
   type SkillId,
+  isSkillId,
   skillsOf,
 } from '@/app/dicebound/domain/attributes'
 import { MAX_CONCEPT } from '@/app/dicebound/domain/campaign'
 import {
   ATTRIBUTE_BUDGET,
   type Character,
+  type SkillRecord,
   MAX_ATTRIBUTE,
   MAX_STARTING_SKILLS,
   MIN_ATTRIBUTE,
@@ -39,6 +42,8 @@ import {
   normalizeAttributes,
   startingSkills,
 } from '@/app/dicebound/domain/character'
+import { FALLBACK_SPECIES, type Species, validateSpecies } from '@/app/dicebound/domain/kit'
+import { isPlainObject } from '@/app/dicebound/domain/validate'
 import { NoApiKeyError, callForTool, requireApiKey, toolSchema } from '@/lib/dicebound/anthropic'
 
 export const maxDuration = 60
@@ -114,6 +119,31 @@ const CreationSchema = z.object({
     .describe(
       'One or two short sentences, addressed to the player as "you", naming which words in their description produced which numbers AND which starting skills. This is read aloud at the table — make it warm and specific, not a list.'
     ),
+  species: z
+    .object({
+      name: z.string().describe('The species name. Short. "Forest Cat", "River Otter", not "Feline Humanoid".'),
+      note: z.string().describe('One clause about what this species is. "grew up in the canopy", not an essay.'),
+      trait: z.object({
+        label: z.string().describe('What the good side looks like in the fiction. "nimble in the branches."'),
+        applies: z.object({
+          attributes: z.array(z.enum(ATTRIBUTE_IDS as unknown as [AttributeId, ...AttributeId[]])).optional(),
+          skills: z.array(SkillEnum).optional(),
+        }).optional(),
+      }).describe('The upside — a single trait, bonus assigned by code.'),
+      drawback: z.object({
+        label: z.string().describe('The cost. "easily distracted by birds." Not optional.'),
+        applies: z.object({
+          attributes: z.array(z.enum(ATTRIBUTE_IDS as unknown as [AttributeId, ...AttributeId[]])).optional(),
+          skills: z.array(SkillEnum).optional(),
+        }).optional(),
+      }).describe('The catch — forced negative by the game. A species with no cost is a stat bonus wearing a name.'),
+      skill: SkillEnum.nullable().describe('One skill this being is innately better or worse at. Null if none clearly fits.'),
+      skillRank: z.number().int().min(-1).max(1).describe('+1 or -1. The game assigns the magnitude.'),
+    })
+    .nullable()
+    .describe(
+      'Generate a species only when the premise or concept plainly implies a non-human. Ordinary people get null. The species name, trait, and drawback must all be about being THAT species — not just a personality.'
+    ),
 })
 
 const SYSTEM = `You build player characters for Dicebound, a dice-and-storytelling game played by all ages.
@@ -137,6 +167,14 @@ THE READING
 - Account for the starting skills as well as the numbers, in the same breath and the same voice: "Locksmith gave you clever hands, and a mouth that will not stop." Not a list, not a justification — one line that reads like someone at the table looking you over.
 - This matters more than it looks. Everywhere else this game teaches that skills are earned by using them, so a skill already sitting at rank 1 with nothing said about it reads as a bug. One sentence is the difference between "why do I have this?" and "of course I have this."
 
+THE SPECIES
+- Generate a species ONLY when the premise or concept plainly says the character is non-human. A cat pirate is non-human. A nervous locksmith is not.
+- When you do, name what the species is (short — "Forest Cat"), describe what it is in one clause, write a trait and a drawback that are about BEING that species, and pick one skill it helps or hinders.
+- The game assigns +1 for the trait and −1 for the drawback — you name what they apply to, not what they are worth.
+- A species with no drawback is a stat bonus wearing a species name. Give it something real to lose.
+- Most premises are human stories. When in doubt, send null. An unearned species reads worse than no species.
+- The reading should mention the species in the same breath as the numbers — "the cat in you gives you sharp eyes but a magpie's attention" — one clause, not a paragraph.
+
 THE NAME
 - If the player named their character, use that name exactly.
 - If not, invent one that fits both the character and the kind of world their sentence implies.
@@ -152,6 +190,7 @@ interface CreationInput {
   innate?: { size?: unknown; looks?: unknown }
   skills?: unknown
   reading?: unknown
+  species?: unknown
 }
 
 export async function POST(request: NextRequest) {
@@ -194,18 +233,19 @@ export async function POST(request: NextRequest) {
       },
     })) as CreationInput
 
-    return NextResponse.json({ source: 'model', character: fromInput(input, concept) })
+    const { character, species } = fromInput(input, concept)
+    return NextResponse.json({ source: 'model', character, species })
   } catch (error) {
     if (!(error instanceof NoApiKeyError)) {
       console.error('dicebound character creation failed:', error)
     }
-    return NextResponse.json({ source: 'offline', character: fallbackCharacter(concept) })
+    return NextResponse.json({ source: 'offline', character: fallbackCharacter(concept), species: null })
   } finally {
     clearTimeout(timeout)
   }
 }
 
-function fromInput(input: CreationInput, concept: string): Character {
+function fromInput(input: CreationInput, concept: string): { character: Character; species: Species | null } {
   const name =
     typeof input.name === 'string' && input.name.trim()
       ? input.name.trim().slice(0, 60)
@@ -214,7 +254,28 @@ function fromInput(input: CreationInput, concept: string): Character {
   const size = clampInnate(input.innate?.size)
   const looks = clampInnate(input.innate?.looks)
 
-  return {
+  // Parse species from model output
+  const rawSpecies = isPlainObject(input.species) ? input.species : null
+  let species: Species | null = null
+  let speciesSkillEntry: Partial<Record<SkillId, SkillRecord>> = {}
+
+  if (rawSpecies) {
+    // Validate — falls back to FALLBACK_SPECIES if model returned something bad
+    species = validateSpecies(rawSpecies) ?? FALLBACK_SPECIES[Math.floor(Math.random() * FALLBACK_SPECIES.length)]
+
+    // Innate skill adjustment (±1, code assigns magnitude, model says which skill)
+    if (typeof rawSpecies.skill === 'string' && isSkillId(rawSpecies.skill)) {
+      const skillRank = typeof rawSpecies.skillRank === 'number'
+        ? Math.max(-1, Math.min(1, Math.round(rawSpecies.skillRank)))
+        : 1
+      if (skillRank !== 0) {
+        const skillId = rawSpecies.skill as SkillId
+        speciesSkillEntry = { [skillId]: { uses: 0, rank: skillRank } }
+      }
+    }
+  }
+
+  const character: Character = {
     name,
     concept,
     reading: typeof input.reading === 'string' ? input.reading.trim().slice(0, 400) : '',
@@ -228,8 +289,13 @@ function fromInput(input: CreationInput, concept: string): Character {
       // they were never practised. That is also why they are spread last.
       ...(size !== 0 ? { size: { uses: 0, rank: size } } : {}),
       ...(looks !== 0 ? { looks: { uses: 0, rank: looks } } : {}),
+      // Species skill goes last — but startingSkills drops innates, and species
+      // skills may not be innate. Species skill wins if there's a conflict.
+      ...speciesSkillEntry,
     },
   }
+
+  return { character, species }
 }
 
 function clampInnate(value: unknown): number {
