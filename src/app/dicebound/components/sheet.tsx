@@ -25,6 +25,7 @@ import {
 import type { Campaign } from '@/app/dicebound/domain/campaign'
 import { RANK_THRESHOLDS, type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
 
+import { Powers, Standing } from './kit'
 import { WorldPanel } from './world'
 
 function sign(value: number): string {
@@ -43,6 +44,7 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
       <header>
         <h2 className="font-headline text-headline-md text-on-surface">{character.name}</h2>
         <p className="mt-1 text-body-md text-on-surface-variant">{character.concept}</p>
+        <Standing campaign={campaign} />
         {character.reading && (
           <p className="mt-3 border-l-2 border-ds-tertiary/50 pl-3 text-sm italic text-on-surface-variant">
             {character.reading}
@@ -94,6 +96,8 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
           </ul>
         )}
       </section>
+
+      <Powers campaign={campaign} />
 
       <WorldPanel campaign={campaign} />
 
