@@ -31,7 +31,7 @@ import {
   validateCampaign,
   validateChapter,
 } from '@/app/dicebound/domain/campaign'
-import { totalRanks } from '@/app/dicebound/domain/character'
+import { earnedRanks } from '@/app/dicebound/domain/character'
 import { levelFor } from '@/app/dicebound/domain/kit'
 import { dayOf } from '@/app/dicebound/domain/world'
 import { getFirestoreDb } from '@/lib/firebase/server'
@@ -79,7 +79,7 @@ export async function saveCampaign(uid: string, campaign: Campaign): Promise<voi
     currentStreak: campaign.currentStreak,
     // Readable phase 2 state. Cheap to write, and the alternative is parsing
     // every blob in the collection to ask how far anyone has got.
-    level: levelFor(totalRanks(campaign.character)),
+    level: levelFor(earnedRanks(campaign.character)),
     className: campaign.kit.className ?? null,
     species: campaign.kit.species?.name ?? null,
     storyDay: dayOf(campaign.world.clock),

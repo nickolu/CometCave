@@ -9,6 +9,7 @@ import {
   MIN_ATTRIBUTE,
   RANK_THRESHOLDS,
   blankAttributes,
+  earnedRanks,
   earnedSkills,
   normalizeAttributes,
   rankFor,
@@ -16,6 +17,7 @@ import {
   startingSkills,
   usesToNextRank,
 } from '@/app/dicebound/domain/character'
+import { levelFor } from '@/app/dicebound/domain/kit'
 
 function character(overrides: Partial<Character> = {}): Character {
   return {
@@ -191,7 +193,7 @@ describe('startingSkills', () => {
     // and the first time the skill came up it would silently correct itself
     // downward — the player would watch a skill they started with get worse.
     const skills = startingSkills(['hand-eye'])
-    expect(skills['hand-eye']).toEqual({ uses: RANK_THRESHOLDS[0], rank: 1 })
+    expect(skills['hand-eye']).toEqual({ uses: RANK_THRESHOLDS[0], rank: 1, seeded: true })
     expect(rankFor(skills['hand-eye']!.uses)).toBe(1)
   })
 
@@ -204,7 +206,19 @@ describe('startingSkills', () => {
     for (let i = 0; i < needed; i++) {
       sheet = recordSkillUse(sheet, 'hand-eye').character
     }
-    expect(sheet.skills['hand-eye']).toEqual({ uses: RANK_THRESHOLDS[1], rank: 2 })
+    expect(sheet.skills['hand-eye']).toEqual({
+      uses: RANK_THRESHOLDS[1],
+      rank: 2,
+      seeded: true,
+    })
+  })
+
+  it('keeps the seeded marker through a use — a head start does not become an achievement', () => {
+    // recordSkillUse used to rebuild the record from `{ uses, rank }`, which
+    // would clear the marker on the first check and hand the player a level for
+    // touching a skill they were given.
+    const sheet = recordSkillUse(character({ skills: startingSkills(['hand-eye']) }), 'hand-eye')
+    expect(sheet.character.skills['hand-eye']?.seeded).toBe(true)
   })
 
   it('grants three when a model proposes six — the model proposes, code decides how many', () => {
@@ -240,5 +254,55 @@ describe('startingSkills', () => {
     expect(startingSkills(undefined)).toEqual({})
     expect(startingSkills('hand-eye')).toEqual({})
     expect(startingSkills([null, 42, {}])).toEqual({})
+  })
+})
+
+describe('earnedRanks', () => {
+  it('a character who has only written a sentence is level 1', () => {
+    // The bug this function exists for: three seeded ranks made levelFor
+    // return 2 before the first die, which made a tier 1 power grantable on
+    // turn 1 and fired class discovery on a histogram of skills nobody used.
+    const sheet = character({ skills: startingSkills(['hand-eye', 'humor', 'observation']) })
+    expect(earnedRanks(sheet)).toBe(0)
+    expect(levelFor(earnedRanks(sheet))).toBe(1)
+  })
+
+  it('a seeded skill that reaches rank 2 in play has earned one rank', () => {
+    let sheet = character({ skills: startingSkills(['hand-eye']) })
+    for (let i = 0; i < RANK_THRESHOLDS[1] - RANK_THRESHOLDS[0]; i++) {
+      sheet = recordSkillUse(sheet, 'hand-eye').character
+    }
+    expect(sheet.skills['hand-eye']?.rank).toBe(2)
+    expect(earnedRanks(sheet)).toBe(1)
+  })
+
+  it('counts a rank nobody handed over in full', () => {
+    // Rank 1 on a skill the player ground out is worth the same as rank 2 on a
+    // skill they were given — the head start is subtracted once, not taxed.
+    const granted = character({ skills: startingSkills(['hand-eye']) })
+    const ground = character({ skills: { balance: { uses: RANK_THRESHOLDS[0], rank: 1 } } })
+    expect(earnedRanks(ground) - earnedRanks(granted)).toBe(1)
+  })
+
+  it('an innate −2 is not a rank and does not move the level', () => {
+    // Size is something the character is. It is subtracted from every Size
+    // check and it must not also slow their levelling for being described.
+    const sheet = character({ skills: { size: { uses: 0, rank: -2 } } })
+    expect(earnedRanks(sheet)).toBe(0)
+    expect(levelFor(earnedRanks(sheet))).toBe(1)
+  })
+
+  it('a character saved before the marker existed keeps the level they had', () => {
+    // Deliberately generous to live campaigns. An unmarked rank reads as
+    // earned, so nobody drops a level on deploy.
+    const legacy = character({
+      skills: {
+        'hand-eye': { uses: RANK_THRESHOLDS[0], rank: 1 },
+        humor: { uses: RANK_THRESHOLDS[0], rank: 1 },
+        observation: { uses: RANK_THRESHOLDS[0], rank: 1 },
+      },
+    })
+    expect(earnedRanks(legacy)).toBe(3)
+    expect(levelFor(earnedRanks(legacy))).toBe(2)
   })
 })
