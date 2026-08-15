@@ -6,6 +6,7 @@ import {
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
   type ToolCall,
+  USE_POWER_TOOL,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
 
@@ -142,6 +143,34 @@ describe('partitionTurnCalls and grant_power', () => {
     ])
 
     expect(powerGrants.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+    expect(premature.map(c => c.id)).toEqual(['b'])
+  })
+})
+
+const usePowerCall = (id: string): ToolCall & { id: string } => ({
+  id,
+  name: USE_POWER_TOOL,
+  input: { id: 'ember-hand' },
+})
+
+describe('partitionTurnCalls and use_power', () => {
+  it('does not end the turn — the DM has to be told what the power made available', () => {
+    const { powerUses, ending } = partitionTurnCalls([usePowerCall('a')])
+
+    expect(powerUses.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+  })
+
+  it('discards narration written in the same breath as spending a power', () => {
+    // Invariant 2 again. That narration was composed before the power's effect
+    // existed — before the model knew whether the charge was even there.
+    const { powerUses, ending, premature } = partitionTurnCalls([
+      usePowerCall('a'),
+      narrate('b', 'Fire blooms in your palm and the guard goes down.'),
+    ])
+
+    expect(powerUses.map(c => c.id)).toEqual(['a'])
     expect(ending).toBeNull()
     expect(premature.map(c => c.id)).toEqual(['b'])
   })

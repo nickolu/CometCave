@@ -11,6 +11,7 @@ import {
   TIER_CHARGES,
   addItem,
   addPower,
+  appliesTo,
   canGrantPower,
   emptyKit,
   isRest,
@@ -19,8 +20,10 @@ import {
   levelFor,
   maxPowersAt,
   maxTierAt,
+  powerEffect,
   powerFromGrant,
   restore,
+  spendPower,
   validateItem,
   validateKit,
   validatePower,
@@ -511,5 +514,133 @@ describe('addPower', () => {
       kit = addPower(kit, powerFromGrant(grant({ id: `p${i}` }), 1, 600)!).kit
     }
     expect(kit.powers).toHaveLength(MAX_POWERS)
+  })
+})
+
+describe('spendPower', () => {
+  const kitWith = (over: Partial<Parameters<typeof powerFromGrant>[0]> = {}, tier = 1) => {
+    const power = powerFromGrant({ ...grant(), ...over }, tier, 600)!
+    return { ...emptyKit(), powers: [power] }
+  }
+
+  it('spends the charge and returns the power, and decides nothing else', () => {
+    // The whole rule as an ordering: the charge is gone before any check is
+    // rolled and without knowing whether one will land.
+    const { kit, power, reason } = spendPower(kitWith(), 'ember-hand')
+    expect(reason).toBe('')
+    expect(power?.charges.now).toBe(TIER_CHARGES[1] - 1)
+    expect(kit.powers[0].charges.now).toBe(TIER_CHARGES[1] - 1)
+    // Nothing resembling an outcome comes back — no modifier, no roll, no band.
+    expect(Object.keys(power ?? {})).not.toContain('bonus')
+  })
+
+  it('a power with no charges left cannot be spent into the negative', () => {
+    const spent = {
+      ...emptyKit(),
+      powers: [{ ...powerFromGrant(grant(), 1, 600)!, charges: { now: 0, max: 3 } }],
+    }
+    const result = spendPower(spent, 'ember-hand')
+    expect(result.power).toBeNull()
+    expect(result.kit.powers[0].charges.now).toBe(0)
+    expect(result.reason).toContain('spent')
+  })
+
+  it('says when the charge comes back, so the player is not left guessing', () => {
+    const restful = {
+      ...emptyKit(),
+      powers: [{ ...powerFromGrant(grant(), 1, 600)!, charges: { now: 0, max: 3 } }],
+    }
+    expect(spendPower(restful, 'ember-hand').reason).toContain('rest')
+  })
+
+  it('refuses a power the kit does not hold rather than inventing one', () => {
+    const result = spendPower(kitWith(), 'fireball')
+    expect(result.power).toBeNull()
+    expect(result.kit.powers[0].charges.now).toBe(TIER_CHARGES[1])
+  })
+
+  it('the same power cannot be spent twice in one turn', () => {
+    // Without this a model that liked the answer spends it three times in one
+    // message and pays for it once.
+    const kit = kitWith()
+    const first = spendPower(kit, 'ember-hand', new Set())
+    const second = spendPower(first.kit, 'ember-hand', new Set(['ember-hand']))
+    expect(second.power).toBeNull()
+    expect(second.kit.powers[0].charges.now).toBe(TIER_CHARGES[1] - 1)
+  })
+
+  it('does not mutate the kit it was given', () => {
+    const kit = kitWith()
+    spendPower(kit, 'ember-hand')
+    expect(kit.powers[0].charges.now).toBe(TIER_CHARGES[1])
+  })
+})
+
+describe('appliesTo', () => {
+  it('an empty claim covers everything — that is why a general thing is worth +0', () => {
+    expect(appliesTo({}, 'dexterity', 'balance')).toBe(true)
+  })
+
+  it('a claim that names something covers only that', () => {
+    expect(appliesTo({ attributes: ['power'] }, 'power', null)).toBe(true)
+    expect(appliesTo({ attributes: ['power'] }, 'dexterity', null)).toBe(false)
+    expect(appliesTo({ skills: ['balance'] }, 'dexterity', 'balance')).toBe(true)
+    expect(appliesTo({ skills: ['balance'] }, 'dexterity', 'quickness')).toBe(false)
+  })
+})
+
+describe('powerEffect', () => {
+  it('a permits power adds a permission to the die card, not a modifier', () => {
+    // +0, and the zero is the point. It is on the card so the player can see
+    // why a thing they could not do a moment ago is suddenly a roll — the same
+    // reason a +0 item trait is named. It is not a bonus and must never become
+    // one.
+    const power = powerFromGrant(
+      { ...grant(), shape: 'permits', permits: 'throw fire, at range' },
+      1,
+      600
+    )!
+    const effect = powerEffect(power)
+
+    expect(effect.advantage).toBeNull()
+    expect(effect.permission?.value).toBe(0)
+    expect(effect.permission?.label).toContain('throw fire, at range')
+  })
+
+  it('an advantage power carries no number at all', () => {
+    // It moves the odds without moving anything anyone can point at, which is
+    // why it sits outside the ±6 budget and the +3 kit ceiling.
+    const power = powerFromGrant(
+      { ...grant(), shape: 'advantage', applies: { attributes: ['power'] } },
+      1,
+      600
+    )!
+    const effect = powerEffect(power)
+
+    expect(effect.permission).toBeNull()
+    expect(effect.advantage?.source.direction).toBe('advantage')
+    expect(JSON.stringify(effect.advantage?.source)).not.toMatch(/\d/)
+  })
+
+  it('an advantage power that matches nothing this turn still costs the charge', () => {
+    // The charge is spent by spendPower, before anything is rolled and without
+    // knowing whether a matching check will ever come. The effect it produces
+    // is only ever *offered* to a check — nothing here can hand the charge
+    // back, and that is what makes spending it a real decision.
+    const power = powerFromGrant(
+      { ...grant(), shape: 'advantage', applies: { attributes: ['power'] } },
+      1,
+      600
+    )!
+    const kit = { ...emptyKit(), powers: [power] }
+
+    const spent = spendPower(kit, power.id)
+    expect(spent.kit.powers[0].charges.now).toBe(TIER_CHARGES[1] - 1)
+
+    const effect = powerEffect(spent.power!)
+    // The turn's only check is a Dexterity one. The power claims Power, so
+    // nothing claims it — and the charge above is still gone.
+    expect(appliesTo(effect.advantage!.applies, 'dexterity', 'balance')).toBe(false)
+    expect(spent.kit.powers[0].charges.now).toBe(TIER_CHARGES[1] - 1)
   })
 })

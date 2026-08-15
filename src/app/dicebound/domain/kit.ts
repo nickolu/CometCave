@@ -25,6 +25,7 @@ import { bool, boundedInt, isPlainObject, oneOf, slug, str } from './validate'
 import { PLAYER_ID } from './world'
 
 import type { AttributeId, SkillId } from './attributes'
+import type { AdvantageSource, Modifier } from './dice'
 import type { EntityId, World } from './world'
 
 /** When a trait or power applies. Empty means "the DM decides, in the fiction". */
@@ -490,7 +491,23 @@ export function kitModifiers(
 }
 
 function traitApplies(trait: Trait, attribute: AttributeId, skill: SkillId | null): boolean {
-  const { attributes, skills } = trait.applies
+  return appliesTo(trait.applies, attribute, skill)
+}
+
+/**
+ * Does a claim about where something applies cover this particular check?
+ *
+ * Shared by item traits and by powers, because they are the same question asked
+ * about the same two fields. An empty claim covers everything, deliberately —
+ * that is why a rope that is good in general is good for +0, and why a power
+ * that names nothing applies wherever the fiction says it does.
+ */
+export function appliesTo(
+  applies: Applicability,
+  attribute: AttributeId,
+  skill: SkillId | null
+): boolean {
+  const { attributes, skills } = applies
   const claimsSomething = (attributes?.length ?? 0) > 0 || (skills?.length ?? 0) > 0
   if (!claimsSomething) return true
 
@@ -699,4 +716,125 @@ export function addPower(kit: Kit, power: Power): { kit: Kit; added: boolean } {
   if (kit.powers.some(held => held.id === power.id)) return { kit, added: false }
   if (kit.powers.length >= MAX_POWERS) return { kit, added: false }
   return { kit: { ...kit, powers: [...kit.powers, power] }, added: true }
+}
+
+/** What spending a charge produced: the power, or the reason there is none. */
+export interface PowerSpend {
+  kit: Kit
+  /** Null when nothing was spent — see `reason`. */
+  power: Power | null
+  /** Addressed to the DM, on a spend as well as a refusal. */
+  reason: string
+}
+
+/**
+ * Spend a charge, and spend it whether or not anything comes of it.
+ *
+ * This is the rule the whole epic rests on, expressed as an ordering: the
+ * charge goes **first**, before any check is rolled and without knowing whether
+ * one will land. A power that only costs you something when it works is not a
+ * choice, it is a bonus with ceremony — and the moment using a power is free on
+ * a miss, the interesting question ("is this the moment?") stops being a
+ * question at all.
+ *
+ * Nothing here decides an outcome. It returns the power so the caller can turn
+ * it into a permission or into advantage; it never returns a modifier, and it
+ * never touches the die.
+ *
+ * `spentThisTurn` is passed in rather than tracked here because the domain has
+ * no idea what a turn is. Without it a model that liked the answer could spend
+ * the same power three times in one message and pay for it once.
+ */
+export function spendPower(
+  kit: Kit,
+  id: unknown,
+  spentThisTurn: ReadonlySet<string> = new Set()
+): PowerSpend {
+  const wanted = slug(id)
+  if (!wanted) return { kit, power: null, reason: 'That did not name a power.' }
+
+  const held = kit.powers.find(power => power.id === wanted)
+  // Refused, not invented. A power the character does not have is not a power
+  // they can use, however good the moment for it looks.
+  if (!held) {
+    return {
+      kit,
+      power: null,
+      reason: `They cannot do that. ${wanted} is not something they have. Narrate the moment without it.`,
+    }
+  }
+
+  if (spentThisTurn.has(wanted)) {
+    return {
+      kit,
+      power: null,
+      reason: `${held.name} has already been used this turn. Once is all they get.`,
+    }
+  }
+
+  if (held.charges.now <= 0) {
+    return {
+      kit,
+      power: null,
+      reason: `${held.name} is spent — no charges left, and they do not come back ${held.refresh === 'rest' ? 'until they rest properly' : 'until the next chapter'}. Narrate them reaching for it and finding nothing there.`,
+    }
+  }
+
+  // Floored, not merely decremented. `validatePower` re-derives `max` on the
+  // way in but nothing re-derives `now`, so the floor has to be enforced at the
+  // one place that moves it.
+  const spent: Power = {
+    ...held,
+    charges: { ...held.charges, now: Math.max(0, held.charges.now - 1) },
+  }
+
+  return {
+    kit: { ...kit, powers: kit.powers.map(power => (power.id === wanted ? spent : power)) },
+    power: spent,
+    reason: '',
+  }
+}
+
+/**
+ * What a spent power leaves on the table — and notably, what it does not.
+ *
+ * Neither branch is an outcome and neither is a magnitude the model chose. A
+ * `permits` power becomes a die-card row worth exactly **+0**: the capability
+ * is named, because the reason is real even when the number is nothing
+ * (invariant 18), and the check still has to be rolled at whatever DC the
+ * fiction sets. An `advantage` power becomes a flag with no number in it at
+ * all.
+ *
+ * This is a function rather than two lines at the call site so that the one
+ * thing worth protecting — *a power never resolves an outcome* — is somewhere a
+ * test can point at. The bonus is a literal zero here on purpose. If a later
+ * change ever wants it to be otherwise, it has to edit this line and explain
+ * itself, rather than quietly adding a number where the model was passing one
+ * through.
+ */
+export interface PowerEffect {
+  /** A +0 row for the die card, for a `permits` power. */
+  permission: Modifier | null
+  /** A flag for the next matching check, for an `advantage` power. */
+  advantage: { source: AdvantageSource; applies: Applicability } | null
+}
+
+export function powerEffect(power: Power): PowerEffect {
+  if (power.shape === 'advantage') {
+    return {
+      permission: null,
+      advantage: {
+        source: { direction: 'advantage', reason: power.name },
+        applies: power.applies,
+      },
+    }
+  }
+
+  return {
+    permission: {
+      label: power.permits ? `${power.name} — ${power.permits}` : power.name,
+      value: 0,
+    },
+    advantage: null,
+  }
 }

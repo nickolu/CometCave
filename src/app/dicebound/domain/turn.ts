@@ -23,6 +23,7 @@ export const NARRATE_TOOL = 'narrate'
 export const RECALL_TOOL = 'recall'
 export const GRANT_ITEM_TOOL = 'grant_item'
 export const GRANT_POWER_TOOL = 'grant_power'
+export const USE_POWER_TOOL = 'use_power'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
@@ -42,6 +43,12 @@ export interface TurnCalls<T extends ToolCall> {
    * got nothing, which is a normal outcome rather than an error.
    */
   powerGrants: T[]
+  /**
+   * `use_power` calls. The charge is spent before anything is rolled, so like
+   * every other bucket here the turn continues rather than ending — the DM has
+   * to be told what the power made available before it can narrate around it.
+   */
+  powerUses: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -73,6 +80,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   const recalls = calls.filter(call => call.name === RECALL_TOOL)
   const grants = calls.filter(call => call.name === GRANT_ITEM_TOOL)
   const powerGrants = calls.filter(call => call.name === GRANT_POWER_TOOL)
+  const powerUses = calls.filter(call => call.name === USE_POWER_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
   // A narration sent alongside a lookup is as blind as one sent alongside a
@@ -80,8 +88,14 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   // for cannot be in it. A power grant belongs in this list for a sharper
   // reason than the others — the grant can be *refused*, and narration written
   // beside it describes the character learning something they did not get.
-  if (rolls.length > 0 || recalls.length > 0 || grants.length > 0 || powerGrants.length > 0) {
-    return { rolls, recalls, grants, powerGrants, ending: null, premature: narrations }
+  if (
+    rolls.length > 0 ||
+    recalls.length > 0 ||
+    grants.length > 0 ||
+    powerGrants.length > 0 ||
+    powerUses.length > 0
+  ) {
+    return { rolls, recalls, grants, powerGrants, powerUses, ending: null, premature: narrations }
   }
 
   // Only the first narration ends the turn. A second one is a duplicate, not a
@@ -91,6 +105,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
     recalls,
     grants,
     powerGrants,
+    powerUses,
     ending: narrations[0] ?? null,
     premature: narrations.slice(1),
   }

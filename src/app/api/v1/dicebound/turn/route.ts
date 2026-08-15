@@ -58,6 +58,7 @@ import {
   skillRank,
 } from '@/app/dicebound/domain/character'
 import {
+  type AdvantageSource,
   BAND_BRIEF,
   BAND_LABEL,
   BAND_MOVE,
@@ -71,6 +72,7 @@ import {
   resolveCheck,
 } from '@/app/dicebound/domain/dice'
 import {
+  type Applicability,
   type Kit,
   MAX_ITEMS,
   MAX_TIER,
@@ -81,11 +83,14 @@ import {
   type Quality,
   addItem,
   addPower,
+  appliesTo,
   canGrantPower,
   itemFromGrant,
   kitModifiers,
   levelFor,
+  powerEffect,
   powerFromGrant,
+  spendPower,
 } from '@/app/dicebound/domain/kit'
 import {
   GRANT_ITEM_TOOL,
@@ -94,6 +99,7 @@ import {
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
   type TurnResult,
+  USE_POWER_TOOL,
   applyTurn,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
@@ -264,6 +270,8 @@ WHAT THEY CAN DO
 - It has to come from something already in the story — name that thing's id in source. Someone you invented this turn does not count. If the teacher is new, introduce them properly first and let them teach it later.
 - A power never decides an outcome. It makes one available: it turns "you cannot hurt him from here" into a roll that can still miss. Write it as a permission, not as a result.
 - You say what it is and what it costs. The game says how strong it is and how often it comes back. You may be told the character is not ready, or that the source does not count — that is a normal answer. Narrate the moment without the power and carry on; do not mention that anything was refused.
+- When they reach for a power they have, call use_power. The charge is spent the moment they reach, whether or not it works — so do not call it to decorate a description, and do not call it twice for one action.
+- A power never settles anything. It makes something possible that was not, and then you still call roll_check for whatever is uncertain about it. Fire in your hand does not kill the guard; it means you can try.
 
 REMEMBERING
 What you are shown is a window on the story, not the whole of it. Places, people and promises that have gone quiet are still there and are not listed.
@@ -552,6 +560,25 @@ const GRANT_POWER: ToolDef = {
   description:
     'Give the character something they can do. Only when the story has earned it and only from a source it already contains. The game decides how strong it is, how many charges it has, and whether they are ready for it at all — and it may say no, which is a normal answer and not a problem to mention.',
   input_schema: toolSchema(GrantPowerSchema),
+}
+
+/**
+ * Note that there is nothing here to say what the power *does* this time.
+ *
+ * The power already said that when it was granted. Letting the model restate
+ * it at the moment of use is letting it restate it larger, and a power whose
+ * effect is re-described every time it is spent is a power the model is
+ * pricing.
+ */
+const UsePowerSchema = z.object({
+  id: z.string().describe('The id of a power they already have.'),
+})
+
+const USE_POWER: ToolDef = {
+  name: USE_POWER_TOOL,
+  description:
+    'Spend one charge of a power the character has. The charge goes whether or not anything comes of it. This does not decide what happens — it tells you what is now possible, and you still call roll_check for anything uncertain.',
+  input_schema: toolSchema(UsePowerSchema),
 }
 
 const OpeningSchema = z.object({
@@ -848,6 +875,9 @@ Resolve it, then call narrate with what happens.`,
   // earlier as things the player had "already met".
   const level = levelFor(earnedRanks(campaign.character))
   const turnStartedAt = world.clock.elapsed
+  // Spent powers, held for the length of the turn. Anything still pending when
+  // the turn ends is discarded with its charge already gone.
+  const powers: TurnPowers = { permissions: [], pending: [], spent: new Set() }
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
     const lastStep = step === MAX_CHECKS
@@ -868,13 +898,14 @@ Resolve it, then call narrate with what happens.`,
       // which is a harder guarantee than asking nicely for prose. There is no
       // fourth roll available to reach for, and finishing is the only move
       // left on the board.
-      tools: lastStep ? [narrate] : [ROLL_CHECK, RECALL, GRANT_ITEM, GRANT_POWER, narrate],
+      tools: lastStep
+        ? [narrate]
+        : [ROLL_CHECK, RECALL, GRANT_ITEM, GRANT_POWER, USE_POWER, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, recalls, grants, powerGrants, ending, premature } = partitionTurnCalls(
-      toolUses(data)
-    )
+    const { rolls, recalls, grants, powerGrants, powerUses, ending, premature } =
+      partitionTurnCalls(toolUses(data))
 
     if (ending) {
       const text = narrationOf(ending.input)
@@ -926,6 +957,7 @@ Resolve it, then call narrate with what happens.`,
       recalls.length === 0 &&
       grants.length === 0 &&
       powerGrants.length === 0 &&
+      powerUses.length === 0 &&
       premature.length === 0
     ) {
       // The model answered in prose instead of declaring the end of the turn.
@@ -939,8 +971,16 @@ Resolve it, then call narrate with what happens.`,
     messages.push({ role: 'assistant', content: data.content ?? [] })
 
     const results: ContentBlock[] = []
+    // Spends run before rolls. A model that sends `use_power` and `roll_check`
+    // in one message meant them in that order, and resolving the roll first
+    // would drop the permission off its own die card.
+    for (const call of powerUses) {
+      const { kit: next, note } = spendPowerFor(kit, powers, call.input)
+      kit = next
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
+    }
     for (const call of rolls) {
-      const { entry, brief } = rollFor(campaign, kit, call.input)
+      const { entry, brief } = rollFor(campaign, kit, powers, call.input)
       entries.push(entry)
       results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
     }
@@ -1084,6 +1124,81 @@ function grantFor(kit: Kit, now: number, input: unknown): { kit: Kit; note: stri
 }
 
 /**
+ * What a spent power left lying on the table for the rest of this turn.
+ *
+ * Neither of these is a number and neither of them decides anything. A
+ * permission becomes a +0 row on the die card — named, because the reason is
+ * real even when the value is nothing (invariant 18) — and an advantage becomes
+ * a flag the next matching check picks up.
+ */
+interface TurnPowers {
+  /** `permits` powers spent this turn, as die-card rows worth nothing. */
+  permissions: Modifier[]
+  /**
+   * `advantage` powers spent this turn and not yet claimed by a check.
+   *
+   * Held rather than applied because the check that matches has not happened
+   * yet — and if none ever does, these are simply thrown away at the end of the
+   * turn with the charges already gone. That is the point: the player spent it
+   * on the wrong moment, which is a real decision, and refunding it would make
+   * it a free one.
+   */
+  pending: { source: AdvantageSource; applies: Applicability }[]
+  /** Ids spent this turn, so one power cannot be paid for once and used twice. */
+  spent: Set<string>
+}
+
+/**
+ * Spend a charge and report what it made available — never what it did.
+ *
+ * The ordering is the whole rule. The charge is gone before any check is
+ * rolled and without knowing whether one will land, because a power that only
+ * costs you something when it works is not a choice.
+ *
+ * The reply is written to stop the model treating the spend as the outcome. It
+ * says what is now possible and then says, in as many words, that a roll is
+ * still owed — a DM handed "you may now throw fire" and nothing else will write
+ * the guard's death in the next sentence.
+ */
+function spendPowerFor(
+  kit: Kit,
+  powers: TurnPowers,
+  input: unknown
+): { kit: Kit; powers: TurnPowers; note: string } {
+  const raw = (input ?? {}) as { id?: unknown }
+  const { kit: next, power, reason } = spendPower(kit, raw.id, powers.spent)
+
+  if (!power) return { kit, powers, note: reason }
+
+  powers.spent.add(power.id)
+  const left = `${power.charges.now} of ${power.charges.max} left`
+  const effect = powerEffect(power)
+
+  if (effect.advantage) {
+    powers.pending.push(effect.advantage)
+    return {
+      kit: next,
+      powers,
+      note: `${power.name} is spent — ${left}. The next roll it bears on is made twice, keeping the better die. It changes the odds and nothing else: no number moves, and the roll can still fail. If nothing this turn is the kind of thing it helps with, the charge is gone anyway.`,
+    }
+  }
+
+  if (effect.permission) powers.permissions.push(effect.permission)
+  return {
+    kit: next,
+    powers,
+    // Deliberately blunter than the other tool results. Live runs showed the DM
+    // spending the charge and then narrating the result outright — fire thrown,
+    // guard down, no die — which is precisely the failure this whole shape
+    // exists to prevent. The usual "most turns are not checks" guidance is
+    // right about most turns and wrong about this one: reaching for a power is
+    // the character betting something scarce on a moment, and a bet that cannot
+    // fail is not a bet.
+    note: `${power.name} is spent — ${left}.${power.permits ? ` They can now ${power.permits}.` : ''} That is a permission, not a result. Do NOT narrate whether it worked. Call roll_check now, for the thing they were trying to achieve with it, at a difficulty the fiction sets — spending a charge is the character betting something scarce on a moment, and it has to be able to fail. If you narrate this without rolling, the power has decided the outcome, and it must not.`,
+  }
+}
+
+/**
  * Answer a `grant_power`, and say what it turned out to be.
  *
  * Every refusal here is a thing that happens in ordinary play — the character
@@ -1143,10 +1258,18 @@ function grantPowerFor(
   }
 }
 
-/** Resolve one `roll_check` call into a transcript entry and a model briefing. */
+/**
+ * Resolve one `roll_check` call into a transcript entry and a model briefing.
+ *
+ * `powers` is mutated: a pending advantage is *claimed* by the first check it
+ * bears on, and claiming it has to be visible to the next check in the same
+ * pass. Threading it back through a return value would work too, and would be
+ * one more thing to forget at the second call site.
+ */
 function rollFor(
   campaign: Campaign,
   kit: Kit,
+  powers: TurnPowers,
   input: unknown
 ): { entry: CheckEntry; brief: string } {
   const raw = (input ?? {}) as {
@@ -1189,8 +1312,20 @@ function rollFor(
   // pack cannot eat the ±6 budget the scene is entitled to.
   modifiers.push(...kitModifiers(kit, raw.items, attribute, skill))
   modifiers.push(...situational)
+  // Permissions ride along at +0 and are not clamped with the situational set,
+  // because there is nothing to clamp. They are on the card so the player can
+  // see *why* a thing they could not do a moment ago is suddenly a roll — the
+  // same reason a +0 item trait is named (invariant 18).
+  modifiers.push(...powers.permissions)
 
-  const outcome = resolveCheck({ dc, modifiers })
+  // The first check a spent advantage bears on claims it. Anything left over at
+  // the end of the turn is simply gone, charge included.
+  const claimed = powers.pending.filter(entry => appliesTo(entry.applies, attribute, skill))
+  if (claimed.length > 0) {
+    powers.pending = powers.pending.filter(entry => !claimed.includes(entry))
+  }
+
+  const outcome = resolveCheck({ dc, modifiers, advantage: claimed.map(entry => entry.source) })
 
   const entry: CheckEntry = {
     kind: 'check',
@@ -1205,10 +1340,14 @@ function rollFor(
     total: outcome.total,
     margin: outcome.margin,
     band: outcome.band,
+    ...(outcome.twice ? { twice: outcome.twice } : {}),
   }
 
   const sign = outcome.margin >= 0 ? '+' : ''
   const brief = [
+    outcome.twice
+      ? `Rolled twice for ${outcome.twice.reason}, keeping the ${outcome.twice.direction === 'advantage' ? 'better' : 'worse'} of ${outcome.roll} and ${outcome.twice.discarded}.`
+      : '',
     `Rolled ${outcome.roll} on a d20, ${outcome.modifier >= 0 ? '+' : ''}${outcome.modifier} = ${outcome.total} against DC ${outcome.dc}.`,
     `Margin ${sign}${outcome.margin}.`,
     `${BAND_LABEL[outcome.band]}. ${BAND_BRIEF[outcome.band]}`,
@@ -1218,7 +1357,9 @@ function rollFor(
     // time a roll comes back; the move quoted next to the number does not.
     `YOUR MOVE: ${BAND_MOVE[outcome.band]}`,
     'Narrate this outcome. Do not restate the numbers — the player can already see them.',
-  ].join(' ')
+  ]
+    .filter(Boolean)
+    .join(' ')
 
   return { entry, brief }
 }
@@ -1304,7 +1445,40 @@ function sheetBlock(campaign: Campaign): string {
   return `THE CHARACTER
 ${c.name} — ${c.concept}
 Attributes: ${attributes}
-Earned skills: ${skills}`
+Earned skills: ${skills}${powersBlock(campaign.kit)}`
+}
+
+/**
+ * The powers the character actually has, by id, or nothing.
+ *
+ * Without this `use_power` is a tool the model cannot reach: it is asked for
+ * the id of a power the kit holds and never told what the kit holds. Live runs
+ * bore that out exactly — a power the player named in their own message got
+ * spent, because the model could guess the id from their words, and a power
+ * they referred to by name got ignored every single time.
+ *
+ * Charges are shown because "you have this" and "you have this, twice more" are
+ * different pieces of advice, and a DM that cannot see the counter will reach
+ * for a spent power and have to be refused.
+ *
+ * Nothing is printed when there are no powers. The prompt is the DM's version
+ * of the sheet, and invariant 17 applies to it for the same reason it applies
+ * to the player's: a heading with nothing under it is an invitation to invent
+ * something to put there.
+ */
+function powersBlock(kit: Kit): string {
+  if (kit.powers.length === 0) return ''
+
+  const lines = kit.powers.map(power => {
+    const what =
+      power.shape === 'permits'
+        ? `lets them ${power.permits || 'do something they otherwise could not'}`
+        : 'makes one roll it bears on come up twice, keeping the better die'
+    const spent = power.charges.now <= 0 ? ' — SPENT, they cannot use this now' : ''
+    return `  ${power.id} "${power.name}" — ${what}. ${power.charges.now}/${power.charges.max} charges${spent}.`
+  })
+
+  return `\nThings they can do (call use_power with the id, and they still roll afterwards):\n${lines.join('\n')}`
 }
 
 function format(value: number): string {
