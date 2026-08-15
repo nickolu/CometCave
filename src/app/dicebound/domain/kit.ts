@@ -286,7 +286,7 @@ export function chargesRestored(before: Kit, after: Kit): number {
 
 // -------------------------------------------------------------- validation
 
-function validateApplicability(value: unknown): Applicability {
+export function validateApplicability(value: unknown): Applicability {
   if (!isPlainObject(value)) return {}
 
   const attributes = Array.isArray(value.attributes)

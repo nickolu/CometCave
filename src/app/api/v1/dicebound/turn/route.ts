@@ -74,20 +74,18 @@ import {
 } from '@/app/dicebound/domain/dice'
 import {
   type Applicability,
+  type Item,
   type Kit,
   MAX_ITEMS,
   MAX_TIER,
   MIN_TIER,
   POWER_SHAPES,
   type PowerShape,
-  QUALITIES,
-  type Quality,
   addItem,
   addPower,
   appliesTo,
   canGrantPower,
   chargesRestored,
-  itemFromGrant,
   kitModifiers,
   levelFor,
   powerEffect,
@@ -95,6 +93,7 @@ import {
   restFor,
   restore,
   spendPower,
+  validateApplicability,
 } from '@/app/dicebound/domain/kit'
 import {
   type ClassShape,
@@ -115,7 +114,15 @@ import {
   creditSkills,
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
-import { bool } from '@/app/dicebound/domain/validate'
+import { bool, boundedInt, isPlainObject, oneOf, slug, str } from '@/app/dicebound/domain/validate'
+import {
+  PROVENANCES,
+  type Provenance,
+  describeQuality,
+  rollQuality,
+  traitsFor,
+  worthOf,
+} from '@/app/dicebound/domain/loot'
 import {
   EDGE_KINDS,
   ENTITY_KINDS,
@@ -477,48 +484,53 @@ const RECALL: ToolDef = {
   input_schema: toolSchema(RecallSchema),
 }
 
+const ProvenanceEnum = z.enum(['underfoot', 'given', 'bought', 'taken', 'hoard'] as const)
+
 const GrantItemSchema = z.object({
-  id: z.string().describe('Stable lowercase slug. Reuse it if the character already has this.'),
-  name: z.string().describe('What the player would call it.'),
-  note: z.string().optional().describe('One line: what it is and where it came from.'),
-  quality: z
-    .enum(QUALITIES as unknown as [Quality, ...Quality[]])
-    .describe(
-      'How good it is. Almost everything is plain — a rope is a permission, not a bonus. Reserve storied for things the story made a moment of.'
-    ),
-  origin: z
+  name: z
+    .string()
+    .describe('What the player would call it. The game slugs this into a stable id — reuse the same name for the same thing.'),
+  note: z
     .string()
     .optional()
-    .describe('The id of the person, place or thing it came from, if the world knows one.'),
+    .describe('One line: what it is and where it came from, as the player would understand it.'),
+  how: ProvenanceEnum.describe(
+    'How it arrived. underfoot: lying around; given: handed over; bought: paid for; taken: off something that did not want to give it up; hoard: from a cache or vault. The game rolls the quality from this — do not try to name a quality, and do not describe the object as though it is good.'
+  ),
+  from: z
+    .string()
+    .optional()
+    .describe('The id of the world entity it came from, if any. Looked up — if it does not exist in the graph, the item is still granted.'),
   consumable: z.boolean().optional().describe('True if using it uses it up.'),
-  uses: z.number().int().min(1).max(9).optional().describe('For a consumable, how many.'),
+  uses: z.number().int().min(1).max(9).optional().describe('For a consumable: how many times.'),
   traits: z
     .array(
       z.object({
         label: z
           .string()
-          .describe(
-            'What is true because they have it, as the player would say it: "you have rope".'
-          ),
+          .describe('What is true because they have it, as the player would say it: "you have rope". The game assigns the number.'),
         applies: z
           .object({
             attributes: z.array(AttributeEnum).optional(),
             skills: z.array(SkillEnum).optional(),
           })
           .optional()
-          .describe(
-            'Leave empty when it bears on everything. Name attributes or skills to narrow it.'
-          ),
+          .describe('Leave empty when it applies everywhere. Name attributes or skills to narrow it.'),
       })
     )
     .max(2)
-    .optional(),
+    .optional()
+    .describe('Labels only. The game decides which ones survive and what they are worth.'),
+  replace: z
+    .string()
+    .optional()
+    .describe('Id of an item already in the pack to swap out. Use this when the pack is full and the player chose what to put down.'),
 })
 
 const GRANT_ITEM: ToolDef = {
   name: GRANT_ITEM_TOOL,
   description:
-    'Give the character something to carry. Call this only when the fiction actually hands it over — they picked it up, were given it, took it. Do not call it to describe scenery. The game decides what the thing is worth; you decide what it is.',
+    'Give the character something to carry. Call only when the fiction hands it over — picked up, given, taken. Name the thing and how it arrived; the game decides what it is worth. Do not name a quality and do not describe it as powerful.',
   input_schema: toolSchema(GrantItemSchema),
 }
 
@@ -1035,7 +1047,7 @@ Resolve it, then call narrate with what happens.`,
       results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
     }
     for (const call of grants) {
-      const { kit: next, note } = grantFor(kit, world.clock.elapsed, call.input)
+      const { kit: next, note } = grantFor(kit, world, call.input)
       kit = next
       results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
@@ -1196,25 +1208,99 @@ function recallFor(world: World, input: unknown): string {
  * nothing on the die, it describes a sword. That is the same loop `roll_check`
  * runs — commit first, then narrate around a number you did not choose.
  */
-function grantFor(kit: Kit, now: number, input: unknown): { kit: Kit; note: string } {
-  const item = itemFromGrant((input ?? {}) as Record<string, unknown>, now)
-  if (!item)
-    return { kit, note: 'That did not describe a thing anyone could pick up. Nothing was added.' }
+function grantFor(
+  kit: Kit,
+  world: World,
+  input: unknown
+): { kit: Kit; note: string } {
+  const now = world.clock.elapsed
+  const raw = isPlainObject(input) ? input : {}
 
-  const { kit: next, added } = addItem(kit, item)
-  if (!added) {
+  const name = str(raw.name, 80).trim()
+  if (!name) {
+    return { kit, note: 'That did not describe a thing anyone could pick up. Nothing was added.' }
+  }
+
+  const id = slug(name)
+
+  // Duplicate guard — same id or same normalised name
+  const existing = kit.items.find(
+    i => i.id === id || i.name.trim().toLowerCase() === name.toLowerCase()
+  )
+  if (existing) {
     return {
       kit,
-      note: `They are carrying ${MAX_ITEMS} things already and cannot take ${item.name} as well. Say so in the fiction and let them choose what to put down.`,
+      note: `${existing.name} is already in the pack. Nothing was added.`,
     }
   }
 
-  const worth = item.traits.filter(trait => trait.bonus !== 0)
+  // Roll the band from provenance — the model does not choose this
+  const provenance = oneOf(raw.how, PROVENANCES, 'underfoot' as Provenance)
+  const band = rollQuality(provenance, Math.random)
+
+  // Traits: labels from model, bonuses from band
+  const rawTraits = Array.isArray(raw.traits) ? raw.traits : []
+  const labels = rawTraits
+    .filter(isPlainObject)
+    .slice(0, 2)
+    .map(t => ({
+      label: str(t.label, 80).trim() || name,
+      applies: validateApplicability(t.applies),
+    }))
+    .filter(l => l.label.length > 0)
+
+  const traits = traitsFor(band, labels)
+
+  // Origin: looked up in the world graph; unresolvable means null
+  const fromId = typeof raw.from === 'string' ? slug(raw.from) : null
+  const origin = fromId && world.entities[fromId] ? fromId : null
+
+  const consumable = bool(raw.consumable)
+  const uses = boundedInt(raw.uses, 1, 9, 1)
+
+  const item: Item = {
+    id,
+    name,
+    note: str(raw.note, 240),
+    traits,
+    ...(consumable ? { charges: { now: uses, max: uses } } : {}),
+    consumable,
+    origin,
+    gainedAt: now,
+  }
+
+  // Replace path: swap one item for another (pack never grows)
+  const replaceId = typeof raw.replace === 'string' ? slug(raw.replace) : null
+  if (replaceId) {
+    const replaceIdx = kit.items.findIndex(i => i.id === replaceId)
+    if (replaceIdx !== -1) {
+      const items = [...kit.items]
+      items[replaceIdx] = item
+      const next = { ...kit, items }
+      const worth = worthOf(item)
+      return {
+        kit: next,
+        note: `${item.name} is theirs, in place of what they set down. ${describeQuality(band, worth)}.`,
+      }
+    }
+    // Replace target not found — fall through to normal add
+  }
+
+  const { kit: next, added } = addItem(kit, item)
+
+  if (!added) {
+    // Pack full — list contents so the DM can name what to set down
+    const contents = kit.items.map(i => `${i.id} "${i.name}"`).join(', ')
+    return {
+      kit,
+      note: `The pack is full (${MAX_ITEMS} items). They are carrying: ${contents}. Say so in the fiction and have them choose what to put down. When they do, call grant_item again with replace set to the id of what they dropped.`,
+    }
+  }
+
+  const worth = worthOf(item)
   return {
     kit: next,
-    note: worth.length
-      ? `${item.name} is theirs. On the die it is worth ${worth.map(t => `${t.label} ${t.bonus > 0 ? '+' : ''}${t.bonus}`).join(', ')} — no more than that. Narrate it as the thing it is, not as an upgrade.`
-      : `${item.name} is theirs, and it is worth nothing on the die. That is the common case: it is a permission, not a bonus. It may make things possible that were not; it does not make them easier.`,
+    note: `${item.name} is theirs. ${describeQuality(band, worth)}.`,
   }
 }
 
