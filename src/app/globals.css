@@ -717,6 +717,22 @@ body {
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Dicebound — the three suggestions arriving under the composer.
+   They land a beat after the narration the player is still reading, so
+   they fade in rather than snap. Re-keying the list on a new set plays
+   it again. Reduced motion is handled by the global rule above.
+   ─────────────────────────────────────────────────────────────────── */
+
+@keyframes dicebound-suggestions-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dicebound-suggestions {
+  animation: dicebound-suggestions-in 0.3s ease-out;
+}
+
 @media print {
   /* Page break control */
   .break-after-page {

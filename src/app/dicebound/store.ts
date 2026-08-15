@@ -15,7 +15,7 @@ import { create } from 'zustand'
 
 import { getTodayPST, getYesterdayOf } from '@/lib/dates'
 
-import { createCharacter, takeTurn } from './api'
+import { createCharacter, fetchSuggestions, takeTurn } from './api'
 import { type CampaignBackend, nullBackend } from './backend'
 import { type Campaign, MAX_CONCEPT, MAX_PREMISE, newCampaign, withVisit } from './domain/campaign'
 import { applyTurn } from './domain/turn'
@@ -32,12 +32,34 @@ interface DiceboundState {
   /** In-character error text, cleared on the next successful action. */
   error: string | null
   backend: CampaignBackend
+  /**
+   * Three things the player might try, for the composer to offer.
+   *
+   * They belong to the scene rather than to the campaign, so they live here and
+   * are never saved. Deliberately *not* cleared when the player acts: the old
+   * three stay on screen, greyed and untappable, until the new three replace
+   * them. Clearing would collapse the row and shove the composer down the
+   * screen twice a turn, which on a phone means the send button moves under a
+   * thumb that is already reaching for it.
+   */
+  suggestions: string[]
+  /**
+   * Which request the suggestions on screen belong to.
+   *
+   * A turn takes real seconds and a suggestion call is fired after every one of
+   * them, so two can easily be in flight across a fast player's turn. Only the
+   * newest may land — an older one arriving late would offer moves for a scene
+   * that is already two paragraphs back.
+   */
+  suggestSeq: number
 
   attach: (backend: CampaignBackend) => Promise<void>
   begin: (premise: string, concept: string) => Promise<void>
   act: (action: string) => Promise<void>
   abandon: () => Promise<void>
   dismissError: () => void
+  /** Ask for a fresh three. Called by the store itself after anything that moves the story. */
+  refreshSuggestions: () => Promise<void>
 }
 
 function freshCampaign(premise: string, character: Character, now: number): Campaign {
@@ -50,6 +72,8 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
   pending: false,
   error: null,
   backend: nullBackend,
+  suggestions: [],
+  suggestSeq: 0,
 
   /**
    * Point the store at storage and load whatever is there.
@@ -63,7 +87,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
     const stored = await backend.load()
 
     if (!stored) {
-      set({ phase: 'creating', campaign: null })
+      set({ phase: 'creating', campaign: null, suggestions: [] })
       return
     }
 
@@ -71,6 +95,10 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
     const visited = withVisit(stored, today, getYesterdayOf(today))
     set({ phase: 'playing', campaign: visited })
     if (visited !== stored) void backend.save(visited)
+
+    // A returning player finds the three under the scene they left on, rather
+    // than an empty rail until they have taken one more turn (CLAUDE.md 3).
+    void get().refreshSuggestions()
   },
 
   async begin(premise, concept) {
@@ -97,6 +125,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       // send the whole campaign straight back to the endpoint this change
       // exists to stop trusting.
       if (!authoritative) void get().backend.save(opened)
+      void get().refreshSuggestions()
     } catch (error) {
       set({
         pending: false,
@@ -132,6 +161,10 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
 
       set({ campaign: next, pending: false })
       if (!authoritative) void get().backend.save(next)
+      // Fired after the turn is on screen, never awaited. The player is
+      // already reading; the three arrive underneath them a beat later and the
+      // turn never waits on a model whose answer it does not need.
+      void get().refreshSuggestions()
     } catch (error) {
       // Roll the optimistic line back out, so the player can edit and resend
       // rather than staring at an action the story never received.
@@ -145,11 +178,35 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
 
   async abandon() {
     if (get().pending) return
-    set({ phase: 'creating', campaign: null, error: null })
+    // The sequence moves so a call still in flight for the abandoned story
+    // cannot land on the next one.
+    set({
+      phase: 'creating',
+      campaign: null,
+      error: null,
+      suggestions: [],
+      suggestSeq: get().suggestSeq + 1,
+    })
     await get().backend.clear()
   },
 
   dismissError() {
     set({ error: null })
+  },
+
+  async refreshSuggestions() {
+    const campaign = get().campaign
+    if (!campaign || campaign.transcript.length === 0) return
+
+    const seq = get().suggestSeq + 1
+    set({ suggestSeq: seq })
+
+    const token = await get().backend.token()
+    const suggestions = await fetchSuggestions({ token, campaign })
+
+    // A newer turn has already asked, or the story was abandoned underneath
+    // this. Either way these are about a scene that has moved on.
+    if (get().suggestSeq !== seq) return
+    set({ suggestions })
   },
 }))

@@ -28,8 +28,18 @@ import { useDicebound } from './store'
 
 export function DiceboundGame() {
   const { user, loading: authLoading, configured } = useAuth()
-  const { phase, campaign, pending, error, attach, begin, act, abandon, dismissError } =
-    useDicebound()
+  const {
+    phase,
+    campaign,
+    pending,
+    error,
+    suggestions,
+    attach,
+    begin,
+    act,
+    abandon,
+    dismissError,
+  } = useDicebound()
 
   const [sheetOpen, setSheetOpen] = useState(false)
 
@@ -120,7 +130,7 @@ export function DiceboundGame() {
           </p>
         )}
 
-        <Composer onSend={act} disabled={pending} />
+        <Composer onSend={act} disabled={pending} suggestions={suggestions} />
       </div>
 
       {/* Desktop: the sheet is always there. Mobile: it slides over. */}
