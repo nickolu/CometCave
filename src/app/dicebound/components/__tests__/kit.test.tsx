@@ -2,10 +2,10 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { Powers, Standing } from '@/app/dicebound/components/kit'
+import { Items, Powers, SpeciesLine, Standing } from '@/app/dicebound/components/kit'
 import { type Campaign, newCampaign } from '@/app/dicebound/domain/campaign'
 import { RANK_THRESHOLDS, blankAttributes } from '@/app/dicebound/domain/character'
-import type { Power } from '@/app/dicebound/domain/kit'
+import type { Item, Power, Species } from '@/app/dicebound/domain/kit'
 import type { Entity } from '@/app/dicebound/domain/world'
 
 afterEach(cleanup)
@@ -52,6 +52,25 @@ const power = (over: Partial<Power> = {}): Power => ({
   cost: '',
   source: 'keeper-imra',
   gainedAt: 60,
+  ...over,
+})
+
+const species = (over: Partial<Species> = {}): Species => ({
+  name: 'Forest Cat',
+  note: 'grew up in the canopy',
+  trait: { label: 'nimble in branches', bonus: 1, applies: {} },
+  drawback: { label: 'easily distracted by birds', bonus: -1, applies: {} },
+  ...over,
+})
+
+const item = (over: Partial<Item> = {}): Item => ({
+  id: 'rope',
+  name: 'Rope',
+  note: 'coiled hemp, twenty metres',
+  traits: [{ label: 'you have rope', bonus: 0, applies: {} }],
+  consumable: false,
+  origin: null,
+  gainedAt: 0,
   ...over,
 })
 
@@ -147,5 +166,96 @@ describe('Powers', () => {
     expect(screen.getByText('Ember Word')).toBeDefined()
     expect(screen.getByText('no charges left')).toBeDefined()
     expect(screen.getByText('Back after you rest')).toBeDefined()
+  })
+})
+
+describe('SpeciesLine', () => {
+  it('renders nothing when species is null', () => {
+    const { container } = render(<SpeciesLine species={null} />)
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('shows both the trait and the drawback — the cost is the reason the package is interesting', () => {
+    render(<SpeciesLine species={species()} />)
+    expect(screen.getByText(/Forest Cat/)).toBeDefined()
+    expect(screen.getByText(/nimble in branches/)).toBeDefined()
+    expect(screen.getByText(/easily distracted by birds/)).toBeDefined()
+  })
+
+  it('shows species without note when note is empty', () => {
+    render(<SpeciesLine species={species({ note: '' })} />)
+    expect(screen.getByText(/Forest Cat/)).toBeDefined()
+  })
+})
+
+describe('Items', () => {
+  it('renders nothing at all when the pack is empty', () => {
+    // Invariant 17. An empty inventory grid advertises unbuilt systems.
+    const { container } = render(<Items campaign={campaignWith()} />)
+    expect(container.innerHTML).toBe('')
+  })
+
+  it('shows item name, note, and trait label', () => {
+    render(
+      <Items
+        campaign={campaignWith({
+          kit: { ...campaignWith().kit, items: [item()] },
+        })}
+      />
+    )
+    expect(screen.getByText('Rope')).toBeDefined()
+    expect(screen.getByText(/coiled hemp/)).toBeDefined()
+    expect(screen.getByText(/you have rope/)).toBeDefined()
+  })
+
+  it('shows a +0 item trait label without any number', () => {
+    render(
+      <Items
+        campaign={campaignWith({
+          kit: { ...campaignWith().kit, items: [item()] },
+        })}
+      />
+    )
+    expect(screen.getByText(/you have rope/)).toBeDefined()
+    // "+0" must not appear anywhere — a column of zeros reads as a game that
+    // ran out of things to give.
+    expect(screen.queryByText('+0')).toBeNull()
+  })
+
+  it('shows the bonus when it is not zero', () => {
+    render(
+      <Items
+        campaign={campaignWith({
+          kit: {
+            ...campaignWith().kit,
+            items: [item({ traits: [{ label: 'sharp edge', bonus: 1, applies: {} }] })],
+          },
+        })}
+      />
+    )
+    expect(screen.getByText('+1')).toBeDefined()
+  })
+
+  it('resolves origin to a name rather than a slug', () => {
+    render(
+      <Items
+        campaign={campaignWith({
+          kit: { ...campaignWith().kit, items: [item({ origin: 'keeper-imra' })] },
+          world: { ...campaignWith().world, entities: { 'keeper-imra': imra } },
+        })}
+      />
+    )
+    expect(screen.getByText('From Keeper Imra')).toBeDefined()
+  })
+
+  it('drops the from-line rather than printing a slug when the entity is gone', () => {
+    render(
+      <Items
+        campaign={campaignWith({
+          kit: { ...campaignWith().kit, items: [item({ origin: 'keeper-imra' })] },
+        })}
+      />
+    )
+    expect(screen.queryByText(/keeper-imra/)).toBeNull()
   })
 })

@@ -28,7 +28,7 @@
  */
 import type { Campaign } from '@/app/dicebound/domain/campaign'
 import { earnedRanks } from '@/app/dicebound/domain/character'
-import { type Power, levelFor } from '@/app/dicebound/domain/kit'
+import { type Item, type Power, type Species, levelFor } from '@/app/dicebound/domain/kit'
 import type { World } from '@/app/dicebound/domain/world'
 
 function Heading({ children }: { children: React.ReactNode }) {
@@ -78,6 +78,96 @@ export function Powers({ campaign }: { campaign: Campaign }) {
         ))}
       </ul>
     </section>
+  )
+}
+
+/**
+ * Species beside the concept, not in a list.
+ *
+ * It is what the character is, so it lives in the header next to the sentence
+ * they wrote. Both the trait and the drawback are named — the cost is the reason
+ * the package is interesting, and hiding it would make species read as a free bonus.
+ */
+export function SpeciesLine({ species }: { species: Species | null }) {
+  if (!species) return null
+
+  const traitStr = species.trait.label
+  const drawbackStr = species.drawback.label
+
+  return (
+    <p className="mt-1 text-sm text-on-surface-variant">
+      <span className="font-semibold text-on-surface">{species.name}</span>
+      {species.note ? ` — ${species.note}` : ''}
+      {'. '}
+      <span>{traitStr}</span>
+      <span className="mx-1 text-on-surface-variant/50">·</span>
+      <span className="text-on-surface-variant/80">{drawbackStr}</span>
+    </p>
+  )
+}
+
+/**
+ * The pack — what the character is currently carrying.
+ *
+ * Item name, note, and each trait label. The bonus number appears only when it
+ * is not zero: most items are +0 and that is the design, but a column of "+0"
+ * reads as a game that has run out of things to give; the label alone reads as
+ * a description of a rope.
+ *
+ * Nothing renders when the pack is empty. Invariant 17.
+ */
+export function Items({ campaign }: { campaign: Campaign }) {
+  const { items } = campaign.kit
+  if (items.length === 0) return null
+
+  return (
+    <section>
+      <Heading>What you carry</Heading>
+      <p className="mt-1 text-xs text-on-surface-variant/70">
+        {items.length} of 12 slots
+      </p>
+      <ul className="mt-3 flex flex-col gap-3">
+        {items.map(item => (
+          <ItemRow key={item.id} item={item} world={campaign.world} />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ItemRow({ item, world }: { item: Item; world: World }) {
+  const from = item.origin ? (world.entities[item.origin]?.name ?? null) : null
+
+  return (
+    <li className="border-l-2 border-outline-variant/40 pl-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <p className="text-sm font-semibold text-on-surface">{item.name}</p>
+        {item.charges && (
+          <span className="tabular-nums text-xs text-on-surface-variant">
+            {item.charges.now}/{item.charges.max} uses
+          </span>
+        )}
+      </div>
+
+      {item.note && <p className="mt-0.5 text-xs text-on-surface-variant">{item.note}</p>}
+
+      {item.traits.length > 0 && (
+        <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-on-surface-variant/70">
+          {item.traits.map(trait => (
+            <li key={trait.label}>
+              {trait.label}
+              {trait.bonus !== 0 && (
+                <span className="ml-1 font-mono text-ds-tertiary">
+                  {trait.bonus > 0 ? `+${trait.bonus}` : `${trait.bonus}`}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {from && <p className="mt-1 text-xs text-on-surface-variant/60">From {from}</p>}
+    </li>
   )
 }
 
