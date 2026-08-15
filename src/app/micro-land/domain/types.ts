@@ -310,6 +310,12 @@ export interface CreatureBlueprint {
    * killing it. The host's `diet.eats` categories still determine valid hosts.
    */
   parasite?: boolean
+  /**
+   * When true, this species slowly converts dirt tiles to mud as it moves
+   * through them — the "earthworm effect". Mud has 1.3× plant fertility vs
+   * dirt's 1.0×, permanently enriching the soil they pass through.
+   */
+  soilEngineer?: boolean
 }
 
 /**
@@ -649,12 +655,12 @@ export interface Carcass {
  */
 export interface Tombstone {
   id: number
-  x: number        // world tile x, creature centre at death
-  y: number        // world tile y, creature centre at death
-  name: string     // what the player called it
+  x: number // world tile x, creature centre at death
+  y: number // world tile y, creature centre at death
+  name: string // what the player called it
   blueprintId: string
-  ageSeconds: number    // how long it lived
-  generation: number   // which generation
+  ageSeconds: number // how long it lived
+  generation: number // which generation
   mealsEaten: number
   children: number
 }

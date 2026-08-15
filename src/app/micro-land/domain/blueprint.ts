@@ -583,6 +583,7 @@ export function sanitizeBlueprint(
     aura: cleanAura(b.aura),
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
+    soilEngineer: b.soilEngineer === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
