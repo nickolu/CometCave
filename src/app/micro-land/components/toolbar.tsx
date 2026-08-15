@@ -881,6 +881,44 @@ export function Toolbar({
             })}
           </div>
         </div>
+
+        {/* ── Generators ──────────────────────────────────────────── */}
+        <div style={{ marginTop: 8 }}>
+          <div style={{ ...label, marginBottom: 4 }}>Generators</div>
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              flexWrap: 'wrap',
+            }}
+          >
+            {blueprints.map(bp => {
+              const selected = tool.kind === 'spawner' && tool.blueprintId === bp.id
+              return (
+                <button
+                  key={bp.id}
+                  type="button"
+                  className="cc-btn shrink-0"
+                  onClick={() => setTool({ kind: 'spawner', blueprintId: bp.id })}
+                  aria-pressed={selected}
+                  title={`Place ${bp.name} spawner`}
+                  style={{
+                    ...swatchStyle(selected),
+                    minWidth: 62,
+                    borderColor: selected
+                      ? 'var(--cc-mint)'
+                      : 'var(--cc-mint-line)',
+                  }}
+                >
+                  <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
+                    <CreaturePortrait blueprint={bp} size={34} />
+                  </span>
+                  <span style={swatchLabel}>{bp.name}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
       )}
     </footer>
   )
@@ -942,6 +980,15 @@ function heldTool(
     // player removed leaves the tool pointing at nothing until they pick again.
     if (!bp) return { name: 'Creature', swatch: null }
     return { name: bp.name, swatch: <CreaturePortrait blueprint={bp} size={18} /> }
+  }
+
+  if (tool.kind === 'spawner') {
+    const bp = blueprints.find(b => b.id === tool.blueprintId)
+    if (!bp) return { name: 'Generator', swatch: <span style={{ fontSize: 13 }}>⬡</span> }
+    return {
+      name: `${bp.name} spawner`,
+      swatch: <CreaturePortrait blueprint={bp} size={18} />,
+    }
   }
 
   const material = MATERIALS[tool.material]
