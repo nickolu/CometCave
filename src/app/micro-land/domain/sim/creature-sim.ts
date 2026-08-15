@@ -45,7 +45,7 @@ import {
   boxViscosity,
   inBounds,
   liquidAt,
-  seedNativePlants,
+  runWorldGenerators,
   setTile,
   settleOnGround,
   solidAt,
@@ -978,8 +978,8 @@ export function tickCreatures(
   }
 
   // The only thing the world regrows on its own. Animals that die out stay
-  // dead — see `seedNativePlants`.
-  seedNativePlants(w, rng, seasonFactor)
+  // dead — see `runWorldGenerators`.
+  runWorldGenerators(w, dt, rng)
 
   // Decay carcasses and remove expired ones.
   for (const car of w.carcasses) {

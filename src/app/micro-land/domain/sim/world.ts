@@ -819,6 +819,81 @@ export function seedNativePlants(w: WorldState, rng: Rng, seasonFactor = 1): voi
 }
 
 /**
+ * Data-driven replacement for seedNativePlants.
+ *
+ * Fires each enabled generator when its timer expires, seeding one creature per
+ * species per tick. Plants use the same moist-spot preference as the old batch
+ * seeder; animals use findSpawnSpot without preference.
+ *
+ * Lazy-initialises generator entries for any native that slipped in through
+ * establishNativePlants rather than registerBlueprint (e.g. empty-canvas worlds
+ * where the ground picks its own species).
+ */
+export function runWorldGenerators(w: WorldState, dt: number, rng: Rng): void {
+  if (w.dormant) return
+  // Same precondition as seedNativePlants — no point seeding until soil exists.
+  if (!establishNativePlants(w, rng)) return
+
+  // Lazy-init generator entries for natives added by establishNativePlants.
+  for (const id of w.natives) {
+    if (!w.generators.some(g => g.blueprintId === id)) {
+      const bp = w.blueprints[id]
+      if (!bp) continue
+      const plantBp = isPlant(bp)
+      w.generators.push({
+        blueprintId: id,
+        enabled: plantBp,
+        intervalSeconds: plantBp ? PLANT_SEED_INTERVAL : 30,
+        nextSeed: 0,
+      })
+    }
+  }
+
+  const rateScale = Math.max(0.01, TUNING.generatorRateMultiplier)
+
+  for (const entry of w.generators) {
+    if (!entry.enabled) continue
+    if (w.elapsed < entry.nextSeed) continue
+    entry.nextSeed = w.elapsed + entry.intervalSeconds * rateScale
+
+    const bp = w.blueprints[entry.blueprintId]
+    if (!bp) continue
+
+    if (isPlant(bp)) {
+      // Respect global plant and creature caps.
+      if (w.creatures.length >= TUNING.maxCreatures) continue
+      let plants = 0
+      for (const c of w.creatures) {
+        if (isPlant(w.blueprints[c.blueprintId])) plants++
+      }
+      if (plants >= TUNING.maxPlants) continue
+      const speciesCount = w.creatures.filter(c => c.blueprintId === bp.id).length
+      if (speciesCount >= TUNING.plantSpeciesCap) continue
+
+      // Prefer the moistier of two candidate spots — same heuristic as before.
+      const spot1 = findSpawnSpot(w, bp, rng)
+      const spot2 = findSpawnSpot(w, bp, rng)
+      let bestSpot = spot1
+      if (spot1 && spot2 && w.moisture) {
+        const m1 = w.moisture[Math.floor(spot1.y) * WORLD_W + Math.floor(spot1.x)] ?? 0
+        const m2 = w.moisture[Math.floor(spot2.y) * WORLD_W + Math.floor(spot2.x)] ?? 0
+        bestSpot = m2 > m1 ? spot2 : spot1
+      } else {
+        bestSpot = spot1 ?? spot2
+      }
+      if (bestSpot) spawnCreature(w, bp, bestSpot.x, bestSpot.y)
+    } else {
+      // Animal generator — respects the per-species soft cap.
+      if (w.creatures.length >= TUNING.maxCreatures) continue
+      const speciesCount = w.creatures.filter(c => c.blueprintId === bp.id).length
+      if (speciesCount >= TUNING.speciesSoftCap) continue
+      const spot = findSpawnSpot(w, bp, rng)
+      if (spot) spawnCreature(w, bp, spot.x, spot.y)
+    }
+  }
+}
+
+/**
  * Update the moisture field — called once per sim step.
  *
  * Runs at a reduced cadence (every 30 ticks ≈ twice a second) to keep the
