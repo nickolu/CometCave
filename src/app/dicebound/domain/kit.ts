@@ -176,6 +176,27 @@ export const QUALITY_BANDS: Record<Quality, { bonus: number; traits: number }> =
   storied: { bonus: 2, traits: 2 },
 }
 
+export const FALLBACK_SPECIES: Species[] = [
+  {
+    name: 'Stray',
+    note: 'grew up learning to read rooms quickly',
+    trait: { label: 'reads a room before they walk into one', bonus: 1, applies: { attributes: ['wisdom'] } },
+    drawback: { label: 'slow to trust anyone new', bonus: -1, applies: { attributes: ['charm'] } },
+  },
+  {
+    name: 'Wanderer',
+    note: 'spent years moving through unfamiliar places',
+    trait: { label: 'finds the way even without a map', bonus: 1, applies: { attributes: ['wisdom'] } },
+    drawback: { label: 'never quite settles', bonus: -1, applies: { attributes: ['constitution'] } },
+  },
+  {
+    name: 'Scrapper',
+    note: 'learned early that things do not come easily',
+    trait: { label: 'keeps going when others stop', bonus: 1, applies: { attributes: ['constitution'] } },
+    drawback: { label: 'poor at asking for help', bonus: -1, applies: { attributes: ['charm'] } },
+  },
+]
+
 /**
  * Levels. `1 + earned ranks / 3` — ranks are earned on use, so level cannot be
  * granted. Feed this `earnedRanks(character)` and nothing else: it counts only
