@@ -28,7 +28,7 @@ repair, offer real options back rather than picking one — plain language, but
 each option has to change what actually gets built and say what the consequence
 is.
 
-Three things are still explicitly undecided and should not be quietly settled by
+Two things are still explicitly undecided and should not be quietly settled by
 a PR:
 
 - **The name.** "Dicebound" is a placeholder, now committed to a route, a
@@ -36,10 +36,17 @@ a PR:
   and a data migration later.
 - **The tier/level table** for powers. Tier 2 at level 4 is a starting guess and
   it sets how long a campaign takes to feel powerful.
-- **How the player gets an item.** Granting is currently its own `grant_item`
-  tool rather than a field on `narrate`, on the reasoning that a field gets
-  filled in passing while a tool has to be reached for. That was decided in a PR
-  rather than by Nick, is flagged as such, and is one edit to reverse.
+
+**How the player gets an item is settled** (August 2026, with Nick, in #3521).
+Granting is its own `grant_item` tool rather than a field on `narrate`: a field
+beside six others gets filled in while writing prose, a tool has to be reached
+for, and only a tool has a result in which the DM can be told what the thing
+turned out to be worth. It costs a round trip on turns where something is found —
+a known price, and one edit to reverse. Settled in the same breath: **code rolls
+an item's quality band**, from a table weighted by where the thing came from. The
+model names the thing and its provenance and has no field in which to ask for
+better. The spec's wording — that the model proposes a band — was one step away
+from letting the DM choose a bonus, and #3552 corrects it.
 
 ## The game in one paragraph
 

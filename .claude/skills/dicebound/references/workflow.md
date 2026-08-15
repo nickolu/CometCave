@@ -11,19 +11,42 @@ closed: #3517 (GM moves and a word budget), #3518 (a sheet that isn't blank),
 #3519 (the world model, the clock, server-authoritative campaigns) and #3520
 (threads, fuses and loose ends).
 
-Two remain, and neither had child issues written for it, deliberately — their
-shape depended on what the graph looked like once real campaigns had run through
-it. That gate has now cleared: the graph populates from play, reconciles from
-prose, and survives a campaign deep enough to condense.
+Two remain. Neither had child issues written for it at first, deliberately —
+their shape depended on what the graph looked like once real campaigns had run
+through it. That gate has now cleared: the graph populates from play, reconciles
+from prose, and survives a campaign deep enough to condense.
 
-- **#3521 inventory, species and traits.** Item granting and the kit ceiling have
-  landed. Species at creation and the inventory UI have not.
-- **#3522 powers, classes and levels.** Not started. Blocked on the tier/level
-  table, which is Nick's to settle.
+- **#3521 inventory, species and traits.** Six child issues written (#3552–#3557),
+  and `f6c4df21` landed a chunk of the middle of them before they were written —
+  `grant_item` is a real tool, `kitModifiers` reaches the die, and items survive
+  the round-trip. What has _not_ landed is the decision those issues exist to
+  encode: `QUALITY_BANDS` is still keyed on a band **the model names**, and
+  `Provenance` does not exist. #3552 is the correction and it is still the entry
+  point. Species at creation (#3555) is untouched.
 
-Two problems found by measurement rather than by reading are still open, and
-neither is fixed by anything above: run `gh issue list --search dicebound` before
-assuming a bug is new.
+  This bullet has now been wrong in both directions — it once claimed granting
+  had landed when it had not, and then claimed nothing was wired a day after it
+  was. The lesson is not a better status line, it is that there is no such thing:
+  **grep the code for the symbol before you plan around it.** `git log --oneline
+-S <symbol>` answers in one command what this file can only ever guess at.
+
+- **#3522 powers, classes and levels.** Nine child issues (#3558–#3566), in
+  progress. Both gates have cleared. The tier table is settled — kept as
+  `{ 1: 2, 2: 4, 3: 7 }`, with #3566 measuring whether tier 3 is reachable at all
+  before anyone moves it. #3558 came first and had to: seeded starting ranks
+  counted toward level, so `levelFor` returned 2 for a character who had not
+  rolled a die, which made tier 1 grantable on turn 1 and fired class discovery
+  on an empty histogram. `earnedRanks` is now the only thing `levelFor` should
+  ever be fed. #3559 followed in the kit lane — advantage exists in the resolver
+  and on the die card, with **nothing able to trigger it** until `use_power`.
+
+Both of the problems that measurement found rather than reading — turns timing
+out around turn 14, and the DM calling for a roll on turns nobody would call
+uncertain — are fixed and closed. There are no open dicebound bugs as of August
+2026: everything open is the two epics and their fifteen children. Run
+`gh issue list --search dicebound` anyway before assuming a bug is new, and note
+that both of those were found by running the harness rather than by reading the
+code.
 
 ## Picking one up
 
@@ -55,6 +78,33 @@ work is about.
 
 The sustainable shape of a batch is therefore **two issues, not four**: one from
 the UI lane, one from whichever server lane is active.
+
+### Both epics are live at once, so lanes now cross them
+
+Fifteen children are open across #3521 and #3522, and the lane rule is about
+**files, not epics** — an issue from the kit epic and an issue from the powers
+epic that both want `turn/route.ts` collide exactly as hard as two from the same
+epic. Every child issue states its own lane at the bottom; the contention that
+exists today is:
+
+| File                   | Wanted by                                                                              |
+| ---------------------- | -------------------------------------------------------------------------------------- |
+| `turn/route.ts`        | #3553, #3554, #3557, #3560, #3561, #3562, #3563 — **one at a time, across both epics** |
+| `domain/kit.ts`        | #3553, #3554, #3557, #3560, #3564                                                      |
+| `domain/dice.ts`       | #3559 (advantage), and #3553 reads its clamps                                          |
+| `components/sheet.tsx` | #3556 (the pack), #3565 (powers, level, class)                                         |
+| `domain/character.ts`  | #3558 — touches nothing else, which is why it is safe to run first and beside anything |
+| `character/route.ts`   | #3555 (species) — uncontended, the easiest thing to put in a parallel slot             |
+| `scripts/`             | #3566 — harness lane, runs beside anything                                             |
+
+Two entry points, one per epic, and they are not interchangeable. **#3552** is
+pure domain and blocks the granting issue. **#3558** must land before anything
+else in the powers epic, because seeded starting ranks currently count toward
+level — `levelFor` returns 2 for a character who has not rolled a die, which
+makes tier 1 grantable on turn 1.
+
+A good batch today is one turn-lane issue, one of #3552/#3555/#3558, and at most
+one of the two sheet issues.
 
 ## Never stack PRs
 
@@ -142,14 +192,29 @@ write landed in Firestore rather than trusting the absence of an error.
 
 ## The two remaining sprints
 
-[#3521](https://github.com/nickolu/CometCave/issues/3521) and
-[#3522](https://github.com/nickolu/CometCave/issues/3522) still have **no child
-issues**, and the original reason has expired — the graph has now run through
-real campaigns, so their shape is knowable.
+[#3521](https://github.com/nickolu/CometCave/issues/3521) was exploded with Nick
+in August 2026, once the graph had run through real campaigns and its shape was
+knowable. Six children, #3552–#3557, ordered and lane-tagged in the epic body.
+Two decisions were settled at the same time and are recorded there: granting is
+its own `grant_item` tool rather than a field on `narrate`, and **code rolls an
+item's quality band** — the model names the thing and where it came from, and
+never proposes a band, because a DM that wants the player to have a good sword
+says "legendary".
 
-What has not expired is who writes them. Do not invent children for either
-without Nick, and #3522 in particular cannot start until the tier/level table is
-settled, because that number decides how long a campaign takes to feel powerful.
+[#3522](https://github.com/nickolu/CometCave/issues/3522) was exploded with Nick
+in August 2026, in the same week. Nine children, #3558–#3566, ordered and
+lane-tagged in the epic body. Three decisions were settled at the same time and
+are recorded there: **level counts only ranks earned in play** (seeded starting
+skills stop counting, which is #3558 and comes first); the **tier table stays at
+`{ 1: 2, 2: 4, 3: 7 }` and gets measured** rather than adjusted on feel, because
+nobody yet knows whether level 7 is reachable in a campaign anyone finishes; and
+**class abilities at even levels are cut** — a class is not an entity, so a
+class-granted power has no source that survives a provenance lookup, and the two
+paths in stay granted and emerged.
+
+The two epics overlap in exactly one file. #3556 (the pack on the sheet) and
+#3565 (powers, level and class on the sheet) both edit `components/sheet.tsx`.
+Land one before starting the other.
 
 #3520 closed without ever needing children: two of its three scope items arrived
 as a side effect of the world epic, and the third was a UI job. Check whether an
