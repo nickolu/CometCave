@@ -21,6 +21,8 @@ export const QUALITY_BANDS: Record<QualityBand, { traits: number; bonuses: numbe
   storied: { traits: 2, bonuses: [2, 0] },
 }
 
+export const PROVENANCES: readonly Provenance[] = ['underfoot', 'given', 'bought', 'taken', 'hoard']
+
 // Five provenances, weights ported from tap-tap-adventure's RARITY_TABLES.
 // All tables must sum to exactly 1.0.
 export const PROVENANCE_TABLES: Record<Provenance, { band: QualityBand; weight: number }[]> = {

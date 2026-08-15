@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { MAX_TRAIT } from '@/app/dicebound/domain/kit'
 import {
+  PROVENANCES,
   PROVENANCE_TABLES,
   QUALITY_BANDS,
   type Provenance,
@@ -26,6 +27,18 @@ function lcgRng(seed = 1): () => number {
     return (s >>> 0) / 0x100000000
   }
 }
+
+describe('PROVENANCES', () => {
+  it('contains all five provenance keys', () => {
+    expect(PROVENANCES).toEqual(['underfoot', 'given', 'bought', 'taken', 'hoard'])
+  })
+
+  it('matches the keys of PROVENANCE_TABLES', () => {
+    const tableKeys = Object.keys(PROVENANCE_TABLES).sort()
+    const arrayValues = [...PROVENANCES].sort()
+    expect(arrayValues).toEqual(tableKeys)
+  })
+})
 
 describe('PROVENANCE_TABLES', () => {
   const provenances = Object.keys(PROVENANCE_TABLES) as Provenance[]
