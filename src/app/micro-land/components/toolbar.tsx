@@ -880,43 +880,43 @@ export function Toolbar({
               )
             })}
           </div>
-        </div>
 
-        {/* ── Generators ──────────────────────────────────────────── */}
-        <div style={{ marginTop: 8 }}>
-          <div style={{ ...label, marginBottom: 4 }}>Generators</div>
-          <div
-            style={{
-              display: 'flex',
-              gap: 6,
-              flexWrap: 'wrap',
-            }}
-          >
-            {blueprints.map(bp => {
-              const selected = tool.kind === 'spawner' && tool.blueprintId === bp.id
-              return (
-                <button
-                  key={bp.id}
-                  type="button"
-                  className="cc-btn shrink-0"
-                  onClick={() => setTool({ kind: 'spawner', blueprintId: bp.id })}
-                  aria-pressed={selected}
-                  title={`Place ${bp.name} spawner`}
-                  style={{
-                    ...swatchStyle(selected),
-                    minWidth: 62,
-                    borderColor: selected
-                      ? 'var(--cc-mint)'
-                      : 'var(--cc-mint-line)',
-                  }}
-                >
-                  <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
-                    <CreaturePortrait blueprint={bp} size={34} />
-                  </span>
-                  <span style={swatchLabel}>{bp.name}</span>
-                </button>
-              )
-            })}
+          {/* ── Generators ──────────────────────────────────────────── */}
+          <div style={{ marginTop: 8 }}>
+            <div style={{ ...label, marginBottom: 4 }}>Generators</div>
+            <div
+              style={{
+                display: 'flex',
+                gap: 6,
+                flexWrap: 'wrap',
+              }}
+            >
+              {blueprints.map(bp => {
+                const selected = tool.kind === 'spawner' && tool.blueprintId === bp.id
+                return (
+                  <button
+                    key={bp.id}
+                    type="button"
+                    className="cc-btn shrink-0"
+                    onClick={() => setTool({ kind: 'spawner', blueprintId: bp.id })}
+                    aria-pressed={selected}
+                    title={`Place ${bp.name} spawner`}
+                    style={{
+                      ...swatchStyle(selected),
+                      minWidth: 62,
+                      borderColor: selected
+                        ? 'var(--cc-mint)'
+                        : 'var(--cc-mint-line)',
+                    }}
+                  >
+                    <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
+                      <CreaturePortrait blueprint={bp} size={34} />
+                    </span>
+                    <span style={swatchLabel}>{bp.name}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
         </div>
       )}
