@@ -555,6 +555,58 @@ export function kitModifiers(
   return capKit(out)
 }
 
+/**
+ * Spend one charge on each named item that contributed to a check.
+ *
+ * A consumable is removed from the pack the moment its last charge goes.
+ * A non-consumable charged item (lantern, torch) stays in the pack at zero —
+ * it is still a lantern, just empty. `kitModifiers` already skips items at
+ * zero charges, so the sheet is the only thing that has to say "out".
+ *
+ * Spending happens after the check resolves, against the live kit, not a
+ * snapshot — so a consumable named twice in one turn is spent once, and a
+ * consumable spent on one check is gone before the next even asks about it.
+ */
+export function spendItemCharges(
+  kit: Kit,
+  named: unknown
+): { kit: Kit; consumed: string[] } {
+  if (!Array.isArray(named)) return { kit, consumed: [] }
+
+  // Deduplicate: naming the same item twice spends it once.
+  const wantedIds = new Set(named.map(id => (typeof id === 'string' ? slug(id) : '')).filter(Boolean))
+  if (wantedIds.size === 0) return { kit, consumed: [] }
+
+  const consumed: string[] = []
+  let items = [...kit.items]
+  let changed = false
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    if (!wantedIds.has(item.id)) continue
+    if (!item.charges || item.charges.now <= 0) continue
+
+    if (item.consumable) {
+      // Remove from kit — a used-up torch is gone, not an empty shell.
+      consumed.push(item.name)
+      items = [...items.slice(0, i), ...items.slice(i + 1)]
+      i--
+      changed = true
+    } else {
+      // Decrement — the lantern is still there, just out.
+      const newNow = item.charges.now - 1
+      items[i] = { ...item, charges: { ...item.charges, now: newNow } }
+      if (newNow === 0) consumed.push(`${item.name} (out)`)
+      changed = true
+    }
+  }
+
+  return {
+    kit: changed ? { ...kit, items } : kit,
+    consumed,
+  }
+}
+
 function traitApplies(trait: Trait, attribute: AttributeId, skill: SkillId | null): boolean {
   return appliesTo(trait.applies, attribute, skill)
 }

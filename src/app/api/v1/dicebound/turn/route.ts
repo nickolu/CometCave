@@ -92,6 +92,7 @@ import {
   powerFromGrant,
   restFor,
   restore,
+  spendItemCharges,
   spendPower,
   validateApplicability,
 } from '@/app/dicebound/domain/kit'
@@ -1044,7 +1045,18 @@ Resolve it, then call narrate with what happens.`,
     for (const call of rolls) {
       const { entry, brief } = rollFor(campaign, kit, powers, call.input)
       entries.push(entry)
-      results.push({ type: 'tool_result', tool_use_id: call.id, content: brief })
+
+      // Spend one charge per named item that bore on this check.
+      const rawInput = (call.input ?? {}) as { items?: unknown }
+      const { kit: afterSpend, consumed } = spendItemCharges(kit, rawInput.items)
+      kit = afterSpend
+
+      const fullBrief =
+        consumed.length > 0
+          ? `${brief} ${consumed.map(n => `${n} was used up`).join(', ')}.`
+          : brief
+
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: fullBrief })
     }
     for (const call of grants) {
       const { kit: next, note } = grantFor(kit, world, call.input)
