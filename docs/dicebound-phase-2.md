@@ -384,9 +384,10 @@ Slots, not weight. A cap of around twelve, because a limit that forces a choice
 makes a story and a limit that requires arithmetic does not.
 
 An `Item` is a carried thing with 0–2 traits, optional charges, and an origin
-pointing at the world entity it came from. The model proposes a quality band;
-code assigns the numbers from a rarity table adapted from
-`itemRarityGenerator.ts`, weighted by where the item came from.
+pointing at the world entity it came from. The model names the thing and says where it came from;
+code rolls the quality band from a provenance table adapted from
+`itemRarityGenerator.ts`. There is no field for requesting a better item —
+the provenance is the only input.
 
 Items reach a check the same way situational modifiers do: the DM names which
 ones it is using, and code looks up what they are actually worth. The model can
