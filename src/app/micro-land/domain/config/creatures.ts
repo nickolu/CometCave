@@ -349,6 +349,8 @@ const STALKER = builtin('stalker', {
   death: { becomes: null, particleColor: '#8c4459', particleCount: 10 },
   aura: null,
   glow: 0,
+  // Intelligent pack hunter — capable of social learning and food preparation.
+  canLearnFoodWashing: true,
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -575,6 +577,8 @@ const WOOLLY = builtin('woolly', {
   death: { becomes: null, particleColor: '#f2ece0', particleCount: 8 },
   aura: null,
   glow: 0,
+  // Social herd grazer — learns food preparation by watching herd-mates.
+  canLearnFoodWashing: true,
 })
 
 const DRIFTMOLE = builtin('driftmole', {
@@ -637,6 +641,8 @@ const RIMECLAW = builtin('rimeclaw', {
   death: { becomes: null, particleColor: '#9fc6dd', particleCount: 10 },
   aura: null,
   glow: 0,
+  // Clever apex predator — solitary but cognitively sophisticated enough for tool learning.
+  canLearnFoodWashing: true,
 })
 
 // ---------------------------------------------------------------------------

@@ -606,6 +606,8 @@ export function sanitizeBlueprint(
     warmBlooded: b.warmBlooded === true,
     infraredVision: b.infraredVision === true,
     lateralLine: b.lateralLine === true,
+    polarizedVision: b.polarizedVision === true,
+    canLearnFoodWashing: !!b.canLearnFoodWashing,
     brainSize:
       typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
         ? b.brainSize
