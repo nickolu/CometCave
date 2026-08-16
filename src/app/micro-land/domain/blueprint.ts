@@ -651,6 +651,7 @@ export function sanitizeBlueprint(
       ? (b.biocontrolTargets as unknown[]).filter((s): s is string => typeof s === 'string')
       : undefined,
     biocontrolAgent: b.biocontrolAgent !== undefined ? !!b.biocontrolAgent : undefined,
+    acidSensitive: typeof b.acidSensitive === 'boolean' ? b.acidSensitive : undefined,
     holometabolous: b.holometabolous !== undefined ? !!b.holometabolous : undefined,
     larvaeBlueprint: typeof b.larvaeBlueprint === 'string' ? b.larvaeBlueprint : undefined,
     metamorphosesInto: typeof b.metamorphosesInto === 'string' ? b.metamorphosesInto : undefined,
@@ -690,6 +691,10 @@ export function sanitizeBlueprint(
     alleeThreshold: typeof b.alleeThreshold === 'number' ? Math.max(1, Math.floor(b.alleeThreshold)) : undefined,
     bodyMass: typeof b.bodyMass === 'number' ? Math.max(0.01, b.bodyMass) : undefined,
     kestrelKingdom: typeof b.kestrelKingdom === 'boolean' ? b.kestrelKingdom : undefined,
+    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
+    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
+    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
+    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
     parentalCare: typeof b.parentalCare === 'boolean' ? b.parentalCare : undefined,
     parentalRadius: typeof b.parentalRadius === 'number' ? Math.max(1, b.parentalRadius) : undefined,
     broodProtection: typeof b.broodProtection === 'number' ? Math.max(0.1, Math.min(1, b.broodProtection)) : undefined,
