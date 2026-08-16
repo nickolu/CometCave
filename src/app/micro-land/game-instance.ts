@@ -223,6 +223,9 @@ export class GameInstance {
   private heatmapCurrentBpId: string | null = null
   private heatmapTickCounter = 0
 
+  // --- nutrient overlay ---
+  private nutrientHeatmap: Float32Array | null = null
+
   // --- pointer state ---
   private pointerDown = false
   private grabbed: Creature | null = null
@@ -382,7 +385,7 @@ export class GameInstance {
       const replayWorld = { ...this.world, creatures: snap.creatures }
       this.renderer.render(replayWorld, theme, undefined, undefined, null)
     } else {
-      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap)
+      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.nutrientHeatmap)
     }
   }
 
@@ -493,6 +496,14 @@ export class GameInstance {
           const ty = Math.max(0, Math.min(WORLD_H - 1, Math.round(c.y)))
           this.heatmap[ty * WORLD_W + tx] += 1
         }
+      }
+
+      // --- nutrient overlay ---
+      const nutrientEnabled = useMicroLand.getState().nutrientOverlayEnabled
+      if (nutrientEnabled && w.soilNutrient) {
+        this.nutrientHeatmap = w.soilNutrient
+      } else {
+        this.nutrientHeatmap = null
       }
     }
   }

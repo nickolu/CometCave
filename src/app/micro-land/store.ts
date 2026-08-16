@@ -554,6 +554,9 @@ interface MicroLandState {
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
+  /** When true, render a green soil-fertility heat map across the world. */
+  nutrientOverlayEnabled: boolean
+  setNutrientOverlayEnabled: (enabled: boolean) => void
   soundEnabled: boolean
   setSoundEnabled: (on: boolean) => void
 
@@ -739,6 +742,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replayIndex: 0,
   trailsEnabled: false,
   heatmapBlueprintId: null,
+  nutrientOverlayEnabled: false,
   soundEnabled: false,
 
   setTheme: themeId => set({ themeId }),
@@ -877,6 +881,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
+  setNutrientOverlayEnabled: enabled => set({ nutrientOverlayEnabled: enabled }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 
   enterReplay: snapshots =>
