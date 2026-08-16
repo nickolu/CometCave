@@ -315,6 +315,19 @@ function isNearWater(w: WorldState, c: Creature): boolean {
   return false
 }
 
+/**
+ * True when this creature qualifies as an elder for its species.
+ *
+ * "Elder" = the last 35% of a creature's natural lifespan, and only for species
+ * that have opted into the elder-knowledge mechanic via `bp.elderWisdom`. Elders
+ * get an enhanced sight bonus, always emit food-location scents, and younger kin
+ * nearby learn by proximity. When all elders of a species die, the population
+ * suffers a knowledge gap until new elders emerge.
+ */
+function isElder(c: Creature, bp: CreatureBlueprint): boolean {
+  return (bp.elderWisdom ?? false) && c.ageSeconds > bp.diet.lifespanSeconds * 0.65
+}
+
 export interface SimEvent {
   /**
    * `eaten` is from the victim's side (this species lost one); `ate` is from the
@@ -1413,7 +1426,57 @@ function look(
       : 0
   const diurnalPenalty =
     Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const sight = sightOf(c, bp) * (1 - diurnalPenalty)
+  const baseSight = sightOf(c, bp) * (1 - diurnalPenalty)
+
+  /**
+   * Elder wisdom sight adjustment.
+   *
+   * Elders know where food is — 1.4× sight from accumulated territory knowledge.
+   * Young creatures near an elder learn by proximity — 1.2× sight. Young creatures
+   * with no living elder of their species anywhere suffer a knowledge gap — 0.85×
+   * sight until new elders emerge. Only applies for species with elderWisdom: true.
+   *
+   * The "any elder alive" scan is O(n) but runs only when needed (non-elder of an
+   * elderWisdom species), which is a small subset of the population. The sense
+   * pass is already O(n²), so one extra O(n) scan is acceptable.
+   */
+  let elderWisdomMultiplier = 1
+  if (bp.elderWisdom) {
+    if (isElder(c, bp)) {
+      // Elders get enhanced sight — they know the territory.
+      elderWisdomMultiplier = 1.4
+    } else {
+      // Young creature: check if any elder of this species is alive.
+      let elderAlive = false
+      let elderNearby = false
+      const baseSight2 = baseSight * baseSight
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        const obp = w.blueprints[other.blueprintId]
+        if (!obp) continue
+        if (isElder(other, obp)) {
+          elderAlive = true
+          // Check if this elder is within sight range for proximity learning.
+          const edx = deltaX(cx, other.x)
+          const edy = other.y - cy
+          if (edx * edx + edy * edy <= baseSight2) {
+            elderNearby = true
+            break // near an elder — no need to keep scanning
+          }
+        }
+      }
+      if (elderNearby) {
+        // Learning by proximity — the elder is right here.
+        elderWisdomMultiplier = 1.2
+      } else if (!elderAlive) {
+        // Knowledge gap — no elder of this species left in the world.
+        elderWisdomMultiplier = 0.85
+      }
+      // If elders exist but none are nearby: no bonus, no penalty.
+    }
+  }
+
+  const sight = baseSight * elderWisdomMultiplier
   const sight2 = sight * sight
 
   /**
@@ -1482,6 +1545,10 @@ function look(
           w.scents.length < 200
         ) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
+        }
+        // Elder wisdom: elders always share food location regardless of cooperation.
+        if (isElder(c, bp) && bp.elderWisdom && w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
         }
         c.mood = 'eat'
         c.targetId = null
@@ -1653,6 +1720,12 @@ function look(
           w.scents.length < 200
         ) {
           w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 10 })
+        }
+        // Elder wisdom: elders always share food location with kin regardless of
+        // cooperation level. Their scents last longer (15 s vs 10 s) — the elder's
+        // knowledge of the territory persists in the world after each meal.
+        if (isElder(c, bp) && bp.elderWisdom && w.scents.length < 200) {
+          w.scents.push({ x: c.x, y: c.y, blueprintId: c.blueprintId, decaySeconds: 15 })
         }
         c.mood = 'eat'
         c.targetId = null

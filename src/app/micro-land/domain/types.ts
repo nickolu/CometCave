@@ -544,6 +544,20 @@ export interface CreatureBlueprint {
    * Default false; only meaningful for intelligent social animals.
    */
   canLearnFoodWashing?: boolean
+  /**
+   * Species-level opt-in to the elder knowledge mechanic.
+   *
+   * When true, creatures in the last 35% of their natural lifespan
+   * (`ageSeconds > lifespanSeconds * 0.65`) are "elders" who carry accumulated
+   * cultural knowledge: rare migration routes, drought-time water sources, safe
+   * foraging patches. Elders get a 1.4× sight bonus and always emit food-location
+   * scents after eating (regardless of cooperation level). Younger members near
+   * an elder learn by proximity (+1.2× sight). When no elder of the species
+   * survives anywhere, the population enters a knowledge gap (0.85× sight) until
+   * new elders emerge. Models elephant matriarch and orca grandmother effects.
+   * Default false; only meaningful for long-lived social animals.
+   */
+  elderWisdom?: boolean
 }
 
 /**
