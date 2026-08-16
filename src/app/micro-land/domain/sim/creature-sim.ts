@@ -1411,7 +1411,12 @@ export function tickCreatures(
     // We read the current blueprintId because it may have just been updated above.
     const currentBp = w.blueprints[c.blueprintId] ?? bp
     if (c.lifeStage === 'pupa' && c.pupalTimer !== undefined) {
-      c.pupalTimer -= dt
+      // Pupal diapause: cold temperatures pause development. Issue #3338.
+      // Only tick the timer when the season is warm (seasonFactor >= 0.7);
+      // in deep winter the pupa enters extended diapause and waits.
+      if (seasonFactor >= 0.7) {
+        c.pupalTimer -= dt
+      }
       if (c.pupalTimer <= 0) {
         const adultBpId = currentBp.metamorphosesInto
         const adultBp = adultBpId ? w.blueprints[adultBpId] : undefined
@@ -2471,6 +2476,42 @@ export function tickCreatures(
 }
 
 // ---------------------------------------------------------------------------
+// Larval niche separation helpers. Issue #3337.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns false when a creature's life-stage override suppresses all hunting.
+ *
+ * When adultTrophicLevel === 'none' the adult does not eat at all — models
+ * mayflies and Shimmer Flies that live only to breed. The creature's hunger
+ * is still ticked normally (it was set to 0 at metamorphosis) so starvation
+ * is not immediate; it just can't replenish.
+ */
+function canHuntAtLifeStage(c: Creature, bp: CreatureBlueprint): boolean {
+  if (c.lifeStage === 'adult' && bp.adultTrophicLevel === 'none') return false
+  return true
+}
+
+/**
+ * Returns true if this hunter can eat this prey, accounting for life-stage
+ * trophic overrides.
+ *
+ * When larvalTrophicLevel is set and the hunter is a larva, the prey must
+ * carry that tag rather than any of the normal diet.eats tags. This creates
+ * zero resource competition between larvae and adults of the same species —
+ * the caterpillar eats leaves, the butterfly drinks nectar (or nothing).
+ */
+function canEatAtLifeStage(hunter: Creature, bp: CreatureBlueprint, prey: CreatureBlueprint): boolean {
+  if (bp.id === prey.id) return false
+  if (prey.size > bp.size) return false
+  if (hunter.lifeStage === 'larva' && bp.larvalTrophicLevel) {
+    // Larval stage overrides: use the larvalTrophicLevel tag instead of diet.eats.
+    return prey.tags.includes(bp.larvalTrophicLevel)
+  }
+  return bp.diet.eats.some(tag => prey.tags.includes(tag))
+}
+
+// ---------------------------------------------------------------------------
 // Senses
 // ---------------------------------------------------------------------------
 
@@ -2728,12 +2769,15 @@ function look(
       continue
     }
 
+    // Life-stage trophic override: adult with adultTrophicLevel === 'none' skips
+    // all hunting; larvae use larvalTrophicLevel instead of diet.eats. Issue #3337.
+    if (!canHuntAtLifeStage(c, bp)) continue
     const wantToEat =
       hungry ||
       (bp.clearingMaintainer === true &&
         obp.move.kind === 'root' &&
         other.ageSeconds < SEEDLING_MAX_AGE)
-    if (wantToEat && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
+    if (wantToEat && canEatAtLifeStage(c, bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
@@ -2795,6 +2839,11 @@ function look(
           } else {
             fill *= 0.7
           }
+        }
+        // Pupal vulnerability: pupae are easy, rewarding prey — predator gets extra
+        // fill, making pupae more targeted by opportunistic hunters. Issue #3338.
+        if (other.lifeStage === 'pupa' && obp.pupalVulnerability) {
+          fill *= 1 + obp.pupalVulnerability
         }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
