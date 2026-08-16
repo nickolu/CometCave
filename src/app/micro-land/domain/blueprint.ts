@@ -625,6 +625,7 @@ export function sanitizeBlueprint(
     polarizedSkin: !!b.polarizedSkin,
     uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
+    bioluminescent: b.bioluminescent !== undefined ? !!b.bioluminescent : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
     breedingPhotoperiod: b.breedingPhotoperiod === 'long' || b.breedingPhotoperiod === 'short'
@@ -651,6 +652,7 @@ export function sanitizeBlueprint(
       ? (b.biocontrolTargets as unknown[]).filter((s): s is string => typeof s === 'string')
       : undefined,
     biocontrolAgent: b.biocontrolAgent !== undefined ? !!b.biocontrolAgent : undefined,
+    acidSensitive: typeof b.acidSensitive === 'boolean' ? b.acidSensitive : undefined,
     holometabolous: b.holometabolous !== undefined ? !!b.holometabolous : undefined,
     larvaeBlueprint: typeof b.larvaeBlueprint === 'string' ? b.larvaeBlueprint : undefined,
     metamorphosesInto: typeof b.metamorphosesInto === 'string' ? b.metamorphosesInto : undefined,
@@ -690,12 +692,23 @@ export function sanitizeBlueprint(
     alleeThreshold: typeof b.alleeThreshold === 'number' ? Math.max(1, Math.floor(b.alleeThreshold)) : undefined,
     bodyMass: typeof b.bodyMass === 'number' ? Math.max(0.01, b.bodyMass) : undefined,
     kestrelKingdom: typeof b.kestrelKingdom === 'boolean' ? b.kestrelKingdom : undefined,
+    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
+    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
+    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
+    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
     parentalCare: typeof b.parentalCare === 'boolean' ? b.parentalCare : undefined,
     parentalRadius: typeof b.parentalRadius === 'number' ? Math.max(1, b.parentalRadius) : undefined,
     broodProtection: typeof b.broodProtection === 'number' ? Math.max(0.1, Math.min(1, b.broodProtection)) : undefined,
     broodParasite: typeof b.broodParasite === 'boolean' ? b.broodParasite : undefined,
     broodParasiteHost: Array.isArray(b.broodParasiteHost) ? (b.broodParasiteHost as string[]) : undefined,
+    platypusPhilosophy: typeof b.platypusPhilosophy === 'boolean' ? b.platypusPhilosophy : undefined,
+    toadTaxation: typeof b.toadTaxation === 'boolean' ? b.toadTaxation : undefined,
+    urchinUnion: typeof b.urchinUnion === 'boolean' ? b.urchinUnion : undefined,
     minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
+    rK: typeof b.rK === 'number' ? Math.max(0, Math.min(1, b.rK)) : undefined,
+    matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
+    semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
+    ageReproductionCurve: ['peak-early', 'peak-middle', 'peak-late'].includes(b.ageReproductionCurve as string) ? b.ageReproductionCurve as 'peak-early' | 'peak-middle' | 'peak-late' : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
@@ -734,6 +747,35 @@ export function sanitizeBlueprint(
             }),
           }
         : undefined,
+    patchDependent: b.patchDependent === true,
+    // Coevolution features (#3263–#3267)
+    predatorEscalation: b.predatorEscalation !== undefined ? !!b.predatorEscalation : undefined,
+    preyEscalation: b.preyEscalation !== undefined ? !!b.preyEscalation : undefined,
+    pollinatorSpecialist: b.pollinatorSpecialist !== undefined ? !!b.pollinatorSpecialist : undefined,
+    flowerTubeDepth:
+      typeof b.flowerTubeDepth === 'number'
+        ? clamp(b.flowerTubeDepth, 0, 1, 0.5)
+        : undefined,
+    tongueLength:
+      typeof b.tongueLength === 'number'
+        ? clamp(b.tongueLength, 0, 1, 0.5)
+        : undefined,
+    hostParasiteAttacker: b.hostParasiteAttacker !== undefined ? !!b.hostParasiteAttacker : undefined,
+    hostParasite: b.hostParasite !== undefined ? !!b.hostParasite : undefined,
+    obligatePartner:
+      typeof b.obligatePartner === 'string' && b.obligatePartner.length > 0
+        ? b.obligatePartner
+        : undefined,
+    toxic: b.toxic !== undefined ? !!b.toxic : undefined,
+    toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    dominanceHierarchy: typeof b.dominanceHierarchy === 'boolean' ? b.dominanceHierarchy : undefined,
+    kinSelection: typeof b.kinSelection === 'boolean' ? b.kinSelection : undefined,
+    alarmCaller: typeof b.alarmCaller === 'boolean' ? b.alarmCaller : undefined,
+    aposematic: typeof b.aposematic === 'boolean' ? b.aposematic : undefined,
+    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
+    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
+    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
+    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
   }
 }
 

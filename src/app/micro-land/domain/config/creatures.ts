@@ -366,6 +366,11 @@ const GLIMMER_MOTH = builtin('glimmer-moth', {
   death: { becomes: null, particleColor: '#fff2a8', particleCount: 10 },
   aura: null,
   glow: 0.7,
+  bioluminescent: true,  // emits bioluminescent glow into nearby lightGrid tiles. Issue #3172.
+  // Coevolution annotations. Issue #3263, #3264, #3267.
+  toxic: true,             // aposematic glow warns predators — genuinely toxic. Issue #3267.
+  pollinatorSpecialist: true,  // specialist pollinator adapted to deep-tubed flowers. Issue #3264.
+  tongueLength: 0.7,       // long proboscis reaches deep nectar tubes. Issue #3264.
 })
 
 const MANTIS_SHRIMP = builtin('mantis-shrimp', {
@@ -433,6 +438,7 @@ const FINLING = builtin('finling', {
   glow: 0,
   phenology: { breedingGdd: 500 }, // midsummer spawner like many fish species
   salinityTolerance: { min: 0.3, max: 1.0 },  // euryhaline — tolerates brackish to marine
+  acidSensitive: true,  // freshwater fish are pH-sensitive bioindicators. Issue #3279.
 })
 
 const SPRING_TROUT = builtin('spring-trout', {
@@ -468,6 +474,7 @@ const SPRING_TROUT = builtin('spring-trout', {
   phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
   anadromous: true,  // migrates back to natal headwater to spawn
   flowZonePreference: 'riffle',  // fast oxygenated headwater — its native habitat
+  acidSensitive: true,  // cold-water headwater fish highly acid-sensitive. Issue #3279.
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -543,6 +550,7 @@ const STALKER = builtin('stalker', {
   socialLearningRate: 0.8,
   brainSize: 0.8,  // apex social predator with complex cooperative strategies
   canInnovateTechniques: true,  // smart enough to invent and culturally transmit hunting strategies
+  ageReproductionCurve: 'peak-middle',  // prime-age individuals breed most; pups and elders rarely do. Issue #3261.
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -643,6 +651,8 @@ const CINDER_WYRM = builtin('cinder-wyrm', {
   death: { becomes: 'obsidian', particleColor: '#e2551d', particleCount: 14 },
   aura: null,
   glow: 0.8,
+  rK: 0.9,              // K-strategist: long-lived lava predator, slow breeder. Issue #3256.
+  matingSystem: 'polygyny',  // dominant male breeds; others wait. Issue #3257.
 })
 
 const RUSTBOT = builtin('rustbot', {
@@ -892,6 +902,7 @@ const SKYBLOOM = builtin('skybloom', {
   aura: null,
   glow: 0.1,
   uvNectar: true,
+  flowerTubeDepth: 0.5,  // moderately deep nectar tube — needs a tongue of ≥ 0.4 to access. Issue #3264.
 })
 
 const MOTE = builtin('mote', {
@@ -1161,6 +1172,7 @@ const FLUTTERMOTH = builtin('fluttermoth', {
   death: { becomes: null, particleColor: '#f0e6d0', particleCount: 4 },
   aura: { radius: 14, helps: ['plant'], boost: 1.5, converts: null, convertRate: 0 },
   glow: 0,
+  toxicMimic: true,  // dull brown wings mimic glimmer moth's aposematic pattern. Issue #3267.
 })
 
 const SEEDMITE = builtin('seedmite', {
@@ -1413,6 +1425,8 @@ const CAVE_SALAMANDER = builtin('cave-salamander', {
   aura: null,
   glow: 0,
   brainSize: 0.6,  // cave salamanders navigate complex 3-D environments by smell alone
+  acidSensitive: true,  // amphibians absorb water through skin — highly vulnerable to pH drop. Issue #3279.
+  uvSensitive: true,  // cave-adapted; UV exposure at sky level causes metabolic stress. Issue #3173.
 })
 
 const BAT = builtin('bat', {
@@ -1600,6 +1614,7 @@ const DRAGON = builtin('dragon', {
     convertRate: 0.3,
   },
   glow: 0.7,
+  rK: 0.9,  // apex K-strategist: rare, long-lived, slow to breed. Issue #3256.
 })
 
 const TREX = builtin('trex', {
@@ -1677,6 +1692,7 @@ const TREX = builtin('trex', {
   death: { becomes: 'bone', particleColor: '#4e7a35', particleCount: 14 },
   aura: null,
   glow: 0,
+  rK: 0.9,  // apex predator K-strategist: slow breeder, long-lived. Issue #3256.
 })
 
 const TOWER_FOLK = builtin('tower-folk', {
@@ -1957,6 +1973,9 @@ const UV_BEE = builtin('uv-bee', {
   aura: { radius: 18, helps: ['plant'], boost: 2.2, converts: null, convertRate: 0 },
   glow: 0,
   uvSensitive: true,
+  pollinatorSpecialist: true,  // UV vision adapted to skybloom nectar guides. Issue #3264.
+  tongueLength: 0.6,           // tongue reaches skybloom's moderately-deep tubes. Issue #3264.
+  obligatePartner: 'skybloom', // co-evolved with skybloom — cannot reproduce without it. Issue #3266.
 })
 
 // ---------------------------------------------------------------------------
@@ -2075,6 +2094,8 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   larvaeBlueprint: 'shimmer-larva',
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
   bodyMass: 0.3,  // small flying insect. Issue #3269.
+  rK: 0.1,        // extreme r-strategist: fast egg hatch, short cooldown. Issue #3256.
+  semelparous: true,  // breed once, then die — classic mayfly/fly lifecycle. Issue #3259.
 })
 
 // ---------------------------------------------------------------------------
@@ -2151,6 +2172,7 @@ const MEADOW_LOCUST = builtin('meadow-locust', {
   hemimetabolous: true,
   nymphBlueprint: 'meadow-locust-nymph',
   bodyMass: 0.2,  // medium insect adult. Issue #3269.
+  rK: 0.1,        // r-strategist: lays many eggs quickly. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2537,6 +2559,7 @@ const CLAM = builtin('clam', {
   glow: 0,
   egglayer: true,
   hardShelled: true,
+  rK: 0.1,  // broadcast spawner: many small eggs, short hatch time. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2764,6 +2787,308 @@ const ARCTIC_TERN = builtin('arctic-tern', {
   landmarkMemory: true,
 })
 
+// ---------------------------------------------------------------------------
+// Kestrel — hovering raptor with hereditary monarchy. Issue #3304.
+// ---------------------------------------------------------------------------
+
+const KESTREL = builtin('kestrel', {
+  name: 'Kestrel',
+  blurb: 'Hovers on the wind, scanning for mice. The hungriest one wears the crown.',
+  size: 2,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { r: '#c05020', b: '#3a2010', c: '#e8c090', w: '#d09850' },
+    frames: [
+      ['.rr...rr.', 'rwwwwwwwr', '..rcrrc..', '...r.r...'],
+      ['rwwwwwwwr', '.rr...rr.', '..rcrrc..', '...r.r...'],
+    ],
+    frameMs: 160,
+    faceMotion: true,
+  },
+  body: { mass: 0.35, bounce: 0.1, drag: 0.4, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'fly', speed: 5.5, jump: 0, restlessness: 0.4 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.022,
+    starveSeconds: 55,
+    breedAt: 0.85,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 28 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c05020', particleCount: 8 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  kestrelKingdom: true,
+  bodyMass: 0.35,
+})
+
+// ---------------------------------------------------------------------------
+// Otter — river mammal with Oligarchy mechanic. Issue #3308.
+// ---------------------------------------------------------------------------
+
+const OTTER = builtin('otter', {
+  name: 'Otter',
+  blurb: 'In populations over 15, five emerge as Oligarchs. Three of them are related. They control 60% of the fish. This is simply how rivers work.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#3a2010', w: '#c0a070', g: '#6a4020', r: '#8a5030' },
+    frames: [
+      ['gwg', 'wbw', 'grg'],
+      ['grg', 'wbw', 'gwg'],
+    ],
+    frameMs: 220,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.05, drag: 0.3, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.0, jump: 2, restlessness: 0.5 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.010,
+    starveSeconds: 40,
+    breedAt: 0.7,
+    lifespanSeconds: 250,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#3a2010', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  otterOligarchy: true,
+  bodyMass: 0.8,
+})
+
+// ---------------------------------------------------------------------------
+// Squirrel — forest mammal with Socialism mechanic. Issue #3312.
+// ---------------------------------------------------------------------------
+
+const SQUIRREL = builtin('squirrel', {
+  name: 'Squirrel',
+  blurb: "Forms the Collective at 30+. All nuts are shared. Except Gerald's. Gerald's exemption is \"temporary\" (Season 1). The Collective debates this every winter. Vote always postponed.",
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { r: '#c06020', b: '#5a3010', w: '#f0d0a0', g: '#8a5020' },
+    frames: [
+      ['grg', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'grg'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.1, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.5, jump: 3, restlessness: 0.7 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.007,
+    starveSeconds: 35,
+    breedAt: 0.6,
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c06020', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  squirrelSocialism: true,
+  bodyMass: 0.25,
+})
+
+// ---------------------------------------------------------------------------
+// Vole — small mammal with Voting mechanic. Issue #3315.
+// ---------------------------------------------------------------------------
+
+const VOLE = builtin('vole', {
+  name: 'Vole',
+  blurb: 'Elects a Chief Vole each season via maze ballot. The incumbent exits the maze first. They know the route. Electoral integrity reforms have been proposed 12 times. The maze designer chairs the reform committee.',
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { b: '#4a3020', w: '#c0a070', g: '#6a4a2a', r: '#8a6040' },
+    frames: [
+      ['gbg', 'wrw', 'gbg'],
+    ],
+    frameMs: 280,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.0, jump: 2, restlessness: 0.8 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.007,
+    starveSeconds: 30,
+    breedAt: 0.5,
+    lifespanSeconds: 150,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#4a3020', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  voleVoting: true,
+  bodyMass: 0.05,
+})
+
+// ---------------------------------------------------------------------------
+// Weasel — territorial predator with War Crimes Tribunal mechanic. Issue #3316.
+// ---------------------------------------------------------------------------
+
+const WEASEL = builtin('weasel', {
+  name: 'Weasel',
+  blurb: 'Maintains territorial boundaries. After 3 confrontations, convenes a Tribunal. Three oldest weasels serve as judges. Verdicts rendered in 2 ticks. Compliance rate: 12%. The Tribunal is still considered legitimate.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#3a1a0a', w: '#f0e0c0', g: '#6a3a1a', r: '#c06030' },
+    frames: [
+      ['gbg', 'wrw', '.g.'],
+      ['.g.', 'wrw', 'gbg'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 4.0, jump: 2, restlessness: 0.7 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.012,
+    starveSeconds: 30,
+    breedAt: 0.75,
+    lifespanSeconds: 160,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#3a1a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  weaselTribunal: true,
+  bodyMass: 0.15,
+})
+
+// ---------------------------------------------------------------------------
+// Platypus — Platypus Philosophy. Issue #3309.
+// ---------------------------------------------------------------------------
+
+const PLATYPUS = builtin('platypus', {
+  name: 'Platypus',
+  blurb: 'Lays eggs. Has fur. Has a bill. Has electroreception. The Philosophical Society has been debating this since generation 1. Unresolved.',
+  size: 1,
+  tags: ['meat', 'mammal', 'amphibian'],
+  art: {
+    palette: { b: '#3a2a1a', w: '#8a6a4a', r: '#6a4a2a', g: '#4a6a4a' },
+    frames: [
+      ['bgb', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'bgb'],
+    ],
+    frameMs: 260,
+    faceMotion: true,
+  },
+  body: { mass: 0.6, bounce: 0.05, drag: 0.3, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 2, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.008,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 250,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a2a1a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  platypusPhilosophy: true,
+  bodyMass: 0.15,
+})
+
+// ---------------------------------------------------------------------------
+// Toad — Toad Taxation. Issue #3313.
+// ---------------------------------------------------------------------------
+
+const TOAD = builtin('toad', {
+  name: 'Toad',
+  blurb: 'Sits on water. Charges a crossing fee. Provides no service. Bites creatures that pay. Bites creatures that resist more. Considers this reasonable.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { g: '#3a5a1a', b: '#1a2a0a', w: '#8ab060', y: '#c0b040' },
+    frames: [
+      ['ggy', 'wgw', 'bwb'],
+      ['bwb', 'wgw', 'ggy'],
+    ],
+    frameMs: 300,
+    faceMotion: false,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 0.7, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.8, jump: 3, hop: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.005,
+    starveSeconds: 60,
+    breedAt: 0.8,
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a5a1a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  toadTaxation: true,
+  bodyMass: 0.12,
+})
+
+// ---------------------------------------------------------------------------
+// Sea Urchin — Urchin Union. Issue #3314.
+// ---------------------------------------------------------------------------
+
+const SEA_URCHIN = builtin('sea-urchin', {
+  name: 'Sea Urchin',
+  blurb: 'Member of the Union. On strike. Demands: stronger currents, lower predator density, improved spinal density conditions. Strike entered its 14th year. Non-union urchins are indistinguishable. Membership has doubled.',
+  size: 1,
+  tags: ['plant', 'aquatic'],
+  art: {
+    palette: { p: '#6a2a8a', w: '#e0d0f0', b: '#2a0a4a', g: '#4a1a6a' },
+    frames: [
+      ['wpw', 'pbp', 'wpw'],
+    ],
+    frameMs: 999,
+    faceMotion: false,
+  },
+  body: { mass: 0.3, bounce: 0.0, drag: 0.8, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'swim', speed: 0.5, jump: 0, hop: 0, restlessness: 0.05 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.003,
+    starveSeconds: 80,
+    breedAt: 0.6,
+    lifespanSeconds: 400,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#6a2a8a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  urchinUnion: true,
+  bodyMass: 0.2,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2835,6 +3160,14 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MONITOR_LIZARD,
   BEAVER,
   ARCTIC_TERN,
+  KESTREL,
+  OTTER,
+  SQUIRREL,
+  VOLE,
+  WEASEL,
+  PLATYPUS,
+  TOAD,
+  SEA_URCHIN,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

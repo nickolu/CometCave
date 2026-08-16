@@ -61,8 +61,11 @@ import {
   settleOnGround,
   solidAt,
   spawnCreature,
+  tickAcidRain,
   tickAtmosphericCO2,
   tickCaveNutrient,
+  tickCorridorMask,
+  tickEdgeMask,
   tickMarshDetritus,
   tickMoisture,
   tickMycorrhizalNetwork,
@@ -873,8 +876,11 @@ export function tickCreatures(
   // Count living plants for CO2 absorption
   const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
   tickAtmosphericCO2(w, tickCount, plantCount)
+  tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickEdgeMask(w, tickCount)
+  tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
@@ -891,6 +897,104 @@ export function tickCreatures(
   const speciesCount: Record<string, number> = {}
   for (const c of creatures) {
     speciesCount[c.blueprintId] = (speciesCount[c.blueprintId] ?? 0) + 1
+  }
+
+  // Kestrel Kingdom: at each seasonal boundary, the individual with the most
+  // cumulative meals is crowned Monarch and hunts at 110% speed. The throne
+  // is re-awarded each season with no memory of the previous holder. No
+  // interregnum — if the Monarch dies mid-season kestrels continue normally.
+  // Issue #3304.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.kestrelLastSeasonIdx ?? -1) < currentSeasonIdx) {
+      w.kestrelLastSeasonIdx = currentSeasonIdx
+      let bestMeals = -1
+      let newMonarch: typeof w.creatures[0] | null = null
+      for (const c of w.creatures) {
+        const cbp = w.blueprints[c.blueprintId]
+        c.isMonarch = false  // clear throne from everyone
+        if (!cbp?.kestrelKingdom) continue
+        if (c.mealsEaten > bestMeals) {
+          bestMeals = c.mealsEaten
+          newMonarch = c
+        }
+      }
+      if (newMonarch) {
+        newMonarch.isMonarch = true
+        w.kestrelMonarchId = newMonarch.id
+      } else {
+        w.kestrelMonarchId = undefined
+      }
+    }
+  }
+
+  // Otter Oligarchy: each season elect the 5 fattest otters as oligarchs.
+  // Issue #3308.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.otterLastElectionSeason ?? -1) < currentSeasonIdx) {
+      w.otterLastElectionSeason = currentSeasonIdx
+      // Clear all oligarch flags first
+      for (const c of w.creatures) {
+        c.isOligarch = false
+      }
+      // Rank otters by mealsEaten and elect top 5
+      const otters = w.creatures
+        .filter(c => w.blueprints[c.blueprintId]?.otterOligarchy)
+        .sort((a, b) => b.mealsEaten - a.mealsEaten)
+        .slice(0, 5)
+      const oligarchIdSet = new Set<number>()
+      for (const o of otters) {
+        o.isOligarch = true
+        oligarchIdSet.add(o.id)
+      }
+      w.otterOligarchIds = [...oligarchIdSet]
+    }
+  }
+
+  // Vole Voting: each season elect a Chief Vole.
+  // Incumbent re-elected 80% of the time. Issue #3315.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.chiefVoleLastElectionSeason ?? -1) < currentSeasonIdx) {
+      w.chiefVoleLastElectionSeason = currentSeasonIdx
+      const voles = w.creatures.filter(c => w.blueprints[c.blueprintId]?.voleVoting)
+      if (voles.length > 0) {
+        for (const v of voles) v.isChiefVole = false
+        // Incumbent loyalty: 80% chance to re-elect if still alive
+        const incumbent = voles.find(v => v.id === w.chiefVoleId)
+        if (incumbent && rng() < 0.8) {
+          incumbent.isChiefVole = true
+        } else {
+          // New election — random pick
+          const winner = voles[Math.floor(rng() * voles.length)]
+          winner.isChiefVole = true
+          w.chiefVoleId = winner.id
+        }
+      }
+    }
+  }
+
+  // Squirrel Socialism: when pop > 30 activate the collective.
+  // Issue #3312.
+  {
+    const squirrels = w.creatures.filter(c => w.blueprints[c.blueprintId]?.squirrelSocialism)
+    // Ensure Gerald exists
+    if (squirrels.length > 0 && w.squirrelGeraldId === undefined) {
+      w.squirrelGeraldId = squirrels[0].id
+      squirrels[0].isGerald = true
+    }
+    const wasActive = w.squirrelCollectiveActive ?? false
+    w.squirrelCollectiveActive = squirrels.length > 30
+    if (w.squirrelCollectiveActive && !wasActive) {
+      // Collective just activated — redistribute hunger toward median
+      const hungers = squirrels.map(c => c.hunger).sort((a, b) => a - b)
+      const median = hungers[Math.floor(hungers.length / 2)]
+      for (const s of squirrels) {
+        if (s.id === w.squirrelGeraldId) continue  // Gerald is exempt
+        s.hunger = s.hunger * 0.5 + median * 0.5  // smooth toward median
+      }
+    }
   }
 
   // Invasion front tracking: for each invasive species, record origin and
@@ -938,6 +1042,89 @@ export function tickCreatures(
         if (v) kill(w, v, obp, dead, events, 'starved')
       }
       events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${obp.name} population collapsed from overshoot` })
+    }
+  }
+
+  // --- Otter Oligarchy: 5 oligarchs elected by fish catches each season. Issue #3308. ---
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeason = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.otterLastElectionSeason ?? -1) < currentSeason) {
+      for (const [bpId, cnt] of Object.entries(speciesCount)) {
+        const obp = w.blueprints[bpId]
+        if (!obp?.otterOligarchy) continue
+        w.otterLastElectionSeason = currentSeason
+        const otters = w.creatures.filter(c2 => c2.blueprintId === bpId)
+        for (const o of otters) o.isOligarch = false
+        if (cnt > 15) {
+          const oligarchs = otters.sort((a, b2) => b2.mealsEaten - a.mealsEaten).slice(0, 5)
+          for (const o of oligarchs) o.isOligarch = true
+          w.otterOligarchIds = oligarchs.map(o => o.id)
+          const bloc = oligarchs.slice(0, 3).map(o => `#${o.id}`).join(', ')
+          events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${obp.name} Oligarchy elected. Bloc: ${bloc}. The other two are aware.` })
+        } else {
+          w.otterOligarchIds = []
+        }
+        break
+      }
+    }
+  }
+
+  // --- Squirrel Socialism: collective food sharing when pop > 30. Issue #3312. ---
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const sbp = w.blueprints[bpId]
+    if (!sbp?.squirrelSocialism) continue
+    const wasCollective = w.squirrelCollectiveActive ?? false
+    w.squirrelCollectiveActive = cnt > 30
+    if (w.squirrelCollectiveActive && !wasCollective) {
+      // Find/assign Gerald (lowest id = first squirrel)
+      const squirrels = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      const gerald = squirrels.reduce((g, c2) => (c2.id < g.id ? c2 : g), squirrels[0])
+      if (gerald) {
+        w.squirrelGeraldId = gerald.id
+        gerald.isGerald = true
+        events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${sbp.name} Collective formed. Gerald (#${gerald.id}) retains private stash. Exemption is "temporary". Gerald is thriving.` })
+      }
+    }
+    break
+  }
+
+  // --- Vole Voting: maze ballot; incumbent exits the maze first (they know the route). Issue #3315. ---
+  if (TUNING.seasonPeriod > 0) {
+    const vSeason = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.chiefVoleLastElectionSeason ?? -1) < vSeason) {
+      for (const [bpId, cnt] of Object.entries(speciesCount)) {
+        const vbp = w.blueprints[bpId]
+        if (!vbp?.voleVoting || cnt < 2) continue
+        w.chiefVoleLastElectionSeason = vSeason
+        const voles = w.creatures.filter(c2 => c2.blueprintId === bpId)
+        for (const v of voles) v.isChiefVole = false
+        // Incumbent re-elected 80% of the time (knows the maze route)
+        const incumbentStillAlive = w.chiefVoleId !== undefined && voles.some(v => v.id === w.chiefVoleId)
+        let newChief: typeof voles[0] | null = null
+        if (incumbentStillAlive && rng() < 0.8) {
+          newChief = voles.find(v => v.id === w.chiefVoleId) ?? null
+        } else {
+          newChief = voles[Math.floor(rng() * voles.length)]
+        }
+        if (newChief) {
+          newChief.isChiefVole = true
+          w.chiefVoleId = newChief.id
+          const reElected = incumbentStillAlive && newChief.id === w.chiefVoleId
+          events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${vbp.name} Election: Chief Vole #${newChief.id} ${reElected ? 're-elected' : 'elected'}. Maze designer chairs reform committee. Electoral integrity proposals: 12. Resolved: 0.` })
+        }
+        break
+      }
+    }
+  }
+
+  // Urchin Union: sea urchins strike when population > 15. Issue #3314.
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const ubp = w.blueprints[bpId]
+    if (!ubp?.urchinUnion) continue
+    const wasStriking = w.urchinStrikeActive ?? false
+    w.urchinStrikeActive = cnt > 15
+    if (w.urchinStrikeActive && !wasStriking) {
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${ubp.name} Union on strike. Demands: stronger currents, fewer predators. Management has not responded.` })
     }
   }
 
@@ -1009,13 +1196,20 @@ export function tickCreatures(
     const { w: bw, h: bh } = artSize(bp)
     const body = bodyBox(bp)
 
+    // Reproduction rate multiplier — accumulated by habitat features, consumed in the breed gate.
+    let reproRate = 1
+
     c.ageSeconds += dt
     c.animMs += dt * 1000
     if (c.breedCooldown > 0) {
       const nutrientBoost = (c.nutrientStore ?? 0) > 0.2 ? 1.5 : 1
       // Jellyfish Judiciary verdict: court-granted breeding priority decays cooldown 50% faster. Issue #3303.
       const judiciaryBoost = (c.judiciaryPriorityTimer ?? 0) > 0 ? 1.5 : 1
-      c.breedCooldown -= dt * nutrientBoost * judiciaryBoost
+      // Gerald breeds 20% faster (Squirrel Socialism founder exemption). Issue #3312.
+      const geraldBoost = (bp.squirrelSocialism && c.isGerald) ? 1.2 : 1
+      // Chief Vole breeds 15% faster (Vole Voting electoral advantage). Issue #3315.
+      const chiefVoleBoost = (bp.voleVoting && c.isChiefVole) ? 1.15 : 1
+      c.breedCooldown -= dt * nutrientBoost * judiciaryBoost * geraldBoost * chiefVoleBoost
     }
     // Decay nutrient store over time.
     if (c.nutrientStore) {
@@ -1061,6 +1255,53 @@ export function tickCreatures(
     // Jellyfish Judiciary priority: tick down court-granted breeding bonus. Issue #3303.
     if (c.judiciaryPriorityTimer && c.judiciaryPriorityTimer > 0) {
       c.judiciaryPriorityTimer = Math.max(0, c.judiciaryPriorityTimer - dt)
+    }
+    // Dominance hierarchy: decay rank contest cooldown and rank itself with age. Issue #3227.
+    if (bp.dominanceHierarchy) {
+      if ((c.rankContestCooldown ?? 0) > 0) {
+        c.rankContestCooldown = Math.max(0, (c.rankContestCooldown ?? 0) - dt)
+      }
+      // Rank decays faster as the creature ages.
+      const ageRatio = c.ageSeconds / (bp.diet.lifespanSeconds ?? 100)
+      c.dominanceRank = Math.max(0, (c.dominanceRank ?? 0.5) - 0.00001 * dt * ageRatio)
+    }
+    // Alarm calls: propagate alarm to nearby conspecifics; decrement timer. Issue #3231.
+    if (bp.alarmCaller && (c.alarmCallTimer ?? 0) > 0) {
+      const alarmSight = sightOf(c, bp) * 2
+      const alarmSight2 = alarmSight * alarmSight
+      const acx = c.x + bw / 2
+      const acy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(acx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - acy
+        if (odx * odx + ody * ody <= alarmSight2) {
+          other.mood = 'flee'
+        }
+      }
+      // Caller pays an exposure cost for calling out loud.
+      c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+      c.alarmCallTimer = Math.max(0, (c.alarmCallTimer ?? 0) - dt)
+    }
+    // Kin selection: share food with nearby starving kin every 60 ticks. Issue #3230.
+    if (bp.kinSelection && c.hunger < 0.4 && tickCount % 60 === c.id % 60) {
+      const kinRange2 = 25 // 5 tiles squared
+      const kcx = c.x + bw / 2
+      const kcy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        if (other.hunger < 0.7) continue
+        if ((other.kinGroupId ?? '') !== (c.kinGroupId ?? '')) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(kcx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - kcy
+        if (odx * odx + ody * ody <= kinRange2) {
+          other.hunger = Math.max(0, other.hunger - 0.02)
+          c.hunger = Math.min(1, c.hunger + 0.02)
+          break // share with at most one kin per tick
+        }
+      }
     }
     // Drift state: exit drift when creature leaves water.
     if (c.drifting) {
@@ -1312,6 +1553,74 @@ export function tickCreatures(
     if (o2Level < 0.7 && !bp.tags?.includes('plant')) {
       c.hunger = Math.min(1, c.hunger + 0.0002 * dt * (0.7 - o2Level) / 0.7)  // up to +0.0002/s at O2=0
     }
+    // Acid rain damage: acid-sensitive aquatic species take hunger damage in low-pH water. Issue #3279.
+    if (bp.acidSensitive && w.tilePH) {
+      const ci = Math.round(c.y) * w.width + Math.round(c.x)
+      if (ci >= 0 && ci < w.tilePH.length) {
+        const ph = w.tilePH[ci]
+        if (ph < 5.5) {
+          // Damage proportional to how acidic the water is
+          const acidDamage = (5.5 - ph) / 5.5 * 0.003
+          c.hunger = Math.min(1, c.hunger + acidDamage * dt)
+        }
+      }
+    }
+    // Edge effects: habitat boundary stress increases hunger slightly. Issue #3282.
+    if (w.edgeMask) {
+      const ci = Math.round(c.y) * w.width + Math.round(c.x)
+      if (ci >= 0 && ci < w.edgeMask.length && w.edgeMask[ci]) {
+        c.hunger = Math.min(1, c.hunger + 0.0002 * dt)
+        // Invasive species breed faster at edges (edge release from competition)
+        if (bp.invasive) reproRate *= 1.3
+      }
+    }
+    // Photosynthesis: plant creatures hunger more slowly in bright light. Issue #3171.
+    if (bp.tags?.includes('plant') && w.lightGrid) {
+      const li = Math.round(c.y) * w.width + Math.round(c.x)
+      if (li >= 0 && li < w.lightGrid.length) {
+        const light = w.lightGrid[li]
+        if (light > 0.6) {
+          c.hunger = Math.max(0, c.hunger - 0.0003 * dt)
+        } else if (light < 0.1) {
+          c.hunger = Math.min(1, c.hunger + 0.0003 * dt)
+        }
+      }
+    }
+    // Bioluminescence: creature emits light into lightGrid tiles. Issue #3172.
+    if (bp.bioluminescent && w.lightGrid && tickCount % 30 === c.id % 30) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const R = 4
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+          const dist = Math.sqrt(dx*dx + dy*dy)
+          if (dist > R) continue
+          const li = (cy + dy) * w.width + (cx + dx)
+          if (li >= 0 && li < w.lightGrid.length) {
+            const glow = (1 - dist / R) * 0.8
+            w.lightGrid[li] = Math.min(1, w.lightGrid[li] + glow)
+          }
+        }
+      }
+    }
+    // UV stress: exposed high-altitude tiles damage UV-sensitive species. Issue #3173.
+    if (bp.uvSensitive && w.lightGrid) {
+      const ci = Math.round(c.y) * w.width + Math.round(c.x)
+      if (c.y < 20 && ci >= 0 && ci < w.lightGrid.length && w.lightGrid[ci] > 0.8) {
+        c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
+      }
+    }
+    // Prey escalation: surviving prey slowly builds evasion every 60 ticks. Issue #3263.
+    if (tickCount % 60 === 0 && bp.preyEscalation) {
+      c.escalatedEvasion = Math.min(0.5, (c.escalatedEvasion ?? 0) + 0.002)
+    }
+    // Immunity waning: host-parasite immunity decays over time without re-exposure. Issue #3265.
+    if (tickCount % 300 === 0 && c.parasiteExposure !== undefined) {
+      c.parasiteExposure = Math.max(0, c.parasiteExposure - 0.1)
+    }
+    // Obligate coevolution: faster starvation when partner species is extinct. Issue #3266.
+    if (bp.obligatePartner !== undefined && (speciesCount[bp.obligatePartner] ?? 0) === 0) {
+      c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+    }
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
@@ -1320,6 +1629,23 @@ export function tickCreatures(
       }
     } else {
       c.starving = Math.max(0, c.starving - dt * 2)
+    }
+
+    // Otter Oligarchy extraction: oligarchs drain 5% hunger from nearby non-oligarchs.
+    // Issue #3308.
+    if (tickCount % 60 === 0 && bp.otterOligarchy && c.isOligarch) {
+      const ocx = c.x + bw / 2
+      const ocy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other === c || other.isOligarch) continue
+        if (other.blueprintId !== c.blueprintId) continue
+        const odx = deltaX(ocx, other.x + bw / 2)
+        const ody = (other.y + bh / 2) - ocy
+        if (odx * odx + ody * ody < 64) { // within 8 tiles
+          const extracted = other.hunger * 0.05
+          other.hunger = Math.max(0, other.hunger - extracted)
+        }
+      }
     }
 
     // --- parasitism: drain host, stay fed, detach when host dies ----------
@@ -1667,6 +1993,117 @@ export function tickCreatures(
       }
     }
 
+    // --- Otter Oligarchy: oligarchs extract 5% of catch from nearby otters. Issue #3308. ---
+    if (bp.otterOligarchy && c.isOligarch) {
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId || other.isOligarch) continue
+        const odist = Math.sqrt((other.x - c.x) ** 2 + (other.y - c.y) ** 2)
+        if (odist > 10) continue
+        const fee = 0.05
+        if (other.hunger < 0.85 && c.hunger > 0.1) {
+          other.hunger = Math.min(1, other.hunger + fee)
+          c.hunger = Math.max(0, c.hunger - fee)
+        }
+      }
+    }
+
+    // --- Squirrel Socialism: collective food sharing (except Gerald). Issue #3312. ---
+    if (bp.squirrelSocialism && w.squirrelCollectiveActive) {
+      if (c.isGerald) {
+        // Gerald thrives: breed cooldown drains 20% faster
+        if (c.breedCooldown > 0) c.breedCooldown -= 0.2 * dt
+      } else if (c.hunger < 0.4) {
+        // Find a well-fed conspecific to share from (the collective)
+        for (const donor of w.creatures) {
+          if (donor.id === c.id || donor.blueprintId !== c.blueprintId || donor.isGerald) continue
+          if (donor.hunger > 0.6) continue  // don't take from hungry donors
+          const ddist = Math.sqrt((donor.x - c.x) ** 2 + (donor.y - c.y) ** 2)
+          if (ddist > 12) continue
+          const share = 0.1
+          c.hunger = Math.max(0, c.hunger - share)
+          donor.hunger = Math.min(1, donor.hunger + share)
+          break
+        }
+      }
+    }
+
+    // --- Vole Voting: Chief Vole has a slight speed bonus (knows all the routes). Issue #3315. ---
+    if (bp.voleVoting && c.isChiefVole) {
+      c.vx *= 1 + 0.05 * dt  // tiny incumbent advantage
+      c.vy *= 1 + 0.05 * dt
+    }
+
+    // --- Weasel War Crimes Tribunal: territory conflicts escalate to tribunal. Issue #3316. ---
+    if (bp.weaselTribunal && c.mood === 'hunt') {
+      // Count nearby same-species rivals
+      for (const rival of w.creatures) {
+        if (rival.id === c.id || rival.blueprintId !== c.blueprintId) continue
+        const rdist = Math.sqrt((rival.x - c.x) ** 2 + (rival.y - c.y) ** 2)
+        if (rdist > 6 || rival.mood !== 'hunt') continue
+        // Confrontation detected
+        c.conflictCount = (c.conflictCount ?? 0) + dt * 0.1  // slow accumulation
+        if ((c.conflictCount ?? 0) >= 3 && rng() < 0.001 * dt) {
+          c.conflictCount = 0
+          const VERDICTS = [
+            'relocate burrow 4 tiles east',
+            'forfeit one prey item',
+            'cease and desist territorial scent marking',
+            'issue formal apology via pheromone',
+          ]
+          const verdict = VERDICTS[Math.floor(rng() * VERDICTS.length)]
+          const complied = rng() < 0.12
+          events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} Tribunal verdict: "${verdict}". Complied: ${complied ? 'yes' : 'no'}. Compliance rate: 12%. Tribunal has no enforcement arm.` })
+          if (complied) {
+            // Actually relocate
+            c.x += 4 * (rng() > 0.5 ? 1 : -1)
+          }
+        }
+      }
+    }
+
+    // Platypus Philosophy: periodic existential contemplation. Issue #3309.
+    if (bp.platypusPhilosophy) {
+      if (c.philosophyTimer === undefined) c.philosophyTimer = (TUNING.seasonPeriod / 10) * rng()
+      c.philosophyTimer -= dt
+      if (c.philosophyTimer <= 0) {
+        c.philosophyTimer = TUNING.seasonPeriod / 10
+        c.wisdom = (c.wisdom ?? 0) + 1
+        c.insightTimer = (c.insightTimer ?? 0) + 4
+        const MUSINGS = [
+          'I have a bill but also fur. Am I real?',
+          'I lay eggs but nurse young. What does this mean?',
+          'I have electroreceptors. Most creatures do not. Why?',
+          'The question of platypus existence remains unresolved.',
+          'Is this a bill or a beak? The Philosophical Society is divided.',
+        ]
+        const musing = MUSINGS[Math.floor(rng() * MUSINGS.length)]
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `Platypus (wisdom: ${c.wisdom}): "${musing}"` })
+      }
+    }
+
+    // Toad Taxation: levy a toll on creatures passing near a toad on water. Issue #3313.
+    if (bp.toadTaxation && IS_LIQUID[w.tiles[Math.floor(c.y) * WORLD_W + Math.floor(c.x)]] === 1) {
+      for (const traveler of w.creatures) {
+        if (traveler.id === c.id || traveler.blueprintId === c.blueprintId) continue
+        const tdist = Math.sqrt((traveler.x - c.x) ** 2 + (traveler.y - c.y) ** 2)
+        if (tdist > 3) continue
+        const toll = 0.05
+        if (traveler.hunger < 0.9 && c.hunger > 0.05) {
+          traveler.hunger = Math.min(1, traveler.hunger + toll)
+          c.hunger = Math.max(0, c.hunger - toll)
+          if (rng() < 0.4) {
+            traveler.stunTimer = (traveler.stunTimer ?? 0) + 0.5
+          }
+        }
+      }
+    }
+
+    // Urchin Union strike: strikers refuse to move. Issue #3314.
+    if (bp.urchinUnion && w.urchinStrikeActive) {
+      c.vx = 0
+      c.vy = 0
+    }
+
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
     if (bp.burrowDigger) {
       const digMats = ['dirt', 'mud', 'sand', 'grass', 'snow', 'ash']
@@ -1840,6 +2277,21 @@ export function tickCreatures(
         }
         break
       }
+    }
+
+    // Species-area: compute local habitat patch score for patch-dependent species. Issue #3281.
+    if (bp.patchDependent && tickCount % 120 === c.id % 120) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const tileAtCreature = w.tiles[cy * w.width + cx]
+      let patchScore = 0
+      const R = 10
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+          const ni = (cy + dy) * w.width + (cx + dx)
+          if (ni >= 0 && ni < w.tiles.length && w.tiles[ni] === tileAtCreature) patchScore++
+        }
+      }
+      c.localPatchScore = patchScore
     }
 
     // Landmark homing: navigate back toward memorized home territory. Issue #3326.
@@ -2486,6 +2938,12 @@ export function tickCreatures(
         if (!zones.some(z => bp.biomeRequirements!.includes(z))) continue
       }
 
+      // Obligate coevolution: cannot reproduce without partner species present. Issue #3266.
+      if (bp.obligatePartner !== undefined) {
+        const partnerCount = speciesCount[bp.obligatePartner] ?? 0
+        if (partnerCount === 0) continue  // partner extinct — no reproduction
+      }
+
       // Carrying capacity density penalty. Issue #3287.
       if (bp.populationCap) {
         const pop = speciesCount[c.blueprintId] ?? 0
@@ -2507,6 +2965,37 @@ export function tickCreatures(
         }
       }
 
+      // Semelparous: skip reproduction if already reproduced once. Issue #3259.
+      if (bp.semelparous && c.hasReproduced) continue
+
+      // Polygyny: only the most-fed male within sight breeds. Issue #3257.
+      if (bp.matingSystem === 'polygyny' && c.id % 2 === 0) {
+        const sight = bp.senses?.sight ?? 12
+        const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight && o.id % 2 === 0)
+        if (competitors.some(o => o.mealsEaten > c.mealsEaten)) continue  // dominated — skip
+      }
+
+      // Age-structured reproduction: rate varies by life stage. Issue #3261.
+      if (bp.ageReproductionCurve) {
+        const lifespan = lifespanOf(c, bp) * TUNING.lifespanScale
+        const relAge = Math.min(1, c.ageSeconds / lifespan)
+        let ageFactor = 1
+        if (bp.ageReproductionCurve === 'peak-early') {
+          ageFactor = relAge < 0.3 ? 1.5 : relAge < 0.6 ? 1.0 : 0.4
+        } else if (bp.ageReproductionCurve === 'peak-middle') {
+          ageFactor = relAge < 0.2 ? 0.3 : relAge < 0.7 ? 1.4 : 0.5
+        } else if (bp.ageReproductionCurve === 'peak-late') {
+          ageFactor = relAge < 0.5 ? 0.5 : relAge < 0.85 ? 1.0 : 1.8
+        }
+        if (rng() >= ageFactor) continue
+      }
+
+      // Species-area: small patches suppress reproduction. Issue #3281.
+      if (bp.patchDependent && (c.localPatchScore ?? 100) < 50) {
+        reproRate *= Math.max(0.1, (c.localPatchScore ?? 10) / 50)
+        if (rng() >= reproRate) continue
+      }
+
       /**
        * An animal needs a partner; a plant does not.
        *
@@ -2519,8 +3008,10 @@ export function tickCreatures(
        * that is allowed to make more of itself alone.
        */
       const wantsMate = needsPartner(bp)
-      const mate = wantsMate ? findMate(w, c, bp, dead) : null
-      if (!wantsMate || mate) {
+      // Promiscuous species reproduce without a mate. Issue #3257.
+      const effectiveWantsMate = bp.matingSystem === 'promiscuity' ? false : wantsMate
+      const mate = effectiveWantsMate ? findMate(w, c, bp, dead) : null
+      if (!effectiveWantsMate || mate) {
         // Born between the two of them, which is the whole point of having made
         // them walk to each other.
         //
@@ -2571,7 +3062,7 @@ export function tickCreatures(
             blueprintId: bp.id,
             traits: childTraits,
             generation,
-            hatchIn: TUNING.eggHatchSeconds,
+            hatchIn: TUNING.eggHatchSeconds * (bp.rK !== undefined ? 0.7 + bp.rK * 0.6 : 1),  // r-selected hatch faster
           })
           // Assign nest site when first egg is laid. Issue #3418.
           if (bp.nestBuilder && c.nestX === undefined) {
@@ -2587,6 +3078,11 @@ export function tickCreatures(
             ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
             (bp.slowMetabolism ? 2 : 1) *
             (bp.invasive ? 0.67 : 1)
+          // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
+          if (bp.rK !== undefined) {
+            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
+            c.breedCooldown *= cooldownMultiplier
+          }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -2594,6 +3090,17 @@ export function tickCreatures(
             else if (mate.children % 10 === 0)
               logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
+          }
+          // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+          if (bp.matingSystem === 'monogamy') {
+            const sight = bp.senses?.sight ?? 12
+            const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
+            if (bondMate) c.breedCooldown *= 0.8
+          }
+          // Semelparous: die after first reproduction. Issue #3259.
+          if (bp.semelparous) {
+            c.hasReproduced = true
+            kill(w, c, bp, dead, events, 'aged')
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
@@ -2644,9 +3151,41 @@ export function tickCreatures(
                 child.traits.size = Math.min(1.2, child.traits.size + 0.015)
               } else if (zone && warmZones.has(zone)) {
                 child.traits.size = Math.max(0.8, child.traits.size - 0.015)
+            // Island dwarfism / gigantism: isolated land populations evolve different body sizes. Issue #3271.
+            if (bp.bodyMass !== undefined && bp.move.kind === 'walk') {
+              const cx = Math.floor(c.x), cy = Math.floor(c.y)
+              const ISLAND_RADIUS = 20
+              let waterLeft = false, waterRight = false
+              for (let dx = 1; dx <= ISLAND_RADIUS; dx++) {
+                const rowL = cy * WORLD_W + ((cx - dx + WORLD_W) % WORLD_W)
+                const rowR = cy * WORLD_W + ((cx + dx) % WORLD_W)
+                if (IS_LIQUID[w.tiles[rowL]] === 1) { waterLeft = true }
+                if (IS_LIQUID[w.tiles[rowR]] === 1) { waterRight = true }
+                if (waterLeft && waterRight) break
+              }
+              if (waterLeft && waterRight) {
+                // Isolated island: prey shrink (no predation pressure), predators grow (no competition)
+                const isPrey = bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')
+                const isPredator = bp.diet.eats.includes('meat')
+                if (isPrey) {
+                  // Check if any predator of this species is nearby
+                  const nearPredator = w.creatures.some(p => {
+                    if (p.blueprintId === c.blueprintId) return false
+                    const pbp = w.blueprints[p.blueprintId]
+                    return pbp?.diet.eats.includes('meat') &&
+                      Math.abs(p.x - c.x) < ISLAND_RADIUS && Math.abs(p.y - c.y) < ISLAND_RADIUS
+                  })
+                  if (!nearPredator) child.traits.size = Math.max(0.8, child.traits.size - 0.02)
+                } else if (isPredator) {
+                  child.traits.size = Math.min(1.2, child.traits.size + 0.02)
+                }
               }
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
+            // Kin selection: offspring inherit parent's kin group. Issue #3230.
+            if (bp.kinSelection) {
+              child.kinGroupId = c.kinGroupId ?? (c.blueprintId + '_' + c.id)
+            }
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
             c.children++
@@ -2822,6 +3361,22 @@ export function tickCreatures(
                 }
                 logLife(c, w.elapsed, 'Spawned and spent — returning nutrients to the headwater')
               }
+              // r/K selection cooldown multiplier (same as egglayer path). Issue #3256.
+              if (bp.rK !== undefined) {
+                const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
+                c.breedCooldown *= cooldownMultiplier
+              }
+              // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+              if (bp.matingSystem === 'monogamy') {
+                const sight = bp.senses?.sight ?? 12
+                const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
+                if (bondMate) c.breedCooldown *= 0.8
+              }
+              // Semelparous: die after first reproduction. Issue #3259.
+              if (bp.semelparous) {
+                c.hasReproduced = true
+                kill(w, c, bp, dead, events, 'aged')
+              }
             }
             events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
           } else {
@@ -2916,6 +3471,30 @@ export function tickCreatures(
               hatchling.traits.size = Math.min(1.2, hatchling.traits.size + 0.015)
             } else if (hatchZone && warmZ.has(hatchZone)) {
               hatchling.traits.size = Math.max(0.8, hatchling.traits.size - 0.015)
+          // Island dwarfism / gigantism at egg hatch. Issue #3271.
+          if (ebp.bodyMass !== undefined && ebp.move.kind === 'walk') {
+            const ex = Math.floor(egg.x), ey = Math.floor(egg.y)
+            const ISLAND_R = 20
+            let wL = false, wR = false
+            for (let idx2 = 1; idx2 <= ISLAND_R; idx2++) {
+              if (IS_LIQUID[w.tiles[ey * WORLD_W + ((ex - idx2 + WORLD_W) % WORLD_W)]] === 1) wL = true
+              if (IS_LIQUID[w.tiles[ey * WORLD_W + ((ex + idx2) % WORLD_W)]] === 1) wR = true
+              if (wL && wR) break
+            }
+            if (wL && wR) {
+              const isPrey2 = ebp.diet.eats.includes('plant') && !ebp.diet.eats.includes('meat')
+              const isPred2 = ebp.diet.eats.includes('meat')
+              if (isPrey2) {
+                const nearPred2 = w.creatures.some(p2 => {
+                  if (p2.blueprintId === egg.blueprintId) return false
+                  const p2bp = w.blueprints[p2.blueprintId]
+                  return p2bp?.diet.eats.includes('meat') &&
+                    Math.abs(p2.x - egg.x) < ISLAND_R && Math.abs(p2.y - egg.y) < ISLAND_R
+                })
+                if (!nearPred2) hatchling.traits.size = Math.max(0.8, hatchling.traits.size - 0.02)
+              } else if (isPred2) {
+                hatchling.traits.size = Math.min(1.2, hatchling.traits.size + 0.02)
+              }
             }
           }
           hatchling.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${egg.generation})` }]
@@ -3366,6 +3945,10 @@ function look(
       if (d2 <= sight2 && d2 < threatDist) {
         threatDist = d2
         threat = other
+        // Alarm calls: prey species emit an alarm signal upon detecting a predator. Issue #3231.
+        if (bp.alarmCaller) {
+          c.alarmCallTimer = 5
+        }
       }
       continue
     }
@@ -3377,6 +3960,23 @@ function look(
       if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
+      }
+      // Dominance hierarchy: rank contests between same-species individuals. Issue #3227.
+      if (bp.dominanceHierarchy && d2 <= sight2) {
+        const cooldown = c.rankContestCooldown ?? 0
+        if (cooldown <= 0) {
+          // Contest: higher mealsEaten wins; winner gains rank, loser loses rank.
+          const cRank = c.dominanceRank ?? 0.5
+          const oRank = other.dominanceRank ?? 0.5
+          if (c.mealsEaten >= other.mealsEaten) {
+            c.dominanceRank = Math.min(1, cRank + 0.1)
+            other.dominanceRank = Math.max(0, oRank - 0.05)
+          } else {
+            c.dominanceRank = Math.max(0, cRank - 0.05)
+            other.dominanceRank = Math.min(1, oRank + 0.1)
+          }
+          c.rankContestCooldown = 30
+        }
       }
       continue
     }
@@ -3415,6 +4015,23 @@ function look(
         return
       }
       if (touching) {
+        // Dominance hierarchy food priority: a lower-ranked individual defers to
+        // a higher-ranked conspecific within 2 tiles. Issue #3227.
+        if (bp.dominanceHierarchy) {
+          const cRank = c.dominanceRank ?? 0.5
+          const dominanceReach2 = 4  // 2 tiles squared
+          let dominated = false
+          for (const rival of w.creatures) {
+            if (rival.id === c.id || rival.blueprintId !== c.blueprintId) continue
+            const rdx = deltaX(cx, rival.x + bw / 2)
+            const rdy = rival.y + bh / 2 - cy
+            if (rdx * rdx + rdy * rdy <= dominanceReach2 && (rival.dominanceRank ?? 0.5) > cRank) {
+              dominated = true
+              break
+            }
+          }
+          if (dominated) continue
+        }
         // Chemical defense: a plant that received a mycorrhizal warning signal is
         // primed with volatile compounds — the grazer finds it unpalatable and
         // moves on. The signal decays in 30 s so the defense is temporary.
@@ -3485,11 +4102,53 @@ function look(
         if (bp.stickProber && other.inBurrow) {
           fill *= 0.8
         }
+        // Pollinator specialization: tongue-length match to flower tube depth modifies fill. Issue #3264.
+        if (bp.pollinatorSpecialist && obp.flowerTubeDepth !== undefined) {
+          const myTongue = bp.tongueLength ?? 0.5
+          if (myTongue < obp.flowerTubeDepth * 0.8) {
+            fill = 0  // tongue too short — no access to nectar
+          } else {
+            // Close match bonus: 20% extra fill when tongue fits the tube well
+            const matchBonus = myTongue <= obp.flowerTubeDepth * 1.2 ? 1.2 : 1.0
+            fill *= matchBonus
+          }
+        }
+        // Host-parasite immunity cycling: parasite on a host-parasite target faces immune resistance. Issue #3265.
+        if (bp.hostParasiteAttacker && obp.hostParasite) {
+          const immunity = other.parasiteExposure ?? 0
+          if (rng() < immunity * 0.8) {
+            // Host is immune this cycle — parasite gains nothing
+            fill = 0
+          } else {
+            // Successful parasitism: exposure builds immunity; parasite gets a weak drain only
+            other.parasiteExposure = Math.min(1, (other.parasiteExposure ?? 0) + 0.05)
+            fill *= 0.3
+          }
+        }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
         c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
+        // Predator-prey trait escalation: successful hunts grant a small permanent speed bonus. Issue #3263.
+        if (bp.predatorEscalation) {
+          c.escalatedSpeed = Math.min(0.5, (c.escalatedSpeed ?? 0) + 0.005)
+        }
+        // Weasel War Crimes Tribunal: track conflicts and fire tribunal events.
+        // Issue #3316.
+        if (bp.weaselTribunal && obp.move.kind !== 'root') {
+          c.conflictCount = (c.conflictCount ?? 0) + 1
+          if (c.conflictCount >= 3 && rng() < 0.12) {
+            c.conflictCount = 0  // reset after tribunal
+            events.push({
+              kind: 'notice',
+              blueprintId: bp.id,
+              x: c.x,
+              y: c.y,
+              text: `${c.name ?? 'A ' + bp.name} was brought before the War Crimes Tribunal. The tribunal issued a strongly-worded notice. Compliance rate: 12%.`,
+            })
+          }
+        }
         // Cultural innovation: rare spontaneous food-washing discovery near water.
         if (bp.canLearnFoodWashing && !c.learnedFoodWashing && isNearWater(w, c) && rng() < 0.002) {
           c.learnedFoodWashing = true
@@ -3556,6 +4215,14 @@ function look(
           const toxMod = Math.max(0, 1 - eatImmunity * 0.7)
           c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5 * toxMod)
           c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5 * toxMod)
+        }
+        // Aposematism: eating a brightly-colored toxic prey teaches the predator to avoid
+        // that species in future. Naive predators (mealsEaten < 5) still attack freely. Issue #3237.
+        if (obp.aposematic && obp.toxic) {
+          if (!c.learnedAversions) c.learnedAversions = []
+          if (!c.learnedAversions.includes(obp.id)) {
+            c.learnedAversions.push(obp.id)
+          }
         }
         events.push({
           kind: 'ate',
@@ -3625,6 +4292,25 @@ function look(
       const disrupted =
         obp.disruptivePattern === true && d2 > DISRUPTION_NEAR_TILES * DISRUPTION_NEAR_TILES
       const finalEfs2 = disrupted ? efs2 * DISRUPTION_FAR_FACTOR * DISRUPTION_FAR_FACTOR : efs2
+      // Prey escalation: evasive prey has a chance to dodge targeting. Issue #3263.
+      if (obp.preyEscalation && rng() < (other.escalatedEvasion ?? 0)) continue
+      // Aposematism: predators avoid genuinely toxic species after experience. Issue #3267.
+      if (obp.toxic && bp.diet.eats?.includes('meat') && rng() < 0.7) continue
+      // Aposematism learned aversion: experienced predators avoid aposematic toxic prey. Issue #3237.
+      if (obp.aposematic && obp.toxic && c.mealsEaten >= 5) {
+        const aversions = c.learnedAversions
+        if (aversions && aversions.includes(obp.id) && rng() < 0.9) continue
+      }
+      // Mimicry: harmless mimics get protection proportional to nearby toxic species density. Issue #3267.
+      if (obp.toxicMimic && rng() < 0.2) {
+        const totalNearby = w.creatures.filter(o2 => Math.hypot(o2.x - c.x, o2.y - c.y) < 20).length
+        const toxicNearby = w.creatures.filter(o2 => {
+          const o2bp = w.blueprints[o2.blueprintId]
+          return o2bp?.toxic && Math.hypot(o2.x - c.x, o2.y - c.y) < 20
+        }).length
+        const mimicryProtection = totalNearby > 0 ? Math.min(0.8, (toxicNearby / totalNearby) * 4) : 0
+        if (rng() < mimicryProtection) continue
+      }
       // Biocontrol preference: specialist agents prioritize their target species.
       // Halve the effective distance for biocontrol targets so they always win
       // target selection over non-targets at similar range. Issue #3368.
@@ -4565,6 +5251,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (c.symbiosisTimer > 0 ? 1.15 : 1) *
       (c.insightTimer && c.insightTimer > 0 ? 0.05 : 1) *  // insight pause
       (c.drifting ? 0.4 : 1) *  // drift — slower passive flow
+      (c.isMonarch && c.mood === 'hunt' ? 1.1 : 1) *  // Kestrel Kingdom throne bonus. Issue #3304.
+      (w.corridorMask && w.corridorMask[Math.round(c.y) * w.width + Math.round(c.x)] ? 1.15 : 1) *  // corridor dispersal. Issue #3283.
+      (1 + (c.escalatedSpeed ?? 0)) *   // predator escalation speed bonus. Issue #3263.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
     (1 - diurnalPenalty)

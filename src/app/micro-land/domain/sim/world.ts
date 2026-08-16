@@ -8,6 +8,7 @@ import {
   IS_FERTILE,
   IS_LIQUID,
   IS_SOLID,
+  MATERIAL_BY_INDEX,
   MATERIAL_INDEX,
   VISCOSITY,
 } from '@/app/micro-land/domain/config/materials'
@@ -1036,7 +1037,17 @@ export function tickLight(w: WorldState, tickCount: number): void {
     let light = 1.0
     for (let y = 0; y < WORLD_H; y++) {
       const tileIdx = w.tiles[y * WORLD_W + wrapCol(x)]
-      if (IS_SOLID[tileIdx] === 1) light *= 0.25
+      if (IS_SOLID[tileIdx] === 1) {
+        light *= 0.25
+      } else {
+        // Semi-solid tiles (plants, water) attenuate light partially. Issue #3170.
+        const matId = MATERIAL_BY_INDEX[tileIdx]?.id
+        if (matId === 'plant' || matId === 'leaves' || matId === 'moss' || matId === 'fern' || matId === 'grass' || matId === 'flower') {
+          light *= 0.6  // canopy plants reduce light by 40%
+        } else if (matId === 'water' || matId === 'salt-water') {
+          light *= 0.85  // water reduces light by 15%
+        }
+      }
       w.lightGrid[y * WORLD_W + x] = light
     }
   }
@@ -1410,4 +1421,105 @@ export function tickWebDecay(w: WorldState, tickCount: number, rng: () => number
   }
 }
 
+// Edge effect mask: marks tiles at habitat boundaries. Issue #3282.
+export function tickEdgeMask(w: WorldState, tickCount: number): void {
+  if (tickCount % 300 !== 0) return
+  if (!w.edgeMask) w.edgeMask = new Uint8Array(w.tiles.length)
+  for (let i = 0; i < w.tiles.length; i++) {
+    const t = w.tiles[i]
+    // check 4-connected neighbors
+    const x = i % w.width, y = Math.floor(i / w.width)
+    let isEdge = 0
+    if (x > 0 && w.tiles[i - 1] !== t) isEdge = 1
+    else if (x < w.width - 1 && w.tiles[i + 1] !== t) isEdge = 1
+    else if (y > 0 && w.tiles[i - w.width] !== t) isEdge = 1
+    else if (y < w.height - 1 && w.tiles[i + w.width] !== t) isEdge = 1
+    w.edgeMask[i] = isEdge
+  }
+}
+
+// Corridor mask: thin habitat strips connecting patches. Issue #3283.
+export function tickCorridorMask(w: WorldState, tickCount: number): void {
+  if (tickCount % 600 !== 0) return
+  if (!w.corridorMask) w.corridorMask = new Uint8Array(w.tiles.length)
+  for (let i = 0; i < w.tiles.length; i++) {
+    const t = w.tiles[i]
+    if (t === AIR) { w.corridorMask[i] = 0; continue }  // air
+    const x = i % w.width, y = Math.floor(i / w.width)
+    // Count horizontal and vertical same-type neighbors (range 1)
+    let hCount = 0, vCount = 0
+    for (let d = 1; d <= 3; d++) {
+      if (x - d >= 0 && w.tiles[i - d] === t) hCount++
+      if (x + d < w.width && w.tiles[i + d] === t) hCount++
+      if (y - d >= 0 && w.tiles[i - d * w.width] === t) vCount++
+      if (y + d < w.height && w.tiles[i + d * w.width] === t) vCount++
+    }
+    // A corridor tile has more neighbors in one direction than the other (narrow strip)
+    const isCorridor = (hCount <= 2 && vCount >= 4) || (vCount <= 2 && hCount >= 4)
+    w.corridorMask[i] = isCorridor ? 1 : 0
+  }
+}
+
 export { AIR }
+
+// ---------------------------------------------------------------------------
+// Acid rain from sulfur pollution (Issue #3279)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulates atmospheric sulfur accumulation from lava tiles and the resulting
+ * acid-rain effect on water and moist-soil pH. Marble/limestone tiles buffer.
+ */
+export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => number): void {
+  if (tickCount % 60 !== 0) return
+
+  // Initialise pH grid to neutral if not yet created
+  if (!w.tilePH) {
+    w.tilePH = new Float32Array(w.tiles.length).fill(7.0)
+  }
+
+  // --- Step 1: Lava tiles emit sulfur ---
+  let sulfurEmitted = 0
+  let limestoneCount = 0
+  for (let i = 0; i < w.tiles.length; i++) {
+    const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
+    if (matId === 'lava') sulfurEmitted += 0.0004
+    if (matId === 'marble' || matId === 'limestone') limestoneCount++
+  }
+
+  // --- Step 2: Update atmospheric sulfur (decays naturally, buffered by limestone) ---
+  const bufferFactor = Math.max(0, 1 - limestoneCount * 0.00005)
+  w.atmosphericSulfurPpm = Math.max(
+    0,
+    Math.min(2.0, (w.atmosphericSulfurPpm ?? 0) * 0.98 * bufferFactor + sulfurEmitted)
+  )
+
+  // --- Step 3: Acid rain — lower pH of water and moist tiles proportional to sulfur ---
+  const sulfur = w.atmosphericSulfurPpm ?? 0
+  if (sulfur < 0.1) return  // not enough sulfur for significant acid rain
+
+  for (let i = 0; i < w.tiles.length; i++) {
+    const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
+    const isWater = matId === 'water' || matId === 'salt-water'
+    const isMoist = (w.moisture?.[i] ?? 0) > 0.5
+
+    if (!isWater && !isMoist) continue
+
+    // Acid deposition proportional to sulfur level
+    const acidDeposit = sulfur * 0.15
+    w.tilePH[i] = Math.max(3.0, w.tilePH[i] - acidDeposit)
+
+    // Limestone/marble adjacency buffers pH recovery
+    const x = i % w.width, y = Math.floor(i / w.width)
+    for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]] as [number,number][]) {
+      const ni = (y + dy) * w.width + (x + dx)
+      if (ni >= 0 && ni < w.tiles.length) {
+        const nMat = MATERIAL_BY_INDEX[w.tiles[ni]]?.id
+        if (nMat === 'marble' || nMat === 'limestone') {
+          w.tilePH[i] = Math.min(7.0, w.tilePH[i] + 0.3)
+          break
+        }
+      }
+    }
+  }
+}
