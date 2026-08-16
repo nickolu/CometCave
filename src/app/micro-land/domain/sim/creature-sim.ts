@@ -359,6 +359,39 @@ function cavityDepth(w: WorldState, c: Creature): number {
 }
 
 /**
+ * Y-coordinate of the first solid tile scanning down from the top at column x.
+ * Higher return value = lower terrain elevation. Returns WORLD_H for open-sky columns.
+ */
+function surfaceHeightAt(w: WorldState, x: number): number {
+  const col = wrapCol(Math.floor(x))
+  for (let y = 0; y < WORLD_H; y++) {
+    if (IS_SOLID[w.tiles[y * WORLD_W + col]]) return y
+  }
+  return WORLD_H
+}
+
+/**
+ * Local terrain temperature modifier based on terrain relief.
+ *
+ * Frost hollow (valley floor, surrounded by higher terrain): cold air drains
+ * downhill and pools, amplifying winter cold. Returns negative value.
+ * Sun-trap (elevated knoll or ridge): less frost shadow, warms faster.
+ * Returns positive value. Flat terrain returns 0.
+ *
+ * Only meaningful when `TUNING.seasonAmplitude > 0`.
+ */
+function microclimateMod(w: WorldState, x: number): number {
+  const here = surfaceHeightAt(w, x)
+  const left = surfaceHeightAt(w, x - 8)
+  const right = surfaceHeightAt(w, x + 8)
+  const avg = (left + right) / 2
+  const diff = here - avg  // positive = depression, negative = elevated
+  if (diff > 2) return -Math.min(0.4, diff / 20)   // frost hollow
+  if (diff < -2) return Math.min(0.25, -diff / 20)  // sun-trap
+  return 0
+}
+
+/**
  * True when c and other overlap — used for snap-trap contact detection.
  * Uses the creature positions as 1-tile points (plants are 1-wide).
  */
@@ -1652,11 +1685,17 @@ export function tickCreatures(
                 const det = w.marshDetritus[footY * WORLD_W + footX] ?? 0
                 salinityBoost *= 1 + det  // up to 2× additional from detrital export
               }
+              // Microclimate pocket: frost hollows amplify winter cold (lower season factor),
+              // sun-traps moderate it. Effect is proportional — strongest in winter when
+              // seasonFactor is already low. Only applies when seasons are enabled.
+              const localSeasonFactor = TUNING.seasonAmplitude > 0
+                ? Math.max(0.01, seasonFactor * (1 + microclimateMod(w, footX)))
+                : seasonFactor
               c.breedCooldown =
                 (TUNING.plantSpreadCooldown * crowdingPenalty * allelopathyFactor * bioticResistanceFactor * competitiveExclusionFactor) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   plantFertilityFactor *
-                  seasonFactor *
+                  localSeasonFactor *
                   salinityBoost)
             } else {
               // Both of them paid to be here, so both of them pay for it. Charging
