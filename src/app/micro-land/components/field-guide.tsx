@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
@@ -93,6 +93,7 @@ export function FieldGuidePane() {
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const keystoneSpeciesIds = useMicroLand(s => s.keystoneSpeciesIds)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -102,7 +103,17 @@ export function FieldGuidePane() {
   const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
   const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
   const elapsed = useMicroLand(s => s.elapsed)
+  const tool = useMicroLand(s => s.tool)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
+
+  // When a creature is selected for placement, scroll its entry into view.
+  const listRef = useRef<HTMLUListElement>(null)
+  const placingBlueprintId = tool.kind === 'creature' ? tool.blueprintId : null
+  useEffect(() => {
+    if (!placingBlueprintId || !listRef.current) return
+    const el = listRef.current.querySelector<HTMLElement>(`[data-blueprint-id="${placingBlueprintId}"]`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [placingBlueprintId])
 
   const [plantsHidden, setPlantsHidden] = useState(false)
   const [compact, setCompact] = useState(() => {
@@ -466,7 +477,7 @@ export function FieldGuidePane() {
           </button>
         </div>
       </div>
-      <ul className="flex flex-col">
+      <ul ref={listRef} className="flex flex-col">
         {ordered.map(bp => (
           <GuideEntry
             key={bp.id}
@@ -484,6 +495,8 @@ export function FieldGuidePane() {
             isHeatmap={heatmapBlueprintId === bp.id}
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
             elapsed={elapsed}
+            keystoneSpeciesIds={keystoneSpeciesIds}
+            isPlacing={placingBlueprintId === bp.id}
           />
         ))}
       </ul>
@@ -933,6 +946,8 @@ function GuideEntry({
   isHeatmap,
   onHeatmap,
   elapsed,
+  keystoneSpeciesIds,
+  isPlacing,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -948,6 +963,8 @@ function GuideEntry({
   isHeatmap?: boolean
   onHeatmap?: () => void
   elapsed: number
+  keystoneSpeciesIds?: ReadonlySet<string>
+  isPlacing?: boolean
 }) {
   // Read from the store rather than threaded down as a prop: the invasion
   // front is only rendered for the handful of entries whose species is
@@ -959,7 +976,11 @@ function GuideEntry({
 
   return (
     <li
-      style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+      data-blueprint-id={bp.id}
+      style={{
+        borderBottom: '1px solid var(--cc-panel-divider)',
+        ...(isPlacing && { outline: '2px solid var(--cc-mint)', outlineOffset: -2 }),
+      }}
     >
       {thumbs && thumbs.length > 0 && onLocateCreature && (
         <div
@@ -1153,6 +1174,37 @@ function GuideEntry({
             <br />
             <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
             {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
+            {bp.trophicLevel !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Trophic level:</strong>{' '}
+                {bp.trophicLevel === 1 ? 'Producer (1)' : bp.trophicLevel === 2 ? 'Herbivore (2)' : bp.trophicLevel === 3 ? 'Carnivore (3)' : `Apex (${bp.trophicLevel})`}
+                {keystoneSpeciesIds?.has(bp.id) && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      background: 'var(--cc-primary)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    KEYSTONE
+                  </span>
+                )}
+              </>
+            )}
+            {bp.successionStage !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Succession stage:</strong>{' '}
+                {bp.successionStage === 1 ? 'Pioneer' : bp.successionStage === 2 ? 'Early' : bp.successionStage === 3 ? 'Mid' : 'Climax'}
+                {' '}({bp.successionStage}/4)
+              </>
+            )}
             {bp.symbiosisPartnerId && (() => {
               const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
               return partner ? (
