@@ -655,6 +655,19 @@ export interface CreatureBlueprint {
    * nutrients into the headwater ecosystem. Issue #3374.
    */
   anadromous?: boolean  // records natal X at birth; adult drives toward it to spawn and die
+  /**
+   * Photoperiod breeding gate. Issue #3360.
+   * 'long' = only breeds when seasonFactor >= 1 (long days, summer).
+   * 'short' = only breeds when seasonFactor <= 1 (short days, winter/autumn).
+   * undefined = no photoperiod restriction.
+   */
+  breedingPhotoperiod?: 'long' | 'short'
+  /**
+   * When true and deep winter (seasonFactor < 0.7), metabolic rate is reduced —
+   * the creature burns hunger more slowly. Models hibernation / torpor in species
+   * that slow down in response to short photoperiods. Issue #3360.
+   */
+  dormancyPhotoperiod?: boolean
 }
 
 /**

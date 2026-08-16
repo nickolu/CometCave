@@ -626,6 +626,10 @@ export function sanitizeBlueprint(
     uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
+    breedingPhotoperiod: b.breedingPhotoperiod === 'long' || b.breedingPhotoperiod === 'short'
+      ? b.breedingPhotoperiod
+      : undefined,
+    dormancyPhotoperiod: b.dormancyPhotoperiod !== undefined ? !!b.dormancyPhotoperiod : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
