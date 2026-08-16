@@ -691,6 +691,7 @@ function tickSeedBank(
   if (tickCount % 60 !== 0) return  // run once per second
 
   const HALF_LIFE = 600  // seconds to 50 % viability
+  const lavaIdx = MATERIAL_INDEX.lava
 
   // Compute current seasonal phase for cold stratification checks.
   const seasonFactor = TUNING.seasonAmplitude > 0
@@ -703,9 +704,38 @@ function tickSeedBank(
   for (const seed of w.seedBank) {
     seed.age += 60 * dt  // approximate: called every 60 ticks
 
+    // Fire scarification: check if lava is at or adjacent to this seed's tile.
+    if (!seed.fireScarified) {
+      const sx = seed.x, sy = seed.y
+      for (let dy = -1; dy <= 1 && !seed.fireScarified; dy++) {
+        for (let dx = -1; dx <= 1 && !seed.fireScarified; dx++) {
+          const tx = wrapCol(sx + dx), ty = sy + dy
+          if (ty < 0 || ty >= WORLD_H) continue
+          if (w.tiles[ty * WORLD_W + tx] === lavaIdx) seed.fireScarified = true
+        }
+      }
+    }
+
     // Try germination
     const bp = w.blueprints[seed.blueprintId]
     if (!bp || bp.move.kind !== 'root') { surviving.push(seed); continue }
+
+    // Fire-germinator species: scarified seeds skip viability decay and germinate eagerly.
+    if (bp.fireGerminator) {
+      if (!seed.fireScarified) { surviving.push(seed); continue }  // waiting for fire
+      // Scarified: attempt germination immediately (don't check viability)
+      if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
+      if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+      const { w: bw, h: bh } = artSize(bp)
+      const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+      if (germinated) {
+        plantsRef.value++
+        speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
+      } else {
+        surviving.push(seed)  // wait for better ground conditions
+      }
+      continue  // don't fall through to normal germination
+    }
 
     const halfLife = bp.seedLongevity ?? HALF_LIFE
     const viability = Math.pow(0.5, seed.age / halfLife)

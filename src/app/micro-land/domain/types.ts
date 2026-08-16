@@ -711,6 +711,14 @@ export interface CreatureBlueprint {
    */
   requiresStratification?: boolean
   /**
+   * Seeds of this species require fire heat to break their hard coat. Dormant
+   * seeds are scarified when lava is detected at their tile or an adjacent tile;
+   * scarified seeds then germinate at 10× the normal probability. Models
+   * serotinous cones (lodgepole pine, banksia) and heat-scarified annuals.
+   * Issue #3353.
+   */
+  fireGerminator?: boolean
+  /**
    * Viability half-life of dormant seeds in seconds. Seeds decay exponentially:
    * viability = 0.5^(age / seedLongevity). Short-lived (transient bank, ~150 s)
    * seeds must germinate within one season or die. Long-lived (persistent bank,
@@ -1190,6 +1198,8 @@ export interface SeedEntry {
   age: number
   /** Accumulated seconds of cold exposure (seasonFactor < 0.9) for stratification. */
   coldHours?: number
+  /** True once lava heat has scarified this seed's coat, enabling germination. Issue #3353. */
+  fireScarified?: boolean
 }
 
 /**

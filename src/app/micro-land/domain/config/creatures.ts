@@ -61,6 +61,7 @@ const SUNLEAF = builtin('sunleaf', {
   aura: null,
   glow: 0,
   uvNectar: true,
+  fireGerminator: true,  // pioneer plant: fire-scarified seeds germinate in ash-cleared ground
   seedLongevity: 2400,  // fire-adapted pioneer: seeds persist for multiple seasons awaiting open ground
 })
 
