@@ -613,6 +613,18 @@ export interface CreatureBlueprint {
     /** GDD at which breeding season opens. 0 or undefined = always breeding. */
     breedingGdd?: number
   }
+  /**
+   * Plants with UV nectar guides have UV-reflective petal patterns that serve
+   * as landing guides for UV-sensitive pollinators. These guides are invisible
+   * to creatures without UV vision.
+   */
+  uvNectar?: boolean
+  /**
+   * Pollinators with UV vision detect UV-reflective petal patterns on flowers,
+   * allowing them to locate UV-nectar plants at full sight range — versus the
+   * 3-tile contact range for non-UV pollinators.
+   */
+  uvSensitive?: boolean
 }
 
 /**

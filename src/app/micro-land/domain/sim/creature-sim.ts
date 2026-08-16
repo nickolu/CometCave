@@ -1212,9 +1212,17 @@ export function tickCreatures(
         }
       } else {
         // Not carrying — look for a nearby plant to pick up on the SENSE_EVERY interval.
+        // UV-sensitive pollinators detect UV-nectar plants at their full sight range;
+        // all pollinators can still pick up any plant within 3 tiles by contact.
         if ((tickCount + c.id) % SENSE_EVERY === 0) {
           const cx = c.x + bw / 2
           const cy = c.y + bh / 2
+          const uvRange = bp.uvSensitive
+            ? bp.senses.sight * (c.traits.sight ?? 1)
+            : 0
+          const uvRange2 = uvRange * uvRange
+          let bestSeed: string | null = null
+          let bestD2 = Infinity
           for (const other of w.creatures) {
             if (other === c || dead.has(other.id)) continue
             const obp = w.blueprints[other.blueprintId]
@@ -1222,12 +1230,18 @@ export function tickCreatures(
             const { w: ow, h: oh } = artSize(obp)
             const dx = deltaX(other.x + ow / 2, cx)
             const dy = cy - (other.y + oh / 2)
-            if (dx * dx + dy * dy < 9) {
-              // within ~3 tiles
-              c.carryingSeed = other.blueprintId
-              c.seedTimer = TUNING.pollinationCarrySeconds
-              break
+            const d2 = dx * dx + dy * dy
+            // Contact range (3 tiles) works for any plant.
+            // UV sight range only works for plants with UV nectar guides.
+            const maxD2 = obp.uvNectar && uvRange2 > 0 ? uvRange2 : 9
+            if (d2 < maxD2 && d2 < bestD2) {
+              bestD2 = d2
+              bestSeed = other.blueprintId
             }
+          }
+          if (bestSeed !== null) {
+            c.carryingSeed = bestSeed
+            c.seedTimer = TUNING.pollinationCarrySeconds
           }
         }
       }
