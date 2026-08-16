@@ -570,7 +570,12 @@ export function sanitizeBlueprint(
       breedAt: clamp(diet.breedAt, 0.1, 1, 0.75),
       lifespanSeconds: clamp(diet.lifespanSeconds, 10, 1800, 240),
     },
-    senses: { sight: clamp(senses.sight, 1, 60, 14) },
+    senses: {
+      sight: clamp(senses.sight, 1, 60, 14),
+      ...(senses.chemoreception !== undefined && {
+        chemoreception: Math.max(0, senses.chemoreception as number),
+      }),
+    },
     habitat: {
       needs: needs && needs.length > 0 ? needs : null,
       drowns: habitat.drowns !== false,

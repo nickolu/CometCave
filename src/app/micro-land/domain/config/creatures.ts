@@ -1256,6 +1256,37 @@ const CAVE_CRICKET = builtin('cave-cricket', {
   glow: 0,
 })
 
+const CAVE_SALAMANDER = builtin('cave-salamander', {
+  name: 'Cave Salamander',
+  blurb: 'Navigates the deep dark by smell alone. It knows where you have been.',
+  size: 2,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { p: '#d4607a', d: '#a03050', w: '#ffd0c8' },
+    frames: [
+      ['dppppd', '.pwwp.', 'd....d'],
+      ['dpppd.', '.pwwp.', '.d...d'],
+    ],
+    frameMs: 250,
+    faceMotion: true,
+  },
+  body: { mass: 0.9, bounce: 0, drag: 0.35, buoyancy: 0.7, immuneTo: [] },
+  move: { kind: 'crawl', speed: 3, jump: 2, restlessness: 0.2 },
+  diet: {
+    eats: ['bug'],
+    fears: ['flier'],
+    hungerRate: 0.02,
+    starveSeconds: 60,
+    breedAt: 0.65,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 4, chemoreception: 18 },  // poor sight, excellent smell
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#d4607a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+})
+
 const BAT = builtin('bat', {
   name: 'Bat',
   blurb: 'Sleeps through the day, slips out at dusk to hunt. Its droppings feed the dark.',
@@ -1801,6 +1832,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNHAWK,
   GLOOMWEAVER,
   CAVE_CRICKET,
+  CAVE_SALAMANDER,
   BAT,
   WISP,
   GRUMBLESTONE,

@@ -202,6 +202,13 @@ export interface CreatureDiet {
 export interface CreatureSenses {
   /** How far it can spot food or danger, in tiles. */
   sight: number
+  /**
+   * Chemical detection range in tiles. Creatures with chemoreception > 0
+   * sample scent concentration gradients across adjacent tiles and move toward
+   * higher concentrations. Can track prey scents (any species tagged as food),
+   * not just same-species beacons.
+   */
+  chemoreception?: number
 }
 
 export interface CreatureHabitat {
