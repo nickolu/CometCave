@@ -595,6 +595,8 @@ export function sanitizeBlueprint(
     polluter: b.polluter === true,
     carnivorousPlant: b.carnivorousPlant === true,
     slowMetabolism: b.slowMetabolism === true,
+    allelopathic: b.allelopathic === true,
+    novelCompoundResistant: b.novelCompoundResistant === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
