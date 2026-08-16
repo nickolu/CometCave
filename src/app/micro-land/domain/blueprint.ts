@@ -696,6 +696,7 @@ export function sanitizeBlueprint(
     broodParasite: typeof b.broodParasite === 'boolean' ? b.broodParasite : undefined,
     broodParasiteHost: Array.isArray(b.broodParasiteHost) ? (b.broodParasiteHost as string[]) : undefined,
     minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
+    lemmingLegislature: typeof b.lemmingLegislature === 'boolean' ? b.lemmingLegislature : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

@@ -991,6 +991,11 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
+  /**
+   * When true, this species forms a Legislature and periodically votes to
+   * collectively run off the nearest world edge when overcrowded. Issue #3305.
+   */
+  lemmingLegislature?: boolean
 }
 
 /**
@@ -1441,6 +1446,10 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True when this lemming has been elected to the Legislature. Issue #3305. */
+  isLegislator?: boolean
+  /** True when the Legislature has voted Cliff and this creature is marching toward the edge. Issue #3305. */
+  cliffBound?: boolean
 }
 
 /**
@@ -1792,6 +1801,10 @@ export interface WorldState {
    * tiles delivered. Used for egg hatch bonus and nest rendering. Issues #3412, #3418.
    */
   nestSites?: Record<string, { progress: number; ownerId: number; x: number; y: number }>
+  /** Next w.elapsed time at which the Lemming Legislature holds a vote. Issue #3305. */
+  lemmingNextVoteTime?: number
+  /** Baseline population per blueprintId for density calculation. Set on first observation. Issue #3305. */
+  lemmingBaseline?: Record<string, number>
 }
 
 // ---------------------------------------------------------------------------
