@@ -739,6 +739,30 @@ export function sanitizeBlueprint(
           }
         : undefined,
     patchDependent: b.patchDependent === true,
+    // Coevolution features (#3263–#3267)
+    predatorEscalation: b.predatorEscalation !== undefined ? !!b.predatorEscalation : undefined,
+    preyEscalation: b.preyEscalation !== undefined ? !!b.preyEscalation : undefined,
+    pollinatorSpecialist: b.pollinatorSpecialist !== undefined ? !!b.pollinatorSpecialist : undefined,
+    flowerTubeDepth:
+      typeof b.flowerTubeDepth === 'number'
+        ? clamp(b.flowerTubeDepth, 0, 1, 0.5)
+        : undefined,
+    tongueLength:
+      typeof b.tongueLength === 'number'
+        ? clamp(b.tongueLength, 0, 1, 0.5)
+        : undefined,
+    hostParasiteAttacker: b.hostParasiteAttacker !== undefined ? !!b.hostParasiteAttacker : undefined,
+    hostParasite: b.hostParasite !== undefined ? !!b.hostParasite : undefined,
+    obligatePartner:
+      typeof b.obligatePartner === 'string' && b.obligatePartner.length > 0
+        ? b.obligatePartner
+        : undefined,
+    toxic: b.toxic !== undefined ? !!b.toxic : undefined,
+    toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
+    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
+    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
+    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
   }
 }
 
