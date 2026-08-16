@@ -198,6 +198,7 @@ const SNAP_TRAP = builtin('snap-trap', {
   aura: null,
   glow: 0,
   seedLongevity: 150,  // transient seed bank: must germinate within a season or die
+  biomeRequirements: ['tropical-rainforest', 'tropical-savanna', 'temperate-forest'],  // moist habitats only. Issue #3378.
 })
 
 const PITCHER_PLANT = builtin('pitcher-plant', {
@@ -1849,6 +1850,7 @@ const SALT_MARSH_REED = builtin('salt-marsh-reed', {
   glow: 0,
   salinityTolerance: { min: 0.2, max: 0.7 },  // thrives in brackish mixing zone
   seedLongevity: 150,  // transient seed bank: annual grass, seeds must germinate within one season
+  biomeRequirements: ['temperate-forest', 'temperate-grassland'],  // temperate wetlands only. Issue #3378.
 })
 
 const MANGROVE = builtin('mangrove', {
@@ -1882,6 +1884,7 @@ const MANGROVE = builtin('mangrove', {
   aerialRoots: true,
   salinityTolerance: { min: 0.0, max: 0.4 },
   seedLongevity: 1800,  // persistent seed bank: long-lived tree seeds outlast multiple seasons
+  biomeRequirements: ['tropical-rainforest', 'tropical-savanna'],  // coastal tropics only. Issue #3378.
 })
 
 const UV_BEE = builtin('uv-bee', {

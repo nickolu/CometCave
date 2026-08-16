@@ -16,7 +16,7 @@ import { z } from 'zod'
 import { BASE_MATERIAL_IDS, MATERIAL_IDS } from './config/materials'
 import { TerrainSchema } from './terrain'
 
-import type { CreatureAura, CreatureBlueprint, LifeKind, LocomotionKind, MaterialId } from './types'
+import type { BiomeZoneType, CreatureAura, CreatureBlueprint, LifeKind, LocomotionKind, MaterialId } from './types'
 
 export const ART_MIN = 3
 /**
@@ -640,6 +640,11 @@ export function sanitizeBlueprint(
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
     lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
+    biomeRequirements: Array.isArray(b.biomeRequirements)
+      ? (b.biomeRequirements as unknown[]).filter((z): z is BiomeZoneType =>
+          ['tropical-rainforest','tropical-savanna','desert','temperate-grassland','temperate-forest','boreal','tundra','ice-cap'].includes(z as string)
+        )
+      : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

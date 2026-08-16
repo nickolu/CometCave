@@ -733,7 +733,31 @@ export interface CreatureBlueprint {
    * Issue #3354.
    */
   seedLongevity?: number
+  /**
+   * Biome zones this species can establish in. When set, creatures and seeds
+   * of this species cannot breed or germinate in regions outside this list.
+   * Uses `biomeZoneAt(w, y)` to classify the current tile's region.
+   * Leave undefined to allow establishment anywhere. Issue #3378.
+   */
+  biomeRequirements?: BiomeZoneType[]
 }
+
+/**
+ * Latitudinal biome classification, used to gate species establishment.
+ *
+ * `biomeZoneAt(w, y)` returns one of these based on the tile's y-row.
+ * Zones map the world's height into rough latitudinal bands: the sky rows
+ * are the warmest (tropical), the deep underground rows are the coldest (ice-cap).
+ */
+export type BiomeZoneType =
+  | 'tropical-rainforest'
+  | 'tropical-savanna'
+  | 'desert'
+  | 'temperate-grassland'
+  | 'temperate-forest'
+  | 'boreal'
+  | 'tundra'
+  | 'ice-cap'
 
 /**
  * Which half of the food web something belongs to.
