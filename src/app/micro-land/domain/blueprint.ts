@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    decomposer: b.decomposer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
@@ -765,6 +766,22 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    // Succession stage: gate seed germination on soil maturity (issue #3123)
+    successionStage: typeof b.successionStage === 'number'
+      ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
+      : undefined,
+    // Trophic level: inferred from diet when not explicitly set (issue #3119)
+    trophicLevel: (() => {
+      if (typeof b.trophicLevel === 'number') {
+        return Math.max(1, Math.min(5, Math.floor(b.trophicLevel)))
+      }
+      const moveKind = typeof move.kind === 'string' ? move.kind : 'walk'
+      const eatsArr = Array.isArray(diet.eats) ? diet.eats as string[] : []
+      if (moveKind === 'root' || eatsArr.length === 0) return 1  // producer
+      if (eatsArr.some((e: string) => ['plant', 'seed', 'algae'].includes(e))) return 2  // herbivore
+      if (eatsArr.some((e: string) => ['meat', 'animal', 'fish', 'insect', 'bug'].includes(e))) return 3  // carnivore
+      return 2  // default herbivore
+    })(),
     otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,

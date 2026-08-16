@@ -1463,6 +1463,79 @@ export function tickCorridorMask(w: WorldState, tickCount: number): void {
 export { AIR }
 
 // ---------------------------------------------------------------------------
+// Soil age — ecological succession substrate (Issues #3124, #3125)
+// ---------------------------------------------------------------------------
+
+/**
+ * Increment soil age on stable solid surface tiles and reset it on deadly tiles.
+ *
+ * Runs every 60 ticks (~once per second). Processes every 6th column per call
+ * (staggered by tickCount) for performance, completing a full world sweep in
+ * approximately 6 seconds. Deadly tiles (lava/fire) reset soil age to 0,
+ * modelling disturbance-driven succession re-set.
+ *
+ * Issues #3124 (soil age field) and #3125 (disturbance reset).
+ */
+export function tickSoilAge(w: WorldState, tickCount: number): void {
+  if (tickCount % 60 !== 0) return
+  w.soilAge ??= new Float32Array(w.width * w.height)
+  const { width, height, tiles, soilAge } = w
+  const colOffset = Math.floor(tickCount / 60) % 6
+  for (let x = colOffset; x < width; x += 6) {
+    for (let y = 0; y < height; y++) {
+      const idx = y * width + x
+      const mat = tiles[idx]
+      if (IS_DEADLY[mat]) {
+        soilAge[idx] = 0  // lava/fire resets succession
+      } else if (IS_SOLID[mat] && !IS_LIQUID[mat]) {
+        // Only age surface tiles — solid tile with non-solid above it
+        const aboveIdx = y > 0 ? (y - 1) * width + x : -1
+        if (aboveIdx >= 0 && !IS_SOLID[tiles[aboveIdx]]) {
+          soilAge[idx] = Math.min(10000, soilAge[idx] + 1)
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Keystone species detection (Issue #3122)
+// ---------------------------------------------------------------------------
+
+/**
+ * Identify keystone species: blueprints that 2+ other species in the ecosystem
+ * depend on (via diet.eats tags or diet.fears tags). A species is "depended on"
+ * when another species' eats or fears list matches one of its tags.
+ *
+ * Runs every 3000 ticks (~50 seconds). Results stored in
+ * WorldState.keystoneSpeciesIds. Issue #3122.
+ */
+export function updateKeystoneSpecies(w: WorldState, tickCount: number): void {
+  if (tickCount % 3000 !== 0) return
+  const dependencyCount = new Map<string, number>()
+  const bpList = Object.values(w.blueprints)
+  for (const bp of bpList) {
+    const checkedIds = new Set<string>()
+    const allDeps = [...bp.diet.eats, ...bp.diet.fears]
+    for (const tag of allDeps) {
+      for (const other of bpList) {
+        if (other.id === bp.id) continue
+        if (checkedIds.has(other.id)) continue
+        if (other.tags.includes(tag)) {
+          checkedIds.add(other.id)
+          dependencyCount.set(other.id, (dependencyCount.get(other.id) ?? 0) + 1)
+        }
+      }
+    }
+  }
+  const keystones = new Set<string>()
+  for (const [id, count] of dependencyCount) {
+    if (count >= 2) keystones.add(id)
+  }
+  w.keystoneSpeciesIds = keystones
+}
+
+// ---------------------------------------------------------------------------
 // Acid rain from sulfur pollution (Issue #3279)
 // ---------------------------------------------------------------------------
 
@@ -1673,6 +1746,42 @@ export function tickGroundwater(w: WorldState, tickCount: number, isLiquid: Uint
       if (gw[tileI] > 0) {
         gw[tileI] = Math.max(0, gw[tileI] - 0.001)
       }
+    }
+  }
+}
+
+/**
+ * Bone slow decomposition (#3103): bone tiles near moisture slowly convert to soil
+ * and deposit nutrients, modelling the long-term breakdown of skeletal material.
+ *
+ * Runs every 300 ticks. Samples 20 random tiles looking for bone. Each bone tile
+ * in moist conditions has a 3% chance to convert to soil with a +0.2 nutrient boost.
+ */
+export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 300 !== 0) return
+  if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+
+  const { width, height, tiles, moisture } = w
+  const boneIdx = MATERIAL_INDEX['bone'] ?? -1
+  const dirtIdx = MATERIAL_INDEX['dirt'] ?? -1
+  if (boneIdx < 0) return
+
+  for (let i = 0; i < 20; i++) {
+    const x = Math.floor(rng() * width)
+    const y = Math.floor(rng() * height)
+    const tileI = y * width + x
+
+    if (tiles[tileI] !== boneIdx) continue
+
+    const moistureHere = moisture?.[tileI] ?? 0
+    if (moistureHere < 0.2) continue // bone needs moisture to decompose
+
+    if (rng() < 0.03) {
+      // Convert bone tile to dirt (if dirt exists) and add nutrients.
+      if (dirtIdx >= 0) {
+        w.tiles[tileI] = dirtIdx
+      }
+      w.soilNutrient[tileI] = Math.min(1, w.soilNutrient[tileI] + 0.2)
     }
   }
 }

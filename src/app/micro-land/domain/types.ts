@@ -327,6 +327,13 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
+   * Decomposer archetype: this creature eats from carcasses (any carcass within 2
+   * tiles) and converts the consumed mass into soilNutrient at the carcass site.
+   * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
+   * vultures, and specialized scavengers. Issues #3099, #3100.
+   */
+  decomposer?: boolean
+  /**
    * When true, this species uses active camouflage based on colour-matching the
    * tile it stands on. The effective camouflage score becomes
    * `max(traits.camouflage, colorMatchScore)`, where colorMatchScore is 1 when
@@ -2005,6 +2012,12 @@ export interface WorldState {
    * diet.fears). Updated every 3000 ticks. Issue #3122.
    */
   keystoneSpeciesIds?: Set<string>
+  /**
+   * Per-tile soil fertility [0, 1]. Enriched by carcass decay, grazer waste,
+   * and bone decomposition. Boosts plant germination rate and reduces plant
+   * hunger drain. Initialized lazily. Issues #3099–#3103.
+   */
+  soilNutrient?: Float32Array
 }
 
 // ---------------------------------------------------------------------------
