@@ -675,6 +675,9 @@ export function sanitizeBlueprint(
     nestRadius: typeof b.nestRadius === 'number' ? Math.max(1, b.nestRadius) : undefined,
     burrowDigger: typeof b.burrowDigger === 'boolean' ? b.burrowDigger : undefined,
     burrowCacheSize: typeof b.burrowCacheSize === 'number' ? Math.max(0, Math.min(1, b.burrowCacheSize)) : undefined,
+    termiteWorker: typeof b.termiteWorker === 'boolean' ? b.termiteWorker : undefined,
+    moundCommensal: typeof b.moundCommensal === 'boolean' ? b.moundCommensal : undefined,
+    moundDestroyer: typeof b.moundDestroyer === 'boolean' ? b.moundDestroyer : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

@@ -2374,6 +2374,84 @@ const BADGER = builtin('badger', {
   burrowCacheSize: 0.5,
 })
 
+const TERMITE = builtin('termite', {
+  name: 'Termite',
+  blurb: 'A eusocial engineer that builds towering mounds from digested soil, creating habitat for dozens of other species.',
+  size: 1,
+  tags: ['plant', 'bug'],
+  art: {
+    palette: { w: '#cc9966', b: '#6b4422', g: '#e8b888' },
+    frames: [['bwb', 'wgw', 'bwb']],
+    frameMs: 200,
+    faceMotion: false,
+  },
+  movement: { canFly: false, canSwim: false, canClimb: false, canBurrow: false, speed: 0.5, wanderBias: 0.7 },
+  diet: { eats: 'plant', huntRadius: 3 },
+  reproduction: { rate: 0.012, eggCount: 6, eggsNeedSolid: true },
+  lifespan: 40,
+  hunger: { rate: 0.00008, starvationRate: 0.0004 },
+  senses: { sight: 0.4, smell: 0.8 },
+  trophicLevel: 1,
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#cc9966', particleCount: 1 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  termiteWorker: true,
+})
+
+const AARDVARK = builtin('aardvark', {
+  name: 'Aardvark',
+  blurb: 'A powerful nocturnal excavator that demolishes termite mounds to feast on the colony within.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#c8a07a', b: '#7a5040', g: '#e8c8a8' },
+    frames: [['gwg', 'wbw', 'gwg']],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  movement: { canFly: false, canSwim: false, canClimb: false, canBurrow: true, speed: 0.8, wanderBias: 0.3 },
+  diet: { eats: 'meat', huntRadius: 8 },
+  reproduction: { rate: 0.001, eggCount: 1, eggsNeedSolid: true },
+  lifespan: 300,
+  hunger: { rate: 0.00003, starvationRate: 0.0001 },
+  senses: { sight: 0.6, smell: 1.2 },
+  trophicLevel: 2,
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c8a07a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  moundDestroyer: true,
+})
+
+const BARK_GECKO = builtin('bark-gecko', {
+  name: 'Bark Gecko',
+  blurb: 'A quick insectivore that lives on the surface of termite mounds, exploiting the steady stream of insects.',
+  size: 1,
+  tags: ['meat', 'reptile'],
+  art: {
+    palette: { w: '#8a8060', b: '#4a3830', g: '#c8b888' },
+    frames: [['bwb', 'wgw', 'bwb']],
+    frameMs: 250,
+    faceMotion: true,
+  },
+  movement: { canFly: false, canSwim: false, canClimb: true, canBurrow: false, speed: 1.4, wanderBias: 0.4 },
+  diet: { eats: 'meat', huntRadius: 5 },
+  reproduction: { rate: 0.003, eggCount: 2, eggsNeedSolid: true },
+  lifespan: 120,
+  hunger: { rate: 0.00005, starvationRate: 0.0002 },
+  senses: { sight: 1.0, smell: 0.3 },
+  trophicLevel: 2,
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#8a8060', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  moundCommensal: true,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2434,6 +2512,9 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   WEAVER_BIRD,
   PRAIRIE_DOG,
   BADGER,
+  TERMITE,
+  AARDVARK,
+  BARK_GECKO,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

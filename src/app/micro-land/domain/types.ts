@@ -48,6 +48,7 @@ export type BaseMaterialId =
   | 'acid'
   | 'shed-skin'
   | 'web'
+  | 'termite-mound'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -877,6 +878,24 @@ export interface CreatureBlueprint {
    * hunger scale. Drawn from when starving at the burrow. Default 0.3. Issue #3419.
    */
   burrowCacheSize?: number
+  /**
+   * Eusocial worker that builds termite-mound tiles upward from its position.
+   * Each tick has a small chance to place a mound tile above the worker,
+   * growing the colony's mound over time. Issue #3421.
+   */
+  termiteWorker?: boolean
+  /**
+   * Creature that prefers to live near termite-mound tiles.
+   * When not within range of a mound, movement is dampened, creating
+   * a tendency to find and stay near mound habitat. Issue #3421.
+   */
+  moundCommensal?: boolean
+  /**
+   * Predator that destroys termite-mound tiles and feeds on the colony within.
+   * Breaking mound tiles reduces hunger and releases nutrients into surrounding
+   * soil via caveNutrient. Issue #3421.
+   */
+  moundDestroyer?: boolean
 }
 
 /**
