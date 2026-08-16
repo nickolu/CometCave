@@ -418,6 +418,20 @@ export interface CreatureBlueprint {
    * applies anywhere, but it is most meaningful in nutrient-scarce environments.
    */
   slowMetabolism?: boolean
+  /**
+   * Invasive species benefit from enemy release — the absence of co-evolved
+   * predators and parasites in their introduced range.
+   *
+   * Effects:
+   *   - Breed cooldown × 0.67 (1.5× faster reproduction rate)
+   *   - Effective disease immunity boosted by +0.56 (base 0.2 → 0.76),
+   *     representing 70% reduced disease susceptibility
+   *
+   * The effect is unconditional (no region tracking yet). It models the
+   * population explosion seen in successful invasions before native ecosystems
+   * adapt: cane toads, zebra mussels, kudzu vine.
+   */
+  invasive?: boolean
 }
 
 /**
