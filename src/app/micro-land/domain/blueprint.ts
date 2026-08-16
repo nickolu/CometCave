@@ -645,6 +645,8 @@ export function sanitizeBlueprint(
           ['tropical-rainforest','tropical-savanna','desert','temperate-grassland','temperate-forest','boreal','tundra','ice-cap'].includes(z as string)
         )
       : undefined,
+    mycorrhizalPartner: b.mycorrhizalPartner !== undefined ? !!b.mycorrhizalPartner : undefined,
+    obligateMycorrhizal: b.obligateMycorrhizal !== undefined ? !!b.obligateMycorrhizal : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

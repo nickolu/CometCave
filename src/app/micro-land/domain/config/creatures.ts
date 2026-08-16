@@ -64,6 +64,7 @@ const SUNLEAF = builtin('sunleaf', {
   fireGerminator: true,  // pioneer plant: fire-scarified seeds germinate in ash-cleared ground
   lightGapGerminator: true,  // gap-dependent pioneer: seeds sprout when canopy opens above them. Issue #3351.
   seedLongevity: 2400,  // fire-adapted pioneer: seeds persist for multiple seasons awaiting open ground
+  mycorrhizalPartner: true,  // forms associations with soil fungi, becoming a node in the Wood Wide Web. Issue #3329.
 })
 
 const BRAMBLE = builtin('bramble', {
@@ -96,6 +97,7 @@ const BRAMBLE = builtin('bramble', {
   aura: null,
   glow: 0,
   lightGapGerminator: true,  // gap-loving shrub: colonises treefall gaps. Issue #3351.
+  mycorrhizalPartner: true,  // forms associations with soil fungi, becoming a node in the Wood Wide Web. Issue #3329.
 })
 
 const KELP = builtin('kelp', {
@@ -1885,6 +1887,8 @@ const MANGROVE = builtin('mangrove', {
   salinityTolerance: { min: 0.0, max: 0.4 },
   seedLongevity: 1800,  // persistent seed bank: long-lived tree seeds outlast multiple seasons
   biomeRequirements: ['tropical-rainforest', 'tropical-savanna'],  // coastal tropics only. Issue #3378.
+  mycorrhizalPartner: true,  // forms associations with soil fungi, becoming a node in the Wood Wide Web. Issue #3329.
+  obligateMycorrhizal: true,  // requires fungal colonization to establish — cannot germinate or survive without a network partner. Issue #3333.
 })
 
 const UV_BEE = builtin('uv-bee', {
