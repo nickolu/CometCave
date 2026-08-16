@@ -1126,6 +1126,7 @@ export function tickCreatures(
               rng() < 0.7
             ) {
               child.learnedFoodWashing = true
+              child.foodWashingVariant = c.foodWashingVariant ?? mate?.foodWashingVariant
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             c.children++
@@ -1697,28 +1698,38 @@ function look(
         // Cultural innovation: rare spontaneous food-washing discovery near water.
         if (bp.canLearnFoodWashing && !c.learnedFoodWashing && isNearWater(w, c) && rng() < 0.002) {
           c.learnedFoodWashing = true
+          c.foodWashingVariant = Math.floor(rng() * 999) + 1
         }
-        // Cultural transmission: a food-washer near kin passes the behavior on.
+        // Cultural transmission: a food-washer near kin passes the behavior on,
+        // including their cultural variant (dialect). Already-knowers with a different
+        // variant may hybridize when populations mix.
         if (c.learnedFoodWashing && isNearWater(w, c)) {
           const sight = c.traits.sight * bp.senses.sight
           for (const other2 of w.creatures) {
             if (
               other2.id === c.id ||
               other2.blueprintId !== c.blueprintId ||
-              other2.learnedFoodWashing ||
               !w.blueprints[other2.blueprintId]?.canLearnFoodWashing
             ) continue
             const dx2 = distX(c.x, other2.x) ** 2
             const dy2 = (c.y - other2.y) ** 2
             if (dx2 + dy2 > sight * sight) continue
-            // Juvenile imprinting: creatures in the first 15% of their lifespan
-            // learn cultural behaviors from nearby adults at 10× the adult rate.
-            // This models parental-care transmission (orca, chimpanzee research):
-            // once a tradition reaches critical mass, offspring born nearby almost
-            // always acquire it before adulthood, making the tradition self-sustaining.
-            const isJuvenile = other2.ageSeconds < (w.blueprints[other2.blueprintId]?.diet.lifespanSeconds ?? 240) * 0.15
-            const transmissionProb = isJuvenile ? 0.40 : 0.04
-            if (rng() < transmissionProb) other2.learnedFoodWashing = true
+            if (!other2.learnedFoodWashing) {
+              // Initial acquisition: juvenile imprinting or adult observation.
+              // Juvenile imprinting: creatures in the first 15% of their lifespan
+              // learn cultural behaviors from nearby adults at 10× the adult rate.
+              const isJuvenile = other2.ageSeconds < (w.blueprints[other2.blueprintId]?.diet.lifespanSeconds ?? 240) * 0.15
+              const transmissionProb = isJuvenile ? 0.40 : 0.04
+              if (rng() < transmissionProb) {
+                other2.learnedFoodWashing = true
+                other2.foodWashingVariant = c.foodWashingVariant
+              }
+            } else if (other2.foodWashingVariant !== c.foodWashingVariant && rng() < 0.005) {
+              // Dialect hybridization: when populations reconnect, rare chance to
+              // adopt the teacher's variant — models documented whale-song dialect
+              // spread when communities merge.
+              other2.foodWashingVariant = c.foodWashingVariant
+            }
           }
         }
         // Cooperative creatures signal food location to kin.

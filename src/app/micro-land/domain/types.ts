@@ -881,6 +881,14 @@ export interface Creature {
    * When active, eating near water yields 5% more energy per meal.
    */
   learnedFoodWashing?: boolean
+  /**
+   * Cultural dialect: which variant of the food-washing behavior this creature
+   * carries. 1–999, unique per founder innovation. Populations separated by
+   * barriers drift toward different values; reconnecting populations compete
+   * via social transmission until one variant dominates.
+   * `undefined` means the behavior is not known.
+   */
+  foodWashingVariant?: number
 }
 
 /**
