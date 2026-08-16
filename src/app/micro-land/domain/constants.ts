@@ -548,3 +548,9 @@ export const SPAWNER_DEFAULT_INTERVAL = 10
  * a small area while still letting the species spread.
  */
 export const SPAWNER_DEFAULT_MAX_LOCAL = 5
+
+/** Number of horizontal region bands for biome classification (Issue #3377). */
+export const NUM_BIOME_REGIONS = 8
+
+/** Height in rows of each biome region band. */
+export const BIOME_REGION_H = Math.ceil(WORLD_H / NUM_BIOME_REGIONS)  // 17

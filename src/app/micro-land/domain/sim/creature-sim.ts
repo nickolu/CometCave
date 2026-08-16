@@ -63,6 +63,7 @@ import {
   tickMoisture,
   tickSalinity,
   tileAt,
+  updateBiomeZones,
 } from './world'
 
 import type { Rng } from './prng'
@@ -850,6 +851,8 @@ export function tickCreatures(
           1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod)
         )
       : 1
+
+  updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
   const dead = new Set<number>()
