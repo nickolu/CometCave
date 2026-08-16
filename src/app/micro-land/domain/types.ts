@@ -710,6 +710,14 @@ export interface CreatureBlueprint {
    * tree seeds that need winter to break dormancy. Issue #3352.
    */
   requiresStratification?: boolean
+  /**
+   * Seeds of this species require fire heat to break their hard coat. Dormant
+   * seeds are scarified when lava is detected at their tile or an adjacent tile;
+   * scarified seeds then germinate at 10× the normal probability. Models
+   * serotinous cones (lodgepole pine, banksia) and heat-scarified annuals.
+   * Issue #3353.
+   */
+  fireGerminator?: boolean
 }
 
 /**
@@ -1182,6 +1190,8 @@ export interface SeedEntry {
   age: number
   /** Accumulated seconds of cold exposure (seasonFactor < 0.9) for stratification. */
   coldHours?: number
+  /** True once lava heat has scarified this seed's coat, enabling germination. Issue #3353. */
+  fireScarified?: boolean
 }
 
 /**
