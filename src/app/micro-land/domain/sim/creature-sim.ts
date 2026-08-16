@@ -57,6 +57,7 @@ import {
   settleOnGround,
   solidAt,
   spawnCreature,
+  tickCaveNutrient,
   tickMoisture,
   tileAt,
 } from './world'
@@ -258,6 +259,9 @@ function fertilityAt(w: WorldState, x: number, y: number): number {
       f = 0.4
       break
     case 'stone':
+      // Base fertility on cave nutrient — drip water creates bacterial blooms.
+      f = 0.05 + ((w.caveNutrient?.[yi * WORLD_W + xi] ?? 0) * 1.5)
+      break
     case 'obsidian':
     case 'marble':
       f = 0.3
@@ -594,6 +598,7 @@ export function tickCreatures(
   w.scents ??= []
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
   tickMoisture(w, tickCount, dt, rng)
+  tickCaveNutrient(w, tickCount, dt)
   w.eggs ??= []
   w.nextEggId ??= 1
 

@@ -1104,6 +1104,13 @@ export interface WorldState {
    * slowly dry out. Plants seed more readily in moist soil.
    */
   moisture: Float32Array
+  /**
+   * Per-tile dissolved organic carbon from surface water drips.
+   * 0 in dry caves; up to 1 under active drip points (where surface water
+   * percolates through stone). Boosts stone tile fertility for cave bacteria
+   * and specialist cave plants. Updated by `tickCaveNutrient`.
+   */
+  caveNutrient?: Float32Array
   eggs: Egg[]
   nextEggId: number
   /** Burrows dug by territorial creatures at their home positions. */
