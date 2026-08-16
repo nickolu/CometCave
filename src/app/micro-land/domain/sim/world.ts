@@ -42,7 +42,7 @@ export function createWorld(seed = 1337): WorldState {
   const blueprints: Record<string, CreatureBlueprint> = {}
   for (const bp of BUILTIN_CREATURES) blueprints[bp.id] = bp
 
-  return {
+  const world: WorldState = {
     width: WORLD_W,
     height: WORLD_H,
     tiles,
@@ -71,6 +71,8 @@ export function createWorld(seed = 1337): WorldState {
     nextSpawnerId: 1,
     generators: [],
   }
+  if (TUNING.estuaryOceanFraction > 0) initSalinity(world)
+  return world
 }
 
 // ---------------------------------------------------------------------------
@@ -978,6 +980,54 @@ export function tickCaveNutrient(w: WorldState, tickCount: number, dt: number): 
         if (IS_LIQUID[w.tiles[ti]] === 1) break
       }
     }
+  }
+}
+
+/**
+ * Initialise the salinity overlay based on TUNING.estuaryOceanFraction.
+ * Ocean tiles (right edge) start at 1.0; fresh tiles (left edge) start at 0.0.
+ * Called once on world creation when estuaryOceanFraction > 0.
+ */
+export function initSalinity(w: WorldState): void {
+  if (TUNING.estuaryOceanFraction <= 0) return
+  w.salinity ??= new Float32Array(WORLD_W * WORLD_H)
+  const oceanStart = Math.floor(WORLD_W * (1 - TUNING.estuaryOceanFraction))
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const i = y * WORLD_W + x
+      if (x >= oceanStart) {
+        w.salinity[i] = 1.0
+      } else {
+        w.salinity[i] = 0.0
+      }
+    }
+  }
+}
+
+/**
+ * Diffuse the salinity gradient — runs every 60 ticks to let the gradient
+ * stabilise without dominating the frame budget.
+ * Ocean edge is held at 1.0; fresh (left 20%) at 0.0. Interior diffuses.
+ */
+export function tickSalinity(w: WorldState, tickCount: number): void {
+  if (!w.salinity || TUNING.estuaryOceanFraction <= 0 || tickCount % 60 !== 0) return
+  const oceanStart = Math.floor(WORLD_W * (1 - TUNING.estuaryOceanFraction))
+  const freshEnd = Math.floor(WORLD_W * 0.1)  // leftmost 10% stays fresh
+  const alpha = 0.05  // diffusion rate
+  // Simple averaging diffusion — one pass per update
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = freshEnd; x < oceanStart; x++) {
+      const i = y * WORLD_W + x
+      const left = w.salinity[y * WORLD_W + (x - 1)] ?? 0
+      const right = w.salinity[y * WORLD_W + (x + 1)] ?? 0
+      w.salinity[i] += alpha * (left + right - 2 * w.salinity[i])
+      w.salinity[i] = Math.max(0, Math.min(1, w.salinity[i]))
+    }
+  }
+  // Reinforce boundary conditions.
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < freshEnd; x++) w.salinity[y * WORLD_W + x] = 0
+    for (let x = oceanStart; x < WORLD_W; x++) w.salinity[y * WORLD_W + x] = 1
   }
 }
 

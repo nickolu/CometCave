@@ -135,6 +135,11 @@ export const TUNING_DEFAULTS = {
   generatorRateMultiplier: 1.0,
   /** Max placed spawners the world can hold at once. */
   maxSpawners: 20,
+  /**
+   * Fraction of world width designated as "ocean" on the right edge.
+   * 0 = no estuary (default). 0.15 = rightmost 15% is salt water.
+   */
+  estuaryOceanFraction: 0,
 }
 
 export type TuningKey = keyof typeof TUNING_DEFAULTS
@@ -495,6 +500,15 @@ export const KNOBS: Knob[] = [
     max: 600,
     step: 10,
     unit: 's',
+  },
+  {
+    key: 'estuaryOceanFraction',
+    group: 'world',
+    label: 'Estuary — ocean fraction',
+    help: 'Fraction of the world width that is salt water (right edge). 0 = disabled. 0.15 creates an estuary mixing zone in the middle. Requires world restart to take effect.',
+    min: 0,
+    max: 0.5,
+    step: 0.05,
   },
   {
     key: 'eggHatchSeconds',
