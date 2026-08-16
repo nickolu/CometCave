@@ -120,6 +120,13 @@ const DISRUPTION_NEAR_TILES = 4
 const DISRUPTION_FAR_FACTOR = 0.65
 
 /**
+ * Plant creatures younger than this (in seconds) count as seedlings.
+ * Clearing maintainers eat seedlings even when sated — casual grazing that
+ * prevents young plants establishing before they can reproduce.
+ */
+const SEEDLING_MAX_AGE = 30
+
+/**
  * Speed (|vx| + |vy|) below which a non-root animal counts as still.
  *
  * Still animals are harder to spot — camouflage. A creature pressed against a
@@ -1305,7 +1312,12 @@ function look(
       continue
     }
 
-    if (hungry && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
+    const wantToEat =
+      hungry ||
+      (bp.clearingMaintainer === true &&
+        obp.move.kind === 'root' &&
+        other.ageSeconds < SEEDLING_MAX_AGE)
+    if (wantToEat && canEat(bp, obp) && sizeOf(other) / sizeOf(c) < 1.8) {
       // Bodies touching? Eat now, don't bother pathing — camouflage can't save
       // something once the predator is already on top of it.
       const touching = gapX <= BITE_PAD && gapY <= BITE_PAD
