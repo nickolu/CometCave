@@ -952,6 +952,14 @@ export interface CreatureBlueprint {
    * scaled down proportionally to population / alleeThreshold. Issue #3288.
    */
   alleeThreshold?: number
+  /**
+   * Body mass in relative units (1.0 = reference size).
+   *
+   * Used for Kleiber's metabolic scaling (hunger rate ∝ bodyMass^0.75) and the
+   * size-based predation gate (prey must be within mass ratio [0.1, 3.0] of
+   * predator). Default 1.0 when undefined. Issues #3269, #3272, #3273.
+   */
+  bodyMass?: number     // body mass in relative units (1.0 = reference size); default 1.0
 }
 
 /**

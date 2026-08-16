@@ -1164,9 +1164,13 @@ export function tickCreatures(
       const isLeader = c.id % 3 === 0
       return isLeader ? 1.0 : 0.7
     })()
+    // Kleiber's metabolic scaling: hunger rate ∝ bodyMass^0.75. Issue #3272.
+    // Large animals need more total food but are more efficient per unit mass.
+    // At mass=1.0 this is 1.0 (no change). At mass=4.0 it's 4^0.75 ≈ 2.83 (more hungry).
+    const klieber = Math.pow(bp.bodyMass ?? 1.0, 0.75)
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * klieber * dt
     )
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
@@ -3205,6 +3209,16 @@ function look(
         }
       }
       if (!hasAnvil) continue
+    }
+
+    // Size-based predation gate: prey must be within mass ratio [0.1, 3.0] of predator. Issue #3273.
+    // Only applies when both predator and prey have bodyMass defined (non-default).
+    // Default mass 1.0 / 1.0 ratio = 1.0 which is within [0.1, 3.0], so unset species are unaffected.
+    if (bp.bodyMass !== undefined && obp.bodyMass !== undefined) {
+      const predMass = bp.bodyMass
+      const preyMass = obp.bodyMass
+      const massRatio = preyMass / predMass
+      if (massRatio < 0.1 || massRatio > 3.0) continue  // prey too small or too large
     }
 
     const { w: ow, h: oh } = artSize(obp)
