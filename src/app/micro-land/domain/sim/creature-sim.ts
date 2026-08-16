@@ -791,6 +791,32 @@ export function tickCreatures(
     if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
+
+    // Circadian clock: advance internal phase at individual period (±10% of day length).
+    // Issue #3357, #3358, #3359.
+    if (TUNING.dayLengthSeconds > 0) {
+      if (c.circadianPhase === undefined) {
+        // First tick: initialize to a random phase (different individuals are out of sync)
+        c.circadianPhase = (c.id % 97) / 97  // deterministic spread using creature id
+      }
+      // Individual period variation: ±10% based on creature id (deterministic, not random)
+      const periodVariation = 1 + ((c.id % 17) - 8) / 80  // ±10%
+      const chronotypeOffset = (c.traits.chronotype ?? 0) * (2 / 24)  // ±2h expressed as fraction
+      c.circadianPhase = (c.circadianPhase + dt / (TUNING.dayLengthSeconds * periodVariation) + chronotypeOffset * dt / TUNING.dayLengthSeconds * 0.01) % 1
+      if (c.circadianPhase < 0) c.circadianPhase += 1
+
+      // Zeitgeber: dawn light resets circadian phase toward external time. Issue #3358.
+      // Underground creatures in deep cave (> 3 tiles) do not receive the signal.
+      const externalPhase = (w.elapsed % TUNING.dayLengthSeconds) / TUNING.dayLengthSeconds
+      const inDawnWindow = externalPhase < 0.1 || externalPhase > 0.95  // dawn/just-before-dawn
+      const isDeepCave = isUnderground(w, c) && cavityDepth(w, c) > 3
+      if (inDawnWindow && !isDeepCave) {
+        // Gentle pull toward external phase — not an instant reset, a gradual correction
+        const phaseError = ((c.circadianPhase - externalPhase + 1.5) % 1) - 0.5  // signed shortest-path error
+        c.circadianPhase = ((c.circadianPhase - phaseError * 0.003 * dt) + 1) % 1
+      }
+    }
+
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
     if ((c as { carryingSeed?: unknown }).carryingSeed === undefined) {
       c.carryingSeed = null
