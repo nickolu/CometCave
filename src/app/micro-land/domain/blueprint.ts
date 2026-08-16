@@ -659,6 +659,11 @@ export function sanitizeBlueprint(
     larvalTrophicLevel: ['plant','meat','scavenger'].includes(b.larvalTrophicLevel as string) ? b.larvalTrophicLevel as 'plant'|'meat'|'scavenger' : undefined,
     adultTrophicLevel: ['plant','meat','nectar','none'].includes(b.adultTrophicLevel as string) ? b.adultTrophicLevel as 'plant'|'meat'|'nectar'|'none' : undefined,
     pupalVulnerability: typeof b.pupalVulnerability === 'number' ? Math.max(0, Math.min(1, b.pupalVulnerability)) : undefined,
+    hemimetabolous: typeof b.hemimetabolous === 'boolean' ? b.hemimetabolous : undefined,
+    nymphBlueprint: typeof b.nymphBlueprint === 'string' ? b.nymphBlueprint : undefined,
+    instarCount: typeof b.instarCount === 'number' ? Math.max(1, Math.floor(b.instarCount)) : undefined,
+    instarDuration: typeof b.instarDuration === 'number' ? Math.max(1, b.instarDuration) : undefined,
+    moultVulnerability: typeof b.moultVulnerability === 'number' ? Math.max(0, b.moultVulnerability) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

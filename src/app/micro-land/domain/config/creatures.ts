@@ -2073,6 +2073,154 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
 })
 
+// ---------------------------------------------------------------------------
+// Meadow Locust Nymph — crawling juvenile that eats plants. Issue #3340, #3341.
+// ---------------------------------------------------------------------------
+
+const MEADOW_LOCUST_NYMPH = builtin('meadow-locust-nymph', {
+  name: 'Locust Nymph',
+  blurb: 'A small wingless hopper that munches leaves. It sheds its skin three times before growing wings.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { w: '#88bb44', b: '#556622', g: '#aaddaa' },
+    frames: [['wbw', 'bgb', 'wbw']],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.1, drag: 0.4, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 4, hop: 0.3, restlessness: 0.3 },
+  diet: {
+    eats: ['plant'],
+    fears: ['bug', 'flier'],
+    hungerRate: 0.03,
+    starveSeconds: 30,
+    breedAt: 1,          // nymphs do not breed — adults do
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#88bb44', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  metamorphosesInto: 'meadow-locust',
+  instarCount: 3,
+  instarDuration: 30,
+  moultVulnerability: 1.2,
+})
+
+// ---------------------------------------------------------------------------
+// Meadow Locust — flying adult that lays eggs. Issue #3340.
+// ---------------------------------------------------------------------------
+
+const MEADOW_LOCUST = builtin('meadow-locust', {
+  name: 'Meadow Locust',
+  blurb: 'A winged grass-hopper that strips plants bare. Its eggs hatch straight into tiny nymphs.',
+  size: 1,
+  tags: ['meat', 'bug', 'flier'],
+  art: {
+    palette: { w: '#88bb44', b: '#556622', g: '#ccff88' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.w.', 'gbg', '.w.'],
+    ],
+    frameMs: 120,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.2, drag: 0.5, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'fly', speed: 5, jump: 0, hop: 0, restlessness: 0.5 },
+  diet: {
+    eats: ['plant'],
+    fears: ['flier'],
+    hungerRate: 0.03,
+    starveSeconds: 30,
+    breedAt: 0.6,
+    lifespanSeconds: 60,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#88bb44', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  hemimetabolous: true,
+  nymphBlueprint: 'meadow-locust-nymph',
+})
+
+// ---------------------------------------------------------------------------
+// Dragonfly Nymph — aquatic predator with 5 instars. Issue #3340, #3341.
+// ---------------------------------------------------------------------------
+
+const DRAGONFLY_NYMPH = builtin('dragonfly-nymph', {
+  name: 'Dragonfly Nymph',
+  blurb: 'A fierce underwater hunter that clings to weeds. It moults five times before crawling out to fly.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { w: '#665533', b: '#443322', g: '#998866' },
+    frames: [['gbg', 'wbw', 'gbg']],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 1.0, bounce: 0, drag: 0.4, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'crawl', speed: 2, jump: 0, hop: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.025,
+    starveSeconds: 60,
+    breedAt: 1,          // nymphs do not breed
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#665533', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  metamorphosesInto: 'dragonfly',
+  instarCount: 5,
+  instarDuration: 25,
+  moultVulnerability: 0.8,
+})
+
+// ---------------------------------------------------------------------------
+// Dragonfly — aerial predator that lays eggs in water. Issue #3340.
+// ---------------------------------------------------------------------------
+
+const DRAGONFLY = builtin('dragonfly', {
+  name: 'Dragonfly',
+  blurb: 'A dazzling aerial predator that hunts smaller bugs. It lays its eggs in still water.',
+  size: 1,
+  tags: ['meat', 'bug', 'flier'],
+  art: {
+    palette: { w: '#44aacc', b: '#226688', g: '#88ddff' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 80,
+    faceMotion: true,
+  },
+  body: { mass: 0.2, bounce: 0.1, drag: 0.5, buoyancy: 1.3, immuneTo: [] },
+  move: { kind: 'fly', speed: 7, jump: 0, hop: 0, restlessness: 0.6 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.03,
+    starveSeconds: 30,
+    breedAt: 0.6,
+    lifespanSeconds: 40,
+  },
+  senses: { sight: 18 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#44aacc', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  hemimetabolous: true,
+  nymphBlueprint: 'dragonfly-nymph',
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2125,6 +2273,10 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SHIMMER_LARVA,
   SHIMMER_PUPA,
   SHIMMER_FLY,
+  MEADOW_LOCUST_NYMPH,
+  MEADOW_LOCUST,
+  DRAGONFLY_NYMPH,
+  DRAGONFLY,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

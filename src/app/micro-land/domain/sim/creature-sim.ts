@@ -1435,6 +1435,53 @@ export function tickCreatures(
       continue
     }
 
+    // --- hemimetabolous instar progression + moulting. Issues #3340, #3341. ---
+    if (c.lifeStage === 'nymph') {
+      const currentNymphBp = w.blueprints[c.blueprintId] ?? bp
+      if (c.moultingTimer !== undefined) {
+        // Currently moulting — count down, stay immobile
+        c.moultingTimer -= dt
+        c.vx = 0
+        c.vy = 0
+        if (c.moultingTimer <= 0) {
+          c.moultingTimer = undefined
+          c.instar = (c.instar ?? 1) + 1
+          const instCount = currentNymphBp.instarCount ?? 3
+          if ((c.instar ?? 1) >= instCount) {
+            // Final moult → adult
+            const adultBpId = currentNymphBp.metamorphosesInto
+            const adultBp = adultBpId ? w.blueprints[adultBpId] : undefined
+            if (adultBp) {
+              c.blueprintId = adultBpId!
+              c.lifeStage = 'adult'
+              c.instar = undefined
+              c.ageSeconds = 0
+            }
+          }
+        }
+        continue  // immobile during moult, skip rest of tick
+      } else {
+        // Check if it's time to moult to the next instar
+        const instCount = currentNymphBp.instarCount ?? 3
+        const instDur = currentNymphBp.instarDuration ?? 30
+        const currentInstar = c.instar ?? 1
+        if (currentInstar < instCount && c.ageSeconds >= instDur * currentInstar) {
+          // Place shed-skin tile at creature position. Issue #3341.
+          const tx = Math.round(c.x)
+          const ty = Math.round(c.y)
+          const tileIdx = ty * w.width + tx
+          if (tileIdx >= 0 && tileIdx < w.tiles.length && w.tiles[tileIdx] === MATERIAL_INDEX['air']) {
+            w.tiles[tileIdx] = MATERIAL_INDEX['shed-skin']
+          }
+          // Start moult pause
+          c.moultingTimer = 2
+          c.vx = 0
+          c.vy = 0
+          continue
+        }
+      }
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
@@ -2340,9 +2387,12 @@ export function tickCreatures(
     if (egg.hatchIn <= 0) {
       const parentBp = w.blueprints[egg.blueprintId]
       // Holometabolous: eggs from this adult hatch as the larval form. Issue #3336.
+      // Hemimetabolous: eggs from this adult hatch as nymph instar 1. Issue #3340.
       const hatchBpId = parentBp?.holometabolous && parentBp.larvaeBlueprint
         ? parentBp.larvaeBlueprint
-        : egg.blueprintId
+        : parentBp?.hemimetabolous && parentBp.nymphBlueprint
+          ? parentBp.nymphBlueprint
+          : egg.blueprintId
       const ebp = w.blueprints[hatchBpId]
       if (ebp && w.creatures.length < TUNING.maxCreatures) {
         const { w: ew, h: eh } = artSize(ebp)
@@ -2354,6 +2404,11 @@ export function tickCreatures(
           // Mark life stage from hatch. Issue #3336.
           if (parentBp?.holometabolous) {
             hatchling.lifeStage = 'larva'
+          }
+          // Hemimetabolous: hatch as nymph at instar 1. Issue #3340.
+          if (parentBp?.hemimetabolous) {
+            hatchling.lifeStage = 'nymph'
+            hatchling.instar = 1
           }
           events.push({ kind: 'born', blueprintId: ebp.id, x: egg.x, y: egg.y })
         }
@@ -2844,6 +2899,10 @@ function look(
         // fill, making pupae more targeted by opportunistic hunters. Issue #3338.
         if (other.lifeStage === 'pupa' && obp.pupalVulnerability) {
           fill *= 1 + obp.pupalVulnerability
+        }
+        // Moult vulnerability: moulting nymphs are soft-shelled and easy prey. Issue #3341.
+        if (other.lifeStage === 'nymph' && other.moultingTimer !== undefined && obp.moultVulnerability) {
+          fill *= 1 + obp.moultVulnerability
         }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
