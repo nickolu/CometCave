@@ -627,6 +627,10 @@ export function sanitizeBlueprint(
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
+    breedingPhotoperiod: b.breedingPhotoperiod === 'long' || b.breedingPhotoperiod === 'short'
+      ? b.breedingPhotoperiod
+      : undefined,
+    dormancyPhotoperiod: b.dormancyPhotoperiod !== undefined ? !!b.dormancyPhotoperiod : undefined,
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,

@@ -822,6 +822,23 @@ export function tickCreatures(
       }
     }
 
+    // Clock disruption: creatures badly out of phase with local time suffer
+    // jet-lag equivalent penalties — mild hunger increase. Issue #3361.
+    if (
+      TUNING.dayLengthSeconds > 0 &&
+      c.circadianPhase !== undefined &&
+      !isUnderground(w, c)
+    ) {
+      const extPhase = (w.elapsed % TUNING.dayLengthSeconds) / TUNING.dayLengthSeconds
+      const rawErr = Math.abs(c.circadianPhase - extPhase)
+      const phaseErr = Math.min(rawErr, 1 - rawErr)  // shortest-path error [0, 0.5]
+      const jetlagThreshold = 4 / 24  // 4 hours in a 24-hour equivalent cycle
+      if (phaseErr > jetlagThreshold) {
+        const severity = (phaseErr - jetlagThreshold) / (0.5 - jetlagThreshold)  // 0→1
+        c.hunger = Math.min(1, c.hunger + severity * 0.00005 * dt)  // mild metabolic disruption
+      }
+    }
+
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
     if ((c as { carryingSeed?: unknown }).carryingSeed === undefined) {
       c.carryingSeed = null
@@ -944,6 +961,12 @@ export function tickCreatures(
         const springRelief = moisture * heatStress  // high moisture = full relief
         c.hunger = Math.min(1, c.hunger + Math.max(0, heatStress - springRelief))
       }
+    }
+    // Winter dormancy: creatures with dormancyPhotoperiod slow metabolism
+    // in deep winter (seasonFactor < 0.7). Issue #3360.
+    if (bp.dormancyPhotoperiod && TUNING.seasonAmplitude > 0 && seasonFactor < 0.7) {
+      const dormancyDepth = Math.max(0, 0.7 - seasonFactor) / 0.7  // 0→1 as season goes from 0.7→0
+      c.hunger = Math.max(0, c.hunger - dormancyDepth * 0.0003 * dt)
     }
     if (c.hunger >= 1) {
       c.starving += dt
@@ -1649,8 +1672,14 @@ export function tickCreatures(
     // accumulated warmth (0–1000) has reached their seasonal window. When
     // seasons are disabled (seasonAmplitude=0), worldGdd returns 1000, so the
     // gate is permanently open and existing behaviour is unchanged.
-    const inBreedingSeason = !bp.phenology?.breedingGdd ||
+    // Photoperiod gate: long-day breeders require seasonFactor >= 1 (summer);
+    // short-day breeders require seasonFactor <= 1 (winter/autumn). Issue #3360.
+    const photoperiodOk = !bp.breedingPhotoperiod || TUNING.seasonAmplitude === 0 ||
+      (bp.breedingPhotoperiod === 'long' ? seasonFactor >= 1.0 : seasonFactor <= 1.0)
+    const inBreedingSeason = photoperiodOk && (
+      !bp.phenology?.breedingGdd ||
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
+    )
     if (
       inBreedingSeason &&
       readyToBreed(c, bp) &&
