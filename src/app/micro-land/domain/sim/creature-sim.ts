@@ -45,6 +45,7 @@ import type { Creature, CreatureBlueprint, Scent, SeedEntry, WorldState } from '
 import { deltaX, distX, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 
 import {
+  biomeZoneAt,
   boxDeadlyMaterial,
   boxDrownFraction,
   boxHitsSolid,
@@ -731,6 +732,11 @@ function tickSeedBank(
       // Scarified: attempt germination immediately (don't check viability)
       if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
       if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+      // Biome gate: fire-scarified seeds still respect biome restrictions. Issue #3378.
+      if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
+        const zone = biomeZoneAt(w, seed.y)
+        if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+      }
       const { w: bw, h: bh } = artSize(bp)
       const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
       const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
@@ -751,6 +757,11 @@ function tickSeedBank(
       // Light gap detected: attempt immediate germination
       if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
       if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+      // Biome gate: light-gap seeds still respect biome restrictions. Issue #3378.
+      if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
+        const zone = biomeZoneAt(w, seed.y)
+        if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+      }
       const { w: bw, h: bh } = artSize(bp)
       const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
       const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
@@ -779,6 +790,15 @@ function tickSeedBank(
 
     if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
     if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+
+    // Biome gate: seeds cannot germinate outside their species' allowed biomes.
+    // The seed stays viable and waits — it will never germinate here, but it
+    // will also not waste a slot once the viability check kills it naturally.
+    // Issue #3378.
+    if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
+      const zone = biomeZoneAt(w, seed.y)
+      if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+    }
 
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
@@ -1931,6 +1951,17 @@ export function tickCreatures(
       !(isPlant && TUNING.pollinationOnly) &&
       (speciesCount[bp.id] ?? 0) < (isPlant ? TUNING.plantSpeciesCap : TUNING.speciesSoftCap)
     ) {
+      // Biome gate: species with biomeRequirements cannot breed outside their
+      // allowed zones. `biomeZoneAt` maps the creature's y-row onto a latitudinal
+      // band; if the current band is not in the species' list, skip reproduction
+      // entirely. Returning null (out-of-bounds y) also blocks breeding — a
+      // creature wedged at the ceiling or floor of the world is not in any zone.
+      // Issue #3378.
+      if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
+        const zone = biomeZoneAt(w, Math.floor(c.y))
+        if (!zone || !bp.biomeRequirements.includes(zone)) continue
+      }
+
       /**
        * An animal needs a partner; a plant does not.
        *

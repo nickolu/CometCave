@@ -23,6 +23,7 @@ import {
 import { neutralTraits } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type {
+  BiomeZoneType,
   Creature,
   CreatureBlueprint,
   MaterialId,
@@ -1152,6 +1153,32 @@ export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
   return counts
+}
+
+/**
+ * Classify a y-row into one of the eight latitudinal biome zones.
+ *
+ * The world is 132 tiles tall. Rows are divided into eight bands of roughly
+ * equal height, ordered from warm (sky-side) to cold (underground), mapping
+ * loosely onto real-world latitude bands. This gives species a spatial axis
+ * to inhabit: a mangrove's `biomeRequirements` keeps it in the upper warm
+ * rows; a tundra specialist stays near the cold underground bands.
+ *
+ * Returns null when `y` is out of bounds, so callers can treat out-of-bounds
+ * tiles as "no biome" and let the species stay dormant rather than crash.
+ * Issue #3378.
+ */
+export function biomeZoneAt(_w: WorldState, y: number): BiomeZoneType | null {
+  if (y < 0 || y >= WORLD_H) return null
+  const fraction = y / WORLD_H
+  if (fraction < 0.125) return 'tropical-rainforest'
+  if (fraction < 0.25)  return 'tropical-savanna'
+  if (fraction < 0.375) return 'desert'
+  if (fraction < 0.5)   return 'temperate-grassland'
+  if (fraction < 0.625) return 'temperate-forest'
+  if (fraction < 0.75)  return 'boreal'
+  if (fraction < 0.875) return 'tundra'
+  return 'ice-cap'
 }
 
 export { AIR }
