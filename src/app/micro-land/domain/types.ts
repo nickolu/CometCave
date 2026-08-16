@@ -659,7 +659,27 @@ export interface CreatureBlueprint {
    * that position to spawn. Spawning is fatal — the fish dies and deposits marine
    * nutrients into the headwater ecosystem. Issue #3374.
    */
-  anadromous?: boolean
+  anadromous?: boolean  // records natal X at birth; adult drives toward it to spawn and die
+  /**
+   * Photoperiod breeding gate. Issue #3360.
+   * 'long' = only breeds when seasonFactor >= 1 (long days, summer).
+   * 'short' = only breeds when seasonFactor <= 1 (short days, winter/autumn).
+   * undefined = no photoperiod restriction.
+   */
+  breedingPhotoperiod?: 'long' | 'short'
+  /**
+   * When true and deep winter (seasonFactor < 0.7), metabolic rate is reduced —
+   * the creature burns hunger more slowly. Models hibernation / torpor in species
+   * that slow down in response to short photoperiods. Issue #3360.
+   */
+  dormancyPhotoperiod?: boolean
+  /**
+   * Preferred flow-velocity zone for aquatic creatures. Creatures in their
+   * preferred zone get a slight hunger relief; in a mismatched zone, a mild
+   * penalty. Only meaningful for aquatic species. Issue #3370.
+   * 'riffle' = fast oxygenated water, 'run' = intermediate, 'pool' = slow silted.
+   */
+  flowZonePreference?: 'riffle' | 'run' | 'pool'
   /**
    * Leaves breeding grounds when the season turns and returns in spring.
    * Creature drives toward `winteringX` when the season is falling and toward
@@ -1129,6 +1149,24 @@ export interface Egg {
 }
 
 /**
+ * A dormant seed resting in the soil seed bank. Seeds enter dormancy when a
+ * pollinator drops them on unsuitable terrain. They persist until conditions
+ * allow germination or viability falls to zero. Issue #3350.
+ */
+export interface SeedEntry {
+  /** Unique id within this world. */
+  id: number
+  /** The plant species this seed will grow into. */
+  blueprintId: string
+  /** Tile X position where the seed is buried. */
+  x: number
+  /** Tile Y position where the seed is buried. */
+  y: number
+  /** Seconds since this seed entered the seed bank. */
+  age: number
+}
+
+/**
  * A chemical marker left when a creature eats.
  *
  * Same-species animals that are hungry and have nothing in sight drift toward
@@ -1258,8 +1296,22 @@ export interface WorldState {
    * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
    */
   marshDetritus?: Float32Array
+  /**
+   * Per-tile flow velocity zone for river/stream tiles.
+   * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
+   * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.
+   */
+  flowZone?: Uint8Array
   eggs: Egg[]
   nextEggId: number
+  /**
+   * Seeds that failed to germinate on dispersal and entered soil dormancy.
+   * Populated lazily; undefined in worlds with no seed bank activity.
+   * Max 300 seeds — oldest are evicted if the cap is reached. Issue #3350.
+   */
+  seedBank?: SeedEntry[]
+  /** Monotonically increasing id for the next SeedEntry. */
+  nextSeedBankId?: number
   /** Burrows dug by territorial creatures at their home positions. */
   nests: Nest[]
   nextNestId: number
