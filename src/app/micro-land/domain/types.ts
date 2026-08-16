@@ -1027,6 +1027,14 @@ export interface CreatureBlueprint {
    * Leave undefined for age-independent reproduction. Issue #3261.
    */
   ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  // Issue #3298: vertical elevator shaft for worms
+  earthwormElevator?: boolean
+  // Issue #3299: founding rain ritual for frogs
+  frogFundamentalism?: boolean
+  // Issue #3300: 17-cabinet gopher government
+  gopherGovernment?: boolean
+  // Issue #3302: pheromone internet for beetles
+  beetleInternet?: boolean
 }
 
 /**
@@ -1489,18 +1497,6 @@ export interface Creature {
   homeLandmarkY?: number
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
-  /** Remaining seconds of frog apostasy breeding penalty (5 in-game days). Issue #3299. */
-  frogApostate?: number
-  /** True when this individual holds all 17 gopher government cabinet positions. Issue #3300. */
-  isGopherAdmin?: boolean
-  /** Elapsed time when the beetle recorded a message to relay. Undefined = no pending message. Issue #3302. */
-  beetleMailRecordedAt?: number
-  /** Type of beetle internet message pending delivery. Issue #3302. */
-  beetleMailType?: 'food' | 'predator'
-  /** X tile of the beetle internet message origin. Issue #3302. */
-  beetleMailX?: number
-  /** Y tile of the beetle internet message origin. Issue #3302. */
-  beetleMailY?: number
 }
 
 /**
@@ -1863,6 +1859,14 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  // Issue #3298: number of times earthworm elevator has been rebuilt
+  earthwormElevatorRebuildCount?: number
+  // Issue #3298: next rebuild notice time
+  earthwormElevatorNextRebuild?: number
+  // Issue #3299: season index of last frog ritual
+  lastFrogRitualSeason?: number
+  // Issue #3300: creature id of gopher government administrator
+  gopherAdminId?: number
 }
 
 // ---------------------------------------------------------------------------
