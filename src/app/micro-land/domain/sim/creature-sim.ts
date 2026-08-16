@@ -46,12 +46,14 @@ import { deltaX, distX, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 
 import {
   biomeZoneAt,
+  biomeZonesAtWithEcotone,
   boxDeadlyMaterial,
   boxDrownFraction,
   boxHitsSolid,
   boxLiquidFraction,
   boxViscosity,
   inBounds,
+  isInEcotone,
   liquidAt,
   runWorldGenerators,
   setTile,
@@ -733,10 +735,12 @@ function tickSeedBank(
       // Scarified: attempt germination immediately (don't check viability)
       if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
       if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
-      // Biome gate: fire-scarified seeds still respect biome restrictions. Issue #3378.
+      // Biome gate: fire-scarified seeds respect biome restrictions; ecotone blending
+      // lets them establish within ECOTONE_WIDTH rows of an adjacent zone's boundary.
+      // Issue #3378, extended by #3379.
       if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
-        const zone = biomeZoneAt(w, seed.y)
-        if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+        const zones = biomeZonesAtWithEcotone(w, seed.y)
+        if (!zones.some(z => bp.biomeRequirements!.includes(z))) { surviving.push(seed); continue }
       }
       const { w: bw, h: bh } = artSize(bp)
       const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
@@ -758,10 +762,12 @@ function tickSeedBank(
       // Light gap detected: attempt immediate germination
       if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
       if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
-      // Biome gate: light-gap seeds still respect biome restrictions. Issue #3378.
+      // Biome gate: light-gap seeds respect biome restrictions; ecotone blending
+      // lets them establish within ECOTONE_WIDTH rows of an adjacent zone's boundary.
+      // Issue #3378, extended by #3379.
       if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
-        const zone = biomeZoneAt(w, seed.y)
-        if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+        const zones = biomeZonesAtWithEcotone(w, seed.y)
+        if (!zones.some(z => bp.biomeRequirements!.includes(z))) { surviving.push(seed); continue }
       }
       const { w: bw, h: bh } = artSize(bp)
       const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
@@ -793,12 +799,12 @@ function tickSeedBank(
     if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
 
     // Biome gate: seeds cannot germinate outside their species' allowed biomes.
-    // The seed stays viable and waits — it will never germinate here, but it
-    // will also not waste a slot once the viability check kills it naturally.
-    // Issue #3378.
+    // Within ECOTONE_WIDTH rows of a band boundary, seeds from the adjacent zone
+    // may also establish — the seed stays viable and waits if neither zone matches.
+    // Issue #3378, extended by #3379.
     if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
-      const zone = biomeZoneAt(w, seed.y)
-      if (!zone || !bp.biomeRequirements.includes(zone)) { surviving.push(seed); continue }
+      const zones = biomeZonesAtWithEcotone(w, seed.y)
+      if (!zones.some(z => bp.biomeRequirements!.includes(z))) { surviving.push(seed); continue }
     }
 
     // Try to germinate via the same reproduce path the pollinator uses.
@@ -1176,6 +1182,19 @@ export function tickCreatures(
             c.hunger = Math.min(1, c.hunger + 0.00008 * dt)
           }
         }
+      }
+    }
+    // Ecotone fitness reduction: a creature operating inside its biome zone's
+    // boundary strip (within ECOTONE_WIDTH rows of a band edge) but actually
+    // standing in the *adjacent* zone pays a mild hunger tax. This models the
+    // real cost of functioning outside an organism's primary niche — reduced
+    // foraging efficiency, unfamiliar microhabitat — without hard-blocking
+    // movement or survival. Species without biomeRequirements are unaffected.
+    // Issue #3379.
+    if (bp.biomeRequirements && bp.biomeRequirements.length > 0 && isInEcotone(w, Math.floor(c.y))) {
+      const zone = biomeZoneAt(w, Math.floor(c.y))
+      if (zone && !bp.biomeRequirements.includes(zone)) {
+        c.hunger = Math.min(1, c.hunger + 0.00003 * dt)
       }
     }
     if (c.hunger >= 1) {
@@ -1955,14 +1974,13 @@ export function tickCreatures(
       (speciesCount[bp.id] ?? 0) < (isPlant ? TUNING.plantSpeciesCap : TUNING.speciesSoftCap)
     ) {
       // Biome gate: species with biomeRequirements cannot breed outside their
-      // allowed zones. `biomeZoneAt` maps the creature's y-row onto a latitudinal
-      // band; if the current band is not in the species' list, skip reproduction
-      // entirely. Returning null (out-of-bounds y) also blocks breeding — a
-      // creature wedged at the ceiling or floor of the world is not in any zone.
-      // Issue #3378.
+      // allowed zones. Within ECOTONE_WIDTH rows of a band boundary, both adjacent
+      // zones are valid — a creature near the edge of its zone may still reproduce.
+      // A row outside all bands (out-of-bounds y) still blocks breeding.
+      // Issue #3378, extended by #3379.
       if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
-        const zone = biomeZoneAt(w, Math.floor(c.y))
-        if (!zone || !bp.biomeRequirements.includes(zone)) continue
+        const zones = biomeZonesAtWithEcotone(w, Math.floor(c.y))
+        if (!zones.some(z => bp.biomeRequirements!.includes(z))) continue
       }
 
       /**

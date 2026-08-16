@@ -1209,4 +1209,53 @@ export function biomeZoneAt(w: WorldState, y: number): BiomeZoneType | null {
   return w.biomeZones[r]?.type ?? null
 }
 
+const ECOTONE_WIDTH = 8  // rows on each side of a band boundary that count as ecotone
+
+/**
+ * Returns all biome zones accessible at a given Y row, considering ecotone
+ * blending. Within ECOTONE_WIDTH rows of a band boundary, both the primary
+ * and adjacent zone are returned so that species from either side may establish.
+ *
+ * The zone list always begins with the primary zone for the row's band; adjacent
+ * zones are appended only when the row is close to a boundary. This means the
+ * result is a singleton in the interior of any band and a pair (or triple, if
+ * exactly on a corner) near boundaries.
+ *
+ * Issue #3379.
+ */
+export function biomeZonesAtWithEcotone(w: WorldState, y: number): BiomeZoneType[] {
+  if (!w.biomeZones || w.biomeZones.length === 0) return []
+  const r = Math.min(NUM_BIOME_REGIONS - 1, Math.floor(y / BIOME_REGION_H))
+  const primary = w.biomeZones[r]?.type
+  if (!primary) return []
+  const result: BiomeZoneType[] = [primary]
+  const bandStart = r * BIOME_REGION_H
+  const bandEnd = bandStart + BIOME_REGION_H
+  // Near the top boundary of this band — blend with the band above (lower index = warmer).
+  if (y - bandStart < ECOTONE_WIDTH && r > 0) {
+    const adj = w.biomeZones[r - 1]?.type
+    if (adj) result.push(adj)
+  }
+  // Near the bottom boundary of this band — blend with the band below (higher index = colder).
+  if (bandEnd - y <= ECOTONE_WIDTH && r < NUM_BIOME_REGIONS - 1) {
+    const adj = w.biomeZones[r + 1]?.type
+    if (adj) result.push(adj)
+  }
+  return result
+}
+
+/**
+ * True if the given Y row is in an ecotone — within ECOTONE_WIDTH rows of a
+ * biome band boundary. Ecotone creatures from adjacent zones experience a mild
+ * fitness reduction to model the cost of operating outside their primary niche.
+ * Issue #3379.
+ */
+export function isInEcotone(w: WorldState, y: number): boolean {
+  if (!w.biomeZones) return false
+  const r = Math.min(NUM_BIOME_REGIONS - 1, Math.floor(y / BIOME_REGION_H))
+  const bandStart = r * BIOME_REGION_H
+  const bandEnd = bandStart + BIOME_REGION_H
+  return (y - bandStart < ECOTONE_WIDTH) || (bandEnd - y <= ECOTONE_WIDTH)
+}
+
 export { AIR }
