@@ -616,6 +616,8 @@ export function sanitizeBlueprint(
     infraredVision: b.infraredVision === true,
     lateralLine: b.lateralLine === true,
     polarizedVision: b.polarizedVision === true,
+    uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
+    uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     elderWisdom: !!b.elderWisdom,
     phenology: b.phenology?.breedingGdd !== undefined
