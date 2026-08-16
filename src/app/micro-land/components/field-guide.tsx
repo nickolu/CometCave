@@ -81,6 +81,7 @@ export function FieldGuidePane() {
   const invasionFront = useMicroLand(s => s.invasionFront)
   const biomeZones = useMicroLand(s => s.biomeZones)
   const atmosphericCO2 = useMicroLand(s => s.atmosphericCO2)
+  const migrationStats = useMicroLand(s => s.migrationStats)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -671,6 +672,55 @@ export function FieldGuidePane() {
                 <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
                   {Math.round(zone.temperature * 100)}&deg;&nbsp;&nbsp;{Math.round(zone.precipitation * 100)}%
                 </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {Object.keys(migrationStats).length > 0 && (
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>
+            Migration Routes
+          </h3>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+            Seasonal travellers following ancient corridors across the world.
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {Object.entries(migrationStats).map(([bpId, stats]) => (
+              <li
+                key={bpId}
+                style={{
+                  padding: '4px 0',
+                  borderBottom: '1px solid var(--cc-panel-divider)',
+                  fontSize: 11,
+                  fontFamily: 'var(--cc-font-mono)',
+                  lineHeight: 1.7,
+                }}
+              >
+                <div style={{ color: 'var(--cc-text-default)', letterSpacing: 0.8, textTransform: 'uppercase', fontSize: 10 }}>
+                  {stats.name}
+                </div>
+                <div style={{ color: 'var(--cc-text-muted)' }}>
+                  {stats.migrating > 0
+                    ? `${stats.migrating} of ${stats.total} en route`
+                    : `${stats.total} resident`}
+                </div>
+                {stats.winteringX !== undefined && (
+                  <div style={{ color: 'var(--cc-text-muted)', opacity: 0.8 }}>
+                    {'← Winter grounds: tile '}{stats.winteringX}
+                  </div>
+                )}
+                {stats.summerX !== undefined && (
+                  <div style={{ color: 'var(--cc-text-muted)', opacity: 0.8 }}>
+                    {'→ Summer grounds: tile '}{stats.summerX}
+                  </div>
+                )}
+                {stats.stopoverHabitat.length > 0 && (
+                  <div style={{ color: 'var(--cc-text-muted)', opacity: 0.7 }}>
+                    {'Stopovers: '}{stats.stopoverHabitat.join(', ')}
+                  </div>
+                )}
               </li>
             ))}
           </ul>
