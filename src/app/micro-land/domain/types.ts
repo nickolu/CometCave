@@ -740,6 +740,18 @@ export interface CreatureBlueprint {
    * Leave undefined to allow establishment anywhere. Issue #3378.
    */
   biomeRequirements?: BiomeZoneType[]
+  /**
+   * This species can form symbiotic associations with soil fungi, becoming a
+   * node in the mycorrhizal network. Connected plants share nutrients and
+   * chemical signals. Issue #3329.
+   */
+  mycorrhizalPartner?: boolean
+  /**
+   * This species REQUIRES fungal colonization to establish or survive beyond
+   * the seedling stage. Without a mycorrhizal partner within HYPHAE_RANGE
+   * tiles, seedlings die and adults face a starvation penalty. Issue #3333.
+   */
+  obligateMycorrhizal?: boolean
 }
 
 /**
@@ -1471,6 +1483,12 @@ export interface WorldState {
    * warmer classification. Issue #3381.
    */
   atmosphericCO2?: number
+  /**
+   * Mycorrhizal network graph: maps creature ID (as string) to array of
+   * connected creature IDs. Entries are pruned when a creature dies. Undefined
+   * until first mycorrhizal plant establishes. Issue #3329.
+   */
+  mycorrhizalLinks?: Record<string, number[]>
 }
 
 // ---------------------------------------------------------------------------

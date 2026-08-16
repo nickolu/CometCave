@@ -52,6 +52,7 @@ import {
   boxHitsSolid,
   boxLiquidFraction,
   boxViscosity,
+  hasMycorrhizalPartnerNearby,
   inBounds,
   isInEcotone,
   liquidAt,
@@ -64,6 +65,7 @@ import {
   tickCaveNutrient,
   tickMarshDetritus,
   tickMoisture,
+  tickMycorrhizalNetwork,
   tickSalinity,
   tileAt,
   updateBiomeZones,
@@ -808,6 +810,12 @@ function tickSeedBank(
       if (!zones.some(z => bp.biomeRequirements!.includes(z))) { surviving.push(seed); continue }
     }
 
+    // Obligate mycorrhizal seeds cannot germinate without nearby fungal partners. Issue #3333.
+    if (bp.obligateMycorrhizal && !hasMycorrhizalPartnerNearby(w, seed.x, seed.y)) {
+      surviving.push(seed)  // wait for network establishment
+      continue
+    }
+
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
@@ -862,6 +870,7 @@ export function tickCreatures(
   // Count living plants for CO2 absorption
   const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
   tickAtmosphericCO2(w, tickCount, plantCount)
+  tickMycorrhizalNetwork(w, tickCount, rng)
   updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
@@ -1196,6 +1205,12 @@ export function tickCreatures(
       const zone = biomeZoneAt(w, Math.floor(c.y))
       if (zone && !bp.biomeRequirements.includes(zone)) {
         c.hunger = Math.min(1, c.hunger + 0.00003 * dt)
+      }
+    }
+    // Obligate mycorrhizal: plants cannot survive without fungal partners. Issue #3333.
+    if (bp.obligateMycorrhizal && bp.move.kind === 'root') {
+      if (!hasMycorrhizalPartnerNearby(w, c.x, c.y)) {
+        c.hunger = Math.min(1, c.hunger + 0.0001 * dt)  // starvation without fungal support
       }
     }
     if (c.hunger >= 1) {
