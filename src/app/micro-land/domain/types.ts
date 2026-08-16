@@ -512,6 +512,17 @@ export interface CreatureBlueprint {
    * metabolic rate despite being only 2% of body mass.
    */
   brainSize?: number
+  /**
+   * Fish-type creatures with a lateral line organ detect water pressure waves
+   * and micro-turbulence from nearby moving creatures. The lateral line
+   * bypasses visual camouflage within a short radius — but only when the
+   * predator is in a water or mud tile (the medium that transmits the
+   * pressure signal).
+   *
+   * Models how blind cave fish still school and hunt, and why predatory fish
+   * in murky water find prey that would be visually invisible.
+   */
+  lateralLine?: boolean
 }
 
 /**
