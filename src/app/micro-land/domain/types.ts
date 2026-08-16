@@ -1029,6 +1029,34 @@ export interface CreatureBlueprint {
    * with a 12% compliance rate (modelled as a history event). Issue #3316.
    */
   weaselTribunal?: boolean
+  /** When true, bites from this predator inject venom that slows prey. Issue #3236. */
+  venomous?: boolean
+  /** Venom potency 0–1. Higher = longer slow and more hunger drain. Default 0.5. Issue #3236. */
+  venomPotency?: number
+  /** Venom resistance 0–1. Species-level trait that reduces venom effect on this species. Issue #3236. */
+  venomResistance?: number
+  /**
+   * When true, this species actively claims a home range and engages in threat
+   * displays when same-species rivals enter it. Territorial creatures breed
+   * 15% faster when the territory is uncontested. Issue #3226.
+   */
+  territorialBlueprintFlag?: boolean
+  /** Radius in tiles of this species' home territory. Default 8. Issue #3226. */
+  territoryRadius?: number
+  /**
+   * When true, this aquatic species is adapted to deep cold water (below thermocline).
+   * Above-thermocline creatures suffer hunger penalties in cold water; below-thermocline
+   * creatures suffer penalties in warm surface water. Issue #3249.
+   */
+  deepWaterSpecialist?: boolean
+  /** If true, this species is adapted to shallow warm water above the thermocline. Issue #3249. */
+  shallowWaterSpecialist?: boolean
+  /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
+  platypusPhilosophy?: boolean
+  /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
+  toadTaxation?: boolean
+  /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
+  urchinUnion?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1120,6 +1148,30 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * When true, this species maintains a dominance hierarchy.
+   * Rank is established through contests in look(); higher rank grants
+   * food access priority and mate priority. Issue #3227.
+   */
+  dominanceHierarchy?: boolean
+  /**
+   * When true, this species exhibits kin selection: offspring inherit parent's
+   * kinGroupId and preferentially share resources with kin. Issue #3230.
+   */
+  kinSelection?: boolean
+  /**
+   * When true, this prey species emits alarm calls when detecting predators.
+   * All same-species individuals within 2× sight range immediately flee.
+   * The caller takes a slight extra predation risk (exposed position). Issue #3231.
+   */
+  alarmCaller?: boolean
+  /**
+   * When true, this toxic species is brightly colored as a warning to predators.
+   * Predators that survive eating one gain a species-specific learned aversion,
+   * reducing future attack probability by 90%. Young/naive predators (mealsEaten < 5)
+   * still attack freely. Issue #3237.
+   */
+  aposematic?: boolean
 }
 
 /**
@@ -1468,6 +1520,10 @@ export interface Creature {
   isChiefVole?: boolean
   /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
   conflictCount?: number
+  /** Total philosophical contemplation sessions completed. Does nothing. Issue #3309. */
+  wisdom?: number
+  /** Countdown seconds until next philosophical contemplation. Issue #3309. */
+  philosophyTimer?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1601,6 +1657,24 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
+  venomTimer?: number
+  /** X of this creature's claimed territory center. Issue #3226. */
+  territoryX?: number
+  /** Y of this creature's claimed territory center. Issue #3226. */
+  territoryY?: number
+  /** Seconds remaining on territory threat display cooldown. Issue #3226. */
+  threatDisplayTimer?: number
+  /** Dominance rank 0–1 (0 = lowest, 1 = alpha). Decays with age. Issue #3227. */
+  dominanceRank?: number
+  /** Countdown seconds until next rank contest. Issue #3227. */
+  rankContestCooldown?: number
+  /** Kin group identifier — inherited from parent. Issue #3230. */
+  kinGroupId?: string
+  /** Countdown seconds remaining on alarm call emission. Nearby kin flee while set. Issue #3231. */
+  alarmCallTimer?: number
+  /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
+  learnedAversions?: string[]
 }
 
 /**
@@ -1793,17 +1867,6 @@ export interface WorldGeneratorEntry {
  * Assigned per horizontal region band (8 bands from sky to bedrock).
  * Issue #3377.
  */
-export type BiomeZoneType =
-  | 'tropical-rainforest'
-  | 'tropical-savanna'
-  | 'desert'
-  | 'temperate-grassland'
-  | 'temperate-forest'
-  | 'boreal'
-  | 'tundra'
-  | 'ice-cap'
-
-/** One classified biome band — a full-width horizontal slice of the world. */
 export interface BiomeZone {
   /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
   regionIndex: number
@@ -1967,6 +2030,10 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
+  thermoclineY?: number
+  /** Whether the Urchin Union strike is active. Issue #3314. */
+  urchinStrikeActive?: boolean
   /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
   otterOligarchIds?: number[]
   /** Season index of the last Otter Oligarchy election. Issue #3308. */
@@ -2018,6 +2085,15 @@ export interface WorldState {
    * hunger drain. Initialized lazily. Issues #3099–#3103.
    */
   soilNutrient?: Float32Array
+   * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windX?: number
+  /**
+   * Current wind direction Y component [-0.2, 0.2]. Positive = downward.
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windY?: number
 }
 
 // ---------------------------------------------------------------------------
