@@ -316,6 +316,14 @@ function isNearWater(w: WorldState, c: Creature): boolean {
 }
 
 /**
+ * True when c and other overlap — used for snap-trap contact detection.
+ * Uses the creature positions as 1-tile points (plants are 1-wide).
+ */
+function overlapsPlant(c: Creature, plant: Creature): boolean {
+  return Math.abs(c.x - plant.x) < 2 && Math.abs(c.y - plant.y) < 2
+}
+
+/**
  * Growing-degree units (0–1000) for the current world time.
  * Derived from the existing season sine wave: 0 at winter nadir, 1000 at
  * summer peak. When seasonAmplitude is 0 (no seasons), returns 1000 so
@@ -777,6 +785,72 @@ export function tickCreatures(
         c.hunger = Math.max(0, c.hunger - 0.015 * dt)
         c.starving = 0
       }
+    }
+
+    // --- snap-trap mechanics -------------------------------------------
+    if (bp.trapType === 'snap' && bp.move.kind === 'root') {
+      if (c.trapDigestingId !== undefined) {
+        // Digesting: drain prey hunger, fill plant's hunger.
+        const prey = w.creatures.find(p => p.id === c.trapDigestingId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.04 * dt)
+          c.hunger = Math.max(0, c.hunger - 0.01 * dt)
+          if (prey.hunger >= 1) {
+            // Prey dies of starvation in the trap; reset.
+            const preyBp = w.blueprints[prey.blueprintId]
+            if (preyBp) kill(w, prey, preyBp, dead, events, 'starved')
+            else dead.add(prey.id)
+            c.trapDigestingId = undefined
+            c.trapTriggerCount = 0
+            c.forceFrame = undefined
+          }
+        } else {
+          // Prey already gone.
+          c.trapDigestingId = undefined
+          c.trapTriggerCount = 0
+          c.forceFrame = undefined
+        }
+      } else {
+        // Trap is open — look for prey contact.
+        c.trapTriggerTimer = Math.max(0, (c.trapTriggerTimer ?? 0) - dt)
+        if (c.trapTriggerTimer === 0) {
+          c.trapTriggerCount = 0  // timer expired, reset trigger
+        }
+        for (const other of w.creatures) {
+          if (
+            other.id === c.id ||
+            other.blueprintId === c.blueprintId ||
+            other.immobilizedById !== undefined ||
+            !overlapsPlant(other, c)
+          ) continue
+          const otherBp = w.blueprints[other.blueprintId]
+          if (!otherBp || otherBp.size > 2) continue  // only catch small creatures
+          c.trapTriggerCount = (c.trapTriggerCount ?? 0) + 1
+          c.trapTriggerTimer = 3  // 3-second window for second touch
+          if (c.trapTriggerCount >= 2) {
+            // Trap snaps shut!
+            c.trapDigestingId = other.id
+            other.immobilizedById = c.id
+            c.trapTriggerCount = 0
+            c.trapTriggerTimer = 0
+            c.forceFrame = 1  // show closed-trap frame
+            break
+          }
+          break  // only process one touch per tick
+        }
+      }
+    }
+    // Clear immobilization if the captor is gone.
+    if (c.immobilizedById !== undefined) {
+      const captor = w.creatures.find(p => p.id === c.immobilizedById)
+      if (!captor || captor.trapDigestingId !== c.id) {
+        c.immobilizedById = undefined
+      }
+    }
+    // Immobilized creatures cannot move.
+    if (c.immobilizedById !== undefined) {
+      c.vx = 0
+      c.vy = 0
     }
 
     // --- old age --------------------------------------------------------

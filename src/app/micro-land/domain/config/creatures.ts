@@ -155,6 +155,44 @@ const SPORECAP = builtin('sporecap', {
   glow: 0.55,
 })
 
+const SNAP_TRAP = builtin('snap-trap', {
+  name: 'Snap Trap',
+  blurb: "Two touches snap it shut. One mistake and you're lunch.",
+  size: 1,
+  tags: ['plant'],
+  carnivorousPlant: true,
+  trapType: 'snap',
+  art: {
+    palette: { g: '#2a6b2a', r: '#cc3333', y: '#f5e642' },
+    frames: [
+      // Open: two lobes spread, red interior visible
+      ['gy.yg', 'g.r.g', 'ggggg', '..g..', '..g..'],
+      // Closed: lobes shut, trap sealed
+      ['ggggg', 'ggggg', 'ggggg', '..g..', '..g..'],
+    ],
+    frameMs: 500,
+    faceMotion: false,
+  },
+  body: { mass: 1, bounce: 0, drag: 0.2, buoyancy: 0.6, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: ['meat', 'insect'],
+    fears: [],
+    hungerRate: 0,
+    starveSeconds: 999,
+    breedAt: 0.1,
+    lifespanSeconds: 600,
+  },
+  habitat: {
+    needs: null,
+    drowns: false,
+  },
+  senses: { sight: 1 },
+  death: { becomes: null, particleColor: '#2a6b2a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+})
+
 // ---------------------------------------------------------------------------
 // Grazers — eat plants, get eaten
 // ---------------------------------------------------------------------------
@@ -1536,6 +1574,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   FROSTCAP,
   GLOWVINE,
   SKYBLOOM,
+  SNAP_TRAP,
   MITE,
   HOPPER,
   GLIMMER_MOTH,
