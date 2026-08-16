@@ -328,6 +328,13 @@ export interface CreatureBlueprint {
    * generations the population drifts toward the local substrate colour.
    */
   cryptic?: boolean
+  /**
+   * High-contrast stripe or spot pattern that breaks the creature's apparent outline
+   * at range, reducing predator detection beyond DISRUPTION_NEAR_TILES.
+   * Up close the pattern is legible; the effect only applies at distance.
+   * Models zebra stripes, jaguar spots, and disruptive camouflage.
+   */
+  disruptivePattern?: boolean
 }
 
 /**
