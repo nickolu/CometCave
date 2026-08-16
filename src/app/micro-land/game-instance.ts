@@ -798,6 +798,26 @@ export class GameInstance {
     // Atmospheric CO2 for Field Guide display. Issue #3381.
     useMicroLand.getState().setAtmosphericCO2(this.world.atmosphericCO2 ?? 0)
 
+    // Migration stats for Field Guide display. Issue #3327.
+    const migStats: Record<string, { name: string; total: number; migrating: number; winteringX: number | undefined; summerX: number | undefined; stopoverHabitat: string[] }> = {}
+    for (const c of this.world.creatures) {
+      const bp = this.world.blueprints[c.blueprintId]
+      if (!bp?.migratory) continue
+      if (!migStats[c.blueprintId]) {
+        migStats[c.blueprintId] = {
+          name: bp.name,
+          total: 0,
+          migrating: 0,
+          winteringX: bp.winteringX,
+          summerX: bp.summerX,
+          stopoverHabitat: bp.stopoverHabitat ?? [],
+        }
+      }
+      migStats[c.blueprintId].total++
+      if (c.migrating) migStats[c.blueprintId].migrating++
+    }
+    useMicroLand.getState().setMigrationStats(migStats)
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {

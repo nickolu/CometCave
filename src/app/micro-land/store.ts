@@ -467,6 +467,26 @@ interface MicroLandState {
    */
   atmosphericCO2: number
   setAtmosphericCO2: (v: number) => void
+  /**
+   * Per-species migration stats for the Field Guide. Keyed by blueprintId;
+   * only populated for migratory species currently in the world. Issue #3327.
+   */
+  migrationStats: Record<string, {
+    name: string
+    total: number
+    migrating: number
+    winteringX: number | undefined
+    summerX: number | undefined
+    stopoverHabitat: string[]
+  }>
+  setMigrationStats: (stats: Record<string, {
+    name: string
+    total: number
+    migrating: number
+    winteringX: number | undefined
+    summerX: number | undefined
+    stopoverHabitat: string[]
+  }>) => void
   /** Set when the Field Guide circle is clicked — game instance centers + inspects. */
   locateCreatureRequest: { id: number; serial: number } | null
   requestLocateCreature: (id: number) => void
@@ -670,6 +690,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   invasionFront: {},
   biomeZones: [],
   atmosphericCO2: 0,
+  migrationStats: {},
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
@@ -804,6 +825,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),
   setAtmosphericCO2: v => set({ atmosphericCO2: v }),
+  setMigrationStats: stats => set({ migrationStats: stats }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
