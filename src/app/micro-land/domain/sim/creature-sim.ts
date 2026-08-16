@@ -67,6 +67,7 @@ import {
   tickCorridorMask,
   tickEdgeMask,
   tickMarshDetritus,
+  tickMineralVeins,
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
@@ -879,9 +880,16 @@ export function tickCreatures(
   tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickMineralVeins(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
+
+  // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
+  const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
+  const WIND_PERIOD_Y = TUNING.seasonPeriod * 4.7
+  w.windX = Math.cos(2 * Math.PI * w.elapsed / WIND_PERIOD_X) * 0.4
+  w.windY = Math.sin(2 * Math.PI * w.elapsed / WIND_PERIOD_Y) * 0.15
 
   const creatures = w.creatures
   const dead = new Set<number>()
@@ -1117,6 +1125,17 @@ export function tickCreatures(
     }
   }
 
+  // Urchin Union: sea urchins strike when population > 15. Issue #3314.
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const ubp = w.blueprints[bpId]
+    if (!ubp?.urchinUnion) continue
+    const wasStriking = w.urchinStrikeActive ?? false
+    w.urchinStrikeActive = cnt > 15
+    if (w.urchinStrikeActive && !wasStriking) {
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${ubp.name} Union on strike. Demands: stronger currents, fewer predators. Management has not responded.` })
+    }
+  }
+
   // MVP warning and rescue effect. Issues #3284, #3285.
   if (tickCount % 60 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
@@ -1151,6 +1170,48 @@ export function tickCreatures(
   byX.length = creatures.length
   for (let i = 0; i < creatures.length; i++) byX[i] = creatures[i]
   byX.sort(compareX)
+
+  // Thermocline: temperature boundary creates distinct shallow vs deep water zones. Issue #3249.
+  if (tickCount % 300 === 0) {
+    // Find water surface (topmost liquid tile in middle column).
+    const midCol = Math.floor(WORLD_W / 2)
+    let surfaceY = 0
+    for (let ty = 0; ty < WORLD_H; ty++) {
+      if (IS_LIQUID[w.tiles[ty * WORLD_W + midCol] ?? 0] === 1) {
+        surfaceY = ty
+        break
+      }
+    }
+    w.thermoclineY = Math.floor(surfaceY + (WORLD_H - surfaceY) * 0.4)
+  }
+
+  // Marine snow: surface productivity creates downward nutrient flux to deep sea. Issue #3251.
+  if (tickCount % 120 === 0 && w.thermoclineY !== undefined) {
+    w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
+    const snowRate = 0.002
+    for (let sx = 0; sx < WORLD_W; sx++) {
+      // Find water surface for this column.
+      let surf = -1
+      for (let sy = 0; sy < WORLD_H; sy++) {
+        if (IS_LIQUID[w.tiles[sy * WORLD_W + sx] ?? 0] === 1) { surf = sy; break }
+      }
+      if (surf < 0) continue
+      // Find bottom for this column.
+      let bottom = WORLD_H - 1
+      for (let sy = WORLD_H - 1; sy >= surf; sy--) {
+        if (IS_LIQUID[w.tiles[sy * WORLD_W + sx] ?? 0] === 1) { bottom = sy; break }
+      }
+      if (bottom <= surf) continue
+      const surfIdx = surf * WORLD_W + sx
+      const bottomIdx = bottom * WORLD_W + sx
+      // Transfer a fraction of surface nutrient to the bottom.
+      const snowAmount = (w.caveNutrient[surfIdx] ?? 0) * snowRate
+      if (snowAmount > 0.0001) {
+        w.caveNutrient[surfIdx] = Math.max(0, w.caveNutrient[surfIdx] - snowAmount)
+        w.caveNutrient[bottomIdx] = Math.min(1, (w.caveNutrient[bottomIdx] ?? 0) + snowAmount)
+      }
+    }
+  }
 
   // Mass emergence pre-computation: which species have >= 3 pupae whose timer
   // will expire this tick? Used for predator satiation during the eating pass.
@@ -1234,6 +1295,8 @@ export function tickCreatures(
     }
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
+    // Venom slow: tick down venom debuff. Issue #3236.
+    if (c.venomTimer && c.venomTimer > 0) c.venomTimer = Math.max(0, c.venomTimer - dt)
     if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
     // Chemical defense prime: tick down mycorrhizal-relayed signal. Issue #3331.
     if (c.defenseTimer !== undefined && c.defenseTimer > 0) {
@@ -1245,6 +1308,53 @@ export function tickCreatures(
     if (c.judiciaryPriorityTimer && c.judiciaryPriorityTimer > 0) {
       c.judiciaryPriorityTimer = Math.max(0, c.judiciaryPriorityTimer - dt)
     }
+    // Dominance hierarchy: decay rank contest cooldown and rank itself with age. Issue #3227.
+    if (bp.dominanceHierarchy) {
+      if ((c.rankContestCooldown ?? 0) > 0) {
+        c.rankContestCooldown = Math.max(0, (c.rankContestCooldown ?? 0) - dt)
+      }
+      // Rank decays faster as the creature ages.
+      const ageRatio = c.ageSeconds / (bp.diet.lifespanSeconds ?? 100)
+      c.dominanceRank = Math.max(0, (c.dominanceRank ?? 0.5) - 0.00001 * dt * ageRatio)
+    }
+    // Alarm calls: propagate alarm to nearby conspecifics; decrement timer. Issue #3231.
+    if (bp.alarmCaller && (c.alarmCallTimer ?? 0) > 0) {
+      const alarmSight = sightOf(c, bp) * 2
+      const alarmSight2 = alarmSight * alarmSight
+      const acx = c.x + bw / 2
+      const acy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(acx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - acy
+        if (odx * odx + ody * ody <= alarmSight2) {
+          other.mood = 'flee'
+        }
+      }
+      // Caller pays an exposure cost for calling out loud.
+      c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+      c.alarmCallTimer = Math.max(0, (c.alarmCallTimer ?? 0) - dt)
+    }
+    // Kin selection: share food with nearby starving kin every 60 ticks. Issue #3230.
+    if (bp.kinSelection && c.hunger < 0.4 && tickCount % 60 === c.id % 60) {
+      const kinRange2 = 25 // 5 tiles squared
+      const kcx = c.x + bw / 2
+      const kcy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        if (other.hunger < 0.7) continue
+        if ((other.kinGroupId ?? '') !== (c.kinGroupId ?? '')) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(kcx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - kcy
+        if (odx * odx + ody * ody <= kinRange2) {
+          other.hunger = Math.max(0, other.hunger - 0.02)
+          c.hunger = Math.min(1, c.hunger + 0.02)
+          break // share with at most one kin per tick
+        }
+      }
+    }
     // Drift state: exit drift when creature leaves water.
     if (c.drifting) {
       const driftTile = w.tiles[Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))] ?? 0
@@ -1255,6 +1365,37 @@ export function tickCreatures(
     if (bp.landmarkMemory && c.homeLandmarkX === undefined) {
       c.homeLandmarkX = c.x
       c.homeLandmarkY = c.y
+    }
+
+    // Territory marking: claim home range, threaten intruders. Issue #3226.
+    if (bp.territorialBlueprintFlag) {
+      // Claim territory on first tick.
+      if (c.territoryX === undefined) {
+        c.territoryX = c.x
+        c.territoryY = c.y
+      }
+      if ((tickCount + c.id) % 60 === 0) {
+        const radius = bp.territoryRadius ?? 8
+        let contested = false
+        for (const other of w.creatures) {
+          if (other === c || other.blueprintId !== c.blueprintId) continue
+          const oFromCenterX = deltaX(other.x, c.territoryX!)
+          const oFromCenterY = other.y - (c.territoryY ?? c.y)
+          if (oFromCenterX * oFromCenterX + oFromCenterY * oFromCenterY < radius * radius) {
+            contested = true
+            c.threatDisplayTimer = 3
+            other.threatDisplayTimer = 3
+          }
+        }
+        if (!contested && c.breedCooldown > 0) {
+          c.breedCooldown *= 0.85  // faster breeding in uncontested territory. Issue #3226.
+        }
+      }
+      if (c.threatDisplayTimer && c.threatDisplayTimer > 0) {
+        c.threatDisplayTimer = Math.max(0, c.threatDisplayTimer - dt)
+        // Don't flee during threat display.
+        if (c.mood === 'flee') c.mood = 'wander'
+      }
     }
 
     // Circadian clock: advance internal phase at individual period (±10% of day length).
@@ -1296,6 +1437,20 @@ export function tickCreatures(
       if (phaseErr > jetlagThreshold) {
         const severity = (phaseErr - jetlagThreshold) / (0.5 - jetlagThreshold)  // 0→1
         c.hunger = Math.min(1, c.hunger + severity * 0.00005 * dt)  // mild metabolic disruption
+      }
+    }
+
+    // Thermocline penalty: out-of-zone specialists suffer hunger penalties. Issue #3249.
+    if (w.thermoclineY !== undefined) {
+      const tileIdx = Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))
+      if (IS_LIQUID[w.tiles[tileIdx] ?? 0] === 1) {
+        const inDeepWater = c.y > w.thermoclineY
+        if (bp.deepWaterSpecialist && !inDeepWater) {
+          c.hunger = Math.min(1, c.hunger + 0.00005 * dt)  // too warm at surface. Issue #3249.
+        }
+        if (bp.shallowWaterSpecialist && inDeepWater) {
+          c.hunger = Math.min(1, c.hunger + 0.00005 * dt)  // too cold in deep water. Issue #3249.
+        }
       }
     }
 
@@ -1451,6 +1606,14 @@ export function tickCreatures(
     if (bp.dormancyPhotoperiod && TUNING.seasonAmplitude > 0 && seasonFactor < 0.7) {
       const dormancyDepth = Math.max(0, 0.7 - seasonFactor) / 0.7  // 0→1 as season goes from 0.7→0
       c.hunger = Math.max(0, c.hunger - dormancyDepth * 0.0003 * dt)
+    }
+    // Wind chill: warm-blooded creatures lose heat faster in cold wind. Issue #3156.
+    if (bp.warmBlooded && TUNING.seasonAmplitude > 0 && seasonFactor < 0.8 && w.windX !== undefined) {
+      const windMag = Math.abs(w.windX) + Math.abs(w.windY ?? 0) * 0.5
+      if (windMag > 0.1) {
+        const coldFactor = Math.max(0, 0.8 - seasonFactor) / 0.8
+        c.hunger = Math.min(1, c.hunger + coldFactor * windMag * 0.0002 * dt)
+      }
     }
     // Flow zone preference: aquatic creatures thrive in their matched zone.
     // Preferred zone → slight hunger relief; wrong zone → mild hunger increase.
@@ -2001,6 +2164,49 @@ export function tickCreatures(
           }
         }
       }
+    }
+
+    // Platypus Philosophy: periodic existential contemplation. Issue #3309.
+    if (bp.platypusPhilosophy) {
+      if (c.philosophyTimer === undefined) c.philosophyTimer = (TUNING.seasonPeriod / 10) * rng()
+      c.philosophyTimer -= dt
+      if (c.philosophyTimer <= 0) {
+        c.philosophyTimer = TUNING.seasonPeriod / 10
+        c.wisdom = (c.wisdom ?? 0) + 1
+        c.insightTimer = (c.insightTimer ?? 0) + 4
+        const MUSINGS = [
+          'I have a bill but also fur. Am I real?',
+          'I lay eggs but nurse young. What does this mean?',
+          'I have electroreceptors. Most creatures do not. Why?',
+          'The question of platypus existence remains unresolved.',
+          'Is this a bill or a beak? The Philosophical Society is divided.',
+        ]
+        const musing = MUSINGS[Math.floor(rng() * MUSINGS.length)]
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `Platypus (wisdom: ${c.wisdom}): "${musing}"` })
+      }
+    }
+
+    // Toad Taxation: levy a toll on creatures passing near a toad on water. Issue #3313.
+    if (bp.toadTaxation && IS_LIQUID[w.tiles[Math.floor(c.y) * WORLD_W + Math.floor(c.x)]] === 1) {
+      for (const traveler of w.creatures) {
+        if (traveler.id === c.id || traveler.blueprintId === c.blueprintId) continue
+        const tdist = Math.sqrt((traveler.x - c.x) ** 2 + (traveler.y - c.y) ** 2)
+        if (tdist > 3) continue
+        const toll = 0.05
+        if (traveler.hunger < 0.9 && c.hunger > 0.05) {
+          traveler.hunger = Math.min(1, traveler.hunger + toll)
+          c.hunger = Math.max(0, c.hunger - toll)
+          if (rng() < 0.4) {
+            traveler.stunTimer = (traveler.stunTimer ?? 0) + 0.5
+          }
+        }
+      }
+    }
+
+    // Urchin Union strike: strikers refuse to move. Issue #3314.
+    if (bp.urchinUnion && w.urchinStrikeActive) {
+      c.vx = 0
+      c.vy = 0
     }
 
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
@@ -3072,6 +3278,10 @@ export function tickCreatures(
               }
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
+            // Kin selection: offspring inherit parent's kin group. Issue #3230.
+            if (bp.kinSelection) {
+              child.kinGroupId = c.kinGroupId ?? (c.blueprintId + '_' + c.id)
+            }
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
             c.children++
@@ -3418,8 +3628,8 @@ export function tickCreatures(
     const { w: vw, h: vh } = artSize(victimBp)
     const angle = rng() * Math.PI * 2
     const dist = 20 + rng() * 40
-    const ox = ev.x + Math.cos(angle) * dist
-    const oy = ev.y + Math.sin(angle) * dist
+    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * 25
+    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * 15
     const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
     if (seedling) {
       plantsAlive++
@@ -3469,8 +3679,13 @@ export function tickCreatures(
     }
   }
 
-  // Scent decay
-  for (const s of w.scents) s.decaySeconds -= dt
+  // Scent decay and wind dispersal. Issue #3155 for wind dispersal.
+  for (const s of w.scents) {
+    s.decaySeconds -= dt
+    // Scents drift downwind. Issue #3155.
+    if (w.windX) s.x += w.windX * dt * 0.4
+    if (w.windY) s.y += w.windY * dt * 0.4
+  }
   w.scents = w.scents.filter(s => s.decaySeconds > 0)
 
   // Disease outbreak: roughly every 3 sim-minutes, infect one random non-plant.
@@ -3501,6 +3716,28 @@ export function tickCreatures(
     }
     const plantsRef = { value: sbPlantsAlive }
     tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng, events)
+  }
+
+  // Wind erosion: high wind strips topsoil from exposed surface tiles. Issue #3159.
+  if (tickCount % 120 === 0 && w.windX !== undefined) {
+    const windMag = Math.abs(w.windX) + Math.abs(w.windY ?? 0) * 0.5
+    if (windMag > 0.25) {
+      const surfaceDepth = Math.floor(WORLD_H * 0.2)  // top 20% of world height
+      const tx = Math.floor(rng() * WORLD_W)
+      for (let ty = 0; ty < surfaceDepth; ty++) {
+        const tid = ty * WORLD_W + wrapCol(tx)
+        const tile = w.tiles[tid]
+        if ((tile === MATERIAL_INDEX.sand || tile === MATERIAL_INDEX.dirt) && rng() < windMag * 0.04) {
+          // Check that tile above is air (exposed surface)
+          const aboveTid = (ty - 1) * WORLD_W + wrapCol(tx)
+          const above = ty > 0 ? w.tiles[aboveTid] : 0
+          if (!IS_SOLID[above] && !IS_LIQUID[above]) {
+            setTile(w, tx, ty, MATERIAL_INDEX.air)
+          }
+          break
+        }
+      }
+    }
   }
 }
 
@@ -3822,6 +4059,10 @@ function look(
       if (d2 <= sight2 && d2 < threatDist) {
         threatDist = d2
         threat = other
+        // Alarm calls: prey species emit an alarm signal upon detecting a predator. Issue #3231.
+        if (bp.alarmCaller) {
+          c.alarmCallTimer = 5
+        }
       }
       continue
     }
@@ -3833,6 +4074,23 @@ function look(
       if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
+      }
+      // Dominance hierarchy: rank contests between same-species individuals. Issue #3227.
+      if (bp.dominanceHierarchy && d2 <= sight2) {
+        const cooldown = c.rankContestCooldown ?? 0
+        if (cooldown <= 0) {
+          // Contest: higher mealsEaten wins; winner gains rank, loser loses rank.
+          const cRank = c.dominanceRank ?? 0.5
+          const oRank = other.dominanceRank ?? 0.5
+          if (c.mealsEaten >= other.mealsEaten) {
+            c.dominanceRank = Math.min(1, cRank + 0.1)
+            other.dominanceRank = Math.max(0, oRank - 0.05)
+          } else {
+            c.dominanceRank = Math.max(0, cRank - 0.05)
+            other.dominanceRank = Math.min(1, oRank + 0.1)
+          }
+          c.rankContestCooldown = 30
+        }
       }
       continue
     }
@@ -3871,6 +4129,23 @@ function look(
         return
       }
       if (touching) {
+        // Dominance hierarchy food priority: a lower-ranked individual defers to
+        // a higher-ranked conspecific within 2 tiles. Issue #3227.
+        if (bp.dominanceHierarchy) {
+          const cRank = c.dominanceRank ?? 0.5
+          const dominanceReach2 = 4  // 2 tiles squared
+          let dominated = false
+          for (const rival of w.creatures) {
+            if (rival.id === c.id || rival.blueprintId !== c.blueprintId) continue
+            const rdx = deltaX(cx, rival.x + bw / 2)
+            const rdy = rival.y + bh / 2 - cy
+            if (rdx * rdx + rdy * rdy <= dominanceReach2 && (rival.dominanceRank ?? 0.5) > cRank) {
+              dominated = true
+              break
+            }
+          }
+          if (dominated) continue
+        }
         // Chemical defense: a plant that received a mycorrhizal warning signal is
         // primed with volatile compounds — the grazer finds it unpalatable and
         // moves on. The signal decays in 30 s so the defense is temporary.
@@ -3888,6 +4163,15 @@ function look(
           c.mood = 'wander'
           c.targetId = null
           return
+        }
+        // Venom injection: venomous predators inject slow on contact. Issue #3236.
+        if (bp.venomous && !dead.has(other.id)) {
+          const potency = bp.venomPotency ?? 0.5
+          const resistance = obp.venomResistance ?? 0
+          const effective = potency * (1 - resistance)
+          if (effective > 0) {
+            other.venomTimer = Math.max(other.venomTimer ?? 0, effective * 20)
+          }
         }
         devour(w, other, obp, dead, events)
         // Chemical signal relay: the eaten plant warns its mycorrhizal-network
@@ -4055,6 +4339,14 @@ function look(
           c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5 * toxMod)
           c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5 * toxMod)
         }
+        // Aposematism: eating a brightly-colored toxic prey teaches the predator to avoid
+        // that species in future. Naive predators (mealsEaten < 5) still attack freely. Issue #3237.
+        if (obp.aposematic && obp.toxic) {
+          if (!c.learnedAversions) c.learnedAversions = []
+          if (!c.learnedAversions.includes(obp.id)) {
+            c.learnedAversions.push(obp.id)
+          }
+        }
         events.push({
           kind: 'ate',
           blueprintId: bp.id,
@@ -4127,6 +4419,11 @@ function look(
       if (obp.preyEscalation && rng() < (other.escalatedEvasion ?? 0)) continue
       // Aposematism: predators avoid genuinely toxic species after experience. Issue #3267.
       if (obp.toxic && bp.diet.eats?.includes('meat') && rng() < 0.7) continue
+      // Aposematism learned aversion: experienced predators avoid aposematic toxic prey. Issue #3237.
+      if (obp.aposematic && obp.toxic && c.mealsEaten >= 5) {
+        const aversions = c.learnedAversions
+        if (aversions && aversions.includes(obp.id) && rng() < 0.9) continue
+      }
       // Mimicry: harmless mimics get protection proportional to nearby toxic species density. Issue #3267.
       if (obp.toxicMimic && rng() < 0.2) {
         const totalNearby = w.creatures.filter(o2 => Math.hypot(o2.x - c.x, o2.y - c.y) < 20).length
@@ -5071,6 +5368,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const speed =
     ((speedOf(c, bp) *
       (c.poisoned > 0 ? 0.5 : 1) *
+      (c.venomTimer && c.venomTimer > 0 ? 0.5 : 1) *  // venom slows movement. Issue #3236.
       (c.packTimer > 0 ? 1.2 : 1) *
       (c.stunTimer > 0 ? 0.2 : 1) *
       (c.sick > 0 ? 0.7 : 1) *

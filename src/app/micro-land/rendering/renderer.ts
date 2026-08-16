@@ -553,6 +553,7 @@ export class Renderer {
     elderId: number | null = null,
     heatmap: Float32Array | null = null,
     nutrientHeatmap: Float32Array | null = null
+    tempHeatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
     const vw = Math.ceil(this.viewTiles)
@@ -599,6 +600,7 @@ export class Renderer {
       this.drawNests(w)
       this.drawTombstones(w)
       if (nutrientHeatmap) this.drawHeatmap(nutrientHeatmap, vx, vw, '#00cc44', 0.5)
+      if (tempHeatmap) this.drawHeatmap(tempHeatmap, vx, vw, '#ff6600', 0.35)
       if (heatmap) this.drawHeatmap(heatmap, vx, vw)
       this.drawEggs(w)
       this.drawSpawners(w)

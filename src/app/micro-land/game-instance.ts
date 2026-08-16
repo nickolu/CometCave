@@ -225,6 +225,8 @@ export class GameInstance {
 
   // --- nutrient overlay ---
   private nutrientHeatmap: Float32Array | null = null
+  // --- temperature overlay ---
+  private tempHeatmap: Float32Array | null = null
 
   // --- pointer state ---
   private pointerDown = false
@@ -386,6 +388,7 @@ export class GameInstance {
       this.renderer.render(replayWorld, theme, undefined, undefined, null)
     } else {
       this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.nutrientHeatmap)
+      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.tempHeatmap)
     }
   }
 
@@ -504,6 +507,42 @@ export class GameInstance {
         this.nutrientHeatmap = w.soilNutrient
       } else {
         this.nutrientHeatmap = null
+      // --- temperature overlay ---
+      const tempEnabled = useMicroLand.getState().tempOverlayEnabled
+      if (tempEnabled) {
+        if (!this.tempHeatmap) this.tempHeatmap = new Float32Array(WORLD_W * WORLD_H)
+        const seasonFactor = 1 + TUNING.seasonAmplitude * Math.sin(2 * Math.PI * w.elapsed / (TUNING.seasonPeriod * 60))
+        const lavaIdx = MATERIAL_INDEX['lava'] ?? -1
+        for (let y = 0; y < WORLD_H; y++) {
+          // Warmer at the bottom (higher y in tile coords = deeper underground = warmer)
+          const baseFraction = y / WORLD_H
+          const baseTemp = baseFraction * 0.8 * seasonFactor
+          for (let x = 0; x < WORLD_W; x++) {
+            this.tempHeatmap[y * WORLD_W + x] = Math.max(0, Math.min(1, baseTemp))
+          }
+        }
+        // Lava tiles add local heat plumes
+        if (lavaIdx >= 0 && w.tiles) {
+          for (let i = 0; i < w.tiles.length; i++) {
+            if (w.tiles[i] !== lavaIdx) continue
+            const lx = i % WORLD_W
+            const ly = Math.floor(i / WORLD_W)
+            for (let dy = -3; dy <= 3; dy++) {
+              for (let dx = -3; dx <= 3; dx++) {
+                const dist = Math.max(Math.abs(dx), Math.abs(dy))
+                const nx = (lx + dx + WORLD_W) % WORLD_W
+                const ny = ly + dy
+                if (ny < 0 || ny >= WORLD_H) continue
+                const boost = 1 - dist * 0.25
+                if (boost <= 0) continue
+                const idx = ny * WORLD_W + nx
+                this.tempHeatmap[idx] = Math.min(1, this.tempHeatmap[idx] + boost)
+              }
+            }
+          }
+        }
+      } else {
+        this.tempHeatmap = null
       }
     }
   }
@@ -879,6 +918,11 @@ export class GameInstance {
       })
     } else {
       useMicroLand.getState().setNetworkStats(null)
+    }
+
+    // Push keystone species set to the store for Field Guide display. Issue #3122.
+    if (this.world.keystoneSpeciesIds) {
+      useMicroLand.getState().setKeystoneSpeciesIds(this.world.keystoneSpeciesIds)
     }
 
     // Speed run win/loss detection
