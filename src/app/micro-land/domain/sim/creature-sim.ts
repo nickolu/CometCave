@@ -716,9 +716,6 @@ function tickSeedBank(
       }
     }
 
-    const viability = Math.pow(0.5, seed.age / HALF_LIFE)
-    if (rng() > viability) continue  // seed died
-
     // Try germination
     const bp = w.blueprints[seed.blueprintId]
     if (!bp || bp.move.kind !== 'root') { surviving.push(seed); continue }
@@ -739,6 +736,10 @@ function tickSeedBank(
       }
       continue  // don't fall through to normal germination
     }
+
+    const halfLife = bp.seedLongevity ?? HALF_LIFE
+    const viability = Math.pow(0.5, seed.age / halfLife)
+    if (rng() > viability) continue  // seed died
 
     // Cold stratification: accumulate cold hours; gate germination until threshold met.
     if (bp.requiresStratification && isCold) {

@@ -718,6 +718,14 @@ export interface CreatureBlueprint {
    * Issue #3353.
    */
   fireGerminator?: boolean
+  /**
+   * Viability half-life of dormant seeds in seconds. Seeds decay exponentially:
+   * viability = 0.5^(age / seedLongevity). Short-lived (transient bank, ~150 s)
+   * seeds must germinate within one season or die. Long-lived (persistent bank,
+   * ~1800 s) seeds can outlast multiple extinctions. Defaults to 600 s if unset.
+   * Issue #3354.
+   */
+  seedLongevity?: number
 }
 
 /**
