@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { IS_DEADLY, IS_LIQUID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { IS_DEADLY, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -317,6 +317,24 @@ function isNearWater(w: WorldState, c: Creature): boolean {
     if (IS_LIQUID[tile] && !IS_DEADLY[tile]) return true
   }
   return false
+}
+
+/**
+ * True when this creature is in a cave — at least 3 solid tiles directly
+ * above its head position. Caves are thermally stable (constant temperature
+ * independent of seasonal and day/night cycles) and dark (constant moderate
+ * darkness, providing selection pressure against high sight traits).
+ */
+function isUnderground(w: WorldState, c: Creature): boolean {
+  const hx = Math.floor(c.x)
+  const hy = Math.floor(c.y) - 1
+  for (let dy = 0; dy < 3; dy++) {
+    const ty = hy - dy
+    if (ty < 0) break
+    const tile = w.tiles[ty * WORLD_W + wrapCol(hx)]
+    if (!IS_SOLID[tile]) return false
+  }
+  return hy >= 0  // must be valid position
 }
 
 /**
@@ -1667,12 +1685,21 @@ function look(
   // This creature's sight, not its species' — everything downstream, including
   // the foraging reach and the window the loop below walks, is measured off it.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
-  const nightFactor =
-    TUNING.dayLengthSeconds > 0
+  const underground = isUnderground(w, c)
+  // Cave thermal stability: underground creatures are thermally decoupled from
+  // surface day/night and seasonal cycles. Cave darkness is constant (0.8 nightFactor)
+  // regardless of time — providing selection pressure against high sight traits
+  // (troglobitic evolution). Lateral-line species bypass this penalty.
+  const nightFactor = underground
+    ? 0.8  // constant cave darkness
+    : TUNING.dayLengthSeconds > 0
       ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
       : 0
-  const diurnalPenalty =
-    Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const diurnalPenalty = underground
+    ? bp.lateralLine
+      ? 0  // lateral-line species navigate by mechanosensory — no darkness penalty
+      : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+    : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
   const baseSight = sightOf(c, bp) * (1 - diurnalPenalty)
 
   /**
@@ -2844,12 +2871,17 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
-  const nightFactor =
-    TUNING.dayLengthSeconds > 0
+  const underground = isUnderground(w, c)
+  const nightFactor = underground
+    ? 0.8  // constant cave darkness
+    : TUNING.dayLengthSeconds > 0
       ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
       : 0
-  const diurnalPenalty =
-    Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+  const diurnalPenalty = underground
+    ? bp.lateralLine
+      ? 0  // lateral-line species navigate by mechanosensory — no darkness penalty
+      : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
+    : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
   const speed =
     ((speedOf(c, bp) *
       (c.poisoned > 0 ? 0.5 : 1) *
