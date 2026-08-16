@@ -570,7 +570,12 @@ export function sanitizeBlueprint(
       breedAt: clamp(diet.breedAt, 0.1, 1, 0.75),
       lifespanSeconds: clamp(diet.lifespanSeconds, 10, 1800, 240),
     },
-    senses: { sight: clamp(senses.sight, 1, 60, 14) },
+    senses: {
+      sight: clamp(senses.sight, 1, 60, 14),
+      ...(senses.chemoreception !== undefined && {
+        chemoreception: Math.max(0, senses.chemoreception as number),
+      }),
+    },
     habitat: {
       needs: needs && needs.length > 0 ? needs : null,
       drowns: habitat.drowns !== false,
@@ -617,6 +622,8 @@ export function sanitizeBlueprint(
     lateralLine: b.lateralLine === true,
     polarizedVision: b.polarizedVision === true,
     polarizedSkin: !!b.polarizedSkin,
+    uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
+    uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     elderWisdom: !!b.elderWisdom,
     phenology: b.phenology?.breedingGdd !== undefined

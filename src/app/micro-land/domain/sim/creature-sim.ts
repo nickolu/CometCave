@@ -1212,9 +1212,17 @@ export function tickCreatures(
         }
       } else {
         // Not carrying — look for a nearby plant to pick up on the SENSE_EVERY interval.
+        // UV-sensitive pollinators detect UV-nectar plants at their full sight range;
+        // all pollinators can still pick up any plant within 3 tiles by contact.
         if ((tickCount + c.id) % SENSE_EVERY === 0) {
           const cx = c.x + bw / 2
           const cy = c.y + bh / 2
+          const uvRange = bp.uvSensitive
+            ? bp.senses.sight * (c.traits.sight ?? 1)
+            : 0
+          const uvRange2 = uvRange * uvRange
+          let bestSeed: string | null = null
+          let bestD2 = Infinity
           for (const other of w.creatures) {
             if (other === c || dead.has(other.id)) continue
             const obp = w.blueprints[other.blueprintId]
@@ -1222,12 +1230,18 @@ export function tickCreatures(
             const { w: ow, h: oh } = artSize(obp)
             const dx = deltaX(other.x + ow / 2, cx)
             const dy = cy - (other.y + oh / 2)
-            if (dx * dx + dy * dy < 9) {
-              // within ~3 tiles
-              c.carryingSeed = other.blueprintId
-              c.seedTimer = TUNING.pollinationCarrySeconds
-              break
+            const d2 = dx * dx + dy * dy
+            // Contact range (3 tiles) works for any plant.
+            // UV sight range only works for plants with UV nectar guides.
+            const maxD2 = obp.uvNectar && uvRange2 > 0 ? uvRange2 : 9
+            if (d2 < maxD2 && d2 < bestD2) {
+              bestD2 = d2
+              bestSeed = other.blueprintId
             }
+          }
+          if (bestSeed !== null) {
+            c.carryingSeed = bestSeed
+            c.seedTimer = TUNING.pollinationCarrySeconds
           }
         }
       }
@@ -2343,6 +2357,49 @@ function look(
       const weight = cooperationVal * 0.3
       c.drift = deltaX(midX, nearestScent.x) > 0 ? weight : -weight
       ;(c as { followingScent?: boolean }).followingScent = true
+    }
+  }
+
+  // Chemoreception gradient: high-chemoreception creatures sample scent
+  // concentration across their detection range and steer up the gradient.
+  // Unlike simple scent-following, this works on prey scents too — the creature
+  // can track where food has been eaten even without a line of sight.
+  const chemoRange = (bp.senses.chemoreception ?? 0) * (c.traits.sight ?? 1)
+  if (
+    chemoRange > 0 &&
+    hungry &&
+    !prey &&
+    !threat &&
+    c.mood === 'wander' &&
+    w.scents.length > 0
+  ) {
+    const chemoRange2 = chemoRange * chemoRange
+    const midX = cx
+    const midY = c.y + bh / 2
+    let leftScore = 0
+    let rightScore = 0
+    for (const s of w.scents) {
+      // Track same-species scents OR prey species scents
+      if (s.blueprintId !== c.blueprintId) {
+        const scentBp = w.blueprints[s.blueprintId]
+        if (!scentBp) continue
+        const isEdible = bp.diet.eats.some(tag => scentBp.tags.includes(tag))
+        if (!isEdible) continue
+      }
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 > chemoRange2) continue
+      // Weight by inverse distance — closer scents count more
+      const weight = 1 / (1 + Math.sqrt(d2))
+      if (sdx > 0) rightScore += weight
+      else leftScore += weight
+    }
+    const gradient = rightScore - leftScore
+    if (Math.abs(gradient) > 0.05) {
+      // Strength scales with chemoreception relative to sight range
+      const strength = Math.min(0.5, (chemoRange / 20) * 0.4)
+      c.drift = gradient > 0 ? strength : -strength
     }
   }
 

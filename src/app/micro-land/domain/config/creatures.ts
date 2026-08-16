@@ -60,6 +60,7 @@ const SUNLEAF = builtin('sunleaf', {
   death: { becomes: null, particleColor: '#ffd166', particleCount: 6 },
   aura: null,
   glow: 0,
+  uvNectar: true,
 })
 
 const BRAMBLE = builtin('bramble', {
@@ -839,6 +840,7 @@ const SKYBLOOM = builtin('skybloom', {
   death: { becomes: null, particleColor: '#ffd7ef', particleCount: 8 },
   aura: null,
   glow: 0.1,
+  uvNectar: true,
 })
 
 const MOTE = builtin('mote', {
@@ -939,6 +941,7 @@ const GLOWVINE = builtin('glowvine', {
   death: { becomes: null, particleColor: '#8ffcd0', particleCount: 6 },
   aura: null,
   glow: 0.62,
+  uvNectar: true,
 })
 
 const PALECRAWLER = builtin('palecrawler', {
@@ -1285,6 +1288,37 @@ const CAVE_CRICKET = builtin('cave-cricket', {
   senses: { sight: 6 },
   habitat: { needs: null, drowns: false },
   death: { becomes: null, particleColor: '#a08060', particleCount: 3 },
+  aura: null,
+  glow: 0,
+})
+
+const CAVE_SALAMANDER = builtin('cave-salamander', {
+  name: 'Cave Salamander',
+  blurb: 'Navigates the deep dark by smell alone. It knows where you have been.',
+  size: 2,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { p: '#d4607a', d: '#a03050', w: '#ffd0c8' },
+    frames: [
+      ['dppppd', '.pwwp.', 'd....d'],
+      ['dpppd.', '.pwwp.', '.d...d'],
+    ],
+    frameMs: 250,
+    faceMotion: true,
+  },
+  body: { mass: 0.9, bounce: 0, drag: 0.35, buoyancy: 0.7, immuneTo: [] },
+  move: { kind: 'crawl', speed: 3, jump: 2, restlessness: 0.2 },
+  diet: {
+    eats: ['bug'],
+    fears: ['flier'],
+    hungerRate: 0.02,
+    starveSeconds: 60,
+    breedAt: 0.65,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 4, chemoreception: 18 },  // poor sight, excellent smell
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#d4607a', particleCount: 4 },
   aura: null,
   glow: 0,
 })
@@ -1795,6 +1829,38 @@ const MANGROVE = builtin('mangrove', {
   salinityTolerance: { min: 0.0, max: 0.4 },
 })
 
+const UV_BEE = builtin('uv-bee', {
+  name: 'UV Bee',
+  blurb: "Sees a world of ultraviolet landing guides invisible to every other eye.",
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { y: '#ffd700', b: '#1a1a3a', s: '#ffffff' },
+    frames: [
+      ['.yby.', 'yybby', '.yby.', '..s..'],
+      ['.yby.', 'yybby', '.yby.', '.s.s.'],
+    ],
+    frameMs: 80,
+    faceMotion: true,
+  },
+  body: { mass: 0.2, bounce: 0.1, drag: 0.5, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'fly', speed: 5, jump: 0, restlessness: 0.5 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.028,
+    starveSeconds: 22,
+    breedAt: 0.72,
+    lifespanSeconds: 140,
+  },
+  senses: { sight: 20, chemoreception: 0 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#ffd700', particleCount: 4 },
+  aura: { radius: 18, helps: ['plant'], boost: 2.2, converts: null, convertRate: 0 },
+  glow: 0,
+  uvSensitive: true,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -1820,6 +1886,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   DRIFTMOLE,
   WOOLLY,
   DUSTBEE,
+  UV_BEE,
   FLUTTERMOTH,
   SEEDMITE,
   LOAMWORM,
@@ -1835,6 +1902,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNHAWK,
   GLOOMWEAVER,
   CAVE_CRICKET,
+  CAVE_SALAMANDER,
   BAT,
   WISP,
   GRUMBLESTONE,
