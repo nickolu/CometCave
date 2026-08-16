@@ -59,6 +59,7 @@ import {
   spawnCreature,
   tickCaveNutrient,
   tickMoisture,
+  tickSalinity,
   tileAt,
 } from './world'
 
@@ -607,6 +608,7 @@ export function tickCreatures(
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
   tickMoisture(w, tickCount, dt, rng)
   tickCaveNutrient(w, tickCount, dt)
+  tickSalinity(w, tickCount)
   w.eggs ??= []
   w.nextEggId ??= 1
 
@@ -772,6 +774,27 @@ export function tickCreatures(
       const effectiveBreedingGdd = bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
       const mismatch = Math.abs(effectiveBreedingGdd - 500) / 500
       c.hunger = Math.min(1, c.hunger + mismatch * 0.00008 * dt)
+    }
+    // Osmotic stress: creatures outside their salinity tolerance range
+    // spend energy on osmoregulation. No effect when salinity is not enabled.
+    if (bp.salinityTolerance && w.salinity) {
+      const cx = Math.floor(c.x)
+      const cy = Math.floor(c.y)
+      if (cx >= 0 && cx < WORLD_W && cy >= 0 && cy < WORLD_H) {
+        const tileSalinity = w.salinity[cy * WORLD_W + cx] ?? 0
+        const { min, max } = bp.salinityTolerance
+        if (tileSalinity < min) {
+          const stress = (min - tileSalinity) * 0.0002 * dt
+          c.hunger = Math.min(1, c.hunger + stress)
+        } else if (tileSalinity > max) {
+          const stress = (tileSalinity - max) * 0.0002 * dt
+          c.hunger = Math.min(1, c.hunger + stress)
+        } else if (c.ageSeconds < (bp.diet.lifespanSeconds ?? 240) * 0.15) {
+          // Nursery habitat: juveniles in optimal salinity zone get a feeding bonus.
+          // Models documented estuarine nursery function for juvenile marine fish.
+          c.hunger = Math.max(0, c.hunger - 0.00005 * dt)
+        }
+      }
     }
     if (c.hunger >= 1) {
       c.starving += dt

@@ -384,6 +384,7 @@ const FINLING = builtin('finling', {
   aura: null,
   glow: 0,
   phenology: { breedingGdd: 500 }, // midsummer spawner like many fish species
+  salinityTolerance: { min: 0.3, max: 1.0 },  // euryhaline — tolerates brackish to marine
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -1628,6 +1629,38 @@ const UNICYCLE_CLOWN = builtin('unicycle-clown', {
   glow: 0,
 })
 
+const SALT_MARSH_REED = builtin('salt-marsh-reed', {
+  name: 'Salt Marsh Reed',
+  blurb: 'Thrives where the river meets the sea. Nothing else will grow here.',
+  size: 2,
+  tags: ['plant', 'grass'],
+  art: {
+    palette: { g: '#4a7a3a', y: '#8a9a3a', t: '#3a6a2a' },
+    frames: [
+      ['g.g.g', 'gyggy', 'ggggg', '.g.g.', '..g..'],
+      ['g.g.g', 'ygggy', 'ggggg', '.g.g.', '..g..'],
+    ],
+    frameMs: 600,
+    faceMotion: false,
+  },
+  body: { mass: 1, bounce: 0, drag: 0.2, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: [],
+    fears: [],
+    hungerRate: 0,
+    starveSeconds: 999,
+    breedAt: 0.2,
+    lifespanSeconds: 400,
+  },
+  senses: { sight: 1 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#4a7a3a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  salinityTolerance: { min: 0.2, max: 0.7 },  // thrives in brackish mixing zone
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -1636,6 +1669,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   FROSTCAP,
   GLOWVINE,
   SKYBLOOM,
+  SALT_MARSH_REED,
   SNAP_TRAP,
   PITCHER_PLANT,
   SUNDEW,

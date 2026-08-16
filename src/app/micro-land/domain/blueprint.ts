@@ -598,6 +598,9 @@ export function sanitizeBlueprint(
       : b.trapType === 'pitfall' ? 'pitfall'
       : b.trapType === 'sticky' ? 'sticky'
       : undefined,
+    salinityTolerance: b.salinityTolerance && typeof (b.salinityTolerance as Record<string, unknown>).min === 'number' && typeof (b.salinityTolerance as Record<string, unknown>).max === 'number'
+      ? { min: Math.max(0, (b.salinityTolerance as { min: number; max: number }).min), max: Math.min(1, (b.salinityTolerance as { min: number; max: number }).max) }
+      : undefined,
     slowMetabolism: b.slowMetabolism === true,
     invasive: b.invasive === true,
     allelopathic: b.allelopathic === true,

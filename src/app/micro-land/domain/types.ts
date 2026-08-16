@@ -430,6 +430,12 @@ export interface CreatureBlueprint {
    */
   trapType?: 'snap' | 'pitfall' | 'sticky'
   /**
+   * Salinity tolerance range [min, max] for estuarine creatures.
+   * Creatures outside this range pay an osmotic-stress hunger penalty.
+   * undefined = no salinity constraint (works in any salinity).
+   */
+  salinityTolerance?: { min: number; max: number }
+  /**
    * Drastically reduced basal metabolic rate — inspired by cave-adapted
    * species (cave olm, cave fish) that can survive months without food.
    *
@@ -1137,6 +1143,12 @@ export interface WorldState {
    * and specialist cave plants. Updated by `tickCaveNutrient`.
    */
   caveNutrient?: Float32Array
+  /**
+   * Per-tile salinity, 0 (fresh) to 1 (salt water). Initialized from
+   * world edges when estuaryEnabled, diffused each tick. Creates a mixing
+   * zone (estuary) in the middle of the world.
+   */
+  salinity?: Float32Array
   eggs: Egg[]
   nextEggId: number
   /** Burrows dug by territorial creatures at their home positions. */
