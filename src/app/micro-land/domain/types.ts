@@ -991,6 +991,12 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
+  /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
+  platypusPhilosophy?: boolean
+  /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
+  toadTaxation?: boolean
+  /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
+  urchinUnion?: boolean
 }
 
 /**
@@ -1451,6 +1457,10 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** Total philosophical contemplation sessions completed. Does nothing. Issue #3309. */
+  wisdom?: number
+  /** Countdown seconds until next philosophical contemplation. Issue #3309. */
+  philosophyTimer?: number
 }
 
 /**
@@ -1813,6 +1823,8 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Whether the Urchin Union strike is active. Issues #3314. */
+  urchinStrikeActive?: boolean
 }
 
 // ---------------------------------------------------------------------------

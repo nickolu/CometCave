@@ -643,6 +643,8 @@ const CINDER_WYRM = builtin('cinder-wyrm', {
   death: { becomes: 'obsidian', particleColor: '#e2551d', particleCount: 14 },
   aura: null,
   glow: 0.8,
+  rK: 0.9,  // K-selected: slow breeder, long cooldown. Issue #3256.
+  matingSystem: 'polygyny',  // dominant male (highest mealsEaten) monopolizes breeding. Issue #3257.
 })
 
 const RUSTBOT = builtin('rustbot', {
@@ -2075,6 +2077,8 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   larvaeBlueprint: 'shimmer-larva',
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
   bodyMass: 0.3,  // small flying insect. Issue #3269.
+  rK: 0.1,         // extreme r-selected: short cooldown, fast-hatching eggs. Issue #3256.
+  semelparous: true,  // dies immediately after first successful reproduction. Issue #3259.
 })
 
 // ---------------------------------------------------------------------------
@@ -2151,6 +2155,7 @@ const MEADOW_LOCUST = builtin('meadow-locust', {
   hemimetabolous: true,
   nymphBlueprint: 'meadow-locust-nymph',
   bodyMass: 0.2,  // medium insect adult. Issue #3269.
+  rK: 0.1,  // r-selected: fast breeding, many small eggs. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2537,6 +2542,7 @@ const CLAM = builtin('clam', {
   glow: 0,
   egglayer: true,
   hardShelled: true,
+  rK: 0.1,  // r-selected: filter-feeder spawns many small eggs. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2802,6 +2808,107 @@ const KESTREL = builtin('kestrel', {
   bodyMass: 0.35,
 })
 
+const PLATYPUS = builtin('platypus', {
+  name: 'Platypus',
+  blurb: 'Lays eggs. Has fur. Has a bill. Has electroreception. The Philosophical Society has been debating this since generation 1. Unresolved.',
+  size: 1,
+  tags: ['meat', 'mammal', 'amphibian'],
+  art: {
+    palette: { b: '#3a2a1a', w: '#8a6a4a', r: '#6a4a2a', g: '#4a6a4a' },
+    frames: [
+      ['bgb', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'bgb'],
+    ],
+    frameMs: 260,
+    faceMotion: true,
+  },
+  body: { mass: 0.6, bounce: 0.05, drag: 0.3, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 2, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.008,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 250,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a2a1a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  platypusPhilosophy: true,
+  bodyMass: 0.15,
+})
+
+const TOAD = builtin('toad', {
+  name: 'Toad',
+  blurb: 'Sits on water. Charges a crossing fee. Provides no service. Bites creatures that pay. Bites creatures that resist more. Considers this reasonable.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { g: '#3a5a1a', b: '#1a2a0a', w: '#8ab060', y: '#c0b040' },
+    frames: [
+      ['ggy', 'wgw', 'bwb'],
+      ['bwb', 'wgw', 'ggy'],
+    ],
+    frameMs: 300,
+    faceMotion: false,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 0.7, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.8, jump: 3, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.005,
+    starveSeconds: 60,
+    breedAt: 0.8,
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a5a1a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  toadTaxation: true,
+  bodyMass: 0.12,
+})
+
+const SEA_URCHIN = builtin('sea-urchin', {
+  name: 'Sea Urchin',
+  blurb: 'Member of the Union. On strike. Demands: stronger currents, lower predator density, improved spinal density conditions. Strike entered its 14th year. Non-union urchins are indistinguishable. Membership has doubled.',
+  size: 1,
+  tags: ['plant', 'aquatic'],
+  art: {
+    palette: { p: '#6a2a8a', w: '#e0d0f0', b: '#2a0a4a', g: '#4a1a6a' },
+    frames: [
+      ['wpw', 'pbp', 'wpw'],
+    ],
+    frameMs: 999,
+    faceMotion: false,
+  },
+  body: { mass: 0.3, bounce: 0.0, drag: 0.8, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'swim', speed: 0.5, jump: 0, restlessness: 0.05 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.003,
+    starveSeconds: 80,
+    breedAt: 0.6,
+    lifespanSeconds: 400,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#6a2a8a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  urchinUnion: true,
+  bodyMass: 0.2,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2874,6 +2981,9 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   BEAVER,
   ARCTIC_TERN,
   KESTREL,
+  PLATYPUS,
+  TOAD,
+  SEA_URCHIN,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

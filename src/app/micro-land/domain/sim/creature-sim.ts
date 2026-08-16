@@ -970,6 +970,17 @@ export function tickCreatures(
     }
   }
 
+  // --- Urchin Union: sea urchins strike when overcrowded. Issue #3314. ---
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const ubp = w.blueprints[bpId]
+    if (!ubp?.urchinUnion) continue
+    const wasStriking = w.urchinStrikeActive ?? false
+    w.urchinStrikeActive = cnt > 15
+    if (w.urchinStrikeActive && !wasStriking) {
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${ubp.name} Union on strike. Demands: stronger currents, fewer predators. Management has not responded.` })
+    }
+  }
+
   // MVP warning and rescue effect. Issues #3284, #3285.
   if (tickCount % 60 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
@@ -1694,6 +1705,51 @@ export function tickCreatures(
         c.vx += (pdx / pdist) * 0.4 * dt
         c.vy += (pdy / pdist) * 0.4 * dt
       }
+    }
+
+    // --- Platypus Philosophy: periodic existential contemplation. Issue #3309. ---
+    if (bp.platypusPhilosophy) {
+      if (c.philosophyTimer === undefined) c.philosophyTimer = (TUNING.seasonPeriod / 10) * rng()
+      c.philosophyTimer -= dt
+      if (c.philosophyTimer <= 0) {
+        c.philosophyTimer = TUNING.seasonPeriod / 10  // every ~30 seconds
+        c.wisdom = (c.wisdom ?? 0) + 1
+        c.insightTimer = (c.insightTimer ?? 0) + 4  // pause briefly for contemplation
+        const MUSINGS = [
+          'I have a bill but also fur. Am I real?',
+          'I lay eggs but nurse young. What does this mean?',
+          'I have electroreceptors. Most creatures do not. Why?',
+          'The question of platypus existence remains unresolved.',
+          'Is this a bill or a beak? The Philosophical Society is divided.',
+        ]
+        const musing = MUSINGS[Math.floor(rng() * MUSINGS.length)]
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `Platypus (wisdom: ${c.wisdom}): "${musing}"` })
+      }
+    }
+
+    // --- Toad Taxation: tolls on creatures passing near a toad on water. Issue #3313. ---
+    if (bp.toadTaxation && IS_LIQUID[w.tiles[Math.floor(c.y) * WORLD_W + Math.floor(c.x)]] === 1) {
+      for (const traveler of w.creatures) {
+        if (traveler.id === c.id || traveler.blueprintId === c.blueprintId) continue
+        const tdist = Math.sqrt((traveler.x - c.x) ** 2 + (traveler.y - c.y) ** 2)
+        if (tdist > 3) continue
+        // Levy 5% toll: toad gains hunger, traveler loses it
+        const toll = 0.05
+        if (traveler.hunger < 0.9 && c.hunger > 0.05) {
+          traveler.hunger = Math.min(1, traveler.hunger + toll)
+          c.hunger = Math.max(0, c.hunger - toll)
+          // Also bite (brief speed penalty via stunTimer nudge)
+          if (rng() < 0.4) {
+            traveler.stunTimer = (traveler.stunTimer ?? 0) + 0.5  // brief bite
+          }
+        }
+      }
+    }
+
+    // --- Urchin Union strike: strikers refuse to move. Issue #3314. ---
+    if (bp.urchinUnion && w.urchinStrikeActive) {
+      c.vx = 0
+      c.vy = 0
     }
 
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
@@ -2536,6 +2592,30 @@ export function tickCreatures(
         }
       }
 
+      // Semelparous: skip reproduction if already reproduced once. Issue #3259.
+      if (bp.semelparous && c.hasReproduced) continue
+
+      // Polygyny: only the most-fed male within sight breeds. Issue #3257.
+      if (bp.matingSystem === 'polygyny' && c.id % 2 === 0) {
+        const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12) && o.id % 2 === 0)
+        if (competitors.some(o => o.mealsEaten > c.mealsEaten)) continue  // dominated — skip
+      }
+
+      // Age-structured reproduction: rate varies by life stage. Issue #3261.
+      if (bp.ageReproductionCurve) {
+        const lifespan = (bp.diet.lifespanSeconds ?? 100) * TUNING.lifespanScale
+        const relAge = Math.min(1, c.ageSeconds / lifespan)
+        let ageFactor = 1
+        if (bp.ageReproductionCurve === 'peak-early') {
+          ageFactor = relAge < 0.3 ? 1.5 : relAge < 0.6 ? 1.0 : 0.4
+        } else if (bp.ageReproductionCurve === 'peak-middle') {
+          ageFactor = relAge < 0.2 ? 0.3 : relAge < 0.7 ? 1.4 : 0.5
+        } else if (bp.ageReproductionCurve === 'peak-late') {
+          ageFactor = relAge < 0.5 ? 0.5 : relAge < 0.85 ? 1.0 : 1.8
+        }
+        if (rng() >= ageFactor) continue
+      }
+
       /**
        * An animal needs a partner; a plant does not.
        *
@@ -2548,8 +2628,10 @@ export function tickCreatures(
        * that is allowed to make more of itself alone.
        */
       const wantsMate = needsPartner(bp)
-      const mate = wantsMate ? findMate(w, c, bp, dead) : null
-      if (!wantsMate || mate) {
+      // Promiscuous species reproduce without a mate. Issue #3257.
+      const effectiveWantsMate = bp.matingSystem === 'promiscuity' ? false : wantsMate
+      const mate = effectiveWantsMate ? findMate(w, c, bp, dead) : null
+      if (!effectiveWantsMate || mate) {
         // Born between the two of them, which is the whole point of having made
         // them walk to each other.
         //
@@ -2600,7 +2682,7 @@ export function tickCreatures(
             blueprintId: bp.id,
             traits: childTraits,
             generation,
-            hatchIn: TUNING.eggHatchSeconds,
+            hatchIn: TUNING.eggHatchSeconds * (bp.rK !== undefined ? 0.7 + bp.rK * 0.6 : 1),  // r-selected hatch faster
           })
           // Assign nest site when first egg is laid. Issue #3418.
           if (bp.nestBuilder && c.nestX === undefined) {
@@ -2616,6 +2698,16 @@ export function tickCreatures(
             ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
             (bp.slowMetabolism ? 2 : 1) *
             (bp.invasive ? 0.67 : 1)
+          // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
+          if (bp.rK !== undefined) {
+            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5x at rK=0, 2.0x at rK=1
+            c.breedCooldown *= cooldownMultiplier
+          }
+          // Semelparous: die after first reproduction. Issue #3259.
+          if (bp.semelparous) {
+            c.hasReproduced = true
+            kill(w, c, bp, dead, events, 'aged')
+          }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -2623,6 +2715,11 @@ export function tickCreatures(
             else if (mate.children % 10 === 0)
               logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
+          }
+          // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+          if (bp.matingSystem === 'monogamy') {
+            const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12))
+            if (bondMate) c.breedCooldown *= 0.8
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
@@ -2852,6 +2949,21 @@ export function tickCreatures(
                 else if (mate.children % 10 === 0)
                   logLife(mate, w.elapsed, `${mate.children} offspring`)
                 payForChild(w, mate, bp, bw, bh, helpers)
+              }
+              // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
+              if (bp.rK !== undefined) {
+                const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5x at rK=0, 2.0x at rK=1
+                c.breedCooldown *= cooldownMultiplier
+              }
+              // Semelparous: die after first reproduction. Issue #3259.
+              if (bp.semelparous) {
+                c.hasReproduced = true
+                kill(w, c, bp, dead, events, 'aged')
+              }
+              // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+              if (bp.matingSystem === 'monogamy') {
+                const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12))
+                if (bondMate) c.breedCooldown *= 0.8
               }
               // Anadromous spawning: the act of reproduction is fatal — spent fish die
               // and deposit marine-derived nutrients (nitrogen, phosphorus) into the
