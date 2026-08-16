@@ -106,6 +106,13 @@ export const TUNING_DEFAULTS = {
    */
   seasonAmplitude: 0,
   /**
+   * GDD added to the seasonal accumulation per completed annual cycle (seasonPeriod),
+   * simulating long-term climate warming. 0 = no warming (default).
+   * At 50, after 4 years a species with breedingGdd=400 begins breeding in early spring
+   * rather than mid-spring — matching documented climate-shift observations.
+   */
+  climateWarmingRate: 0,
+  /**
    * How long one day/night cycle lasts, in sim seconds.
    * 0 = no day/night cycle (default). 120 = one cycle every two real-world minutes at normal speed.
    */
@@ -469,6 +476,15 @@ export const KNOBS: Knob[] = [
     min: 30,
     max: 1800,
     step: 30,
+  },
+  {
+    key: 'climateWarmingRate',
+    group: 'world',
+    label: 'Climate warming — GDD shift per year',
+    help: 'Extra growing-degree units added to the seasonal accumulator each completed annual cycle (seasonPeriod). 0 = stable climate. 50 = moderate warming; breeding seasons advance ~1–2 weeks per simulated year, eventually desynchronising historically matched predator–prey pairs.',
+    min: 0,
+    max: 200,
+    step: 5,
   },
   {
     key: 'dayLengthSeconds',
