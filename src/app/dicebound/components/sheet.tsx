@@ -12,7 +12,8 @@
  * Skills in progress are shown too, greyed, with the progress toward the next
  * rank. Hiding them until they land would make ranks feel like they arrive at
  * random; showing the counter turns "the DM keeps asking me to balance" into
- * a goal the player can see coming.
+ * a goal the player can see coming. The counter keeps running after the first
+ * rank lands, for the same reason — see `SkillRow`.
  */
 import {
   ATTRIBUTES,
@@ -23,7 +24,7 @@ import {
   type SkillId,
 } from '@/app/dicebound/domain/attributes'
 import type { Campaign } from '@/app/dicebound/domain/campaign'
-import { RANK_THRESHOLDS, type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
+import { type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
 
 import { Powers, Standing } from './kit'
 import { WorldPanel } from './world'
@@ -144,15 +145,28 @@ function SkillRow({ skill, record }: { skill: SkillId; record: SkillRecord }) {
   // so it belongs on the sheet as a number rather than as an em dash.
   const active = record.rank !== 0
   // Innate ranks never advance, so they never show progress toward a next one.
+  // `usesToNextRank` returns null at max rank too, which is the other case with
+  // nothing left to count toward.
   const remaining = innate ? null : usesToNextRank(record.uses)
 
   return (
     <li className="flex items-baseline justify-between gap-3">
       <span className={`text-sm ${active ? 'text-on-surface' : 'text-on-surface-variant/70'}`}>
         {SKILLS[skill].name}
-        {!active && remaining !== null && (
+        {/*
+          Shown at every rank, not only before the first one. This used to be
+          gated on `!active` against a hardcoded `RANK_THRESHOLDS[0]`, which
+          meant the counter vanished the moment a skill reached +1 — and since
+          rank 2 is 8 uses and rank 3 is 18, the five or ten checks spent
+          climbing toward them were invisible on the one screen that exists to
+          record what the player did. A sheet that shows 3/3 and then nothing
+          reads as a game where +1 is the ceiling. The denominator is derived
+          from `usesToNextRank` rather than named, so it follows the thresholds
+          wherever they land next.
+        */}
+        {remaining !== null && (
           <span className="ml-2 text-xs text-on-surface-variant/60">
-            {record.uses}/{RANK_THRESHOLDS[0]}
+            {record.uses}/{record.uses + remaining}
           </span>
         )}
       </span>
