@@ -350,6 +350,16 @@ export interface CreatureBlueprint {
    * Models the real-world bite marks found on butterfly wings at eyespot locations.
    */
   eyespots?: boolean
+  /**
+   * Rooted plants that physically bind loose soil with their root systems,
+   * preventing erosion of the substrate they are anchored in.
+   *
+   * Each tick, the plant has a small chance to convert adjacent sand tiles
+   * (within 2 tiles horizontally) into stable dirt — modelling the way riparian
+   * trees lock in riverbank soil and prevent slumping. Only applies to
+   * `move.kind === 'root'` creatures. Models willows, alders, mangroves.
+   */
+  rootBankStabilizer?: boolean
 }
 
 /**
