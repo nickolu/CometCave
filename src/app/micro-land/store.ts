@@ -438,6 +438,13 @@ interface MicroLandState {
    */
   shelf: ShelfState
 
+  /**
+   * Per-node connection count in the mycorrhizal network.
+   * Keyed by creature ID (as string). Only populated when mycorrhizalLinks exist.
+   * Used by the Field Guide to identify hub trees. Issue #3332.
+   */
+  networkDegree: Record<string, number>
+  setNetworkDegree: (d: Record<string, number>) => void
   /** Set when the field guide asks to find a species in the world. */
   locateRequest: { blueprintId: string; serial: number } | null
   /** Close the sidebar and emit a locate request for the game instance to handle. */
@@ -685,6 +692,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   historyLog: [],
   saveState: { kind: 'idle' },
   shelf: { worlds: [], activeId: null, busy: false, error: null },
+  networkDegree: {},
   locateRequest: null,
   populationItems: [],
   invasionFront: {},
@@ -821,6 +829,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setShelf: shelf => set({ shelf }),
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
+  setNetworkDegree: d => set({ networkDegree: d }),
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),

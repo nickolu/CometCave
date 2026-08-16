@@ -82,6 +82,7 @@ export function FieldGuidePane() {
   const biomeZones = useMicroLand(s => s.biomeZones)
   const atmosphericCO2 = useMicroLand(s => s.atmosphericCO2)
   const migrationStats = useMicroLand(s => s.migrationStats)
+  const networkDegree = useMicroLand(s => s.networkDegree)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -726,6 +727,45 @@ export function FieldGuidePane() {
           </ul>
         </section>
       )}
+
+      {Object.keys(networkDegree).length > 0 && (() => {
+        const maxDegree = Math.max(...Object.values(networkDegree))
+        if (maxDegree < 2) return null  // not interesting until trees are well-connected
+        const hubEntries = Object.entries(networkDegree)
+          .filter(([, d]) => d >= Math.max(3, maxDegree * 0.6))
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+        if (hubEntries.length === 0) return null
+        return (
+          <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+            <h3 className="pb-2" style={sectionHeading}>Hub Trees</h3>
+            <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+              Mother trees with the most fungal connections — keystone nodes of the Wood Wide Web.
+            </p>
+            {hubEntries.map(([id, degree]) => {
+              const creature = populationItems.find(p => String(p.id) === id)
+              return (
+                <div
+                  key={id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    padding: '3px 0',
+                    fontSize: 11,
+                    fontFamily: 'var(--cc-font-mono)',
+                    borderBottom: '1px solid var(--cc-panel-divider)',
+                  }}
+                >
+                  <span style={{ color: 'var(--cc-text-default)' }}>
+                    {creature?.name ?? `Node ${id}`}
+                  </span>
+                  <span style={{ color: 'var(--cc-text-muted)' }}>{degree} links</span>
+                </div>
+              )
+            })}
+          </section>
+        )
+      })()}
 
       {Object.keys(foodWeb).length > 0 && (
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
