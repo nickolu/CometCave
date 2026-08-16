@@ -667,9 +667,10 @@ export function tickCreatures(
 
     const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
     const metabolicRate = bp.slowMetabolism ? 0.1 : 1
+    const cognitiveOverhead = 1 + (bp.brainSize ?? 0) * 0.2
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * dt
     )
     if (c.hunger >= 1) {
       c.starving += dt

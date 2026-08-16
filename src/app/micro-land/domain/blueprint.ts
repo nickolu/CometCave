@@ -605,6 +605,10 @@ export function sanitizeBlueprint(
     electroreceptive: b.electroreceptive === true,
     warmBlooded: b.warmBlooded === true,
     infraredVision: b.infraredVision === true,
+    brainSize:
+      typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
+        ? b.brainSize
+        : 0,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
