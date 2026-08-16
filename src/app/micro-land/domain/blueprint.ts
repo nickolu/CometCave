@@ -592,6 +592,7 @@ export function sanitizeBlueprint(
     bioturbator: b.bioturbator === true,
     rootBankStabilizer: b.rootBankStabilizer === true,
     polluter: b.polluter === true,
+    carnivorousPlant: b.carnivorousPlant === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
