@@ -1095,6 +1095,19 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * True if this species is cold-blooded (ectotherm). Speed scales with
+   * local temperature. Issue #3134.
+   */
+  coldBlooded?: boolean
+  /**
+   * Minimum comfortable temperature [0, 1]. Hunger penalty below this. Issue #3136.
+   */
+  tempMin?: number
+  /**
+   * Maximum comfortable temperature [0, 1]. Hunger penalty above this. Issue #3136.
+   */
+  tempMax?: number
 }
 
 /**
@@ -1968,6 +1981,11 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Per-tile temperature [0, 1]. 0 = freezing, 0.5 = temperate, 1 = lava-hot.
+   * Slow diffusion from extreme material tiles. Issues #3132, #3133.
+   */
+  tileTemp?: Float32Array
 }
 
 // ---------------------------------------------------------------------------

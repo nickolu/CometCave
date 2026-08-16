@@ -70,6 +70,7 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickTileTemp,
   tickWebDecay,
   tileAt,
   updateBiomeZones,
@@ -882,6 +883,42 @@ export function tickCreatures(
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
+  tickTileTemp(w, tickCount, seasonFactor)
+
+  // Ice formation: cold biome water tiles freeze. Issue #3137.
+  // Ice melting: warm biome ice tiles thaw. Issue #3138.
+  if (tickCount % 60 === 0 && TUNING.seasonAmplitude > 0 && w.biomeZones) {
+    const waterIdx = MATERIAL_INDEX.water
+    const iceIdx = MATERIAL_INDEX.ice
+    const REGION_H = Math.floor(WORLD_H / (w.biomeZones.length || 1))
+    for (let r = 0; r < (w.biomeZones?.length ?? 0); r++) {
+      const zone = w.biomeZones[r]
+      if (!zone) continue
+      const rowStart = r * REGION_H
+      const rowEnd = Math.min(rowStart + REGION_H, WORLD_H)
+      if (zone.temperature < 0.1) {
+        // Freeze some water tiles in this cold zone
+        for (let y = rowStart; y < rowEnd; y++) {
+          for (let x = 0; x < WORLD_W; x += 8) {  // sample every 8th column
+            const i = y * WORLD_W + x
+            if (w.tiles[i] === waterIdx && rng() < 0.002) {
+              setTile(w, x, y, iceIdx)
+            }
+          }
+        }
+      } else if (zone.temperature > 0.35) {
+        // Melt some ice tiles in warm zones
+        for (let y = rowStart; y < rowEnd; y++) {
+          for (let x = 0; x < WORLD_W; x += 8) {
+            const i = y * WORLD_W + x
+            if (w.tiles[i] === iceIdx && rng() < 0.003) {
+              setTile(w, x, y, waterIdx)
+            }
+          }
+        }
+      }
+    }
+  }
 
   const creatures = w.creatures
   const dead = new Set<number>()
@@ -1551,6 +1588,43 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
       }
     }
+    // Local temperature from biome zone. Issues #3134, #3135, #3136.
+    const creatureZoneTemp: number = (() => {
+      if (!w.biomeZones || w.biomeZones.length === 0) return 0.5
+      const REGION_H2 = Math.floor(WORLD_H / w.biomeZones.length)
+      const ri = Math.min(w.biomeZones.length - 1, Math.floor(Math.floor(c.y) / Math.max(1, REGION_H2)))
+      return w.biomeZones[ri]?.temperature ?? 0.5
+    })()
+
+    // Cold-blooded speed scaling: ectotherms slow in cold, fast in heat. Issue #3134.
+    if (bp.coldBlooded) {
+      const speedMod = 0.5 + creatureZoneTemp * 0.9  // 0.5× at 0, 1.4× at 1
+      // Apply by directly scaling velocity (not traits, which are inherited)
+      c.vx *= speedMod
+      c.vy *= speedMod
+    }
+
+    // Warm-blooded thermoregulation: endotherms burn energy in extremes. Issue #3135.
+    if (bp.warmBlooded) {
+      if (creatureZoneTemp < 0.15) {
+        const coldStress = (0.15 - creatureZoneTemp) / 0.15
+        c.hunger = Math.min(1, c.hunger + coldStress * 0.0003 * dt)
+      } else if (creatureZoneTemp > 0.85) {
+        const heatStress = (creatureZoneTemp - 0.85) / 0.15
+        c.hunger = Math.min(1, c.hunger + heatStress * 0.0002 * dt)
+      }
+    }
+
+    // Temperature comfort range: hunger penalty outside tempMin/tempMax. Issue #3136.
+    if (bp.tempMin !== undefined && creatureZoneTemp < bp.tempMin) {
+      const deviation = bp.tempMin - creatureZoneTemp
+      c.hunger = Math.min(1, c.hunger + deviation * 0.0004 * dt)
+    }
+    if (bp.tempMax !== undefined && creatureZoneTemp > bp.tempMax) {
+      const deviation = creatureZoneTemp - bp.tempMax
+      c.hunger = Math.min(1, c.hunger + deviation * 0.0004 * dt)
+    }
+
     // Prey escalation: surviving prey slowly builds evasion every 60 ticks. Issue #3263.
     if (tickCount % 60 === 0 && bp.preyEscalation) {
       c.escalatedEvasion = Math.min(0.5, (c.escalatedEvasion ?? 0) + 0.002)
