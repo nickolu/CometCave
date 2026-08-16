@@ -98,6 +98,7 @@ export function FieldGuidePane() {
   const compareId = useMicroLand(s => s.compareId)
   const setCompareId = useMicroLand(s => s.setCompareId)
   const traitHistory = useMicroLand(s => s.traitHistory)
+  const agePyramid = useMicroLand(s => s.agePyramid)
   const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
   const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
   const elapsed = useMicroLand(s => s.elapsed)
@@ -478,6 +479,7 @@ export function FieldGuidePane() {
             onCompare={() => handleCompare(bp.id)}
             isComparePin={compareId === bp.id}
             traitHistory={traitHistory[bp.id]}
+            agePyramidEntry={agePyramid[bp.id]}
             compact={compact}
             isHeatmap={heatmapBlueprintId === bp.id}
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
@@ -926,6 +928,7 @@ function GuideEntry({
   onCompare,
   isComparePin,
   traitHistory,
+  agePyramidEntry,
   compact,
   isHeatmap,
   onHeatmap,
@@ -940,6 +943,7 @@ function GuideEntry({
   onCompare?: () => void
   isComparePin?: boolean
   traitHistory?: TraitHistoryEntry[]
+  agePyramidEntry?: { j: number; a: number; e: number }
   compact?: boolean
   isHeatmap?: boolean
   onHeatmap?: () => void
@@ -988,6 +992,18 @@ function GuideEntry({
           ))}
         </div>
       )}
+      {agePyramidEntry && (() => {
+        const { j, a, e } = agePyramidEntry
+        const total = j + a + e
+        if (total === 0) return null
+        return (
+          <div style={{ display: 'flex', height: '4px', width: '100%', marginTop: '2px', borderRadius: '2px', overflow: 'hidden' }}>
+            <div style={{ width: `${(j / total * 100).toFixed(1)}%`, background: '#88cc44' }} title={`Juvenile: ${j}`} />
+            <div style={{ width: `${(a / total * 100).toFixed(1)}%`, background: '#4488cc' }} title={`Adult: ${a}`} />
+            <div style={{ width: `${(e / total * 100).toFixed(1)}%`, background: '#cc8844' }} title={`Elder: ${e}`} />
+          </div>
+        )
+      })()}
       <div className={`flex gap-3 px-4 ${compact ? 'py-1.5' : 'py-3'}`}>
       {!compact && (
         <div className="shrink-0 pt-0.5">

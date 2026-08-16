@@ -940,6 +940,18 @@ export interface CreatureBlueprint {
    * Issue #3326.
    */
   landmarkMemory?: boolean
+  /**
+   * Carrying capacity for this species. When the species population exceeds this
+   * value, reproduction is progressively penalized. At 1.5× the cap, 30% of the
+   * population is culled per overshoot event. Issue #3287, #3292.
+   */
+  populationCap?: number
+  /**
+   * Minimum viable population for normal reproduction (Allee effect).
+   * When the species population falls below this threshold, reproduction rate is
+   * scaled down proportionally to population / alleeThreshold. Issue #3288.
+   */
+  alleeThreshold?: number
 }
 
 /**

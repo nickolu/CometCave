@@ -562,6 +562,13 @@ export class GameInstance {
       if (isSoundEnabled()) playExtinction()
     }
 
+    // Stochastic extinction notice: fire a player notification when an extinction
+    // event is pushed by the small-population random crash. Issue #3291.
+    for (const event of events) {
+      if (event.kind !== 'extinction') continue
+      if (event.text) notify(event.text)
+    }
+
     // Seed bank diversity rescue: a species that went locally extinct has
     // germinated from dormant seeds still in the soil. Remove it from the
     // field guide's memorial list and let the player know.
@@ -992,6 +999,23 @@ export class GameInstance {
       const flat: Record<string, TraitHistoryEntry[]> = {}
       for (const [id, hist] of this.traitHistory) flat[id] = hist
       useMicroLand.getState().setTraitHistory(flat)
+    }
+
+    // Age class pyramid computation. Issue #3290.
+    {
+      const agePyramid: Record<string, { j: number; a: number; e: number }> = {}
+      for (const c of this.world.creatures) {
+        const cbp = this.world.blueprints[c.blueprintId]
+        if (!cbp) continue
+        const lifespan = lifespanOf(c, cbp) * TUNING.lifespanScale
+        const age = c.ageSeconds
+        const entry = agePyramid[c.blueprintId] ?? { j: 0, a: 0, e: 0 }
+        if (age < lifespan * 0.2) entry.j++
+        else if (age < lifespan * 0.75) entry.a++
+        else entry.e++
+        agePyramid[c.blueprintId] = entry
+      }
+      useMicroLand.getState().setAgePyramid(agePyramid)
     }
 
     // A running world is different every tick, so there is no cheaper signal

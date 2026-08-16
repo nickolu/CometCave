@@ -463,7 +463,7 @@ export interface SimEvent {
    * going locally extinct (speciesCount was 0 at the moment of germination). The
    * field guide removes the species from the extinctions list on receiving this.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice' | 'extinction'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -909,6 +909,35 @@ export function tickCreatures(
       if (w.invasionFrontX[c.blueprintId] === undefined || cx > w.invasionFrontX[c.blueprintId]) {
         w.invasionFrontX[c.blueprintId] = cx
       }
+    }
+  }
+
+  // Stochastic extinction: tiny populations face random crashes. Issue #3291.
+  if (tickCount % 300 === 0) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      if (cnt < 5 && cnt > 0 && rng() < 0.01) {
+        const toExtinct = w.creatures.filter(c2 => c2.blueprintId === bpId)
+        const extBp = w.blueprints[bpId]
+        if (extBp) {
+          for (const c2 of toExtinct) kill(w, c2, extBp, dead, events, 'aged')
+          events.push({ kind: 'extinction', blueprintId: bpId, x: 0, y: 0, text: `${extBp.name} went locally extinct` })
+        }
+      }
+    }
+  }
+
+  // Population overshoot and collapse. Issue #3292.
+  if (tickCount % 60 === 0) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const obp = w.blueprints[bpId]
+      if (!obp?.populationCap || cnt <= obp.populationCap * 1.5) continue
+      const victims2 = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      const killCnt = Math.floor(victims2.length * 0.3)
+      for (let ki = 0; ki < killCnt; ki++) {
+        const v = victims2[Math.floor(rng() * victims2.length)]
+        if (v) kill(w, v, obp, dead, events, 'starved')
+      }
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${obp.name} population collapsed from overshoot` })
     }
   }
 
@@ -2412,6 +2441,27 @@ export function tickCreatures(
       if (bp.biomeRequirements && bp.biomeRequirements.length > 0) {
         const zones = biomeZonesAtWithEcotone(w, Math.floor(c.y))
         if (!zones.some(z => bp.biomeRequirements!.includes(z))) continue
+      }
+
+      // Carrying capacity density penalty. Issue #3287.
+      if (bp.populationCap) {
+        const pop = speciesCount[c.blueprintId] ?? 0
+        const density = pop / bp.populationCap
+        if (density >= 1.0) continue  // at or above capacity: skip reproduction
+        if (density >= 0.8) {
+          // linear decline from 100% → 0% as density goes from 0.8 → 1.0
+          const penalty = (density - 0.8) / 0.2
+          if (rng() < penalty) continue
+        }
+      }
+
+      // Allee effect: mate scarcity reduces reproduction. Issue #3288.
+      if (bp.alleeThreshold) {
+        const pop = speciesCount[c.blueprintId] ?? 0
+        if (pop < bp.alleeThreshold) {
+          const alleeFactor = pop / bp.alleeThreshold
+          if (rng() >= alleeFactor) continue
+        }
       }
 
       /**
