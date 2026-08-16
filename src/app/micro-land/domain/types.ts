@@ -361,6 +361,21 @@ export interface CreatureBlueprint {
    */
   countershaded?: boolean
   /**
+   * Cephalopod/chameleon-type active color change: the creature updates its hue
+   * every 5 seconds to match the tile it is standing on.
+   *
+   * When standing still and hue-matched, the creature's `cryptic` detection
+   * advantage applies at full strength. During the 2-tick transition (after the
+   * hue updates), the creature is exposed — chromatophore pigment cells are
+   * briefly in an incoherent intermediate state. The effect requires `cryptic:
+   * true` to influence predator detection; without it, the hue shift is cosmetic.
+   *
+   * Models cuttlefish, cephalopods, and some species of chameleon. The hue
+   * persists in traits and is inherited by offspring — creating selection pressure
+   * for adaptable-hue lineages on variable substrates.
+   */
+  activeChromatophores?: boolean
+  /**
    * Digging creatures that physically mix soil layers, bringing buried nutrients
    * and infertile substrate to the surface where plants can use them.
    *

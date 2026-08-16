@@ -122,6 +122,21 @@ const BIOTURBATION_PROB = 0.001
 const ROOT_STABILIZE_PROB = 0.0005
 
 /**
+ * Seconds between chromatophore hue updates. At 5 s the creature adapts
+ * roughly twice a minute — fast enough to matter ecologically, slow enough
+ * to be visible in the field guide.
+ */
+const CHROMATO_INTERVAL = 5
+
+/**
+ * Seconds the chromatophore is in an incoherent intermediate state after
+ * updating its hue. At 2/60 s ≈ 33 ms (two physics ticks) the creature is
+ * briefly exposed — models the real latency in pigment-cell rearrangement.
+ * During this window camouflage is zero, matching the issue spec.
+ */
+const CHROMATO_FADE_S = 2 / 60
+
+/**
  * Within this many tiles, disruptive patterns give no detection benefit —
  * the outline is legible at close range regardless of the pattern.
  */
@@ -911,6 +926,42 @@ export function tickCreatures(
       }
     }
 
+    // Active chromatophores: update hue to match the current tile every
+    // CHROMATO_INTERVAL seconds. For 2 physics ticks after the update the
+    // creature is in transition (chromatophoreFade > 0) and its camouflage
+    // is zero — pigment cells are incoherent between the two states.
+    // The updated hue persists in traits and is inherited by offspring,
+    // driving substrate-adaptive lineages on variable terrain.
+    if (bp.activeChromatophores) {
+      const chdt = c as {
+        chromatophoreTimer?: number
+        chromatophoreFade?: number
+      }
+      if (chdt.chromatophoreTimer === undefined) chdt.chromatophoreTimer = 0
+      if (chdt.chromatophoreFade === undefined) chdt.chromatophoreFade = 0
+
+      chdt.chromatophoreTimer += dt
+      if (chdt.chromatophoreFade > 0)
+        chdt.chromatophoreFade = Math.max(0, chdt.chromatophoreFade - dt)
+
+      if (chdt.chromatophoreTimer >= CHROMATO_INTERVAL) {
+        chdt.chromatophoreTimer = 0
+        const footX = Math.floor(c.x + body.dx + body.w / 2)
+        const footY = Math.floor(c.y + body.dy + body.h)
+        const mat = MATERIAL_BY_INDEX[tileAt(w, footX, footY)]
+        if (mat) {
+          const newHue = hexHue(mat.color)
+          const t = c.traits as { hue?: number }
+          // Only start a transition if the hue actually changes (avoids
+          // false-positive exposure when the creature stays on the same tile).
+          if (newHue !== -1 && t.hue !== newHue) {
+            t.hue = newHue
+            chdt.chromatophoreFade = CHROMATO_FADE_S
+          }
+        }
+      }
+    }
+
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
     if (
@@ -1453,18 +1504,24 @@ function look(
       // at its feet) rather than its vertical centre. Centre is always air for a
       // walking creature, which would make the colour match meaningless — the
       // relevant substrate is always the one the creature is resting against.
-      const baseCamouflage = obp.cryptic
-        ? Math.max(
-            other.traits.camouflage,
-            crypticCamouflage(
-              ((other.traits.hue % 360) + 360) % 360,
-              hexHue(
-                MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
-                  ?.color ?? '#808080'
+      // Chromatophore transition: for 2 ticks after a hue update the prey
+      // is fully exposed (pigment cells incoherent). Override camouflage to 0.
+      const chromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
+      const baseCamouflage =
+        chromaFade > 0
+          ? 0 // transitioning — briefly exposed
+          : obp.cryptic
+            ? Math.max(
+                other.traits.camouflage,
+                crypticCamouflage(
+                  ((other.traits.hue % 360) + 360) % 360,
+                  hexHue(
+                    MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
+                      ?.color ?? '#808080'
+                  )
+                )
               )
-            )
-          )
-        : other.traits.camouflage
+            : other.traits.camouflage
       // Countershading: dark-top/pale-belly structure eliminates shadow depth cues,
       // making the body appear flat and harder to resolve at any angle.
       // A fixed structural bonus — it does not depend on tile colour or evolution.
@@ -1498,18 +1555,22 @@ function look(
       obp.move.kind !== 'root' // not a plant
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
-      const intruderCamoBase = obp.cryptic
-        ? Math.max(
-            other.traits.camouflage,
-            crypticCamouflage(
-              ((other.traits.hue % 360) + 360) % 360,
-              hexHue(
-                MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
-                  ?.color ?? '#808080'
+      const intruderChromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
+      const intruderCamoBase =
+        intruderChromaFade > 0
+          ? 0
+          : obp.cryptic
+            ? Math.max(
+                other.traits.camouflage,
+                crypticCamouflage(
+                  ((other.traits.hue % 360) + 360) % 360,
+                  hexHue(
+                    MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
+                      ?.color ?? '#808080'
+                  )
+                )
               )
-            )
-          )
-        : other.traits.camouflage
+            : other.traits.camouflage
       const intruderCamo = obp.countershaded === true
         ? Math.min(1, intruderCamoBase + 0.25)
         : intruderCamoBase
