@@ -2110,7 +2110,6 @@ export interface WorldState {
 // Event history
 // ---------------------------------------------------------------------------
 
-
 export type HistoryEventKind = 'born' | 'died' | 'plant_died' | 'ate' | 'named' | 'plant' | 'sick'
 
 export interface HistoryEntry {
