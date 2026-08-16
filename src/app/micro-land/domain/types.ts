@@ -341,6 +341,16 @@ export interface CreatureBlueprint {
    * Only targets plants younger than SEEDLING_MAX_AGE seconds.
    */
   clearingMaintainer?: boolean
+  /**
+   * Dark dorsal surface and pale ventral surface that cancel out the shadow cast
+   * by overhead lighting, making the body appear flat and harder to resolve as
+   * three-dimensional prey.
+   *
+   * Adds a fixed +0.25 to the effective camouflage score independent of the
+   * cryptic tile-matching system — structural concealment that does not evolve
+   * away in a single generation. The most common coloration pattern in vertebrates.
+   */
+  countershaded?: boolean
 }
 
 /**

@@ -1382,7 +1382,7 @@ function look(
       // at its feet) rather than its vertical centre. Centre is always air for a
       // walking creature, which would make the colour match meaningless — the
       // relevant substrate is always the one the creature is resting against.
-      const camouflage = obp.cryptic
+      const baseCamouflage = obp.cryptic
         ? Math.max(
             other.traits.camouflage,
             crypticCamouflage(
@@ -1394,6 +1394,10 @@ function look(
             )
           )
         : other.traits.camouflage
+      // Countershading: dark-top/pale-belly structure eliminates shadow depth cues,
+      // making the body appear flat and harder to resolve at any angle.
+      // A fixed structural bonus — it does not depend on tile colour or evolution.
+      const camouflage = obp.countershaded === true ? Math.min(1, baseCamouflage + 0.25) : baseCamouflage
       const detFactor = still
         ? Math.max(0.15, 0.5 - camouflage * 0.375) // 0.5 (camo=0) → 0.2 (camo=0.8)
         : 1 - camouflage * 0.3 // 1.0 (camo=0) → 0.76 (camo=0.8)
@@ -1423,7 +1427,7 @@ function look(
       obp.move.kind !== 'root' // not a plant
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
-      const intruderCamo = obp.cryptic
+      const intruderCamoBase = obp.cryptic
         ? Math.max(
             other.traits.camouflage,
             crypticCamouflage(
@@ -1435,6 +1439,9 @@ function look(
             )
           )
         : other.traits.camouflage
+      const intruderCamo = obp.countershaded === true
+        ? Math.min(1, intruderCamoBase + 0.25)
+        : intruderCamoBase
       const effectiveTerritoryR = territoryR * (1 - intruderCamo * 0.5)
       if (d2 < effectiveTerritoryR * effectiveTerritoryR && d2 < preyDist) {
         preyDist = d2
