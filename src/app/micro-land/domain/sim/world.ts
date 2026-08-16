@@ -1031,6 +1031,29 @@ export function tickSalinity(w: WorldState, tickCount: number): void {
   }
 }
 
+/**
+ * Decay and diffuse marsh detritus — dissolved organic carbon exported from
+ * decomposing salt marsh plants. Acts as a slow-release fertility subsidy for
+ * the coastal food web. Runs every 30 ticks.
+ */
+export function tickMarshDetritus(w: WorldState, tickCount: number, dt: number): void {
+  if (!w.marshDetritus || tickCount % 30 !== 0) return
+  const decay = 0.001 * dt
+  for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+    w.marshDetritus[i] = Math.max(0, w.marshDetritus[i] - decay)
+  }
+  // Gentle lateral diffusion between horizontally adjacent tiles
+  const alpha = 0.02
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const i = y * WORLD_W + x
+      const left = w.marshDetritus[y * WORLD_W + ((x - 1 + WORLD_W) % WORLD_W)]
+      const right = w.marshDetritus[y * WORLD_W + ((x + 1) % WORLD_W)]
+      w.marshDetritus[i] = Math.max(0, Math.min(1, w.marshDetritus[i] + alpha * (left + right - 2 * w.marshDetritus[i])))
+    }
+  }
+}
+
 export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1

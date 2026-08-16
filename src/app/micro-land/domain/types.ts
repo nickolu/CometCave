@@ -436,6 +436,11 @@ export interface CreatureBlueprint {
    */
   salinityTolerance?: { min: number; max: number }
   /**
+   * Aerial roots create structural shelter in tidal zones. When true, juvenile
+   * creatures within 8 tiles receive a doubled nursery hunger bonus.
+   */
+  aerialRoots?: boolean
+  /**
    * Drastically reduced basal metabolic rate — inspired by cave-adapted
    * species (cave olm, cave fish) that can survive months without food.
    *
@@ -1149,6 +1154,11 @@ export interface WorldState {
    * zone (estuary) in the middle of the world.
    */
   salinity?: Float32Array
+  /**
+   * Dissolved organic carbon exported from decomposing marsh plants.
+   * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
+   */
+  marshDetritus?: Float32Array
   eggs: Egg[]
   nextEggId: number
   /** Burrows dug by territorial creatures at their home positions. */

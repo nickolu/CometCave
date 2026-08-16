@@ -1661,6 +1661,38 @@ const SALT_MARSH_REED = builtin('salt-marsh-reed', {
   salinityTolerance: { min: 0.2, max: 0.7 },  // thrives in brackish mixing zone
 })
 
+const MANGROVE = builtin('mangrove', {
+  name: 'Mangrove',
+  blurb: "Its tangled roots filter sediment and shelter the young of a hundred species.",
+  size: 4,
+  tags: ['plant', 'tree'],
+  art: {
+    palette: { g: '#2d5016', b: '#6b4423', r: '#4a7a1a', l: '#c8e060' },
+    frames: [
+      ['...rr...', '..rrll..', '.rrrrrr.', 'rrrrrrrr', '...bb...', '...bb...', '.bb.bb..', 'bb...bbb'],
+    ],
+    frameMs: 1000,
+    faceMotion: false,
+  },
+  body: { mass: 3, bounce: 0, drag: 0.1, buoyancy: 0.4, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: [],
+    fears: [],
+    hungerRate: 0,
+    starveSeconds: 999,
+    breedAt: 0.1,
+    lifespanSeconds: 800,
+  },
+  senses: { sight: 1 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#2d5016', particleCount: 8 },
+  aura: { helps: ['grass'], radius: 12, boost: 1.4 },
+  glow: 0,
+  aerialRoots: true,
+  salinityTolerance: { min: 0.0, max: 0.4 },
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -1670,6 +1702,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   GLOWVINE,
   SKYBLOOM,
   SALT_MARSH_REED,
+  MANGROVE,
   SNAP_TRAP,
   PITCHER_PLANT,
   SUNDEW,
