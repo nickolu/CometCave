@@ -524,6 +524,12 @@ interface MicroLandState {
     totalLinks: number
   } | null
   setNetworkStats: (stats: { connected: number; isolated: number; clusterCount: number; totalLinks: number } | null) => void
+  /**
+   * Set of blueprint IDs identified as keystone species — those that 2+ other
+   * species depend on. Updated periodically by updateKeystoneSpecies(). Issue #3122.
+   */
+  keystoneSpeciesIds: ReadonlySet<string>
+  setKeystoneSpeciesIds: (ids: ReadonlySet<string>) => void
 
   /**
    * When set, the renderer draws each creature with a color overlay based on
@@ -721,6 +727,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   networkDegree: {},
   networkStats: null,
+  keystoneSpeciesIds: new Set<string>(),
   locateRequest: null,
   populationItems: [],
   invasionFront: {},
@@ -861,6 +868,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setNetworkDegree: d => set({ networkDegree: d }),
   setNetworkStats: stats => set({ networkStats: stats }),
+  setKeystoneSpeciesIds: ids => set({ keystoneSpeciesIds: ids }),
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),

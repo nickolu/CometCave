@@ -870,6 +870,11 @@ export class GameInstance {
       useMicroLand.getState().setNetworkStats(null)
     }
 
+    // Push keystone species set to the store for Field Guide display. Issue #3122.
+    if (this.world.keystoneSpeciesIds) {
+      useMicroLand.getState().setKeystoneSpeciesIds(this.world.keystoneSpeciesIds)
+    }
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {

@@ -73,9 +73,11 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickSoilAge,
   tickWebDecay,
   tileAt,
   updateBiomeZones,
+  updateKeystoneSpecies,
 } from './world'
 
 import type { Rng } from './prng'
@@ -825,6 +827,13 @@ function tickSeedBank(
       continue
     }
 
+    // Succession stage gate: only germinate when soil is mature enough. Issue #3123.
+    if (bp.successionStage && bp.successionStage > 1 && w.soilAge) {
+      const minAge = (bp.successionStage - 1) * 1500
+      const soilAgeHere = w.soilAge[seed.y * WORLD_W + seed.x] ?? 0
+      if (soilAgeHere < minAge) { surviving.push(seed); continue }
+    }
+
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
@@ -885,6 +894,8 @@ export function tickCreatures(
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
+  tickSoilAge(w, tickCount)
+  updateKeystoneSpecies(w, tickCount)
   // Water cycle — Issues #3110, #3111, #3112, #3114
   tickEvaporation(w, tickCount, rng)
   tickCloudDrift(
@@ -3639,8 +3650,30 @@ function look(
     }
   }
 
-  const sight = baseSight * elderWisdomMultiplier
+  let sight = baseSight * elderWisdomMultiplier
   const sight2 = sight * sight
+
+  /**
+   * Density-dependent fear: prey reduce foraging range when predators are
+   * numerous nearby. When 3+ predators that could eat this creature are within
+   * a 10-tile radius, foraging sight is reduced by 40%. Issue #3120.
+   */
+  if (bp.move.kind !== 'root') {
+    let nearbyPredatorCount = 0
+    const fearRadius2 = 100  // 10 tiles squared
+    for (const other of w.creatures) {
+      if (other.id === c.id) continue
+      const obp = w.blueprints[other.blueprintId]
+      if (!obp) continue
+      if (!obp.diet.eats.some(tag => bp.tags.includes(tag)) || obp.size < bp.size) continue
+      const odx = deltaX(cx, other.x + bw / 2)
+      const ody = other.y - cy
+      if (odx * odx + ody * ody <= fearRadius2) {
+        nearbyPredatorCount++
+        if (nearbyPredatorCount >= 3) { sight = sight * 0.6; break }
+      }
+    }
+  }
 
   /**
    * How far it can find something to eat, which is not how far it can see.

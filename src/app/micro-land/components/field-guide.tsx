@@ -93,6 +93,7 @@ export function FieldGuidePane() {
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const keystoneSpeciesIds = useMicroLand(s => s.keystoneSpeciesIds)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -484,6 +485,7 @@ export function FieldGuidePane() {
             isHeatmap={heatmapBlueprintId === bp.id}
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
             elapsed={elapsed}
+            keystoneSpeciesIds={keystoneSpeciesIds}
           />
         ))}
       </ul>
@@ -933,6 +935,7 @@ function GuideEntry({
   isHeatmap,
   onHeatmap,
   elapsed,
+  keystoneSpeciesIds,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -948,6 +951,7 @@ function GuideEntry({
   isHeatmap?: boolean
   onHeatmap?: () => void
   elapsed: number
+  keystoneSpeciesIds?: ReadonlySet<string>
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -1149,6 +1153,37 @@ function GuideEntry({
             <br />
             <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
             {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
+            {bp.trophicLevel !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Trophic level:</strong>{' '}
+                {bp.trophicLevel === 1 ? 'Producer (1)' : bp.trophicLevel === 2 ? 'Herbivore (2)' : bp.trophicLevel === 3 ? 'Carnivore (3)' : `Apex (${bp.trophicLevel})`}
+                {keystoneSpeciesIds?.has(bp.id) && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      background: 'var(--cc-primary)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    KEYSTONE
+                  </span>
+                )}
+              </>
+            )}
+            {bp.successionStage !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Succession stage:</strong>{' '}
+                {bp.successionStage === 1 ? 'Pioneer' : bp.successionStage === 2 ? 'Early' : bp.successionStage === 3 ? 'Mid' : 'Climax'}
+                {' '}({bp.successionStage}/4)
+              </>
+            )}
             {bp.symbiosisPartnerId && (() => {
               const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
               return partner ? (
