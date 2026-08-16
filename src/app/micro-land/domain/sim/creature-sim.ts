@@ -1179,6 +1179,20 @@ export function tickCreatures(
       continue
     }
 
+    /**
+     * Whether this creature is a rooted plant.
+     *
+     * Declared at the top of the loop body rather than down in the breeding
+     * section, which is where it is most used and where it used to live.
+     * Habitat features added since — riparian buffers, leaf litter subsidy,
+     * technique innovation — read it hundreds of lines earlier, and a `const`
+     * read above its own declaration is not a hoisting convenience, it is a
+     * temporal dead zone throw. It killed `step()` on the first plant to tick,
+     * which is every world the moment fertile ground is painted. Keep this
+     * above every read.
+     */
+    const isPlant = bp.move.kind === 'root'
+
     // `bw`/`bh` are what the creature *looks* like — used for sight, biting and
     // anything the player can see. `body` is what it collides with. For all but
     // the largest creatures the two are identical.
@@ -2075,7 +2089,7 @@ export function tickCreatures(
 
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events, rng)
+      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng)
     }
 
     // --- burrow retreat: when threatened or hungry, head back to burrow. Issue #3419. ---
@@ -2806,7 +2820,7 @@ export function tickCreatures(
     }
 
     // --- breeding -------------------------------------------------------
-    const isPlant = bp.move.kind === 'root'
+    // `isPlant` is declared at the top of the loop body — see the note there.
     // Phenological gate: species with a breedingGdd threshold only mate when
     // accumulated warmth (0–1000) has reached their seasonal window. When
     // seasons are disabled (seasonAmplitude=0), worldGdd returns 1000, so the
@@ -3552,6 +3566,12 @@ function look(
   bh: number,
   dead: Set<number>,
   events: SimEvent[],
+  /**
+   * Species with a cohort emerging from pupa this tick, computed once per tick
+   * by `tickCreatures`. Passed in rather than recomputed: `look` runs per
+   * creature, and the answer is the same for all of them.
+   */
+  massEmerging: ReadonlySet<string>,
   rng: Rng
 ): void {
   const cx = c.x + bw / 2
@@ -3921,7 +3941,7 @@ function look(
         // Predator satiation during mass emergence: when a cohort of the prey's
         // species is emerging simultaneously, the predator is already gorged from
         // the glut and gains only half the normal hunger reduction. Issue #3339.
-        if (massEmergingSpecies.has(obp.id)) {
+        if (massEmerging.has(obp.id)) {
           fill *= 0.5
         }
         // Pupal vulnerability: pupae are easy, rewarding prey — predator gets extra
