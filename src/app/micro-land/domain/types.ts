@@ -1176,6 +1176,14 @@ export interface CreatureBlueprint {
    * still attack freely. Issue #3237.
    */
   aposematic?: boolean
+  /** When true, this species builds a vertical express shaft and earns a vertical movement bonus. Issue #3298. */
+  earthwormElevator?: boolean
+  /** When true, this species observes the annual Founding Rain ritual; absent frogs become apostates. Issue #3299. */
+  frogFundamentalism?: boolean
+  /** When true, the first individual becomes the Administrator holding all 17 cabinet positions. Issue #3300. */
+  gopherGovernment?: boolean
+  /** When true, this species relays pheromone messages with a 135s delay. Issue #3302. */
+  beetleInternet?: boolean
 }
 
 /**
@@ -2076,6 +2084,14 @@ export interface WorldState {
    * Slow sinusoidal oscillation; updated each tick. Issue #3153.
    */
   windY?: number
+  /** How many times the earthworm elevator has been rebuilt this world session. Issue #3298. */
+  earthwormElevatorRebuildCount?: number
+  /** World elapsed time at which the next earthworm elevator rebuild notice fires. Issue #3298. */
+  earthwormElevatorNextRebuild?: number
+  /** Season index of the last Frog Fundamentalism ritual. Issue #3299. */
+  lastFrogRitualSeason?: number
+  /** Creature id of the Gopher Government Administrator. Issue #3300. */
+  gopherAdminId?: number
 }
 
 // ---------------------------------------------------------------------------
