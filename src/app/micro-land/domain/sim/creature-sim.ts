@@ -935,6 +935,25 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + Math.max(0, heatStress - springRelief))
       }
     }
+    // Flow zone preference: aquatic creatures thrive in their matched zone.
+    // Preferred zone → slight hunger relief; wrong zone → mild hunger increase.
+    // Zones are 1=pool, 2=run, 3=riffle; 0 means non-water tile. Issue #3370.
+    if (bp.flowZonePreference && w.flowZone) {
+      const fzx = Math.floor(c.x)
+      const fzy = Math.floor(c.y)
+      if (fzx >= 0 && fzx < WORLD_W && fzy >= 0 && fzy < WORLD_H) {
+        const zone = w.flowZone[fzy * WORLD_W + fzx]
+        if (zone > 0) {
+          const preferred =
+            bp.flowZonePreference === 'riffle' ? 3 : bp.flowZonePreference === 'run' ? 2 : 1
+          if (zone === preferred) {
+            c.hunger = Math.max(0, c.hunger - 0.00005 * dt)
+          } else {
+            c.hunger = Math.min(1, c.hunger + 0.00008 * dt)
+          }
+        }
+      }
+    }
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {

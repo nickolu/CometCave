@@ -627,6 +627,9 @@ export function sanitizeBlueprint(
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
+    flowZonePreference: b.flowZonePreference === 'riffle' || b.flowZonePreference === 'run' || b.flowZonePreference === 'pool'
+      ? b.flowZonePreference
+      : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
