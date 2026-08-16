@@ -353,6 +353,8 @@ const STALKER = builtin('stalker', {
   canLearnFoodWashing: true,
   // Pack elders carry route knowledge — their death creates a knowledge gap.
   elderWisdom: true,
+  // Pack hunters communicate and coordinate well — high cultural transmission.
+  socialLearningRate: 0.8,
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -420,6 +422,8 @@ const GULPER = builtin('gulper', {
   // Matriarchal pod structure — elder females lead the group to seasonal feeding
   // grounds. Their death leaves the pod disoriented (models orca grandmother effect).
   elderWisdom: true,
+  // Aquatic pod — moderate social transmission rate.
+  socialLearningRate: 0.6,
 })
 
 const CINDER_WYRM = builtin('cinder-wyrm', {
@@ -586,6 +590,8 @@ const WOOLLY = builtin('woolly', {
   canLearnFoodWashing: true,
   // Herd matriarchs remember the safest grazing routes — knowledge lost with them.
   elderWisdom: true,
+  // Herd animals follow leaders — medium-high social transmission rate.
+  socialLearningRate: 0.7,
 })
 
 const DRIFTMOLE = builtin('driftmole', {
@@ -650,6 +656,8 @@ const RIMECLAW = builtin('rimeclaw', {
   glow: 0,
   // Clever apex predator — solitary but cognitively sophisticated enough for tool learning.
   canLearnFoodWashing: true,
+  // Solitary apex predators rarely observe others — lower social transmission rate.
+  socialLearningRate: 0.4,
 })
 
 // ---------------------------------------------------------------------------

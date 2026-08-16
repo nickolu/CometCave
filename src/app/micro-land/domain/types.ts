@@ -545,6 +545,22 @@ export interface CreatureBlueprint {
    */
   canLearnFoodWashing?: boolean
   /**
+   * How readily this species transmits and acquires learned behaviors, 0–1.
+   *
+   * A multiplier on cultural transmission probability in both directions —
+   * how fast a demonstrator passes a behavior on, and how fast an observer
+   * picks it up. Works alongside `brainSize`: smarter, more social species
+   * learn fastest.
+   *
+   * Default (absent or 0.5) preserves the original 4% / 40% food-washing
+   * transmission rates. High values (1.0) make the species hyper-social
+   * learners; low values (0.1) make cultural transmission rare even between
+   * close kin. Also moderates forgetting: high socialLearningRate species
+   * forget learned behaviors more slowly because active social reinforcement
+   * keeps the knowledge alive.
+   */
+  socialLearningRate?: number
+  /**
    * Species-level opt-in to the elder knowledge mechanic.
    *
    * When true, creatures in the last 35% of their natural lifespan
