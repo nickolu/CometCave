@@ -130,6 +130,8 @@ const ROOT_STABILIZE_PROB = 0.0005
  */
 const POLLUTION_PROB = 0.001
 
+const ALLELOPATHY_RADIUS = 8 // tiles — allelopathic suppression reach
+
 /**
  * Seconds between chromatophore hue updates. At 5 s the creature adapts
  * roughly twice a minute — fast enough to matter ecologically, slow enough
@@ -1112,8 +1114,30 @@ export function tickCreatures(
               const plantFertilityFactor = bp.carnivorousPlant
                 ? Math.max(0.1, 2.0 - fertilityAt(w, footX, footY))
                 : fertilityAt(w, footX, footY)
+
+              // allelopathy suppression: nearby allelopathic different-species plants
+              // slow our breeding by 30%
+              let allelopathyFactor = 1
+              if (!bp.novelCompoundResistant) {
+                const ax = c.x + bw / 2
+                const ay = c.y + bh / 2
+                const nearbyN = gather(ax, ALLELOPATHY_RADIUS + bw / 2)
+                for (let i = 0; i < nearbyN; i++) {
+                  const other = found[i]
+                  if (other.id === c.id) continue
+                  const obp = w.blueprints[other.blueprintId]
+                  if (!obp?.allelopathic || obp.id === bp.id) continue
+                  const odx = other.x + (obp.art.frames[0][0]?.length ?? 1) / 2 - ax
+                  const ody = other.y + (obp.art.frames[0]?.length ?? 1) / 2 - ay
+                  if (odx * odx + ody * ody < ALLELOPATHY_RADIUS * ALLELOPATHY_RADIUS) {
+                    allelopathyFactor = 1.3
+                    break
+                  }
+                }
+              }
+
               c.breedCooldown =
-                (TUNING.plantSpreadCooldown * crowdingPenalty) /
+                (TUNING.plantSpreadCooldown * crowdingPenalty * allelopathyFactor) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   plantFertilityFactor *
                   seasonFactor)
