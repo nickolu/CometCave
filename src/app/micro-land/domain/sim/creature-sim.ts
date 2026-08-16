@@ -1584,6 +1584,35 @@ export function tickCreatures(
       }
     }
 
+    // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
+    if (bp.burrowDigger) {
+      const digMats = ['dirt', 'mud', 'sand', 'grass', 'snow', 'ash']
+      for (const ddy of [0, 1]) {
+        const tx = Math.round(c.x), ty = Math.round(c.y) + ddy
+        if (tx < 0 || tx >= w.width || ty < 0 || ty >= w.height) continue
+        const tIdx = ty * w.width + tx
+        const matId = MATERIAL_BY_INDEX[w.tiles[tIdx]]?.id
+        if (matId !== undefined && digMats.includes(matId) && rng() < 0.15 * dt) {
+          if (c.burrowX === undefined) {
+            c.burrowX = tx
+            c.burrowY = ty
+          }
+          w.tiles[tIdx] = AIR
+          break
+        }
+      }
+    }
+
+    // --- in-burrow status: underground at burrow site = safe. Issue #3419. ---
+    if (bp.burrowDigger && c.burrowX !== undefined) {
+      const distToBurrow = Math.sqrt((c.x - c.burrowX) ** 2 + (c.y - c.burrowY!) ** 2)
+      const aboveIdx = (Math.round(c.y) - 1) * w.width + Math.round(c.x)
+      const hasRoof = aboveIdx >= 0 && aboveIdx < w.tiles.length && IS_SOLID[w.tiles[aboveIdx]]
+      c.inBurrow = distToBurrow < 3 && !!hasRoof
+    } else {
+      c.inBurrow = false
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
@@ -1628,6 +1657,29 @@ export function tickCreatures(
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
       look(w, c, bp, bw, bh, dead, events, rng)
+    }
+
+    // --- burrow retreat: when threatened or hungry, head back to burrow. Issue #3419. ---
+    if (bp.burrowDigger && c.burrowX !== undefined && (c.hunger > 0.7 || c.mood === 'flee')) {
+      const rdx = c.burrowX - c.x, rdy = c.burrowY! - c.y
+      const rdist = Math.sqrt(rdx * rdx + rdy * rdy)
+      if (rdist > 1) {
+        c.vx += (rdx / rdist) * 0.5 * dt
+        c.vy += (rdy / rdist) * 0.5 * dt
+      }
+    }
+
+    // --- food cache: store/draw surplus energy in burrow. Issue #3419. ---
+    if (bp.burrowDigger && c.inBurrow) {
+      const cacheMax = bp.burrowCacheSize ?? 0.3
+      if (c.hunger < 0.2 && (c.cachedFood ?? 0) < cacheMax) {
+        c.cachedFood = Math.min(cacheMax, (c.cachedFood ?? 0) + 0.05 * dt)
+      }
+      if (c.hunger > 0.8 && (c.cachedFood ?? 0) > 0) {
+        const draw = Math.min(c.cachedFood ?? 0, 0.3 * dt)
+        c.cachedFood = (c.cachedFood ?? 0) - draw
+        c.hunger = Math.max(0, c.hunger - draw)
+      }
     }
 
     // --- movement -------------------------------------------------------
@@ -2927,6 +2979,8 @@ function look(
     if (other.id === c.id || dead.has(other.id)) continue
     const obp = w.blueprints[other.blueprintId]
     if (!obp) continue
+    // Burrowed creatures are safe from non-burrowing predators. Issue #3419.
+    if (other.inBurrow && !bp.burrowDigger) continue
 
     const { w: ow, h: oh } = artSize(obp)
     // The short way round, so a creature by the seam hunts across it rather than

@@ -2300,6 +2300,80 @@ const WEAVER_BIRD = builtin('weaver-bird', {
   nestRadius: 3,
 })
 
+// ---------------------------------------------------------------------------
+// Prairie Dog — colonial burrowing herbivore. Issue #3419.
+// ---------------------------------------------------------------------------
+
+const PRAIRIE_DOG = builtin('prairie-dog', {
+  name: 'Prairie Dog',
+  blurb: 'A colonial burrower that excavates vast underground towns, ducking below ground when danger strikes.',
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { w: '#c8963c', b: '#7a5c2a', g: '#e8c07a' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+    ],
+    frameMs: 400,
+    faceMotion: true,
+  },
+  body: { mass: 1, bounce: 0.05, drag: 0.5, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.2, jump: 5, hop: 0, restlessness: 0.5 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.00007,
+    starveSeconds: 30,
+    breedAt: 0.75,
+    lifespanSeconds: 80,
+  },
+  senses: { sight: 1.1 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c8963c', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  burrowDigger: true,
+  burrowCacheSize: 0.4,
+})
+
+// ---------------------------------------------------------------------------
+// Badger — powerful burrowing predator. Issue #3419.
+// ---------------------------------------------------------------------------
+
+const BADGER = builtin('badger', {
+  name: 'Badger',
+  blurb: 'A powerful burrowing predator that excavates setts and pursues prey even underground.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#c8c8c8', b: '#222222', g: '#888888' },
+    frames: [
+      ['bwb', 'wgw', 'bwb'],
+    ],
+    frameMs: 400,
+    faceMotion: true,
+  },
+  body: { mass: 1, bounce: 0.05, drag: 0.4, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'walk', speed: 0.9, jump: 4, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00004,
+    starveSeconds: 60,
+    breedAt: 0.75,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 0.8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#888888', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  burrowDigger: true,
+  burrowCacheSize: 0.5,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2358,6 +2432,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   DRAGONFLY_NYMPH,
   DRAGONFLY,
   WEAVER_BIRD,
+  PRAIRIE_DOG,
+  BADGER,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(
