@@ -678,6 +678,10 @@ export function sanitizeBlueprint(
     termiteWorker: typeof b.termiteWorker === 'boolean' ? b.termiteWorker : undefined,
     moundCommensal: typeof b.moundCommensal === 'boolean' ? b.moundCommensal : undefined,
     moundDestroyer: typeof b.moundDestroyer === 'boolean' ? b.moundDestroyer : undefined,
+    anvilUser: typeof b.anvilUser === 'boolean' ? b.anvilUser : undefined,
+    hardShelled: typeof b.hardShelled === 'boolean' ? b.hardShelled : undefined,
+    stickProber: typeof b.stickProber === 'boolean' ? b.stickProber : undefined,
+    stickProbeDamage: typeof b.stickProbeDamage === 'number' ? Math.max(0, Math.min(1, b.stickProbeDamage)) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
