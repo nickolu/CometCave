@@ -1027,14 +1027,6 @@ export interface CreatureBlueprint {
    * Leave undefined for age-independent reproduction. Issue #3261.
    */
   ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
-  // Issue #3298: vertical elevator shaft for worms
-  earthwormElevator?: boolean
-  // Issue #3299: founding rain ritual for frogs
-  frogFundamentalism?: boolean
-  // Issue #3300: 17-cabinet gopher government
-  gopherGovernment?: boolean
-  // Issue #3302: pheromone internet for beetles
-  beetleInternet?: boolean
 }
 
 /**
@@ -1859,14 +1851,6 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
-  // Issue #3298: number of times earthworm elevator has been rebuilt
-  earthwormElevatorRebuildCount?: number
-  // Issue #3298: next rebuild notice time
-  earthwormElevatorNextRebuild?: number
-  // Issue #3299: season index of last frog ritual
-  lastFrogRitualSeason?: number
-  // Issue #3300: creature id of gopher government administrator
-  gopherAdminId?: number
 }
 
 // ---------------------------------------------------------------------------
