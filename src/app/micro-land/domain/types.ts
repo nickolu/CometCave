@@ -960,6 +960,37 @@ export interface CreatureBlueprint {
    * predator). Default 1.0 when undefined. Issues #3269, #3272, #3273.
    */
   bodyMass?: number     // body mass in relative units (1.0 = reference size); default 1.0
+  /**
+   * When true, this species participates in the Kestrel Kingdom mechanic.
+   *
+   * At each seasonal boundary the individual with the highest cumulative
+   * `mealsEaten` is crowned Monarch. The Monarch hunts at 110% speed.
+   * There is no court, no succession plan — the crown is re-awarded each
+   * season regardless of what happened to the previous holder. Issue #3304.
+   */
+  kestrelKingdom?: boolean
+  /**
+   * When true, this species stays near its nest when eggs are present, and
+   * intercepts predators approaching those eggs. Issue #3258.
+   */
+  parentalCare?: boolean
+  /** Tiles within which eggs are protected by a guarding parent. Default 5. Issue #3258. */
+  parentalRadius?: number
+  /** Hatch time multiplier for guarded eggs (< 1 = faster). Default 0.8. Issue #3258. */
+  broodProtection?: number
+  /**
+   * When true, this species lays its eggs in a host species' nest rather than
+   * building its own, leaving the hosts to raise its young. Issue #3260.
+   */
+  broodParasite?: boolean
+  /** Blueprint IDs of compatible host species for this brood parasite. Issue #3260. */
+  broodParasiteHost?: string[]
+  /**
+   * Population warning threshold. When the live count falls below this value
+   * (but is still above zero) the species is at high extinction risk.
+   * The field guide shows a warning indicator. Issues #3284, #3285.
+   */
+  minViablePopulation?: number
 }
 
 /**

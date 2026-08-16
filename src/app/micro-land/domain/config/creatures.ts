@@ -2305,6 +2305,48 @@ const WEAVER_BIRD = builtin('weaver-bird', {
   nestCompleteAt: 6,
   nestHatchBonus: 0.65,
   nestRadius: 3,
+  parentalCare: true,
+  parentalRadius: 4,
+  broodProtection: 0.75,
+  minViablePopulation: 8,
+})
+
+// ---------------------------------------------------------------------------
+// Cuckoo — brood parasite that exploits Weaver Bird nests. Issues #3260, #3284, #3285.
+// ---------------------------------------------------------------------------
+
+const CUCKOO = builtin('cuckoo', {
+  name: 'Cuckoo',
+  blurb: 'A master of deception that never builds its own nest — instead, it parasitizes Weaver Bird nests and lets the hosts do all the work.',
+  size: 1,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { w: '#888888', b: '#333333', g: '#cccccc' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 150,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.1, drag: 0.5, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'fly', speed: 1.6, jump: 0, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00005,
+    starveSeconds: 30,
+    breedAt: 0.6,
+    lifespanSeconds: 150,
+  },
+  senses: { sight: 16 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#888888', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  broodParasite: true,
+  broodParasiteHost: ['weaver-bird'],
 })
 
 // ---------------------------------------------------------------------------
@@ -2780,6 +2822,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   DRAGONFLY_NYMPH,
   DRAGONFLY,
   WEAVER_BIRD,
+  CUCKOO,
   PRAIRIE_DOG,
   BADGER,
   TERMITE,

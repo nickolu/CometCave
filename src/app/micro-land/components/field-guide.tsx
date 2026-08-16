@@ -1033,6 +1033,11 @@ function GuideEntry({
             >
               {alive > 0 ? `${alive} alive` : 'none left'}
             </span>
+            {bp.minViablePopulation && alive < bp.minViablePopulation && alive > 0 && (
+              <span style={{ color: '#ff4444', marginLeft: '4px', fontSize: '11px' }}>
+                ⚠ MVP risk
+              </span>
+            )}
             {bp.summoned && (
               <span
                 className="inline-flex items-center gap-1"

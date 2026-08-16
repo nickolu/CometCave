@@ -941,6 +941,28 @@ export function tickCreatures(
     }
   }
 
+  // MVP warning and rescue effect. Issues #3284, #3285.
+  if (tickCount % 60 === 0) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const ebp = w.blueprints[bpId]
+      if (!ebp?.minViablePopulation) continue
+      if (cnt < ebp.minViablePopulation && cnt > 0) {
+        // Rescue effect: stochastic immigration from an imagined meta-population
+        // prevents immediate extinction when a small population persists.
+        if (rng() < 0.05 * dt) {
+          const randomExisting = w.creatures.find(c2 => c2.blueprintId === bpId)
+          if (randomExisting) {
+            const immigrant = spawnCreature(w, ebp, randomExisting.x + (rng() - 0.5) * 10, randomExisting.y + (rng() - 0.5) * 10)
+            if (immigrant) {
+              immigrant.generation = randomExisting.generation
+              // spawnCreature already pushed immigrant to w.creatures
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Helpers — bees, worms, anything with an aura. Gathered once per tick
   // because the breeding check below asks "is one of these near me", and there
   // are normally none at all.
@@ -1631,6 +1653,17 @@ export function tickCreatures(
         // Bias velocity toward nest site
         c.vx += (ddx / dist) * 0.2 * dt
         c.vy += (ddy / dist) * 0.2 * dt
+      }
+    }
+
+    // --- Parental care: stay near nest when eggs exist nearby. Issue #3258. ---
+    if (bp.parentalCare && c.nestX !== undefined) {
+      const pdx = c.nestX - c.x, pdy = c.nestY! - c.y
+      const pdist = Math.sqrt(pdx * pdx + pdy * pdy)
+      const pRadius = bp.parentalRadius ?? 5
+      if (pdist > pRadius) {
+        c.vx += (pdx / pdist) * 0.4 * dt
+        c.vy += (pdy / pdist) * 0.4 * dt
       }
     }
 
@@ -2498,7 +2531,36 @@ export function tickCreatures(
         // attempts failing to find ground there.
         const ox = mate ? wrapX(c.x + deltaX(c.x, mate.x) / 2) : c.x
         const oy = mate ? (c.y + mate.y) / 2 : c.y
-        if (bp.egglayer && !isPlant) {
+        // Brood parasitism: lay egg in a host species' nest instead. Issue #3260.
+        if (bp.broodParasite && bp.broodParasiteHost && bp.egglayer && !isPlant) {
+          const hosts = bp.broodParasiteHost
+          for (const host of w.creatures) {
+            const hbp = w.blueprints[host.blueprintId]
+            if (!hosts.includes(host.blueprintId) || host.nestX === undefined) continue
+            const hdx = host.nestX - c.x, hdy = host.nestY! - c.y
+            const hdist = Math.sqrt(hdx * hdx + hdy * hdy)
+            if (hdist < 8) {
+              const childTraits = inherit(c.traits, null, rng)
+              const generation = c.generation + 1
+              w.eggs.push({
+                id: w.nextEggId++,
+                x: host.nestX,
+                y: host.nestY!,
+                blueprintId: c.blueprintId,
+                traits: childTraits,
+                generation,
+                hatchIn: TUNING.eggHatchSeconds * 0.7,  // parasite hatches faster
+              })
+              c.children++
+              if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
+              speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
+              c.breedCooldown = TUNING.breedCooldown *
+                ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
+              events.push({ kind: 'notice', blueprintId: bp.id, x: host.nestX, y: host.nestY!, text: `${bp.name} parasitized a ${hbp?.name ?? 'host'} nest` })
+              break
+            }
+          }
+        } else if (bp.egglayer && !isPlant) {
           // Egg-layer: drop an egg with inherited traits rather than spawning live.
           const childTraits = inherit(c.traits, mate?.traits ?? null, rng)
           const generation = Math.max(c.generation, mate?.generation ?? 0) + 1
@@ -2801,6 +2863,20 @@ export function tickCreatures(
             egg.hatchIn -= dt * (1 / hatchBonus - 1)  // net effect: hatchIn depletes faster
             break
           }
+        }
+      }
+    }
+    // Parental care hatch bonus: guarded eggs hatch faster. Issue #3258.
+    if (egg.hatchIn > 0) {
+      for (const parent of w.creatures) {
+        const pbp = w.blueprints[parent.blueprintId]
+        if (!pbp?.parentalCare || parent.blueprintId !== egg.blueprintId) continue
+        const pDist = Math.sqrt((parent.x - egg.x) ** 2 + (parent.y - egg.y) ** 2)
+        const pRadius = pbp.parentalRadius ?? 5
+        if (pDist <= pRadius) {
+          const bonus = pbp.broodProtection ?? 0.8
+          egg.hatchIn -= dt * (1 / bonus - 1)  // net faster
+          break
         }
       }
     }
@@ -3166,6 +3242,20 @@ function look(
       const gapX = Math.max(0, Math.abs(dx) - bw / 2)
       const gapY = Math.max(0, Math.abs(dy) - bh / 2)
       if (gapX <= BITE_PAD && gapY <= BITE_PAD) {
+        // Parental egg defense: parent intercepts predators approaching eggs. Issue #3258.
+        let eggDefended = false
+        for (const parent of w.creatures) {
+          const pbp = w.blueprints[parent.blueprintId]
+          if (!pbp?.parentalCare || parent.blueprintId !== egg.blueprintId) continue
+          if (parent.nestX === undefined) continue
+          const pRadius = pbp.parentalRadius ?? 5
+          const pdist = Math.sqrt((parent.x - egg.x) ** 2 + (parent.y - egg.y) ** 2)
+          if (pdist <= pRadius && rng() < 0.4) {
+            eggDefended = true
+            break
+          }
+        }
+        if (eggDefended) continue
         c.hunger = Math.max(0, c.hunger - mealFill(c, bp, eggBp) * 0.6) // eggs are smaller meals
         c.starving = 0
         c.huntBlockedId = null

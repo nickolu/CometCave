@@ -689,6 +689,13 @@ export function sanitizeBlueprint(
     populationCap: typeof b.populationCap === 'number' ? Math.max(1, Math.floor(b.populationCap)) : undefined,
     alleeThreshold: typeof b.alleeThreshold === 'number' ? Math.max(1, Math.floor(b.alleeThreshold)) : undefined,
     bodyMass: typeof b.bodyMass === 'number' ? Math.max(0.01, b.bodyMass) : undefined,
+    kestrelKingdom: typeof b.kestrelKingdom === 'boolean' ? b.kestrelKingdom : undefined,
+    parentalCare: typeof b.parentalCare === 'boolean' ? b.parentalCare : undefined,
+    parentalRadius: typeof b.parentalRadius === 'number' ? Math.max(1, b.parentalRadius) : undefined,
+    broodProtection: typeof b.broodProtection === 'number' ? Math.max(0.1, Math.min(1, b.broodProtection)) : undefined,
+    broodParasite: typeof b.broodParasite === 'boolean' ? b.broodParasite : undefined,
+    broodParasiteHost: Array.isArray(b.broodParasiteHost) ? (b.broodParasiteHost as string[]) : undefined,
+    minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
