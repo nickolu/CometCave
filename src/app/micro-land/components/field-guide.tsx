@@ -7,9 +7,19 @@ import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-la
 import { type CreatureBlueprint, type CreatureThumb, type Traits, LIFE_KINDS } from '@/app/micro-land/domain/types'
 import { formatDuration } from '@/app/micro-land/format'
 import { useMicroLand, type PopulationSnapshot, type TraitHistoryEntry } from '@/app/micro-land/store'
+import { TUNING } from '@/app/micro-land/domain/tuning'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
+
+function worldGdd(elapsed: number): number {
+  if (TUNING.seasonAmplitude === 0 || TUNING.seasonPeriod <= 0) return 1000
+  const yearsElapsed = Math.floor(elapsed / TUNING.seasonPeriod)
+  const climateBonus = Math.min(400, yearsElapsed * TUNING.climateWarmingRate)
+  const yearFrac = (elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+  const baseGdd = Math.round((1 - Math.cos(2 * Math.PI * yearFrac)) / 2 * 1000)
+  return Math.min(1000, baseGdd + climateBonus)
+}
 
 const sectionHeading: React.CSSProperties = {
   fontFamily: 'var(--cc-font-mono)',
@@ -83,6 +93,7 @@ export function FieldGuidePane() {
   const traitHistory = useMicroLand(s => s.traitHistory)
   const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
   const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
+  const elapsed = useMicroLand(s => s.elapsed)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
 
   const [plantsHidden, setPlantsHidden] = useState(false)
@@ -445,6 +456,7 @@ export function FieldGuidePane() {
             compact={compact}
             isHeatmap={heatmapBlueprintId === bp.id}
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
+            elapsed={elapsed}
           />
         ))}
       </ul>
@@ -740,6 +752,7 @@ function GuideEntry({
   compact,
   isHeatmap,
   onHeatmap,
+  elapsed,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -753,6 +766,7 @@ function GuideEntry({
   compact?: boolean
   isHeatmap?: boolean
   onHeatmap?: () => void
+  elapsed: number
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -948,6 +962,49 @@ function GuideEntry({
                 </>
               ) : null
             })()}
+            {bp.phenology?.breedingGdd !== undefined && TUNING.seasonAmplitude > 0 && (
+              <>
+                <br />
+                {(() => {
+                  const gdd = worldGdd(elapsed)
+                  const breedingGdd = bp.phenology!.breedingGdd!
+                  const inSeason = gdd >= breedingGdd
+                  // Synchrony: 1 = breeds at summer peak (GDD 500), 0 = maximally mismatched
+                  const synchrony = Math.round((1 - Math.abs(breedingGdd - 500) / 500) * 100)
+                  // For predators: check if any prey species also has a breeding window
+                  const preyWithPhenology = eats.filter(e => e.phenology?.breedingGdd !== undefined)
+                  const preyOverlap = preyWithPhenology.length > 0
+                    ? Math.round(
+                        preyWithPhenology.reduce((sum, prey) => {
+                          const preyGdd = prey.phenology!.breedingGdd!
+                          const overlap = 1 - Math.abs(breedingGdd - preyGdd) / 1000
+                          return sum + overlap
+                        }, 0) / preyWithPhenology.length * 100
+                      )
+                    : null
+                  return (
+                    <>
+                      <strong style={{ fontWeight: 600 }}>Breeding season:</strong>{' '}
+                      opens at GDD {breedingGdd} · current{' '}
+                      <span style={{ color: inSeason ? 'var(--cc-primary)' : 'var(--cc-text-muted)' }}>
+                        {gdd}/{1000}{inSeason ? ' ✓ in season' : ''}
+                      </span>
+                      <br />
+                      <strong style={{ fontWeight: 600 }}>Synchrony:</strong>{' '}
+                      <span style={{ color: synchrony >= 70 ? 'var(--cc-primary)' : synchrony >= 40 ? 'inherit' : 'var(--cc-text-muted)' }}>
+                        {synchrony}%
+                      </span>
+                      {' '}with summer peak
+                      {preyOverlap !== null && (
+                        <span style={{ color: 'var(--cc-text-muted)' }}>
+                          {' '}· {preyOverlap}% prey overlap
+                        </span>
+                      )}
+                    </>
+                  )
+                })()}
+              </>
+            )}
           </p>
         )}
 
