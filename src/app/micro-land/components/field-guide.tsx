@@ -83,6 +83,7 @@ export function FieldGuidePane() {
   const atmosphericCO2 = useMicroLand(s => s.atmosphericCO2)
   const migrationStats = useMicroLand(s => s.migrationStats)
   const networkDegree = useMicroLand(s => s.networkDegree)
+  const networkStats = useMicroLand(s => s.networkStats)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -766,6 +767,23 @@ export function FieldGuidePane() {
           </section>
         )
       })()}
+
+      {networkStats && (
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>Wood Wide Web</h3>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+            The invisible fungal network threading between plant roots.
+          </p>
+          <div style={{ fontSize: 11, fontFamily: 'var(--cc-font-mono)', lineHeight: 1.8 }}>
+            <div style={{ color: 'var(--cc-text-default)' }}>
+              {networkStats.connected} plants networked · {networkStats.isolated} isolated
+            </div>
+            <div style={{ color: 'var(--cc-text-muted)' }}>
+              {networkStats.clusterCount} cluster{networkStats.clusterCount !== 1 ? 's' : ''} · {networkStats.totalLinks} fungal links
+            </div>
+          </div>
+        </section>
+      )}
 
       {Object.keys(foodWeb).length > 0 && (
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>

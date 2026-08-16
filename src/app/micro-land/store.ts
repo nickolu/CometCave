@@ -499,6 +499,19 @@ interface MicroLandState {
   requestLocateCreature: (id: number) => void
 
   /**
+   * Mycorrhizal network connectivity statistics for the Wood Wide Web section
+   * of the Field Guide. Null when no mycorrhizal-partner plants are present.
+   * Issue #3334.
+   */
+  networkStats: {
+    connected: number
+    isolated: number
+    clusterCount: number
+    totalLinks: number
+  } | null
+  setNetworkStats: (stats: { connected: number; isolated: number; clusterCount: number; totalLinks: number } | null) => void
+
+  /**
    * When set, the renderer draws each creature with a color overlay based on
    * this trait's value — blue for weak, red for strong. Null means no overlay.
    */
@@ -693,6 +706,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   saveState: { kind: 'idle' },
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   networkDegree: {},
+  networkStats: null,
   locateRequest: null,
   populationItems: [],
   invasionFront: {},
@@ -830,6 +844,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setNetworkDegree: d => set({ networkDegree: d }),
+  setNetworkStats: stats => set({ networkStats: stats }),
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),
