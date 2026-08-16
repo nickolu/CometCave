@@ -2339,6 +2339,49 @@ function look(
     }
   }
 
+  // Chemoreception gradient: high-chemoreception creatures sample scent
+  // concentration across their detection range and steer up the gradient.
+  // Unlike simple scent-following, this works on prey scents too — the creature
+  // can track where food has been eaten even without a line of sight.
+  const chemoRange = (bp.senses.chemoreception ?? 0) * (c.traits.sight ?? 1)
+  if (
+    chemoRange > 0 &&
+    hungry &&
+    !prey &&
+    !threat &&
+    c.mood === 'wander' &&
+    w.scents.length > 0
+  ) {
+    const chemoRange2 = chemoRange * chemoRange
+    const midX = cx
+    const midY = c.y + bh / 2
+    let leftScore = 0
+    let rightScore = 0
+    for (const s of w.scents) {
+      // Track same-species scents OR prey species scents
+      if (s.blueprintId !== c.blueprintId) {
+        const scentBp = w.blueprints[s.blueprintId]
+        if (!scentBp) continue
+        const isEdible = bp.diet.eats.some(tag => scentBp.tags.includes(tag))
+        if (!isEdible) continue
+      }
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 > chemoRange2) continue
+      // Weight by inverse distance — closer scents count more
+      const weight = 1 / (1 + Math.sqrt(d2))
+      if (sdx > 0) rightScore += weight
+      else leftScore += weight
+    }
+    const gradient = rightScore - leftScore
+    if (Math.abs(gradient) > 0.05) {
+      // Strength scales with chemoreception relative to sight range
+      const strength = Math.min(0.5, (chemoRange / 20) * 0.4)
+      c.drift = gradient > 0 ? strength : -strength
+    }
+  }
+
   // Stuck detection — if this creature has been locked on the same prey for
   // too many consecutive passes without eating, the path is likely blocked.
   //
