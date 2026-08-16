@@ -562,6 +562,19 @@ export class GameInstance {
       if (isSoundEnabled()) playExtinction()
     }
 
+    // Seed bank diversity rescue: a species that went locally extinct has
+    // germinated from dormant seeds still in the soil. Remove it from the
+    // field guide's memorial list and let the player know.
+    for (const event of events) {
+      if (event.kind !== 'diversity-rescue') continue
+      const bp = this.world.blueprints[event.blueprintId]
+      if (!bp) continue
+      useMicroLand.getState().removeExtinction(event.blueprintId)
+      // Re-add to knownSpecies so a second extinction will be noticed again.
+      this.knownSpecies.add(event.blueprintId)
+      notify(`A ${bp.name} has re-emerged from dormant seeds in the soil.`)
+    }
+
     // Accumulate lifetime stats.
     let totalBorn = 0, totalDeaths = 0, totalEats = 0
     let longestLived = worldStats.longestLived

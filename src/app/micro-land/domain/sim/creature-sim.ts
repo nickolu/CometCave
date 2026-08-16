@@ -450,8 +450,12 @@ export interface SimEvent {
    * `eaten` is from the victim's side (this species lost one); `ate` is from the
    * hunter's side and carries who it caught. Both fire for a single kill — the
    * UI wants the hunter's framing, the extinction check wants the victim's.
+   *
+   * `diversity-rescue` fires when a species germinates from the seed bank after
+   * going locally extinct (speciesCount was 0 at the moment of germination). The
+   * field guide removes the species from the extinctions list on receiving this.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -685,7 +689,8 @@ function tickSeedBank(
   tickCount: number,
   speciesCount: Record<string, number>,
   plantsRef: { value: number },
-  rng: Rng
+  rng: Rng,
+  events: SimEvent[]
 ): void {
   if (!w.seedBank || w.seedBank.length === 0) return
   if (tickCount % 60 !== 0) return  // run once per second
@@ -727,10 +732,12 @@ function tickSeedBank(
       if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
       if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
       const { w: bw, h: bh } = artSize(bp)
+      const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
       const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
       if (germinated) {
         plantsRef.value++
         speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
+        if (wasExtinct) events.push({ kind: 'diversity-rescue', blueprintId: seed.blueprintId, x: seed.x, y: seed.y })
       } else {
         surviving.push(seed)  // wait for better ground conditions
       }
@@ -755,11 +762,13 @@ function tickSeedBank(
 
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
+    const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
     const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
     if (germinated) {
       plantsRef.value++
       speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
       // Don't push seed — it germinated successfully
+      if (wasExtinct) events.push({ kind: 'diversity-rescue', blueprintId: seed.blueprintId, x: seed.x, y: seed.y })
     } else {
       surviving.push(seed)
     }
@@ -2320,7 +2329,7 @@ export function tickCreatures(
       if (w.blueprints[c.blueprintId]?.move.kind === 'root') sbPlantsAlive++
     }
     const plantsRef = { value: sbPlantsAlive }
-    tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng)
+    tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng, events)
   }
 }
 
