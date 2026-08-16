@@ -83,6 +83,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   diurnal: 0,
   immunity: 0.2,
   reproductionCooldown: 1,
+  chronotype: 0,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -130,8 +131,8 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown') =>
-    b ? (a[key] + b[key]) / 2 : a[key]
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'chronotype') =>
+    b ? ((a[key] ?? 0) + (b[key] ?? 0)) / 2 : (a[key] ?? 0)
 
   return {
     speed: clamp(mix('speed') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
@@ -148,6 +149,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
     immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
     reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
+    chronotype: clamp(mix('chronotype') + nudge(rng, drift), -1, 1),
   }
 }
 
@@ -283,6 +285,8 @@ export function traitPhrases(t: Traits): string[] {
   else if ((t.immunity ?? 0.2) <= 0.05) phrases.push('susceptible')
   if ((t.reproductionCooldown ?? 1) <= 1 - NOTABLE) phrases.push('breeds quickly')
   else if ((t.reproductionCooldown ?? 1) >= 1 + NOTABLE) phrases.push('breeds slowly')
+  if ((t.chronotype ?? 0) <= -0.4) phrases.push('early riser')
+  else if ((t.chronotype ?? 0) >= 0.4) phrases.push('night owl')
   return phrases
 }
 
