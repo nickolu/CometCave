@@ -1968,6 +1968,16 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
 }
 
 // ---------------------------------------------------------------------------

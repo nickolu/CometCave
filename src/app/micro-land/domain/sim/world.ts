@@ -1523,3 +1523,91 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
     }
   }
 }
+
+/**
+ * Stochastic weather state machine: transitions between clear, rain, drought,
+ * and storm states, biased by season. Applies moisture and tile effects each
+ * 60-tick window. Issues #3094, #3095, #3096, #3097.
+ */
+export function tickWeather(w: WorldState, tickCount: number, rng: () => number): void {
+  // Initialize
+  if (w.weatherState === undefined) w.weatherState = 'clear'
+  if (w.weatherTimer === undefined) w.weatherTimer = 0
+
+  w.weatherTimer -= 1
+
+  const seasonFactor =
+    TUNING.seasonAmplitude > 0
+      ? 1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / (TUNING.seasonPeriod * 60))
+      : 1
+  const isSummer = seasonFactor > 1.1
+  const isWinter = seasonFactor < 0.9
+
+  // Apply ongoing weather effects every 60 ticks
+  if (tickCount % 60 === 0) {
+    if (w.weatherState === 'rain') {
+      // Boost moisture on 30 random tiles per check
+      for (let i = 0; i < 30; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.05)
+      }
+    } else if (w.weatherState === 'drought') {
+      // Drain moisture from 15 random non-water tiles
+      for (let i = 0; i < 15; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (!IS_LIQUID[w.tiles[idx]] && w.moisture[idx] > 0) {
+          w.moisture[idx] = Math.max(0, w.moisture[idx] - 0.02)
+        }
+      }
+    } else if (w.weatherState === 'storm') {
+      // Lightning: 5% chance per check to convert a random exposed surface tile to ash
+      if (rng() < 0.05) {
+        const lx = Math.floor(rng() * w.width)
+        const ly = Math.floor(rng() * w.height)
+        const lIdx = ly * w.width + lx
+        if (!IS_SOLID[w.tiles[lIdx]] && !IS_LIQUID[w.tiles[lIdx]]) {
+          setTile(w, lx, ly, MATERIAL_INDEX.ash)
+        }
+      }
+      // Storms also bring rain — boost moisture on 10 random tiles
+      for (let i = 0; i < 10; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.03)
+      }
+    }
+  }
+
+  // Weather transition (only when timer expires)
+  if (w.weatherTimer > 0) return
+
+  const prev = w.weatherState
+  const r = rng()
+
+  if (prev === 'clear') {
+    if (isSummer && r < 0.08) w.weatherState = 'drought'
+    else if (r < 0.12) w.weatherState = 'rain'
+    else if (r < 0.04) w.weatherState = 'storm'
+    // else stay clear
+  } else if (prev === 'rain') {
+    if (r < 0.45) w.weatherState = 'clear'
+    else if (r < 0.55) w.weatherState = 'storm'
+    // else continue rain
+  } else if (prev === 'drought') {
+    if (isWinter || r < 0.35) w.weatherState = 'clear'
+    else if (r < 0.40) w.weatherState = 'rain'
+    // else continue drought
+  } else if (prev === 'storm') {
+    if (r < 0.55) w.weatherState = 'rain'
+    else if (r < 0.80) w.weatherState = 'clear'
+    // else continue storm
+  }
+
+  // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)
+  w.weatherTimer = 600 + Math.floor(rng() * 1800)
+}

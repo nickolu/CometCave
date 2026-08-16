@@ -71,6 +71,7 @@ import {
   tickMycorrhizalNetwork,
   tickSalinity,
   tickWebDecay,
+  tickWeather,
   tileAt,
   updateBiomeZones,
 } from './world'
@@ -879,6 +880,7 @@ export function tickCreatures(
   tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickWeather(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
@@ -1383,6 +1385,10 @@ export function tickCreatures(
       1,
       c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * klieber * dt
     )
+    // Drought starvation pressure on plant-eaters: food is scarcer when moisture is low. Issue #3096.
+    if (w.weatherState === 'drought' && bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')) {
+      c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
+    }
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
     // scarce when their demand is highest. Penalty is zero when seasons are disabled
@@ -3903,6 +3909,10 @@ function look(
           }
         }
         let fill = mealFill(c, bp, obp, sizeOf(other))
+        // Nocturnal predators gain an ambush advantage in storms (dark + chaos). Issue #3097.
+        if (w.weatherState === 'storm' && ((c.traits as { diurnal?: number }).diurnal ?? 0) < -0.2) {
+          fill *= 1.2
+        }
         // Food washing bonus: +5% energy if the creature has learned the behavior
         // and is near non-deadly liquid (water, not lava/acid).
         if (c.learnedFoodWashing && isNearWater(w, c)) {
@@ -5082,7 +5092,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (1 + (c.escalatedSpeed ?? 0)) *   // predator escalation speed bonus. Issue #3263.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
-    (1 - diurnalPenalty)
+    (1 - diurnalPenalty) *
+    // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
+    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {
