@@ -1682,6 +1682,56 @@ export function tickCreatures(
       }
     }
 
+    // Termite mound construction: workers build mound tiles upward. Issue #3421.
+    if (bp.termiteWorker && rng() < 0.02 * dt) {
+      const tx = Math.round(c.x), ty = Math.round(c.y) - 1
+      if (tx >= 0 && tx < w.width && ty >= 0 && ty < w.height) {
+        const tIdx = ty * w.width + tx
+        if (w.tiles[tIdx] === AIR) {
+          w.tiles[tIdx] = MATERIAL_INDEX['termite-mound']
+        }
+      }
+    }
+
+    // Mound destroyer: breaks termite-mound tiles and eats termites. Issue #3421.
+    if (bp.moundDestroyer) {
+      const tx = Math.round(c.x), ty = Math.round(c.y)
+      const tIdx = ty * w.width + tx
+      if (tIdx >= 0 && tIdx < w.tiles.length && w.tiles[tIdx] === MATERIAL_INDEX['termite-mound'] && rng() < 0.1 * dt) {
+        w.tiles[tIdx] = AIR
+        c.hunger = Math.max(0, c.hunger - 0.1)
+        // Nutrient release: mound material enriches surrounding soil
+        if (w.caveNutrient) {
+          for (let ndy = -3; ndy <= 3; ndy++) {
+            for (let ndx = -3; ndx <= 3; ndx++) {
+              const ni = (ty + ndy) * w.width + (tx + ndx)
+              if (ni >= 0 && ni < w.tiles.length) {
+                w.caveNutrient[ni] = Math.min(1, (w.caveNutrient[ni] ?? 0) + 0.15)
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Mound commensal: stay near termite mound habitat. Issue #3421.
+    if (bp.moundCommensal) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      let nearMound = false
+      for (let ndy = -4; ndy <= 4 && !nearMound; ndy++) {
+        for (let ndx = -4; ndx <= 4 && !nearMound; ndx++) {
+          const ni = (cy + ndy) * w.width + (cx + ndx)
+          if (ni >= 0 && ni < w.tiles.length && w.tiles[ni] === MATERIAL_INDEX['termite-mound']) {
+            nearMound = true
+          }
+        }
+      }
+      if (!nearMound) {
+        c.vx *= 0.97  // slow drift when away from mound — tendency to find one
+        c.vy *= 0.97
+      }
+    }
+
     // --- movement -------------------------------------------------------
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)

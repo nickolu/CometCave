@@ -81,6 +81,7 @@ export const BASE_MATERIAL_IDS = [
   'acid',
   'shed-skin',
   'web',
+  'termite-mound',
 ] as const satisfies readonly BaseMaterialId[]
 
 const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
@@ -187,6 +188,11 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     solid: false,
     viscous: 0.95,
     glow: 0.04,
+  }),
+  'termite-mound': material('termite-mound', 'Termite Mound', '#a0724c', {
+    grain: 0.22,
+    solid: true,
+    fertile: false,
   }),
 }
 
