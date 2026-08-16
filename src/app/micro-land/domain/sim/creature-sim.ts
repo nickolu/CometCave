@@ -1394,6 +1394,42 @@ export function tickCreatures(
       c.vy = 0
     }
 
+    // --- metamorphosis: larva → pupa → adult. Issue #3336. -------------------
+    // Age-gated transition: when the larva (or any metamorphosing stage) exceeds
+    // its metamorphosisAge, it transforms into the next stage blueprint.
+    if (bp.metamorphosesInto && bp.metamorphosisAge !== undefined && c.ageSeconds >= bp.metamorphosisAge) {
+      const nextBp = w.blueprints[bp.metamorphosesInto]
+      if (nextBp) {
+        c.blueprintId = bp.metamorphosesInto
+        c.lifeStage = nextBp.pupalDuration !== undefined ? 'pupa' : 'adult'
+        c.pupalTimer = nextBp.pupalDuration
+        c.ageSeconds = 0  // reset age for the new stage
+        c.hunger = 0.5    // reset hunger at metamorphosis
+      }
+    }
+    // Pupa countdown: timer ticks down until adult emergence. Issue #3336.
+    // We read the current blueprintId because it may have just been updated above.
+    const currentBp = w.blueprints[c.blueprintId] ?? bp
+    if (c.lifeStage === 'pupa' && c.pupalTimer !== undefined) {
+      c.pupalTimer -= dt
+      if (c.pupalTimer <= 0) {
+        const adultBpId = currentBp.metamorphosesInto
+        const adultBp = adultBpId ? w.blueprints[adultBpId] : undefined
+        if (adultBp) {
+          c.blueprintId = adultBpId!
+          c.lifeStage = 'adult'
+          c.pupalTimer = undefined
+          c.ageSeconds = 0
+        }
+      }
+    }
+    // Pupae are immobile — skip movement and hunting this tick. Issue #3336.
+    if (c.lifeStage === 'pupa') {
+      c.vx = 0
+      c.vy = 0
+      continue
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
@@ -2297,7 +2333,12 @@ export function tickCreatures(
   for (const egg of w.eggs) {
     egg.hatchIn -= dt
     if (egg.hatchIn <= 0) {
-      const ebp = w.blueprints[egg.blueprintId]
+      const parentBp = w.blueprints[egg.blueprintId]
+      // Holometabolous: eggs from this adult hatch as the larval form. Issue #3336.
+      const hatchBpId = parentBp?.holometabolous && parentBp.larvaeBlueprint
+        ? parentBp.larvaeBlueprint
+        : egg.blueprintId
+      const ebp = w.blueprints[hatchBpId]
       if (ebp && w.creatures.length < TUNING.maxCreatures) {
         const { w: ew, h: eh } = artSize(ebp)
         const hatchling = spawnCreature(w, ebp, egg.x - ew / 2, egg.y - eh / 2)
@@ -2305,6 +2346,10 @@ export function tickCreatures(
           hatchling.generation = egg.generation
           hatchling.traits = egg.traits
           hatchling.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${egg.generation})` }]
+          // Mark life stage from hatch. Issue #3336.
+          if (parentBp?.holometabolous) {
+            hatchling.lifeStage = 'larva'
+          }
           events.push({ kind: 'born', blueprintId: ebp.id, x: egg.x, y: egg.y })
         }
       }

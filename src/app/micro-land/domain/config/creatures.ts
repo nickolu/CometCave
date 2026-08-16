@@ -1992,6 +1992,83 @@ const SHIMMER_LARVA = builtin('shimmer-larva', {
   glow: 0.1,
   canDrift: true,
   flowZonePreference: 'run',  // intermediate flow — grips substrate but stays in current
+  metamorphosesInto: 'shimmer-pupa',  // larva → pupa at 60 s. Issue #3336.
+  metamorphosisAge: 60,
+})
+
+// ---------------------------------------------------------------------------
+// Shimmer Pupa — still chrysalis stage. Issue #3336.
+// ---------------------------------------------------------------------------
+
+const SHIMMER_PUPA = builtin('shimmer-pupa', {
+  name: 'Shimmer Pupa',
+  blurb: 'A still chrysalis anchored to stone. Something perfect waits inside.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { p: '#aaccbb', d: '#668877', g: '#cceeee' },
+    frames: [
+      ['.p.', 'pdp', '.p.'],
+      ['.p.', 'pgp', '.p.'],
+    ],
+    frameMs: 400,
+    faceMotion: false,
+  },
+  body: { mass: 0.8, bounce: 0, drag: 0.1, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: [],
+    fears: ['fish', 'flier'],
+    hungerRate: 0,
+    starveSeconds: 300,
+    breedAt: 1,       // never breeds
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 2 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#aaccbb', particleCount: 3 },
+  aura: null,
+  glow: 0.05,
+  pupalDuration: 20,              // 20 s countdown until adult emergence. Issue #3336.
+  metamorphosesInto: 'shimmer-fly',
+})
+
+// ---------------------------------------------------------------------------
+// Shimmer Fly — winged adult. Lays eggs that hatch as shimmer-larva. Issue #3336.
+// ---------------------------------------------------------------------------
+
+const SHIMMER_FLY = builtin('shimmer-fly', {
+  name: 'Shimmer Fly',
+  blurb: 'The winged adult lives just long enough to breed. Its iridescent wings catch every light.',
+  size: 1,
+  tags: ['meat', 'bug', 'flier'],
+  art: {
+    palette: { w: '#ccffee', b: '#44bbaa', g: '#eeffdd' },
+    frames: [
+      ['w.w', 'wbw', '.w.'],
+      ['.w.', 'wgw', 'w.w'],
+    ],
+    frameMs: 100,
+    faceMotion: true,
+  },
+  body: { mass: 0.1, bounce: 0.1, drag: 0.5, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'fly', speed: 5, jump: 0, restlessness: 0.7 },
+  diet: {
+    eats: [],           // adults do not eat
+    fears: ['fish'],
+    hungerRate: 0,
+    starveSeconds: 120,
+    breedAt: 0.5,
+    lifespanSeconds: 40,  // short adult lifespan — breed and die
+  },
+  senses: { sight: 16 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#ccffee', particleCount: 6 },
+  aura: null,
+  glow: 0.2,
+  egglayer: true,
+  holometabolous: true,       // eggs hatch as shimmer-larva. Issue #3336.
+  larvaeBlueprint: 'shimmer-larva',
 })
 
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
@@ -2044,6 +2121,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   TREX,
   DRAGON,
   SHIMMER_LARVA,
+  SHIMMER_PUPA,
+  SHIMMER_FLY,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

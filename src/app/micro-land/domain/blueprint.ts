@@ -651,6 +651,11 @@ export function sanitizeBlueprint(
       ? (b.biocontrolTargets as unknown[]).filter((s): s is string => typeof s === 'string')
       : undefined,
     biocontrolAgent: b.biocontrolAgent !== undefined ? !!b.biocontrolAgent : undefined,
+    holometabolous: b.holometabolous !== undefined ? !!b.holometabolous : undefined,
+    larvaeBlueprint: typeof b.larvaeBlueprint === 'string' ? b.larvaeBlueprint : undefined,
+    metamorphosesInto: typeof b.metamorphosesInto === 'string' ? b.metamorphosesInto : undefined,
+    metamorphosisAge: typeof b.metamorphosisAge === 'number' && b.metamorphosisAge > 0 ? b.metamorphosisAge : undefined,
+    pupalDuration: typeof b.pupalDuration === 'number' && b.pupalDuration > 0 ? b.pupalDuration : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

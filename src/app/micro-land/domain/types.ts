@@ -765,6 +765,31 @@ export interface CreatureBlueprint {
    * naturally occurring species. Used for Field Guide tracking. Issue #3368.
    */
   biocontrolAgent?: boolean
+  /**
+   * This species transitions through complete metamorphosis: egg → larva → pupa → adult.
+   * Eggs hatch into `larvaeBlueprint` creatures instead of adults. Issue #3336.
+   */
+  holometabolous?: boolean
+  /**
+   * BlueprintId of the larval form. Eggs from this adult species hatch as this blueprint.
+   * Only meaningful when `holometabolous: true`. Issue #3336.
+   */
+  larvaeBlueprint?: string
+  /**
+   * This creature transforms into this blueprintId when it reaches `metamorphosisAge`.
+   * Used on larval and pupal blueprints to encode the lifecycle chain. Issue #3336.
+   */
+  metamorphosesInto?: string
+  /**
+   * Age in seconds at which metamorphosis is triggered. When `c.ageSeconds` exceeds
+   * this value, the creature switches to `metamorphosesInto` blueprint. Issue #3336.
+   */
+  metamorphosisAge?: number
+  /**
+   * Seconds this pupa stage lasts before adult emerges. Only relevant for pupal blueprints
+   * where the transition is time-gated, not age-gated. Issue #3336.
+   */
+  pupalDuration?: number
 }
 
 /**
@@ -1167,6 +1192,10 @@ export interface Creature {
   /** Seconds remaining of mycorrhizal-relayed chemical defense prime. Reduces
    * herbivory damage while active. Set when a network neighbor is attacked. Issue #3331. */
   defenseTimer?: number
+  /** Current metamorphic stage — set at hatch time or after each transition. Issue #3336. */
+  lifeStage?: 'larva' | 'pupa' | 'adult'
+  /** Countdown seconds until adult emergence. Only set on pupa-stage creatures. Issue #3336. */
+  pupalTimer?: number
 }
 
 /**
