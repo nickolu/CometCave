@@ -650,6 +650,11 @@ export interface CreatureBlueprint {
    */
   uvSensitive?: boolean
   /**
+   * Stream invertebrate that occasionally enters the water column and drifts
+   * passively with current. Delivers food to downstream fish. Issue #3373.
+   */
+  canDrift?: boolean
+  /**
    * Records natal X position at birth; as adults, these fish migrate back toward
    * that position to spawn. Spawning is fatal — the fish dies and deposits marine
    * nutrients into the headwater ecosystem. Issue #3374.
@@ -1039,8 +1044,10 @@ export interface Creature {
   insightTimer?: number
   /** Total insight events this creature has had. */
   insightCount?: number
+  /** Currently in passive drift (stream invertebrate released into current). Issue #3373. */
+  drifting?: boolean
   /** X tile position where this creature was born (for anadromous migration). */
-  natalX?: number  // X tile position where this creature was born (for anadromous migration)
+  natalX?: number
   circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
 }
 

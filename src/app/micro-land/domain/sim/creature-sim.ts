@@ -791,6 +791,11 @@ export function tickCreatures(
     if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
+    // Drift state: exit drift when creature leaves water.
+    if (c.drifting) {
+      const driftTile = w.tiles[Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))] ?? 0
+      if (!IS_LIQUID[driftTile]) c.drifting = false
+    }
 
     // Circadian clock: advance internal phase at individual period (±10% of day length).
     // Issue #3357, #3358, #3359.
@@ -1507,6 +1512,26 @@ export function tickCreatures(
         if (lldx <= 3 && lldy <= 3) {
           c.hunger = Math.max(0, c.hunger - 0.00002 * dt)
           break
+        }
+      }
+    }
+
+    // Invertebrate drift: aquatic invertebrates with canDrift occasionally release
+    // from substrate and drift passively with current. Highest at dusk/dawn.
+    // Drifting creatures are easy prey for fish positioned upstream. Issue #3373.
+    if (bp.canDrift && bp.move.kind !== 'root' && !c.drifting) {
+      const driftTile = w.tiles[Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))] ?? 0
+      if (IS_LIQUID[driftTile] && !IS_DEADLY[driftTile]) {
+        // Dawn/dusk periodicity: nightFactor ∈ [0.25, 0.75] → 3× base probability.
+        // Compute nightFactor inline (same formula as look() function).
+        const driftNightFactor = TUNING.dayLengthSeconds > 0
+          ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
+          : 0
+        const isDuskDawn = driftNightFactor > 0.25 && driftNightFactor < 0.75
+        const driftProb = (isDuskDawn ? 0.0006 : 0.0002) * dt
+        if (rng() < driftProb) {
+          c.drifting = true
+          c.drift = 1  // drift rightward (proxy for downstream)
         }
       }
     }
@@ -3308,6 +3333,10 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
         c.drift = leftScore > rightScore ? -1 : 1
       }
     }
+    // Drifting invertebrates are locked rightward and move slowly regardless of state.
+    if (c.drifting) {
+      c.drift = 1
+    }
     // Anadromous migration: adult fish drive toward natal spawn site when mature.
     if (bp.anadromous && c.natalX !== undefined && c.ageSeconds > (bp.diet.lifespanSeconds ?? 240) * 0.4) {
       const toNatal = deltaX(c.x, c.natalX)
@@ -3368,6 +3397,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (c.sick > 0 ? 0.7 : 1) *
       (c.symbiosisTimer > 0 ? 1.15 : 1) *
       (c.insightTimer && c.insightTimer > 0 ? 0.05 : 1) *  // insight pause
+      (c.drifting ? 0.4 : 1) *  // drift — slower passive flow
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
     (1 - diurnalPenalty)
