@@ -991,7 +991,9 @@ export function tickCreatures(
     c.animMs += dt * 1000
     if (c.breedCooldown > 0) {
       const nutrientBoost = (c.nutrientStore ?? 0) > 0.2 ? 1.5 : 1
-      c.breedCooldown -= dt * nutrientBoost
+      // Jellyfish Judiciary verdict: court-granted breeding priority decays cooldown 50% faster. Issue #3303.
+      const judiciaryBoost = (c.judiciaryPriorityTimer ?? 0) > 0 ? 1.5 : 1
+      c.breedCooldown -= dt * nutrientBoost * judiciaryBoost
     }
     // Decay nutrient store over time.
     if (c.nutrientStore) {
@@ -1034,6 +1036,10 @@ export function tickCreatures(
     }
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
+    // Jellyfish Judiciary priority: tick down court-granted breeding bonus. Issue #3303.
+    if (c.judiciaryPriorityTimer && c.judiciaryPriorityTimer > 0) {
+      c.judiciaryPriorityTimer = Math.max(0, c.judiciaryPriorityTimer - dt)
+    }
     // Drift state: exit drift when creature leaves water.
     if (c.drifting) {
       const driftTile = w.tiles[Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))] ?? 0
@@ -3805,6 +3811,41 @@ function look(
   } else {
     c.packTimer = 0
     c.packSize = 0
+  }
+
+  // Jellyfish Judiciary (Court of Currents): when an aquatic species shares a
+  // tile with a rival aquatic species and a drifter jelly is within sight, the
+  // court convenes. One side is randomly awarded 10 s of breeding priority.
+  // The court then disperses and forgets — each session starts fresh with no
+  // memory of previous rulings. Issue #3303.
+  const isAquatic = bp.move.kind === 'swim' || !!bp.habitat.needs?.includes('water')
+  if (isAquatic) {
+    let hasRival = false
+    for (const other of w.creatures) {
+      if (other === c || other.blueprintId === c.blueprintId) continue
+      const obp = w.blueprints[other.blueprintId]
+      if (!obp) continue
+      if (obp.move.kind !== 'swim' && !obp.habitat.needs?.includes('water')) continue
+      const odx = deltaX(cx, other.x + bw / 2)
+      const ody = (other.y + bh / 2) - cy
+      if (odx * odx + ody * ody < 9) { // within ~3 tiles — same territory
+        hasRival = true
+        break
+      }
+    }
+    if (hasRival) {
+      for (const judge of w.creatures) {
+        if (judge.blueprintId !== 'drifter-jelly') continue
+        const jdx = deltaX(cx, judge.x)
+        const jdy = judge.y - cy
+        if (jdx * jdx + jdy * jdy > sight2) continue // judge not in sight
+        // Court convenes — random verdict; winner gets 10 s breeding priority
+        if (rng() < 0.5 && !(c.judiciaryPriorityTimer && c.judiciaryPriorityTimer > 0)) {
+          c.judiciaryPriorityTimer = 10
+        }
+        break // one ruling per sense pass
+      }
+    }
   }
 
   // A starving creature ignores threats — the instinct to eat overrides the

@@ -1274,6 +1274,15 @@ export interface Creature {
    */
   sick: number
   /**
+   * Seconds of Jellyfish Judiciary breeding priority remaining.
+   *
+   * Set when the Court of Currents (a nearby drifter jelly) convenes to settle
+   * an aquatic territory dispute. The winning species breeds 50% faster while
+   * above zero. The court disperses immediately after the verdict and retains no
+   * memory — the same species can be tried again next session. Issue #3303.
+   */
+  judiciaryPriorityTimer?: number
+  /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
    * creature enters 'rest' mood until it recovers. Optional so old saves with
