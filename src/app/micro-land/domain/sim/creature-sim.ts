@@ -831,6 +831,21 @@ export function tickCreatures(
       }
     }
 
+    // --- cultural forgetting ------------------------------------------------
+    // Learned food washing can fade without reinforcement. Rate is moderated
+    // by brainSize (smarter creatures retain knowledge longer) and
+    // socialLearningRate (social species forget less — active peer reinforcement
+    // keeps the behavior alive). 0.0002/s base → ~2% per 100s for brainSize=0;
+    // brainSize=1 → never forgets. Models the documented loss of cultural
+    // behaviors in isolated cetacean populations.
+    if (c.learnedFoodWashing) {
+      const cbp = w.blueprints[c.blueprintId]
+      const forgetRate = 0.0002 * (1 - (cbp?.brainSize ?? 0)) * (1 - ((cbp?.socialLearningRate ?? 0.5) * 0.4))
+      if (rng() < forgetRate * dt) {
+        c.learnedFoodWashing = false
+      }
+    }
+
     // --- nest building --------------------------------------------------------
     // A well-fed, grounded, territorial creature digs a burrow at its home
     // while resting. The nest builds over NEST_BUILD_TIME seconds of rest and
@@ -1711,7 +1726,13 @@ function look(
             const dx2 = distX(c.x, other2.x) ** 2
             const dy2 = (c.y - other2.y) ** 2
             if (dx2 + dy2 > sight * sight) continue
-            if (rng() < 0.04) other2.learnedFoodWashing = true
+            const learnerBp = w.blueprints[other2.blueprintId]
+            const isJuvenile = other2.ageSeconds < (learnerBp?.diet.lifespanSeconds ?? 240) * 0.15
+            const baseProb = isJuvenile ? 0.40 : 0.04
+            // Scale by learner's socialLearningRate and brainSize (smarter, more social species learn faster)
+            const socialScale = (learnerBp?.socialLearningRate ?? 0.5) * 2 * (1 + (learnerBp?.brainSize ?? 0))
+            const transmissionProb = Math.min(0.95, baseProb * socialScale)
+            if (rng() < transmissionProb) other2.learnedFoodWashing = true
           }
         }
         // Cooperative creatures signal food location to kin.

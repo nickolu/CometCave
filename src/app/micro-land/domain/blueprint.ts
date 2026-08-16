@@ -613,6 +613,10 @@ export function sanitizeBlueprint(
       typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
         ? b.brainSize
         : 0,
+    socialLearningRate:
+      typeof b.socialLearningRate === 'number' && b.socialLearningRate >= 0 && b.socialLearningRate <= 1
+        ? b.socialLearningRate
+        : 0.5,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
