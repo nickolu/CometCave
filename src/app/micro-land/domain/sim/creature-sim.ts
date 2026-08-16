@@ -340,6 +340,25 @@ function isUnderground(w: WorldState, c: Creature): boolean {
 }
 
 /**
+ * Returns the depth-from-surface in tiles: how many consecutive solid tiles
+ * sit above the creature's head. Returns 0 at or near the surface.
+ * Used to model the twilight → transition → midnight cave zone gradient.
+ */
+function cavityDepth(w: WorldState, c: Creature): number {
+  const hx = Math.floor(c.x)
+  const hy = Math.floor(c.y) - 1
+  let depth = 0
+  for (let dy = 0; dy < WORLD_H; dy++) {
+    const ty = hy - dy
+    if (ty < 0) break
+    const tile = w.tiles[ty * WORLD_W + wrapCol(hx)]
+    if (!IS_SOLID[tile]) break
+    depth++
+  }
+  return depth
+}
+
+/**
  * True when c and other overlap — used for snap-trap contact detection.
  * Uses the creature positions as 1-tile points (plants are 1-wide).
  */
@@ -1789,7 +1808,7 @@ function look(
   // regardless of time — providing selection pressure against high sight traits
   // (troglobitic evolution). Lateral-line species bypass this penalty.
   const nightFactor = underground
-    ? 0.8  // constant cave darkness
+    ? Math.min(0.8, 0.1 + cavityDepth(w, c) * 0.07)  // twilight→midnight gradient
     : TUNING.dayLengthSeconds > 0
       ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
       : 0
@@ -2971,7 +2990,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
   const underground = isUnderground(w, c)
   const nightFactor = underground
-    ? 0.8  // constant cave darkness
+    ? Math.min(0.8, 0.1 + cavityDepth(w, c) * 0.07)  // twilight→midnight gradient
     : TUNING.dayLengthSeconds > 0
       ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
       : 0
