@@ -644,9 +644,10 @@ export function tickCreatures(
     const restSlowdown = c.mood === 'rest' ? 0.5 : 1
 
     const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
+    const metabolicRate = bp.slowMetabolism ? 0.1 : 1
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * dt
     )
     if (c.hunger >= 1) {
       c.starving += dt
@@ -989,7 +990,8 @@ export function tickCreatures(
           speciesCount[bp.id] = (speciesCount[bp.id] ?? 0) + 1
           c.breedCooldown =
             TUNING.breedCooldown *
-            ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)
+            ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
+            (bp.slowMetabolism ? 2 : 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -1898,7 +1900,8 @@ function payForChild(
   parent.hunger = Math.min(1, parent.hunger + TUNING.breedCost)
   parent.breedCooldown =
     (TUNING.breedCooldown *
-      ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1)) /
+      ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
+      (bp.slowMetabolism ? 2 : 1)) /
     auraBoost(w, parent, bp, bw, bh, helpers)
   if (parent.mood === 'mate') {
     parent.mood = 'wander'
