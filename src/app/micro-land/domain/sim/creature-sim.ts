@@ -2741,6 +2741,16 @@ function look(
         if (c.learnedFoodWashing && isNearWater(w, c)) {
           fill *= 1.05
         }
+        // Biocontrol targeting: specialist agents are more effective against their
+        // target species (2× fill — co-evolved hunting efficiency) and less effective
+        // against non-targets (0.7× fill — off-target effort). Issue #3368.
+        if (bp.biocontrolTargets && bp.biocontrolTargets.length > 0) {
+          if (bp.biocontrolTargets.includes(obp.id)) {
+            fill *= 2
+          } else {
+            fill *= 0.7
+          }
+        }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
         c.huntBlockedId = null
@@ -2881,8 +2891,13 @@ function look(
       const disrupted =
         obp.disruptivePattern === true && d2 > DISRUPTION_NEAR_TILES * DISRUPTION_NEAR_TILES
       const finalEfs2 = disrupted ? efs2 * DISRUPTION_FAR_FACTOR * DISRUPTION_FAR_FACTOR : efs2
-      if (d2 <= finalEfs2 && d2 < preyDist) {
-        preyDist = d2
+      // Biocontrol preference: specialist agents prioritize their target species.
+      // Halve the effective distance for biocontrol targets so they always win
+      // target selection over non-targets at similar range. Issue #3368.
+      const biocontrolPriorityD2 =
+        bp.biocontrolTargets && bp.biocontrolTargets.includes(obp.id) ? d2 * 0.25 : d2
+      if (d2 <= finalEfs2 && biocontrolPriorityD2 < preyDist) {
+        preyDist = biocontrolPriorityD2
         prey = other
         preyDir = dx >= 0 ? 1 : -1
         preyCx = other.x + ow / 2

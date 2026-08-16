@@ -647,6 +647,10 @@ export function sanitizeBlueprint(
       : undefined,
     mycorrhizalPartner: b.mycorrhizalPartner !== undefined ? !!b.mycorrhizalPartner : undefined,
     obligateMycorrhizal: b.obligateMycorrhizal !== undefined ? !!b.obligateMycorrhizal : undefined,
+    biocontrolTargets: Array.isArray(b.biocontrolTargets)
+      ? (b.biocontrolTargets as unknown[]).filter((s): s is string => typeof s === 'string')
+      : undefined,
+    biocontrolAgent: b.biocontrolAgent !== undefined ? !!b.biocontrolAgent : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
