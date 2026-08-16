@@ -350,6 +350,16 @@ export interface CreatureBlueprint {
    * Models the real-world bite marks found on butterfly wings at eyespot locations.
    */
   eyespots?: boolean
+  /**
+   * Digging creatures that physically mix soil layers, bringing buried nutrients
+   * and infertile substrate to the surface where plants can use them.
+   *
+   * When the creature walks over sand, stone, ash, or bone tiles, there is a
+   * small chance per tick the tile is converted to dirt — reclaiming barren
+   * areas. Complements soilEngineer (which enriches dirt→mud); bioturbators
+   * reclaim the layer beneath. Models earthworms, moles, ants, crabs.
+   */
+  bioturbator?: boolean
 }
 
 /**
