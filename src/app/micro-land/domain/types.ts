@@ -928,6 +928,12 @@ export interface Creature {
   /** For sticky traps: how many ticks this creature has been adhered (0–3). */
   adheredTicks?: number
   /**
+   * For carnivorous plants: accumulated prey nitrogen from successful digestions.
+   * 0–1 scale; decays over time. When above 0.2, reduces breed cooldown drain
+   * at 1.5× rate — prey-rich areas produce far more carnivorous plant offspring.
+   */
+  nutrientStore?: number
+  /**
    * Cultural dialect: which variant of the food-washing behavior this creature
    * carries. 1–999, unique per founder innovation. Populations separated by
    * barriers drift toward different values; reconnecting populations compete

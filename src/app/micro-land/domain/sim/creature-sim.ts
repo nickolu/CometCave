@@ -664,7 +664,14 @@ export function tickCreatures(
 
     c.ageSeconds += dt
     c.animMs += dt * 1000
-    if (c.breedCooldown > 0) c.breedCooldown -= dt
+    if (c.breedCooldown > 0) {
+      const nutrientBoost = (c.nutrientStore ?? 0) > 0.2 ? 1.5 : 1
+      c.breedCooldown -= dt * nutrientBoost
+    }
+    // Decay nutrient store over time.
+    if (c.nutrientStore) {
+      c.nutrientStore = Math.max(0, c.nutrientStore - 0.0005 * dt)
+    }
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
@@ -800,6 +807,7 @@ export function tickCreatures(
             const preyBp = w.blueprints[prey.blueprintId]
             if (preyBp) kill(w, prey, preyBp, dead, events, 'starved')
             else dead.add(prey.id)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.3)
             c.trapDigestingId = undefined
             c.trapTriggerCount = 0
             c.forceFrame = undefined
@@ -852,6 +860,7 @@ export function tickCreatures(
           c.hunger = Math.max(0, c.hunger - 0.008 * dt)
           if (prey.hunger >= 1) {
             dead.add(preyId)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.25)
           } else {
             stillDigesting.push(preyId)
           }
@@ -888,6 +897,7 @@ export function tickCreatures(
           c.hunger = Math.max(0, c.hunger - 0.006 * dt)
           if (prey.hunger >= 1) {
             dead.add(preyId)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.2)
           } else {
             stillDigesting.push(preyId)
           }
