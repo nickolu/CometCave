@@ -2814,6 +2814,20 @@ const LEMMING = builtin('lemming', {
     hungerRate: 0.009,
     starveSeconds: 35,
     breedAt: 0.5,
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a4a1e', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  lemmingLegislature: true,
+  minViablePopulation: 20,
+  bodyMass: 0.08,
+})
+
+// ---------------------------------------------------------------------------
 // Kestrel — hovering raptor with hereditary monarchy. Issue #3304.
 // ---------------------------------------------------------------------------
 
@@ -2919,13 +2933,6 @@ const SQUIRREL = builtin('squirrel', {
   },
   senses: { sight: 12 },
   habitat: { needs: null, drowns: true },
-  death: { becomes: null, particleColor: '#7a4a1e', particleCount: 6 },
-  aura: null,
-  glow: 0,
-  egglayer: false,
-  lemmingLegislature: true,
-  minViablePopulation: 20,
-  bodyMass: 0.08,
   death: { becomes: null, particleColor: '#c06020', particleCount: 5 },
   aura: null,
   glow: 0,
