@@ -2694,6 +2694,31 @@ export function tickCreatures(
         }
       }
 
+      // Semelparous: skip reproduction if already reproduced once. Issue #3259.
+      if (bp.semelparous && c.hasReproduced) continue
+
+      // Polygyny: only the most-fed male within sight breeds. Issue #3257.
+      if (bp.matingSystem === 'polygyny' && c.id % 2 === 0) {
+        const sight = bp.senses?.sight ?? 12
+        const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight && o.id % 2 === 0)
+        if (competitors.some(o => o.mealsEaten > c.mealsEaten)) continue  // dominated — skip
+      }
+
+      // Age-structured reproduction: rate varies by life stage. Issue #3261.
+      if (bp.ageReproductionCurve) {
+        const lifespan = lifespanOf(c, bp) * TUNING.lifespanScale
+        const relAge = Math.min(1, c.ageSeconds / lifespan)
+        let ageFactor = 1
+        if (bp.ageReproductionCurve === 'peak-early') {
+          ageFactor = relAge < 0.3 ? 1.5 : relAge < 0.6 ? 1.0 : 0.4
+        } else if (bp.ageReproductionCurve === 'peak-middle') {
+          ageFactor = relAge < 0.2 ? 0.3 : relAge < 0.7 ? 1.4 : 0.5
+        } else if (bp.ageReproductionCurve === 'peak-late') {
+          ageFactor = relAge < 0.5 ? 0.5 : relAge < 0.85 ? 1.0 : 1.8
+        }
+        if (rng() >= ageFactor) continue
+      }
+
       /**
        * An animal needs a partner; a plant does not.
        *
@@ -2706,8 +2731,10 @@ export function tickCreatures(
        * that is allowed to make more of itself alone.
        */
       const wantsMate = needsPartner(bp)
-      const mate = wantsMate ? findMate(w, c, bp, dead) : null
-      if (!wantsMate || mate) {
+      // Promiscuous species reproduce without a mate. Issue #3257.
+      const effectiveWantsMate = bp.matingSystem === 'promiscuity' ? false : wantsMate
+      const mate = effectiveWantsMate ? findMate(w, c, bp, dead) : null
+      if (!effectiveWantsMate || mate) {
         // Born between the two of them, which is the whole point of having made
         // them walk to each other.
         //
@@ -2758,7 +2785,7 @@ export function tickCreatures(
             blueprintId: bp.id,
             traits: childTraits,
             generation,
-            hatchIn: TUNING.eggHatchSeconds,
+            hatchIn: TUNING.eggHatchSeconds * (bp.rK !== undefined ? 0.7 + bp.rK * 0.6 : 1),  // r-selected hatch faster
           })
           // Assign nest site when first egg is laid. Issue #3418.
           if (bp.nestBuilder && c.nestX === undefined) {
@@ -2774,6 +2801,11 @@ export function tickCreatures(
             ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
             (bp.slowMetabolism ? 2 : 1) *
             (bp.invasive ? 0.67 : 1)
+          // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
+          if (bp.rK !== undefined) {
+            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
+            c.breedCooldown *= cooldownMultiplier
+          }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -2781,6 +2813,17 @@ export function tickCreatures(
             else if (mate.children % 10 === 0)
               logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
+          }
+          // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+          if (bp.matingSystem === 'monogamy') {
+            const sight = bp.senses?.sight ?? 12
+            const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
+            if (bondMate) c.breedCooldown *= 0.8
+          }
+          // Semelparous: die after first reproduction. Issue #3259.
+          if (bp.semelparous) {
+            c.hasReproduced = true
+            kill(w, c, bp, dead, events, 'aged')
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
@@ -3027,6 +3070,22 @@ export function tickCreatures(
                   }
                 }
                 logLife(c, w.elapsed, 'Spawned and spent — returning nutrients to the headwater')
+              }
+              // r/K selection cooldown multiplier (same as egglayer path). Issue #3256.
+              if (bp.rK !== undefined) {
+                const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
+                c.breedCooldown *= cooldownMultiplier
+              }
+              // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+              if (bp.matingSystem === 'monogamy') {
+                const sight = bp.senses?.sight ?? 12
+                const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
+                if (bondMate) c.breedCooldown *= 0.8
+              }
+              // Semelparous: die after first reproduction. Issue #3259.
+              if (bp.semelparous) {
+                c.hasReproduced = true
+                kill(w, c, bp, dead, events, 'aged')
               }
             }
             events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })

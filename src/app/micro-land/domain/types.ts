@@ -991,57 +991,70 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
-
+  /**
+   * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
+   *
+   * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
+   * K-selected species (1): long breedCooldown (2.0×), slow egg hatching (1.3×).
+   * Leave undefined for no r/K bias. Issue #3256.
+   */
+  rK?: number
+  /**
+   * Mating system governing partner selection and bonding.
+   *
+   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
+   * 'polygyny': only the most-fed male within sight breeds.
+   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
+   * 'promiscuity': no mate-finding required — reproduces without a partner.
+   * Leave undefined for default partner-seeking behavior. Issue #3257.
+   */
+  matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
+  /**
+   * When true, this species reproduces only once and then dies.
+   *
+   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
+   * After the first successful reproduction the creature is killed via aged death.
+   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
+   */
+  semelparous?: boolean
+  /**
+   * Reproductive rate varies with life stage.
+   *
+   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
+   * 'peak-middle': prime-age adults breed most; young and old rarely do.
+   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
+   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
+   * Leave undefined for age-independent reproduction. Issue #3261.
+   */
+  ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
   // --- Coevolution features (#3263–#3267) ---
-
   /** Predator-prey escalation: predator gains cumulative speed from hunting success. Issue #3263. */
   predatorEscalation?: boolean
   /** Predator-prey escalation: prey gains cumulative evasion from surviving predation. Issue #3263. */
   preyEscalation?: boolean
-
   /** Pollinator specialization: this creature is a specialized pollinator. Issue #3264. */
   pollinatorSpecialist?: boolean
   /** Pollinator specialization: how deep the nectar tube is (0.0–1.0); set on plants. Issue #3264. */
   flowerTubeDepth?: number
   /** Pollinator specialization: tongue reach of the pollinator (0.0–1.0). Issue #3264. */
   tongueLength?: number
-
   /** Host-parasite immunity: this species acts as a parasite (drains hosts without killing). Issue #3265. */
   hostParasiteAttacker?: boolean
   /** Host-parasite immunity: this species can be parasitized and builds immune exposure. Issue #3265. */
   hostParasite?: boolean
-
   /** Obligate coevolved pair: blueprintId of the required mutualistic partner species. Issue #3266. */
   obligatePartner?: string
-
   /** Mimicry: this species is genuinely toxic/aposematic; predators learn to avoid it. Issue #3267. */
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
-  /**
-   * When true, in rivers with population > 15, five otters with the most meals
-   * become Oligarchs each season. Oligarchs extract 5% hunger from nearby
-   * non-oligarch conspecifics. Three form a bloc. The other two are aware.
-   * Issue #3308.
-   */
+  /** Otter Oligarchy: top-5 fish-eaters become oligarchs each season. Issue #3308. */
   otterOligarchy?: boolean
-  /**
-   * When true, squirrels form a Collective when pop > 30. All hunger is shared
-   * communally among members. Gerald (first squirrel) retains a private stash
-   * via a "temporary" exemption granted in Season 1, never revisited. Issue #3312.
-   */
+  /** Squirrel Socialism: hunger pooled communally when pop > 30; Gerald exempt. Issue #3312. */
   squirrelSocialism?: boolean
-  /**
-   * When true, voles elect a Chief Vole each season via maze ballot. The
-   * incumbent is re-elected with 80% probability (they know the route).
-   * Electoral integrity reforms have been proposed 12 times. Issue #3315.
-   */
+  /** Vole Voting: Chief Vole elected by maze ballot each season. Issue #3315. */
   voleVoting?: boolean
-  /**
-   * When true, after 3+ territorial confrontations a Tribunal fires with a
-   * random verdict. Compliance rate: 12%. The Tribunal has no enforcement arm.
-   * It is still considered legitimate. Issue #3316.
-   */
+  /** Weasel Tribunal: 3+ kills triggers an international tribunal (12% compliance). Issue #3316. */
   weaselTribunal?: boolean
 }
 
@@ -1383,6 +1396,14 @@ export interface Creature {
    * Issue #3304.
    */
   isMonarch?: boolean
+  /** Whether this individual is an elected Oligarch (otterOligarchy species). Issue #3308. */
+  isOligarch?: boolean
+  /** Whether this individual is Gerald, the founding squirrel exempt from socialism. Issue #3312. */
+  isGerald?: boolean
+  /** Whether this individual is the currently-elected Chief Vole. Issue #3315. */
+  isChiefVole?: boolean
+  /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
+  conflictCount?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1503,20 +1524,14 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
+  hasReproduced?: boolean
   /** Bonus speed from successful hunts (predator escalation, accumulates, max 0.5). Issue #3263. */
   escalatedSpeed?: number
   /** Evasion factor from surviving predation (prey escalation, accumulates, max 0.5). Issue #3263. */
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
-  /** True when this otter is currently an Oligarch (elected by fish catches). Issue #3308. */
-  isOligarch?: boolean
-  /** True when this squirrel is Gerald — first of the collective, permanently exempt. Issue #3312. */
-  isGerald?: boolean
-  /** True when this vole is the current Chief Vole (maze-elected). Issue #3315. */
-  isChiefVole?: boolean
-  /** Accumulated territorial confrontation count; triggers Tribunal at 3+. Issue #3316. */
-  conflictCount?: number
 }
 
 /**
