@@ -1122,6 +1122,24 @@ export interface Egg {
 }
 
 /**
+ * A dormant seed resting in the soil seed bank. Seeds enter dormancy when a
+ * pollinator drops them on unsuitable terrain. They persist until conditions
+ * allow germination or viability falls to zero. Issue #3350.
+ */
+export interface SeedEntry {
+  /** Unique id within this world. */
+  id: number
+  /** The plant species this seed will grow into. */
+  blueprintId: string
+  /** Tile X position where the seed is buried. */
+  x: number
+  /** Tile Y position where the seed is buried. */
+  y: number
+  /** Seconds since this seed entered the seed bank. */
+  age: number
+}
+
+/**
  * A chemical marker left when a creature eats.
  *
  * Same-species animals that are hungry and have nothing in sight drift toward
@@ -1253,6 +1271,14 @@ export interface WorldState {
   marshDetritus?: Float32Array
   eggs: Egg[]
   nextEggId: number
+  /**
+   * Seeds that failed to germinate on dispersal and entered soil dormancy.
+   * Populated lazily; undefined in worlds with no seed bank activity.
+   * Max 300 seeds — oldest are evicted if the cap is reached. Issue #3350.
+   */
+  seedBank?: SeedEntry[]
+  /** Monotonically increasing id for the next SeedEntry. */
+  nextSeedBankId?: number
   /** Burrows dug by territorial creatures at their home positions. */
   nests: Nest[]
   nextNestId: number

@@ -41,7 +41,7 @@ import {
   speedOf,
 } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
-import type { Creature, CreatureBlueprint, Scent, WorldState } from '@/app/micro-land/domain/types'
+import type { Creature, CreatureBlueprint, Scent, SeedEntry, WorldState } from '@/app/micro-land/domain/types'
 import { deltaX, distX, wrapCol, wrapX } from '@/app/micro-land/domain/wrap'
 
 import {
@@ -666,6 +666,57 @@ function gather(cx: number, reach: number): number {
     for (let i = 0; i < byX.length && byX[i].x <= hi; i++) found.push(byX[i])
   }
   return found.length
+}
+
+/**
+ * Ages dormant seeds and tries to germinate them when conditions allow.
+ *
+ * Seeds lose viability exponentially with a half-life of 600 seconds (two
+ * simulated years at the 300s season period). A seed whose viability falls
+ * below a random draw on a given tick dies. Surviving seeds try to germinate
+ * once per second if: the tile below them is fertile AND the plant cap allows
+ * another individual of that species.
+ *
+ * Issue #3350.
+ */
+function tickSeedBank(
+  w: WorldState,
+  dt: number,
+  tickCount: number,
+  speciesCount: Record<string, number>,
+  plantsRef: { value: number },
+  rng: Rng
+): void {
+  if (!w.seedBank || w.seedBank.length === 0) return
+  if (tickCount % 60 !== 0) return  // run once per second
+
+  const HALF_LIFE = 600  // seconds to 50 % viability
+
+  const surviving: SeedEntry[] = []
+  for (const seed of w.seedBank) {
+    seed.age += 60 * dt  // approximate: called every 60 ticks
+    const viability = Math.pow(0.5, seed.age / HALF_LIFE)
+    if (rng() > viability) continue  // seed died
+
+    // Try germination
+    const bp = w.blueprints[seed.blueprintId]
+    if (!bp || bp.move.kind !== 'root') { surviving.push(seed); continue }
+    if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
+    if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+
+    // Try to germinate via the same reproduce path the pollinator uses.
+    const { w: bw, h: bh } = artSize(bp)
+    const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+    if (germinated) {
+      plantsRef.value++
+      speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
+      // Don't push seed — it germinated successfully
+    } else {
+      surviving.push(seed)
+    }
+  }
+
+  w.seedBank = surviving
 }
 
 export function tickCreatures(
@@ -1359,6 +1410,31 @@ export function tickCreatures(
                   life: 1.5 + rng() * 1.5,
                   maxLife: 2.5,
                   color: '#fde68a',
+                })
+              }
+            }
+            if (!seedling) {
+              // Germination failed — bury the seed in the bank for later sprouting.
+              w.seedBank ??= []
+              w.nextSeedBankId ??= 1
+              if (w.seedBank.length < 300) {
+                w.seedBank.push({
+                  id: w.nextSeedBankId++,
+                  blueprintId: seedBp.id,
+                  x: Math.floor(c.x),
+                  y: Math.floor(c.y + bh),
+                  age: 0,
+                })
+              } else {
+                // Evict oldest to keep cap. Seeds are generally pushed in order, so
+                // index 0 is oldest — O(n) shift but n is capped at 300.
+                w.seedBank.shift()
+                w.seedBank.push({
+                  id: w.nextSeedBankId++,
+                  blueprintId: seedBp.id,
+                  x: Math.floor(c.x),
+                  y: Math.floor(c.y + bh),
+                  age: 0,
                 })
               }
             }
@@ -2067,6 +2143,18 @@ export function tickCreatures(
   }
 
   tickParticles(w, dt, gravityScale)
+
+  // Seed bank tick: age dormant seeds and try to germinate survivors.
+  if (w.seedBank && w.seedBank.length > 0) {
+    const sbSpeciesCount: Record<string, number> = {}
+    let sbPlantsAlive = 0
+    for (const c of w.creatures) {
+      sbSpeciesCount[c.blueprintId] = (sbSpeciesCount[c.blueprintId] ?? 0) + 1
+      if (w.blueprints[c.blueprintId]?.move.kind === 'root') sbPlantsAlive++
+    }
+    const plantsRef = { value: sbPlantsAlive }
+    tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng)
+  }
 }
 
 // ---------------------------------------------------------------------------
