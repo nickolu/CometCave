@@ -21,6 +21,8 @@
  * untappable while the dungeon master answers, so the composer under a player's
  * thumb never moves.
  */
+import { useDicebound } from '@/app/dicebound/store'
+
 export function Suggestions({
   suggestions,
   onPick,
@@ -30,30 +32,55 @@ export function Suggestions({
   onPick: (text: string) => void
   disabled: boolean
 }) {
+  const { suggestionsHidden, toggleSuggestions } = useDicebound()
+
+  // Invariant 17: nothing renders until the story is under way.
+  // The toggle itself does not appear until the first set of chips arrives.
   if (suggestions.length === 0) return null
 
+  if (suggestionsHidden) {
+    return (
+      <div className="mx-auto max-w-2xl pb-3">
+        <button
+          type="button"
+          onClick={toggleSuggestions}
+          aria-expanded={false}
+          className="text-sm italic text-on-surface-variant/60 hover:text-on-surface-variant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+        >
+          things you might try
+        </button>
+      </div>
+    )
+  }
+
   return (
-    <ul
-      // Keyed on the set itself so React remounts the list when the three
-      // change, which is what replays the fade. A new three arrive under a
-      // player who is still reading the paragraph above them, and something
-      // that appears without warning under moving eyes reads as a glitch.
-      key={suggestions.join(' ')}
-      aria-label="Things you might try. Choosing one fills the box; you can change it before you send."
-      className="dicebound-suggestions mx-auto flex max-w-2xl flex-wrap gap-2 pb-3"
-    >
-      {suggestions.map(suggestion => (
-        <li key={suggestion}>
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => onPick(suggestion)}
-            className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5 text-left text-sm italic text-on-surface-variant transition-colors hover:border-ds-primary/60 hover:not-italic hover:text-on-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary disabled:opacity-40"
-          >
-            {suggestion}
-          </button>
-        </li>
-      ))}
-    </ul>
+    <div className="mx-auto max-w-2xl pb-3">
+      <ul
+        key={suggestions.join(' ')}
+        aria-label="Things you might try. Choosing one fills the box; you can change it before you send."
+        className="dicebound-suggestions flex flex-wrap gap-2"
+      >
+        {suggestions.map(suggestion => (
+          <li key={suggestion}>
+            <button
+              type="button"
+              disabled={disabled}
+              onClick={() => onPick(suggestion)}
+              className="rounded-full border border-outline-variant bg-surface-container-low px-3 py-1.5 text-left text-sm italic text-on-surface-variant transition-colors hover:border-ds-primary/60 hover:not-italic hover:text-on-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary disabled:opacity-40"
+            >
+              {suggestion}
+            </button>
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={toggleSuggestions}
+        aria-expanded={true}
+        className="mt-2 text-sm text-on-surface-variant/50 hover:text-on-surface-variant focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+      >
+        put away
+      </button>
+    </div>
   )
 }

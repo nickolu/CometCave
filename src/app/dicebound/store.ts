@@ -13,6 +13,29 @@
  */
 import { create } from 'zustand'
 
+const SUGGESTIONS_HIDDEN_KEY = 'dicebound:suggestions-hidden'
+
+function readSuggestionsHidden(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(SUGGESTIONS_HIDDEN_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function writeSuggestionsHidden(hidden: boolean): void {
+  try {
+    if (hidden) {
+      window.localStorage.setItem(SUGGESTIONS_HIDDEN_KEY, 'true')
+    } else {
+      window.localStorage.removeItem(SUGGESTIONS_HIDDEN_KEY)
+    }
+  } catch {
+    // storage blocked — preference is session-only
+  }
+}
+
 import { getTodayPST, getYesterdayOf } from '@/lib/dates'
 
 import { createCharacter, fetchSuggestions, takeTurn } from './api'
@@ -52,6 +75,7 @@ interface DiceboundState {
    * that is already two paragraphs back.
    */
   suggestSeq: number
+  suggestionsHidden: boolean
 
   attach: (backend: CampaignBackend) => Promise<void>
   begin: (premise: string, concept: string) => Promise<void>
@@ -60,6 +84,7 @@ interface DiceboundState {
   dismissError: () => void
   /** Ask for a fresh three. Called by the store itself after anything that moves the story. */
   refreshSuggestions: () => Promise<void>
+  toggleSuggestions: () => void
 }
 
 function freshCampaign(premise: string, character: Character, now: number): Campaign {
@@ -74,6 +99,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
   backend: nullBackend,
   suggestions: [],
   suggestSeq: 0,
+  suggestionsHidden: readSuggestionsHidden(),
 
   /**
    * Point the store at storage and load whatever is there.
@@ -197,6 +223,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
   async refreshSuggestions() {
     const campaign = get().campaign
     if (!campaign || campaign.transcript.length === 0) return
+    if (get().suggestionsHidden) return
 
     const seq = get().suggestSeq + 1
     set({ suggestSeq: seq })
@@ -208,5 +235,18 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
     // this. Either way these are about a scene that has moved on.
     if (get().suggestSeq !== seq) return
     set({ suggestions })
+  },
+
+  toggleSuggestions() {
+    const hidden = !get().suggestionsHidden
+    writeSuggestionsHidden(hidden)
+    if (hidden) {
+      // Collapsing: bump seq so any in-flight fetch is discarded
+      set({ suggestionsHidden: true, suggestSeq: get().suggestSeq + 1 })
+    } else {
+      // Expanding: fetch fresh suggestions
+      set({ suggestionsHidden: false })
+      void get().refreshSuggestions()
+    }
   },
 }))
