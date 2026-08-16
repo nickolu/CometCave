@@ -47,6 +47,7 @@ export type BaseMaterialId =
   | 'sap'
   | 'acid'
   | 'shed-skin'
+  | 'web'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -837,6 +838,16 @@ export interface CreatureBlueprint {
    * normal fill — soft-shelled nymphs are easier prey. Issue #3341.
    */
   moultVulnerability?: number
+  /**
+   * Spider-type creatures that spin web tiles between solid anchor points.
+   * Web tiles passively capture small flying creatures and degrade over time.
+   * Issue #3420.
+   */
+  webSpinner?: boolean
+  /** Radius within which webs are placed, in tiles. Default 4. Issue #3420. */
+  webRange?: number
+  /** Seconds between placing a web tile. Default 5. Issue #3420. */
+  webBuildInterval?: number
 }
 
 /**
@@ -1247,6 +1258,10 @@ export interface Creature {
   instar?: number
   /** Countdown seconds remaining in a moult pause. Set when moulting begins. Issue #3341. */
   moultingTimer?: number
+  /** Countdown seconds until this web-spinner places the next web tile. Issue #3420. */
+  webBuildTimer?: number
+  /** True when this flying creature has been caught in a web tile. Issue #3420. */
+  webTrapped?: boolean
 }
 
 /**

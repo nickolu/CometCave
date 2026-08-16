@@ -2221,6 +2221,44 @@ const DRAGONFLY = builtin('dragonfly', {
   nymphBlueprint: 'dragonfly-nymph',
 })
 
+// ---------------------------------------------------------------------------
+// Garden Spider — web-spinning predator. Issue #3420.
+// ---------------------------------------------------------------------------
+
+const GARDEN_SPIDER = builtin('garden-spider', {
+  name: 'Garden Spider',
+  blurb: 'A patient architect, building geometric webs to passively harvest flying prey.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { w: '#cc9955', b: '#442211', g: '#eecc88' },
+    frames: [
+      ['bwb', 'wgw', 'bwb'],
+    ],
+    frameMs: 500,
+    faceMotion: false,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.4, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'crawl', speed: 2.0, jump: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['bug'],
+    fears: [],
+    hungerRate: 0.018,
+    starveSeconds: 60,
+    breedAt: 0.75,
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#cc9955', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  webSpinner: true,
+  webRange: 5,
+  webBuildInterval: 4,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2263,6 +2301,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   RIMECLAW,
   SUNHAWK,
   GLOOMWEAVER,
+  GARDEN_SPIDER,
   CAVE_CRICKET,
   CAVE_SALAMANDER,
   BAT,
