@@ -321,10 +321,24 @@ function isNearWater(w: WorldState, c: Creature): boolean {
  * summer peak. When seasonAmplitude is 0 (no seasons), returns 1000 so
  * phenological gates are always open — existing gameplay is unaffected.
  */
+/**
+ * Climate warming bonus — extra GDD added each year as the simulated climate
+ * warms over time. Returns 0 when `climateWarmingRate` is 0 (default).
+ *
+ * Each completed annual cycle (seasonPeriod) adds `climateWarmingRate` GDD
+ * to the bonus, capped at 400 to prevent runaway desynchronisation.
+ */
+function climateBonus(elapsed: number): number {
+  if (TUNING.climateWarmingRate === 0 || TUNING.seasonPeriod <= 0) return 0
+  const yearsElapsed = Math.floor(elapsed / TUNING.seasonPeriod)
+  return Math.min(400, yearsElapsed * TUNING.climateWarmingRate)
+}
+
 function worldGdd(elapsed: number): number {
   if (TUNING.seasonAmplitude === 0 || TUNING.seasonPeriod <= 0) return 1000
   const yearFrac = (elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
-  return Math.round((1 - Math.cos(2 * Math.PI * yearFrac)) / 2 * 1000)
+  const baseGdd = Math.round((1 - Math.cos(2 * Math.PI * yearFrac)) / 2 * 1000)
+  return Math.min(1000, baseGdd + climateBonus(elapsed))
 }
 
 /**
