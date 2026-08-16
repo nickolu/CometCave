@@ -627,6 +627,10 @@ export function sanitizeBlueprint(
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
+    breedingPhotoperiod: b.breedingPhotoperiod === 'long' || b.breedingPhotoperiod === 'short'
+      ? b.breedingPhotoperiod
+      : undefined,
+    dormancyPhotoperiod: b.dormancyPhotoperiod !== undefined ? !!b.dormancyPhotoperiod : undefined,
     flowZonePreference: b.flowZonePreference === 'riffle' || b.flowZonePreference === 'run' || b.flowZonePreference === 'pool'
       ? b.flowZonePreference
       : undefined,
