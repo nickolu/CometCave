@@ -1095,6 +1095,16 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * True if this species has sexual dimorphism: males and females differ
+   * in appearance and behavior. Issue #3165.
+   */
+  sexualDimorphism?: boolean
+  /**
+   * True if this creature is a decomposer (fungus/bacteria) that gains
+   * energy from mud tiles (decomposing organic matter). Issue #3146.
+   */
+  decomposer?: boolean
 }
 
 /**
@@ -1576,6 +1586,15 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /**
+   * Seconds without a nearby conspecific; resets to 0 on breeding.
+   * Drives faster trait drift in isolated populations. Issue #3164.
+   */
+  isolationTime?: number
+  /**
+   * Sex of this individual for sexually dimorphic species. Issue #3165.
+   */
+  sex?: 'male' | 'female'
 }
 
 /**
