@@ -67,6 +67,7 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickWebDecay,
   tileAt,
   updateBiomeZones,
 } from './world'
@@ -873,6 +874,7 @@ export function tickCreatures(
   const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
   tickAtmosphericCO2(w, tickCount, plantCount)
   tickMycorrhizalNetwork(w, tickCount, rng)
+  tickWebDecay(w, tickCount, rng)
   updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
@@ -1506,6 +1508,35 @@ export function tickCreatures(
       }
     }
 
+    // --- web building: spiders periodically place web tiles near solid anchor points. Issue #3420. ---
+    if (bp.webSpinner) {
+      c.webBuildTimer = (c.webBuildTimer ?? 0) - dt
+      if (c.webBuildTimer <= 0) {
+        c.webBuildTimer = bp.webBuildInterval ?? 5
+        const range = bp.webRange ?? 4
+        const cx = Math.round(c.x)
+        const cy = Math.round(c.y)
+        const webMat = MATERIAL_INDEX['web']
+        const airMat = 0  // AIR is always index 0
+        for (let attempt = 0; attempt < 8; attempt++) {
+          const tx = cx + Math.round((rng() * 2 - 1) * range)
+          const ty = cy + Math.round((rng() * 2 - 1) * range)
+          if (tx < 0 || tx >= w.width || ty < 0 || ty >= w.height) continue
+          const tIdx = ty * w.width + tx
+          if (w.tiles[tIdx] !== airMat) continue
+          const webOffsets: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+          const hasAnchor = webOffsets.some(([dx, dy]) => {
+            const ni = (ty + dy) * w.width + (tx + dx)
+            return ni >= 0 && ni < w.tiles.length && IS_SOLID[w.tiles[ni]]
+          })
+          if (hasAnchor) {
+            w.tiles[tIdx] = webMat
+            break
+          }
+        }
+      }
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
@@ -1573,6 +1604,23 @@ export function tickCreatures(
        */
       c.vy = Math.max(0, c.vy)
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
+    }
+
+    // --- web capture: flying creatures entering a web tile become trapped. Issue #3420. ---
+    if (bp.move.kind === 'fly' || bp.move.kind === 'drift') {
+      const capTileIdx = Math.round(c.y) * w.width + wrapCol(Math.round(c.x))
+      if (capTileIdx >= 0 && capTileIdx < w.tiles.length && w.tiles[capTileIdx] === MATERIAL_INDEX['web']) {
+        c.webTrapped = true
+      }
+    }
+    if (c.webTrapped) {
+      // Small chance to escape each second; otherwise freeze velocity.
+      if (rng() < 0.005 * dt) {
+        c.webTrapped = false
+      } else {
+        c.vx = 0
+        c.vy = 0
+      }
     }
 
     // --- fatigue --------------------------------------------------------
@@ -2948,6 +2996,10 @@ function look(
         // Moult vulnerability: moulting nymphs are soft-shelled and easy prey. Issue #3341.
         if (other.lifeStage === 'nymph' && other.moultingTimer !== undefined && obp.moultVulnerability) {
           fill *= 1 + obp.moultVulnerability
+        }
+        // Web-trapped prey: immobilized creatures are easy pickings for the spider. Issue #3420.
+        if (other.webTrapped && bp.webSpinner) {
+          fill *= 2
         }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0

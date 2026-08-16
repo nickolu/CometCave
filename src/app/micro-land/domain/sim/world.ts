@@ -1369,4 +1369,33 @@ export function isInEcotone(w: WorldState, y: number): boolean {
   return (y - bandStart < ECOTONE_WIDTH) || (bandEnd - y <= ECOTONE_WIDTH)
 }
 
+/**
+ * Decay web tiles over time and destroy them when adjacent to water (rain damage).
+ * Each call (every 60 ticks) gives each web tile a 0.2% chance to become air.
+ * Issue #3420.
+ */
+const WEB_DECAY_CHANCE = 0.002
+export function tickWebDecay(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 60 !== 0) return
+  const webIdx = MATERIAL_INDEX.web
+  const waterIdx = MATERIAL_INDEX.water
+  for (let i = 0; i < w.tiles.length; i++) {
+    if (w.tiles[i] !== webIdx) continue
+    const x = i % w.width
+    const y = Math.floor(i / w.width)
+    // Check for adjacent water (rain damage)
+    let adjacentWater = false
+    const offsets: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+    for (const [dx, dy] of offsets) {
+      const nx = x + dx
+      const ny = y + dy
+      if (nx < 0 || nx >= w.width || ny < 0 || ny >= w.height) continue
+      if (w.tiles[ny * w.width + nx] === waterIdx) { adjacentWater = true; break }
+    }
+    if (adjacentWater || rng() < WEB_DECAY_CHANCE) {
+      w.tiles[i] = AIR
+    }
+  }
+}
+
 export { AIR }

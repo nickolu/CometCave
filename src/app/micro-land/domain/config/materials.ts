@@ -80,6 +80,7 @@ export const BASE_MATERIAL_IDS = [
   'sap',
   'acid',
   'shed-skin',
+  'web',
 ] as const satisfies readonly BaseMaterialId[]
 
 const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
@@ -180,6 +181,12 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     grain: 0.18,
     solid: true,
     fertile: true,
+  }),
+  web: material('web', 'Web', '#e8e8f0', {
+    grain: 0.05,
+    solid: false,
+    viscous: 0.95,
+    glow: 0.04,
   }),
 }
 

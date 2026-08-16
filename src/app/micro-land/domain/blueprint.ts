@@ -664,6 +664,9 @@ export function sanitizeBlueprint(
     instarCount: typeof b.instarCount === 'number' ? Math.max(1, Math.floor(b.instarCount)) : undefined,
     instarDuration: typeof b.instarDuration === 'number' ? Math.max(1, b.instarDuration) : undefined,
     moultVulnerability: typeof b.moultVulnerability === 'number' ? Math.max(0, b.moultVulnerability) : undefined,
+    webSpinner: typeof b.webSpinner === 'boolean' ? b.webSpinner : undefined,
+    webRange: typeof b.webRange === 'number' ? Math.max(1, Math.floor(b.webRange)) : undefined,
+    webBuildInterval: typeof b.webBuildInterval === 'number' ? Math.max(0.5, b.webBuildInterval) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
