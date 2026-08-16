@@ -689,6 +689,7 @@ export function sanitizeBlueprint(
     populationCap: typeof b.populationCap === 'number' ? Math.max(1, Math.floor(b.populationCap)) : undefined,
     alleeThreshold: typeof b.alleeThreshold === 'number' ? Math.max(1, Math.floor(b.alleeThreshold)) : undefined,
     bodyMass: typeof b.bodyMass === 'number' ? Math.max(0.01, b.bodyMass) : undefined,
+    kestrelKingdom: typeof b.kestrelKingdom === 'boolean' ? b.kestrelKingdom : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

@@ -960,6 +960,15 @@ export interface CreatureBlueprint {
    * predator). Default 1.0 when undefined. Issues #3269, #3272, #3273.
    */
   bodyMass?: number     // body mass in relative units (1.0 = reference size); default 1.0
+  /**
+   * When true, this species participates in the Kestrel Kingdom mechanic.
+   *
+   * At each seasonal boundary the individual with the highest cumulative
+   * `mealsEaten` is crowned Monarch. The Monarch hunts at 110% speed.
+   * There is no court, no succession plan — the crown is re-awarded each
+   * season regardless of what happened to the previous holder. Issue #3304.
+   */
+  kestrelKingdom?: boolean
 }
 
 /**
@@ -1290,6 +1299,16 @@ export interface Creature {
    * memory — the same species can be tried again next session. Issue #3303.
    */
   judiciaryPriorityTimer?: number
+  /**
+   * Whether this individual currently holds the Kestrel Kingdom throne.
+   *
+   * Set at each seasonal boundary on the kestrelKingdom individual with the
+   * highest mealsEaten. Grants 10% hunting speed. Cleared on all individuals
+   * before each re-election. When the Monarch dies mid-season the crown sits
+   * vacant until the next reckoning — no interregnum protocol exists.
+   * Issue #3304.
+   */
+  isMonarch?: boolean
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1761,6 +1780,17 @@ export interface WorldState {
    * tiles delivered. Used for egg hatch bonus and nest rendering. Issues #3412, #3418.
    */
   nestSites?: Record<string, { progress: number; ownerId: number; x: number; y: number }>
+  /**
+   * ID of the currently-reigning Monarch Kestrel (kestrelKingdom species).
+   * Updated each season by the reckoning logic. Cleared when no kestrel survives.
+   * Issue #3304.
+   */
+  kestrelMonarchId?: number
+  /**
+   * Index of the last season for which the Kestrel Kingdom reckoning ran.
+   * Prevents the election from firing on every tick. Issue #3304.
+   */
+  kestrelLastSeasonIdx?: number
 }
 
 // ---------------------------------------------------------------------------

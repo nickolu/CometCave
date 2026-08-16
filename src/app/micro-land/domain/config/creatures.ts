@@ -2689,6 +2689,43 @@ const BEAVER = builtin('beaver', {
 // Arctic Tern — landmark-learning migratory seabird. Issue #3326.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Kestrel — hovering raptor with hereditary monarchy. Issue #3304.
+// ---------------------------------------------------------------------------
+
+const KESTREL = builtin('kestrel', {
+  name: 'Kestrel',
+  blurb: 'Hovers on the wind, scanning for mice. The hungriest one wears the crown.',
+  size: 2,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { r: '#c05020', b: '#3a2010', c: '#e8c090', w: '#d09850' },
+    frames: [
+      ['.rr...rr.', 'rwwwwwwwr', '..rcrrc..', '...r.r...'],
+      ['rwwwwwwwr', '.rr...rr.', '..rcrrc..', '...r.r...'],
+    ],
+    frameMs: 160,
+    faceMotion: true,
+  },
+  body: { mass: 0.35, bounce: 0.1, drag: 0.4, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'fly', speed: 5.5, jump: 0, restlessness: 0.4 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.022,
+    starveSeconds: 55,
+    breedAt: 0.85,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 28 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c05020', particleCount: 8 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  kestrelKingdom: true,
+})
+
 const ARCTIC_TERN = builtin('arctic-tern', {
   name: 'Arctic Tern',
   blurb: "The world's longest migrant — navigates 70,000 km annually using memorized landmarks and following experienced elders.",
@@ -2792,6 +2829,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MONITOR_LIZARD,
   BEAVER,
   ARCTIC_TERN,
+  KESTREL,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(
