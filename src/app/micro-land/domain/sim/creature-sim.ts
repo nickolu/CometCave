@@ -4226,6 +4226,7 @@ function look(
         if (preyToxicity > 0) {
           if ((c as { toxinLoad?: number }).toxinLoad === undefined) c.toxinLoad = 0
           c.toxinLoad = Math.min(1, (c.toxinLoad as number) + preyToxicity * 0.3)
+        }
         // Aposematism: eating a brightly-colored toxic prey teaches the predator to avoid
         // that species in future. Naive predators (mealsEaten < 5) still attack freely. Issue #3237.
         if (obp.aposematic && obp.toxic) {
