@@ -1004,6 +1004,12 @@ export interface CreatureBlueprint {
    * with a 12% compliance rate (modelled as a history event). Issue #3316.
    */
   weaselTribunal?: boolean
+  /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
+  platypusPhilosophy?: boolean
+  /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
+  toadTaxation?: boolean
+  /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
+  urchinUnion?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1443,6 +1449,10 @@ export interface Creature {
   isChiefVole?: boolean
   /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
   conflictCount?: number
+  /** Total philosophical contemplation sessions completed. Does nothing. Issue #3309. */
+  wisdom?: number
+  /** Countdown seconds until next philosophical contemplation. Issue #3309. */
+  philosophyTimer?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1942,6 +1952,8 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Whether the Urchin Union strike is active. Issue #3314. */
+  urchinStrikeActive?: boolean
   /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
   otterOligarchIds?: number[]
   /** Season index of the last Otter Oligarchy election. Issue #3308. */
