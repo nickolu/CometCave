@@ -133,6 +133,8 @@ const POLLUTION_PROB = 0.001
 const ALLELOPATHY_RADIUS = 8 // tiles — allelopathic suppression reach
 const BIOTIC_RESISTANCE_RADIUS = 12 // tiles — diversity sensing reach for invasives
 const BIOTIC_RESISTANCE_THRESHOLD = 3 // distinct native species needed for resistance
+const COMPETITIVE_EXCLUSION_RADIUS = 6 // tiles
+const COMPETITIVE_THRESHOLD = 3.0 // sum of competitor ability at which penalty begins
 
 /**
  * Seconds between chromatophore hue updates. At 5 s the creature adapts
@@ -1161,8 +1163,34 @@ export function tickCreatures(
                 }
               }
 
+              // competitive exclusion: high-ability competitors suppress breeding
+              let competitiveExclusionFactor = 1
+              {
+                const myAbility = bp.competitiveAbility ?? 1
+                const ccx = c.x + bw / 2
+                const ccy = c.y + bh / 2
+                const nearbyN3 = gather(ccx, COMPETITIVE_EXCLUSION_RADIUS + bw / 2)
+                let competitorPressure = 0
+                for (let i = 0; i < nearbyN3; i++) {
+                  const other = found[i]
+                  if (other.id === c.id) continue
+                  const obp = w.blueprints[other.blueprintId]
+                  if (!obp || obp.move.kind !== 'root' || obp.id === bp.id) continue
+                  const odx = other.x + (obp.art.frames[0][0]?.length ?? 1) / 2 - ccx
+                  const ody = other.y + (obp.art.frames[0]?.length ?? 1) / 2 - ccy
+                  if (odx * odx + ody * ody < COMPETITIVE_EXCLUSION_RADIUS * COMPETITIVE_EXCLUSION_RADIUS) {
+                    competitorPressure += (obp.competitiveAbility ?? 1)
+                  }
+                }
+                const relativePressure = competitorPressure / Math.max(0.1, myAbility)
+                if (relativePressure > COMPETITIVE_THRESHOLD) {
+                  const excess = Math.min(2, (relativePressure - COMPETITIVE_THRESHOLD) / COMPETITIVE_THRESHOLD)
+                  competitiveExclusionFactor = 1 + 0.5 * excess
+                }
+              }
+
               c.breedCooldown =
-                (TUNING.plantSpreadCooldown * crowdingPenalty * allelopathyFactor * bioticResistanceFactor) /
+                (TUNING.plantSpreadCooldown * crowdingPenalty * allelopathyFactor * bioticResistanceFactor * competitiveExclusionFactor) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   plantFertilityFactor *
                   seasonFactor)

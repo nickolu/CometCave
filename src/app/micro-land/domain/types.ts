@@ -466,6 +466,19 @@ export interface CreatureBlueprint {
    * plant population exposed to an allelopathic invader over many generations.
    */
   novelCompoundResistant?: boolean
+  /**
+   * How effectively this species competes with others for shared resources and
+   * space. Contributes to competitive pressure experienced by neighbours of
+   * different species.
+   *
+   * Default 1.0. Invasive generalists typically use 2.0, reflecting broader
+   * niche breadth and resource-use efficiency. Specialists may be < 1.0 in
+   * out-of-niche conditions.
+   *
+   * Used in the competitive exclusion formula: when total competitive pressure
+   * from other species nearby exceeds COMPETITIVE_THRESHOLD, breeding rate drops.
+   */
+  competitiveAbility?: number
 }
 
 /**

@@ -598,6 +598,10 @@ export function sanitizeBlueprint(
     invasive: b.invasive === true,
     allelopathic: b.allelopathic === true,
     novelCompoundResistant: b.novelCompoundResistant === true,
+    competitiveAbility:
+      typeof b.competitiveAbility === 'number' && b.competitiveAbility > 0
+        ? b.competitiveAbility
+        : 1,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
