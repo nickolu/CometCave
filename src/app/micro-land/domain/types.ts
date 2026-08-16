@@ -447,6 +447,25 @@ export interface CreatureBlueprint {
    * adapt: cane toads, zebra mussels, kudzu vine.
    */
   invasive?: boolean
+  /**
+   * Allelopathic plants secrete chemicals that suppress the growth of nearby
+   * competitors. Any rooted plant within `ALLELOPATHY_RADIUS` tiles whose
+   * blueprint does NOT have `novelCompoundResistant: true` gets a 30% breed-
+   * cooldown penalty (breedCooldown × 1.3) applied each tick.
+   *
+   * Models garlic mustard, black walnut juglone, and invasive Phragmites
+   * secreting allelopathic compounds into the soil.
+   */
+  allelopathic?: boolean
+  /**
+   * This plant has evolved or already carries resistance to allelopathic
+   * compounds in its habitat. Nearby allelopathic plants do not suppress its
+   * growth rate.
+   *
+   * In an invasive-species context, this trait can spread through a native
+   * plant population exposed to an allelopathic invader over many generations.
+   */
+  novelCompoundResistant?: boolean
 }
 
 /**
