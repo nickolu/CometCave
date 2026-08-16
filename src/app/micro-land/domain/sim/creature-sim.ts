@@ -3151,6 +3151,8 @@ export function tickCreatures(
                 child.traits.size = Math.min(1.2, child.traits.size + 0.015)
               } else if (zone && warmZones.has(zone)) {
                 child.traits.size = Math.max(0.8, child.traits.size - 0.015)
+              }
+            }
             // Island dwarfism / gigantism: isolated land populations evolve different body sizes. Issue #3271.
             if (bp.bodyMass !== undefined && bp.move.kind === 'walk') {
               const cx = Math.floor(c.x), cy = Math.floor(c.y)
@@ -3471,6 +3473,8 @@ export function tickCreatures(
               hatchling.traits.size = Math.min(1.2, hatchling.traits.size + 0.015)
             } else if (hatchZone && warmZ.has(hatchZone)) {
               hatchling.traits.size = Math.max(0.8, hatchling.traits.size - 0.015)
+            }
+          }
           // Island dwarfism / gigantism at egg hatch. Issue #3271.
           if (ebp.bodyMass !== undefined && ebp.move.kind === 'walk') {
             const ex = Math.floor(egg.x), ey = Math.floor(egg.y)
