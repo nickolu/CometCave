@@ -2860,6 +2860,9 @@ const CRAB = builtin('crab', {
   glow: 0,
   egglayer: true,
   crabConstitution: true,
+  bodyMass: 0.12,
+})
+
 // Otter — river mammal with Oligarchy mechanic. Issue #3308.
 // ---------------------------------------------------------------------------
 
@@ -3198,6 +3201,8 @@ const XERUS = builtin('xerus', {
   xerusXenophobia: true,
   burrowDigger: true,
   bodyMass: 0.25,
+})
+
 // Sea Urchin — Urchin Union. Issue #3314.
 // ---------------------------------------------------------------------------
 
