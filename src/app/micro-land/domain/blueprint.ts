@@ -776,6 +776,10 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
+    bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
+    quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
+    raccoonRealEstate: typeof b.raccoonRealEstate === 'boolean' ? b.raccoonRealEstate : undefined,
   }
 }
 
