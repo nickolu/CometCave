@@ -67,6 +67,7 @@ import {
   tickCorridorMask,
   tickEdgeMask,
   tickMarshDetritus,
+  tickMineralVeins,
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
@@ -879,6 +880,7 @@ export function tickCreatures(
   tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickMineralVeins(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
