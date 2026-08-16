@@ -1095,6 +1095,30 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * When true, this species maintains a dominance hierarchy.
+   * Rank is established through contests in look(); higher rank grants
+   * food access priority and mate priority. Issue #3227.
+   */
+  dominanceHierarchy?: boolean
+  /**
+   * When true, this species exhibits kin selection: offspring inherit parent's
+   * kinGroupId and preferentially share resources with kin. Issue #3230.
+   */
+  kinSelection?: boolean
+  /**
+   * When true, this prey species emits alarm calls when detecting predators.
+   * All same-species individuals within 2× sight range immediately flee.
+   * The caller takes a slight extra predation risk (exposed position). Issue #3231.
+   */
+  alarmCaller?: boolean
+  /**
+   * When true, this toxic species is brightly colored as a warning to predators.
+   * Predators that survive eating one gain a species-specific learned aversion,
+   * reducing future attack probability by 90%. Young/naive predators (mealsEaten < 5)
+   * still attack freely. Issue #3237.
+   */
+  aposematic?: boolean
 }
 
 /**
@@ -1576,6 +1600,16 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Dominance rank 0–1 (0 = lowest, 1 = alpha). Decays with age. Issue #3227. */
+  dominanceRank?: number
+  /** Countdown seconds until next rank contest. Issue #3227. */
+  rankContestCooldown?: number
+  /** Kin group identifier — inherited from parent. Issue #3230. */
+  kinGroupId?: string
+  /** Countdown seconds remaining on alarm call emission. Nearby kin flee while set. Issue #3231. */
+  alarmCallTimer?: number
+  /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
+  learnedAversions?: string[]
 }
 
 /**

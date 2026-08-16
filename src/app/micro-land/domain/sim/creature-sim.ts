@@ -1245,6 +1245,53 @@ export function tickCreatures(
     if (c.judiciaryPriorityTimer && c.judiciaryPriorityTimer > 0) {
       c.judiciaryPriorityTimer = Math.max(0, c.judiciaryPriorityTimer - dt)
     }
+    // Dominance hierarchy: decay rank contest cooldown and rank itself with age. Issue #3227.
+    if (bp.dominanceHierarchy) {
+      if ((c.rankContestCooldown ?? 0) > 0) {
+        c.rankContestCooldown = Math.max(0, (c.rankContestCooldown ?? 0) - dt)
+      }
+      // Rank decays faster as the creature ages.
+      const ageRatio = c.ageSeconds / (bp.diet.lifespanSeconds ?? 100)
+      c.dominanceRank = Math.max(0, (c.dominanceRank ?? 0.5) - 0.00001 * dt * ageRatio)
+    }
+    // Alarm calls: propagate alarm to nearby conspecifics; decrement timer. Issue #3231.
+    if (bp.alarmCaller && (c.alarmCallTimer ?? 0) > 0) {
+      const alarmSight = sightOf(c, bp) * 2
+      const alarmSight2 = alarmSight * alarmSight
+      const acx = c.x + bw / 2
+      const acy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(acx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - acy
+        if (odx * odx + ody * ody <= alarmSight2) {
+          other.mood = 'flee'
+        }
+      }
+      // Caller pays an exposure cost for calling out loud.
+      c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+      c.alarmCallTimer = Math.max(0, (c.alarmCallTimer ?? 0) - dt)
+    }
+    // Kin selection: share food with nearby starving kin every 60 ticks. Issue #3230.
+    if (bp.kinSelection && c.hunger < 0.4 && tickCount % 60 === c.id % 60) {
+      const kinRange2 = 25 // 5 tiles squared
+      const kcx = c.x + bw / 2
+      const kcy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+        if (other.hunger < 0.7) continue
+        if ((other.kinGroupId ?? '') !== (c.kinGroupId ?? '')) continue
+        const { w: ow, h: oh } = artSize(w.blueprints[other.blueprintId] ?? bp)
+        const odx = deltaX(kcx, other.x + ow / 2)
+        const ody = (other.y + oh / 2) - kcy
+        if (odx * odx + ody * ody <= kinRange2) {
+          other.hunger = Math.max(0, other.hunger - 0.02)
+          c.hunger = Math.min(1, c.hunger + 0.02)
+          break // share with at most one kin per tick
+        }
+      }
+    }
     // Drift state: exit drift when creature leaves water.
     if (c.drifting) {
       const driftTile = w.tiles[Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))] ?? 0
@@ -3072,6 +3119,10 @@ export function tickCreatures(
               }
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
+            // Kin selection: offspring inherit parent's kin group. Issue #3230.
+            if (bp.kinSelection) {
+              child.kinGroupId = c.kinGroupId ?? (c.blueprintId + '_' + c.id)
+            }
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
             c.children++
@@ -3822,6 +3873,10 @@ function look(
       if (d2 <= sight2 && d2 < threatDist) {
         threatDist = d2
         threat = other
+        // Alarm calls: prey species emit an alarm signal upon detecting a predator. Issue #3231.
+        if (bp.alarmCaller) {
+          c.alarmCallTimer = 5
+        }
       }
       continue
     }
@@ -3833,6 +3888,23 @@ function look(
       if (seeking && d2 <= sight2 && readyToBreed(other, obp) && d2 < mateDist) {
         mateDist = d2
         mate = other
+      }
+      // Dominance hierarchy: rank contests between same-species individuals. Issue #3227.
+      if (bp.dominanceHierarchy && d2 <= sight2) {
+        const cooldown = c.rankContestCooldown ?? 0
+        if (cooldown <= 0) {
+          // Contest: higher mealsEaten wins; winner gains rank, loser loses rank.
+          const cRank = c.dominanceRank ?? 0.5
+          const oRank = other.dominanceRank ?? 0.5
+          if (c.mealsEaten >= other.mealsEaten) {
+            c.dominanceRank = Math.min(1, cRank + 0.1)
+            other.dominanceRank = Math.max(0, oRank - 0.05)
+          } else {
+            c.dominanceRank = Math.max(0, cRank - 0.05)
+            other.dominanceRank = Math.min(1, oRank + 0.1)
+          }
+          c.rankContestCooldown = 30
+        }
       }
       continue
     }
@@ -3871,6 +3943,23 @@ function look(
         return
       }
       if (touching) {
+        // Dominance hierarchy food priority: a lower-ranked individual defers to
+        // a higher-ranked conspecific within 2 tiles. Issue #3227.
+        if (bp.dominanceHierarchy) {
+          const cRank = c.dominanceRank ?? 0.5
+          const dominanceReach2 = 4  // 2 tiles squared
+          let dominated = false
+          for (const rival of w.creatures) {
+            if (rival.id === c.id || rival.blueprintId !== c.blueprintId) continue
+            const rdx = deltaX(cx, rival.x + bw / 2)
+            const rdy = rival.y + bh / 2 - cy
+            if (rdx * rdx + rdy * rdy <= dominanceReach2 && (rival.dominanceRank ?? 0.5) > cRank) {
+              dominated = true
+              break
+            }
+          }
+          if (dominated) continue
+        }
         // Chemical defense: a plant that received a mycorrhizal warning signal is
         // primed with volatile compounds — the grazer finds it unpalatable and
         // moves on. The signal decays in 30 s so the defense is temporary.
@@ -4055,6 +4144,14 @@ function look(
           c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5 * toxMod)
           c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5 * toxMod)
         }
+        // Aposematism: eating a brightly-colored toxic prey teaches the predator to avoid
+        // that species in future. Naive predators (mealsEaten < 5) still attack freely. Issue #3237.
+        if (obp.aposematic && obp.toxic) {
+          if (!c.learnedAversions) c.learnedAversions = []
+          if (!c.learnedAversions.includes(obp.id)) {
+            c.learnedAversions.push(obp.id)
+          }
+        }
         events.push({
           kind: 'ate',
           blueprintId: bp.id,
@@ -4127,6 +4224,11 @@ function look(
       if (obp.preyEscalation && rng() < (other.escalatedEvasion ?? 0)) continue
       // Aposematism: predators avoid genuinely toxic species after experience. Issue #3267.
       if (obp.toxic && bp.diet.eats?.includes('meat') && rng() < 0.7) continue
+      // Aposematism learned aversion: experienced predators avoid aposematic toxic prey. Issue #3237.
+      if (obp.aposematic && obp.toxic && c.mealsEaten >= 5) {
+        const aversions = c.learnedAversions
+        if (aversions && aversions.includes(obp.id) && rng() < 0.9) continue
+      }
       // Mimicry: harmless mimics get protection proportional to nearby toxic species density. Issue #3267.
       if (obp.toxicMimic && rng() < 0.2) {
         const totalNearby = w.creatures.filter(o2 => Math.hypot(o2.x - c.x, o2.y - c.y) < 20).length
