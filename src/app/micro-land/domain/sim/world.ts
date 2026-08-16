@@ -908,6 +908,26 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
   w.moisture ??= new Float32Array(WORLD_W * WORLD_H)
   const timePassed = 30 / 60 // seconds per update window
   const waterIdx = MATERIAL_INDEX.water
+
+  // Spring flood pulse: rising-phase sine (spring) amplifies moisture near water
+  // and deposits floodwater nutrients in floodplain tiles. Issue #3372.
+  let springFloodMult = 1
+  let nutrientDeposit = 0
+  if (TUNING.seasonAmplitude > 0) {
+    const sPhase = (2 * Math.PI * w.elapsed) / TUNING.seasonPeriod
+    const sinP = Math.sin(sPhase)
+    const cosP = Math.cos(sPhase)
+    // Spring = sin > 0 && cos > 0: the rising quarter heading toward summer peak.
+    if (sinP > 0 && cosP > 0) {
+      springFloodMult = 1 + TUNING.seasonAmplitude * sinP * 4
+      nutrientDeposit = TUNING.seasonAmplitude * sinP * 0.0001 * timePassed
+    }
+  }
+
+  if (nutrientDeposit > 0) {
+    w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
+  }
+
   for (let y = 0; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
       const i = y * WORLD_W + x
@@ -922,7 +942,11 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
         (y > 0 && w.tiles[i - WORLD_W] === waterIdx) ||
         (y < WORLD_H - 1 && w.tiles[i + WORLD_W] === waterIdx)
       if (hasWater) {
-        w.moisture[i] = Math.min(1, w.moisture[i] + 0.01 * timePassed)
+        w.moisture[i] = Math.min(1, w.moisture[i] + 0.01 * timePassed * springFloodMult)
+        // Spring floodwater deposits nutrients in floodplain tiles
+        if (nutrientDeposit > 0 && w.caveNutrient) {
+          w.caveNutrient[i] = Math.min(1, (w.caveNutrient[i] ?? 0) + nutrientDeposit)
+        }
       }
     }
   }
