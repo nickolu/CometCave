@@ -827,6 +827,40 @@ export class GameInstance {
       useMicroLand.getState().setNetworkDegree(degree)
     }
 
+    // Mycorrhizal network statistics for the Wood Wide Web Field Guide section. Issue #3334.
+    const mycoPlants = this.world.creatures.filter(c =>
+      this.world.blueprints[c.blueprintId]?.mycorrhizalPartner
+    )
+    if (mycoPlants.length > 0 && this.world.mycorrhizalLinks) {
+      const links = this.world.mycorrhizalLinks
+      const connected = new Set(Object.keys(links).map(Number))
+
+      // Union-Find for cluster count
+      const parent: Record<number, number> = {}
+      const find = (x: number): number => {
+        parent[x] ??= x
+        if (parent[x] !== x) parent[x] = find(parent[x])
+        return parent[x]
+      }
+      const union = (a: number, b: number) => { parent[find(a)] = find(b) }
+
+      for (const [idStr, neighbors] of Object.entries(links)) {
+        for (const n of neighbors) union(Number(idStr), n)
+      }
+      const roots = new Set(Object.keys(links).map(id => find(Number(id))))
+
+      const totalLinks = Object.values(links).reduce((s, l) => s + l.length, 0) / 2
+
+      useMicroLand.getState().setNetworkStats({
+        connected: connected.size,
+        isolated: mycoPlants.filter(c => !connected.has(c.id)).length,
+        clusterCount: roots.size,
+        totalLinks: Math.round(totalLinks),
+      })
+    } else {
+      useMicroLand.getState().setNetworkStats(null)
+    }
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {
