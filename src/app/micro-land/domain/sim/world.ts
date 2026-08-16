@@ -1410,4 +1410,43 @@ export function tickWebDecay(w: WorldState, tickCount: number, rng: () => number
   }
 }
 
+// Edge effect mask: marks tiles at habitat boundaries. Issue #3282.
+export function tickEdgeMask(w: WorldState, tickCount: number): void {
+  if (tickCount % 300 !== 0) return
+  if (!w.edgeMask) w.edgeMask = new Uint8Array(w.tiles.length)
+  for (let i = 0; i < w.tiles.length; i++) {
+    const t = w.tiles[i]
+    // check 4-connected neighbors
+    const x = i % w.width, y = Math.floor(i / w.width)
+    let isEdge = 0
+    if (x > 0 && w.tiles[i - 1] !== t) isEdge = 1
+    else if (x < w.width - 1 && w.tiles[i + 1] !== t) isEdge = 1
+    else if (y > 0 && w.tiles[i - w.width] !== t) isEdge = 1
+    else if (y < w.height - 1 && w.tiles[i + w.width] !== t) isEdge = 1
+    w.edgeMask[i] = isEdge
+  }
+}
+
+// Corridor mask: thin habitat strips connecting patches. Issue #3283.
+export function tickCorridorMask(w: WorldState, tickCount: number): void {
+  if (tickCount % 600 !== 0) return
+  if (!w.corridorMask) w.corridorMask = new Uint8Array(w.tiles.length)
+  for (let i = 0; i < w.tiles.length; i++) {
+    const t = w.tiles[i]
+    if (t === AIR) { w.corridorMask[i] = 0; continue }  // air
+    const x = i % w.width, y = Math.floor(i / w.width)
+    // Count horizontal and vertical same-type neighbors (range 1)
+    let hCount = 0, vCount = 0
+    for (let d = 1; d <= 3; d++) {
+      if (x - d >= 0 && w.tiles[i - d] === t) hCount++
+      if (x + d < w.width && w.tiles[i + d] === t) hCount++
+      if (y - d >= 0 && w.tiles[i - d * w.width] === t) vCount++
+      if (y + d < w.height && w.tiles[i + d * w.width] === t) vCount++
+    }
+    // A corridor tile has more neighbors in one direction than the other (narrow strip)
+    const isCorridor = (hCount <= 2 && vCount >= 4) || (vCount <= 2 && hCount >= 4)
+    w.corridorMask[i] = isCorridor ? 1 : 0
+  }
+}
+
 export { AIR }

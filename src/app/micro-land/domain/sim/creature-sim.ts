@@ -63,6 +63,8 @@ import {
   spawnCreature,
   tickAtmosphericCO2,
   tickCaveNutrient,
+  tickCorridorMask,
+  tickEdgeMask,
   tickMarshDetritus,
   tickMoisture,
   tickMycorrhizalNetwork,
@@ -875,6 +877,8 @@ export function tickCreatures(
   tickAtmosphericCO2(w, tickCount, plantCount)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickEdgeMask(w, tickCount)
+  tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
@@ -1037,6 +1041,9 @@ export function tickCreatures(
     // the largest creatures the two are identical.
     const { w: bw, h: bh } = artSize(bp)
     const body = bodyBox(bp)
+
+    // Reproduction rate multiplier — accumulated by habitat features, consumed in the breed gate.
+    let reproRate = 1
 
     c.ageSeconds += dt
     c.animMs += dt * 1000
@@ -1340,6 +1347,15 @@ export function tickCreatures(
     const o2Level = w.atmosphericO2 ?? 1.0
     if (o2Level < 0.7 && !bp.tags?.includes('plant')) {
       c.hunger = Math.min(1, c.hunger + 0.0002 * dt * (0.7 - o2Level) / 0.7)  // up to +0.0002/s at O2=0
+    }
+    // Edge effects: habitat boundary stress increases hunger slightly. Issue #3282.
+    if (w.edgeMask) {
+      const ci = Math.round(c.y) * w.width + Math.round(c.x)
+      if (ci >= 0 && ci < w.edgeMask.length && w.edgeMask[ci]) {
+        c.hunger = Math.min(1, c.hunger + 0.0002 * dt)
+        // Invasive species breed faster at edges (edge release from competition)
+        if (bp.invasive) reproRate *= 1.3
+      }
     }
     if (c.hunger >= 1) {
       c.starving += dt
@@ -1869,6 +1885,21 @@ export function tickCreatures(
         }
         break
       }
+    }
+
+    // Species-area: compute local habitat patch score for patch-dependent species. Issue #3281.
+    if (bp.patchDependent && tickCount % 120 === c.id % 120) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const tileAtCreature = w.tiles[cy * w.width + cx]
+      let patchScore = 0
+      const R = 10
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+          const ni = (cy + dy) * w.width + (cx + dx)
+          if (ni >= 0 && ni < w.tiles.length && w.tiles[ni] === tileAtCreature) patchScore++
+        }
+      }
+      c.localPatchScore = patchScore
     }
 
     // Landmark homing: navigate back toward memorized home territory. Issue #3326.
@@ -2559,6 +2590,12 @@ export function tickCreatures(
           ageFactor = relAge < 0.5 ? 0.5 : relAge < 0.85 ? 1.0 : 1.8
         }
         if (rng() >= ageFactor) continue
+      }
+
+      // Species-area: small patches suppress reproduction. Issue #3281.
+      if (bp.patchDependent && (c.localPatchScore ?? 100) < 50) {
+        reproRate *= Math.max(0.1, (c.localPatchScore ?? 10) / 50)
+        if (rng() >= reproRate) continue
       }
 
       /**
@@ -4688,6 +4725,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (c.insightTimer && c.insightTimer > 0 ? 0.05 : 1) *  // insight pause
       (c.drifting ? 0.4 : 1) *  // drift — slower passive flow
       (c.isMonarch && c.mood === 'hunt' ? 1.1 : 1) *  // Kestrel Kingdom throne bonus. Issue #3304.
+      (w.corridorMask && w.corridorMask[Math.round(c.y) * w.width + Math.round(c.x)] ? 1.15 : 1) *  // corridor dispersal. Issue #3283.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
     (1 - diurnalPenalty)
