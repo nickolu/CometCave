@@ -408,6 +408,11 @@ export interface CreatureBlueprint {
    */
   polluter?: boolean
   /**
+   * Cave bats roost on underground surfaces. While underground they slowly
+   * deposit guano onto floor tiles, boosting caveNutrient for cave plant growth.
+   */
+  caveBat?: boolean
+  /**
    * Plants that supplement nutrient-poor substrate by trapping and digesting prey.
    *
    * Inverts the fertility curve: carnivorous plants breed *faster* on low-fertility

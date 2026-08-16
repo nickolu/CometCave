@@ -1267,6 +1267,22 @@ export function tickCreatures(
       }
     }
 
+    // Cave bat guano: underground bats continuously deposit guano on floor tiles,
+    // subsidising the cave food web through the caveNutrient overlay.
+    // SPORECAP fungi grow faster on guano-enriched stone; cave crickets follow.
+    if (bp.caveBat && isUnderground(w, c)) {
+      const gx = Math.floor(c.x + bw / 2)
+      const gy = Math.floor(c.y + bh)  // floor tile directly below bat
+      w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
+      for (let dx = -2; dx <= 2; dx++) {
+        const tx = (gx + dx + WORLD_W) % WORLD_W
+        if (gy >= 0 && gy < WORLD_H) {
+          const idx = gy * WORLD_W + tx
+          w.caveNutrient[idx] = Math.min(1, (w.caveNutrient[idx] ?? 0) + 0.0002 * dt)
+        }
+      }
+    }
+
     // Industrial pollution: creatures with polluter flag deposit soot (ash) on
     // the tiles they walk through, darkening the substrate and creating selection
     // pressure for cryptic variants with ash-hue colouring (industrial melanism).
