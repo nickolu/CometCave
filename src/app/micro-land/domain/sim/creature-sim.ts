@@ -1320,6 +1320,47 @@ export function tickCreatures(
       }
     }
 
+    // --- niche construction feedback ------------------------------------
+    // In persistently modified habitats, traits that were neutral elsewhere
+    // become either costly or advantageous — the constructed environment
+    // drives selection in ways the original did not.
+    {
+      const ncx = Math.floor(c.x + body.dx + body.w / 2)
+      const ncy = Math.floor(c.y + body.dy + body.h)
+      const footMat = tileAt(w, ncx, ncy)
+
+      // Mud zones (created by soilEngineer): murky, organic-rich substrate.
+      // High sight is costly — visual acuity buys little in turbid conditions.
+      // High cooperation pays off — dense habitat rewards group foraging.
+      if (footMat === MATERIAL_INDEX.mud) {
+        const sightOvershoot = Math.max(0, c.traits.sight - 1.0)
+        c.hunger = Math.min(1, c.hunger + sightOvershoot * 0.00005 * dt)
+        const coopBonus = Math.max(0, c.traits.cooperation - 0.5)
+        c.hunger = Math.max(0, c.hunger - coopBonus * 0.00003 * dt)
+      }
+
+      // Persistently wet zones (moisture > 0.65, from soilEngineer/bioturbator):
+      // damp habitats accelerate microbial spread — low-immunity lineages pay a cost.
+      if (w.moisture) {
+        const tileIdx = ncy * WORLD_W + ncx
+        if (ncy >= 0 && ncy < WORLD_H && ncx >= 0 && ncx < WORLD_W) {
+          const moisture = w.moisture[tileIdx] ?? 0
+          if (moisture > 0.65) {
+            const immunityGap = Math.max(0, 0.6 - c.traits.immunity)
+            c.hunger = Math.min(1, c.hunger + immunityGap * 0.00005 * dt)
+          }
+        }
+      }
+
+      // Ash zones (created by polluter): visually homogenous soot landscape.
+      // Conspicuous, low-camouflage creatures stand out and are taken first —
+      // industrial melanism selection pressure reinforced through hunger cost.
+      if (footMat === MATERIAL_INDEX.ash && bp.move.kind !== 'root') {
+        const camoGap = Math.max(0, 0.4 - c.traits.camouflage)
+        c.hunger = Math.min(1, c.hunger + camoGap * 0.00004 * dt)
+      }
+    }
+
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
     // Phenological gate: species with a breedingGdd threshold only mate when
