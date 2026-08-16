@@ -587,6 +587,7 @@ export function sanitizeBlueprint(
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
+    rootBankStabilizer: b.rootBankStabilizer === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {

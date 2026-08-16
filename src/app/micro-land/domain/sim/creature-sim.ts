@@ -107,6 +107,13 @@ const BITE_PAD = 0.5
 const SOIL_ENRICH_PROB = 0.002
 
 /**
+ * Probability per tick per adjacent tile that a root-bank-stabilizing plant
+ * binds a loose sand tile into dirt. At 60Hz and a 5-tile sweep this gives
+ * ~18% per second per tile — fast enough to be visible in tests within 60 s.
+ */
+const ROOT_STABILIZE_PROB = 0.0005
+
+/**
  * Within this many tiles, disruptive patterns give no detection benefit —
  * the outline is legible at close range regardless of the pattern.
  */
@@ -850,6 +857,21 @@ export function tickCreatures(
       const scy = Math.floor(c.y + body.dy + body.h)
       if (tileAt(w, scx, scy) === MATERIAL_INDEX.dirt && Math.random() < SOIL_ENRICH_PROB) {
         setTile(w, scx, scy, MATERIAL_INDEX.mud)
+      }
+    }
+
+    // Root bank stabilization: riparian plants bind loose soil by slowly
+    // converting adjacent sand tiles into stable dirt within their root zone.
+    // Models willows and alders locking in riverbank soil with their roots.
+    // Works only for rooted plants — walkers don't hold soil in place.
+    if (bp.rootBankStabilizer && bp.move.kind === 'root') {
+      const rx = Math.floor(c.x + body.dx + body.w / 2)
+      const ry = Math.floor(c.y + body.dy + body.h)
+      for (let dx = -2; dx <= 2; dx++) {
+        const tx = wrapX(rx + dx)
+        if (tileAt(w, tx, ry) === MATERIAL_INDEX.sand && Math.random() < ROOT_STABILIZE_PROB) {
+          setTile(w, tx, ry, MATERIAL_INDEX.dirt)
+        }
       }
     }
 
