@@ -1842,11 +1842,196 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
-/**
- * Whittaker biome classification — one of eight climate zones.
- * Assigned per horizontal region band (8 bands from sky to bedrock).
- * Issue #3377.
- */
+// ---------------------------------------------------------------------------
+// Live world state
+// ---------------------------------------------------------------------------
+
+export interface WorldState {
+  width: number
+  height: number
+  /** Row-major grid of materials, length `width * height`. */
+  tiles: Uint8Array
+  /** Per-tile color jitter, so the terrain doesn't look flat. */
+  grain: Uint8Array
+  creatures: Creature[]
+  particles: Particle[]
+  carcasses: Carcass[]
+  tombstones: Tombstone[]
+  nextTombstoneId: number
+  nextCarcassId: number
+  scents: Scent[]
+  /**
+   * Per-tile moisture level, [0,1]. Tiles near water gain moisture; all tiles
+   * slowly dry out. Plants seed more readily in moist soil.
+   */
+  moisture: Float32Array
+  /**
+   * Per-tile dissolved organic carbon from surface water drips.
+   * 0 in dry caves; up to 1 under active drip points (where surface water
+   * percolates through stone). Boosts stone tile fertility for cave bacteria
+   * and specialist cave plants. Updated by `tickCaveNutrient`.
+   */
+  caveNutrient?: Float32Array
+  /**
+   * Per-tile salinity, 0 (fresh) to 1 (salt water). Initialized from
+   * world edges when estuaryEnabled, diffused each tick. Creates a mixing
+   * zone (estuary) in the middle of the world.
+   */
+  salinity?: Float32Array
+  /**
+   * Dissolved organic carbon exported from decomposing marsh plants.
+   * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
+   */
+  marshDetritus?: Float32Array
+  /**
+   * X tile position where each invasive species was first observed in this
+   * world. Keyed by blueprintId. Populated lazily when the first individual
+   * of an invasive species is seen. Issue #3366.
+   */
+  invasionOriginX?: Record<string, number>
+  /**
+   * Maximum X tile position ever reached by each invasive species, ratcheting
+   * up monotonically. Keyed by blueprintId. Tracks the historical invasion
+   * front. Issue #3366.
+   */
+  invasionFrontX?: Record<string, number>
+  /**
+   * Per-tile flow velocity zone for river/stream tiles.
+   * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
+   * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.
+   */
+  flowZone?: Uint8Array
+  /**
+   * Per-tile light level [0, 1]. 1 = full sky exposure, 0 = complete shade.
+   * Computed by column-sweep from top to bottom: each solid tile attenuates by 0.25.
+   * Updated every 30 ticks. Used for light-gap germination triggers. Issue #3351.
+   */
+  lightGrid?: Float32Array
+  eggs: Egg[]
+  nextEggId: number
+  /**
+   * Seeds that failed to germinate on dispersal and entered soil dormancy.
+   * Populated lazily; undefined in worlds with no seed bank activity.
+   * Max 300 seeds — oldest are evicted if the cap is reached. Issue #3350.
+   */
+  seedBank?: SeedEntry[]
+  /** Monotonically increasing id for the next SeedEntry. */
+  nextSeedBankId?: number
+  /** Burrows dug by territorial creatures at their home positions. */
+  nests: Nest[]
+  nextNestId: number
+  /** Blueprints available in this world, keyed by id. */
+  blueprints: Record<string, CreatureBlueprint>
+  nextCreatureId: number
+  /** Seconds since the world started. */
+  elapsed: number
+  /** Deterministic RNG state. */
+  seed: number
+  /** Tile-simulation phase, alternated so liquids don't drift one way. */
+  flowPhase: number
+  /**
+   * Species that belong to this world — theme starters plus anything the player
+   * summoned. The ground's seed bank only ever draws from this list, so a desert
+   * never spontaneously sprouts kelp.
+   */
+  natives: string[]
+  /** Next world-clock time at which the ground may seed native plants. */
+  nextPlantSeed: number
+  /**
+   * True while the player has deliberately emptied the world.
+   *
+   * Native plants otherwise grow back out of the soil forever, which would make
+   * Empty impossible to hold on any world that has ground in it. Anything
+   * generative — painting, placing, summoning, changing theme — wakes it again.
+   */
+  dormant: boolean
+  /** Placed spawner objects. Emit one creature of their species on a timer. */
+  spawners: Spawner[]
+  nextSpawnerId: number
+  /** Per-species background-seeding config. Plants default to enabled. */
+  generators: WorldGeneratorEntry[]
+  /**
+   * Whittaker biome zones — one entry per horizontal region band.
+   * 8 bands by default (top = coldest/sky, bottom = warmest/deep). Updated
+   * by `updateBiomeZones` every 300 ticks. Undefined until first pass.
+   * Issue #3377.
+   */
+  biomeZones?: BiomeZone[]
+  /**
+   * Atmospheric CO2 concentration offset [0, 1]. 0 = pre-industrial baseline,
+   * 1 = extreme warming. Emitted by lava tiles; absorbed by living plants.
+   * Raises temperature baseline in `updateBiomeZones`, shifting zones toward
+   * warmer classification. Issue #3381.
+   */
+  atmosphericCO2?: number
+  /**
+   * Atmospheric O2 level relative to baseline [0, 2]. 1.0 = normal.
+   * Plants produce O2; animals and lava consume it. Below 0.7 causes
+   * metabolic stress in non-plant creatures. Issues #3275, #3276.
+   */
+  atmosphericO2?: number
+  /** Parts-per-million equivalent of atmospheric sulfur dioxide. Emitted by lava tiles; causes acid rain. Issue #3279. */
+  atmosphericSulfurPpm?: number
+  /** Per-tile pH grid [0–14]; 7.0 = neutral. Water + high sulfur → drops below 5.5. Limestone neutralizes. Issue #3279. */
+  tilePH?: Float32Array
+  /**
+   * Mycorrhizal network graph: maps creature ID (as string) to array of
+   * connected creature IDs. Entries are pruned when a creature dies. Undefined
+   * until first mycorrhizal plant establishes. Issue #3329.
+   */
+  mycorrhizalLinks?: Record<string, number[]>
+  /**
+   * Active nest sites built by nestBuilder creatures.
+   *
+   * Keyed as `"x,y"`. Each entry tracks the owner, coordinates and number of
+   * tiles delivered. Used for egg hatch bonus and nest rendering. Issues #3412, #3418.
+   */
+  nestSites?: Record<string, { progress: number; ownerId: number; x: number; y: number }>
+  /**
+   * ID of the currently-reigning Monarch Kestrel (kestrelKingdom species).
+   * Updated each season by the reckoning logic. Cleared when no kestrel survives.
+   * Issue #3304.
+   */
+  kestrelMonarchId?: number
+  /**
+   * Index of the last season for which the Kestrel Kingdom reckoning ran.
+   * Prevents the election from firing on every tick. Issue #3304.
+   */
+  kestrelLastSeasonIdx?: number
+  /** Whether the Urchin Union strike is active. Issue #3314. */
+  urchinStrikeActive?: boolean
+  /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
+  otterOligarchIds?: number[]
+  /** Season index of the last Otter Oligarchy election. Issue #3308. */
+  otterLastElectionSeason?: number
+  /** ID of Gerald, the founding squirrel. Set on first squirrel birth and never changed. Issue #3312. */
+  squirrelGeraldId?: number
+  /** Whether the squirrel collective is currently active (population > 30). Issue #3312. */
+  squirrelCollectiveActive?: boolean
+  /** ID of the current Chief Vole. Issue #3315. */
+  chiefVoleId?: number
+  /** Season index of the last Vole Voting election. Issue #3315. */
+  chiefVoleLastElectionSeason?: number
+  /**
+   * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
+   * different material type), 0 otherwise. Computed every 300 ticks.
+   * Issue #3282.
+   */
+  edgeMask?: Uint8Array
+  /**
+   * Per-tile corridor mask: 1 if the tile is part of a thin habitat strip
+   * connecting larger patches (corridor ≤3 tiles wide in one axis), 0 otherwise.
+   * Computed every 600 ticks. Issue #3283.
+   */
+  corridorMask?: Uint8Array
+  /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
+  weaselTribunalActive?: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Event history
+// ---------------------------------------------------------------------------
+
 export type HistoryEventKind = 'born' | 'died' | 'plant_died' | 'ate' | 'named' | 'plant' | 'sick'
 
 export interface HistoryEntry {
