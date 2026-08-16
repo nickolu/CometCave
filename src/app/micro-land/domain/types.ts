@@ -1004,6 +1004,28 @@ export interface CreatureBlueprint {
    * with a 12% compliance rate (modelled as a history event). Issue #3316.
    */
   weaselTribunal?: boolean
+  /** When true, bites from this predator inject venom that slows prey. Issue #3236. */
+  venomous?: boolean
+  /** Venom potency 0–1. Higher = longer slow and more hunger drain. Default 0.5. Issue #3236. */
+  venomPotency?: number
+  /** Venom resistance 0–1. Species-level trait that reduces venom effect on this species. Issue #3236. */
+  venomResistance?: number
+  /**
+   * When true, this species actively claims a home range and engages in threat
+   * displays when same-species rivals enter it. Territorial creatures breed
+   * 15% faster when the territory is uncontested. Issue #3226.
+   */
+  territorialBlueprintFlag?: boolean
+  /** Radius in tiles of this species' home territory. Default 8. Issue #3226. */
+  territoryRadius?: number
+  /**
+   * When true, this aquatic species is adapted to deep cold water (below thermocline).
+   * Above-thermocline creatures suffer hunger penalties in cold water; below-thermocline
+   * creatures suffer penalties in warm surface water. Issue #3249.
+   */
+  deepWaterSpecialist?: boolean
+  /** If true, this species is adapted to shallow warm water above the thermocline. Issue #3249. */
+  shallowWaterSpecialist?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1576,6 +1598,14 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
+  venomTimer?: number
+  /** X of this creature's claimed territory center. Issue #3226. */
+  territoryX?: number
+  /** Y of this creature's claimed territory center. Issue #3226. */
+  territoryY?: number
+  /** Seconds remaining on territory threat display cooldown. Issue #3226. */
+  threatDisplayTimer?: number
 }
 
 /**
@@ -1942,6 +1972,8 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
+  thermoclineY?: number
   /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
   otterOligarchIds?: number[]
   /** Season index of the last Otter Oligarchy election. Issue #3308. */
