@@ -848,6 +848,21 @@ export function tickCreatures(
         }
       }
     }
+    // Thermal stress: heat-sensitive species suffer in warm summer water.
+    // Spring-fed tiles (high moisture from groundwater percolation) act as
+    // cool refugia — local moisture proportionally relieves the heat penalty.
+    // No effect when seasons are disabled (seasonAmplitude = 0).
+    if (bp.heatSensitive && TUNING.seasonAmplitude > 0 && seasonFactor > 1.0) {
+      const thx = Math.floor(c.x)
+      const thy = Math.floor(c.y)
+      if (thx >= 0 && thx < WORLD_W && thy >= 0 && thy < WORLD_H) {
+        const moisture = w.moisture ? (w.moisture[thy * WORLD_W + thx] ?? 0) : 0
+        // Stress proportional to how hot the season is; relief proportional to spring-water moisture
+        const heatStress = (seasonFactor - 1.0) * 0.0002 * dt
+        const springRelief = moisture * heatStress  // high moisture = full relief
+        c.hunger = Math.min(1, c.hunger + Math.max(0, heatStress - springRelief))
+      }
+    }
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {

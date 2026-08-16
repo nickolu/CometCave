@@ -421,6 +421,39 @@ const FINLING = builtin('finling', {
   salinityTolerance: { min: 0.3, max: 1.0 },  // euryhaline — tolerates brackish to marine
 })
 
+const SPRING_TROUT = builtin('spring-trout', {
+  name: 'Spring Trout',
+  blurb: 'Thrives only where groundwater keeps the river cold. Vanishes in summer heat.',
+  size: 2,
+  tags: ['meat', 'fish'],
+  art: {
+    palette: { b: '#4a7ab5', s: '#8ab8d8', r: '#c84040', w: '#f0f0f0' },
+    frames: [
+      ['bbsbb', 'bwwrb', 'bbsbb'],
+      ['bbsbb', 'bwwrb', '.bbsb'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.6, bounce: 0.1, drag: 0.4, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'swim', speed: 6, jump: 0, restlessness: 0.4 },
+  diet: {
+    eats: ['bug', 'crustacean'],
+    fears: [],
+    hungerRate: 0.025,
+    starveSeconds: 35,
+    breedAt: 0.70,
+    lifespanSeconds: 260,
+  },
+  senses: { sight: 16 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#4a7ab5', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  heatSensitive: true,
+  phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
+})
+
 const EMBER_GRUB = builtin('ember-grub', {
   name: 'Ember Grub',
   blurb: 'Crawls over anything, even lava. Nothing burns it.',
@@ -1879,6 +1912,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   GLIMMER_MOTH,
   MANTIS_SHRIMP,
   FINLING,
+  SPRING_TROUT,
   EMBER_GRUB,
   DELVER,
   MOTE,

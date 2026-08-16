@@ -448,6 +448,16 @@ export interface CreatureBlueprint {
    */
   salinityTolerance?: { min: number; max: number }
   /**
+   * Heat-sensitive species (cold-water fish, trout analogues) suffer increased
+   * hunger during warm seasons. Groundwater-fed tiles (high moisture from
+   * groundwater percolation) act as thermal refugia — the stress is
+   * proportionally relieved by local moisture.
+   *
+   * Models how spring seeps provide critical cold-water refuge for trout and
+   * salmon in warming climates.
+   */
+  heatSensitive?: boolean
+  /**
    * Aerial roots create structural shelter in tidal zones. When true, juvenile
    * creatures within 8 tiles receive a doubled nursery hunger bonus.
    */
