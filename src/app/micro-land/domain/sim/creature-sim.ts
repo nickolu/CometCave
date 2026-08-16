@@ -1516,6 +1516,41 @@ export function tickCreatures(
         if (bp.invasive) reproRate *= 1.3
       }
     }
+    // Photosynthesis: plant creatures hunger more slowly in bright light. Issue #3171.
+    if (bp.tags?.includes('plant') && w.lightGrid) {
+      const li = Math.round(c.y) * w.width + Math.round(c.x)
+      if (li >= 0 && li < w.lightGrid.length) {
+        const light = w.lightGrid[li]
+        if (light > 0.6) {
+          c.hunger = Math.max(0, c.hunger - 0.0003 * dt)
+        } else if (light < 0.1) {
+          c.hunger = Math.min(1, c.hunger + 0.0003 * dt)
+        }
+      }
+    }
+    // Bioluminescence: creature emits light into lightGrid tiles. Issue #3172.
+    if (bp.bioluminescent && w.lightGrid && tickCount % 30 === c.id % 30) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const R = 4
+      for (let dy = -R; dy <= R; dy++) {
+        for (let dx = -R; dx <= R; dx++) {
+          const dist = Math.sqrt(dx*dx + dy*dy)
+          if (dist > R) continue
+          const li = (cy + dy) * w.width + (cx + dx)
+          if (li >= 0 && li < w.lightGrid.length) {
+            const glow = (1 - dist / R) * 0.8
+            w.lightGrid[li] = Math.min(1, w.lightGrid[li] + glow)
+          }
+        }
+      }
+    }
+    // UV stress: exposed high-altitude tiles damage UV-sensitive species. Issue #3173.
+    if (bp.uvSensitive && w.lightGrid) {
+      const ci = Math.round(c.y) * w.width + Math.round(c.x)
+      if (c.y < 20 && ci >= 0 && ci < w.lightGrid.length && w.lightGrid[ci] > 0.8) {
+        c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
+      }
+    }
     // Prey escalation: surviving prey slowly builds evasion every 60 ticks. Issue #3263.
     if (tickCount % 60 === 0 && bp.preyEscalation) {
       c.escalatedEvasion = Math.min(0.5, (c.escalatedEvasion ?? 0) + 0.002)

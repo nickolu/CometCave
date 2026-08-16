@@ -366,6 +366,7 @@ const GLIMMER_MOTH = builtin('glimmer-moth', {
   death: { becomes: null, particleColor: '#fff2a8', particleCount: 10 },
   aura: null,
   glow: 0.7,
+  bioluminescent: true,  // emits bioluminescent glow into nearby lightGrid tiles. Issue #3172.
   // Coevolution annotations. Issue #3263, #3264, #3267.
   toxic: true,             // aposematic glow warns predators — genuinely toxic. Issue #3267.
   pollinatorSpecialist: true,  // specialist pollinator adapted to deep-tubed flowers. Issue #3264.
@@ -1425,6 +1426,7 @@ const CAVE_SALAMANDER = builtin('cave-salamander', {
   glow: 0,
   brainSize: 0.6,  // cave salamanders navigate complex 3-D environments by smell alone
   acidSensitive: true,  // amphibians absorb water through skin — highly vulnerable to pH drop. Issue #3279.
+  uvSensitive: true,  // cave-adapted; UV exposure at sky level causes metabolic stress. Issue #3173.
 })
 
 const BAT = builtin('bat', {

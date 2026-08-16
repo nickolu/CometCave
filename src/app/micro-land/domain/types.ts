@@ -650,8 +650,16 @@ export interface CreatureBlueprint {
    * Pollinators with UV vision detect UV-reflective petal patterns on flowers,
    * allowing them to locate UV-nectar plants at full sight range — versus the
    * 3-tile contact range for non-UV pollinators.
+   *
+   * Also used for UV stress zones (#3173): when true, creature takes hunger
+   * damage in high-UV tiles (sky-exposed surface tiles with no canopy).
    */
   uvSensitive?: boolean
+  /**
+   * When true, creature emits bioluminescent glow into nearby lightGrid tiles,
+   * locally illuminating the surrounding area. Issue #3172.
+   */
+  bioluminescent?: boolean
   /**
    * Stream invertebrate that occasionally enters the water column and drifts
    * passively with current. Delivers food to downstream fish. Issue #3373.

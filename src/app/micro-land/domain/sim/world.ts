@@ -1037,7 +1037,17 @@ export function tickLight(w: WorldState, tickCount: number): void {
     let light = 1.0
     for (let y = 0; y < WORLD_H; y++) {
       const tileIdx = w.tiles[y * WORLD_W + wrapCol(x)]
-      if (IS_SOLID[tileIdx] === 1) light *= 0.25
+      if (IS_SOLID[tileIdx] === 1) {
+        light *= 0.25
+      } else {
+        // Semi-solid tiles (plants, water) attenuate light partially. Issue #3170.
+        const matId = MATERIAL_BY_INDEX[tileIdx]?.id
+        if (matId === 'plant' || matId === 'leaves' || matId === 'moss' || matId === 'fern' || matId === 'grass' || matId === 'flower') {
+          light *= 0.6  // canopy plants reduce light by 40%
+        } else if (matId === 'water' || matId === 'salt-water') {
+          light *= 0.85  // water reduces light by 15%
+        }
+      }
       w.lightGrid[y * WORLD_W + x] = light
     }
   }
