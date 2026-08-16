@@ -769,6 +769,10 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    // Lineage, food web, and succession features (#3121, #3126, #3167)
+    derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
+    trophicLevel: typeof b.trophicLevel === 'number' && b.trophicLevel >= 1 ? Math.round(b.trophicLevel) : undefined,
+    successionStage: typeof b.successionStage === 'number' && b.successionStage >= 1 && b.successionStage <= 4 ? Math.round(b.successionStage) : undefined,
   }
 }
 
