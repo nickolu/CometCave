@@ -483,6 +483,7 @@ export function sanitizeBlueprint(
   const move = (b.move ?? {}) as Record<string, unknown>
   const diet = (b.diet ?? {}) as Record<string, unknown>
   const senses = (b.senses ?? {}) as Record<string, unknown>
+  const phenology = (b.phenology ?? {}) as Record<string, unknown>
   const habitat = (b.habitat ?? {}) as Record<string, unknown>
   const death = (b.death ?? {}) as Record<string, unknown>
 
@@ -714,9 +715,14 @@ export function sanitizeBlueprint(
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
-    phenology: b.phenology?.breedingGdd !== undefined
-      ? { breedingGdd: Math.max(0, Math.min(1000, b.phenology.breedingGdd)) }
-      : undefined,
+    // Narrowed by `typeof` rather than tested against `undefined`: `raw` is
+    // hostile input, and a `breedingGdd` of "soon" passes an !== undefined check
+    // and then comes out of Math.min as NaN — which, on a gate that decides
+    // whether a species may breed at all, is a species that never breeds again.
+    phenology:
+      typeof phenology.breedingGdd === 'number' && Number.isFinite(phenology.breedingGdd)
+        ? { breedingGdd: Math.max(0, Math.min(1000, phenology.breedingGdd)) }
+        : undefined,
     brainSize:
       typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
         ? b.brainSize
@@ -765,10 +771,9 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
-    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
-    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
-    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
-    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    // The four polity flags are set once, above. They were duplicated here
+    // verbatim — harmless, since both copies computed the same value, but the
+    // second silently shadowed the first.
   }
 }
 

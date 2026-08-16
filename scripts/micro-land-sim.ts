@@ -84,8 +84,6 @@ interface RunResult {
   meals: Record<string, { plants: number; animals: number }>
   /** Share of the world still made of something, 0..1. */
   solidFraction: number
-  /** Tiles tunnelled through by creatures still alive at the end. */
-  dug: number
   /**
    * blueprintId → what its survivors inherited, averaged.
    *
@@ -161,11 +159,13 @@ function runOnce(seed: number): RunResult {
     }
   }
 
-  // How much of the map got eaten by diggers? A tunnel network is the point;
-  // a world with no walls left is a bug.
+  // How much of the map is still standing? A world with no walls left is a bug.
+  //
+  // The companion "tunnelled" figure is gone: it summed `creature.tilesDug`,
+  // which stopped existing when digging was removed, so the harness had been
+  // printing `NaN tiles` on every run since.
   let solidLeft = 0
   for (let i = 0; i < world.tiles.length; i++) if (world.tiles[i] !== 0) solidLeft++
-  const dug = world.creatures.reduce((a, c) => a + c.tilesDug, 0)
 
   const survivors = countByBlueprint(world)
   const extinctions = [...seeded].filter(id => !survivors[id])
@@ -197,7 +197,6 @@ function runOnce(seed: number): RunResult {
     deaths,
     meals,
     solidFraction: solidLeft / world.tiles.length,
-    dug,
     drift,
   }
 }
@@ -286,9 +285,6 @@ console.log(`  low water mark    ${avgMin.toFixed(0)}`)
 console.log(`  alive at the end  ${(totalAlive / runs).toFixed(0)}`)
 console.log(
   `  world still solid ${((results.reduce((a, r) => a + r.solidFraction, 0) / runs) * 100).toFixed(0)}%`
-)
-console.log(
-  `  tunnelled (live)  ${(results.reduce((a, r) => a + r.dug, 0) / runs).toFixed(0)} tiles`
 )
 console.log(
   totalAlive === 0

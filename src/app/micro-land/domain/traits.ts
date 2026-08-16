@@ -91,6 +91,34 @@ export function neutralTraits(): Traits {
   return { ...NEUTRAL_TRAITS }
 }
 
+/**
+ * The range each trait is allowed to occupy.
+ *
+ * One table rather than bounds written out at each site. `inherit` clamps a
+ * newborn into these, and the save loader clamps a stored one back into them on
+ * the way in; the two quietly disagreeing is exactly how a world starts
+ * changing its own creatures a little every time it is reopened.
+ *
+ * `hue` is absent on purpose — it is an angle and wraps, so it has no bounds to
+ * clamp to. See `wrapHue`.
+ */
+export const TRAIT_BOUNDS: Record<Exclude<keyof Traits, 'hue'>, { min: number; max: number }> = {
+  speed: { min: TRAIT_MIN, max: TRAIT_MAX },
+  sight: { min: TRAIT_MIN, max: TRAIT_MAX },
+  lifespan: { min: TRAIT_MIN, max: TRAIT_MAX },
+  shade: { min: SHADE_MIN, max: SHADE_MAX },
+  roam: { min: TRAIT_MIN, max: TRAIT_MAX },
+  territorial: { min: 0.1, max: 1.4 },
+  size: { min: 0.8, max: 1.2 },
+  camouflage: { min: 0, max: 0.8 },
+  toxicity: { min: 0, max: 1 },
+  cooperation: { min: 0, max: 1 },
+  diurnal: { min: -1, max: 1 },
+  immunity: { min: 0, max: 1 },
+  reproductionCooldown: { min: TRAIT_MIN, max: TRAIT_MAX },
+  chronotype: { min: -1, max: 1 },
+}
+
 function clamp(v: number, lo: number, hi: number): number {
   return v < lo ? lo : v > hi ? hi : v
 }
@@ -134,22 +162,26 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'chronotype') =>
     b ? ((a[key] ?? 0) + (b[key] ?? 0)) / 2 : (a[key] ?? 0)
 
+  /** Blend, nudge, and clamp back into the trait's own range. */
+  const drifted = (key: Exclude<keyof Traits, 'hue'>) =>
+    clamp(mix(key) + nudge(rng, drift), TRAIT_BOUNDS[key].min, TRAIT_BOUNDS[key].max)
+
   return {
-    speed: clamp(mix('speed') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
-    sight: clamp(mix('sight') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
-    lifespan: clamp(mix('lifespan') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
+    speed: drifted('speed'),
+    sight: drifted('sight'),
+    lifespan: drifted('lifespan'),
     hue: wrapHue((b ? blendHue(a.hue, b.hue) : a.hue) + nudge(rng, hueDrift)),
-    shade: clamp(mix('shade') + nudge(rng, drift), SHADE_MIN, SHADE_MAX),
-    roam: clamp(mix('roam') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
-    territorial: clamp(mix('territorial') + nudge(rng, drift), 0.1, 1.4),
-    size: clamp(mix('size') + nudge(rng, drift), 0.8, 1.2),
-    camouflage: clamp(mix('camouflage') + nudge(rng, drift), 0, 0.8),
-    toxicity: clamp(mix('toxicity') + nudge(rng, drift), 0, 1),
-    cooperation: clamp(mix('cooperation') + nudge(rng, drift), 0, 1),
-    diurnal: clamp(mix('diurnal') + nudge(rng, drift), -1, 1),
-    immunity: clamp(mix('immunity') + nudge(rng, drift), 0, 1),
-    reproductionCooldown: clamp(mix('reproductionCooldown') + nudge(rng, drift), TRAIT_MIN, TRAIT_MAX),
-    chronotype: clamp(mix('chronotype') + nudge(rng, drift), -1, 1),
+    shade: drifted('shade'),
+    roam: drifted('roam'),
+    territorial: drifted('territorial'),
+    size: drifted('size'),
+    camouflage: drifted('camouflage'),
+    toxicity: drifted('toxicity'),
+    cooperation: drifted('cooperation'),
+    diurnal: drifted('diurnal'),
+    immunity: drifted('immunity'),
+    reproductionCooldown: drifted('reproductionCooldown'),
+    chronotype: drifted('chronotype'),
   }
 }
 

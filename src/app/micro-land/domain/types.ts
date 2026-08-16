@@ -1103,6 +1103,11 @@ export interface CreatureBlueprint {
  * `biomeZoneAt(w, y)` returns one of these based on the tile's y-row.
  * Zones map the world's height into rough latitudinal bands: the sky rows
  * are the warmest (tropical), the deep underground rows are the coldest (ice-cap).
+ *
+ * This is also the Whittaker classification assigned per horizontal region
+ * band (issue #3377) — that landed as a second, byte-identical copy of this
+ * union further down the file, which is a redeclaration rather than a new
+ * type. One declaration, two readings of it.
  */
 export type BiomeZoneType =
   | 'tropical-rainforest'
@@ -1762,21 +1767,6 @@ export interface WorldGeneratorEntry {
    */
   nextSeed: number
 }
-
-/**
- * Whittaker biome classification — one of eight climate zones.
- * Assigned per horizontal region band (8 bands from sky to bedrock).
- * Issue #3377.
- */
-export type BiomeZoneType =
-  | 'tropical-rainforest'
-  | 'tropical-savanna'
-  | 'desert'
-  | 'temperate-grassland'
-  | 'temperate-forest'
-  | 'boreal'
-  | 'tundra'
-  | 'ice-cap'
 
 /** One classified biome band — a full-width horizontal slice of the world. */
 export interface BiomeZone {

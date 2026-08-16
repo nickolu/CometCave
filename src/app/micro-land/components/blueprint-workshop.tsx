@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useMicroLand } from '@/app/micro-land/store'
+import { neutralTraits } from '@/app/micro-land/domain/traits'
 import type { CreatureBlueprint, Traits } from '@/app/micro-land/domain/types'
 
 const TRAIT_DEFS: Array<{ key: keyof Traits; label: string; min: number; max: number; step: number; neutral: number }> = [
@@ -31,13 +32,10 @@ function traitColor(hue: number, shade: number): string {
   return `hsl(${Math.round(hue)}, 60%, ${lightness}%)`
 }
 
-function defaultTraits(): Traits {
-  return {
-    speed: 1, sight: 1, lifespan: 1, hue: 0, shade: 1,
-    roam: 1, territorial: 0.5, size: 1, camouflage: 0.2,
-    toxicity: 0, cooperation: 0.3, immunity: 0.2,
-  }
-}
+// Was a hand-written copy of the neutral set, and had already fallen two traits
+// behind it. There is exactly one definition of "neutral" and it lives in
+// `traits.ts`.
+const defaultTraits = neutralTraits
 
 /**
  * Build a creature out of one already here: pick a base, then move its numbers.
