@@ -673,6 +673,8 @@ export function sanitizeBlueprint(
     nestCompleteAt: typeof b.nestCompleteAt === 'number' ? Math.max(1, Math.floor(b.nestCompleteAt)) : undefined,
     nestHatchBonus: typeof b.nestHatchBonus === 'number' ? Math.max(0.1, Math.min(1, b.nestHatchBonus)) : undefined,
     nestRadius: typeof b.nestRadius === 'number' ? Math.max(1, b.nestRadius) : undefined,
+    burrowDigger: typeof b.burrowDigger === 'boolean' ? b.burrowDigger : undefined,
+    burrowCacheSize: typeof b.burrowCacheSize === 'number' ? Math.max(0, Math.min(1, b.burrowCacheSize)) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

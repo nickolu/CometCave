@@ -866,6 +866,17 @@ export interface CreatureBlueprint {
   nestHatchBonus?: number
   /** Radius in tiles within which eggs benefit from the nest. Default 3. Issue #3418. */
   nestRadius?: number
+  /**
+   * When true, this creature physically excavates soil tiles (dirt, mud, sand,
+   * grass, snow, ash) to dig a burrow tunnel. The first tile dug becomes the
+   * creature's tracked burrow entrance (burrowX, burrowY). Issue #3419.
+   */
+  burrowDigger?: boolean
+  /**
+   * Maximum food reserves this creature can store in its burrow, on the 0–1
+   * hunger scale. Drawn from when starving at the burrow. Default 0.3. Issue #3419.
+   */
+  burrowCacheSize?: number
 }
 
 /**
@@ -1288,6 +1299,14 @@ export interface Creature {
   nestY?: number
   /** Number of tiles delivered to the nest so far. Issue #3418. */
   nestProgress?: number
+  /** X tile of this creature's self-dug burrow entrance. Issue #3419. */
+  burrowX?: number
+  /** Y tile of this creature's self-dug burrow entrance. Issue #3419. */
+  burrowY?: number
+  /** Food energy reserves cached in the burrow, 0–1 hunger-scale. Issue #3419. */
+  cachedFood?: number
+  /** True while this creature is underground at its burrow site. Issue #3419. */
+  inBurrow?: boolean
 }
 
 /**
