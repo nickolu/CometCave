@@ -1215,6 +1215,69 @@ export function tickAtmosphericCO2(
   w.atmosphericCO2 = Math.max(0, Math.min(1, w.atmosphericCO2 + emission - absorption))
 }
 
+const HYPHAE_RANGE = 20  // tiles — max fungal link distance
+const COLONIZATION_CHANCE = 0.05  // probability per tick-60 cycle of forming a new link
+
+/**
+ * Spread mycorrhizal fungal hyphae between nearby compatible plants, building
+ * the network graph in `w.mycorrhizalLinks`. Prunes dead links each cycle.
+ * Runs every 60 ticks. Issue #3329.
+ */
+export function tickMycorrhizalNetwork(w: WorldState, tickCount: number, rng: Rng): void {
+  if (tickCount % 60 !== 0) return
+
+  // Collect all living mycorrhizal-partner plants
+  const mycoPlants = w.creatures.filter(c => w.blueprints[c.blueprintId]?.mycorrhizalPartner)
+  if (mycoPlants.length === 0) return
+
+  w.mycorrhizalLinks ??= {}
+
+  // Prune links where one end is dead
+  const livingIds = new Set(w.creatures.map(c => c.id))
+  for (const [idStr, neighbors] of Object.entries(w.mycorrhizalLinks)) {
+    if (!livingIds.has(Number(idStr))) {
+      delete w.mycorrhizalLinks[idStr]
+      continue
+    }
+    w.mycorrhizalLinks[idStr] = neighbors.filter(n => livingIds.has(n))
+    if (w.mycorrhizalLinks[idStr].length === 0) delete w.mycorrhizalLinks[idStr]
+  }
+
+  // Attempt new connections between nearby plants
+  for (let i = 0; i < mycoPlants.length; i++) {
+    const a = mycoPlants[i]
+    for (let j = i + 1; j < mycoPlants.length; j++) {
+      const b = mycoPlants[j]
+      const dist = Math.hypot(a.x - b.x, a.y - b.y)
+      if (dist > HYPHAE_RANGE) continue
+      // Check if already connected
+      const aLinks = w.mycorrhizalLinks[String(a.id)]
+      if (aLinks?.includes(b.id)) continue
+      // Probabilistic colonization
+      if (rng() > COLONIZATION_CHANCE) continue
+      // Add bidirectional link
+      w.mycorrhizalLinks[String(a.id)] ??= []
+      w.mycorrhizalLinks[String(b.id)] ??= []
+      w.mycorrhizalLinks[String(a.id)].push(b.id)
+      w.mycorrhizalLinks[String(b.id)].push(a.id)
+    }
+  }
+}
+
+/**
+ * True if there is at least one mycorrhizal-partner plant within HYPHAE_RANGE
+ * tiles of the given position. Used to gate obligate species. Issue #3333.
+ */
+export function hasMycorrhizalPartnerNearby(w: WorldState, x: number, y: number): boolean {
+  if (!w.mycorrhizalLinks) return false
+  const linkedIds = new Set(Object.keys(w.mycorrhizalLinks).map(Number))
+  for (const c of w.creatures) {
+    if (!linkedIds.has(c.id)) continue
+    if (Math.hypot(c.x - x, c.y - y) <= HYPHAE_RANGE) return true
+  }
+  return false
+}
+
 function classifyBiome(temp: number, precip: number): BiomeZoneType {
   if (temp < 0.1) return 'ice-cap'
   if (temp < 0.2) return 'tundra'
