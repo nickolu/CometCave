@@ -543,6 +543,7 @@ const STALKER = builtin('stalker', {
   socialLearningRate: 0.8,
   brainSize: 0.8,  // apex social predator with complex cooperative strategies
   canInnovateTechniques: true,  // smart enough to invent and culturally transmit hunting strategies
+  ageReproductionCurve: 'peak-middle',  // prime-age individuals breed most; pups and elders rarely do. Issue #3261.
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -643,6 +644,8 @@ const CINDER_WYRM = builtin('cinder-wyrm', {
   death: { becomes: 'obsidian', particleColor: '#e2551d', particleCount: 14 },
   aura: null,
   glow: 0.8,
+  rK: 0.9,              // K-strategist: long-lived lava predator, slow breeder. Issue #3256.
+  matingSystem: 'polygyny',  // dominant male breeds; others wait. Issue #3257.
 })
 
 const RUSTBOT = builtin('rustbot', {
@@ -1600,6 +1603,7 @@ const DRAGON = builtin('dragon', {
     convertRate: 0.3,
   },
   glow: 0.7,
+  rK: 0.9,  // apex K-strategist: rare, long-lived, slow to breed. Issue #3256.
 })
 
 const TREX = builtin('trex', {
@@ -1677,6 +1681,7 @@ const TREX = builtin('trex', {
   death: { becomes: 'bone', particleColor: '#4e7a35', particleCount: 14 },
   aura: null,
   glow: 0,
+  rK: 0.9,  // apex predator K-strategist: slow breeder, long-lived. Issue #3256.
 })
 
 const TOWER_FOLK = builtin('tower-folk', {
@@ -2075,6 +2080,8 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   larvaeBlueprint: 'shimmer-larva',
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
   bodyMass: 0.3,  // small flying insect. Issue #3269.
+  rK: 0.1,        // extreme r-strategist: fast egg hatch, short cooldown. Issue #3256.
+  semelparous: true,  // breed once, then die — classic mayfly/fly lifecycle. Issue #3259.
 })
 
 // ---------------------------------------------------------------------------
@@ -2151,6 +2158,7 @@ const MEADOW_LOCUST = builtin('meadow-locust', {
   hemimetabolous: true,
   nymphBlueprint: 'meadow-locust-nymph',
   bodyMass: 0.2,  // medium insect adult. Issue #3269.
+  rK: 0.1,        // r-strategist: lays many eggs quickly. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2537,6 +2545,7 @@ const CLAM = builtin('clam', {
   glow: 0,
   egglayer: true,
   hardShelled: true,
+  rK: 0.1,  // broadcast spawner: many small eggs, short hatch time. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
