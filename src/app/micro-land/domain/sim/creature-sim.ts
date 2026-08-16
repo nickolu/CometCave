@@ -130,6 +130,9 @@ const ROOT_STABILIZE_PROB = 0.0005
  */
 const POLLUTION_PROB = 0.001
 
+const BIOTIC_RESISTANCE_RADIUS = 12 // tiles — diversity sensing reach for invasives
+const BIOTIC_RESISTANCE_THRESHOLD = 3 // distinct native species needed for resistance
+
 /**
  * Seconds between chromatophore hue updates. At 5 s the creature adapts
  * roughly twice a minute — fast enough to matter ecologically, slow enough
@@ -1112,8 +1115,32 @@ export function tickCreatures(
               const plantFertilityFactor = bp.carnivorousPlant
                 ? Math.max(0.1, 2.0 - fertilityAt(w, footX, footY))
                 : fertilityAt(w, footX, footY)
+
+              // biotic resistance: diverse native communities slow invasive colonization
+              let bioticResistanceFactor = 1
+              if (bp.invasive) {
+                const bx = c.x + bw / 2
+                const by = c.y + bh / 2
+                const nearbyN2 = gather(bx, BIOTIC_RESISTANCE_RADIUS + bw / 2)
+                const nativeSpeciesNearby = new Set<string>()
+                for (let i = 0; i < nearbyN2; i++) {
+                  const other = found[i]
+                  if (other.id === c.id) continue
+                  const obp = w.blueprints[other.blueprintId]
+                  if (!obp || obp.invasive) continue // only count non-invasive (native) species
+                  const odx = other.x + (obp.art.frames[0][0]?.length ?? 1) / 2 - bx
+                  const ody = other.y + (obp.art.frames[0]?.length ?? 1) / 2 - by
+                  if (odx * odx + ody * ody < BIOTIC_RESISTANCE_RADIUS * BIOTIC_RESISTANCE_RADIUS) {
+                    nativeSpeciesNearby.add(other.blueprintId)
+                  }
+                }
+                if (nativeSpeciesNearby.size >= BIOTIC_RESISTANCE_THRESHOLD) {
+                  bioticResistanceFactor = 1.5 // 50% slower in diverse native communities
+                }
+              }
+
               c.breedCooldown =
-                (TUNING.plantSpreadCooldown * crowdingPenalty) /
+                (TUNING.plantSpreadCooldown * crowdingPenalty * bioticResistanceFactor) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   plantFertilityFactor *
                   seasonFactor)
