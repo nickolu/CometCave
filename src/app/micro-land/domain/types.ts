@@ -650,8 +650,16 @@ export interface CreatureBlueprint {
    * Pollinators with UV vision detect UV-reflective petal patterns on flowers,
    * allowing them to locate UV-nectar plants at full sight range — versus the
    * 3-tile contact range for non-UV pollinators.
+   *
+   * Also used for UV stress zones (#3173): when true, creature takes hunger
+   * damage in high-UV tiles (sky-exposed surface tiles with no canopy).
    */
   uvSensitive?: boolean
+  /**
+   * When true, creature emits bioluminescent glow into nearby lightGrid tiles,
+   * locally illuminating the surrounding area. Issue #3172.
+   */
+  bioluminescent?: boolean
   /**
    * Stream invertebrate that occasionally enters the water column and drifts
    * passively with current. Delivers food to downstream fish. Issue #3373.
@@ -768,6 +776,8 @@ export interface CreatureBlueprint {
    * naturally occurring species. Used for Field Guide tracking. Issue #3368.
    */
   biocontrolAgent?: boolean
+  /** When true, creature takes extra damage in acidic water (pH < 5.5). Models fish, amphibians, invertebrates. Issue #3279. */
+  acidSensitive?: boolean
   /**
    * This species transitions through complete metamorphosis: egg → larva → pupa → adult.
    * Eggs hatch into `larvaeBlueprint` creatures instead of adults. Issue #3336.
@@ -970,6 +980,37 @@ export interface CreatureBlueprint {
    */
   kestrelKingdom?: boolean
   /**
+   * When true, this species runs the Otter Oligarchy: each season the 5 fattest
+   * otters (by mealsEaten) are elected oligarchs and extract 5% hunger drain from
+   * nearby non-oligarchs. Issue #3308.
+   */
+  otterOligarchy?: boolean
+  /**
+   * When true, this species runs Squirrel Socialism: when population > 30 the
+   * collective activates and food (hunger) is redistributed toward the median.
+   * The first squirrel ever (Gerald) is exempt and breeds 20% faster.
+   * Issue #3312.
+   */
+  squirrelSocialism?: boolean
+  /**
+   * When true, this species holds a Vole Voting election each season to elect a
+   * Chief Vole. The incumbent is re-elected 80% of the time. The Chief Vole
+   * breeds 15% faster. Issue #3315.
+   */
+  voleVoting?: boolean
+  /**
+   * When true, this species runs the Weasel War Crimes Tribunal: individuals
+   * accumulate a conflictCount for each kill; after 3+ conflicts a tribunal fires
+   * with a 12% compliance rate (modelled as a history event). Issue #3316.
+   */
+  weaselTribunal?: boolean
+  /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
+  platypusPhilosophy?: boolean
+  /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
+  toadTaxation?: boolean
+  /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
+  urchinUnion?: boolean
+  /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
    */
@@ -1018,6 +1059,98 @@ export interface CreatureBlueprint {
   hedgehogHealthcare?: boolean
   /** When true, this species only cooperates with burrowing conspecifics; ignores non-diggers. Issue #3317. */
   xerusXenophobia?: boolean
+   * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
+   *
+   * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
+   * K-selected species (1): long breedCooldown (2.0×), slow egg hatching (1.3×).
+   * Leave undefined for no r/K bias. Issue #3256.
+   */
+  rK?: number
+  /**
+   * Mating system governing partner selection and bonding.
+   *
+   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
+   * 'polygyny': only the most-fed male within sight breeds.
+   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
+   * 'promiscuity': no mate-finding required — reproduces without a partner.
+   * Leave undefined for default partner-seeking behavior. Issue #3257.
+   */
+  matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
+  /**
+   * When true, this species reproduces only once and then dies.
+   *
+   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
+   * After the first successful reproduction the creature is killed via aged death.
+   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
+   */
+  semelparous?: boolean
+  /**
+   * Reproductive rate varies with life stage.
+   *
+   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
+   * 'peak-middle': prime-age adults breed most; young and old rarely do.
+   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
+   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
+   * Leave undefined for age-independent reproduction. Issue #3261.
+   */
+  ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  /**
+   * When true, this species requires large contiguous habitat patches to
+   * reproduce normally. Small or fragmented patches suppress breeding.
+   * Issue #3281.
+   */
+  patchDependent?: boolean
+
+  // --- Coevolution features (#3263–#3267) ---
+
+  /** Predator-prey escalation: predator gains cumulative speed from hunting success. Issue #3263. */
+  predatorEscalation?: boolean
+  /** Predator-prey escalation: prey gains cumulative evasion from surviving predation. Issue #3263. */
+  preyEscalation?: boolean
+
+  /** Pollinator specialization: this creature is a specialized pollinator. Issue #3264. */
+  pollinatorSpecialist?: boolean
+  /** Pollinator specialization: how deep the nectar tube is (0.0–1.0); set on plants. Issue #3264. */
+  flowerTubeDepth?: number
+  /** Pollinator specialization: tongue reach of the pollinator (0.0–1.0). Issue #3264. */
+  tongueLength?: number
+
+  /** Host-parasite immunity: this species acts as a parasite (drains hosts without killing). Issue #3265. */
+  hostParasiteAttacker?: boolean
+  /** Host-parasite immunity: this species can be parasitized and builds immune exposure. Issue #3265. */
+  hostParasite?: boolean
+
+  /** Obligate coevolved pair: blueprintId of the required mutualistic partner species. Issue #3266. */
+  obligatePartner?: string
+
+  /** Mimicry: this species is genuinely toxic/aposematic; predators learn to avoid it. Issue #3267. */
+  toxic?: boolean
+  /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
+  toxicMimic?: boolean
+  /**
+   * When true, this species maintains a dominance hierarchy.
+   * Rank is established through contests in look(); higher rank grants
+   * food access priority and mate priority. Issue #3227.
+   */
+  dominanceHierarchy?: boolean
+  /**
+   * When true, this species exhibits kin selection: offspring inherit parent's
+   * kinGroupId and preferentially share resources with kin. Issue #3230.
+   */
+  kinSelection?: boolean
+  /**
+   * When true, this prey species emits alarm calls when detecting predators.
+   * All same-species individuals within 2× sight range immediately flee.
+   * The caller takes a slight extra predation risk (exposed position). Issue #3231.
+   */
+  alarmCaller?: boolean
+  /**
+   * When true, this toxic species is brightly colored as a warning to predators.
+   * Predators that survive eating one gain a species-specific learned aversion,
+   * reducing future attack probability by 90%. Young/naive predators (mealsEaten < 5)
+   * still attack freely. Issue #3237.
+   */
+  aposematic?: boolean
 }
 
 /**
@@ -1358,6 +1491,18 @@ export interface Creature {
    * Issue #3304.
    */
   isMonarch?: boolean
+  /** Whether this individual is an elected Oligarch (otterOligarchy species). Issue #3308. */
+  isOligarch?: boolean
+  /** Whether this individual is Gerald, the founding squirrel exempt from socialism. Issue #3312. */
+  isGerald?: boolean
+  /** Whether this individual is the currently-elected Chief Vole. Issue #3315. */
+  isChiefVole?: boolean
+  /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
+  conflictCount?: number
+  /** Total philosophical contemplation sessions completed. Does nothing. Issue #3309. */
+  wisdom?: number
+  /** Countdown seconds until next philosophical contemplation. Issue #3309. */
+  philosophyTimer?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1482,6 +1627,29 @@ export interface Creature {
   hasReproduced?: boolean
   /** Active spine-sharing boost from nearby Healthcare pact members. 0 when alone. Issue #3301. */
   spineBoost?: number
+  /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
+  hasReproduced?: boolean
+  /**
+   * Cached count of same-habitat tiles in the local area.
+   * Computed every 120 ticks for patchDependent species. Issue #3281.
+   */
+  localPatchScore?: number
+  /** Bonus speed from successful hunts (predator escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedSpeed?: number
+  /** Evasion factor from surviving predation (prey escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedEvasion?: number
+  /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
+  parasiteExposure?: number
+  /** Dominance rank 0–1 (0 = lowest, 1 = alpha). Decays with age. Issue #3227. */
+  dominanceRank?: number
+  /** Countdown seconds until next rank contest. Issue #3227. */
+  rankContestCooldown?: number
+  /** Kin group identifier — inherited from parent. Issue #3230. */
+  kinGroupId?: string
+  /** Countdown seconds remaining on alarm call emission. Nearby kin flee while set. Issue #3231. */
+  alarmCallTimer?: number
+  /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
+  learnedAversions?: string[]
 }
 
 /**
@@ -1820,6 +1988,10 @@ export interface WorldState {
    * metabolic stress in non-plant creatures. Issues #3275, #3276.
    */
   atmosphericO2?: number
+  /** Parts-per-million equivalent of atmospheric sulfur dioxide. Emitted by lava tiles; causes acid rain. Issue #3279. */
+  atmosphericSulfurPpm?: number
+  /** Per-tile pH grid [0–14]; 7.0 = neutral. Water + high sulfur → drops below 5.5. Limestone neutralizes. Issue #3279. */
+  tilePH?: Float32Array
   /**
    * Mycorrhizal network graph: maps creature ID (as string) to array of
    * connected creature IDs. Entries are pruned when a creature dies. Undefined
@@ -1848,6 +2020,34 @@ export interface WorldState {
   crabConstitutionRatified?: boolean
   /** Next elapsed time for the Duck Town Hall. Issue #3297. */
   duckTownHallTime?: number
+  /** Whether the Urchin Union strike is active. Issue #3314. */
+  urchinStrikeActive?: boolean
+  /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
+  otterOligarchIds?: number[]
+  /** Season index of the last Otter Oligarchy election. Issue #3308. */
+  otterLastElectionSeason?: number
+  /** ID of Gerald, the founding squirrel. Set on first squirrel birth and never changed. Issue #3312. */
+  squirrelGeraldId?: number
+  /** Whether the squirrel collective is currently active (population > 30). Issue #3312. */
+  squirrelCollectiveActive?: boolean
+  /** ID of the current Chief Vole. Issue #3315. */
+  chiefVoleId?: number
+  /** Season index of the last Vole Voting election. Issue #3315. */
+  chiefVoleLastElectionSeason?: number
+  /**
+   * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
+   * different material type), 0 otherwise. Computed every 300 ticks.
+   * Issue #3282.
+   */
+  edgeMask?: Uint8Array
+  /**
+   * Per-tile corridor mask: 1 if the tile is part of a thin habitat strip
+   * connecting larger patches (corridor ≤3 tiles wide in one axis), 0 otherwise.
+   * Computed every 600 ticks. Issue #3283.
+   */
+  corridorMask?: Uint8Array
+  /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
+  weaselTribunalActive?: boolean
 }
 
 // ---------------------------------------------------------------------------
