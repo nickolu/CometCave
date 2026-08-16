@@ -502,6 +502,16 @@ export interface CreatureBlueprint {
    * visual-camouflage defences.
    */
   infraredVision?: boolean
+  /**
+   * Cognitive capacity on a 0–1 scale. Increases daily energy expenditure by
+   * `brainSize × 0.2` (a creature with brainSize=1 burns 20% more energy than
+   * one with brainSize=0, all else equal). Enables access to tool-use and social
+   * learning mechanics in future epics.
+   *
+   * Models the real energetic tradeoff: the human brain uses ~20% of basal
+   * metabolic rate despite being only 2% of body mass.
+   */
+  brainSize?: number
 }
 
 /**
