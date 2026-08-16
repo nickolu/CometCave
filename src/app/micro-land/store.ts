@@ -560,6 +560,9 @@ interface MicroLandState {
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
+  /** When true, render a temperature gradient overlay across the world. */
+  tempOverlayEnabled: boolean
+  setTempOverlayEnabled: (enabled: boolean) => void
   soundEnabled: boolean
   setSoundEnabled: (on: boolean) => void
 
@@ -746,6 +749,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replayIndex: 0,
   trailsEnabled: false,
   heatmapBlueprintId: null,
+  tempOverlayEnabled: false,
   soundEnabled: false,
 
   setTheme: themeId => set({ themeId }),
@@ -885,6 +889,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
+  setTempOverlayEnabled: enabled => set({ tempOverlayEnabled: enabled }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 
   enterReplay: snapshots =>
