@@ -127,6 +127,13 @@ const DISRUPTION_FAR_FACTOR = 0.65
 const SEEDLING_MAX_AGE = 30
 
 /**
+ * Probability that a predator's killing blow hits an eyespot (wing edge, tail tip)
+ * rather than the prey's body. The prey escapes; the predator gets almost nothing.
+ * 0.4 = 40% deflection, matching real-world eyespot attack-diversion research.
+ */
+const EYESPOT_DEFLECT_CHANCE = 0.4
+
+/**
  * Speed (|vx| + |vy|) below which a non-root animal counts as still.
  *
  * Still animals are harder to spot — camouflage. A creature pressed against a
@@ -1333,6 +1340,19 @@ function look(
         return
       }
       if (touching) {
+        // Eyespot deflection: false-eye markings redirect 40% of killing blows to
+        // a non-vital region. The prey escapes with a burst of speed; the predator
+        // lands a wing-tip bite and gains almost nothing from the missed kill.
+        if (obp.eyespots === true && Math.random() < EYESPOT_DEFLECT_CHANCE) {
+          other.vx = (other.x < c.x ? -1 : 1) * 150
+          other.vy = -60
+          other.mood = 'flee'
+          other.targetId = c.id
+          c.hunger = Math.max(0, c.hunger - mealFill(c, bp, obp, sizeOf(other)) * 0.05)
+          c.mood = 'wander'
+          c.targetId = null
+          return
+        }
         devour(w, other, obp, dead, events)
         c.hunger = Math.max(0, c.hunger - mealFill(c, bp, obp, sizeOf(other)))
         c.starving = 0
