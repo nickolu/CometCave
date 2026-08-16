@@ -1221,6 +1221,75 @@ const CRYSTAL_SNAIL = builtin('crystal-snail', {
 })
 
 // ---------------------------------------------------------------------------
+// The cave food web — bat guano subsidises fungi, fungi feed cave crickets,
+// cave crickets feed bats. The caveNutrient overlay carries the signal.
+// ---------------------------------------------------------------------------
+
+const CAVE_CRICKET = builtin('cave-cricket', {
+  name: 'Cave Cricket',
+  blurb: 'Feeds on fungus and bat droppings. Sees nothing; feels everything.',
+  size: 2,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { t: '#a08060', d: '#5a4030', l: '#c0a878' },
+    frames: [
+      ['t.t.t', 'ttttt', '.tdt.', 't...t'],
+      ['.t.t.', 'ttttt', '.tdt.', 't...t'],
+    ],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.1, drag: 0.3, buoyancy: 0.4, immuneTo: [] },
+  move: { kind: 'crawl', speed: 2.5, jump: 4, restlessness: 0.3 },
+  diet: {
+    eats: ['fungus'],
+    fears: ['flier'],
+    hungerRate: 0.025,
+    starveSeconds: 40,
+    breedAt: 0.65,
+    lifespanSeconds: 160,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#a08060', particleCount: 3 },
+  aura: null,
+  glow: 0,
+})
+
+const BAT = builtin('bat', {
+  name: 'Bat',
+  blurb: 'Sleeps through the day, slips out at dusk to hunt. Its droppings feed the dark.',
+  size: 2,
+  tags: ['meat', 'flier'],
+  art: {
+    palette: { d: '#2a1a2e', g: '#6b3a6e', w: '#c0a0c8' },
+    frames: [
+      ['dggd', '.gg.', '.ww.'],
+      ['g..g', 'gggg', '.ww.'],
+    ],
+    frameMs: 120,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.1, drag: 0.5, buoyancy: 0.2, immuneTo: [] },
+  move: { kind: 'crawl', speed: 6, jump: 0, restlessness: 0.6 },
+  diet: {
+    eats: ['bug', 'flier'],
+    fears: [],
+    hungerRate: 0.04,
+    starveSeconds: 25,
+    breedAt: 0.7,
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#6b3a6e', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  traitDefaults: { diurnal: -1 },  // nocturnal — hunts at dusk/night
+  caveBat: true,
+})
+
+// ---------------------------------------------------------------------------
 // The big ones
 //
 // Every one of these was authored by the model through the ordinary summon
@@ -1731,6 +1800,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   RIMECLAW,
   SUNHAWK,
   GLOOMWEAVER,
+  CAVE_CRICKET,
+  BAT,
   WISP,
   GRUMBLESTONE,
   TREX,

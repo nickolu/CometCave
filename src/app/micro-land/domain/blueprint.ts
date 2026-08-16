@@ -593,6 +593,7 @@ export function sanitizeBlueprint(
     bioturbator: b.bioturbator === true,
     rootBankStabilizer: b.rootBankStabilizer === true,
     polluter: b.polluter === true,
+    caveBat: b.caveBat !== undefined ? !!b.caveBat : undefined,
     carnivorousPlant: b.carnivorousPlant === true,
     trapType: b.trapType === 'snap' ? 'snap'
       : b.trapType === 'pitfall' ? 'pitfall'
