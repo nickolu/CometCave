@@ -351,6 +351,8 @@ const STALKER = builtin('stalker', {
   glow: 0,
   // Intelligent pack hunter — capable of social learning and food preparation.
   canLearnFoodWashing: true,
+  // Pack elders carry route knowledge — their death creates a knowledge gap.
+  elderWisdom: true,
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -415,6 +417,9 @@ const GULPER = builtin('gulper', {
   death: { becomes: null, particleColor: '#3f5f8a', particleCount: 12 },
   aura: null,
   glow: 0,
+  // Matriarchal pod structure — elder females lead the group to seasonal feeding
+  // grounds. Their death leaves the pod disoriented (models orca grandmother effect).
+  elderWisdom: true,
 })
 
 const CINDER_WYRM = builtin('cinder-wyrm', {
@@ -579,6 +584,8 @@ const WOOLLY = builtin('woolly', {
   glow: 0,
   // Social herd grazer — learns food preparation by watching herd-mates.
   canLearnFoodWashing: true,
+  // Herd matriarchs remember the safest grazing routes — knowledge lost with them.
+  elderWisdom: true,
 })
 
 const DRIFTMOLE = builtin('driftmole', {
