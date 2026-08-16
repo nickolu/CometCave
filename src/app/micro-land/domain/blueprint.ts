@@ -738,6 +738,7 @@ export function sanitizeBlueprint(
             }),
           }
         : undefined,
+    patchDependent: b.patchDependent === true,
   }
 }
 

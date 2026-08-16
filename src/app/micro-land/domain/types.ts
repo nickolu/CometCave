@@ -970,6 +970,31 @@ export interface CreatureBlueprint {
    */
   kestrelKingdom?: boolean
   /**
+   * When true, this species runs the Otter Oligarchy: each season the 5 fattest
+   * otters (by mealsEaten) are elected oligarchs and extract 5% hunger drain from
+   * nearby non-oligarchs. Issue #3308.
+   */
+  otterOligarchy?: boolean
+  /**
+   * When true, this species runs Squirrel Socialism: when population > 30 the
+   * collective activates and food (hunger) is redistributed toward the median.
+   * The first squirrel ever (Gerald) is exempt and breeds 20% faster.
+   * Issue #3312.
+   */
+  squirrelSocialism?: boolean
+  /**
+   * When true, this species holds a Vole Voting election each season to elect a
+   * Chief Vole. The incumbent is re-elected 80% of the time. The Chief Vole
+   * breeds 15% faster. Issue #3315.
+   */
+  voleVoting?: boolean
+  /**
+   * When true, this species runs the Weasel War Crimes Tribunal: individuals
+   * accumulate a conflictCount for each kill; after 3+ conflicts a tribunal fires
+   * with a 12% compliance rate (modelled as a history event). Issue #3316.
+   */
+  weaselTribunal?: boolean
+  /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
    */
@@ -1027,6 +1052,12 @@ export interface CreatureBlueprint {
    * Leave undefined for age-independent reproduction. Issue #3261.
    */
   ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  /**
+   * When true, this species requires large contiguous habitat patches to
+   * reproduce normally. Small or fragmented patches suppress breeding.
+   * Issue #3281.
+   */
+  patchDependent?: boolean
 }
 
 /**
@@ -1367,6 +1398,14 @@ export interface Creature {
    * Issue #3304.
    */
   isMonarch?: boolean
+  /** Whether this individual is an elected Oligarch (otterOligarchy species). Issue #3308. */
+  isOligarch?: boolean
+  /** Whether this individual is Gerald, the founding squirrel exempt from socialism. Issue #3312. */
+  isGerald?: boolean
+  /** Whether this individual is the currently-elected Chief Vole. Issue #3315. */
+  isChiefVole?: boolean
+  /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
+  conflictCount?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1489,6 +1528,11 @@ export interface Creature {
   homeLandmarkY?: number
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
+  /**
+   * Cached count of same-habitat tiles in the local area.
+   * Computed every 120 ticks for patchDependent species. Issue #3281.
+   */
+  localPatchScore?: number
 }
 
 /**
@@ -1851,6 +1895,30 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
+  otterOligarchIds?: number[]
+  /** Season index of the last Otter Oligarchy election. Issue #3308. */
+  otterLastElectionSeason?: number
+  /** ID of Gerald, the founding squirrel. Set on first squirrel birth and never changed. Issue #3312. */
+  squirrelGeraldId?: number
+  /** Whether the squirrel collective is currently active (population > 30). Issue #3312. */
+  squirrelCollectiveActive?: boolean
+  /** ID of the current Chief Vole. Issue #3315. */
+  chiefVoleId?: number
+  /** Season index of the last Vole Voting election. Issue #3315. */
+  chiefVoleLastElectionSeason?: number
+  /**
+   * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
+   * different material type), 0 otherwise. Computed every 300 ticks.
+   * Issue #3282.
+   */
+  edgeMask?: Uint8Array
+  /**
+   * Per-tile corridor mask: 1 if the tile is part of a thin habitat strip
+   * connecting larger patches (corridor ≤3 tiles wide in one axis), 0 otherwise.
+   * Computed every 600 ticks. Issue #3283.
+   */
+  corridorMask?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------
