@@ -80,6 +80,7 @@ export function FieldGuidePane() {
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const invasionFront = useMicroLand(s => s.invasionFront)
   const biomeZones = useMicroLand(s => s.biomeZones)
+  const atmosphericCO2 = useMicroLand(s => s.atmosphericCO2)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -645,6 +646,12 @@ export function FieldGuidePane() {
           <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
             Whittaker biome classification by world depth — temperature and moisture shape each band&rsquo;s ecology.
           </p>
+          {atmosphericCO2 > 0.05 && (
+            <p className="biome-co2-warning" style={{ fontSize: 11, color: 'var(--cc-gold)', marginBottom: 8 }}>
+              CO&#x2082;: {Math.round(atmosphericCO2 * 100)}% above baseline
+              {atmosphericCO2 > 0.5 ? ' — biomes shifting rapidly' : atmosphericCO2 > 0.2 ? ' — warming detected' : ''}
+            </p>
+          )}
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
             {biomeZones.map(zone => (
               <li

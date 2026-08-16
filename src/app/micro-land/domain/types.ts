@@ -1464,6 +1464,13 @@ export interface WorldState {
    * Issue #3377.
    */
   biomeZones?: BiomeZone[]
+  /**
+   * Atmospheric CO2 concentration offset [0, 1]. 0 = pre-industrial baseline,
+   * 1 = extreme warming. Emitted by lava tiles; absorbed by living plants.
+   * Raises temperature baseline in `updateBiomeZones`, shifting zones toward
+   * warmer classification. Issue #3381.
+   */
+  atmosphericCO2?: number
 }
 
 // ---------------------------------------------------------------------------

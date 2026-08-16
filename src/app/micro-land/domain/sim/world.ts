@@ -1170,7 +1170,8 @@ export function updateBiomeZones(w: WorldState, tickCount: number, seasonFactor:
   for (let r = 0; r < NUM_BIOME_REGIONS; r++) {
     const midY = r * BIOME_REGION_H + Math.floor(BIOME_REGION_H / 2)
     const baseTemp = Math.max(0, 1 - midY / WORLD_H)
-    const temperature = Math.min(1, baseTemp * seasonFactor)
+    const co2Warming = (w.atmosphericCO2 ?? 0) * 0.3  // up to +0.3 temperature units at max CO2
+    const temperature = Math.min(1, baseTemp * seasonFactor + co2Warming)
 
     // Sample moisture across every 4th column of every row in the band
     const rowStart = r * BIOME_REGION_H
@@ -1186,6 +1187,32 @@ export function updateBiomeZones(w: WorldState, tickCount: number, seasonFactor:
 
     w.biomeZones[r] = { regionIndex: r, type: classifyBiome(temperature, precipitation), temperature, precipitation }
   }
+}
+
+const LAVA_CO2_EMIT = 0.000002   // per lava tile per tick
+const PLANT_CO2_ABSORB = 0.00001  // per living plant creature per tick
+
+/**
+ * Accumulate atmospheric CO2 from lava tiles and deplete it via plant
+ * photosynthesis. CO2 remains in [0, 1]. Called every tick. Issue #3381.
+ */
+export function tickAtmosphericCO2(
+  w: WorldState,
+  tickCount: number,
+  livingPlantCount: number
+): void {
+  if (tickCount % 60 !== 0) return  // update once per second
+  w.atmosphericCO2 ??= 0
+  // Count lava tiles (lazy: sample every 8th tile for performance)
+  const lavaIdx = MATERIAL_INDEX.lava
+  let lavaTiles = 0
+  for (let i = 0; i < w.tiles.length; i += 8) {
+    if (w.tiles[i] === lavaIdx) lavaTiles++
+  }
+  // Emit from lava, absorb by plants
+  const emission = lavaTiles * LAVA_CO2_EMIT
+  const absorption = livingPlantCount * PLANT_CO2_ABSORB
+  w.atmosphericCO2 = Math.max(0, Math.min(1, w.atmosphericCO2 + emission - absorption))
 }
 
 function classifyBiome(temp: number, precip: number): BiomeZoneType {
