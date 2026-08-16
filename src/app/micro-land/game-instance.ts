@@ -818,6 +818,15 @@ export class GameInstance {
     }
     useMicroLand.getState().setMigrationStats(migStats)
 
+    // Hub tree degree — count per-node connections in the mycorrhizal network. Issue #3332.
+    if (this.world.mycorrhizalLinks) {
+      const degree: Record<string, number> = {}
+      for (const [idStr, links] of Object.entries(this.world.mycorrhizalLinks)) {
+        degree[idStr] = links.length
+      }
+      useMicroLand.getState().setNetworkDegree(degree)
+    }
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {

@@ -1151,6 +1151,9 @@ export interface Creature {
   /** Migratory fat reserve [0, 1]. Depletes during active migration; refills at stopover habitat. */
   migratoryFat?: number
   circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
+  /** Seconds remaining of mycorrhizal-relayed chemical defense prime. Reduces
+   * herbivory damage while active. Set when a network neighbor is attacked. Issue #3331. */
+  defenseTimer?: number
 }
 
 /**

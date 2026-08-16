@@ -976,6 +976,10 @@ export function tickCreatures(
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
     if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
+    // Chemical defense prime: tick down mycorrhizal-relayed signal. Issue #3331.
+    if (c.defenseTimer !== undefined && c.defenseTimer > 0) {
+      c.defenseTimer = Math.max(0, c.defenseTimer - dt)
+    }
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     // Drift state: exit drift when creature leaves water.
@@ -2700,6 +2704,11 @@ function look(
         return
       }
       if (touching) {
+        // Chemical defense: a plant that received a mycorrhizal warning signal is
+        // primed with volatile compounds — the grazer finds it unpalatable and
+        // moves on. The signal decays in 30 s so the defense is temporary.
+        // Issue #3331.
+        if (obp.move.kind === 'root' && other.defenseTimer && other.defenseTimer > 0) return
         // Eyespot deflection: false-eye markings redirect 40% of killing blows to
         // a non-vital region. The prey escapes with a burst of speed; the predator
         // lands a wing-tip bite and gains almost nothing from the missed kill.
@@ -2714,6 +2723,18 @@ function look(
           return
         }
         devour(w, other, obp, dead, events)
+        // Chemical signal relay: the eaten plant warns its mycorrhizal-network
+        // neighbors via volatile compounds, priming their chemical defenses for
+        // 30 s. Only plants (root locomotion) relay the signal. Issue #3331.
+        if (obp.move.kind === 'root' && w.mycorrhizalLinks) {
+          const links = w.mycorrhizalLinks[String(other.id)]
+          if (links) {
+            for (const neighborId of links) {
+              const neighbor = w.creatures.find(nc => nc.id === neighborId)
+              if (neighbor) neighbor.defenseTimer = Math.max(neighbor.defenseTimer ?? 0, 30)
+            }
+          }
+        }
         let fill = mealFill(c, bp, obp, sizeOf(other))
         // Food washing bonus: +5% energy if the creature has learned the behavior
         // and is near non-deadly liquid (water, not lava/acid).
