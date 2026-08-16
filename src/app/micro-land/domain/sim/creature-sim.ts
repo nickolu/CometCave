@@ -978,9 +978,29 @@ export function tickCreatures(
       const isStillSummer = Math.sin(p) > 0.3
       return isAutumnFalling && isStillSummer ? 2.0 : 1.0
     })()
+    // V-formation aerodynamics: migratory flyers in a group of 3+ benefit from
+    // upwash vortices (70 % cost); lone migrants pay a solo penalty (120 %).
+    // Leadership rotates by creature id parity — a simple but stable rotation.
+    // Non-migratory or non-flying creatures are unaffected. Issue #3325.
+    const vFormationFactor = (() => {
+      if (!bp.migratory || !c.migrating || bp.move.kind !== 'fly') return 1
+      let flockSize = 0
+      for (const other of w.creatures) {
+        if (other.id === c.id) continue
+        if (w.blueprints[other.blueprintId]?.id !== bp.id) continue
+        if (!other.migrating) continue
+        if (Math.abs(other.x - c.x) > 12 || Math.abs(other.y - c.y) > 8) continue
+        flockSize++
+      }
+      if (flockSize === 0) return 1.2  // lone migrant
+      if (flockSize < 2) return 1.0   // pair, no formation yet
+      // Flock of 3+: leader pays full, others get upwash discount
+      const isLeader = c.id % 3 === 0
+      return isLeader ? 1.0 : 0.7
+    })()
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * dt
     )
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
@@ -1691,6 +1711,37 @@ export function tickCreatures(
         c.migrating = c.migrating ?? false
       }
     }
+
+    // Migratory fat tracking and stopover refueling. Creatures with a
+    // `stopoverHabitat` array deplete fat while actively migrating; they
+    // pause and refuel when standing on a matching tile, and die of
+    // exhaustion if fat hits zero. Creatures without the field skip all of
+    // this. Issue #3324.
+    if (bp.migratory && bp.stopoverHabitat && bp.stopoverHabitat.length > 0) {
+      c.migratoryFat ??= 1.0
+
+      if (c.migrating) {
+        // Active migration: deplete fat reserves
+        c.migratoryFat = Math.max(0, c.migratoryFat - 0.002 * dt)
+
+        if (c.migratoryFat <= 0) {
+          kill(w, c, bp, dead, events, 'starved')
+          continue
+        }
+
+        // Check for stopover habitat: tile at foot level
+        const stx = Math.floor(c.x)
+        const sty = Math.floor(c.y + 1)  // one tile below creature centre
+        const underfoot = MATERIAL_BY_INDEX[tileAt(w, stx, sty)]?.id
+        if (underfoot && bp.stopoverHabitat.includes(underfoot)) {
+          c.migrating = false  // pause to rest and refuel
+        }
+      } else {
+        // At stopover or destination: slowly refuel
+        c.migratoryFat = Math.min(1, c.migratoryFat + 0.002 * dt)
+      }
+    }
+
 
     // Industrial pollution: creatures with polluter flag deposit soot (ash) on
     // the tiles they walk through, darkening the substrate and creating selection

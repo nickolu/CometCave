@@ -945,6 +945,7 @@ const SUNHAWK = builtin('sunhawk', {
   magnetoreceptive: true,    // internal compass — navigates without landmarks
   winteringX: 168,           // left quarter of the 672-wide world
   summerX: 504,              // right quarter
+  stopoverHabitat: ['grass', 'dirt', 'water'],  // refuels on grassland, wetland, or open water
   habitat: { needs: null, drowns: true },
   death: { becomes: null, particleColor: '#c9762f', particleCount: 12 },
   aura: null,

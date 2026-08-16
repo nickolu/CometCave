@@ -639,6 +639,9 @@ export function sanitizeBlueprint(
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
+    stopoverHabitat: Array.isArray(b.stopoverHabitat)
+      ? (b.stopoverHabitat as unknown[]).filter((s): s is string => typeof s === 'string')
+      : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
