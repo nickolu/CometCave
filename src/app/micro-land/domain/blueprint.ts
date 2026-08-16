@@ -584,11 +584,23 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    cryptic: b.cryptic === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
             ...((b.traitDefaults as Record<string, unknown>).roam !== undefined && {
               roam: Number((b.traitDefaults as Record<string, unknown>).roam),
+            }),
+            ...((b.traitDefaults as Record<string, unknown>).hue !== undefined && {
+              hue: Number((b.traitDefaults as Record<string, unknown>).hue),
+            }),
+            ...((b.traitDefaults as Record<string, unknown>).camouflage !== undefined && {
+              camouflage: clamp(
+                Number((b.traitDefaults as Record<string, unknown>).camouflage),
+                0,
+                1,
+                0.2
+              ),
             }),
           }
         : undefined,
