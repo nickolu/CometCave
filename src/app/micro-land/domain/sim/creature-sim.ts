@@ -1005,6 +1005,129 @@ export function tickCreatures(
     }
   }
 
+  // Amphitheater Ants: periodic mandatory performance reviews. Issue #3294.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.antLastPerformanceSeason ?? -1) < currentSeasonIdx) {
+      w.antLastPerformanceSeason = currentSeasonIdx
+      const ants = w.creatures.filter(c => w.blueprints[c.blueprintId]?.antTheater)
+      if (ants.length > 0) {
+        // Clear all performers
+        for (const a of ants) a.isPerformer = false
+        // Elect performer: most-fed ant
+        const performer = ants.reduce((best, a) => a.mealsEaten > best.mealsEaten ? a : best, ants[0])
+        performer.isPerformer = true
+        // Audience: all ants within 10 tiles
+        let audience = 0
+        for (const a of ants) {
+          const dx = a.x - performer.x, dy = a.y - performer.y
+          if (dx * dx + dy * dy < 100) audience++
+        }
+        w.antAudience = audience
+        events.push({ kind: 'notice', blueprintId: performer.blueprintId, x: performer.x, y: performer.y, text: `Mandatory attendance review at the Amphitheater. Attendance: ${audience}/${ants.length}. The committee is not satisfied.` })
+        // Reward: attending ants get a breed cooldown boost
+        for (const a of ants) {
+          const dx = a.x - performer.x, dy = a.y - performer.y
+          if (dx * dx + dy * dy < 25) {
+            a.breedCooldown = Math.max(0, (a.breedCooldown ?? 0) - 5)
+          }
+        }
+      }
+    }
+  }
+
+  // Bear Banking: communal savings with seasonal interest. Issue #3295.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.bearBankLastSeasonIdx ?? -1) < currentSeasonIdx) {
+      w.bearBankLastSeasonIdx = currentSeasonIdx
+      const bears = w.creatures.filter(c => w.blueprints[c.blueprintId]?.bearBanking)
+      if (bears.length > 0) {
+        w.bearBankBalance ??= 0
+        // Deposits: well-fed bears add to bank
+        for (const b of bears) {
+          if (b.hunger < 0.5) {
+            const deposit = (0.5 - b.hunger) * 10
+            w.bearBankBalance += deposit
+          }
+        }
+        // Interest: 5% per season, cap at 100
+        w.bearBankBalance = Math.min(100, w.bearBankBalance * 1.05)
+        // Withdrawals: hungry bears draw from bank
+        for (const b of bears) {
+          if (b.hunger > 0.8 && w.bearBankBalance > 5) {
+            const withdrawal = Math.min(5, w.bearBankBalance)
+            b.hunger = Math.max(0, b.hunger - withdrawal * 0.02)
+            w.bearBankBalance -= withdrawal
+          }
+        }
+        const bpId = bears[0].blueprintId
+        if (w.bearBankBalance > 80) {
+          events.push({ kind: 'notice', blueprintId: bpId, x: bears[0].x, y: bears[0].y, text: `Bear Bank seasonal dividend declared. Balance: ${w.bearBankBalance.toFixed(1)} nuts. The auditors are impressed.` })
+        } else {
+          events.push({ kind: 'notice', blueprintId: bpId, x: bears[0].x, y: bears[0].y, text: `Bear Bank balance: ${w.bearBankBalance.toFixed(1)} nuts. Interest rate: 5%. All deposits guaranteed.` })
+        }
+      }
+    }
+  }
+
+  // Quail Quarantine Zone: quarantine triggered by single sneeze in Season 4. Issue #3310.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    const quails = w.creatures.filter(c => w.blueprints[c.blueprintId]?.quailQuarantine)
+    if (quails.length > 0) {
+      const bpId = quails[0].blueprintId
+      // Season 4 triggers quarantine (season index 3)
+      if (!w.quailQuarantineActive && currentSeasonIdx === 3 && (w.quailQuarantineSeasonIdx ?? -1) < 3) {
+        w.quailQuarantineActive = true
+        w.quailQuarantineSeasonIdx = currentSeasonIdx
+        events.push({ kind: 'notice', blueprintId: bpId, x: quails[0].x, y: quails[0].y, text: `QUARANTINE NOTICE: Quail Settlement placed under quarantine following a suspicious sneeze on Day 1 of Season 4. Breeding suspended pending investigation.` })
+      }
+      // Lift quarantine after 1 season or when pop < 5
+      if (w.quailQuarantineActive) {
+        if (currentSeasonIdx > (w.quailQuarantineSeasonIdx ?? 3) || quails.length < 5) {
+          w.quailQuarantineActive = false
+          events.push({ kind: 'notice', blueprintId: bpId, x: quails[0].x, y: quails[0].y, text: `Quarantine lifted. Health Inspector Vole declared the settlement safe. The original sneezer was unavailable for comment.` })
+        }
+      }
+    }
+  }
+
+  // Raccoon Real Estate: seasonal property appraisal and flipping. Issue #3311.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.raccoonRealEstateLastSeasonIdx ?? -1) < currentSeasonIdx) {
+      w.raccoonRealEstateLastSeasonIdx = currentSeasonIdx
+      const raccoons = w.creatures.filter(c => w.blueprints[c.blueprintId]?.raccoonRealEstate)
+      if (raccoons.length > 0) {
+        w.raccoonDenSites ??= {}
+        let topFlipper: typeof raccoons[0] | null = null
+        let topGarbage = -1
+        for (const r of raccoons) {
+          // Appraise location: value = recent meals × 10 capped
+          const value = Math.min(10, r.mealsEaten / 10)
+          const key = `${Math.floor(r.x)},${Math.floor(r.y)}`
+          w.raccoonDenSites[key] = value
+          r.garbageCurrency = (r.garbageCurrency ?? 0) + value
+          if (r.garbageCurrency > topGarbage) {
+            topGarbage = r.garbageCurrency
+            topFlipper = r
+          }
+        }
+        if (topFlipper) {
+          // Find most valuable site
+          let bestSite = '', bestVal = -1
+          for (const [k, v] of Object.entries(w.raccoonDenSites)) {
+            if (v > bestVal) { bestVal = v; bestSite = k }
+          }
+          const bpId = topFlipper.blueprintId
+          events.push({ kind: 'notice', blueprintId: bpId, x: topFlipper.x, y: topFlipper.y, text: `Raccoon Real Estate Report: ${raccoons.length} listings. Top flipper holds ${topGarbage.toFixed(0)} garbage units. Market: HOT.` })
+          topFlipper.garbageCurrency = 0  // spent on the flip
+        }
+      }
+    }
+  }
+
   // Invasion front tracking: for each invasive species, record origin and
   // track the historical maximum X spread. Runs every 60 ticks (once per
   // second). Issue #3366.
@@ -3027,6 +3150,9 @@ export function tickCreatures(
       !bp.phenology?.breedingGdd ||
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
     )
+    // Quail Quarantine: breeding suspended while quarantine is active. Issue #3310.
+    if (bp.quailQuarantine && w.quailQuarantineActive) continue
+
     if (
       inBreedingSeason &&
       readyToBreed(c, bp) &&

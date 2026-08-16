@@ -3015,6 +3015,120 @@ const PLATYPUS = builtin('platypus', {
 })
 
 // ---------------------------------------------------------------------------
+// Ant — eusocial insect with Amphitheater performance mechanic. Issue #3294.
+// ---------------------------------------------------------------------------
+
+const ANT = builtin('ant', {
+  name: 'Ant',
+  blurb: 'Eusocial insect that constructed a 47-seat amphitheater in Season 2. Attendance is mandatory. Reviews are mixed.',
+  size: 0,
+  tags: ['plant', 'insect'],
+  art: {
+    palette: { b: '#1a0a00', r: '#4a1a00', w: '#e0a060' },
+    frames: [
+      ['.b.', 'rbr', '.r.'],
+      ['.r.', 'rbr', '.b.'],
+    ],
+    frameMs: 150,
+    faceMotion: false,
+  },
+  body: { mass: 0.05, bounce: 0.05, drag: 0.2, buoyancy: 0.1, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.8, jump: 0.1, hop: 0, restlessness: 0.9 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00008,
+    starveSeconds: 35,
+    breedAt: 0.6,
+    lifespanSeconds: 80,
+  },
+  senses: { sight: 5 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#1a0a00', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  antTheater: true,
+  bodyMass: 0.001,
+})
+
+// ---------------------------------------------------------------------------
+// Bear — omnivore with communal nut banking. Issue #3295.
+// ---------------------------------------------------------------------------
+
+const BEAR = builtin('bear', {
+  name: 'Brown Bear',
+  blurb: 'Founded the First National Nut Bank in Season 1. Has not read the terms and conditions. Neither has anyone else. The bank is thriving.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#2a1a0a', w: '#6a4a2a', g: '#8a6a4a' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  body: { mass: 2.0, bounce: 0.05, drag: 0.3, buoyancy: 0.6, immuneTo: [] },
+  move: { kind: 'walk', speed: 0.8, jump: 0.3, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: [],
+    hungerRate: 0.00004,
+    starveSeconds: 90,
+    breedAt: 0.8,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#2a1a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  bearBanking: true,
+  bodyMass: 3.0,
+})
+
+// ---------------------------------------------------------------------------
+// Quail — small bird under quarantine mechanic. Issue #3310.
+// ---------------------------------------------------------------------------
+
+const QUAIL = builtin('quail', {
+  name: 'Common Quail',
+  blurb: 'An entire settlement was quarantined in Season 4 due to a suspicious sneeze. The sneezer has never been identified. The quarantine may never fully end.',
+  size: 0,
+  tags: ['plant', 'bird'],
+  art: {
+    palette: { b: '#3a2a1a', w: '#c0a060', g: '#6a5a3a', r: '#8a6a3a' },
+    frames: [
+      ['.w.', 'wbw', '.g.'],
+      ['.g.', 'wbw', '.w.'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.15, bounce: 0.1, drag: 0.2, buoyancy: 0.3, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.4, jump: 0.8, hop: 0, restlessness: 0.6 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00007,
+    starveSeconds: 45,
+    breedAt: 0.65,
+    lifespanSeconds: 110,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#3a2a1a', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  quailQuarantine: true,
+  bodyMass: 0.15,
+})
+
+// ---------------------------------------------------------------------------
 // Toad — Toad Taxation. Issue #3313.
 // ---------------------------------------------------------------------------
 
@@ -3087,6 +3201,44 @@ const SEA_URCHIN = builtin('sea-urchin', {
   egglayer: false,
   urchinUnion: true,
   bodyMass: 0.2,
+})
+
+// ---------------------------------------------------------------------------
+// Raccoon — omnivore with real estate flipping mechanic. Issue #3311.
+// ---------------------------------------------------------------------------
+
+const RACCOON = builtin('raccoon', {
+  name: 'Raccoon',
+  blurb: 'Flipped 14 den sites last season. Does not disclose commission rates. Market is described as "HOT" in all materials regardless of conditions.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#1a1a1a', w: '#c0c0c0', g: '#6a6a6a', r: '#4a3a2a' },
+    frames: [
+      ['grg', 'wbw', 'gwg'],
+      ['gwg', 'wbw', 'grg'],
+    ],
+    frameMs: 220,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.3, buoyancy: 0.5, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.2, jump: 0.6, hop: 0, restlessness: 0.7 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: [],
+    hungerRate: 0.00006,
+    starveSeconds: 55,
+    breedAt: 0.7,
+    lifespanSeconds: 140,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#1a1a1a', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  raccoonRealEstate: true,
+  bodyMass: 0.5,
 })
 
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
@@ -3168,6 +3320,10 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   PLATYPUS,
   TOAD,
   SEA_URCHIN,
+  ANT,
+  BEAR,
+  QUAIL,
+  RACCOON,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(
