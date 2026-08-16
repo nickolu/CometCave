@@ -157,6 +157,8 @@ const CHROMATO_FADE_S = 2 / 60
  */
 const DISRUPTION_NEAR_TILES = 4
 
+const LATERAL_LINE_RADIUS = 5 // tiles — hydrodynamic pressure sensing range
+
 /**
  * Beyond DISRUPTION_NEAR_TILES, a disruptive-pattern creature is only
  * detectable at this fraction of the predator's normal detection radius.
@@ -1630,9 +1632,20 @@ function look(
       // is fully exposed (pigment cells incoherent). Override camouflage to 0.
       const chromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
       // Sensory modalities that bypass visual camouflage entirely
+      // lateral line: bypasses camouflage within short range in water/mud tiles
+      const predFootX = Math.floor(c.x + bw / 2)
+      const predFootY = Math.floor(c.y + bh)
+      const predTile = tileAt(w, predFootX, predFootY)
+      const predMat = MATERIAL_BY_INDEX[predTile]
+      const inWaterOrMud = predMat?.id === 'water' || predMat?.id === 'mud'
+      const lateralLineSense =
+        bp.lateralLine === true &&
+        inWaterOrMud &&
+        d2 < LATERAL_LINE_RADIUS * LATERAL_LINE_RADIUS
       const sensorBypass =
         bp.electroreceptive === true || // detects bioelectric fields
-        (bp.infraredVision === true && obp.warmBlooded === true) // detects heat
+        (bp.infraredVision === true && obp.warmBlooded === true) || // detects heat
+        lateralLineSense // detects water pressure waves
       const baseCamouflage = sensorBypass
         ? 0
         : chromaFade > 0
@@ -1684,9 +1697,20 @@ function look(
       const territoryR = (c.traits.territorial ?? 0.5) * 10
       const intruderChromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
       // Sensory modalities that bypass visual camouflage entirely
+      // lateral line: bypasses camouflage within short range in water/mud tiles
+      const intPredFootX = Math.floor(c.x + bw / 2)
+      const intPredFootY = Math.floor(c.y + bh)
+      const intPredTile = tileAt(w, intPredFootX, intPredFootY)
+      const intPredMat = MATERIAL_BY_INDEX[intPredTile]
+      const intInWaterOrMud = intPredMat?.id === 'water' || intPredMat?.id === 'mud'
+      const intLateralLineSense =
+        bp.lateralLine === true &&
+        intInWaterOrMud &&
+        d2 < LATERAL_LINE_RADIUS * LATERAL_LINE_RADIUS
       const intruderSensorBypass =
         bp.electroreceptive === true || // detects bioelectric fields
-        (bp.infraredVision === true && obp.warmBlooded === true) // detects heat
+        (bp.infraredVision === true && obp.warmBlooded === true) || // detects heat
+        intLateralLineSense // detects water pressure waves
       const intruderCamoBase = intruderSensorBypass
         ? 0
         : intruderChromaFade > 0
