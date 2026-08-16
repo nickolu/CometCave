@@ -2452,6 +2452,115 @@ const BARK_GECKO = builtin('bark-gecko', {
   moundCommensal: true,
 })
 
+// ---------------------------------------------------------------------------
+// Clam — hard-shelled sessile filter feeder. Issue #3413.
+// ---------------------------------------------------------------------------
+
+const CLAM = builtin('clam', {
+  name: 'Clam',
+  blurb: 'A bivalve filter-feeder with a thick shell — only a skilled tool user can crack it open.',
+  size: 1,
+  tags: ['meat', 'mollusk'],
+  art: {
+    palette: { w: '#d8c8a8', b: '#8a7860', g: '#e8dcc8' },
+    frames: [['bwb', 'wgw', 'bwb']],
+    frameMs: 1000,
+    faceMotion: false,
+  },
+  body: { mass: 2, bounce: 0, drag: 0.1, buoyancy: 0.5, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, hop: 0, restlessness: 0 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.00002,
+    starveSeconds: 300,
+    breedAt: 0.4,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 1 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: 'bone', particleColor: '#d8c8a8', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  hardShelled: true,
+})
+
+// ---------------------------------------------------------------------------
+// Sea Otter — anvil-using marine predator. Issue #3413.
+// ---------------------------------------------------------------------------
+
+const SEA_OTTER = builtin('sea-otter', {
+  name: 'Sea Otter',
+  blurb: 'A marine mammal that cracks open hard-shelled prey by smashing them against a rock held on its belly.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#8a6040', b: '#4a3020', g: '#c8a070' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.1, drag: 0.5, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'swim', speed: 1.0, jump: 0, hop: 0, restlessness: 0.4 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00005,
+    starveSeconds: 60,
+    breedAt: 0.75,
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#8a6040', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  anvilUser: true,
+})
+
+// ---------------------------------------------------------------------------
+// Caledonian Crow — stick-probing intelligent predator. Issue #3414.
+// ---------------------------------------------------------------------------
+
+const CALEDONIAN_CROW = builtin('caledonian-crow', {
+  name: 'Caledonian Crow',
+  blurb: 'The most sophisticated non-human tool maker — fashions and uses stick tools to extract prey from narrow crevices.',
+  size: 1,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { w: '#222222', b: '#111111', g: '#444444' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 150,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.1, drag: 0.5, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'fly', speed: 1.8, jump: 0, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00004,
+    starveSeconds: 40,
+    breedAt: 0.75,
+    lifespanSeconds: 240,
+  },
+  senses: { sight: 15 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#222222', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  stickProber: true,
+  objectManipulator: true,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2515,6 +2624,9 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   TERMITE,
   AARDVARK,
   BARK_GECKO,
+  CLAM,
+  SEA_OTTER,
+  CALEDONIAN_CROW,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

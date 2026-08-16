@@ -3029,8 +3029,29 @@ function look(
     if (other.id === c.id || dead.has(other.id)) continue
     const obp = w.blueprints[other.blueprintId]
     if (!obp) continue
-    // Burrowed creatures are safe from non-burrowing predators. Issue #3419.
-    if (other.inBurrow && !bp.burrowDigger) continue
+    // Burrowed creatures are safe from non-burrowing, non-probing predators. Issues #3419, #3414.
+    if (other.inBurrow && !bp.burrowDigger && !bp.stickProber) continue
+
+    // Hard-shelled prey: requires anvil (stone tile nearby). Issue #3413.
+    if (obp.hardShelled) {
+      if (!bp.anvilUser) continue
+      let hasAnvil = false
+      const axc = Math.round(c.x), ayc = Math.round(c.y)
+      anvilSearch:
+      for (let ady = -3; ady <= 3; ady++) {
+        for (let adx = -3; adx <= 3; adx++) {
+          const ani = (ayc + ady) * w.width + (axc + adx)
+          if (ani >= 0 && ani < w.tiles.length) {
+            const amat = MATERIAL_BY_INDEX[w.tiles[ani]]?.id
+            if (amat === 'stone' || amat === 'metal' || amat === 'marble' || amat === 'obsidian' || amat === 'iron') {
+              hasAnvil = true
+              break anvilSearch
+            }
+          }
+        }
+      }
+      if (!hasAnvil) continue
+    }
 
     const { w: ow, h: oh } = artSize(obp)
     // The short way round, so a creature by the seam hunts across it rather than
@@ -3173,6 +3194,10 @@ function look(
         // Web-trapped prey: immobilized creatures are easy pickings for the spider. Issue #3420.
         if (other.webTrapped && bp.webSpinner) {
           fill *= 2
+        }
+        // Stick probing: slightly reduced efficiency when extracting from burrow. Issue #3414.
+        if (bp.stickProber && other.inBurrow) {
+          fill *= 0.8
         }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0

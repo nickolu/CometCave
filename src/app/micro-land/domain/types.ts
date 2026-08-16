@@ -896,6 +896,28 @@ export interface CreatureBlueprint {
    * soil via caveNutrient. Issue #3421.
    */
   moundDestroyer?: boolean
+  /**
+   * This species uses hard objects (rock, metal, stone tiles) as anvils to crack
+   * open hard-shelled prey. Without a stone/metal tile within 3 tiles, it cannot
+   * eat hard-shelled creatures. Issue #3413.
+   */
+  anvilUser?: boolean
+  /**
+   * This species has a shell so hard that only an anvilUser predator can crack
+   * it open. Non-anvilUser predators cannot eat this creature at all. Issue #3413.
+   */
+  hardShelled?: boolean
+  /**
+   * This species fashions stick-like tools to probe into burrow entrances and
+   * extract hidden prey. Unlike regular predators, it can attack creatures that
+   * are inBurrow. Extraction is slightly less efficient than a direct kill. Issue #3414.
+   */
+  stickProber?: boolean
+  /**
+   * Hunger reduction applied per stick-probe extraction (0–1 scale).
+   * Defaults to 0.08 when unset. Only meaningful when stickProber is true. Issue #3414.
+   */
+  stickProbeDamage?: number
 }
 
 /**
