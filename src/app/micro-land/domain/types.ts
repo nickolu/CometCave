@@ -991,6 +991,33 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
+  /**
+   * r/K selection position: 0=extreme r-selected (fast, many small offspring),
+   * 1=extreme K-selected (slow, few well-provisioned offspring). Issue #3256.
+   */
+  rK?: number
+  /**
+   * Mating system: affects reproduction rate and mate-finding behavior.
+   * Issue #3257.
+   */
+  matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
+  /**
+   * When true, the individual dies immediately after its first successful
+   * reproduction (big-bang reproduction strategy). Issue #3259.
+   */
+  semelparous?: boolean
+  /**
+   * How reproductive rate varies with age. Issue #3261.
+   */
+  ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  /** When true, this species ratifies a Constitution when population first reaches 10. Issue #3296. */
+  crabConstitution?: boolean
+  /** When true, this species holds periodic Town Hall votes. Issue #3297. */
+  duckDemocracy?: boolean
+  /** When true, nearby conspecifics provide defensive spine-sharing, increasing effective toxicity. Issue #3301. */
+  hedgehogHealthcare?: boolean
+  /** When true, this species only cooperates with burrowing conspecifics; ignores non-diggers. Issue #3317. */
+  xerusXenophobia?: boolean
 }
 
 /**
@@ -1451,6 +1478,10 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True once a semelparous creature has reproduced; prevents second reproduction. Issue #3259. */
+  hasReproduced?: boolean
+  /** Active spine-sharing boost from nearby Healthcare pact members. 0 when alone. Issue #3301. */
+  spineBoost?: number
 }
 
 /**
@@ -1813,6 +1844,10 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** True after the Crab Constitution has been ratified for the first time. Issue #3296. */
+  crabConstitutionRatified?: boolean
+  /** Next elapsed time for the Duck Town Hall. Issue #3297. */
+  duckTownHallTime?: number
 }
 
 // ---------------------------------------------------------------------------

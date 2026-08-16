@@ -970,6 +970,42 @@ export function tickCreatures(
     }
   }
 
+  // --- Crab Constitution: once-per-world event when 10+ crabs assemble. Issue #3296. ---
+  if (!w.crabConstitutionRatified) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const cbp = w.blueprints[bpId]
+      if (!cbp?.crabConstitution || cnt < 10) continue
+      w.crabConstitutionRatified = true
+      const CLAUSES = [
+        'ARTICLE I: The right to moult without interference is inalienable.',
+        'ARTICLE II: Equal access to shell sizes for all citizens.',
+        'ARTICLE III: A Senate of Shells shall be formed. It has not yet met.',
+      ]
+      const text = `${cbp.name} Constitution ratified. ${CLAUSES[Math.floor(rng() * CLAUSES.length)]} Enforcement mechanism: none.`
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text })
+      break
+    }
+  }
+
+  // --- Duck Democracy: periodic town hall votes. Issue #3297. ---
+  const DUCK_HALL_PERIOD = TUNING.seasonPeriod / 10  // every ~30 seconds ≈ 10 in-game days
+  w.duckTownHallTime ??= w.elapsed + DUCK_HALL_PERIOD
+  if (w.elapsed >= w.duckTownHallTime) {
+    w.duckTownHallTime = w.elapsed + DUCK_HALL_PERIOD
+    for (const [bpId] of Object.entries(speciesCount)) {
+      const dbp = w.blueprints[bpId]
+      if (!dbp?.duckDemocracy) continue
+      const ducks = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      if (ducks.length < 3) continue
+      const facingRight = ducks.filter(d => d.facing === 1).length
+      const ISSUES = ['fish supply', 'predator proximity', 'nesting materials', 'pond water quality', 'bread distribution']
+      const issue = ISSUES[Math.floor(rng() * ISSUES.length)]
+      const outcome = facingRight > ducks.length / 2 ? 'right' : 'left'
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${dbp.name} Town Hall: ${issue} discussed. Decision Made: [Inconclusive] (majority faced ${outcome})` })
+      break
+    }
+  }
+
   // MVP warning and rescue effect. Issues #3284, #3285.
   if (tickCount % 60 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
@@ -1167,6 +1203,35 @@ export function tickCreatures(
       c.migrateTimer += dt
     } else {
       c.migrateTimer = Math.max(0, c.migrateTimer - dt)
+    }
+
+    // --- Hedgehog Healthcare: spine-sharing — nearby kin slightly repel threats. Issue #3301. ---
+    if (bp.hedgehogHealthcare) {
+      const nearKin = w.creatures.filter(k =>
+        k.id !== c.id && k.blueprintId === c.blueprintId &&
+        Math.abs(k.x - c.x) < 5 && Math.abs(k.y - c.y) < 5
+      )
+      if (nearKin.length >= 2) {
+        c.spineBoost = 0.2  // active healthcare benefit
+      } else {
+        c.spineBoost = 0
+      }
+    }
+
+    // --- Xerus Xenophobia: ground squirrels ignore non-digger species. Issue #3317. ---
+    if (bp.xerusXenophobia && c.targetId !== null) {
+      const target = w.creatures.find(t => t.id === c.targetId)
+      if (target) {
+        const tbp = w.blueprints[target.blueprintId]
+        // Embargo flying species; 100% tariff on non-diggers (push them away from food target)
+        if (tbp?.move.kind === 'fly') {
+          c.targetId = null  // refuse to interact with fliers
+        } else if (!tbp?.burrowDigger && tbp?.move.kind !== 'walk') {
+          // Non-digger non-flier: ignore their food if another digger source is present
+          // (simplified: just 50% chance to ignore non-digger food target each tick)
+          if (rng() < 0.01 * dt) c.targetId = null
+        }
+      }
     }
 
     // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
@@ -2536,6 +2601,30 @@ export function tickCreatures(
         }
       }
 
+      // Semelparous: skip reproduction if already reproduced once. Issue #3259.
+      if (bp.semelparous && c.hasReproduced) continue
+
+      // Polygyny: only the most-fed male within sight breeds. Issue #3257.
+      if (bp.matingSystem === 'polygyny' && c.id % 2 === 0) {
+        const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12) && o.id % 2 === 0)
+        if (competitors.some(o => o.mealsEaten > c.mealsEaten)) continue  // dominated — skip
+      }
+
+      // Age-structured reproduction: rate varies by life stage. Issue #3261.
+      if (bp.ageReproductionCurve) {
+        const lifespan = (bp.diet.lifespanSeconds ?? 100) * TUNING.lifespanScale
+        const relAge = Math.min(1, c.ageSeconds / lifespan)
+        let ageFactor = 1
+        if (bp.ageReproductionCurve === 'peak-early') {
+          ageFactor = relAge < 0.3 ? 1.5 : relAge < 0.6 ? 1.0 : 0.4
+        } else if (bp.ageReproductionCurve === 'peak-middle') {
+          ageFactor = relAge < 0.2 ? 0.3 : relAge < 0.7 ? 1.4 : 0.5
+        } else if (bp.ageReproductionCurve === 'peak-late') {
+          ageFactor = relAge < 0.5 ? 0.5 : relAge < 0.85 ? 1.0 : 1.8
+        }
+        if (rng() >= ageFactor) continue
+      }
+
       /**
        * An animal needs a partner; a plant does not.
        *
@@ -2548,8 +2637,10 @@ export function tickCreatures(
        * that is allowed to make more of itself alone.
        */
       const wantsMate = needsPartner(bp)
-      const mate = wantsMate ? findMate(w, c, bp, dead) : null
-      if (!wantsMate || mate) {
+      // Promiscuous species reproduce without a mate. Issue #3257.
+      const effectiveWantsMate = bp.matingSystem === 'promiscuity' ? false : wantsMate
+      const mate = effectiveWantsMate ? findMate(w, c, bp, dead) : null
+      if (!effectiveWantsMate || mate) {
         // Born between the two of them, which is the whole point of having made
         // them walk to each other.
         //
@@ -2600,7 +2691,7 @@ export function tickCreatures(
             blueprintId: bp.id,
             traits: childTraits,
             generation,
-            hatchIn: TUNING.eggHatchSeconds,
+            hatchIn: TUNING.eggHatchSeconds * (bp.rK !== undefined ? 0.7 + bp.rK * 0.6 : 1),  // r-selected hatch faster
           })
           // Assign nest site when first egg is laid. Issue #3418.
           if (bp.nestBuilder && c.nestX === undefined) {
@@ -2616,6 +2707,16 @@ export function tickCreatures(
             ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
             (bp.slowMetabolism ? 2 : 1) *
             (bp.invasive ? 0.67 : 1)
+          // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
+          if (bp.rK !== undefined) {
+            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5x at rK=0, 2.0x at rK=1
+            c.breedCooldown *= cooldownMultiplier
+          }
+          // Semelparous: die after first reproduction. Issue #3259.
+          if (bp.semelparous) {
+            c.hasReproduced = true
+            kill(w, c, bp, dead, events, 'aged')
+          }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -2623,6 +2724,11 @@ export function tickCreatures(
             else if (mate.children % 10 === 0)
               logLife(mate, w.elapsed, `${mate.children} offspring`)
             payForChild(w, mate, bp, bw, bh, helpers)
+          }
+          // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
+          if (bp.matingSystem === 'monogamy') {
+            const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12))
+            if (bondMate) c.breedCooldown *= 0.8
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
@@ -3483,6 +3589,8 @@ function look(
         // moves on. The signal decays in 30 s so the defense is temporary.
         // Issue #3331.
         if (obp.move.kind === 'root' && other.defenseTimer && other.defenseTimer > 0) return
+        // Hedgehog Healthcare: kin-pooled spines give 20% miss chance. Issue #3301.
+        if ((other.spineBoost ?? 0) > 0 && rng() < (other.spineBoost ?? 0)) continue
         // Eyespot deflection: false-eye markings redirect 40% of killing blows to
         // a non-vital region. The prey escapes with a burst of speed; the predator
         // lands a wing-tip bite and gains almost nothing from the missed kill.
