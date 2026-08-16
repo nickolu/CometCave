@@ -1117,6 +1117,17 @@ export function tickCreatures(
     }
   }
 
+  // Urchin Union: sea urchins strike when population > 15. Issue #3314.
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const ubp = w.blueprints[bpId]
+    if (!ubp?.urchinUnion) continue
+    const wasStriking = w.urchinStrikeActive ?? false
+    w.urchinStrikeActive = cnt > 15
+    if (w.urchinStrikeActive && !wasStriking) {
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${ubp.name} Union on strike. Demands: stronger currents, fewer predators. Management has not responded.` })
+    }
+  }
+
   // MVP warning and rescue effect. Issues #3284, #3285.
   if (tickCount % 60 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
@@ -2001,6 +2012,49 @@ export function tickCreatures(
           }
         }
       }
+    }
+
+    // Platypus Philosophy: periodic existential contemplation. Issue #3309.
+    if (bp.platypusPhilosophy) {
+      if (c.philosophyTimer === undefined) c.philosophyTimer = (TUNING.seasonPeriod / 10) * rng()
+      c.philosophyTimer -= dt
+      if (c.philosophyTimer <= 0) {
+        c.philosophyTimer = TUNING.seasonPeriod / 10
+        c.wisdom = (c.wisdom ?? 0) + 1
+        c.insightTimer = (c.insightTimer ?? 0) + 4
+        const MUSINGS = [
+          'I have a bill but also fur. Am I real?',
+          'I lay eggs but nurse young. What does this mean?',
+          'I have electroreceptors. Most creatures do not. Why?',
+          'The question of platypus existence remains unresolved.',
+          'Is this a bill or a beak? The Philosophical Society is divided.',
+        ]
+        const musing = MUSINGS[Math.floor(rng() * MUSINGS.length)]
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `Platypus (wisdom: ${c.wisdom}): "${musing}"` })
+      }
+    }
+
+    // Toad Taxation: levy a toll on creatures passing near a toad on water. Issue #3313.
+    if (bp.toadTaxation && IS_LIQUID[w.tiles[Math.floor(c.y) * WORLD_W + Math.floor(c.x)]] === 1) {
+      for (const traveler of w.creatures) {
+        if (traveler.id === c.id || traveler.blueprintId === c.blueprintId) continue
+        const tdist = Math.sqrt((traveler.x - c.x) ** 2 + (traveler.y - c.y) ** 2)
+        if (tdist > 3) continue
+        const toll = 0.05
+        if (traveler.hunger < 0.9 && c.hunger > 0.05) {
+          traveler.hunger = Math.min(1, traveler.hunger + toll)
+          c.hunger = Math.max(0, c.hunger - toll)
+          if (rng() < 0.4) {
+            traveler.stunTimer = (traveler.stunTimer ?? 0) + 0.5
+          }
+        }
+      }
+    }
+
+    // Urchin Union strike: strikers refuse to move. Issue #3314.
+    if (bp.urchinUnion && w.urchinStrikeActive) {
+      c.vx = 0
+      c.vy = 0
     }
 
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
