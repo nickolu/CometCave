@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    decomposer: b.decomposer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
