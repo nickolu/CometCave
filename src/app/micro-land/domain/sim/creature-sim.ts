@@ -1410,6 +1410,13 @@ export function tickCreatures(
       }
     }
 
+    // Polarized mating beacon: polarized-skin creatures ready to breed emit a
+    // covert polarized signal once per SENSE_EVERY interval. Only same-species
+    // polarizedVision creatures can detect this — predators are blind to it.
+    if (bp.polarizedSkin && readyToBreed(c, bp) && (tickCount + c.id) % SENSE_EVERY === 0 && w.scents.length < 200) {
+      w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 8, polarized: true })
+    }
+
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
     // Phenological gate: species with a breedingGdd threshold only mate when
@@ -2393,6 +2400,38 @@ function look(
       // Strength scales with chemoreception relative to sight range
       const strength = Math.min(0.5, (chemoRange / 20) * 0.4)
       c.drift = gradient > 0 ? strength : -strength
+    }
+  }
+
+  // Polarized mating signal: polarizedVision creatures detect polarized beacons
+  // from same-species polarizedSkin individuals at 2× normal sight range.
+  // These covert signals are invisible to predators without polarizedVision.
+  if (
+    bp.polarizedVision &&
+    !prey &&
+    !threat &&
+    c.mood === 'wander' &&
+    w.scents.length > 0
+  ) {
+    const polReach2 = sight * sight * 4  // 2× sight radius
+    const midX = cx
+    const midY = c.y + bh / 2
+    let nearestPolD2 = Infinity
+    let nearestPolScent: Scent | null = null
+    for (const s of w.scents) {
+      if (!s.polarized) continue
+      if (s.blueprintId !== c.blueprintId) continue
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      const d2 = sdx * sdx + sdy * sdy
+      if (d2 < nearestPolD2 && d2 < polReach2) {
+        nearestPolD2 = d2
+        nearestPolScent = s
+      }
+    }
+    if (nearestPolScent) {
+      const weight = 0.35
+      c.drift = deltaX(midX, nearestPolScent.x) > 0 ? weight : -weight
     }
   }
 

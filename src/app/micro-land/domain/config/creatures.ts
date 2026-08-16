@@ -355,6 +355,39 @@ const GLIMMER_MOTH = builtin('glimmer-moth', {
   glow: 0.7,
 })
 
+const MANTIS_SHRIMP = builtin('mantis-shrimp', {
+  name: 'Mantis Shrimp',
+  blurb: "Sees sixteen color channels. Its polarized patterns speak a language only kin can read.",
+  size: 2,
+  tags: ['meat', 'crustacean'],
+  art: {
+    palette: { r: '#e84343', g: '#43a843', b: '#4343e8', o: '#e89043', w: '#ffffff' },
+    frames: [
+      ['rgobo', 'rwwwr', 'gbbog'],
+      ['obrgo', 'rwwwr', 'boogb'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 1.1, bounce: 0.1, drag: 0.35, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'crawl', speed: 4, jump: 3, restlessness: 0.3 },
+  diet: {
+    eats: ['crustacean', 'bug', 'fish'],
+    fears: [],
+    hungerRate: 0.025,
+    starveSeconds: 50,
+    breedAt: 0.68,
+    lifespanSeconds: 280,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#e84343', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  polarizedVision: true,
+  polarizedSkin: true,
+})
+
 const FINLING = builtin('finling', {
   name: 'Finling',
   blurb: 'A small bright fish. Out of water it flops and gasps.',
@@ -1844,6 +1877,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MITE,
   HOPPER,
   GLIMMER_MOTH,
+  MANTIS_SHRIMP,
   FINLING,
   EMBER_GRUB,
   DELVER,

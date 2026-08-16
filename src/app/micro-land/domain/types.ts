@@ -565,6 +565,13 @@ export interface CreatureBlueprint {
    */
   polarizedVision?: boolean
   /**
+   * Cephalopods and mantis shrimp emit polarized skin patterns as covert
+   * mating signals. Other same-species polarizedVision creatures detect these
+   * beacons at 2× normal sight range. Predators without polarizedVision are
+   * blind to the signal — it cannot be eavesdropped.
+   */
+  polarizedSkin?: boolean
+  /**
    * Species-level opt-in to the food-washing cultural innovation.
    *
    * When true, individuals of this species can discover — or learn from kin —
@@ -1069,6 +1076,8 @@ export interface Scent {
   blueprintId: string
   /** Seconds until this marker vanishes. */
   decaySeconds: number
+  /** When true, this is a polarized-light mating signal; only detected by polarizedVision creatures */
+  polarized?: boolean
 }
 
 export interface Particle {
