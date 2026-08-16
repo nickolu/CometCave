@@ -512,6 +512,7 @@ interface MicroLandState {
   clearGeneratorConfigRequest: () => void
   setStats: (population: PopulationEntry[], total: number, elapsed: number) => void
   addExtinction: (record: ExtinctionRecord) => void
+  removeExtinction: (blueprintId: string) => void
   clearExtinctions: () => void
   updateWorldStats: (patch: Partial<WorldStats>) => void
   resetWorldStats: () => void
@@ -706,6 +707,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
       }
     }),
   addExtinction: record => set(s => ({ extinctions: [...s.extinctions, record] })),
+  removeExtinction: blueprintId => set(s => ({ extinctions: s.extinctions.filter(e => e.blueprintId !== blueprintId) })),
   clearExtinctions: () => set({ extinctions: [] }),
   updateWorldStats: patch => set(s => ({ worldStats: { ...s.worldStats, ...patch } })),
   resetWorldStats: () => set({ worldStats: { ...EMPTY_STATS } }),
