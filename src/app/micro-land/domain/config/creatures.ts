@@ -62,6 +62,7 @@ const SUNLEAF = builtin('sunleaf', {
   glow: 0,
   uvNectar: true,
   fireGerminator: true,  // pioneer plant: fire-scarified seeds germinate in ash-cleared ground
+  lightGapGerminator: true,  // gap-dependent pioneer: seeds sprout when canopy opens above them. Issue #3351.
   seedLongevity: 2400,  // fire-adapted pioneer: seeds persist for multiple seasons awaiting open ground
 })
 
@@ -94,6 +95,7 @@ const BRAMBLE = builtin('bramble', {
   death: { becomes: null, particleColor: '#57b04a', particleCount: 5 },
   aura: null,
   glow: 0,
+  lightGapGerminator: true,  // gap-loving shrub: colonises treefall gaps. Issue #3351.
 })
 
 const KELP = builtin('kelp', {

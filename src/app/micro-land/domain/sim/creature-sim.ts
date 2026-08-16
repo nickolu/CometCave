@@ -737,6 +737,26 @@ function tickSeedBank(
       continue  // don't fall through to normal germination
     }
 
+    // Light-gap germinator: germinates eagerly when canopy opens above the seed.
+    if (bp.lightGapGerminator && w.lightGrid) {
+      const lightLevel = w.lightGrid[seed.y * WORLD_W + seed.x]
+      if (lightLevel < 0.4) { surviving.push(seed); continue }  // still shaded — wait
+      // Light gap detected: attempt immediate germination
+      if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
+      if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
+      const { w: bw, h: bh } = artSize(bp)
+      const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
+      const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+      if (germinated) {
+        plantsRef.value++
+        speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
+        if (wasExtinct) events.push({ kind: 'diversity-rescue', blueprintId: seed.blueprintId, x: seed.x, y: seed.y } as SimEvent)
+      } else {
+        surviving.push(seed)
+      }
+      continue
+    }
+
     const halfLife = bp.seedLongevity ?? HALF_LIFE
     const viability = Math.pow(0.5, seed.age / halfLife)
     if (rng() > viability) continue  // seed died

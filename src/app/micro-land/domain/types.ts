@@ -719,6 +719,13 @@ export interface CreatureBlueprint {
    */
   fireGerminator?: boolean
   /**
+   * Seeds of this species germinate preferentially in light gaps — openings in the
+   * canopy created by treefall or disturbance. When `lightGrid` at the seed's tile
+   * exceeds 0.4, the seed attempts immediate germination. Models gap-dependent
+   * pioneers like SUNLEAF and BRAMBLE. Issue #3351.
+   */
+  lightGapGerminator?: boolean
+  /**
    * Viability half-life of dormant seeds in seconds. Seeds decay exponentially:
    * viability = 0.5^(age / seedLongevity). Short-lived (transient bank, ~150 s)
    * seeds must germinate within one season or die. Long-lived (persistent bank,
@@ -1350,6 +1357,12 @@ export interface WorldState {
    * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.
    */
   flowZone?: Uint8Array
+  /**
+   * Per-tile light level [0, 1]. 1 = full sky exposure, 0 = complete shade.
+   * Computed by column-sweep from top to bottom: each solid tile attenuates by 0.25.
+   * Updated every 30 ticks. Used for light-gap germination triggers. Issue #3351.
+   */
+  lightGrid?: Float32Array
   eggs: Egg[]
   nextEggId: number
   /**
