@@ -1246,6 +1246,11 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0001 * dt)  // starvation without fungal support
       }
     }
+    // Low O2 respiration penalty: thin atmosphere reduces metabolic efficiency. Issue #3276.
+    const o2Level = w.atmosphericO2 ?? 1.0
+    if (o2Level < 0.7 && !bp.tags?.includes('plant')) {
+      c.hunger = Math.min(1, c.hunger + 0.0002 * dt * (0.7 - o2Level) / 0.7)  // up to +0.0002/s at O2=0
+    }
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {

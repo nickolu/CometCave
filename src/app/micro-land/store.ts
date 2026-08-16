@@ -475,6 +475,13 @@ interface MicroLandState {
   atmosphericCO2: number
   setAtmosphericCO2: (v: number) => void
   /**
+   * Atmospheric O2 level relative to baseline [0, 2]. 1.0 = normal.
+   * Mirrored from WorldState on each stats tick. Used by the Field Guide
+   * to show the O2 level. Issues #3275, #3276.
+   */
+  atmosphericO2: number
+  setAtmosphericO2: (v: number) => void
+  /**
    * Per-species migration stats for the Field Guide. Keyed by blueprintId;
    * only populated for migratory species currently in the world. Issue #3327.
    */
@@ -712,6 +719,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   invasionFront: {},
   biomeZones: [],
   atmosphericCO2: 0,
+  atmosphericO2: 1.0,
   migrationStats: {},
   locateCreatureRequest: null,
   traitOverlay: null,
@@ -849,6 +857,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),
   setAtmosphericCO2: v => set({ atmosphericCO2: v }),
+  setAtmosphericO2: v => set({ atmosphericO2: v }),
   setMigrationStats: stats => set({ migrationStats: stats }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
