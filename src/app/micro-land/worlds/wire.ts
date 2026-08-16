@@ -20,8 +20,8 @@
 import { MATERIAL_IDS } from '@/app/micro-land/domain/config/materials'
 import { PLANT_SEED_INTERVAL, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { sanitizeTerrain } from '@/app/micro-land/domain/terrain'
-import { SHADE_MAX, SHADE_MIN, TRAIT_MAX, TRAIT_MIN } from '@/app/micro-land/domain/traits'
-import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import { NEUTRAL_TRAITS, TRAIT_BOUNDS } from '@/app/micro-land/domain/traits'
+import type { CreatureBlueprint, Traits } from '@/app/micro-land/domain/types'
 
 import {
   type SavedCreature,
@@ -145,16 +145,25 @@ function validRuns(runs: unknown, tileCount: number): number[] | null {
  */
 function cleanTraits(raw: unknown): SavedCreature['traits'] {
   if (!isPlainObject(raw)) return undefined
-  return {
-    speed: clamp(raw.speed, TRAIT_MIN, TRAIT_MAX, 1),
-    sight: clamp(raw.sight, TRAIT_MIN, TRAIT_MAX, 1),
-    lifespan: clamp(raw.lifespan, TRAIT_MIN, TRAIT_MAX, 1),
-    // Wrapped rather than clamped — hue is an angle, and 370° is 10°, not 360°.
-    hue: ((clamp(raw.hue, -1e6, 1e6, 0) % 360) + 360) % 360,
-    shade: clamp(raw.shade, SHADE_MIN, SHADE_MAX, 1),
-    // roam was added after the first save format; absent in old saves → defaults to 1.
-    roam: clamp(raw.roam, TRAIT_MIN, TRAIT_MAX, 1),
+
+  const out: Partial<Traits> = {}
+
+  // Wrapped rather than clamped — hue is an angle, and 370° is 10°, not 360°.
+  if (raw.hue !== undefined) out.hue = ((clamp(raw.hue, -1e6, 1e6, 0) % 360) + 360) % 360
+
+  // Driven off `TRAIT_BOUNDS` rather than a written-out list, so a trait added
+  // to the set is validated here the day it exists rather than the day someone
+  // notices it is being dropped. A key absent from the save stays absent — the
+  // thaw merges over `neutralTraits()`, which is the one place the default for
+  // a missing trait is decided.
+  for (const key of Object.keys(TRAIT_BOUNDS) as Exclude<keyof Traits, 'hue'>[]) {
+    const value = raw[key]
+    if (value === undefined) continue
+    const { min, max } = TRAIT_BOUNDS[key]
+    out[key] = clamp(value, min, max, NEUTRAL_TRAITS[key] ?? 1)
   }
+
+  return out
 }
 
 function cleanCreature(raw: unknown, index: number): SavedCreature | null {

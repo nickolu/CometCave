@@ -1233,7 +1233,10 @@ export class Renderer {
       }
 
       if (traitKey) {
-        const delta = ((c.traits as Record<string, number>)[traitKey] ?? 1) - 1.0
+        // Double cast because `Traits` has no index signature — the heatmap
+        // picks its trait by string key at runtime, so this is a genuine
+        // dynamic read rather than a mistake.
+        const delta = ((c.traits as unknown as Record<string, number>)[traitKey] ?? 1) - 1.0
         if (Math.abs(delta) >= 0.08) {
           const alpha = Math.min(0.6, Math.abs(delta) * 1.2).toFixed(2)
           ctx.globalAlpha = parseFloat(alpha)
@@ -1270,10 +1273,13 @@ export class Renderer {
       if (!this.onScreen(c.x - 8, 16)) continue
 
       const dots: string[] = []
-      if ((c as { sick?: number }).sick) dots.push('#a855f7')
+      // These three are required on `Creature`; the widening casts that used to
+      // be here dated from when they were not, and re-introduced the very
+      // `undefined` they were meant to guard against.
+      if (c.sick) dots.push('#a855f7')
       if (c.starving > 0) dots.push('#f97316')
-      if ((c as { poisoned?: number }).poisoned > 0) dots.push('#84cc16')
-      if ((c as { stunTimer?: number }).stunTimer > 0) dots.push('#facc15')
+      if (c.poisoned > 0) dots.push('#84cc16')
+      if (c.stunTimer > 0) dots.push('#facc15')
       if (c.distress > 1) dots.push('#60a5fa')
       if (dots.length === 0) continue
 

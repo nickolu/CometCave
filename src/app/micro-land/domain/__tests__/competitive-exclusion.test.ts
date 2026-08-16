@@ -17,9 +17,10 @@ import { sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { tickCreatures } from '@/app/micro-land/domain/sim/creature-sim'
+import type { SimEvent } from '@/app/micro-land/domain/sim/creature-sim'
 import { makeRng } from '@/app/micro-land/domain/sim/prng'
 import { createWorld, registerBlueprint, spawnCreature } from '@/app/micro-land/domain/sim/world'
-import type { CreatureBlueprint, SimEvent, WorldState } from '@/app/micro-land/domain/types'
+import type { CreatureBlueprint, WorldState } from '@/app/micro-land/domain/types'
 
 function mudWorld(): WorldState {
   const w = createWorld(5)

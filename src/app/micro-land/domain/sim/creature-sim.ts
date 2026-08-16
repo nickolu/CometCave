@@ -1338,7 +1338,10 @@ export function tickCreatures(
     }
 
     // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
-    if (bp.body.locomotion === 'walk') {
+    // `move.kind`, not the `body.locomotion` this used to read — that field went
+    // away with the digging feature, so this whole quicksand branch had been
+    // dead since. Walkers sink again.
+    if (bp.move.kind === 'walk') {
       const qs_fx = Math.floor(c.x + body.dx + body.w / 2)
       const qs_fy = Math.floor(c.y + body.dy + body.h)
       if (MATERIAL_BY_INDEX[tileAt(w, qs_fx, qs_fy)]?.id === 'quicksand') {

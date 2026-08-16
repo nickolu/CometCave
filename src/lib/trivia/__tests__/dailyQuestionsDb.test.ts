@@ -131,7 +131,10 @@ describe('setDailyQuestions', () => {
   })
 
   it('calls set with data merged with createdAt', async () => {
-    const setFn = vi.fn(() => Promise.resolve())
+    // Declared with its argument: `vi.fn(() => …)` infers a zero-arg signature,
+    // which types `mock.calls[0]` as the empty tuple and makes reading the
+    // document that was written a type error rather than an assertion.
+    const setFn = vi.fn<(doc: Record<string, unknown>) => Promise<void>>(() => Promise.resolve())
     const { db } = buildMockDb({ docSet: setFn })
     mockGetFirestoreDb.mockReturnValue(db as unknown as ReturnType<typeof getFirestoreDb>)
 
