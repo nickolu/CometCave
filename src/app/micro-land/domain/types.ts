@@ -523,6 +523,27 @@ export interface CreatureBlueprint {
    * in murky water find prey that would be visually invisible.
    */
   lateralLine?: boolean
+  /**
+   * Mantis shrimp and cephalopods detect polarized light reflections from
+   * iridescent surfaces, including the cryptic colour-matching camouflage used
+   * by flatfish and cephalopods themselves.
+   *
+   * When true, this predator strips the `cryptic` tile-matching bonus from prey
+   * camouflage — but does NOT override base `traits.camouflage`. A cryptic prey
+   * that would have had `baseCamouflage ≈ 1` falls back to `traits.camouflage`
+   * (default ≈ 0.2). Unlike electroreception, polarized light is weaker:
+   * it reveals the colour match, not the animal's presence per se.
+   */
+  polarizedVision?: boolean
+  /**
+   * Species-level opt-in to the food-washing cultural innovation.
+   *
+   * When true, individuals of this species can discover — or learn from kin —
+   * the practice of rinsing food near water before eating it. The behavior is
+   * per-individual (`Creature.learnedFoodWashing`) and spreads socially.
+   * Default false; only meaningful for intelligent social animals.
+   */
+  canLearnFoodWashing?: boolean
 }
 
 /**
@@ -833,6 +854,19 @@ export interface Creature {
    * no fatigue data default to 0.
    */
   fatigue?: number
+  /**
+   * Whether this individual has learned to wash food before eating.
+   *
+   * A per-creature learned behavior, not a heritable trait — it is absent by
+   * default and acquired either by rare spontaneous innovation near water, or
+   * by observing a kin who already does it. Models the 1953 Koshima macaque
+   * potato-washing discovery: the first documented cultural transmission in
+   * non-humans.
+   *
+   * Only active for species with `canLearnFoodWashing: true` in their blueprint.
+   * When active, eating near water yields 5% more energy per meal.
+   */
+  learnedFoodWashing?: boolean
 }
 
 /**

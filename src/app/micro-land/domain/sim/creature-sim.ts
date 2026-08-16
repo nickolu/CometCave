@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { IS_DEADLY, IS_LIQUID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -287,6 +287,32 @@ function fertilityAt(w: WorldState, x: number, y: number): number {
   }
 
   return Math.max(0.2, f)
+}
+
+/**
+ * True when any of the four cardinal tiles around the creature's centre is a
+ * liquid that is NOT deadly (water yes, lava/acid no).
+ *
+ * Used for the food-washing mechanic: washing food in lava is not an upgrade.
+ */
+function isNearWater(w: WorldState, c: Creature): boolean {
+  const cx = Math.floor(c.x)
+  const cy = Math.floor(c.y)
+  const offsets: [number, number][] = [
+    [0, -1],
+    [0, 1],
+    [-1, 0],
+    [1, 0],
+  ]
+  for (const [dx, dy] of offsets) {
+    const col = wrapCol(cx + dx)
+    const row = cy + dy
+    if (row < 0 || row >= WORLD_H) continue
+    const idx = col + row * WORLD_W
+    const tile = w.tiles[idx] ?? 0
+    if (IS_LIQUID[tile] && !IS_DEADLY[tile]) return true
+  }
+  return false
 }
 
 export interface SimEvent {
@@ -1078,6 +1104,16 @@ export function tickCreatures(
             // replaces them, which is what makes "born here" and "put here" two
             // genuinely different things.
             child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+            // Food-washing inheritance: 70% chance to inherit from the parent
+            // that knows the technique. Models early cultural transmission —
+            // offspring raised by a food-washer mostly pick up the behavior.
+            if (
+              (c.learnedFoodWashing || mate?.learnedFoodWashing) &&
+              bp.canLearnFoodWashing &&
+              rng() < 0.7
+            ) {
+              child.learnedFoodWashing = true
+            }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
@@ -1580,11 +1616,37 @@ function look(
           return
         }
         devour(w, other, obp, dead, events)
-        c.hunger = Math.max(0, c.hunger - mealFill(c, bp, obp, sizeOf(other)))
+        let fill = mealFill(c, bp, obp, sizeOf(other))
+        // Food washing bonus: +5% energy if the creature has learned the behavior
+        // and is near non-deadly liquid (water, not lava/acid).
+        if (c.learnedFoodWashing && isNearWater(w, c)) {
+          fill *= 1.05
+        }
+        c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
         c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
+        // Cultural innovation: rare spontaneous food-washing discovery near water.
+        if (bp.canLearnFoodWashing && !c.learnedFoodWashing && isNearWater(w, c) && rng() < 0.002) {
+          c.learnedFoodWashing = true
+        }
+        // Cultural transmission: a food-washer near kin passes the behavior on.
+        if (c.learnedFoodWashing && isNearWater(w, c)) {
+          const sight = c.traits.sight * bp.senses.sight
+          for (const other2 of w.creatures) {
+            if (
+              other2.id === c.id ||
+              other2.blueprintId !== c.blueprintId ||
+              other2.learnedFoodWashing ||
+              !w.blueprints[other2.blueprintId]?.canLearnFoodWashing
+            ) continue
+            const dx2 = distX(c.x, other2.x) ** 2
+            const dy2 = (c.y - other2.y) ** 2
+            if (dx2 + dy2 > sight * sight) continue
+            if (rng() < 0.04) other2.learnedFoodWashing = true
+          }
+        }
         // Cooperative creatures signal food location to kin.
         if (
           ((c.traits as { cooperation?: number }).cooperation ?? 0.3) > 0.5 &&
@@ -1650,7 +1712,7 @@ function look(
         ? 0
         : chromaFade > 0
           ? 0 // transitioning — briefly exposed
-          : obp.cryptic
+          : obp.cryptic && !bp.polarizedVision
             ? Math.max(
                 other.traits.camouflage,
                 crypticCamouflage(
@@ -1715,7 +1777,7 @@ function look(
         ? 0
         : intruderChromaFade > 0
           ? 0
-          : obp.cryptic
+          : obp.cryptic && !bp.polarizedVision
             ? Math.max(
                 other.traits.camouflage,
                 crypticCamouflage(

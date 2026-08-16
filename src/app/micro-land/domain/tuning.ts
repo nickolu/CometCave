@@ -470,6 +470,26 @@ export const KNOBS: Knob[] = [
     max: 1800,
     step: 30,
   },
+  {
+    key: 'dayLengthSeconds',
+    group: 'world',
+    label: 'Day/night cycle length',
+    help: 'How long one day/night cycle lasts in simulation time. 0 disables the cycle entirely. 120 is one cycle every two real-world minutes at normal speed.',
+    min: 0,
+    max: 600,
+    step: 10,
+    unit: 's',
+  },
+  {
+    key: 'eggHatchSeconds',
+    group: 'creatures',
+    label: 'Egg hatch time',
+    help: 'How long an egg takes to hatch. Shorter = faster generations, more responsive populations. Longer = eggs linger and are more vulnerable.',
+    min: 1,
+    max: 120,
+    step: 1,
+    unit: 's',
+  },
 ]
 
 const KNOB_BY_KEY: Record<TuningKey, Knob> = Object.fromEntries(
