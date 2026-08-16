@@ -1269,6 +1269,18 @@ export interface WorldState {
    * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
    */
   marshDetritus?: Float32Array
+  /**
+   * X tile position where each invasive species was first observed in this
+   * world. Keyed by blueprintId. Populated lazily when the first individual
+   * of an invasive species is seen. Issue #3366.
+   */
+  invasionOriginX?: Record<string, number>
+  /**
+   * Maximum X tile position ever reached by each invasive species, ratcheting
+   * up monotonically. Keyed by blueprintId. Tracks the historical invasion
+   * front. Issue #3366.
+   */
+  invasionFrontX?: Record<string, number>
   eggs: Egg[]
   nextEggId: number
   /**

@@ -78,6 +78,7 @@ export function FieldGuidePane() {
   const milestones = useMicroLand(s => s.milestones)
   const populationHistory = useMicroLand(s => s.populationHistory)
   const traitOverlay = useMicroLand(s => s.traitOverlay)
+  const invasionFront = useMicroLand(s => s.invasionFront)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -1000,6 +1001,28 @@ function GuideEntry({
                           {' '}· {preyOverlap}% prey overlap
                         </span>
                       )}
+                    </>
+                  )
+                })()}
+              </>
+            )}
+            {bp.invasive && invasionFront[bp.id] && (
+              <>
+                <br />
+                {(() => {
+                  const { originX, frontX } = invasionFront[bp.id]
+                  const spread = Math.abs(frontX - originX)
+                  const pct = Math.round((spread / 672) * 100)
+                  return (
+                    <>
+                      <strong style={{ fontWeight: 600 }}>Invasion origin:</strong>{' '}
+                      tile {originX}
+                      <br />
+                      <strong style={{ fontWeight: 600 }}>Current front:</strong>{' '}
+                      tile {frontX} · spread {spread} tiles{' '}
+                      <span style={{ color: pct >= 50 ? '#ef4444' : pct >= 25 ? '#f97316' : 'var(--cc-text-muted)' }}>
+                        ({pct}% of world)
+                      </span>
                     </>
                   )
                 })()}

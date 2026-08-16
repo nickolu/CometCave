@@ -761,6 +761,22 @@ export class GameInstance {
       .sort((a, b) => b.ageSeconds - a.ageSeconds)
     useMicroLand.getState().setPopulationItems(thumbs)
 
+    // Invasion front data for Field Guide display.
+    if (this.world.invasionOriginX || this.world.invasionFrontX) {
+      const frontData: Record<string, { originX: number; frontX: number }> = {}
+      const origins = this.world.invasionOriginX ?? {}
+      const fronts = this.world.invasionFrontX ?? {}
+      for (const id of [...Object.keys(origins), ...Object.keys(fronts)]) {
+        if (origins[id] !== undefined) {
+          frontData[id] = {
+            originX: origins[id],
+            frontX: fronts[id] ?? origins[id],
+          }
+        }
+      }
+      useMicroLand.getState().setInvasionFront(frontData)
+    }
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {
