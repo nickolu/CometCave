@@ -423,6 +423,16 @@ export interface CreatureBlueprint {
    * Models sundews, pitcher plants, butterworts on acidic bogs and volcanic rock.
    */
   carnivorousPlant?: boolean
+  /**
+   * Drastically reduced basal metabolic rate — inspired by cave-adapted
+   * species (cave olm, cave fish) that can survive months without food.
+   *
+   * When true, the hunger increment is multiplied by 0.1, making the creature
+   * burn energy at 10% of the normal rate. Reproduction rate is also halved
+   * (these are extreme K-strategists). No special tile requirement — the flag
+   * applies anywhere, but it is most meaningful in nutrient-scarce environments.
+   */
+  slowMetabolism?: boolean
 }
 
 /**

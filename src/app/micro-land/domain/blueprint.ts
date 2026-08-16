@@ -594,6 +594,7 @@ export function sanitizeBlueprint(
     rootBankStabilizer: b.rootBankStabilizer === true,
     polluter: b.polluter === true,
     carnivorousPlant: b.carnivorousPlant === true,
+    slowMetabolism: b.slowMetabolism === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
