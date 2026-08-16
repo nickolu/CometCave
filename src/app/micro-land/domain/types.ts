@@ -49,6 +49,7 @@ export type BaseMaterialId =
   | 'shed-skin'
   | 'web'
   | 'termite-mound'
+  | 'fire'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -105,6 +106,8 @@ export interface Material {
   tintable: boolean
   /** For a tint variant, the material it is a recolor of. */
   tintOf: TintableMaterialId | null
+  /** Burns when adjacent to fire; can be ignited and spread flames. */
+  flammable?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -729,6 +732,13 @@ export interface CreatureBlueprint {
    * Issue #3353.
    */
   fireGerminator?: boolean
+  /**
+   * Seeds of this fire-adapted species sprout preferentially on fresh ash.
+   * When an ash tile is detected within radius 2 of the seed, the sprout rate
+   * is boosted by 5×. Models pioneer species that colonise post-fire landscapes:
+   * fireweed, lodgepole pine, Ceanothus. Issue #3117.
+   */
+  fireAdapted?: boolean
   /**
    * Seeds of this species germinate preferentially in light gaps — openings in the
    * canopy created by treefall or disturbance. When `lightGrid` at the seed's tile
@@ -1968,6 +1978,16 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
 }
 
 // ---------------------------------------------------------------------------

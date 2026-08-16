@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { AIR, IS_DEADLY, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { AIR, IS_DEADLY, IS_FLAMMABLE, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -70,7 +70,9 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickFire,
   tickWebDecay,
+  tickWeather,
   tileAt,
   updateBiomeZones,
 } from './world'
@@ -825,7 +827,27 @@ function tickSeedBank(
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
-    const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+
+    // Fire-adapted plants sprout at 5× rate when ash is nearby. Issue #3117.
+    let sproutAttempts = 1
+    if (bp.fireAdapted) {
+      const ashMatIdx = MATERIAL_INDEX.ash
+      const ox = seed.x, oy = seed.y
+      let ashNearby = false
+      outer3117: for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const nx = Math.min(WORLD_W - 1, Math.max(0, ox + dx))
+          const ny = Math.min(WORLD_H - 1, Math.max(0, oy + dy))
+          if (w.tiles[ny * WORLD_W + nx] === ashMatIdx) { ashNearby = true; break outer3117 }
+        }
+      }
+      if (ashNearby) sproutAttempts = 5
+    }
+
+    let germinated: ReturnType<typeof reproduce> = null
+    for (let a = 0; a < sproutAttempts && !germinated; a++) {
+      germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+    }
     if (germinated) {
       plantsRef.value++
       speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
@@ -879,6 +901,8 @@ export function tickCreatures(
   tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickFire(w, tickCount, rng, IS_FLAMMABLE, IS_LIQUID, MATERIAL_INDEX.fire, MATERIAL_INDEX.ash)
+  tickWeather(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
@@ -3903,6 +3927,10 @@ function look(
           }
         }
         let fill = mealFill(c, bp, obp, sizeOf(other))
+        // Nocturnal predators gain an ambush advantage in storms (dark + chaos). Issue #3097.
+        if (w.weatherState === 'storm' && ((c.traits as { diurnal?: number }).diurnal ?? 0) < -0.2) {
+          fill *= 1.2
+        }
         // Food washing bonus: +5% energy if the creature has learned the behavior
         // and is near non-deadly liquid (water, not lava/acid).
         if (c.learnedFoodWashing && isNearWater(w, c)) {
@@ -5082,7 +5110,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (1 + (c.escalatedSpeed ?? 0)) *   // predator escalation speed bonus. Issue #3263.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
-    (1 - diurnalPenalty)
+    (1 - diurnalPenalty) *
+    // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
+    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {
