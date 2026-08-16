@@ -1689,6 +1689,18 @@ export interface Creature {
   alarmCallTimer?: number
   /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
   learnedAversions?: string[]
+  /** Seconds of frog apostasy countdown — dissenting frog moving away from fundamentalist mob. Issue #3xxx. */
+  frogApostate?: number
+  /** True when this gopher holds the current admin role in the Gopher Grid. Issue #3xxx. */
+  isGopherAdmin?: boolean
+  /** World elapsed time when this beetle recorded its mail message (undefined = no message queued). Issue #3xxx. */
+  beetleMailRecordedAt?: number
+  /** Type of beetle mail queued: 'food' or 'predator'. Issue #3xxx. */
+  beetleMailType?: string
+  /** X tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailX?: number
+  /** Y tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailY?: number
 }
 
 /**
