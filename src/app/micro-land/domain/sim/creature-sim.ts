@@ -115,6 +115,37 @@ const SOIL_ENRICH_PROB = 0.002
  */
 const CAMOUFLAGE_STILL = 1.5
 
+/** Extract hue (0–360) from a CSS hex color. Returns -1 for achromatic (gray/white/black). */
+export function hexHue(hex: string): number {
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const d = max - min
+  if (d < 0.05) return -1 // achromatic — too gray to have a meaningful hue
+  let h: number
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) * 60
+  else if (max === g) h = ((b - r) / d + 2) * 60
+  else h = ((r - g) / d + 4) * 60
+  return h
+}
+
+/**
+ * Camouflage score for a cryptic creature standing on a tile.
+ *
+ * creature.traits.hue is treated as the creature's dominant color (0–360).
+ * tileHue is the tile material's hue, or -1 if achromatic.
+ * Achromatic tiles (stone, metal, ice) give a flat 0.3 — some concealment but not great.
+ * A perfect hue match gives 1.0 (fully camouflaged); 90° away gives 0 (no colour benefit).
+ */
+export function crypticCamouflage(creatureHue: number, tileHue: number): number {
+  if (tileHue < 0) return 0.3
+  const diff = Math.abs((((creatureHue - tileHue) % 360) + 360) % 360)
+  const angular = Math.min(diff, 360 - diff) // 0–180
+  return Math.max(0, 1 - angular / 90) // 1 at 0°, 0 at ≥90°
+}
+
 /**
  * How fertile the soil is at a world position — a multiplier on plant spread rate.
  *
@@ -1322,7 +1353,22 @@ function look(
         obp.move.kind !== 'root' && Math.abs(other.vx) + Math.abs(other.vy) < CAMOUFLAGE_STILL
       // Camouflage: trait scales how hard this creature is to spot.
       // Still creatures benefit most; moving gives most of it away.
-      const camouflage = (other.traits as { camouflage?: number }).camouflage ?? 0.2
+      // For the tile lookup, read the tile the creature is standing on (the row
+      // at its feet) rather than its vertical centre. Centre is always air for a
+      // walking creature, which would make the colour match meaningless — the
+      // relevant substrate is always the one the creature is resting against.
+      const camouflage = obp.cryptic
+        ? Math.max(
+            other.traits.camouflage,
+            crypticCamouflage(
+              ((other.traits.hue % 360) + 360) % 360,
+              hexHue(
+                MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
+                  ?.color ?? '#808080'
+              )
+            )
+          )
+        : other.traits.camouflage
       const detFactor = still
         ? Math.max(0.15, 0.5 - camouflage * 0.375) // 0.5 (camo=0) → 0.2 (camo=0.8)
         : 1 - camouflage * 0.3 // 1.0 (camo=0) → 0.76 (camo=0.8)
@@ -1346,7 +1392,18 @@ function look(
       obp.move.kind !== 'root' // not a plant
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
-      const intruderCamo = (other.traits as { camouflage?: number }).camouflage ?? 0.2
+      const intruderCamo = obp.cryptic
+        ? Math.max(
+            other.traits.camouflage,
+            crypticCamouflage(
+              ((other.traits.hue % 360) + 360) % 360,
+              hexHue(
+                MATERIAL_BY_INDEX[tileAt(w, Math.floor(other.x + ow / 2), Math.floor(other.y + oh))]
+                  ?.color ?? '#808080'
+              )
+            )
+          )
+        : other.traits.camouflage
       const effectiveTerritoryR = territoryR * (1 - intruderCamo * 0.5)
       if (d2 < effectiveTerritoryR * effectiveTerritoryR && d2 < preyDist) {
         preyDist = d2

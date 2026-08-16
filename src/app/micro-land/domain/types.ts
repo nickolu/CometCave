@@ -316,6 +316,18 @@ export interface CreatureBlueprint {
    * dirt's 1.0×, permanently enriching the soil they pass through.
    */
   soilEngineer?: boolean
+  /**
+   * When true, this species uses active camouflage based on colour-matching the
+   * tile it stands on. The effective camouflage score becomes
+   * `max(traits.camouflage, colorMatchScore)`, where colorMatchScore is 1 when
+   * the creature's hue exactly matches the tile's hue and falls to 0 at 90°
+   * apart. Achromatic tiles (stone, metal, ice) give a flat 0.3 baseline.
+   *
+   * This creates an evolutionary feedback loop: cryptic individuals on earthy
+   * tiles that happen to share those hues survive predation better, so over
+   * generations the population drifts toward the local substrate colour.
+   */
+  cryptic?: boolean
 }
 
 /**
