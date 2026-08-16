@@ -725,6 +725,19 @@ export function tickCreatures(
       1,
       c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * dt
     )
+    // Phenological mismatch penalty: species breeding far from the summer GDD peak
+    // (≈ 500) face elevated hunger during their breeding season — prey/plants are
+    // scarce when their demand is highest. Penalty is zero when seasons are disabled
+    // or when the species has no phenological gate.
+    if (
+      bp.phenology?.breedingGdd !== undefined &&
+      TUNING.seasonAmplitude > 0 &&
+      worldGdd(w.elapsed) >= bp.phenology.breedingGdd
+    ) {
+      // mismatch: 0 = perfectly timed (breedingGdd=500), 1 = maximally mismatched
+      const mismatch = Math.abs(bp.phenology.breedingGdd - 500) / 500
+      c.hunger = Math.min(1, c.hunger + mismatch * 0.00008 * dt)
+    }
     if (c.hunger >= 1) {
       c.starving += dt
       if (c.starving >= bp.diet.starveSeconds) {
