@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     clearingMaintainer: b.clearingMaintainer === true,
     eyespots: b.eyespots === true,
     countershaded: b.countershaded === true,
+    activeChromatophores: b.activeChromatophores === true,
     bioturbator: b.bioturbator === true,
     rootBankStabilizer: b.rootBankStabilizer === true,
     polluter: b.polluter === true,
