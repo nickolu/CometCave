@@ -1028,6 +1028,40 @@ const PALECRAWLER = builtin('palecrawler', {
   death: { becomes: null, particleColor: '#ded3c4', particleCount: 6 },
   aura: null,
   glow: 0,
+  invasive: true,  // escaped from a cave research lab — spreads aggressively with no natural enemies. Issue #3368.
+})
+
+const PARASITOID_WASP = builtin('parasitoid-wasp', {
+  name: 'Parasitoid Wasp',
+  blurb: 'Introduced to suppress the Palecrawler — but its preferences are not always precise.',
+  size: 1,
+  tags: ['meat', 'bug'],
+  art: {
+    palette: { y: '#f5c518', b: '#1a1a1a', r: '#cc3300', w: '#ffffcc' },
+    frames: [
+      ['.yby.', 'ybbby', '.wrw.', '..b..'],
+      ['.yby.', 'ybwby', '.wrw.', '..b..'],
+    ],
+    frameMs: 120,
+    faceMotion: true,
+  },
+  body: { mass: 0.08, bounce: 0.1, drag: 0.55, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'fly', speed: 5.5, jump: 0, restlessness: 0.5, hop: 0 },
+  diet: {
+    eats: ['bug'],
+    fears: [],
+    hungerRate: 0.035,
+    starveSeconds: 22,
+    breedAt: 0.72,
+    lifespanSeconds: 150,
+  },
+  senses: { sight: 18 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#f5c518', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  biocontrolAgent: true,
+  biocontrolTargets: ['palecrawler'],  // specialist predator released to suppress the invasive Palecrawler. Issue #3368.
 })
 
 const GLOOMWEAVER = builtin('gloomweaver', {
@@ -1983,6 +2017,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   DELVER,
   MOTE,
   PALECRAWLER,
+  PARASITOID_WASP,
   DRIFTMOLE,
   WOOLLY,
   DUSTBEE,

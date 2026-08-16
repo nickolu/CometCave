@@ -752,6 +752,19 @@ export interface CreatureBlueprint {
    * tiles, seedlings die and adults face a starvation penalty. Issue #3333.
    */
   obligateMycorrhizal?: boolean
+  /**
+   * This species preferentially hunts creatures whose blueprintId appears in
+   * this list. When a `biocontrolTarget` creature is within attack range, the
+   * agent prioritizes it over other prey (2× attack bonus vs. target, 0.5×
+   * vs. non-target). Models specialist biocontrol agents introduced to suppress
+   * invasive species. Issue #3368.
+   */
+  biocontrolTargets?: string[]
+  /**
+   * True if this species is itself a biocontrol introduction rather than a
+   * naturally occurring species. Used for Field Guide tracking. Issue #3368.
+   */
+  biocontrolAgent?: boolean
 }
 
 /**
