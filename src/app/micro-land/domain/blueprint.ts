@@ -616,6 +616,7 @@ export function sanitizeBlueprint(
     infraredVision: b.infraredVision === true,
     lateralLine: b.lateralLine === true,
     polarizedVision: b.polarizedVision === true,
+    polarizedSkin: !!b.polarizedSkin,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     elderWisdom: !!b.elderWisdom,
     phenology: b.phenology?.breedingGdd !== undefined
