@@ -1714,6 +1714,12 @@ export interface WorldState {
    */
   atmosphericCO2?: number
   /**
+   * Atmospheric O2 level relative to baseline [0, 2]. 1.0 = normal.
+   * Plants produce O2; animals and lava consume it. Below 0.7 causes
+   * metabolic stress in non-plant creatures. Issues #3275, #3276.
+   */
+  atmosphericO2?: number
+  /**
    * Mycorrhizal network graph: maps creature ID (as string) to array of
    * connected creature IDs. Entries are pruned when a creature dies. Undefined
    * until first mycorrhizal plant establishes. Issue #3329.

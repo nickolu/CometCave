@@ -797,6 +797,8 @@ export class GameInstance {
 
     // Atmospheric CO2 for Field Guide display. Issue #3381.
     useMicroLand.getState().setAtmosphericCO2(this.world.atmosphericCO2 ?? 0)
+    // Atmospheric O2 for Field Guide display. Issues #3275, #3276.
+    useMicroLand.getState().setAtmosphericO2(this.world.atmosphericO2 ?? 1.0)
 
     // Migration stats for Field Guide display. Issue #3327.
     const migStats: Record<string, { name: string; total: number; migrating: number; winteringX: number | undefined; summerX: number | undefined; stopoverHabitat: string[] }> = {}

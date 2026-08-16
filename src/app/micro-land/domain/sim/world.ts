@@ -1189,12 +1189,17 @@ export function updateBiomeZones(w: WorldState, tickCount: number, seasonFactor:
   }
 }
 
-const LAVA_CO2_EMIT = 0.000002   // per lava tile per tick
+const LAVA_CO2_EMIT = 0.000002    // per lava tile per tick
 const PLANT_CO2_ABSORB = 0.00001  // per living plant creature per tick
+const O2_PLANT_EMIT = 0.000008    // per living plant per tick-call
+const O2_ANIMAL_CONSUME = 0.000003 // per living animal per tick-call
+const O2_LAVA_CONSUME = 0.000001   // per sampled lava tile
 
 /**
  * Accumulate atmospheric CO2 from lava tiles and deplete it via plant
- * photosynthesis. CO2 remains in [0, 1]. Called every tick. Issue #3381.
+ * photosynthesis. Also tracks O2: plants produce it, animals and lava consume
+ * it. CO2 remains in [0, 1]; O2 in [0, 2] (1.0 = baseline).
+ * Called every tick. Issues #3381, #3275, #3276.
  */
 export function tickAtmosphericCO2(
   w: WorldState,
@@ -1213,6 +1218,13 @@ export function tickAtmosphericCO2(
   const emission = lavaTiles * LAVA_CO2_EMIT
   const absorption = livingPlantCount * PLANT_CO2_ABSORB
   w.atmosphericCO2 = Math.max(0, Math.min(1, w.atmosphericCO2 + emission - absorption))
+
+  // O2 tracking: plants produce O2, animals and lava consume it. Issues #3275, #3276.
+  const livingAnimalCount = w.creatures.length  // rough approximation (includes plants/animals)
+  const o2Change = livingPlantCount * O2_PLANT_EMIT
+               - livingAnimalCount * O2_ANIMAL_CONSUME
+               - lavaTiles * O2_LAVA_CONSUME
+  w.atmosphericO2 = Math.max(0, Math.min(2, (w.atmosphericO2 ?? 1.0) + o2Change))
 }
 
 const HYPHAE_RANGE = 20  // tiles — max fungal link distance

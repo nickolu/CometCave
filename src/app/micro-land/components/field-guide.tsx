@@ -81,6 +81,7 @@ export function FieldGuidePane() {
   const invasionFront = useMicroLand(s => s.invasionFront)
   const biomeZones = useMicroLand(s => s.biomeZones)
   const atmosphericCO2 = useMicroLand(s => s.atmosphericCO2)
+  const atmosphericO2 = useMicroLand(s => s.atmosphericO2)
   const migrationStats = useMicroLand(s => s.migrationStats)
   const networkDegree = useMicroLand(s => s.networkDegree)
   const networkStats = useMicroLand(s => s.networkStats)
@@ -653,6 +654,14 @@ export function FieldGuidePane() {
             <p className="biome-co2-warning" style={{ fontSize: 11, color: 'var(--cc-gold)', marginBottom: 8 }}>
               CO&#x2082;: {Math.round(atmosphericCO2 * 100)}% above baseline
               {atmosphericCO2 > 0.5 ? ' — biomes shifting rapidly' : atmosphericCO2 > 0.2 ? ' — warming detected' : ''}
+            </p>
+          )}
+          {/* O2 level display. Issue #3275. */}
+          {atmosphericO2 !== undefined && (
+            <p className={atmosphericO2 < 0.7 ? 'biome-co2-warning' : ''} style={{ fontSize: 11, color: atmosphericO2 < 0.7 ? 'var(--cc-gold)' : 'var(--cc-text-muted)', marginBottom: 8 }}>
+              O&#x2082;: {(atmosphericO2 * 100).toFixed(0)}% of baseline
+              {atmosphericO2 < 0.7 ? ' \u2014 thin atmosphere, animals sluggish' :
+               atmosphericO2 > 1.5 ? ' \u2014 oxygen-rich, fire risk elevated' : ''}
             </p>
           )}
           <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
