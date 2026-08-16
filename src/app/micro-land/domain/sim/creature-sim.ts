@@ -107,6 +107,15 @@ const BITE_PAD = 0.5
 const SOIL_ENRICH_PROB = 0.002
 
 /**
+ * Probability per tick that a polluter creature converts the tile it is
+ * standing on (dirt or grass) into ash. At 60Hz this gives a ~6% chance
+ * per second — slower than soil enrichment because soot requires sustained
+ * exposure to build up. Ash has 0.7× fertility, creating selection pressure
+ * for dark-hued cryptic variants (industrial melanism).
+ */
+const POLLUTION_PROB = 0.001
+
+/**
  * Within this many tiles, disruptive patterns give no detection benefit —
  * the outline is legible at close range regardless of the pattern.
  */
@@ -857,6 +866,23 @@ export function tickCreatures(
       const scy = Math.floor(c.y + body.dy + body.h)
       if (tileAt(w, scx, scy) === MATERIAL_INDEX.dirt && Math.random() < SOIL_ENRICH_PROB) {
         setTile(w, scx, scy, MATERIAL_INDEX.mud)
+      }
+    }
+
+    // Industrial pollution: creatures with polluter flag deposit soot (ash) on
+    // the tiles they walk through, darkening the substrate and creating selection
+    // pressure for cryptic variants with ash-hue colouring (industrial melanism).
+    // Converts dirt and grass to ash (fertility 0.7×); does not affect other
+    // tile types so the effect is concentrated on vegetation-bearing ground.
+    if (bp.polluter) {
+      const scx = Math.floor(c.x + body.dx + body.w / 2)
+      const scy = Math.floor(c.y + body.dy + body.h)
+      const foot = tileAt(w, scx, scy)
+      if (
+        (foot === MATERIAL_INDEX.dirt || foot === MATERIAL_INDEX.grass) &&
+        Math.random() < POLLUTION_PROB
+      ) {
+        setTile(w, scx, scy, MATERIAL_INDEX.ash)
       }
     }
 

@@ -360,6 +360,18 @@ export interface CreatureBlueprint {
    * away in a single generation. The most common coloration pattern in vertebrates.
    */
   countershaded?: boolean
+  /**
+   * Industrial polluter: the creature deposits soot (ash) on dirt and grass tiles
+   * as it moves, darkening the substrate. Ash has 0.7× plant fertility compared
+   * to dirt's 1.0× — a penalty that models real soot smothering.
+   *
+   * The primary ecological effect is selection pressure: cryptic prey species on
+   * ash tiles benefit from dark/blue-gray hue matching (ash hue ≈270°), causing
+   * dark morph individuals to survive predation better (industrial melanism).
+   * When pollution clears (polluter removed), lighter morphs recover their
+   * advantage on the original substrate. Models the peppered moth case study.
+   */
+  polluter?: boolean
 }
 
 /**
