@@ -1674,6 +1674,8 @@ export function tickCreatures(
               child.phenoOffset = Math.max(-200, Math.min(200, mutated))
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
+            // Record birth position for anadromous migration homing.
+            if (bp.anadromous) child.natalX = Math.floor(child.x)
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -1829,6 +1831,23 @@ export function tickCreatures(
                 else if (mate.children % 10 === 0)
                   logLife(mate, w.elapsed, `${mate.children} offspring`)
                 payForChild(w, mate, bp, bw, bh, helpers)
+              }
+              // Anadromous spawning: the act of reproduction is fatal — spent fish die
+              // and deposit marine-derived nutrients (nitrogen, phosphorus) into the
+              // headwater ecosystem. Issue #3374.
+              if (bp.anadromous) {
+                c.hunger = 1  // exhausted — will starve next tick
+                const spawnX = Math.floor(c.x + bw / 2), spawnY = Math.floor(c.y + bh / 2)
+                w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
+                for (let ndy = -3; ndy <= 3; ndy++) {
+                  for (let ndx = -3; ndx <= 3; ndx++) {
+                    const ntx = wrapCol(spawnX + ndx), nty = spawnY + ndy
+                    if (nty >= 0 && nty < WORLD_H) {
+                      w.caveNutrient[nty * WORLD_W + ntx] = Math.min(1, (w.caveNutrient[nty * WORLD_W + ntx] ?? 0) + 0.15)
+                    }
+                  }
+                }
+                logLife(c, w.elapsed, 'Spawned and spent — returning nutrients to the headwater')
               }
             }
             events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
@@ -3232,6 +3251,13 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       }
       if (leftScore !== rightScore) {
         c.drift = leftScore > rightScore ? -1 : 1
+      }
+    }
+    // Anadromous migration: adult fish drive toward natal spawn site when mature.
+    if (bp.anadromous && c.natalX !== undefined && c.ageSeconds > (bp.diet.lifespanSeconds ?? 240) * 0.4) {
+      const toNatal = deltaX(c.x, c.natalX)
+      if (Math.abs(toNatal) > 5) {
+        c.drift = toNatal > 0 ? 1 : -1
       }
     }
     wantX = c.drift

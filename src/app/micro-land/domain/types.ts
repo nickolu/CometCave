@@ -649,6 +649,12 @@ export interface CreatureBlueprint {
    * 3-tile contact range for non-UV pollinators.
    */
   uvSensitive?: boolean
+  /**
+   * Records natal X position at birth; as adults, these fish migrate back toward
+   * that position to spawn. Spawning is fatal — the fish dies and deposits marine
+   * nutrients into the headwater ecosystem. Issue #3374.
+   */
+  anadromous?: boolean  // records natal X at birth; adult drives toward it to spawn and die
 }
 
 /**
@@ -1019,6 +1025,8 @@ export interface Creature {
   insightTimer?: number
   /** Total insight events this creature has had. */
   insightCount?: number
+  /** X tile position where this creature was born (for anadromous migration). */
+  natalX?: number  // X tile position where this creature was born (for anadromous migration)
 }
 
 /**

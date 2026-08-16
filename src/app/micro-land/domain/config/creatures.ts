@@ -453,6 +453,7 @@ const SPRING_TROUT = builtin('spring-trout', {
   glow: 0,
   heatSensitive: true,
   phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
+  anadromous: true,  // migrates back to natal headwater to spawn
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
