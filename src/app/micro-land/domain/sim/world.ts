@@ -1523,3 +1523,156 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
     }
   }
 }
+
+// ---------------------------------------------------------------------------
+// Water cycle — evaporation, cloud drift, precipitation, groundwater (#3110–#3114)
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaporation: water tiles adjacent to air/cloud above slowly emit cloud vapor.
+ *
+ * Runs every 90 ticks. Samples a random row and checks every 4th column so the
+ * scan stays cheap (~width/4 tiles per pass). Each eligible water tile has a 3%
+ * chance of converting the tile above it to cloud. Issue #3110.
+ */
+export function tickEvaporation(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 90 !== 0) return
+  const { width, height, tiles } = w
+  const waterIdx = MATERIAL_INDEX['water'] ?? -1
+  const cloudIdx = MATERIAL_INDEX['cloud'] ?? -1
+  const airIdx = MATERIAL_INDEX['air'] ?? -1
+  if (waterIdx < 0 || cloudIdx < 0) return
+
+  const row = Math.floor(rng() * height)
+  if (row === 0) return
+  for (let x = 0; x < width; x += 4) {
+    const tileI = row * width + x
+    if (tiles[tileI] !== waterIdx) continue
+    const aboveI = (row - 1) * width + x
+    const above = tiles[aboveI]
+    if ((above === airIdx || above === cloudIdx) && rng() < 0.03) {
+      w.tiles[aboveI] = cloudIdx
+    }
+  }
+}
+
+/**
+ * Cloud drift: cloud tiles move laterally with a wind bias and precipitate when
+ * they form dense clusters.
+ *
+ * Runs every 120 ticks. Uses w.windX if present, else a slight rightward bias.
+ * When a cloud tile has 3+ cloud neighbors it has an 8% chance to precipitate —
+ * dropping rain or snow (based on altitude) on the first air tile below the
+ * cloud column. Issues #3111, #3112.
+ */
+export function tickCloudDrift(
+  w: WorldState,
+  tickCount: number,
+  rng: () => number,
+  setTileFn: (w: WorldState, x: number, y: number, matIdx: number) => void,
+  airMatIdx: number,
+  cloudMatIdx: number,
+  waterMatIdx: number,
+  snowMatIdx: number,
+): void {
+  if (tickCount % 120 !== 0) return
+  const { width, height, tiles } = w
+  if (cloudMatIdx < 0) return
+
+  // Wind bias: use w.windX if available, else slight rightward drift
+  const windBias = (w as unknown as { windX?: number }).windX ?? 0.1
+
+  // Collect cloud tile indices before mutation
+  const cloudTiles: number[] = []
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] === cloudMatIdx) cloudTiles.push(i)
+  }
+
+  for (const tileIdx of cloudTiles) {
+    const x = tileIdx % width
+    const y = Math.floor(tileIdx / width)
+
+    // Lateral drift based on wind direction
+    const drift = windBias > 0 ? 1 : windBias < 0 ? -1 : (rng() < 0.5 ? 1 : -1)
+    const nx = x + drift
+    if (nx >= 0 && nx < width) {
+      const nIdx = y * width + nx
+      if (tiles[nIdx] === airMatIdx) {
+        setTileFn(w, x, y, airMatIdx)
+        setTileFn(w, nx, y, cloudMatIdx)
+      }
+    }
+
+    // Precipitation: count cloud neighbors; dense clusters rain
+    let cloudNeighbors = 0
+    for (let cy = -1; cy <= 1; cy++) {
+      for (let cx = -1; cx <= 1; cx++) {
+        if (cx === 0 && cy === 0) continue
+        const cnx = x + cx
+        const cny = y + cy
+        if (cnx >= 0 && cnx < width && cny >= 0 && cny < height) {
+          if (tiles[cny * width + cnx] === cloudMatIdx) cloudNeighbors++
+        }
+      }
+    }
+
+    if (cloudNeighbors >= 3 && rng() < 0.08) {
+      // Find first non-cloud tile below
+      let rainY = y + 1
+      while (rainY < height && tiles[rainY * width + x] === cloudMatIdx) rainY++
+      if (rainY < height && tiles[rainY * width + x] === airMatIdx) {
+        // Top 20% of world counts as cold → snow; otherwise rain
+        const cold = y < height * 0.2
+        const precipMat = cold && snowMatIdx >= 0 ? snowMatIdx : waterMatIdx
+        if (precipMat >= 0) {
+          setTileFn(w, x, y, airMatIdx)       // cloud dissipates
+          setTileFn(w, x, rainY, precipMat)   // precipitation falls below
+          // Boost moisture at landing tile
+          if (w.moisture) {
+            const mIdx = rainY * width + x
+            w.moisture[mIdx] = Math.min(1, w.moisture[mIdx] + 0.1)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Groundwater table: subsurface moisture seeps upward through soil from water
+ * tiles below, keeping lowlands moist even without surface water.
+ *
+ * Runs every 150 ticks. Samples every 4th column for performance. Initializes
+ * w.groundwater lazily. Issue #3114.
+ */
+export function tickGroundwater(w: WorldState, tickCount: number, isLiquid: Uint8Array): void {
+  if (tickCount % 150 !== 0) return
+  const { width, height, tiles, moisture } = w
+  if (!moisture) return
+
+  // Lazy-initialize groundwater array
+  if (!w.groundwater) {
+    w.groundwater = new Float32Array(width * height)
+  }
+  const gw = w.groundwater
+
+  for (let y = 1; y < height; y++) {
+    for (let x = 0; x < width; x += 4) {
+      const tileI = y * width + x
+      const belowI = y + 1 < height ? (y + 1) * width + x : -1
+
+      if (belowI < 0) continue
+
+      // Seep moisture upward from liquid tiles below into non-liquid tiles
+      if (isLiquid[tiles[belowI]] === 1 && isLiquid[tiles[tileI]] !== 1) {
+        moisture[tileI] = Math.min(1, moisture[tileI] + 0.003)
+        gw[tileI] = Math.min(1, gw[tileI] + 0.003)
+      }
+
+      // Groundwater level decays slowly
+      if (gw[tileI] > 0) {
+        gw[tileI] = Math.max(0, gw[tileI] - 0.001)
+      }
+    }
+  }
+}

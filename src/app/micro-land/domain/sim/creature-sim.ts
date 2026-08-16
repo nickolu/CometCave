@@ -66,6 +66,9 @@ import {
   tickCaveNutrient,
   tickCorridorMask,
   tickEdgeMask,
+  tickEvaporation,
+  tickCloudDrift,
+  tickGroundwater,
   tickMarshDetritus,
   tickMoisture,
   tickMycorrhizalNetwork,
@@ -882,6 +885,16 @@ export function tickCreatures(
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
+  // Water cycle — Issues #3110, #3111, #3112, #3114
+  tickEvaporation(w, tickCount, rng)
+  tickCloudDrift(
+    w, tickCount, rng, setTile,
+    MATERIAL_INDEX['air'],
+    MATERIAL_INDEX['cloud'],
+    MATERIAL_INDEX['water'],
+    MATERIAL_INDEX['snow'],
+  )
+  tickGroundwater(w, tickCount, IS_LIQUID)
 
   const creatures = w.creatures
   const dead = new Set<number>()
