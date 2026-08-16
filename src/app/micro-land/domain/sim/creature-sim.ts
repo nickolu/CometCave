@@ -1045,10 +1045,22 @@ export function tickCreatures(
               }
               const crowdingPenalty = 1 + crowdCount * TUNING.plantCrowdingStrength
 
+              // Soil fertility scales breed cooldown inversely: richer soil →
+              // shorter wait. The foot tile (one row below the body) is the
+              // substrate the plant is actually rooted in; the body centre is
+              // in the air above it and always returns the default 'dirt' value.
+              const footX = Math.floor(c.x + body.dx + body.w / 2)
+              const footY = Math.floor(c.y + body.dy + body.h)
+              // Carnivorous plants invert the fertility curve: they breed faster
+              // on nutrient-poor tiles (stone, sand, ash) and slower on rich
+              // soil, out-competing normal flora on barren ground.
+              const plantFertilityFactor = bp.carnivorousPlant
+                ? Math.max(0.1, 2.0 - fertilityAt(w, footX, footY))
+                : fertilityAt(w, footX, footY)
               c.breedCooldown =
                 (TUNING.plantSpreadCooldown * crowdingPenalty) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
-                  fertilityAt(w, c.x + bw / 2, c.y + bh / 2) *
+                  plantFertilityFactor *
                   seasonFactor)
             } else {
               // Both of them paid to be here, so both of them pay for it. Charging
@@ -2607,7 +2619,7 @@ function reproduce(
       // picked. Same trap as spawning: the tile under a box is
       // `floor(y + bh - 0.001) + 1`, so `settleOnGround` owns that arithmetic.
       const settled = settleOnGround(w, cx + body.dx, cy + body.dy, body.w, body.h, {
-        requireFertile: true,
+        requireFertile: !bp.carnivorousPlant,
         maxDrop: 10,
       })
       if (settled === null) continue
