@@ -660,6 +660,22 @@ export interface CreatureBlueprint {
    * nutrients into the headwater ecosystem. Issue #3374.
    */
   anadromous?: boolean
+  /**
+   * Leaves breeding grounds when the season turns and returns in spring.
+   * Creature drives toward `winteringX` when the season is falling and toward
+   * `summerX` when rising. Issue #3321.
+   */
+  migratory?: boolean
+  /** X tile of the wintering ground. Default: left quarter of the world. */
+  winteringX?: number
+  /** X tile of the breeding/summer ground. Default: right quarter of the world. */
+  summerX?: number
+  /**
+   * Creature carries an internal magnetic compass: it orients directly toward
+   * its seasonal destination without needing visible landmarks. Flyers with this
+   * flag maintain altitude during migration. Issue #3322.
+   */
+  magnetoreceptive?: boolean
 }
 
 /**
@@ -1035,6 +1051,10 @@ export interface Creature {
   drifting?: boolean
   /** X tile position where this creature was born (for anadromous migration). */
   natalX?: number
+  /** True when the creature is actively migrating toward its seasonal destination. */
+  migrating?: boolean
+  /** X tile the creature is currently migrating toward. */
+  migrationDestX?: number
   circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
 }
 

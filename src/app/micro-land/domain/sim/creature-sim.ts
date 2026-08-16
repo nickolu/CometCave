@@ -868,9 +868,19 @@ export function tickCreatures(
     const symbiosisFed = c.symbiosisTimer > 0 ? 0.8 : 1
     const metabolicRate = bp.slowMetabolism ? 0.1 : 1
     const cognitiveOverhead = 1 + (bp.brainSize ?? 0) * 0.2
+    // Pre-migration hyperphagia: migratory creatures double hunger intake during
+    // the late-summer fattening phase — season is still above 1 but falling.
+    // Issue #3323.
+    const migratoryHyperphagia = (() => {
+      if (!bp.migratory || TUNING.seasonAmplitude === 0) return 1
+      const p = (2 * Math.PI * w.elapsed) / TUNING.seasonPeriod
+      const isAutumnFalling = Math.cos(p) < -0.05
+      const isStillSummer = Math.sin(p) > 0.3
+      return isAutumnFalling && isStillSummer ? 2.0 : 1.0
+    })()
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * dt
     )
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
@@ -1510,6 +1520,25 @@ export function tickCreatures(
           c.drifting = true
           c.drift = 1  // drift rightward (proxy for downstream)
         }
+      }
+    }
+
+    // Seasonal migration state: migratory creatures track which half of the year
+    // it is and drive toward their seasonal destination. Triggers when > 15 tiles
+    // from destination; clears when within 15 tiles. Issue #3321.
+    if (bp.migratory && TUNING.seasonAmplitude > 0) {
+      const migP = (2 * Math.PI * w.elapsed) / TUNING.seasonPeriod
+      const cosP = Math.cos(migP)
+      if (Math.abs(cosP) > 0.1) {
+        const destX = cosP < 0
+          ? (bp.winteringX ?? Math.round(WORLD_W * 0.25))
+          : (bp.summerX ?? Math.round(WORLD_W * 0.75))
+        const distToDest = Math.abs(deltaX(c.x, destX))
+        c.migrating = distToDest > 15
+        c.migrationDestX = destX
+      } else {
+        // Near equinox: hold current state, don't thrash direction
+        c.migrating = c.migrating ?? false
       }
     }
 
@@ -3307,6 +3336,16 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Drifting invertebrates are locked rightward and move slowly regardless of state.
     if (c.drifting) {
       c.drift = 1
+    }
+    // Seasonal migration drive: override wander drift with a strong directional
+    // pull toward the seasonal destination. Magnetoreceptive flyers also climb
+    // slightly to avoid terrain. Issue #3321 / #3322.
+    if (bp.migratory && c.migrating && c.migrationDestX !== undefined) {
+      const towardDest = deltaX(c.x, c.migrationDestX)
+      c.drift = towardDest > 0 ? 1 : -1
+      if (bp.magnetoreceptive && bp.move.kind === 'fly') {
+        wantY = -0.4  // climb to avoid terrain during migration
+      }
     }
     // Anadromous migration: adult fish drive toward natal spawn site when mature.
     if (bp.anadromous && c.natalX !== undefined && c.ageSeconds > (bp.diet.lifespanSeconds ?? 240) * 0.4) {
