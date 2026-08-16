@@ -454,6 +454,7 @@ const SPRING_TROUT = builtin('spring-trout', {
   heatSensitive: true,
   phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
   anadromous: true,  // migrates back to natal headwater to spawn
+  flowZonePreference: 'riffle',  // fast oxygenated headwater — its native habitat
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -939,6 +940,11 @@ const SUNHAWK = builtin('sunhawk', {
   // the map unobstructed. At 40 tiles it could see a third of the world at once
   // and cleared out every grazer in it, so it hunts by patrolling instead.
   senses: { sight: 26 },
+  migratory: true,           // departs when season turns, returns each spring
+  magnetoreceptive: true,    // internal compass — navigates without landmarks
+  winteringX: 168,           // left quarter of the 672-wide world
+  summerX: 504,              // right quarter
+  stopoverHabitat: ['grass', 'dirt', 'water'],  // refuels on grassland, wetland, or open water
   habitat: { needs: null, drowns: true },
   death: { becomes: null, particleColor: '#c9762f', particleCount: 12 },
   aura: null,
@@ -1933,6 +1939,7 @@ const SHIMMER_LARVA = builtin('shimmer-larva', {
   aura: null,
   glow: 0.1,
   canDrift: true,
+  flowZonePreference: 'run',  // intermediate flow — grips substrate but stays in current
 })
 
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [

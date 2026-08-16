@@ -673,6 +673,36 @@ export interface CreatureBlueprint {
    * that slow down in response to short photoperiods. Issue #3360.
    */
   dormancyPhotoperiod?: boolean
+  /**
+   * Preferred flow-velocity zone for aquatic creatures. Creatures in their
+   * preferred zone get a slight hunger relief; in a mismatched zone, a mild
+   * penalty. Only meaningful for aquatic species. Issue #3370.
+   * 'riffle' = fast oxygenated water, 'run' = intermediate, 'pool' = slow silted.
+   */
+  flowZonePreference?: 'riffle' | 'run' | 'pool'
+  /**
+   * Leaves breeding grounds when the season turns and returns in spring.
+   * Creature drives toward `winteringX` when the season is falling and toward
+   * `summerX` when rising. Issue #3321.
+   */
+  migratory?: boolean
+  /** X tile of the wintering ground. Default: left quarter of the world. */
+  winteringX?: number
+  /** X tile of the breeding/summer ground. Default: right quarter of the world. */
+  summerX?: number
+  /**
+   * Creature carries an internal magnetic compass: it orients directly toward
+   * its seasonal destination without needing visible landmarks. Flyers with this
+   * flag maintain altitude during migration. Issue #3322.
+   */
+  magnetoreceptive?: boolean
+  /**
+   * Terrain materials that count as suitable stopover habitat for refueling
+   * during migration. When a migrating creature lands on a matching tile it
+   * pauses, refuels, and resumes. Creatures with this set deplete fat while
+   * migrating; those without it are not fat-tracked. Issue #3324.
+   */
+  stopoverHabitat?: string[]
 }
 
 /**
@@ -1048,6 +1078,12 @@ export interface Creature {
   drifting?: boolean
   /** X tile position where this creature was born (for anadromous migration). */
   natalX?: number
+  /** True when the creature is actively migrating toward its seasonal destination. */
+  migrating?: boolean
+  /** X tile the creature is currently migrating toward. */
+  migrationDestX?: number
+  /** Migratory fat reserve [0, 1]. Depletes during active migration; refills at stopover habitat. */
+  migratoryFat?: number
   circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
 }
 
@@ -1281,6 +1317,12 @@ export interface WorldState {
    * front. Issue #3366.
    */
   invasionFrontX?: Record<string, number>
+  /**
+   * Per-tile flow velocity zone for river/stream tiles.
+   * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
+   * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.
+   */
+  flowZone?: Uint8Array
   eggs: Egg[]
   nextEggId: number
   /**
