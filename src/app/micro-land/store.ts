@@ -455,6 +455,12 @@ interface MicroLandState {
    */
   invasionFront: Record<string, { originX: number; frontX: number }>
   setInvasionFront: (data: Record<string, { originX: number; frontX: number }>) => void
+  /**
+   * Whittaker biome classification for each world region band.
+   * Synced from world.biomeZones by game-instance. Empty until first pass.
+   */
+  biomeZones: import('./domain/types').BiomeZone[]
+  setBiomeZones: (zones: import('./domain/types').BiomeZone[]) => void
   /** Set when the Field Guide circle is clicked — game instance centers + inspects. */
   locateCreatureRequest: { id: number; serial: number } | null
   requestLocateCreature: (id: number) => void
@@ -656,6 +662,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   locateRequest: null,
   populationItems: [],
   invasionFront: {},
+  biomeZones: [],
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
@@ -788,6 +795,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
+  setBiomeZones: zones => set({ biomeZones: zones }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),

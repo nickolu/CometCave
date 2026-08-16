@@ -790,6 +790,11 @@ export class GameInstance {
       useMicroLand.getState().setInvasionFront(frontData)
     }
 
+    // Biome zone data for Field Guide display.
+    if (this.world.biomeZones && this.world.biomeZones.length > 0) {
+      useMicroLand.getState().setBiomeZones(this.world.biomeZones)
+    }
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {

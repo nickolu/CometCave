@@ -79,6 +79,7 @@ export function FieldGuidePane() {
   const populationHistory = useMicroLand(s => s.populationHistory)
   const traitOverlay = useMicroLand(s => s.traitOverlay)
   const invasionFront = useMicroLand(s => s.invasionFront)
+  const biomeZones = useMicroLand(s => s.biomeZones)
   const setTraitOverlay = useMicroLand(s => s.setTraitOverlay)
   const addBlueprint = useMicroLand(s => s.addBlueprint)
   const trailsEnabled = useMicroLand(s => s.trailsEnabled)
@@ -130,6 +131,24 @@ export function FieldGuidePane() {
     } else {
       setCompareTarget(bpId)
     }
+  }
+
+  function biomeIcon(type: string): string {
+    const icons: Record<string, string> = {
+      'tropical-rainforest': '🌴',
+      'tropical-savanna': '🌿',
+      'desert': '🏜',
+      'temperate-grassland': '🌾',
+      'temperate-forest': '🌲',
+      'boreal': '🌲',
+      'tundra': '❄',
+      'ice-cap': '🧊',
+    }
+    return icons[type] ?? '🌍'
+  }
+
+  function biomeLabel(type: string): string {
+    return type.split('-').map((w: string) => w[0].toUpperCase() + w.slice(1)).join(' ')
   }
 
   return (
@@ -611,6 +630,39 @@ export function FieldGuidePane() {
                 <span>🦴 {ext.name}</span>
                 <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
                   gen {ext.maxGeneration} · {Math.round(ext.livedFor / 60)} min
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {biomeZones.length > 0 && (
+        <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+          <h3 className="pb-2" style={sectionHeading}>
+            Climate Zones
+          </h3>
+          <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+            Whittaker biome classification by world depth — temperature and moisture shape each band&rsquo;s ecology.
+          </p>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {biomeZones.map(zone => (
+              <li
+                key={zone.regionIndex}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  padding: '3px 0',
+                  fontSize: 11,
+                  fontFamily: 'var(--cc-font-mono)',
+                }}
+              >
+                <span>
+                  {biomeIcon(zone.type)}{' '}{biomeLabel(zone.type)}
+                </span>
+                <span style={{ color: 'var(--cc-text-muted)', fontSize: 10 }}>
+                  {Math.round(zone.temperature * 100)}&deg;&nbsp;&nbsp;{Math.round(zone.precipitation * 100)}%
                 </span>
               </li>
             ))}
