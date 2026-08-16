@@ -1262,6 +1262,27 @@ export function tickMycorrhizalNetwork(w: WorldState, tickCount: number, rng: Rn
       w.mycorrhizalLinks[String(b.id)].push(a.id)
     }
   }
+
+  // Nutrient sharing: well-fed plants export to hungry neighbors (20% fungal toll)
+  const EXPORT_THRESHOLD = 0.3   // hunger below this → surplus to share
+  const IMPORT_THRESHOLD = 0.6   // hunger above this → needs help
+  const TRANSFER_RATE = 0.02     // hunger units transferred per link per tick-60 cycle
+  const FUNGAL_TOLL = 0.20       // fraction lost to fungal intermediary
+
+  const creatureById = new Map(w.creatures.map(c => [c.id, c]))
+  for (const [idStr, neighbors] of Object.entries(w.mycorrhizalLinks)) {
+    const donor = creatureById.get(Number(idStr))
+    if (!donor || donor.hunger > EXPORT_THRESHOLD) continue  // not well-fed enough to share
+    for (const neighborId of neighbors) {
+      const recipient = creatureById.get(neighborId)
+      if (!recipient || recipient.hunger < IMPORT_THRESHOLD) continue  // doesn't need help
+      // Transfer nutrients: donor gets slightly hungrier, recipient gets less hungry
+      const transferred = Math.min(TRANSFER_RATE, recipient.hunger - IMPORT_THRESHOLD)
+      const donorCost = transferred / (1 - FUNGAL_TOLL)  // fungus takes 20% cut
+      donor.hunger = Math.min(1, donor.hunger + donorCost)
+      recipient.hunger = Math.max(0, recipient.hunger - transferred)
+    }
+  }
 }
 
 /**
