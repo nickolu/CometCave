@@ -2802,6 +2802,158 @@ const KESTREL = builtin('kestrel', {
   bodyMass: 0.35,
 })
 
+// ---------------------------------------------------------------------------
+// River Otter — Otter Oligarchy. Issue #3308.
+// ---------------------------------------------------------------------------
+
+const RIVER_OTTER = builtin('river-otter', {
+  name: 'River Otter',
+  blurb: 'A sleek freshwater predator that has organized society into an oligarchy where the five fattest otters rule — and extract tribute.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#8a6040', b: '#3a2010', g: '#b08050' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.7, bounce: 0.1, drag: 0.4, buoyancy: 1.1, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.1, jump: 0.6, hop: 0, restlessness: 0.5 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00006,
+    starveSeconds: 55,
+    breedAt: 0.75,
+    lifespanSeconds: 160,
+  },
+  senses: { sight: 7 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#8a6040', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  otterOligarchy: true,
+  bodyMass: 1.5,
+})
+
+// ---------------------------------------------------------------------------
+// Red Squirrel — Squirrel Socialism. Issue #3312.
+// ---------------------------------------------------------------------------
+
+const RED_SQUIRREL = builtin('red-squirrel', {
+  name: 'Red Squirrel',
+  blurb: 'An acorn-hoarding rodent that has embraced collectivist ideology: food is shared equally among all — except Gerald, who founded the movement and is therefore exempt.',
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { w: '#c06030', b: '#3a1800', g: '#e08040' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.2, drag: 0.3, buoyancy: 0.5, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.3, jump: 0.8, hop: 0, restlessness: 0.7 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00007,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 130,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#c06030', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  squirrelSocialism: true,
+  bodyMass: 0.3,
+})
+
+// ---------------------------------------------------------------------------
+// Field Vole — Vole Voting. Issue #3315.
+// ---------------------------------------------------------------------------
+
+const FIELD_VOLE = builtin('field-vole', {
+  name: 'Field Vole',
+  blurb: 'A tiny grassland rodent with a sophisticated electoral system: the Chief Vole is elected each season, though the incumbent wins 80% of the time due to name recognition.',
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { w: '#806040', b: '#2a1800', g: '#a08060' },
+    frames: [
+      ['.w.', 'wbw', '.w.'],
+      ['...', 'wbw', '...'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.2, bounce: 0.1, drag: 0.3, buoyancy: 0.4, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.1, jump: 0.4, hop: 0, restlessness: 0.6 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00008,
+    starveSeconds: 40,
+    breedAt: 0.65,
+    lifespanSeconds: 100,
+  },
+  senses: { sight: 5 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#806040', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  voleVoting: true,
+  bodyMass: 0.2,
+})
+
+// ---------------------------------------------------------------------------
+// Stoat — Weasel War Crimes Tribunal. Issue #3316.
+// ---------------------------------------------------------------------------
+
+const STOAT = builtin('stoat', {
+  name: 'Stoat',
+  blurb: 'A ferocious mustelid that has been repeatedly brought before the War Crimes Tribunal. The tribunal issues strongly-worded notices. The stoat ignores them.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#c8a060', b: '#2a1800', g: '#e8c080' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 150,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.15, drag: 0.3, buoyancy: 0.5, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.4, jump: 0.5, hop: 0, restlessness: 0.8 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00006,
+    starveSeconds: 45,
+    breedAt: 0.75,
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#c8a060', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  weaselTribunal: true,
+  bodyMass: 0.4,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2874,6 +3026,10 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   BEAVER,
   ARCTIC_TERN,
   KESTREL,
+  RIVER_OTTER,
+  RED_SQUIRREL,
+  FIELD_VOLE,
+  STOAT,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

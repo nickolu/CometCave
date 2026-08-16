@@ -922,6 +922,75 @@ export function tickCreatures(
     }
   }
 
+  // Otter Oligarchy: each season elect the 5 fattest otters as oligarchs.
+  // Issue #3308.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.otterLastElectionSeason ?? -1) < currentSeasonIdx) {
+      w.otterLastElectionSeason = currentSeasonIdx
+      // Clear all oligarch flags first
+      for (const c of w.creatures) {
+        c.isOligarch = false
+      }
+      // Rank otters by mealsEaten and elect top 5
+      const otters = w.creatures
+        .filter(c => w.blueprints[c.blueprintId]?.otterOligarchy)
+        .sort((a, b) => b.mealsEaten - a.mealsEaten)
+        .slice(0, 5)
+      const oligarchIdSet = new Set<number>()
+      for (const o of otters) {
+        o.isOligarch = true
+        oligarchIdSet.add(o.id)
+      }
+      w.otterOligarchIds = [...oligarchIdSet]
+    }
+  }
+
+  // Vole Voting: each season elect a Chief Vole.
+  // Incumbent re-elected 80% of the time. Issue #3315.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.chiefVoleLastElectionSeason ?? -1) < currentSeasonIdx) {
+      w.chiefVoleLastElectionSeason = currentSeasonIdx
+      const voles = w.creatures.filter(c => w.blueprints[c.blueprintId]?.voleVoting)
+      if (voles.length > 0) {
+        for (const v of voles) v.isChiefVole = false
+        // Incumbent loyalty: 80% chance to re-elect if still alive
+        const incumbent = voles.find(v => v.id === w.chiefVoleId)
+        if (incumbent && rng() < 0.8) {
+          incumbent.isChiefVole = true
+        } else {
+          // New election — random pick
+          const winner = voles[Math.floor(rng() * voles.length)]
+          winner.isChiefVole = true
+          w.chiefVoleId = winner.id
+        }
+      }
+    }
+  }
+
+  // Squirrel Socialism: when pop > 30 activate the collective.
+  // Issue #3312.
+  {
+    const squirrels = w.creatures.filter(c => w.blueprints[c.blueprintId]?.squirrelSocialism)
+    // Ensure Gerald exists (the first/oldest squirrel)
+    if (squirrels.length > 0 && w.squirrelGeraldId === undefined) {
+      w.squirrelGeraldId = squirrels[0].id
+      squirrels[0].isGerald = true
+    }
+    const wasActive = w.squirrelCollectiveActive ?? false
+    w.squirrelCollectiveActive = squirrels.length > 30
+    if (w.squirrelCollectiveActive && !wasActive) {
+      // Collective just activated — redistribute hunger toward median
+      const hungers = squirrels.map(c => c.hunger).sort((a, b) => a - b)
+      const median = hungers[Math.floor(hungers.length / 2)]
+      for (const s of squirrels) {
+        if (s.id === w.squirrelGeraldId) continue  // Gerald is exempt
+        s.hunger = s.hunger * 0.5 + median * 0.5  // smooth toward median
+      }
+    }
+  }
+
   // Invasion front tracking: for each invasive species, record origin and
   // track the historical maximum X spread. Runs every 60 ticks (once per
   // second). Issue #3366.
@@ -1044,7 +1113,11 @@ export function tickCreatures(
       const nutrientBoost = (c.nutrientStore ?? 0) > 0.2 ? 1.5 : 1
       // Jellyfish Judiciary verdict: court-granted breeding priority decays cooldown 50% faster. Issue #3303.
       const judiciaryBoost = (c.judiciaryPriorityTimer ?? 0) > 0 ? 1.5 : 1
-      c.breedCooldown -= dt * nutrientBoost * judiciaryBoost
+      // Gerald breeds 20% faster (Squirrel Socialism founder exemption). Issue #3312.
+      const geraldBoost = (bp.squirrelSocialism && c.isGerald) ? 1.2 : 1
+      // Chief Vole breeds 15% faster (Vole Voting electoral advantage). Issue #3315.
+      const chiefVoleBoost = (bp.voleVoting && c.isChiefVole) ? 1.15 : 1
+      c.breedCooldown -= dt * nutrientBoost * judiciaryBoost * geraldBoost * chiefVoleBoost
     }
     // Decay nutrient store over time.
     if (c.nutrientStore) {
@@ -1349,6 +1422,23 @@ export function tickCreatures(
       }
     } else {
       c.starving = Math.max(0, c.starving - dt * 2)
+    }
+
+    // Otter Oligarchy extraction: oligarchs drain 5% hunger from nearby non-oligarchs.
+    // Runs every 60 ticks (~1 second). Issue #3308.
+    if (tickCount % 60 === 0 && bp.otterOligarchy && c.isOligarch) {
+      const ocx = c.x + bw / 2
+      const ocy = c.y + bh / 2
+      for (const other of w.creatures) {
+        if (other === c || other.isOligarch) continue
+        if (other.blueprintId !== c.blueprintId) continue
+        const odx = deltaX(ocx, other.x + bw / 2)
+        const ody = (other.y + bh / 2) - ocy
+        if (odx * odx + ody * ody < 64) { // within 8 tiles (8² = 64)
+          const extracted = other.hunger * 0.05
+          other.hunger = Math.max(0, other.hunger - extracted)
+        }
+      }
     }
 
     // --- parasitism: drain host, stay fed, detach when host dies ----------
@@ -3553,6 +3643,20 @@ function look(
         c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
+        // Weasel War Crimes Tribunal: track kills and fire tribunal events. Issue #3316.
+        if (bp.weaselTribunal && obp.move.kind !== 'root') {
+          c.conflictCount = (c.conflictCount ?? 0) + 1
+          if (c.conflictCount >= 3 && rng() < 0.12) {
+            c.conflictCount = 0
+            events.push({
+              kind: 'notice',
+              blueprintId: bp.id,
+              x: c.x,
+              y: c.y,
+              text: `${c.name ?? 'A ' + bp.name} was brought before the War Crimes Tribunal. The tribunal issued a strongly-worded notice. Compliance rate: 12%.`,
+            })
+          }
+        }
         // Cultural innovation: rare spontaneous food-washing discovery near water.
         if (bp.canLearnFoodWashing && !c.learnedFoodWashing && isNearWater(w, c) && rng() < 0.002) {
           c.learnedFoodWashing = true

@@ -970,6 +970,28 @@ export interface CreatureBlueprint {
    */
   kestrelKingdom?: boolean
   /**
+   * When true, this species runs the Otter Oligarchy: each season the 5 fattest
+   * otters (by mealsEaten) are elected oligarchs and extract 5% hunger drain from
+   * nearby non-oligarchs within 8 tiles. Issue #3308.
+   */
+  otterOligarchy?: boolean
+  /**
+   * When true, this species uses Squirrel Socialism: when population exceeds 30
+   * the collective activates and hunger is redistributed toward the median.
+   * The founding squirrel Gerald is exempt and breeds 20% faster. Issue #3312.
+   */
+  squirrelSocialism?: boolean
+  /**
+   * When true, this species holds a Vole Voting election each season: a Chief
+   * Vole is elected; incumbent wins 80% of the time. Issue #3315.
+   */
+  voleVoting?: boolean
+  /**
+   * When true, this species (Stoat) tracks kills as conflictCount; after 3+
+   * kills fires a tribunal event with 12% probability. Issue #3316.
+   */
+  weaselTribunal?: boolean
+  /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
    */
@@ -1331,6 +1353,14 @@ export interface Creature {
    * Issue #3304.
    */
   isMonarch?: boolean
+  /** Whether this individual is an elected Oligarch (otterOligarchy species). Issue #3308. */
+  isOligarch?: boolean
+  /** Whether this individual is Gerald, the founding Red Squirrel, exempt from socialism. Issue #3312. */
+  isGerald?: boolean
+  /** Whether this individual is the elected Chief Vole. Issue #3315. */
+  isChiefVole?: boolean
+  /** Number of kills recorded for the weaselTribunal mechanic. Issue #3316. */
+  conflictCount?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1813,6 +1843,18 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
+  otterOligarchIds?: number[]
+  /** Season index of last otter oligarchy election. Issue #3308. */
+  otterLastElectionSeason?: number
+  /** ID of the founding Red Squirrel Gerald (squirrelSocialism). Issue #3312. */
+  squirrelGeraldId?: number
+  /** Whether the squirrel collective is currently active. Issue #3312. */
+  squirrelCollectiveActive?: boolean
+  /** ID of the current Chief Vole. Issue #3315. */
+  chiefVoleId?: number
+  /** Season index of last vole election. Issue #3315. */
+  chiefVoleLastElectionSeason?: number
 }
 
 // ---------------------------------------------------------------------------
