@@ -4163,6 +4163,8 @@ function look(
           // Pack bonus: coordinated kill grants extra energy
           if (packCount >= 1) {
             c.hunger = Math.max(0, c.hunger - 0.1)  // bonus energy from coordinated hunt
+          }
+        }
         // Venom injection: venomous predators inject slow on contact. Issue #3236.
         if (bp.venomous && !dead.has(other.id)) {
           const potency = bp.venomPotency ?? 0.5
