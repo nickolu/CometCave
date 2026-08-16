@@ -793,6 +793,7 @@ export interface Traits {
    * Neutral at 1. Range [TRAIT_MIN, TRAIT_MAX].
    */
   reproductionCooldown: number
+  chronotype?: number  // phase offset trait: negative = early bird, positive = late owl, range [-1, 1]
 }
 
 /** One living thing in the world. */
@@ -1027,6 +1028,7 @@ export interface Creature {
   insightCount?: number
   /** X tile position where this creature was born (for anadromous migration). */
   natalX?: number  // X tile position where this creature was born (for anadromous migration)
+  circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
 }
 
 /**
