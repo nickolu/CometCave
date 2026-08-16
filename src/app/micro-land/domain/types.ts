@@ -316,6 +316,12 @@ export interface CreatureBlueprint {
    * dirt's 1.0×, permanently enriching the soil they pass through.
    */
   soilEngineer?: boolean
+  /**
+   * When true, this creature eats plant seedlings even when not hungry,
+   * preventing succession — the mechanism behind savanna and prairie maintenance.
+   * Only targets plants younger than SEEDLING_MAX_AGE seconds.
+   */
+  clearingMaintainer?: boolean
 }
 
 /**
