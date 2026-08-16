@@ -1610,4 +1610,67 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
 
   // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)
   w.weatherTimer = 600 + Math.floor(rng() * 1800)
+ * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
+ * and applies local effects (water chemistry, plant nutrition). Issue #3179.
+ *
+ * Runs every 1200 ticks (every ~20 seconds of sim time at 60 ticks/s).
+ * Uses a fixed random probe rather than a full scan.
+ */
+export function tickMineralVeins(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 1200 !== 0) return
+  const stoneIdx = MATERIAL_INDEX.stone
+  const waterIdx = MATERIAL_INDEX.water
+
+  // Ore materials and their local nutrient effects
+  const ores: Array<{ id: string; nutrientBoost: number; pHShift: number }> = [
+    { id: 'iron', nutrientBoost: -0.02, pHShift: -0.3 },   // iron → acidifies water, reduces fertility
+    { id: 'gold', nutrientBoost: 0.05, pHShift: 0 },       // gold → inert, mild fertility boost
+    { id: 'gem', nutrientBoost: 0.03, pHShift: 0.1 },      // gem crystal → slightly alkaline
+    { id: 'crystal', nutrientBoost: 0.04, pHShift: 0 },    // crystal → enhances plant growth
+  ]
+
+  // Probe a random column, look for exposed stone in the upper-middle depth
+  // (not at the very surface, which is already well-modelled)
+  const tx = Math.floor(rng() * WORLD_W)
+  const startY = Math.floor(WORLD_H * 0.25)
+  const endY = Math.floor(WORLD_H * 0.75)
+
+  for (let ty = startY; ty < endY; ty++) {
+    const ti = ty * WORLD_W + tx
+    if (w.tiles[ti] !== stoneIdx) continue
+
+    // Only expose ore if adjacent to air or liquid (crack in the rock)
+    const above = ty > 0 ? w.tiles[(ty - 1) * WORLD_W + tx] : 0
+    const hasGap = !IS_SOLID[above] || (ty < WORLD_H - 1 && !IS_SOLID[w.tiles[(ty + 1) * WORLD_W + tx]])
+    if (!hasGap) continue
+
+    // Small chance to convert stone to ore (1 in 8 when conditions met)
+    if (rng() > 0.125) break
+
+    const ore = ores[Math.floor(rng() * ores.length)]
+    setTile(w, tx, ty, MATERIAL_INDEX[ore.id as keyof typeof MATERIAL_INDEX])
+
+    // Apply effects to adjacent water tiles (chemistry) and caveNutrient (plant growth)
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const nx = (tx + dx + WORLD_W) % WORLD_W
+        const ny = ty + dy
+        if (ny < 0 || ny >= WORLD_H) continue
+        const ni = ny * WORLD_W + nx
+
+        if (w.tiles[ni] === waterIdx) {
+          // pH effect on water chemistry (uses existing tilePH system if present)
+          if (w.tilePH && ore.pHShift !== 0) {
+            w.tilePH[ni] = Math.max(0, Math.min(14, (w.tilePH[ni] ?? 7) + ore.pHShift * 0.1))
+          }
+        }
+
+        // Plant nutrition effect via caveNutrient (affects soil fertility)
+        if (ore.nutrientBoost !== 0 && w.caveNutrient) {
+          w.caveNutrient[ni] = Math.max(0, Math.min(1, (w.caveNutrient[ni] ?? 0) + ore.nutrientBoost * 0.05))
+        }
+      }
+    }
+    break
+  }
 }
