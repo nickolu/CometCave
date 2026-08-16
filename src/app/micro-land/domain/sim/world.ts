@@ -1663,6 +1663,9 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
 
   // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)
   w.weatherTimer = 600 + Math.floor(rng() * 1800)
+}
+
+/**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
  * and applies local effects (water chemistry, plant nutrition). Issue #3179.
  *
