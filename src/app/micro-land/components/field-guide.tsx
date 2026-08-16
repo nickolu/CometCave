@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
@@ -103,7 +103,17 @@ export function FieldGuidePane() {
   const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
   const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
   const elapsed = useMicroLand(s => s.elapsed)
+  const tool = useMicroLand(s => s.tool)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
+
+  // When a creature is selected for placement, scroll its entry into view.
+  const listRef = useRef<HTMLUListElement>(null)
+  const placingBlueprintId = tool.kind === 'creature' ? tool.blueprintId : null
+  useEffect(() => {
+    if (!placingBlueprintId || !listRef.current) return
+    const el = listRef.current.querySelector<HTMLElement>(`[data-blueprint-id="${placingBlueprintId}"]`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [placingBlueprintId])
 
   const [plantsHidden, setPlantsHidden] = useState(false)
   const [compact, setCompact] = useState(() => {
@@ -467,7 +477,7 @@ export function FieldGuidePane() {
           </button>
         </div>
       </div>
-      <ul className="flex flex-col">
+      <ul ref={listRef} className="flex flex-col">
         {ordered.map(bp => (
           <GuideEntry
             key={bp.id}
@@ -486,6 +496,7 @@ export function FieldGuidePane() {
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
             elapsed={elapsed}
             keystoneSpeciesIds={keystoneSpeciesIds}
+            isPlacing={placingBlueprintId === bp.id}
           />
         ))}
       </ul>
@@ -936,6 +947,7 @@ function GuideEntry({
   onHeatmap,
   elapsed,
   keystoneSpeciesIds,
+  isPlacing,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -952,6 +964,7 @@ function GuideEntry({
   onHeatmap?: () => void
   elapsed: number
   keystoneSpeciesIds?: ReadonlySet<string>
+  isPlacing?: boolean
 }) {
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
@@ -959,7 +972,11 @@ function GuideEntry({
 
   return (
     <li
-      style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+      data-blueprint-id={bp.id}
+      style={{
+        borderBottom: '1px solid var(--cc-panel-divider)',
+        ...(isPlacing && { outline: '2px solid var(--cc-mint)', outlineOffset: -2 }),
+      }}
     >
       {thumbs && thumbs.length > 0 && onLocateCreature && (
         <div

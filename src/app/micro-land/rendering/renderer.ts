@@ -551,7 +551,8 @@ export class Renderer {
     theme: Theme,
     highlightId: number | null = null,
     elderId: number | null = null,
-    heatmap: Float32Array | null = null
+    heatmap: Float32Array | null = null,
+    tempHeatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
     const vw = Math.ceil(this.viewTiles)
@@ -597,6 +598,7 @@ export class Renderer {
       this.drawCarcasses(w)
       this.drawNests(w)
       this.drawTombstones(w)
+      if (tempHeatmap) this.drawHeatmap(tempHeatmap, vx, vw, '#ff6600', 0.35)
       if (heatmap) this.drawHeatmap(heatmap, vx, vw)
       this.drawEggs(w)
       this.drawSpawners(w)
@@ -883,7 +885,13 @@ export class Renderer {
     return top + (bottom - top) * ty
   }
 
-  private drawHeatmap(heatmap: Float32Array, vx: number, vw: number): void {
+  private drawHeatmap(
+    heatmap: Float32Array,
+    vx: number,
+    vw: number,
+    color = '#ff3200',
+    maxAlpha = 0.5
+  ): void {
     // Only ever drawn on the un-offset pass: it is a full-column wash rather
     // than a sprite, so it has nothing hanging over the seam to duplicate.
     if (this.drawOffset !== 0) return
@@ -906,8 +914,8 @@ export class Renderer {
         for (let y = 0; y < WORLD_H; y++) {
           const v = heatmap[y * WORLD_W + x]
           if (v < 0.5) continue
-          ctx.globalAlpha = Math.min(0.5, v / peak)
-          ctx.fillStyle = '#ff3200'
+          ctx.globalAlpha = Math.min(maxAlpha, (v / peak) * maxAlpha)
+          ctx.fillStyle = color
           ctx.fillRect(x, y, 1, 1)
         }
       }
