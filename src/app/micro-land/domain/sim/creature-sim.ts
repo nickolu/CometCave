@@ -692,6 +692,13 @@ function tickSeedBank(
 
   const HALF_LIFE = 600  // seconds to 50 % viability
 
+  // Compute current seasonal phase for cold stratification checks.
+  const seasonFactor = TUNING.seasonAmplitude > 0
+    ? Math.max(0.05, 1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod))
+    : 1
+  const isCold = seasonFactor < 0.9
+  const STRATIFICATION_THRESHOLD = 120  // seconds of cold needed to break dormancy
+
   const surviving: SeedEntry[] = []
   for (const seed of w.seedBank) {
     seed.age += 60 * dt  // approximate: called every 60 ticks
@@ -701,6 +708,16 @@ function tickSeedBank(
     // Try germination
     const bp = w.blueprints[seed.blueprintId]
     if (!bp || bp.move.kind !== 'root') { surviving.push(seed); continue }
+
+    // Cold stratification: accumulate cold hours; gate germination until threshold met.
+    if (bp.requiresStratification && isCold) {
+      seed.coldHours = (seed.coldHours ?? 0) + 60 * dt
+    }
+    if (bp.requiresStratification && (seed.coldHours ?? 0) < STRATIFICATION_THRESHOLD) {
+      surviving.push(seed)  // not yet stratified — wait
+      continue
+    }
+
     if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
     if ((speciesCount[seed.blueprintId] ?? 0) >= TUNING.plantSpeciesCap) { surviving.push(seed); continue }
 

@@ -631,6 +631,7 @@ export function sanitizeBlueprint(
       ? b.breedingPhotoperiod
       : undefined,
     dormancyPhotoperiod: b.dormancyPhotoperiod !== undefined ? !!b.dormancyPhotoperiod : undefined,
+    requiresStratification: b.requiresStratification !== undefined ? !!b.requiresStratification : undefined,
     flowZonePreference: b.flowZonePreference === 'riffle' || b.flowZonePreference === 'run' || b.flowZonePreference === 'pool'
       ? b.flowZonePreference
       : undefined,
