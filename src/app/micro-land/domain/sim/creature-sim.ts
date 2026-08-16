@@ -625,7 +625,8 @@ export function tickCreatures(
       c.sick -= dt
       if (c.sick <= 0) {
         c.sick = 0
-        const immunity = (c.traits as { immunity?: number }).immunity ?? 0.2
+        const rawImmunity = (c.traits as { immunity?: number }).immunity ?? 0.2
+        const immunity = bp.invasive ? Math.min(1, rawImmunity + 0.56) : rawImmunity
         if (rng() >= immunity * 0.8 + 0.2) {
           kill(w, c, bp, dead, events, 'diseased')
           continue
@@ -1042,7 +1043,8 @@ export function tickCreatures(
           c.breedCooldown =
             TUNING.breedCooldown *
             ((c.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
-            (bp.slowMetabolism ? 2 : 1)
+            (bp.slowMetabolism ? 2 : 1) *
+            (bp.invasive ? 0.67 : 1)
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -1256,7 +1258,9 @@ export function tickCreatures(
     )
     if (animals.length > 0) {
       const victim = animals[Math.floor(rng() * animals.length)]
-      const immunity = (victim.traits as { immunity?: number }).immunity ?? 0.2
+      const victimBp = w.blueprints[victim.blueprintId]
+      const rawImmunity = (victim.traits as { immunity?: number }).immunity ?? 0.2
+      const immunity = victimBp?.invasive ? Math.min(1, rawImmunity + 0.56) : rawImmunity
       if (rng() > immunity) {
         victim.sick = TUNING.diseaseDuration
       }
@@ -1710,7 +1714,9 @@ function look(
       const gdx = Math.max(0, Math.abs(deltaX(cx, other.x + ow / 2)) - (bw + ow) / 2)
       const gdy = Math.max(0, Math.abs(other.y + oh / 2 - (c.y + bh / 2)) - (bh + oh) / 2)
       if (gdx * gdx + gdy * gdy > spreadReach * spreadReach) continue
-      const otherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
+      const otherBp = w.blueprints[other.blueprintId]
+      const rawOtherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
+      const otherImmunity = otherBp?.invasive ? Math.min(1, rawOtherImmunity + 0.56) : rawOtherImmunity
       if (rng() < TUNING.diseaseSpreadChance * (1 - otherImmunity)) {
         if (!other.sick) {
           events.push({ kind: 'sick', blueprintId: other.blueprintId, x: other.x, y: other.y })
@@ -1962,7 +1968,8 @@ function payForChild(
   parent.breedCooldown =
     (TUNING.breedCooldown *
       ((parent.traits as { reproductionCooldown?: number }).reproductionCooldown ?? 1) *
-      (bp.slowMetabolism ? 2 : 1)) /
+      (bp.slowMetabolism ? 2 : 1) *
+      (bp.invasive ? 0.67 : 1)) /
     auraBoost(w, parent, bp, bw, bh, helpers)
   if (parent.mood === 'mate') {
     parent.mood = 'wander'
