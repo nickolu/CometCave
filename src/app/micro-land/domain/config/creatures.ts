@@ -940,6 +940,11 @@ const SUNHAWK = builtin('sunhawk', {
   // the map unobstructed. At 40 tiles it could see a third of the world at once
   // and cleared out every grazer in it, so it hunts by patrolling instead.
   senses: { sight: 26 },
+  migratory: true,           // departs when season turns, returns each spring
+  magnetoreceptive: true,    // internal compass — navigates without landmarks
+  winteringX: 168,           // left quarter of the 672-wide world
+  summerX: 504,              // right quarter
+  stopoverHabitat: ['grass', 'dirt', 'water'],  // refuels on grassland, wetland, or open water
   habitat: { needs: null, drowns: true },
   death: { becomes: null, particleColor: '#c9762f', particleCount: 12 },
   aura: null,
