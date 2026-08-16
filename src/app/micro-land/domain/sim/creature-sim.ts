@@ -941,6 +941,28 @@ export function tickCreatures(
     }
   }
 
+  // MVP warning and rescue effect. Issues #3284, #3285.
+  if (tickCount % 60 === 0) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const ebp = w.blueprints[bpId]
+      if (!ebp?.minViablePopulation) continue
+      if (cnt < ebp.minViablePopulation && cnt > 0) {
+        // Rescue effect: stochastic immigration from an imagined meta-population
+        // prevents immediate extinction when a small population persists.
+        if (rng() < 0.05 * dt) {
+          const randomExisting = w.creatures.find(c2 => c2.blueprintId === bpId)
+          if (randomExisting) {
+            const immigrant = spawnCreature(w, ebp, randomExisting.x + (rng() - 0.5) * 10, randomExisting.y + (rng() - 0.5) * 10)
+            if (immigrant) {
+              immigrant.generation = randomExisting.generation
+              // spawnCreature already pushed immigrant to w.creatures
+            }
+          }
+        }
+      }
+    }
+  }
+
   // Helpers — bees, worms, anything with an aura. Gathered once per tick
   // because the breeding check below asks "is one of these near me", and there
   // are normally none at all.
