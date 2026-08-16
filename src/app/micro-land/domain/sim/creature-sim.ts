@@ -2635,6 +2635,36 @@ export function tickCreatures(
               const mutated = midpoint + (rng() * 20 - 10)
               child.phenoOffset = Math.max(-200, Math.min(200, mutated))
             }
+            // Island dwarfism / gigantism: isolated land populations evolve different body sizes. Issue #3271.
+            if (bp.bodyMass !== undefined && bp.move.kind === 'walk') {
+              const cx = Math.floor(c.x), cy = Math.floor(c.y)
+              const ISLAND_RADIUS = 20
+              let waterLeft = false, waterRight = false
+              for (let dx = 1; dx <= ISLAND_RADIUS; dx++) {
+                const rowL = cy * WORLD_W + ((cx - dx + WORLD_W) % WORLD_W)
+                const rowR = cy * WORLD_W + ((cx + dx) % WORLD_W)
+                if (IS_LIQUID[w.tiles[rowL]] === 1) { waterLeft = true }
+                if (IS_LIQUID[w.tiles[rowR]] === 1) { waterRight = true }
+                if (waterLeft && waterRight) break
+              }
+              if (waterLeft && waterRight) {
+                // Isolated island: prey shrink (no predation pressure), predators grow (no competition)
+                const isPrey = bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')
+                const isPredator = bp.diet.eats.includes('meat')
+                if (isPrey) {
+                  // Check if any predator of this species is nearby
+                  const nearPredator = w.creatures.some(p => {
+                    if (p.blueprintId === c.blueprintId) return false
+                    const pbp = w.blueprints[p.blueprintId]
+                    return pbp?.diet.eats.includes('meat') &&
+                      Math.abs(p.x - c.x) < ISLAND_RADIUS && Math.abs(p.y - c.y) < ISLAND_RADIUS
+                  })
+                  if (!nearPredator) child.traits.size = Math.max(0.8, child.traits.size - 0.02)
+                } else if (isPredator) {
+                  child.traits.size = Math.min(1.2, child.traits.size + 0.02)
+                }
+              }
+            }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
@@ -2896,6 +2926,32 @@ export function tickCreatures(
         if (hatchling) {
           hatchling.generation = egg.generation
           hatchling.traits = egg.traits
+          // Island dwarfism / gigantism at egg hatch. Issue #3271.
+          if (ebp.bodyMass !== undefined && ebp.move.kind === 'walk') {
+            const ex = Math.floor(egg.x), ey = Math.floor(egg.y)
+            const ISLAND_R = 20
+            let wL = false, wR = false
+            for (let idx2 = 1; idx2 <= ISLAND_R; idx2++) {
+              if (IS_LIQUID[w.tiles[ey * WORLD_W + ((ex - idx2 + WORLD_W) % WORLD_W)]] === 1) wL = true
+              if (IS_LIQUID[w.tiles[ey * WORLD_W + ((ex + idx2) % WORLD_W)]] === 1) wR = true
+              if (wL && wR) break
+            }
+            if (wL && wR) {
+              const isPrey2 = ebp.diet.eats.includes('plant') && !ebp.diet.eats.includes('meat')
+              const isPred2 = ebp.diet.eats.includes('meat')
+              if (isPrey2) {
+                const nearPred2 = w.creatures.some(p2 => {
+                  if (p2.blueprintId === egg.blueprintId) return false
+                  const p2bp = w.blueprints[p2.blueprintId]
+                  return p2bp?.diet.eats.includes('meat') &&
+                    Math.abs(p2.x - egg.x) < ISLAND_R && Math.abs(p2.y - egg.y) < ISLAND_R
+                })
+                if (!nearPred2) hatchling.traits.size = Math.max(0.8, hatchling.traits.size - 0.02)
+              } else if (isPred2) {
+                hatchling.traits.size = Math.min(1.2, hatchling.traits.size + 0.02)
+              }
+            }
+          }
           hatchling.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${egg.generation})` }]
           // Mark life stage from hatch. Issue #3336.
           if (parentBp?.holometabolous) {
