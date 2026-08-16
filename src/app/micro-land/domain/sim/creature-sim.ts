@@ -873,6 +873,12 @@ export function tickCreatures(
         )
       : 1
 
+  // Lunar phase counter: one full cycle every ~28 "moon days" = 0.9333 × seasonPeriod.
+  // Issues #3187, #3188.
+  const LUNAR_PERIOD = TUNING.seasonPeriod * 0.9333
+  w.lunarPhaseDay = (w.elapsed / LUNAR_PERIOD) * 28 % 28
+  w.tidalHeight = Math.sin(2 * Math.PI * w.lunarPhaseDay / 28)
+
   // Count living plants for CO2 absorption
   const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
   tickAtmosphericCO2(w, tickCount, plantCount)
@@ -1562,6 +1568,14 @@ export function tickCreatures(
     // Obligate coevolution: faster starvation when partner species is extinct. Issue #3266.
     if (bp.obligatePartner !== undefined && (speciesCount[bp.obligatePartner] ?? 0) === 0) {
       c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+    }
+    // Intertidal zone: bonus at low tide, penalty at high tide. Issue #3191.
+    if (bp.intertidal && w.tidalHeight !== undefined) {
+      if (w.tidalHeight < -0.3) {
+        c.hunger = Math.max(0, c.hunger - 0.002 * dt)
+      } else if (w.tidalHeight > 0.5) {
+        c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+      }
     }
     if (c.hunger >= 1) {
       c.starving += dt
@@ -2819,6 +2833,12 @@ export function tickCreatures(
       !bp.phenology?.breedingGdd ||
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
     )
+    // Lunar breeding trigger: species tied to a moon phase can only breed near it. Issue #3190.
+    if (bp.lunarBreedingPhase !== undefined && w.lunarPhaseDay !== undefined) {
+      const phaseDiff = Math.abs(((w.lunarPhaseDay - bp.lunarBreedingPhase + 28) % 28))
+      const phaseDiffWrapped = Math.min(phaseDiff, 28 - phaseDiff)
+      if (phaseDiffWrapped > 2) continue
+    }
     if (
       inBreedingSeason &&
       readyToBreed(c, bp) &&

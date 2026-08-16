@@ -765,6 +765,11 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    lunarBreedingPhase:
+      typeof b.lunarBreedingPhase === 'number'
+        ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
+        : undefined,
+    intertidal: b.intertidal !== undefined ? !!b.intertidal : undefined,
     otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,

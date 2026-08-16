@@ -1095,6 +1095,18 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * Moon phase (0–27) at which this species breeds. When set, breeding is
+   * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
+   * Issue #3190.
+   */
+  lunarBreedingPhase?: number
+  /**
+   * True if this species is adapted to the intertidal zone (shoreline).
+   * At low tide (tidalHeight < −0.3), gains a hunger bonus. At high tide
+   * (tidalHeight > 0.5), takes a hunger penalty. Issue #3191.
+   */
+  intertidal?: boolean
 }
 
 /**
@@ -1968,6 +1980,17 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Current lunar phase day [0, 28). Derived from elapsed and stored for
+   * renderer access. 0 = new moon, 7 = first quarter, 14 = full moon, 21 = last quarter.
+   * Updated each tick in tickCreatures(). Issues #3187, #3188.
+   */
+  lunarPhaseDay?: number
+  /**
+   * Tidal height [-1, 1]. Sine of lunar phase. > 0.5 = high tide; < -0.5 = low tide.
+   * Issue #3188.
+   */
+  tidalHeight?: number
 }
 
 // ---------------------------------------------------------------------------
