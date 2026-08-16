@@ -942,6 +942,45 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
   }
 }
 
+/**
+ * Update the cave-nutrient field — drip water from surface pools carries
+ * dissolved organic matter down through stone, nourishing cave bacteria.
+ * Runs at the same cadence as tickMoisture (every 30 ticks).
+ */
+export function tickCaveNutrient(w: WorldState, tickCount: number, dt: number): void {
+  if (tickCount % 30 !== 0) return
+  w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
+  const timePassed = 30 / 60
+  const stoneIdx = MATERIAL_INDEX.stone
+  const waterIdx = MATERIAL_INDEX.water
+
+  // Decay all cave nutrient slowly.
+  for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+    if (w.caveNutrient[i] > 0) {
+      w.caveNutrient[i] = Math.max(0, w.caveNutrient[i] - 0.003 * timePassed)
+    }
+  }
+
+  // Drip: for each water tile in the upper half of the world, look downward
+  // for the first stone tile within 40 rows. Check every 4th column to stay cheap.
+  for (let x = 0; x < WORLD_W; x += 4) {
+    for (let y = 0; y < Math.floor(WORLD_H / 2); y++) {
+      if (w.tiles[y * WORLD_W + x] !== waterIdx) continue
+      for (let dy = 1; dy <= 40; dy++) {
+        const ty = y + dy
+        if (ty >= WORLD_H) break
+        const ti = ty * WORLD_W + x
+        if (w.tiles[ti] === stoneIdx) {
+          w.caveNutrient[ti] = Math.min(1, w.caveNutrient[ti] + 0.015 * timePassed)
+          break
+        }
+        // Stop looking if we hit another liquid (no further drip through pooled water)
+        if (IS_LIQUID[w.tiles[ti]] === 1) break
+      }
+    }
+  }
+}
+
 export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
