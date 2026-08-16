@@ -878,9 +878,29 @@ export function tickCreatures(
       const isStillSummer = Math.sin(p) > 0.3
       return isAutumnFalling && isStillSummer ? 2.0 : 1.0
     })()
+    // V-formation aerodynamics: migratory flyers in a group of 3+ benefit from
+    // upwash vortices (70 % cost); lone migrants pay a solo penalty (120 %).
+    // Leadership rotates by creature id parity — a simple but stable rotation.
+    // Non-migratory or non-flying creatures are unaffected. Issue #3325.
+    const vFormationFactor = (() => {
+      if (!bp.migratory || !c.migrating || bp.move.kind !== 'fly') return 1
+      let flockSize = 0
+      for (const other of w.creatures) {
+        if (other.id === c.id) continue
+        if (w.blueprints[other.blueprintId]?.id !== bp.id) continue
+        if (!other.migrating) continue
+        if (Math.abs(other.x - c.x) > 12 || Math.abs(other.y - c.y) > 8) continue
+        flockSize++
+      }
+      if (flockSize === 0) return 1.2  // lone migrant
+      if (flockSize < 2) return 1.0   // pair, no formation yet
+      // Flock of 3+: leader pays full, others get upwash discount
+      const isLeader = c.id % 3 === 0
+      return isLeader ? 1.0 : 0.7
+    })()
     c.hunger = Math.min(
       1,
-      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * dt
+      c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * dt
     )
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
