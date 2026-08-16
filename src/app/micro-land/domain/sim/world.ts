@@ -8,6 +8,7 @@ import {
   IS_FERTILE,
   IS_LIQUID,
   IS_SOLID,
+  MATERIAL_BY_INDEX,
   MATERIAL_INDEX,
   VISCOSITY,
 } from '@/app/micro-land/domain/config/materials'
@@ -1450,3 +1451,65 @@ export function tickCorridorMask(w: WorldState, tickCount: number): void {
 }
 
 export { AIR }
+
+// ---------------------------------------------------------------------------
+// Acid rain from sulfur pollution (Issue #3279)
+// ---------------------------------------------------------------------------
+
+/**
+ * Simulates atmospheric sulfur accumulation from lava tiles and the resulting
+ * acid-rain effect on water and moist-soil pH. Marble/limestone tiles buffer.
+ */
+export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => number): void {
+  if (tickCount % 60 !== 0) return
+
+  // Initialise pH grid to neutral if not yet created
+  if (!w.tilePH) {
+    w.tilePH = new Float32Array(w.tiles.length).fill(7.0)
+  }
+
+  // --- Step 1: Lava tiles emit sulfur ---
+  let sulfurEmitted = 0
+  let limestoneCount = 0
+  for (let i = 0; i < w.tiles.length; i++) {
+    const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
+    if (matId === 'lava') sulfurEmitted += 0.0004
+    if (matId === 'marble' || matId === 'limestone') limestoneCount++
+  }
+
+  // --- Step 2: Update atmospheric sulfur (decays naturally, buffered by limestone) ---
+  const bufferFactor = Math.max(0, 1 - limestoneCount * 0.00005)
+  w.atmosphericSulfurPpm = Math.max(
+    0,
+    Math.min(2.0, (w.atmosphericSulfurPpm ?? 0) * 0.98 * bufferFactor + sulfurEmitted)
+  )
+
+  // --- Step 3: Acid rain — lower pH of water and moist tiles proportional to sulfur ---
+  const sulfur = w.atmosphericSulfurPpm ?? 0
+  if (sulfur < 0.1) return  // not enough sulfur for significant acid rain
+
+  for (let i = 0; i < w.tiles.length; i++) {
+    const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
+    const isWater = matId === 'water' || matId === 'salt-water'
+    const isMoist = (w.moisture?.[i] ?? 0) > 0.5
+
+    if (!isWater && !isMoist) continue
+
+    // Acid deposition proportional to sulfur level
+    const acidDeposit = sulfur * 0.15
+    w.tilePH[i] = Math.max(3.0, w.tilePH[i] - acidDeposit)
+
+    // Limestone/marble adjacency buffers pH recovery
+    const x = i % w.width, y = Math.floor(i / w.width)
+    for (const [dx, dy] of [[-1,0],[1,0],[0,-1],[0,1]] as [number,number][]) {
+      const ni = (y + dy) * w.width + (x + dx)
+      if (ni >= 0 && ni < w.tiles.length) {
+        const nMat = MATERIAL_BY_INDEX[w.tiles[ni]]?.id
+        if (nMat === 'marble' || nMat === 'limestone') {
+          w.tilePH[i] = Math.min(7.0, w.tilePH[i] + 0.3)
+          break
+        }
+      }
+    }
+  }
+}

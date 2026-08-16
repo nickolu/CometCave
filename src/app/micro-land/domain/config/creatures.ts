@@ -437,6 +437,7 @@ const FINLING = builtin('finling', {
   glow: 0,
   phenology: { breedingGdd: 500 }, // midsummer spawner like many fish species
   salinityTolerance: { min: 0.3, max: 1.0 },  // euryhaline — tolerates brackish to marine
+  acidSensitive: true,  // freshwater fish are pH-sensitive bioindicators. Issue #3279.
 })
 
 const SPRING_TROUT = builtin('spring-trout', {
@@ -472,6 +473,7 @@ const SPRING_TROUT = builtin('spring-trout', {
   phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
   anadromous: true,  // migrates back to natal headwater to spawn
   flowZonePreference: 'riffle',  // fast oxygenated headwater — its native habitat
+  acidSensitive: true,  // cold-water headwater fish highly acid-sensitive. Issue #3279.
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -1422,6 +1424,7 @@ const CAVE_SALAMANDER = builtin('cave-salamander', {
   aura: null,
   glow: 0,
   brainSize: 0.6,  // cave salamanders navigate complex 3-D environments by smell alone
+  acidSensitive: true,  // amphibians absorb water through skin — highly vulnerable to pH drop. Issue #3279.
 })
 
 const BAT = builtin('bat', {

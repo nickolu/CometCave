@@ -768,6 +768,8 @@ export interface CreatureBlueprint {
    * naturally occurring species. Used for Field Guide tracking. Issue #3368.
    */
   biocontrolAgent?: boolean
+  /** When true, creature takes extra damage in acidic water (pH < 5.5). Models fish, amphibians, invertebrates. Issue #3279. */
+  acidSensitive?: boolean
   /**
    * This species transitions through complete metamorphosis: egg → larva → pupa → adult.
    * Eggs hatch into `larvaeBlueprint` creatures instead of adults. Issue #3336.
@@ -1904,6 +1906,10 @@ export interface WorldState {
    * metabolic stress in non-plant creatures. Issues #3275, #3276.
    */
   atmosphericO2?: number
+  /** Parts-per-million equivalent of atmospheric sulfur dioxide. Emitted by lava tiles; causes acid rain. Issue #3279. */
+  atmosphericSulfurPpm?: number
+  /** Per-tile pH grid [0–14]; 7.0 = neutral. Water + high sulfur → drops below 5.5. Limestone neutralizes. Issue #3279. */
+  tilePH?: Float32Array
   /**
    * Mycorrhizal network graph: maps creature ID (as string) to array of
    * connected creature IDs. Entries are pruned when a creature dies. Undefined
