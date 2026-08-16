@@ -49,6 +49,7 @@ export type BaseMaterialId =
   | 'shed-skin'
   | 'web'
   | 'termite-mound'
+  | 'fire'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
