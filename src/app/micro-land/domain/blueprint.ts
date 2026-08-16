@@ -765,6 +765,7 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
     otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
