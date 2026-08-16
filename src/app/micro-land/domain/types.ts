@@ -991,6 +991,58 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
+
+  // --- Coevolution features (#3263–#3267) ---
+
+  /** Predator-prey escalation: predator gains cumulative speed from hunting success. Issue #3263. */
+  predatorEscalation?: boolean
+  /** Predator-prey escalation: prey gains cumulative evasion from surviving predation. Issue #3263. */
+  preyEscalation?: boolean
+
+  /** Pollinator specialization: this creature is a specialized pollinator. Issue #3264. */
+  pollinatorSpecialist?: boolean
+  /** Pollinator specialization: how deep the nectar tube is (0.0–1.0); set on plants. Issue #3264. */
+  flowerTubeDepth?: number
+  /** Pollinator specialization: tongue reach of the pollinator (0.0–1.0). Issue #3264. */
+  tongueLength?: number
+
+  /** Host-parasite immunity: this species acts as a parasite (drains hosts without killing). Issue #3265. */
+  hostParasiteAttacker?: boolean
+  /** Host-parasite immunity: this species can be parasitized and builds immune exposure. Issue #3265. */
+  hostParasite?: boolean
+
+  /** Obligate coevolved pair: blueprintId of the required mutualistic partner species. Issue #3266. */
+  obligatePartner?: string
+
+  /** Mimicry: this species is genuinely toxic/aposematic; predators learn to avoid it. Issue #3267. */
+  toxic?: boolean
+  /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
+  toxicMimic?: boolean
+  /**
+   * When true, in rivers with population > 15, five otters with the most meals
+   * become Oligarchs each season. Oligarchs extract 5% hunger from nearby
+   * non-oligarch conspecifics. Three form a bloc. The other two are aware.
+   * Issue #3308.
+   */
+  otterOligarchy?: boolean
+  /**
+   * When true, squirrels form a Collective when pop > 30. All hunger is shared
+   * communally among members. Gerald (first squirrel) retains a private stash
+   * via a "temporary" exemption granted in Season 1, never revisited. Issue #3312.
+   */
+  squirrelSocialism?: boolean
+  /**
+   * When true, voles elect a Chief Vole each season via maze ballot. The
+   * incumbent is re-elected with 80% probability (they know the route).
+   * Electoral integrity reforms have been proposed 12 times. Issue #3315.
+   */
+  voleVoting?: boolean
+  /**
+   * When true, after 3+ territorial confrontations a Tribunal fires with a
+   * random verdict. Compliance rate: 12%. The Tribunal has no enforcement arm.
+   * It is still considered legitimate. Issue #3316.
+   */
+  weaselTribunal?: boolean
 }
 
 /**
@@ -1451,6 +1503,20 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** Bonus speed from successful hunts (predator escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedSpeed?: number
+  /** Evasion factor from surviving predation (prey escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedEvasion?: number
+  /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
+  parasiteExposure?: number
+  /** True when this otter is currently an Oligarch (elected by fish catches). Issue #3308. */
+  isOligarch?: boolean
+  /** True when this squirrel is Gerald — first of the collective, permanently exempt. Issue #3312. */
+  isGerald?: boolean
+  /** True when this vole is the current Chief Vole (maze-elected). Issue #3315. */
+  isChiefVole?: boolean
+  /** Accumulated territorial confrontation count; triggers Tribunal at 3+. Issue #3316. */
+  conflictCount?: number
 }
 
 /**
@@ -1813,6 +1879,20 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** IDs of the five current Otter Oligarchs. Issue #3308. */
+  otterOligarchIds?: number[]
+  /** Season index of the last otter oligarchy election. Issue #3308. */
+  otterLastElectionSeason?: number
+  /** ID of Gerald, the permanently-exempt squirrel. Issue #3312. */
+  squirrelGeraldId?: number
+  /** True when the Squirrel Collective is active (pop > 30). Issue #3312. */
+  squirrelCollectiveActive?: boolean
+  /** ID of the current Chief Vole. Issue #3315. */
+  chiefVoleId?: number
+  /** Season index of the last vole election. Issue #3315. */
+  chiefVoleLastElectionSeason?: number
+  /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
+  weaselTribunalActive?: boolean
 }
 
 // ---------------------------------------------------------------------------
