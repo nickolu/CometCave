@@ -781,6 +781,7 @@ export function tickCreatures(
     }
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
+    if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     if ((c as { sick?: number }).sick === undefined) c.sick = 0
@@ -2522,6 +2523,22 @@ function look(
     c.huntPassCount = 0
   }
 
+  // Insight problem solving: cognitively superior creatures unlock novel solutions when stuck
+  const insightBrainSize = bp.brainSize ?? 0
+  if (
+    insightBrainSize >= 0.5 &&
+    bp.move.kind !== 'root' &&
+    (c.huntPassCount ?? 0) >= 4 &&
+    !c.insightTimer &&
+    Math.random() < insightBrainSize * 0.08
+  ) {
+    c.insightTimer = 2 + insightBrainSize * 3
+    c.insightCount = (c.insightCount ?? 0) + 1
+    c.huntPassCount = 0
+    c.huntBlockedId = null
+    logLife(c, w.elapsed, `Insight #${c.insightCount}: unlocked novel path to prey`)
+  }
+
   // Disease spread: an infected creature spreads to non-plant neighbours within 4 tiles.
   if (c.sick > 0 && bp.move.kind !== 'root') {
     const spreadReach = 4
@@ -3172,6 +3189,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (c.stunTimer > 0 ? 0.2 : 1) *
       (c.sick > 0 ? 0.7 : 1) *
       (c.symbiosisTimer > 0 ? 1.15 : 1) *
+      (c.insightTimer && c.insightTimer > 0 ? 0.05 : 1) *  // insight pause
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
     (1 - diurnalPenalty)

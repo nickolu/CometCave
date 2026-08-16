@@ -386,6 +386,7 @@ const MANTIS_SHRIMP = builtin('mantis-shrimp', {
   glow: 0,
   polarizedVision: true,
   polarizedSkin: true,
+  brainSize: 0.75,  // real mantis shrimp are remarkably intelligent
 })
 
 const FINLING = builtin('finling', {
@@ -525,6 +526,7 @@ const STALKER = builtin('stalker', {
   phenology: { breedingGdd: 350 }, // breeds in late spring / early summer
   // Pack hunters communicate and coordinate well — high cultural transmission.
   socialLearningRate: 0.8,
+  brainSize: 0.8,  // apex social predator with complex cooperative strategies
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -1354,6 +1356,7 @@ const CAVE_SALAMANDER = builtin('cave-salamander', {
   death: { becomes: null, particleColor: '#d4607a', particleCount: 4 },
   aura: null,
   glow: 0,
+  brainSize: 0.6,  // cave salamanders navigate complex 3-D environments by smell alone
 })
 
 const BAT = builtin('bat', {

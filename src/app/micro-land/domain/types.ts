@@ -1000,6 +1000,10 @@ export interface Creature {
    * Default undefined = 0 (no offset from species baseline).
    */
   phenoOffset?: number
+  /** Seconds remaining in an insight pause. While above zero the creature moves at 0.05× speed. */
+  insightTimer?: number
+  /** Total insight events this creature has had. */
+  insightCount?: number
 }
 
 /**
