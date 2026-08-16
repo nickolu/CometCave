@@ -1490,6 +1490,21 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0001 * dt)  // starvation without fungal support
       }
     }
+    // Coral reef builder: builds stone reef by converting water tile above. Issue #3253.
+    if (bp.coralPolyp && bp.move.kind === 'root' && tickCount % 600 === c.id % 600) {
+      const cx3 = Math.floor(c.x)
+      const topY = Math.floor(c.y) - 1  // one tile above the coral
+      if (topY >= 0 && topY < WORLD_H) {
+        const aboveIdx = topY * WORLD_W + wrapCol(cx3)
+        const aboveTile = w.tiles[aboveIdx]
+        if (IS_LIQUID[aboveTile] && !IS_DEADLY[aboveTile]) {
+          const occupied = w.creatures.some(other => Math.floor(other.x) === cx3 && Math.floor(other.y) === topY)
+          if (!occupied) {
+            setTile(w, cx3, topY, MATERIAL_INDEX.stone)
+          }
+        }
+      }
+    }
     // Low O2 respiration penalty: thin atmosphere reduces metabolic efficiency. Issue #3276.
     const o2Level = w.atmosphericO2 ?? 1.0
     if (o2Level < 0.7 && !bp.tags?.includes('plant')) {
@@ -2805,6 +2820,22 @@ export function tickCreatures(
       w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 8, polarized: true })
     }
 
+    // Pheromone trail: deposit scent every 15 ticks while moving. Issue #3234.
+    if (bp.pheromoneDepositor && (tickCount + c.id) % 15 === 0 && w.scents.length < 300) {
+      const speed = Math.hypot(c.vx, c.vy)
+      if (speed > 0.05) {
+        w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 20 })
+      }
+    }
+
+    // Sound propagation: sound emitter broadcasts acoustic signal as scent. Issue #3241.
+    if (bp.soundEmitter && (tickCount + c.id) % SENSE_EVERY === 0 && w.scents.length < 300) {
+      w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 5 })
+    }
+
+    // Multi-host parasite: larval stage cannot breed. Issue #3185.
+    if (bp.intermediateHostId !== undefined && c.lifecycleStage === 'larval') continue
+
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
     // Phenological gate: species with a breedingGdd threshold only mate when
@@ -3074,6 +3105,10 @@ export function tickCreatures(
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
+            // Multi-host parasite: start as larval stage. Issue #3185.
+            if (bp.intermediateHostId !== undefined) {
+              child.lifecycleStage = 'larval'
+            }
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -3864,6 +3899,10 @@ function look(
         c.hostId = other.id
         c.mood = 'eat'
         c.targetId = null
+        // Multi-host lifecycle: mature from larval to adult when attaching to intermediate host. Issue #3185.
+        if (bp.intermediateHostId !== undefined && c.lifecycleStage === 'larval' && other.blueprintId === bp.intermediateHostId) {
+          c.lifecycleStage = 'adult'
+        }
         if (other.mood === 'wander' || other.mood === 'rest') {
           other.mood = 'flee'
           other.targetId = c.id
@@ -4218,7 +4257,7 @@ function look(
     !threat &&
     c.mood === 'wander' &&
     w.scents.length > 0 &&
-    cooperationVal > 0.5
+    (cooperationVal > 0.5 || bp.pheromoneDepositor === true)
   ) {
     const scentReach2 = sight * sight * 4
     const midX = cx
@@ -4317,6 +4356,28 @@ function look(
     if (nearestPolScent) {
       const weight = 0.35
       c.drift = deltaX(midX, nearestPolScent.x) > 0 ? weight : -weight
+    }
+  }
+
+  // Sound-receptive: flee from nearby sound emitter scents. Issue #3241.
+  if (bp.soundReceptive && c.mood === 'wander' && w.scents.length > 0) {
+    const soundRange = (bp.soundReceptiveRange ?? 12)
+    const soundRange2 = soundRange * soundRange
+    const midX = cx
+    const midY = c.y + bh / 2
+    for (const s of w.scents) {
+      if (s.blueprintId === c.blueprintId) continue  // ignore own species
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      if (sdx * sdx + sdy * sdy < soundRange2) {
+        const soundBp = w.blueprints[s.blueprintId]
+        if (soundBp?.soundEmitter) {
+          c.mood = 'flee'
+          c.vx += sdx > 0 ? -0.3 : 0.3
+          c.vy += sdy > 0 ? -0.2 : 0.2
+          break
+        }
+      }
     }
   }
 

@@ -1095,6 +1095,36 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * This species deposits pheromone trails (scent markers) while moving.
+   * Same-species creatures attracted to these trails regardless of cooperation.
+   * Issue #3234.
+   */
+  pheromoneDepositor?: boolean
+  /**
+   * This parasite requires an intermediate host to mature from larval to adult stage.
+   * Set to the blueprintId of the intermediate host species. Issue #3185.
+   */
+  intermediateHostId?: string
+  /**
+   * True if this plant-like creature is a coral polyp that builds reef structure.
+   * Converts adjacent water tiles to stone at a slow rate. Issue #3253.
+   */
+  coralPolyp?: boolean
+  /**
+   * This creature broadcasts sound signals as extended-range scent beacons.
+   * Other creatures with soundReceptive respond to these signals. Issue #3241.
+   */
+  soundEmitter?: boolean
+  /**
+   * This creature can detect and react to sound signals from soundEmitter species.
+   * Flees from nearby sound events within soundReceptiveRange tiles. Issue #3241.
+   */
+  soundReceptive?: boolean
+  /**
+   * Detection range in tiles for sound receptive creatures. Issue #3241.
+   */
+  soundReceptiveRange?: number
 }
 
 /**
@@ -1576,6 +1606,12 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /**
+   * Parasite lifecycle stage: 'larval' cannot breed; 'adult' can breed normally.
+   * Set on birth for multihost parasites; matures after parasitizing intermediateHostId.
+   * Issue #3185.
+   */
+  lifecycleStage?: 'larval' | 'adult'
 }
 
 /**
