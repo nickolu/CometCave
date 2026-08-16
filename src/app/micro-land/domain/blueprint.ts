@@ -609,6 +609,9 @@ export function sanitizeBlueprint(
     polarizedVision: b.polarizedVision === true,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     elderWisdom: !!b.elderWisdom,
+    phenology: b.phenology?.breedingGdd !== undefined
+      ? { breedingGdd: Math.max(0, Math.min(1000, b.phenology.breedingGdd)) }
+      : undefined,
     brainSize:
       typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
         ? b.brainSize
