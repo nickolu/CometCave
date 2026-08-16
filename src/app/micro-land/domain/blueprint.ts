@@ -682,6 +682,8 @@ export function sanitizeBlueprint(
     hardShelled: typeof b.hardShelled === 'boolean' ? b.hardShelled : undefined,
     stickProber: typeof b.stickProber === 'boolean' ? b.stickProber : undefined,
     stickProbeDamage: typeof b.stickProbeDamage === 'number' ? Math.max(0, Math.min(1, b.stickProbeDamage)) : undefined,
+    secondaryColonizer: typeof b.secondaryColonizer === 'boolean' ? b.secondaryColonizer : undefined,
+    colonizedStructure: Array.isArray(b.colonizedStructure) ? (b.colonizedStructure as string[]) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

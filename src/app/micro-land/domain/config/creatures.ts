@@ -2561,6 +2561,79 @@ const CALEDONIAN_CROW = builtin('caledonian-crow', {
   objectManipulator: true,
 })
 
+// ---------------------------------------------------------------------------
+// Barn Owl — silent nocturnal hunter that squats in abandoned nests. Issue #3423.
+// ---------------------------------------------------------------------------
+
+const BARN_OWL = builtin('barn-owl', {
+  name: 'Barn Owl',
+  blurb: 'A silent nocturnal hunter that squats in abandoned nests, repurposing them as hunting perches.',
+  size: 1,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { w: '#f5ead8', b: '#8a7050', g: '#ffffff' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.0, drag: 0.5, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'fly', speed: 2.0, jump: 0, hop: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00003,
+    starveSeconds: 30,
+    breedAt: 0.75,
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 18 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#f5ead8', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  secondaryColonizer: true,
+  colonizedStructure: ['nest'],
+})
+
+// ---------------------------------------------------------------------------
+// Monitor Lizard — opportunistic predator that takes over abandoned mounds and burrows. Issue #3423.
+// ---------------------------------------------------------------------------
+
+const MONITOR_LIZARD = builtin('monitor-lizard', {
+  name: 'Monitor Lizard',
+  blurb: 'An opportunistic predator that takes over abandoned termite mounds and burrows as a ready-made den.',
+  size: 1,
+  tags: ['meat', 'reptile'],
+  art: {
+    palette: { w: '#7a9060', b: '#3a4830', g: '#aab888' },
+    frames: [['bwb', 'wgw', 'bwb']],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  body: { mass: 1.0, bounce: 0.0, drag: 0.4, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.1, jump: 4, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.000035,
+    starveSeconds: 40,
+    breedAt: 0.75,
+    lifespanSeconds: 250,
+  },
+  senses: { sight: 14 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a9060', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  secondaryColonizer: true,
+  colonizedStructure: ['mound', 'burrow'],
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2627,6 +2700,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   CLAM,
   SEA_OTTER,
   CALEDONIAN_CROW,
+  BARN_OWL,
+  MONITOR_LIZARD,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

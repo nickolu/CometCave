@@ -918,6 +918,17 @@ export interface CreatureBlueprint {
    * Defaults to 0.08 when unset. Only meaningful when stickProber is true. Issue #3414.
    */
   stickProbeDamage?: number
+  /**
+   * When true, this creature seeks out and moves into vacant built structures
+   * (abandoned nests, burrows, mounds) left by dead owners. Gains shelter safety
+   * similar to burrowing creatures while occupying a structure. Issue #3423.
+   */
+  secondaryColonizer?: boolean
+  /**
+   * Types of structures this secondary colonizer will occupy.
+   * Values match structure type keys: 'nest' | 'burrow' | 'mound'. Issue #3423.
+   */
+  colonizedStructure?: string[]
 }
 
 /**
@@ -1348,6 +1359,11 @@ export interface Creature {
   cachedFood?: number
   /** True while this creature is underground at its burrow site. Issue #3419. */
   inBurrow?: boolean
+  /**
+   * WorldState.nestSites key (e.g. "12,34") of the structure this secondary
+   * colonizer is currently occupying. Undefined when not in a structure. Issue #3423.
+   */
+  occupiedStructureKey?: string
 }
 
 /**

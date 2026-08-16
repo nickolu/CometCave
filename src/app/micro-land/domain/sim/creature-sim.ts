@@ -1732,6 +1732,33 @@ export function tickCreatures(
       }
     }
 
+    // Secondary colonization: move into vacant built structures. Issue #3423.
+    if (bp.secondaryColonizer && c.occupiedStructureKey === undefined && w.nestSites && tickCount % 120 === c.id % 120) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const livingOwnerIds = new Set(w.creatures.map(cr => cr.id))
+      const occupiedKeys = new Set(
+        w.creatures.filter(cr => cr.occupiedStructureKey != null).map(cr => cr.occupiedStructureKey!)
+      )
+      for (const [key, site] of Object.entries(w.nestSites)) {
+        if (livingOwnerIds.has(site.ownerId)) continue  // owner still alive
+        if (occupiedKeys.has(key)) continue              // already occupied by someone else
+        const sdx = site.x - cx, sdy = site.y - cy
+        const sdist = Math.sqrt(sdx * sdx + sdy * sdy)
+        if (sdist > 20) continue  // too far away
+        // Steer toward this vacant structure
+        if (sdist > 1) {
+          c.vx += (sdx / sdist) * 0.3 * dt
+          c.vy += (sdy / sdist) * 0.3 * dt
+        }
+        if (sdist < 2) {
+          // Move in!
+          c.occupiedStructureKey = key
+          site.ownerId = c.id  // update occupant
+        }
+        break
+      }
+    }
+
     // --- movement -------------------------------------------------------
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
@@ -3031,6 +3058,8 @@ function look(
     if (!obp) continue
     // Burrowed creatures are safe from non-burrowing, non-probing predators. Issues #3419, #3414.
     if (other.inBurrow && !bp.burrowDigger && !bp.stickProber) continue
+    // Colonized structure shelter: colonizers in occupied structures are hidden. Issue #3423.
+    if (other.occupiedStructureKey && !bp.secondaryColonizer && !bp.burrowDigger && !bp.moundDestroyer) continue
 
     // Hard-shelled prey: requires anvil (stone tile nearby). Issue #3413.
     if (obp.hardShelled) {
