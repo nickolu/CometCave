@@ -1418,6 +1418,50 @@ export function tickCreatures(
       }
     }
 
+    // Riparian buffer: root plants within 3 tiles of water absorb surface
+    // nutrients before they reach the stream. The plant benefits (extra growth);
+    // the water body stays cleaner. Issue #3371.
+    if (isPlant) {
+      const rpx = Math.floor(c.x + bw / 2), rpy = Math.floor(c.y + bh / 2)
+      let riparianNearWater = false
+      outer: for (let rdy = -3; rdy <= 3; rdy++) {
+        for (let rdx = -3; rdx <= 3; rdx++) {
+          const rtx = wrapCol(rpx + rdx), rty = rpy + rdy
+          if (rty < 0 || rty >= WORLD_H) continue
+          if (IS_LIQUID[w.tiles[rty * WORLD_W + rtx] ?? 0] && !IS_DEADLY[w.tiles[rty * WORLD_W + rtx] ?? 0]) {
+            riparianNearWater = true
+            break outer
+          }
+        }
+      }
+      if (riparianNearWater && w.caveNutrient) {
+        const rni = rpy * WORLD_W + rpx
+        const ripNutrient = w.caveNutrient[rni] ?? 0
+        if (ripNutrient > 0) {
+          const absorbed = Math.min(ripNutrient, 0.0005 * dt)
+          w.caveNutrient[rni] -= absorbed
+          c.hunger = Math.max(0, c.hunger - absorbed * 0.4)
+        }
+      }
+    }
+
+    // Leaf litter / falling insect bonus: aquatic creatures near overhanging
+    // riparian vegetation receive a small food subsidy from organic inputs.
+    // Issue #3371.
+    if (!isPlant && isNearWater(w, c)) {
+      const llcx = Math.floor(c.x), llcy = Math.floor(c.y)
+      for (const other of w.creatures) {
+        if (other.id === c.id) continue
+        const obp = w.blueprints[other.blueprintId]
+        if (!obp || obp.move.kind !== 'root') continue
+        const lldx = Math.abs(Math.floor(other.x) - llcx), lldy = Math.abs(Math.floor(other.y) - llcy)
+        if (lldx <= 3 && lldy <= 3) {
+          c.hunger = Math.max(0, c.hunger - 0.00002 * dt)
+          break
+        }
+      }
+    }
+
     // Industrial pollution: creatures with polluter flag deposit soot (ash) on
     // the tiles they walk through, darkening the substrate and creating selection
     // pressure for cryptic variants with ash-hue colouring (industrial melanism).
