@@ -2031,6 +2031,7 @@ const SHIMMER_PUPA = builtin('shimmer-pupa', {
   glow: 0.05,
   pupalDuration: 20,              // 20 s countdown until adult emergence. Issue #3336.
   metamorphosesInto: 'shimmer-fly',
+  pupalVulnerability: 0.5,        // moderately vulnerable to predation. Issue #3338.
 })
 
 // ---------------------------------------------------------------------------
@@ -2069,6 +2070,7 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   egglayer: true,
   holometabolous: true,       // eggs hatch as shimmer-larva. Issue #3336.
   larvaeBlueprint: 'shimmer-larva',
+  adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
 })
 
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [

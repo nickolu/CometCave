@@ -790,6 +790,28 @@ export interface CreatureBlueprint {
    * where the transition is time-gated, not age-gated. Issue #3336.
    */
   pupalDuration?: number
+  /**
+   * What larvae of this species eat, overriding the normal trophic level.
+   * When set and the creature has lifeStage === 'larva', the sim uses this tag
+   * instead of diet.eats to determine valid prey. Enables niche separation: the
+   * caterpillar eats leaves while the butterfly drinks nectar. Issue #3337.
+   */
+  larvalTrophicLevel?: 'plant' | 'meat' | 'scavenger'
+  /**
+   * What adults of this species eat, overriding the normal trophic level.
+   * 'none' means the adult stage does not eat at all — models mayflies and some
+   * moths that live only to breed. When set to a non-none value, overrides
+   * diet.eats for adult-stage creatures. Issue #3337.
+   */
+  adultTrophicLevel?: 'plant' | 'meat' | 'nectar' | 'none'
+  /**
+   * Extra vulnerability of this pupa to predation, [0, 1].
+   * When non-zero, a predator eating this pupa gets (1 + pupalVulnerability) ×
+   * normal meal fill — making pupae more rewarding prey and therefore more
+   * targeted by opportunistic predators. 0 = no extra vulnerability (default).
+   * Issue #3338.
+   */
+  pupalVulnerability?: number
 }
 
 /**
