@@ -883,6 +883,12 @@ export function tickCreatures(
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
 
+  // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
+  const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
+  const WIND_PERIOD_Y = TUNING.seasonPeriod * 4.7
+  w.windX = Math.cos(2 * Math.PI * w.elapsed / WIND_PERIOD_X) * 0.4
+  w.windY = Math.sin(2 * Math.PI * w.elapsed / WIND_PERIOD_Y) * 0.15
+
   const creatures = w.creatures
   const dead = new Set<number>()
 
@@ -1451,6 +1457,14 @@ export function tickCreatures(
     if (bp.dormancyPhotoperiod && TUNING.seasonAmplitude > 0 && seasonFactor < 0.7) {
       const dormancyDepth = Math.max(0, 0.7 - seasonFactor) / 0.7  // 0→1 as season goes from 0.7→0
       c.hunger = Math.max(0, c.hunger - dormancyDepth * 0.0003 * dt)
+    }
+    // Wind chill: warm-blooded creatures lose heat faster in cold wind. Issue #3156.
+    if (bp.warmBlooded && TUNING.seasonAmplitude > 0 && seasonFactor < 0.8 && w.windX !== undefined) {
+      const windMag = Math.abs(w.windX) + Math.abs(w.windY ?? 0) * 0.5
+      if (windMag > 0.1) {
+        const coldFactor = Math.max(0, 0.8 - seasonFactor) / 0.8
+        c.hunger = Math.min(1, c.hunger + coldFactor * windMag * 0.0002 * dt)
+      }
     }
     // Flow zone preference: aquatic creatures thrive in their matched zone.
     // Preferred zone → slight hunger relief; wrong zone → mild hunger increase.
@@ -3418,8 +3432,8 @@ export function tickCreatures(
     const { w: vw, h: vh } = artSize(victimBp)
     const angle = rng() * Math.PI * 2
     const dist = 20 + rng() * 40
-    const ox = ev.x + Math.cos(angle) * dist
-    const oy = ev.y + Math.sin(angle) * dist
+    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * 25
+    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * 15
     const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
     if (seedling) {
       plantsAlive++
@@ -3469,8 +3483,13 @@ export function tickCreatures(
     }
   }
 
-  // Scent decay
-  for (const s of w.scents) s.decaySeconds -= dt
+  // Scent decay and wind dispersal. Issue #3155 for wind dispersal.
+  for (const s of w.scents) {
+    s.decaySeconds -= dt
+    // Scents drift downwind. Issue #3155.
+    if (w.windX) s.x += w.windX * dt * 0.4
+    if (w.windY) s.y += w.windY * dt * 0.4
+  }
   w.scents = w.scents.filter(s => s.decaySeconds > 0)
 
   // Disease outbreak: roughly every 3 sim-minutes, infect one random non-plant.
@@ -3501,6 +3520,28 @@ export function tickCreatures(
     }
     const plantsRef = { value: sbPlantsAlive }
     tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng, events)
+  }
+
+  // Wind erosion: high wind strips topsoil from exposed surface tiles. Issue #3159.
+  if (tickCount % 120 === 0 && w.windX !== undefined) {
+    const windMag = Math.abs(w.windX) + Math.abs(w.windY ?? 0) * 0.5
+    if (windMag > 0.25) {
+      const surfaceDepth = Math.floor(WORLD_H * 0.2)  // top 20% of world height
+      const tx = Math.floor(rng() * WORLD_W)
+      for (let ty = 0; ty < surfaceDepth; ty++) {
+        const tid = ty * WORLD_W + wrapCol(tx)
+        const tile = w.tiles[tid]
+        if ((tile === MATERIAL_INDEX.sand || tile === MATERIAL_INDEX.dirt) && rng() < windMag * 0.04) {
+          // Check that tile above is air (exposed surface)
+          const aboveTid = (ty - 1) * WORLD_W + wrapCol(tx)
+          const above = ty > 0 ? w.tiles[aboveTid] : 0
+          if (!IS_SOLID[above] && !IS_LIQUID[above]) {
+            setTile(w, tx, ty, MATERIAL_INDEX.air)
+          }
+          break
+        }
+      }
+    }
   }
 }
 
