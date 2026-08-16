@@ -840,11 +840,93 @@ export function tickCreatures(
         }
       }
     }
+    // --- pitfall-trap mechanics ----------------------------------------
+    if (bp.trapType === 'pitfall' && bp.move.kind === 'root') {
+      // Digest any prey already captured.
+      if (!c.trapPreyIds) c.trapPreyIds = []
+      const stillDigesting: number[] = []
+      for (const preyId of c.trapPreyIds) {
+        const prey = w.creatures.find(p => p.id === preyId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.05 * dt)  // drowning faster than snap
+          c.hunger = Math.max(0, c.hunger - 0.008 * dt)
+          if (prey.hunger >= 1) {
+            dead.add(preyId)
+          } else {
+            stillDigesting.push(preyId)
+          }
+        }
+      }
+      c.trapPreyIds = stillDigesting
+      // Passive trap: any small creature nearby has a chance to slip in.
+      if (c.trapPreyIds.length < 3) {  // pitcher can hold up to 3 prey
+        for (const other of w.creatures) {
+          if (
+            other.id === c.id ||
+            other.blueprintId === c.blueprintId ||
+            c.trapPreyIds.includes(other.id) ||
+            other.immobilizedById !== undefined ||
+            !overlapsPlant(other, c)
+          ) continue
+          const otherBp = w.blueprints[other.blueprintId]
+          if (!otherBp || otherBp.size > 2) continue
+          if (rng() < 0.01 * dt * 60) {  // ~1% chance per tick at 60fps
+            c.trapPreyIds.push(other.id)
+            other.immobilizedById = c.id
+          }
+        }
+      }
+    }
+    // --- sticky-trap mechanics -----------------------------------------
+    if (bp.trapType === 'sticky' && bp.move.kind === 'root') {
+      if (!c.trapPreyIds) c.trapPreyIds = []
+      const stillDigesting: number[] = []
+      for (const preyId of c.trapPreyIds) {
+        const prey = w.creatures.find(p => p.id === preyId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.03 * dt)
+          c.hunger = Math.max(0, c.hunger - 0.006 * dt)
+          if (prey.hunger >= 1) {
+            dead.add(preyId)
+          } else {
+            stillDigesting.push(preyId)
+          }
+        }
+      }
+      c.trapPreyIds = stillDigesting
+      for (const other of w.creatures) {
+        if (
+          other.id === c.id ||
+          other.blueprintId === c.blueprintId ||
+          c.trapPreyIds.includes(other.id) ||
+          other.immobilizedById !== undefined ||
+          !overlapsPlant(other, c)
+        ) continue
+        const otherBp = w.blueprints[other.blueprintId]
+        if (!otherBp || otherBp.size > 2) continue
+        other.adheredTicks = (other.adheredTicks ?? 0) + 1
+        if (other.adheredTicks >= 3) {
+          // Fully adhered after 3 contacts.
+          c.trapPreyIds.push(other.id)
+          other.immobilizedById = c.id
+          other.adheredTicks = 0
+        } else {
+          // Slow but not yet captured: heavily penalise movement.
+          other.vx *= 0.1
+          other.vy *= 0.1
+        }
+      }
+    }
     // Clear immobilization if the captor is gone.
     if (c.immobilizedById !== undefined) {
       const captor = w.creatures.find(p => p.id === c.immobilizedById)
-      if (!captor || captor.trapDigestingId !== c.id) {
+      const stillHeld = captor && (
+        captor.trapDigestingId === c.id ||
+        (captor.trapPreyIds?.includes(c.id) ?? false)
+      )
+      if (!stillHeld) {
         c.immobilizedById = undefined
+        c.adheredTicks = undefined
       }
     }
     // Immobilized creatures cannot move.

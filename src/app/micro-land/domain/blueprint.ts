@@ -594,7 +594,10 @@ export function sanitizeBlueprint(
     rootBankStabilizer: b.rootBankStabilizer === true,
     polluter: b.polluter === true,
     carnivorousPlant: b.carnivorousPlant === true,
-    trapType: b.trapType === 'snap' ? 'snap' : undefined,
+    trapType: b.trapType === 'snap' ? 'snap'
+      : b.trapType === 'pitfall' ? 'pitfall'
+      : b.trapType === 'sticky' ? 'sticky'
+      : undefined,
     slowMetabolism: b.slowMetabolism === true,
     invasive: b.invasive === true,
     allelopathic: b.allelopathic === true,

@@ -428,7 +428,7 @@ export interface CreatureBlueprint {
    * 'snap': two-touch trigger (Venus flytrap model).
    * Other trap types added by later issues.
    */
-  trapType?: 'snap'
+  trapType?: 'snap' | 'pitfall' | 'sticky'
   /**
    * Drastically reduced basal metabolic rate — inspired by cave-adapted
    * species (cave olm, cave fish) that can survive months without food.
@@ -923,6 +923,10 @@ export interface Creature {
   forceFrame?: number
   /** ID of the snap-trap plant holding this creature captive; creature cannot move while set. */
   immobilizedById?: number
+  /** For pitfall/sticky traps: IDs of multiple prey currently being digested. */
+  trapPreyIds?: number[]
+  /** For sticky traps: how many ticks this creature has been adhered (0–3). */
+  adheredTicks?: number
   /**
    * Cultural dialect: which variant of the food-washing behavior this creature
    * carries. 1–999, unique per founder innovation. Populations separated by

@@ -193,6 +193,68 @@ const SNAP_TRAP = builtin('snap-trap', {
   glow: 0,
 })
 
+const PITCHER_PLANT = builtin('pitcher-plant', {
+  name: 'Pitcher Plant',
+  blurb: 'A pool of digestive fluid waits patiently at the bottom.',
+  size: 1,
+  tags: ['plant'],
+  carnivorousPlant: true,
+  trapType: 'pitfall',
+  art: {
+    palette: { g: '#3a7a2a', r: '#8b3030', p: '#cc5555' },
+    frames: [
+      ['ggggg', 'g.p.g', 'g.p.g', 'grrrg', '.ggg.'],
+    ],
+    frameMs: 500,
+    faceMotion: false,
+  },
+  body: { mass: 1, bounce: 0, drag: 0.2, buoyancy: 0.6, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: ['meat', 'insect'],
+    fears: [],
+    hungerRate: 0,
+    starveSeconds: 999,
+    breedAt: 0.1,
+    lifespanSeconds: 600,
+  },
+  senses: { sight: 1 },
+  death: { becomes: null, particleColor: '#3a7a2a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+})
+
+const SUNDEW = builtin('sundew', {
+  name: 'Sundew',
+  blurb: 'Sticky glistening drops lure and hold the curious.',
+  size: 1,
+  tags: ['plant'],
+  carnivorousPlant: true,
+  trapType: 'sticky',
+  art: {
+    palette: { g: '#2d5a1f', r: '#cc2222', y: '#f5e642' },
+    frames: [
+      ['yryry', 'rrrrr', '.ggg.', '..g..', '..g..'],
+    ],
+    frameMs: 500,
+    faceMotion: false,
+  },
+  body: { mass: 1, bounce: 0, drag: 0.2, buoyancy: 0.6, immuneTo: [] },
+  move: { kind: 'root', speed: 0, jump: 0, restlessness: 0 },
+  diet: {
+    eats: ['meat', 'insect'],
+    fears: [],
+    hungerRate: 0,
+    starveSeconds: 999,
+    breedAt: 0.1,
+    lifespanSeconds: 600,
+  },
+  senses: { sight: 1 },
+  death: { becomes: null, particleColor: '#2d5a1f', particleCount: 6 },
+  aura: null,
+  glow: 0,
+})
+
 // ---------------------------------------------------------------------------
 // Grazers — eat plants, get eaten
 // ---------------------------------------------------------------------------
@@ -1575,6 +1637,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   GLOWVINE,
   SKYBLOOM,
   SNAP_TRAP,
+  PITCHER_PLANT,
+  SUNDEW,
   MITE,
   HOPPER,
   GLIMMER_MOTH,
