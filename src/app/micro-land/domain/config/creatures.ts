@@ -283,6 +283,7 @@ const FINLING = builtin('finling', {
   death: { becomes: null, particleColor: '#ffa62b', particleCount: 6 },
   aura: null,
   glow: 0,
+  phenology: { breedingGdd: 500 }, // midsummer spawner like many fish species
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -353,6 +354,7 @@ const STALKER = builtin('stalker', {
   canLearnFoodWashing: true,
   // Pack elders carry route knowledge — their death creates a knowledge gap.
   elderWisdom: true,
+  phenology: { breedingGdd: 350 }, // breeds in late spring / early summer
   // Pack hunters communicate and coordinate well — high cultural transmission.
   socialLearningRate: 0.8,
 })
@@ -590,6 +592,7 @@ const WOOLLY = builtin('woolly', {
   canLearnFoodWashing: true,
   // Herd matriarchs remember the safest grazing routes — knowledge lost with them.
   elderWisdom: true,
+  phenology: { breedingGdd: 200 }, // early spring breeder
   // Herd animals follow leaders — medium-high social transmission rate.
   socialLearningRate: 0.7,
 })

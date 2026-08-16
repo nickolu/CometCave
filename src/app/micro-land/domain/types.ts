@@ -574,6 +574,16 @@ export interface CreatureBlueprint {
    * Default false; only meaningful for long-lived social animals.
    */
   elderWisdom?: boolean
+  /**
+   * Phenological calendar: GDD thresholds for seasonal life-history events.
+   * GDD (0–1000) is derived from world elapsed time and seasonPeriod — 0 in
+   * midwinter, 1000 at summer peak. When seasonAmplitude is 0 (no seasons),
+   * GDD is always 1000 and all phenological gates are permanently open.
+   */
+  phenology?: {
+    /** GDD at which breeding season opens. 0 or undefined = always breeding. */
+    breedingGdd?: number
+  }
 }
 
 /**

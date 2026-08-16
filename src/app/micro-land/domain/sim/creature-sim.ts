@@ -316,6 +316,18 @@ function isNearWater(w: WorldState, c: Creature): boolean {
 }
 
 /**
+ * Growing-degree units (0–1000) for the current world time.
+ * Derived from the existing season sine wave: 0 at winter nadir, 1000 at
+ * summer peak. When seasonAmplitude is 0 (no seasons), returns 1000 so
+ * phenological gates are always open — existing gameplay is unaffected.
+ */
+function worldGdd(elapsed: number): number {
+  if (TUNING.seasonAmplitude === 0 || TUNING.seasonPeriod <= 0) return 1000
+  const yearFrac = (elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+  return Math.round((1 - Math.cos(2 * Math.PI * yearFrac)) / 2 * 1000)
+}
+
+/**
  * True when this creature qualifies as an elder for its species.
  *
  * "Elder" = the last 35% of a creature's natural lifespan, and only for species
@@ -1055,7 +1067,14 @@ export function tickCreatures(
 
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
+    // Phenological gate: species with a breedingGdd threshold only mate when
+    // accumulated warmth (0–1000) has reached their seasonal window. When
+    // seasons are disabled (seasonAmplitude=0), worldGdd returns 1000, so the
+    // gate is permanently open and existing behaviour is unchanged.
+    const inBreedingSeason = !bp.phenology?.breedingGdd ||
+      worldGdd(w.elapsed) >= bp.phenology.breedingGdd
     if (
+      inBreedingSeason &&
       readyToBreed(c, bp) &&
       creatures.length < TUNING.maxCreatures &&
       !(isPlant && plantsAlive >= TUNING.maxPlants) &&
