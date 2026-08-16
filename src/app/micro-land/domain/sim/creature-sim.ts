@@ -462,7 +462,7 @@ export interface SimEvent {
    * going locally extinct (speciesCount was 0 at the moment of germination). The
    * field guide removes the species from the extinctions list on receiving this.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -474,6 +474,8 @@ export interface SimEvent {
   children?: number
   /** Only set on death events: the player-given name of the creature that died, if any. */
   creatureName?: string | null
+  /** Only set on `notice` events: the message to display. */
+  text?: string
 }
 
 let tickCount = 0
@@ -920,6 +922,25 @@ export function tickCreatures(
   byX.length = creatures.length
   for (let i = 0; i < creatures.length; i++) byX[i] = creatures[i]
   byX.sort(compareX)
+
+  // Mass emergence pre-computation: which species have >= 3 pupae whose timer
+  // will expire this tick? Used for predator satiation during the eating pass.
+  // Issue #3339.
+  const massEmergingSpecies = new Set<string>()
+  const pupaCountBySpecies: Record<string, number> = {}
+  if (seasonFactor >= 0.7) {
+    for (const c of creatures) {
+      if (c.lifeStage === 'pupa' && c.pupalTimer !== undefined && c.pupalTimer <= dt) {
+        pupaCountBySpecies[c.blueprintId] = (pupaCountBySpecies[c.blueprintId] ?? 0) + 1
+      }
+    }
+    for (const [bpId, count] of Object.entries(pupaCountBySpecies)) {
+      if (count >= 3) massEmergingSpecies.add(bpId)
+    }
+  }
+
+  // Per-tick emergence counter for the post-loop notice event. Issue #3339.
+  const emergenceCount: Record<string, number> = {}
 
   for (const c of creatures) {
     if (dead.has(c.id)) continue
@@ -1416,6 +1437,9 @@ export function tickCreatures(
         const adultBpId = currentBp.metamorphosesInto
         const adultBp = adultBpId ? w.blueprints[adultBpId] : undefined
         if (adultBp) {
+          // Track how many of each species emerge this tick for mass-emergence
+          // notice and predator satiation. Issue #3339.
+          emergenceCount[adultBpId!] = (emergenceCount[adultBpId!] ?? 0) + 1
           c.blueprintId = adultBpId!
           c.lifeStage = 'adult'
           c.pupalTimer = undefined
@@ -2327,6 +2351,21 @@ export function tickCreatures(
     w.creatures = creatures.filter(c => !dead.has(c.id))
   }
 
+  // Mass emergence notice: if >= 3 adults of the same species emerged this tick,
+  // fire a notice event (predator satiation — overwhelming numbers). Issue #3339.
+  for (const [bpId, count] of Object.entries(emergenceCount)) {
+    if (count >= 3) {
+      const ebp = w.blueprints[bpId]
+      events.push({
+        kind: 'notice',
+        blueprintId: bpId,
+        text: `${count} ${ebp?.name ?? bpId}s emerge at once — predators overwhelmed!`,
+        x: 0,
+        y: 0,
+      })
+    }
+  }
+
   // Egg hatching: decrement timers and hatch ready eggs.
   w.eggs ??= []
   const hatchedEggIds = new Set<number>()
@@ -2795,6 +2834,12 @@ function look(
           } else {
             fill *= 0.7
           }
+        }
+        // Predator satiation during mass emergence: when a cohort of the prey's
+        // species is emerging simultaneously, the predator is already gorged from
+        // the glut and gains only half the normal hunger reduction. Issue #3339.
+        if (massEmergingSpecies.has(obp.id)) {
+          fill *= 0.5
         }
         c.hunger = Math.max(0, c.hunger - fill)
         c.starving = 0
