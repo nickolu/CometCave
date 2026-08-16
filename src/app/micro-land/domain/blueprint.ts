@@ -769,6 +769,13 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    playBehavior: typeof b.playBehavior === 'boolean' ? b.playBehavior : undefined,
+    maturityAge: typeof b.maturityAge === 'number' ? Math.max(0, b.maturityAge) : undefined,
+    matingCaller: typeof b.matingCaller === 'boolean' ? b.matingCaller : undefined,
+    matingCallRange: typeof b.matingCallRange === 'number' ? Math.max(1, b.matingCallRange) : undefined,
+    dawnChorus: typeof b.dawnChorus === 'boolean' ? b.dawnChorus : undefined,
+    dawnChorusRange: typeof b.dawnChorusRange === 'number' ? Math.max(1, b.dawnChorusRange) : undefined,
+    maxDepth: typeof b.maxDepth === 'number' ? Math.max(1, b.maxDepth) : undefined,
   }
 }
 

@@ -2257,6 +2257,94 @@ export function tickCreatures(
       }
     }
 
+    // Play behavior: juvenile creatures build skills through play. Issue #3232.
+    if (bp.playBehavior && bp.maturityAge && c.ageSeconds < bp.maturityAge) {
+      if (c.playTimer === undefined) c.playTimer = 10 + rng() * 20
+      c.playTimer -= dt
+      if (c.playTimer <= 0) {
+        c.playTimer = 15 + rng() * 15
+        const maxBonus = 0.1
+        if ((c.playSkillBonus ?? 0) < maxBonus) {
+          c.playSkillBonus = Math.min(maxBonus, (c.playSkillBonus ?? 0) + 0.001)
+          c.traits.speed = (c.traits.speed ?? 1) + 0.001
+        }
+        c.hunger = Math.min(1, c.hunger + 0.01)  // play costs energy
+      }
+    }
+
+    // Mating call attractance: ready-to-breed creatures emit calls; receptive ones navigate. Issue #3244.
+    if (bp.matingCaller && tickCount % 60 === 0) {
+      const range = bp.matingCallRange ?? 15
+      // Effective range scales with caller health
+      const effectiveRange = range * (1 - (c.hunger ?? 0) * 0.5)
+      if (readyToBreed(c, bp)) {
+        // Caller: find receptive same-species within range and set their target
+        for (const other of w.creatures) {
+          if (other === c || other.blueprintId !== c.blueprintId) continue
+          if (!readyToBreed(other, bp)) continue
+          const dx = deltaX(c.x, other.x), dy = other.y - c.y
+          if (dx * dx + dy * dy < effectiveRange * effectiveRange) {
+            other.matingCallSourceX = c.x
+            other.matingCallSourceY = c.y
+          }
+        }
+      }
+      // Clear stale call source if creature is no longer receptive
+      if (c.matingCallSourceX !== undefined && !readyToBreed(c, bp)) {
+        c.matingCallSourceX = undefined
+        c.matingCallSourceY = undefined
+      }
+    }
+
+    // Dawn chorus: birds vocalize at sunrise, establishing acoustic territory. Issue #3246.
+    if (bp.dawnChorus) {
+      // nightFactor: 0 = day, 1 = night. dayFraction here: 0 = start of day, 1 = end.
+      // We derive a day fraction from the same cosine formula used for nightFactor.
+      // nightFactor = (1 - cos(2π * elapsed / dayLength)) / 2
+      // Dawn window: nightFactor transitions from 1 toward 0 — we use the raw elapsed
+      // modulus to identify 0.05–0.2 of the day period as the dawn chorus window.
+      const dayLen = TUNING.dayLengthSeconds
+      const dayFraction = dayLen > 0 ? (w.elapsed % dayLen) / dayLen : 0
+      const isDawnWindow = dayFraction > 0.05 && dayFraction < 0.2
+      c.chorusing = isDawnWindow
+      if (isDawnWindow) {
+        const chorusRange = bp.dawnChorusRange ?? 12
+        // Push nearby same-species birds to maintain spacing
+        for (const other of w.creatures) {
+          if (other === c || other.blueprintId !== c.blueprintId) continue
+          const dx = deltaX(c.x, other.x), dy = other.y - c.y
+          const dist2 = dx * dx + dy * dy
+          if (dist2 < chorusRange * chorusRange && dist2 > 0) {
+            const dist = Math.sqrt(dist2)
+            // Gently push other away
+            other.vx += (dx / dist) * 20 * dt
+            other.vy += (dy / dist) * 20 * dt
+          }
+        }
+      }
+    }
+
+    // Water pressure zones: creatures below maxDepth take pressure damage. Issue #3248.
+    if (bp.maxDepth !== undefined && (tickCount + c.id) % 60 === 0) {
+      // Find depth below water surface by scanning up
+      const cx = Math.floor(c.x + bw / 2), cy = Math.floor(c.y + bh / 2)
+      let depth = 0
+      for (let dy = 0; dy < 50; dy++) {
+        const ty = cy - dy
+        if (ty < 0) break
+        if (IS_LIQUID[w.tiles[ty * WORLD_W + (cx % WORLD_W)]] !== 1) break
+        depth = dy
+      }
+      const excess = depth - bp.maxDepth
+      if (excess > 0) {
+        c.hunger = Math.min(1, c.hunger + excess * 0.001)  // pressure damage
+        if (excess > 10) {
+          // Severe pressure: push creature upward
+          c.vy = Math.min(c.vy, -20)
+        }
+      }
+    }
+
     // --- movement -------------------------------------------------------
     if (bp.move.kind !== 'root') {
       steer(w, c, bp, dt, rng)
@@ -5026,6 +5114,19 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0
     c.targetId = null
+    // Mating call navigation: move toward call source if set. Issue #3244.
+    if (bp.matingCaller && c.matingCallSourceX !== undefined && readyToBreed(c, bp)) {
+      const cdx = deltaX(c.x, c.matingCallSourceX)
+      const cdy = (c.matingCallSourceY ?? c.y) - c.y
+      const dist = Math.sqrt(cdx * cdx + cdy * cdy)
+      if (dist > 2) {
+        wantX = cdx / dist
+        wantY = cdy / dist
+      } else {
+        c.matingCallSourceX = undefined
+        c.matingCallSourceY = undefined
+      }
+    }
   }
 
   // Obstacle avoidance: walk and crawl locomotion steer around solid walls.

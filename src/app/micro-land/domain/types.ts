@@ -1095,6 +1095,39 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * When true, juvenile creatures (ageSeconds < maturityAge) engage in play.
+   * Each play session incrementally raises traits.speed by 0.001 (capped at +0.1
+   * above baseline). Play costs a small hunger penalty but builds adult skill.
+   * Issue #3232.
+   */
+  playBehavior?: boolean
+  /** Age in seconds below which this creature is considered juvenile. Default 0 (disabled). Issue #3232. */
+  maturityAge?: number
+  /**
+   * When true, creatures ready to breed emit mating calls.
+   * Receptive same-species individuals within matingCallRange tiles navigate
+   * toward the caller. Higher health (low hunger) = longer call range.
+   * Issue #3244.
+   */
+  matingCaller?: boolean
+  /** Radius in tiles within which mating calls are heard. Default 15. Issue #3244. */
+  matingCallRange?: number
+  /**
+   * When true, this diurnal bird species participates in the dawn chorus.
+   * At sunrise (dayTimer 0.05–0.2), these creatures vocalize, establishing
+   * acoustic territory. Other same-species individuals within dawnChorusRange
+   * tiles increase spacing (drift away from caller). Issue #3246.
+   */
+  dawnChorus?: boolean
+  /** Radius of dawn chorus acoustic territory in tiles. Default 12. Issue #3246. */
+  dawnChorusRange?: number
+  /**
+   * Maximum depth this species can withstand in tile units below water surface.
+   * Creatures below this depth take pressure damage proportional to excess depth.
+   * Undefined = no pressure limit. Issue #3248.
+   */
+  maxDepth?: number
 }
 
 /**
@@ -1576,6 +1609,16 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Cumulative skill bonus earned through juvenile play. Issue #3232. */
+  playSkillBonus?: number
+  /** Countdown seconds until next play session. Issue #3232. */
+  playTimer?: number
+  /** World X position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceX?: number
+  /** World Y position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceY?: number
+  /** Whether this creature is currently in its dawn chorus call. Issue #3246. */
+  chorusing?: boolean
 }
 
 /**
