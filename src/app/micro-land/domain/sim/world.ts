@@ -967,6 +967,7 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
     }
   }
   updateFlowZones(w, tickCount)
+  tickLight(w, tickCount)
 }
 
 /**
@@ -1012,6 +1013,27 @@ export function updateFlowZones(w: WorldState, tickCount: number): void {
       const gradient = Math.abs(fL - fR)
       const zone = gradient >= 3 ? 3 : gradient >= 1 ? 2 : 1
       w.flowZone[y * WORLD_W + wrapCol(x)] = zone
+    }
+  }
+}
+
+/**
+ * Compute the per-tile light level by column-sweep from the top of the world.
+ *
+ * Starts at full sunlight (1.0) at row 0 and attenuates by 0.25 for each solid
+ * tile encountered, reaching near-zero under thick overhangs or cave ceilings.
+ * Air and liquid tiles are transparent. Runs every 30 ticks (same cadence as
+ * tickMoisture). Used by the light-gap germination trigger. Issue #3351.
+ */
+export function tickLight(w: WorldState, tickCount: number): void {
+  if (tickCount % 30 !== 0) return
+  w.lightGrid ??= new Float32Array(WORLD_W * WORLD_H)
+  for (let x = 0; x < WORLD_W; x++) {
+    let light = 1.0
+    for (let y = 0; y < WORLD_H; y++) {
+      const tileIdx = w.tiles[y * WORLD_W + wrapCol(x)]
+      if (IS_SOLID[tileIdx] === 1) light *= 0.25
+      w.lightGrid[y * WORLD_W + x] = light
     }
   }
 }

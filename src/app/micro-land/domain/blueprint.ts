@@ -639,6 +639,7 @@ export function sanitizeBlueprint(
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
+    lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
