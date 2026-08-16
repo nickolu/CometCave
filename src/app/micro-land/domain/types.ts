@@ -680,6 +680,13 @@ export interface CreatureBlueprint {
    * 'riffle' = fast oxygenated water, 'run' = intermediate, 'pool' = slow silted.
    */
   flowZonePreference?: 'riffle' | 'run' | 'pool'
+  /**
+   * Seeds of this species require cold stratification before they can germinate.
+   * Dispersed seeds accumulate cold exposure (when seasonFactor < 0.9); only after
+   * 120 seconds of cold do they become capable of germinating. Models temperate
+   * tree seeds that need winter to break dormancy. Issue #3352.
+   */
+  requiresStratification?: boolean
 }
 
 /**
@@ -1144,6 +1151,8 @@ export interface SeedEntry {
   y: number
   /** Seconds since this seed entered the seed bank. */
   age: number
+  /** Accumulated seconds of cold exposure (seasonFactor < 0.9) for stratification. */
+  coldHours?: number
 }
 
 /**
