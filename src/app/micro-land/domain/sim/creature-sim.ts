@@ -316,6 +316,14 @@ function isNearWater(w: WorldState, c: Creature): boolean {
 }
 
 /**
+ * True when c and other overlap — used for snap-trap contact detection.
+ * Uses the creature positions as 1-tile points (plants are 1-wide).
+ */
+function overlapsPlant(c: Creature, plant: Creature): boolean {
+  return Math.abs(c.x - plant.x) < 2 && Math.abs(c.y - plant.y) < 2
+}
+
+/**
  * Growing-degree units (0–1000) for the current world time.
  * Derived from the existing season sine wave: 0 at winter nadir, 1000 at
  * summer peak. When seasonAmplitude is 0 (no seasons), returns 1000 so
@@ -656,7 +664,14 @@ export function tickCreatures(
 
     c.ageSeconds += dt
     c.animMs += dt * 1000
-    if (c.breedCooldown > 0) c.breedCooldown -= dt
+    if (c.breedCooldown > 0) {
+      const nutrientBoost = (c.nutrientStore ?? 0) > 0.2 ? 1.5 : 1
+      c.breedCooldown -= dt * nutrientBoost
+    }
+    // Decay nutrient store over time.
+    if (c.nutrientStore) {
+      c.nutrientStore = Math.max(0, c.nutrientStore - 0.0005 * dt)
+    }
     // Migration: creatures saved before toxicity was added won't have poisoned.
     if (c.poisoned === undefined) c.poisoned = 0
     if ((c as { sinking?: number }).sinking === undefined) c.sinking = 0
@@ -777,6 +792,157 @@ export function tickCreatures(
         c.hunger = Math.max(0, c.hunger - 0.015 * dt)
         c.starving = 0
       }
+    }
+
+    // --- snap-trap mechanics -------------------------------------------
+    if (bp.trapType === 'snap' && bp.move.kind === 'root') {
+      if (c.trapDigestingId !== undefined) {
+        // Digesting: drain prey hunger, fill plant's hunger.
+        const prey = w.creatures.find(p => p.id === c.trapDigestingId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.04 * dt)
+          c.hunger = Math.max(0, c.hunger - 0.01 * dt)
+          if (prey.hunger >= 1) {
+            // Prey dies of starvation in the trap; reset.
+            const preyBp = w.blueprints[prey.blueprintId]
+            if (preyBp) kill(w, prey, preyBp, dead, events, 'starved')
+            else dead.add(prey.id)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.3)
+            c.trapDigestingId = undefined
+            c.trapTriggerCount = 0
+            c.forceFrame = undefined
+          }
+        } else {
+          // Prey already gone.
+          c.trapDigestingId = undefined
+          c.trapTriggerCount = 0
+          c.forceFrame = undefined
+        }
+      } else {
+        // Trap is open — look for prey contact.
+        c.trapTriggerTimer = Math.max(0, (c.trapTriggerTimer ?? 0) - dt)
+        if (c.trapTriggerTimer === 0) {
+          c.trapTriggerCount = 0  // timer expired, reset trigger
+        }
+        for (const other of w.creatures) {
+          if (
+            other.id === c.id ||
+            other.blueprintId === c.blueprintId ||
+            other.immobilizedById !== undefined ||
+            !overlapsPlant(other, c)
+          ) continue
+          const otherBp = w.blueprints[other.blueprintId]
+          if (!otherBp || otherBp.size > 2) continue  // only catch small creatures
+          c.trapTriggerCount = (c.trapTriggerCount ?? 0) + 1
+          c.trapTriggerTimer = 3  // 3-second window for second touch
+          if (c.trapTriggerCount >= 2) {
+            // Trap snaps shut!
+            c.trapDigestingId = other.id
+            other.immobilizedById = c.id
+            c.trapTriggerCount = 0
+            c.trapTriggerTimer = 0
+            c.forceFrame = 1  // show closed-trap frame
+            break
+          }
+          break  // only process one touch per tick
+        }
+      }
+    }
+    // --- pitfall-trap mechanics ----------------------------------------
+    if (bp.trapType === 'pitfall' && bp.move.kind === 'root') {
+      // Digest any prey already captured.
+      if (!c.trapPreyIds) c.trapPreyIds = []
+      const stillDigesting: number[] = []
+      for (const preyId of c.trapPreyIds) {
+        const prey = w.creatures.find(p => p.id === preyId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.05 * dt)  // drowning faster than snap
+          c.hunger = Math.max(0, c.hunger - 0.008 * dt)
+          if (prey.hunger >= 1) {
+            dead.add(preyId)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.25)
+          } else {
+            stillDigesting.push(preyId)
+          }
+        }
+      }
+      c.trapPreyIds = stillDigesting
+      // Passive trap: any small creature nearby has a chance to slip in.
+      if (c.trapPreyIds.length < 3) {  // pitcher can hold up to 3 prey
+        for (const other of w.creatures) {
+          if (
+            other.id === c.id ||
+            other.blueprintId === c.blueprintId ||
+            c.trapPreyIds.includes(other.id) ||
+            other.immobilizedById !== undefined ||
+            !overlapsPlant(other, c)
+          ) continue
+          const otherBp = w.blueprints[other.blueprintId]
+          if (!otherBp || otherBp.size > 2) continue
+          if (rng() < 0.01 * dt * 60) {  // ~1% chance per tick at 60fps
+            c.trapPreyIds.push(other.id)
+            other.immobilizedById = c.id
+          }
+        }
+      }
+    }
+    // --- sticky-trap mechanics -----------------------------------------
+    if (bp.trapType === 'sticky' && bp.move.kind === 'root') {
+      if (!c.trapPreyIds) c.trapPreyIds = []
+      const stillDigesting: number[] = []
+      for (const preyId of c.trapPreyIds) {
+        const prey = w.creatures.find(p => p.id === preyId)
+        if (prey) {
+          prey.hunger = Math.min(1, prey.hunger + 0.03 * dt)
+          c.hunger = Math.max(0, c.hunger - 0.006 * dt)
+          if (prey.hunger >= 1) {
+            dead.add(preyId)
+            c.nutrientStore = Math.min(1, (c.nutrientStore ?? 0) + 0.2)
+          } else {
+            stillDigesting.push(preyId)
+          }
+        }
+      }
+      c.trapPreyIds = stillDigesting
+      for (const other of w.creatures) {
+        if (
+          other.id === c.id ||
+          other.blueprintId === c.blueprintId ||
+          c.trapPreyIds.includes(other.id) ||
+          other.immobilizedById !== undefined ||
+          !overlapsPlant(other, c)
+        ) continue
+        const otherBp = w.blueprints[other.blueprintId]
+        if (!otherBp || otherBp.size > 2) continue
+        other.adheredTicks = (other.adheredTicks ?? 0) + 1
+        if (other.adheredTicks >= 3) {
+          // Fully adhered after 3 contacts.
+          c.trapPreyIds.push(other.id)
+          other.immobilizedById = c.id
+          other.adheredTicks = 0
+        } else {
+          // Slow but not yet captured: heavily penalise movement.
+          other.vx *= 0.1
+          other.vy *= 0.1
+        }
+      }
+    }
+    // Clear immobilization if the captor is gone.
+    if (c.immobilizedById !== undefined) {
+      const captor = w.creatures.find(p => p.id === c.immobilizedById)
+      const stillHeld = captor && (
+        captor.trapDigestingId === c.id ||
+        (captor.trapPreyIds?.includes(c.id) ?? false)
+      )
+      if (!stillHeld) {
+        c.immobilizedById = undefined
+        c.adheredTicks = undefined
+      }
+    }
+    // Immobilized creatures cannot move.
+    if (c.immobilizedById !== undefined) {
+      c.vx = 0
+      c.vy = 0
     }
 
     // --- old age --------------------------------------------------------

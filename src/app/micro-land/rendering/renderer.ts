@@ -1193,7 +1193,9 @@ export class Renderer {
       // many things happen to be alive.
       if (!this.onScreen(c.x, sprites.width)) continue
       const frameCount = sprites.frames.length
-      const frame = frameCount === 1 ? 0 : Math.floor(c.animMs / sprites.frameMs) % frameCount
+      const frame = c.forceFrame !== undefined
+        ? Math.min(c.forceFrame, frameCount - 1)
+        : frameCount === 1 ? 0 : Math.floor(c.animMs / sprites.frameMs) % frameCount
       const source =
         c.facing === -1 && bp.art.faceMotion ? sprites.flipped[frame] : sprites.frames[frame]
 

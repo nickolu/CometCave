@@ -424,6 +424,12 @@ export interface CreatureBlueprint {
    */
   carnivorousPlant?: boolean
   /**
+   * Mechanism by which carnivorous plants trap prey.
+   * 'snap': two-touch trigger (Venus flytrap model).
+   * Other trap types added by later issues.
+   */
+  trapType?: 'snap' | 'pitfall' | 'sticky'
+  /**
    * Drastically reduced basal metabolic rate — inspired by cave-adapted
    * species (cave olm, cave fish) that can survive months without food.
    *
@@ -907,6 +913,26 @@ export interface Creature {
    * When active, eating near water yields 5% more energy per meal.
    */
   learnedFoodWashing?: boolean
+  /** For snap-trap plants: number of times prey has touched the trap (0–2). */
+  trapTriggerCount?: number
+  /** For snap-trap plants: countdown in seconds until the trigger resets. */
+  trapTriggerTimer?: number
+  /** For snap-trap plants: ID of the prey creature currently being digested. */
+  trapDigestingId?: number
+  /** Force the renderer to display a specific art frame (0-indexed). undefined = use normal animation. */
+  forceFrame?: number
+  /** ID of the snap-trap plant holding this creature captive; creature cannot move while set. */
+  immobilizedById?: number
+  /** For pitfall/sticky traps: IDs of multiple prey currently being digested. */
+  trapPreyIds?: number[]
+  /** For sticky traps: how many ticks this creature has been adhered (0–3). */
+  adheredTicks?: number
+  /**
+   * For carnivorous plants: accumulated prey nitrogen from successful digestions.
+   * 0–1 scale; decays over time. When above 0.2, reduces breed cooldown drain
+   * at 1.5× rate — prey-rich areas produce far more carnivorous plant offspring.
+   */
+  nutrientStore?: number
   /**
    * Cultural dialect: which variant of the food-washing behavior this creature
    * carries. 1–999, unique per founder innovation. Populations separated by
