@@ -1628,8 +1628,13 @@ function look(
       // Chromatophore transition: for 2 ticks after a hue update the prey
       // is fully exposed (pigment cells incoherent). Override camouflage to 0.
       const chromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
-      const baseCamouflage =
-        chromaFade > 0
+      // Sensory modalities that bypass visual camouflage entirely
+      const sensorBypass =
+        bp.electroreceptive === true || // detects bioelectric fields
+        (bp.infraredVision === true && obp.warmBlooded === true) // detects heat
+      const baseCamouflage = sensorBypass
+        ? 0
+        : chromaFade > 0
           ? 0 // transitioning — briefly exposed
           : obp.cryptic
             ? Math.max(
@@ -1677,8 +1682,13 @@ function look(
     ) {
       const territoryR = (c.traits.territorial ?? 0.5) * 10
       const intruderChromaFade = (other as { chromatophoreFade?: number }).chromatophoreFade ?? 0
-      const intruderCamoBase =
-        intruderChromaFade > 0
+      // Sensory modalities that bypass visual camouflage entirely
+      const intruderSensorBypass =
+        bp.electroreceptive === true || // detects bioelectric fields
+        (bp.infraredVision === true && obp.warmBlooded === true) // detects heat
+      const intruderCamoBase = intruderSensorBypass
+        ? 0
+        : intruderChromaFade > 0
           ? 0
           : obp.cryptic
             ? Math.max(

@@ -602,6 +602,9 @@ export function sanitizeBlueprint(
       typeof b.competitiveAbility === 'number' && b.competitiveAbility > 0
         ? b.competitiveAbility
         : 1,
+    electroreceptive: b.electroreceptive === true,
+    warmBlooded: b.warmBlooded === true,
+    infraredVision: b.infraredVision === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
