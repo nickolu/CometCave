@@ -1711,7 +1711,14 @@ function look(
             const dx2 = distX(c.x, other2.x) ** 2
             const dy2 = (c.y - other2.y) ** 2
             if (dx2 + dy2 > sight * sight) continue
-            if (rng() < 0.04) other2.learnedFoodWashing = true
+            // Juvenile imprinting: creatures in the first 15% of their lifespan
+            // learn cultural behaviors from nearby adults at 10× the adult rate.
+            // This models parental-care transmission (orca, chimpanzee research):
+            // once a tradition reaches critical mass, offspring born nearby almost
+            // always acquire it before adulthood, making the tradition self-sustaining.
+            const isJuvenile = other2.ageSeconds < (w.blueprints[other2.blueprintId]?.diet.lifespanSeconds ?? 240) * 0.15
+            const transmissionProb = isJuvenile ? 0.40 : 0.04
+            if (rng() < transmissionProb) other2.learnedFoodWashing = true
           }
         }
         // Cooperative creatures signal food location to kin.
