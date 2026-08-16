@@ -586,6 +586,7 @@ export function sanitizeBlueprint(
     soilEngineer: b.soilEngineer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
+    eyespots: b.eyespots === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
