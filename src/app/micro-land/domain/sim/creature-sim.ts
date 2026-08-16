@@ -58,6 +58,7 @@ import {
   solidAt,
   spawnCreature,
   tickCaveNutrient,
+  tickMarshDetritus,
   tickMoisture,
   tickSalinity,
   tileAt,
@@ -627,6 +628,7 @@ export function tickCreatures(
   tickMoisture(w, tickCount, dt, rng)
   tickCaveNutrient(w, tickCount, dt)
   tickSalinity(w, tickCount)
+  tickMarshDetritus(w, tickCount, dt)
   w.eggs ??= []
   w.nextEggId ??= 1
 
@@ -810,7 +812,20 @@ export function tickCreatures(
         } else if (c.ageSeconds < (bp.diet.lifespanSeconds ?? 240) * 0.15) {
           // Nursery habitat: juveniles in optimal salinity zone get a feeding bonus.
           // Models documented estuarine nursery function for juvenile marine fish.
-          c.hunger = Math.max(0, c.hunger - 0.00005 * dt)
+          // Aerial-root plants (mangroves) within 8 tiles double the bonus —
+          // structural shelter reduces predation and improves feeding conditions.
+          let nurseryBonus = 0.00005
+          const jcx = Math.floor(c.x)
+          const jcy = Math.floor(c.y)
+          for (const other of w.creatures) {
+            const obp = w.blueprints[other.blueprintId]
+            if (!obp?.aerialRoots) continue
+            const { w: ow, h: oh } = artSize(obp)
+            const odx = Math.abs(Math.floor(other.x + ow / 2) - jcx)
+            const ody = Math.abs(Math.floor(other.y + oh / 2) - jcy)
+            if (odx <= 8 && ody <= 8) { nurseryBonus = 0.0001; break }
+          }
+          c.hunger = Math.max(0, c.hunger - nurseryBonus * dt)
         }
       }
     }
@@ -1529,11 +1544,30 @@ export function tickCreatures(
                 }
               }
 
+              // Salt marsh productivity: plants in optimal salinity breed up to 3× faster,
+              // modelling the extreme NPP of tidal wetland communities.
+              // Detrital subsidy: marshDetritus further boosts productivity.
+              let salinityBoost = 1.0
+              if (bp.salinityTolerance && w.salinity) {
+                const { min, max } = bp.salinityTolerance
+                const half = (max - min) / 2
+                const mid = min + half
+                const tileSal = w.salinity[footY * WORLD_W + footX] ?? 0
+                if (tileSal >= min && tileSal <= max && half > 0) {
+                  const proximity = 1 - Math.abs(tileSal - mid) / half
+                  salinityBoost = 1 + 2 * proximity  // 1→3×
+                }
+              }
+              if (w.marshDetritus) {
+                const det = w.marshDetritus[footY * WORLD_W + footX] ?? 0
+                salinityBoost *= 1 + det  // up to 2× additional from detrital export
+              }
               c.breedCooldown =
                 (TUNING.plantSpreadCooldown * crowdingPenalty * allelopathyFactor * bioticResistanceFactor * competitiveExclusionFactor) /
                 (auraBoost(w, c, bp, bw, bh, helpers) *
                   plantFertilityFactor *
-                  seasonFactor)
+                  seasonFactor *
+                  salinityBoost)
             } else {
               // Both of them paid to be here, so both of them pay for it. Charging
               // only the one whose turn it happened to be would make a baby cost a
@@ -3285,6 +3319,22 @@ function kill(
 ): void {
   if (dead.has(c.id)) return
   dead.add(c.id)
+  // Marsh detritus: when salt-tolerant plants die, export dissolved organic
+  // carbon to surrounding tiles, subsidising the coastal food web.
+  if (bp.move.kind === 'root' && bp.salinityTolerance && w.salinity) {
+    const px = Math.floor(wrapX(c.x))
+    const py = Math.floor(c.y)
+    w.marshDetritus ??= new Float32Array(WORLD_W * WORLD_H)
+    for (let dy = -2; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const nx = (px + dx + WORLD_W) % WORLD_W
+        const ny = py + dy
+        if (ny < 0 || ny >= WORLD_H) continue
+        const idx = ny * WORLD_W + nx
+        w.marshDetritus[idx] = Math.min(1, w.marshDetritus[idx] + 0.08)
+      }
+    }
+  }
   const { w: bw, h: bh } = artSize(bp)
   // Animals leave a carcass on any death.
   if (bp.move.kind !== 'root') {
