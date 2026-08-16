@@ -107,6 +107,19 @@ const BITE_PAD = 0.5
 const SOIL_ENRICH_PROB = 0.002
 
 /**
+ * Within this many tiles, disruptive patterns give no detection benefit —
+ * the outline is legible at close range regardless of the pattern.
+ */
+const DISRUPTION_NEAR_TILES = 4
+
+/**
+ * Beyond DISRUPTION_NEAR_TILES, a disruptive-pattern creature is only
+ * detectable at this fraction of the predator's normal detection radius.
+ * 0.65 means 65% of range — roughly 42% of the area.
+ */
+const DISRUPTION_FAR_FACTOR = 0.65
+
+/**
  * Speed (|vx| + |vy|) below which a non-root animal counts as still.
  *
  * Still animals are harder to spot — camouflage. A creature pressed against a
@@ -1373,7 +1386,13 @@ function look(
         ? Math.max(0.15, 0.5 - camouflage * 0.375) // 0.5 (camo=0) → 0.2 (camo=0.8)
         : 1 - camouflage * 0.3 // 1.0 (camo=0) → 0.76 (camo=0.8)
       const efs2 = foodSight2 * detFactor * detFactor
-      if (d2 <= efs2 && d2 < preyDist) {
+      // Disruptive coloration: at range the outline breaks into false edges.
+      // The effect only applies beyond DISRUPTION_NEAR_TILES — up close, the body
+      // registers as a coherent object regardless of the pattern.
+      const disrupted =
+        obp.disruptivePattern === true && d2 > DISRUPTION_NEAR_TILES * DISRUPTION_NEAR_TILES
+      const finalEfs2 = disrupted ? efs2 * DISRUPTION_FAR_FACTOR * DISRUPTION_FAR_FACTOR : efs2
+      if (d2 <= finalEfs2 && d2 < preyDist) {
         preyDist = d2
         prey = other
         preyDir = dx >= 0 ? 1 : -1
