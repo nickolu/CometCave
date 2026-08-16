@@ -1897,6 +1897,42 @@ const UV_BEE = builtin('uv-bee', {
   uvSensitive: true,
 })
 
+// ---------------------------------------------------------------------------
+// Stream invertebrate — drifts passively in current, feeds fish. Issue #3373.
+// ---------------------------------------------------------------------------
+
+const SHIMMER_LARVA = builtin('shimmer-larva', {
+  name: 'Shimmer Larva',
+  blurb: 'A stream-dwelling larva that lets go at dusk and drifts. The trout are waiting.',
+  size: 1,
+  tags: ['meat', 'bug', 'aquatic'],
+  art: {
+    palette: { s: '#88ddcc', d: '#4499aa', g: '#ccffee' },
+    frames: [
+      ['sss', 'dsd', '.s.'],
+      ['.ss', 'sds', 'ss.'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.6, bounce: 0, drag: 0.5, buoyancy: 1.2, immuneTo: [] },
+  move: { kind: 'crawl', speed: 1.5, jump: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['plant', 'fungus'],
+    fears: ['fish', 'flier'],
+    hungerRate: 0.02,
+    starveSeconds: 30,
+    breedAt: 0.75,
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#88ddcc', particleCount: 3 },
+  aura: null,
+  glow: 0.1,
+  canDrift: true,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -1945,6 +1981,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   GRUMBLESTONE,
   TREX,
   DRAGON,
+  SHIMMER_LARVA,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

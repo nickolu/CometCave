@@ -625,6 +625,7 @@ export function sanitizeBlueprint(
     polarizedSkin: !!b.polarizedSkin,
     uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
+    canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     elderWisdom: !!b.elderWisdom,
     phenology: b.phenology?.breedingGdd !== undefined

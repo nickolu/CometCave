@@ -642,6 +642,11 @@ export interface CreatureBlueprint {
    * 3-tile contact range for non-UV pollinators.
    */
   uvSensitive?: boolean
+  /**
+   * Stream invertebrate that occasionally enters the water column and drifts
+   * passively with current. Delivers food to downstream fish. Issue #3373.
+   */
+  canDrift?: boolean
 }
 
 /**
@@ -1004,6 +1009,8 @@ export interface Creature {
   insightTimer?: number
   /** Total insight events this creature has had. */
   insightCount?: number
+  /** Currently in passive drift (stream invertebrate released into current). Issue #3373. */
+  drifting?: boolean
 }
 
 /**
