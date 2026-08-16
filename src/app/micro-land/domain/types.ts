@@ -1322,6 +1322,16 @@ export interface Creature {
    */
   judiciaryPriorityTimer?: number
   /**
+   * Whether this individual currently holds the Kestrel Kingdom throne.
+   *
+   * Set at each seasonal boundary on the kestrelKingdom individual with the
+   * highest mealsEaten. Grants 10% hunting speed. Cleared on all individuals
+   * before each re-election. When the Monarch dies mid-season the crown sits
+   * vacant until the next reckoning — no interregnum protocol exists.
+   * Issue #3304.
+   */
+  isMonarch?: boolean
+  /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
    * creature enters 'rest' mood until it recovers. Optional so old saves with
@@ -1792,6 +1802,17 @@ export interface WorldState {
    * tiles delivered. Used for egg hatch bonus and nest rendering. Issues #3412, #3418.
    */
   nestSites?: Record<string, { progress: number; ownerId: number; x: number; y: number }>
+  /**
+   * ID of the currently-reigning Monarch Kestrel (kestrelKingdom species).
+   * Updated each season by the reckoning logic. Cleared when no kestrel survives.
+   * Issue #3304.
+   */
+  kestrelMonarchId?: number
+  /**
+   * Index of the last season for which the Kestrel Kingdom reckoning ran.
+   * Prevents the election from firing on every tick. Issue #3304.
+   */
+  kestrelLastSeasonIdx?: number
 }
 
 // ---------------------------------------------------------------------------
