@@ -693,6 +693,13 @@ function tickSeedBank(
   const HALF_LIFE = 600  // seconds to 50 % viability
   const lavaIdx = MATERIAL_INDEX.lava
 
+  // Compute current seasonal phase for cold stratification checks.
+  const seasonFactor = TUNING.seasonAmplitude > 0
+    ? Math.max(0.05, 1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod))
+    : 1
+  const isCold = seasonFactor < 0.9
+  const STRATIFICATION_THRESHOLD = 120  // seconds of cold needed to break dormancy
+
   const surviving: SeedEntry[] = []
   for (const seed of w.seedBank) {
     seed.age += 60 * dt  // approximate: called every 60 ticks
@@ -731,6 +738,15 @@ function tickSeedBank(
         surviving.push(seed)  // wait for better ground conditions
       }
       continue  // don't fall through to normal germination
+    }
+
+    // Cold stratification: accumulate cold hours; gate germination until threshold met.
+    if (bp.requiresStratification && isCold) {
+      seed.coldHours = (seed.coldHours ?? 0) + 60 * dt
+    }
+    if (bp.requiresStratification && (seed.coldHours ?? 0) < STRATIFICATION_THRESHOLD) {
+      surviving.push(seed)  // not yet stratified — wait
+      continue
     }
 
     if (plantsRef.value >= TUNING.maxPlants) { surviving.push(seed); continue }
@@ -802,6 +818,25 @@ export function tickCreatures(
   const speciesCount: Record<string, number> = {}
   for (const c of creatures) {
     speciesCount[c.blueprintId] = (speciesCount[c.blueprintId] ?? 0) + 1
+  }
+
+  // Invasion front tracking: for each invasive species, record origin and
+  // track the historical maximum X spread. Runs every 60 ticks (once per
+  // second). Issue #3366.
+  if (tickCount % 60 === 0) {
+    w.invasionOriginX ??= {}
+    w.invasionFrontX ??= {}
+    for (const c of w.creatures) {
+      const cbp = w.blueprints[c.blueprintId]
+      if (!cbp?.invasive) continue
+      const cx = Math.floor(c.x)
+      if (w.invasionOriginX[c.blueprintId] === undefined) {
+        w.invasionOriginX[c.blueprintId] = cx
+      }
+      if (w.invasionFrontX[c.blueprintId] === undefined || cx > w.invasionFrontX[c.blueprintId]) {
+        w.invasionFrontX[c.blueprintId] = cx
+      }
+    }
   }
 
   // Helpers — bees, worms, anything with an aura. Gathered once per tick

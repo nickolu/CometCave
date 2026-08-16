@@ -704,6 +704,13 @@ export interface CreatureBlueprint {
    */
   stopoverHabitat?: string[]
   /**
+   * Seeds of this species require cold stratification before they can germinate.
+   * Dispersed seeds accumulate cold exposure (when seasonFactor < 0.9); only after
+   * 120 seconds of cold do they become capable of germinating. Models temperate
+   * tree seeds that need winter to break dormancy. Issue #3352.
+   */
+  requiresStratification?: boolean
+  /**
    * Seeds of this species require fire heat to break their hard coat. Dormant
    * seeds are scarified when lava is detected at their tile or an adjacent tile;
    * scarified seeds then germinate at 10× the normal probability. Models
@@ -1181,6 +1188,8 @@ export interface SeedEntry {
   y: number
   /** Seconds since this seed entered the seed bank. */
   age: number
+  /** Accumulated seconds of cold exposure (seasonFactor < 0.9) for stratification. */
+  coldHours?: number
   /** True once lava heat has scarified this seed's coat, enabling germination. Issue #3353. */
   fireScarified?: boolean
 }
@@ -1315,6 +1324,18 @@ export interface WorldState {
    * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
    */
   marshDetritus?: Float32Array
+  /**
+   * X tile position where each invasive species was first observed in this
+   * world. Keyed by blueprintId. Populated lazily when the first individual
+   * of an invasive species is seen. Issue #3366.
+   */
+  invasionOriginX?: Record<string, number>
+  /**
+   * Maximum X tile position ever reached by each invasive species, ratcheting
+   * up monotonically. Keyed by blueprintId. Tracks the historical invasion
+   * front. Issue #3366.
+   */
+  invasionFrontX?: Record<string, number>
   /**
    * Per-tile flow velocity zone for river/stream tiles.
    * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
