@@ -632,6 +632,7 @@ export function sanitizeBlueprint(
       : undefined,
     dormancyPhotoperiod: b.dormancyPhotoperiod !== undefined ? !!b.dormancyPhotoperiod : undefined,
     requiresStratification: b.requiresStratification !== undefined ? !!b.requiresStratification : undefined,
+    seedLongevity: typeof b.seedLongevity === 'number' && b.seedLongevity > 0 ? b.seedLongevity : undefined,
     flowZonePreference: b.flowZonePreference === 'riffle' || b.flowZonePreference === 'run' || b.flowZonePreference === 'pool'
       ? b.flowZonePreference
       : undefined,

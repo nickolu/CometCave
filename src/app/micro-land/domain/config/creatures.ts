@@ -61,6 +61,7 @@ const SUNLEAF = builtin('sunleaf', {
   aura: null,
   glow: 0,
   uvNectar: true,
+  seedLongevity: 2400,  // fire-adapted pioneer: seeds persist for multiple seasons awaiting open ground
 })
 
 const BRAMBLE = builtin('bramble', {
@@ -154,6 +155,7 @@ const SPORECAP = builtin('sporecap', {
   death: { becomes: null, particleColor: '#b9a6ff', particleCount: 6 },
   aura: null,
   glow: 0.55,
+  seedLongevity: 1800,  // persistent spore bank: fungal spores outlast multiple population crashes
 })
 
 const SNAP_TRAP = builtin('snap-trap', {
@@ -192,6 +194,7 @@ const SNAP_TRAP = builtin('snap-trap', {
   death: { becomes: null, particleColor: '#2a6b2a', particleCount: 6 },
   aura: null,
   glow: 0,
+  seedLongevity: 150,  // transient seed bank: must germinate within a season or die
 })
 
 const PITCHER_PLANT = builtin('pitcher-plant', {
@@ -223,6 +226,7 @@ const PITCHER_PLANT = builtin('pitcher-plant', {
   death: { becomes: null, particleColor: '#3a7a2a', particleCount: 6 },
   aura: null,
   glow: 0,
+  seedLongevity: 150,  // transient seed bank: must germinate within a season or die
 })
 
 const SUNDEW = builtin('sundew', {
@@ -254,6 +258,7 @@ const SUNDEW = builtin('sundew', {
   death: { becomes: null, particleColor: '#2d5a1f', particleCount: 6 },
   aura: null,
   glow: 0,
+  seedLongevity: 150,  // transient seed bank: must germinate within a season or die
 })
 
 // ---------------------------------------------------------------------------
@@ -985,6 +990,7 @@ const GLOWVINE = builtin('glowvine', {
   aura: null,
   glow: 0.62,
   uvNectar: true,
+  seedLongevity: 1800,  // persistent spore bank: cave-adapted, seeds survive extended dark periods
 })
 
 const PALECRAWLER = builtin('palecrawler', {
@@ -1839,6 +1845,7 @@ const SALT_MARSH_REED = builtin('salt-marsh-reed', {
   aura: null,
   glow: 0,
   salinityTolerance: { min: 0.2, max: 0.7 },  // thrives in brackish mixing zone
+  seedLongevity: 150,  // transient seed bank: annual grass, seeds must germinate within one season
 })
 
 const MANGROVE = builtin('mangrove', {
@@ -1871,6 +1878,7 @@ const MANGROVE = builtin('mangrove', {
   glow: 0,
   aerialRoots: true,
   salinityTolerance: { min: 0.0, max: 0.4 },
+  seedLongevity: 1800,  // persistent seed bank: long-lived tree seeds outlast multiple seasons
 })
 
 const UV_BEE = builtin('uv-bee', {
