@@ -543,6 +543,7 @@ const STALKER = builtin('stalker', {
   socialLearningRate: 0.8,
   brainSize: 0.8,  // apex social predator with complex cooperative strategies
   canInnovateTechniques: true,  // smart enough to invent and culturally transmit hunting strategies
+  ageReproductionCurve: 'peak-middle',  // prime-age individuals breed most; pups and elders rarely do. Issue #3261.
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {
@@ -643,6 +644,8 @@ const CINDER_WYRM = builtin('cinder-wyrm', {
   death: { becomes: 'obsidian', particleColor: '#e2551d', particleCount: 14 },
   aura: null,
   glow: 0.8,
+  rK: 0.9,              // K-strategist: long-lived lava predator, slow breeder. Issue #3256.
+  matingSystem: 'polygyny',  // dominant male breeds; others wait. Issue #3257.
 })
 
 const RUSTBOT = builtin('rustbot', {
@@ -1600,6 +1603,7 @@ const DRAGON = builtin('dragon', {
     convertRate: 0.3,
   },
   glow: 0.7,
+  rK: 0.9,  // apex K-strategist: rare, long-lived, slow to breed. Issue #3256.
 })
 
 const TREX = builtin('trex', {
@@ -1677,6 +1681,7 @@ const TREX = builtin('trex', {
   death: { becomes: 'bone', particleColor: '#4e7a35', particleCount: 14 },
   aura: null,
   glow: 0,
+  rK: 0.9,  // apex predator K-strategist: slow breeder, long-lived. Issue #3256.
 })
 
 const TOWER_FOLK = builtin('tower-folk', {
@@ -2075,6 +2080,8 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   larvaeBlueprint: 'shimmer-larva',
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
   bodyMass: 0.3,  // small flying insect. Issue #3269.
+  rK: 0.1,        // extreme r-strategist: fast egg hatch, short cooldown. Issue #3256.
+  semelparous: true,  // breed once, then die — classic mayfly/fly lifecycle. Issue #3259.
 })
 
 // ---------------------------------------------------------------------------
@@ -2151,6 +2158,7 @@ const MEADOW_LOCUST = builtin('meadow-locust', {
   hemimetabolous: true,
   nymphBlueprint: 'meadow-locust-nymph',
   bodyMass: 0.2,  // medium insect adult. Issue #3269.
+  rK: 0.1,        // r-strategist: lays many eggs quickly. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2537,6 +2545,7 @@ const CLAM = builtin('clam', {
   glow: 0,
   egglayer: true,
   hardShelled: true,
+  rK: 0.1,  // broadcast spawner: many small eggs, short hatch time. Issue #3256.
 })
 
 // ---------------------------------------------------------------------------
@@ -2802,6 +2811,159 @@ const KESTREL = builtin('kestrel', {
   bodyMass: 0.35,
 })
 
+// ---------------------------------------------------------------------------
+// Earthworm — vertical express shaft excavator. Issue #3298.
+// ---------------------------------------------------------------------------
+
+const EARTHWORM = builtin('earthworm', {
+  name: 'Earthworm',
+  blurb: 'Constructs a vertical express shaft through the soil. Other worms use it. The shaft collapses. They rebuild it. No worm remembers this has happened before. It always surprises them.',
+  size: 1,
+  tags: ['meat'],
+  art: {
+    palette: { r: '#c06050', b: '#6a3020', w: '#d09080', g: '#8a4030' },
+    frames: [
+      ['r', 'w', 'b', 'r'],
+      ['b', 'r', 'w', 'b'],
+    ],
+    frameMs: 250,
+    faceMotion: false,
+  },
+  body: { mass: 0.2, bounce: 0.0, drag: 0.6, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.5, jump: 0, restlessness: 0.8 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.004,
+    starveSeconds: 60,
+    breedAt: 0.6,
+    lifespanSeconds: 150,
+  },
+  senses: { sight: 4 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#c06050', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  earthwormElevator: true,
+  burrowDigger: true,
+  bodyMass: 0.02,
+})
+
+// ---------------------------------------------------------------------------
+// Frog — observes the Founding Rain once per season. Issue #3299.
+// ---------------------------------------------------------------------------
+
+const FROG = builtin('frog', {
+  name: 'Frog',
+  blurb: 'Observes the Founding Rain once per year. No theology. Only the rain matters. Frogs who miss the ceremony are apostates and breed more slowly. The penalty is exactly 5 in-game days. It is considered extremely serious.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { g: '#2a7a2a', w: '#a0e070', b: '#1a4a1a', y: '#e0d040' },
+    frames: [
+      ['gwg', 'yby', '.g.'],
+      ['.g.', 'yby', 'gwg'],
+    ],
+    frameMs: 320,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.3, drag: 0.4, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 5, restlessness: 0.6 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.006,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#2a7a2a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  frogFundamentalism: true,
+  bodyMass: 0.1,
+})
+
+// ---------------------------------------------------------------------------
+// Gopher — one holds all 17 cabinet positions. Issue #3300.
+// ---------------------------------------------------------------------------
+
+const GOPHER = builtin('gopher', {
+  name: 'Gopher',
+  blurb: 'One gopher holds all 17 cabinet positions simultaneously. Their tunneling behavior is identical to all other gophers. They have never attended a meeting with themselves. The cabinet schedule is fully booked.',
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { b: '#5a3a0a', w: '#c0a070', g: '#8a6030', r: '#a07040' },
+    frames: [
+      ['gbg', 'wrw', '.g.'],
+      ['.g.', 'wrw', 'gbg'],
+    ],
+    frameMs: 240,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.8, jump: 1, restlessness: 0.7 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.008,
+    starveSeconds: 40,
+    breedAt: 0.6,
+    lifespanSeconds: 180,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#5a3a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  gopherGovernment: true,
+  burrowDigger: true,
+  bodyMass: 0.2,
+})
+
+// ---------------------------------------------------------------------------
+// Beetle — runs the pheromone internet. Issue #3302.
+// ---------------------------------------------------------------------------
+
+const BEETLE = builtin('beetle', {
+  name: 'Beetle',
+  blurb: 'Maintains the pheromone internet. Messages travel at 1 tile per 3 minutes. Content: food here, or predator here. Both are 45 minutes out of date. The network is still considered a marvel.',
+  size: 1,
+  tags: ['meat', 'plant'],
+  art: {
+    palette: { b: '#0a1a4a', w: '#6070d0', g: '#2030a0', r: '#3040c0' },
+    frames: [
+      ['gbg', 'wbw', 'gbg'],
+    ],
+    frameMs: 350,
+    faceMotion: true,
+  },
+  body: { mass: 0.15, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.0, jump: 1, restlessness: 0.7 },
+  diet: {
+    eats: ['plant', 'meat'],
+    fears: ['meat'],
+    hungerRate: 0.005,
+    starveSeconds: 50,
+    breedAt: 0.6,
+    lifespanSeconds: 150,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#0a1a4a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  beetleInternet: true,
+  bodyMass: 0.02,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2874,6 +3036,10 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   BEAVER,
   ARCTIC_TERN,
   KESTREL,
+  EARTHWORM,
+  FROG,
+  GOPHER,
+  BEETLE,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

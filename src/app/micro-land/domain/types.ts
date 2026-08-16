@@ -991,6 +991,42 @@ export interface CreatureBlueprint {
    * The field guide shows a warning indicator. Issues #3284, #3285.
    */
   minViablePopulation?: number
+  /**
+   * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
+   *
+   * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
+   * K-selected species (1): long breedCooldown (2.0×), slow egg hatching (1.3×).
+   * Leave undefined for no r/K bias. Issue #3256.
+   */
+  rK?: number
+  /**
+   * Mating system governing partner selection and bonding.
+   *
+   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
+   * 'polygyny': only the most-fed male within sight breeds.
+   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
+   * 'promiscuity': no mate-finding required — reproduces without a partner.
+   * Leave undefined for default partner-seeking behavior. Issue #3257.
+   */
+  matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
+  /**
+   * When true, this species reproduces only once and then dies.
+   *
+   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
+   * After the first successful reproduction the creature is killed via aged death.
+   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
+   */
+  semelparous?: boolean
+  /**
+   * Reproductive rate varies with life stage.
+   *
+   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
+   * 'peak-middle': prime-age adults breed most; young and old rarely do.
+   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
+   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
+   * Leave undefined for age-independent reproduction. Issue #3261.
+   */
+  ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
 }
 
 /**
@@ -1451,6 +1487,20 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
+  hasReproduced?: boolean
+  /** Remaining seconds of frog apostasy breeding penalty (5 in-game days). Issue #3299. */
+  frogApostate?: number
+  /** True when this individual holds all 17 gopher government cabinet positions. Issue #3300. */
+  isGopherAdmin?: boolean
+  /** Elapsed time when the beetle recorded a message to relay. Undefined = no pending message. Issue #3302. */
+  beetleMailRecordedAt?: number
+  /** Type of beetle internet message pending delivery. Issue #3302. */
+  beetleMailType?: 'food' | 'predator'
+  /** X tile of the beetle internet message origin. Issue #3302. */
+  beetleMailX?: number
+  /** Y tile of the beetle internet message origin. Issue #3302. */
+  beetleMailY?: number
 }
 
 /**
