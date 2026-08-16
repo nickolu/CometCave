@@ -1306,6 +1306,18 @@ export interface WorldState {
    */
   marshDetritus?: Float32Array
   /**
+   * X tile position where each invasive species was first observed in this
+   * world. Keyed by blueprintId. Populated lazily when the first individual
+   * of an invasive species is seen. Issue #3366.
+   */
+  invasionOriginX?: Record<string, number>
+  /**
+   * Maximum X tile position ever reached by each invasive species, ratcheting
+   * up monotonically. Keyed by blueprintId. Tracks the historical invasion
+   * front. Issue #3366.
+   */
+  invasionFrontX?: Record<string, number>
+  /**
    * Per-tile flow velocity zone for river/stream tiles.
    * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
    * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.

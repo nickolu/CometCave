@@ -449,6 +449,12 @@ interface MicroLandState {
    */
   populationItems: CreatureThumb[]
   setPopulationItems: (items: CreatureThumb[]) => void
+  /**
+   * Invasion front data for display in the Field Guide.
+   * Keyed by blueprintId; only populated for invasive species.
+   */
+  invasionFront: Record<string, { originX: number; frontX: number }>
+  setInvasionFront: (data: Record<string, { originX: number; frontX: number }>) => void
   /** Set when the Field Guide circle is clicked — game instance centers + inspects. */
   locateCreatureRequest: { id: number; serial: number } | null
   requestLocateCreature: (id: number) => void
@@ -648,6 +654,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   locateRequest: null,
   populationItems: [],
+  invasionFront: {},
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
@@ -778,6 +785,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   requestLocate: blueprintId =>
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setPopulationItems: items => set({ populationItems: items }),
+  setInvasionFront: data => set({ invasionFront: data }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),

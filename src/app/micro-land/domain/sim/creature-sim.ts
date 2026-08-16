@@ -772,6 +772,25 @@ export function tickCreatures(
     speciesCount[c.blueprintId] = (speciesCount[c.blueprintId] ?? 0) + 1
   }
 
+  // Invasion front tracking: for each invasive species, record origin and
+  // track the historical maximum X spread. Runs every 60 ticks (once per
+  // second). Issue #3366.
+  if (tickCount % 60 === 0) {
+    w.invasionOriginX ??= {}
+    w.invasionFrontX ??= {}
+    for (const c of w.creatures) {
+      const cbp = w.blueprints[c.blueprintId]
+      if (!cbp?.invasive) continue
+      const cx = Math.floor(c.x)
+      if (w.invasionOriginX[c.blueprintId] === undefined) {
+        w.invasionOriginX[c.blueprintId] = cx
+      }
+      if (w.invasionFrontX[c.blueprintId] === undefined || cx > w.invasionFrontX[c.blueprintId]) {
+        w.invasionFrontX[c.blueprintId] = cx
+      }
+    }
+  }
+
   // Helpers — bees, worms, anything with an aura. Gathered once per tick
   // because the breeding check below asks "is one of these near me", and there
   // are normally none at all.
