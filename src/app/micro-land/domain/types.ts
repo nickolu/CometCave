@@ -915,6 +915,13 @@ export interface Creature {
    * `undefined` means the behavior is not known.
    */
   foodWashingVariant?: number
+  /**
+   * Per-individual deviation from the species' phenology.breedingGdd threshold.
+   * Heritable with mutation — positive = breeds later, negative = breeds earlier.
+   * Capped at ±200 GDD. Species without phenology.breedingGdd ignore this.
+   * Default undefined = 0 (no offset from species baseline).
+   */
+  phenoOffset?: number
 }
 
 /**
