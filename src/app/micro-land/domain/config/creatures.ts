@@ -36,6 +36,7 @@ const SUNLEAF = builtin('sunleaf', {
   blurb: 'A little green sprout. Almost everything eats these.',
   size: 1,
   tags: ['plant'],
+  bodyMass: 0.5,  // small plant. Issue #3269.
   art: {
     palette: { a: '#ffd166', b: '#3f7d2a' },
     frames: [
@@ -72,6 +73,7 @@ const BRAMBLE = builtin('bramble', {
   blurb: 'A tangled berry bush. Bigger meals for bigger mouths.',
   size: 2,
   tags: ['plant'],
+  bodyMass: 0.5,  // small plant. Issue #3269.
   art: {
     palette: { s: '#2f6b3a', l: '#57b04a', b: '#d1466f' },
     frames: [
@@ -1994,6 +1996,7 @@ const SHIMMER_LARVA = builtin('shimmer-larva', {
   flowZonePreference: 'run',  // intermediate flow — grips substrate but stays in current
   metamorphosesInto: 'shimmer-pupa',  // larva → pupa at 60 s. Issue #3336.
   metamorphosisAge: 60,
+  bodyMass: 0.1,  // small insect larva. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2071,6 +2074,7 @@ const SHIMMER_FLY = builtin('shimmer-fly', {
   holometabolous: true,       // eggs hatch as shimmer-larva. Issue #3336.
   larvaeBlueprint: 'shimmer-larva',
   adultTrophicLevel: 'none',  // adult Shimmer Flies do not eat — breed and die. Issue #3337.
+  bodyMass: 0.3,  // small flying insect. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2107,6 +2111,7 @@ const MEADOW_LOCUST_NYMPH = builtin('meadow-locust-nymph', {
   instarCount: 3,
   instarDuration: 30,
   moultVulnerability: 1.2,
+  bodyMass: 0.1,  // small insect nymph. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2145,6 +2150,7 @@ const MEADOW_LOCUST = builtin('meadow-locust', {
   egglayer: true,
   hemimetabolous: true,
   nymphBlueprint: 'meadow-locust-nymph',
+  bodyMass: 0.2,  // medium insect adult. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2257,6 +2263,7 @@ const GARDEN_SPIDER = builtin('garden-spider', {
   webSpinner: true,
   webRange: 5,
   webBuildInterval: 4,
+  bodyMass: 0.2,  // medium insect. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2335,6 +2342,7 @@ const PRAIRIE_DOG = builtin('prairie-dog', {
   egglayer: true,
   burrowDigger: true,
   burrowCacheSize: 0.4,
+  bodyMass: 0.3,  // small vertebrate. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2398,6 +2406,7 @@ const TERMITE = builtin('termite', {
   glow: 0,
   egglayer: true,
   termiteWorker: true,
+  bodyMass: 0.1,  // small insect. Issue #3269.
 })
 
 const AARDVARK = builtin('aardvark', {
@@ -2424,6 +2433,7 @@ const AARDVARK = builtin('aardvark', {
   glow: 0,
   egglayer: true,
   moundDestroyer: true,
+  bodyMass: 2.0,  // large mammal. Issue #3269.
 })
 
 const BARK_GECKO = builtin('bark-gecko', {
@@ -2450,6 +2460,7 @@ const BARK_GECKO = builtin('bark-gecko', {
   glow: 0,
   egglayer: true,
   moundCommensal: true,
+  bodyMass: 0.15,  // tiny lizard. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2521,6 +2532,7 @@ const SEA_OTTER = builtin('sea-otter', {
   glow: 0,
   egglayer: true,
   anvilUser: true,
+  bodyMass: 2.0,  // large mammal. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2559,6 +2571,7 @@ const CALEDONIAN_CROW = builtin('caledonian-crow', {
   egglayer: true,
   stickProber: true,
   objectManipulator: true,
+  bodyMass: 1.5,  // large predatory bird. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2597,6 +2610,7 @@ const BARN_OWL = builtin('barn-owl', {
   egglayer: true,
   secondaryColonizer: true,
   colonizedStructure: ['nest'],
+  bodyMass: 1.5,  // large predatory bird. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2632,6 +2646,7 @@ const MONITOR_LIZARD = builtin('monitor-lizard', {
   egglayer: true,
   secondaryColonizer: true,
   colonizedStructure: ['mound', 'burrow'],
+  bodyMass: 1.5,  // large predatory reptile. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
@@ -2667,6 +2682,7 @@ const BEAVER = builtin('beaver', {
   egglayer: true,
   damBuilder: true,
   objectManipulator: true,
+  bodyMass: 2.0,  // large mammal. Issue #3269.
 })
 
 // ---------------------------------------------------------------------------
