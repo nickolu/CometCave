@@ -107,6 +107,14 @@ const BITE_PAD = 0.5
 const SOIL_ENRICH_PROB = 0.002
 
 /**
+ * Probability per tick that a bioturbating creature converts the infertile tile
+ * it is standing on (sand, stone, ash, bone) into dirt. At 60Hz this gives
+ * a ~6% chance per second — slower than soil enrichment because bringing
+ * barren substrate to productive soil is a larger physical transformation.
+ */
+const BIOTURBATION_PROB = 0.001
+
+/**
  * Within this many tiles, disruptive patterns give no detection benefit —
  * the outline is legible at close range regardless of the pattern.
  */
@@ -857,6 +865,27 @@ export function tickCreatures(
       const scy = Math.floor(c.y + body.dy + body.h)
       if (tileAt(w, scx, scy) === MATERIAL_INDEX.dirt && Math.random() < SOIL_ENRICH_PROB) {
         setTile(w, scx, scy, MATERIAL_INDEX.mud)
+      }
+    }
+
+    // Bioturbation: digging creatures mix infertile substrate (sand, stone, ash,
+    // bone) into productive soil (dirt) by physically breaking up and turning
+    // over the ground beneath them. Models the earthworm / mole / ant effect:
+    // subsoil material is brought to the surface where plants can use it.
+    // Complements soil engineering — bioturbation reclaims barren areas while
+    // soil engineering enriches existing soil.
+    if (bp.bioturbator) {
+      const scx = Math.floor(c.x + body.dx + body.w / 2)
+      const scy = Math.floor(c.y + body.dy + body.h)
+      const foot = tileAt(w, scx, scy)
+      if (
+        (foot === MATERIAL_INDEX.sand ||
+          foot === MATERIAL_INDEX.stone ||
+          foot === MATERIAL_INDEX.ash ||
+          foot === MATERIAL_INDEX.bone) &&
+        Math.random() < BIOTURBATION_PROB
+      ) {
+        setTile(w, scx, scy, MATERIAL_INDEX.dirt)
       }
     }
 

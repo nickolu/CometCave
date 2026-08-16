@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     clearingMaintainer: b.clearingMaintainer === true,
     eyespots: b.eyespots === true,
     countershaded: b.countershaded === true,
+    bioturbator: b.bioturbator === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
