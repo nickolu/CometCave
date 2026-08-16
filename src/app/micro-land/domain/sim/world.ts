@@ -966,6 +966,54 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
       }
     }
   }
+  updateFlowZones(w, tickCount)
+}
+
+/**
+ * Classify each water tile as pool (1), run (2), or riffle (3) based on the
+ * local height gradient of the solid-floor beneath neighbour columns.
+ *
+ * For a water tile at (x, y), scan down in columns x-1 and x+1 to find the
+ * first solid-tile Y in each. The absolute difference gives the gradient:
+ * >= 3 tiles = riffle (steep), >= 1 = run, 0 = pool (flat). Runs every 60
+ * ticks (~1 Hz). The overlay stays undefined in worlds with no water.
+ * Issue #3370.
+ */
+export function updateFlowZones(w: WorldState, tickCount: number): void {
+  if (tickCount % 60 !== 0) return
+
+  // Early exit if no water tiles exist.
+  let hasWater = false
+  for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+    if (IS_LIQUID[w.tiles[i]] === 1) { hasWater = true; break }
+  }
+  if (!hasWater) return
+
+  w.flowZone ??= new Uint8Array(WORLD_W * WORLD_H)
+  w.flowZone.fill(0)
+
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      if (IS_LIQUID[w.tiles[y * WORLD_W + wrapCol(x)]] !== 1) continue
+
+      // Find Y of first solid tile at or below y in a given column.
+      let fL = WORLD_H
+      const xL = wrapCol(x - 1)
+      for (let fy = y; fy < WORLD_H; fy++) {
+        if (IS_SOLID[w.tiles[fy * WORLD_W + xL]] === 1) { fL = fy; break }
+      }
+
+      let fR = WORLD_H
+      const xR = wrapCol(x + 1)
+      for (let fy = y; fy < WORLD_H; fy++) {
+        if (IS_SOLID[w.tiles[fy * WORLD_W + xR]] === 1) { fR = fy; break }
+      }
+
+      const gradient = Math.abs(fL - fR)
+      const zone = gradient >= 3 ? 3 : gradient >= 1 ? 2 : 1
+      w.flowZone[y * WORLD_W + wrapCol(x)] = zone
+    }
+  }
 }
 
 /**
