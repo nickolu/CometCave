@@ -1892,6 +1892,10 @@ export interface BiomeZone {
   precipitation: number
 }
 
+// ---------------------------------------------------------------------------
+// Live world state
+// ---------------------------------------------------------------------------
+
 export interface WorldState {
   width: number
   height: number
