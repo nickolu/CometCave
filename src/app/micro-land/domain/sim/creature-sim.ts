@@ -58,6 +58,7 @@ import {
   settleOnGround,
   solidAt,
   spawnCreature,
+  tickAtmosphericCO2,
   tickCaveNutrient,
   tickMarshDetritus,
   tickMoisture,
@@ -852,16 +853,16 @@ export function tickCreatures(
         )
       : 1
 
+  // Count living plants for CO2 absorption
+  const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
+  tickAtmosphericCO2(w, tickCount, plantCount)
   updateBiomeZones(w, tickCount, seasonFactor)
 
   const creatures = w.creatures
   const dead = new Set<number>()
 
   // Plants are capped as a share of the population so they can't carpet the map.
-  let plantCount = 0
-  for (const c of creatures) {
-    if (w.blueprints[c.blueprintId]?.move.kind === 'root') plantCount++
-  }
+  // plantCount was already computed above for CO2 absorption.
   // Tracked live rather than snapshotted: every eligible plant breeds in the
   // same tick, so a snapshot taken up here lets 150 plants become 300 before
   // the cap is ever re-read.

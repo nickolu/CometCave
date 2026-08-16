@@ -795,6 +795,9 @@ export class GameInstance {
       useMicroLand.getState().setBiomeZones(this.world.biomeZones)
     }
 
+    // Atmospheric CO2 for Field Guide display. Issue #3381.
+    useMicroLand.getState().setAtmosphericCO2(this.world.atmosphericCO2 ?? 0)
+
     // Speed run win/loss detection
     const sr = useMicroLand.getState().speedRun
     if (sr.active && sr.result === 'none') {

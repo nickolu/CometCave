@@ -461,6 +461,12 @@ interface MicroLandState {
    */
   biomeZones: import('./domain/types').BiomeZone[]
   setBiomeZones: (zones: import('./domain/types').BiomeZone[]) => void
+  /**
+   * Atmospheric CO2 concentration offset [0, 1]. Mirrored from WorldState on
+   * each stats tick. Used by the Field Guide to show the CO2 warning. Issue #3381.
+   */
+  atmosphericCO2: number
+  setAtmosphericCO2: (v: number) => void
   /** Set when the Field Guide circle is clicked — game instance centers + inspects. */
   locateCreatureRequest: { id: number; serial: number } | null
   requestLocateCreature: (id: number) => void
@@ -663,6 +669,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   populationItems: [],
   invasionFront: {},
   biomeZones: [],
+  atmosphericCO2: 0,
   locateCreatureRequest: null,
   traitOverlay: null,
   compareId: null,
@@ -796,6 +803,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),
+  setAtmosphericCO2: v => set({ atmosphericCO2: v }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
   setTraitOverlay: trait => set(s => ({ traitOverlay: s.traitOverlay === trait ? null : trait })),
