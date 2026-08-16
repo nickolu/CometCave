@@ -2259,6 +2259,47 @@ const GARDEN_SPIDER = builtin('garden-spider', {
   webBuildInterval: 4,
 })
 
+// ---------------------------------------------------------------------------
+// Weaver Bird — nest-building seed-eater. Issue #3418.
+// ---------------------------------------------------------------------------
+
+const WEAVER_BIRD = builtin('weaver-bird', {
+  name: 'Weaver Bird',
+  blurb: 'A master builder that weaves intricate nests from grass and moss, protecting eggs from predation.',
+  size: 1,
+  tags: ['plant', 'bird', 'flier'],
+  art: {
+    palette: { w: '#e8b84b', b: '#7a4f10', g: '#ffd97a' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 130,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.1, drag: 0.5, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'fly', speed: 1.5, jump: 0, hop: 0, restlessness: 0.4 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.00006,
+    starveSeconds: 30,
+    breedAt: 0.75,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 16 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#e8b84b', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  nestBuilder: true,
+  nestMaterials: ['grass', 'moss'],
+  nestCompleteAt: 6,
+  nestHatchBonus: 0.65,
+  nestRadius: 3,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2316,6 +2357,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MEADOW_LOCUST,
   DRAGONFLY_NYMPH,
   DRAGONFLY,
+  WEAVER_BIRD,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

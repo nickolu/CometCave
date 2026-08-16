@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { IS_DEADLY, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { AIR, IS_DEADLY, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -1537,6 +1537,53 @@ export function tickCreatures(
       }
     }
 
+    // --- object manipulation: pick up nearby collectable tiles. Issues #3412, #3418. ---
+    if ((bp.objectManipulator || bp.nestBuilder) && c.carriedMaterial === undefined && c.hunger < 0.5) {
+      const collectibles: string[] = bp.nestMaterials ?? ['grass', 'moss', 'wood']
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      outerPickup:
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx2 = -2; dx2 <= 2; dx2++) {
+          const tx = cx + dx2, ty = cy + dy
+          if (tx < 0 || tx >= w.width || ty < 0 || ty >= w.height) continue
+          const tIdx = ty * w.width + tx
+          const matId = MATERIAL_BY_INDEX[w.tiles[tIdx]]?.id
+          if (matId !== undefined && collectibles.includes(matId) && rng() < 0.05 * dt) {
+            c.carriedMaterial = w.tiles[tIdx]
+            w.tiles[tIdx] = AIR
+            break outerPickup
+          }
+        }
+      }
+    }
+    // --- nest delivery: when carrying, steer toward nest site and place tile. Issue #3418. ---
+    if (bp.nestBuilder && c.carriedMaterial !== undefined && c.nestX !== undefined && c.nestY !== undefined) {
+      const ddx = c.nestX - c.x, ddy = c.nestY - c.y
+      const dist = Math.sqrt(ddx * ddx + ddy * ddy)
+      if (dist < 2) {
+        // Place the tile at or near the nest anchor
+        const placeIdx = Math.round(c.nestY) * w.width + Math.round(c.nestX)
+        if (placeIdx >= 0 && placeIdx < w.tiles.length && w.tiles[placeIdx] === AIR) {
+          w.tiles[placeIdx] = c.carriedMaterial
+        }
+        c.carriedMaterial = undefined
+        c.nestProgress = (c.nestProgress ?? 0) + 1
+        // Register/update nest in WorldState
+        w.nestSites = w.nestSites ?? {}
+        const nestKey = `${Math.round(c.nestX)},${Math.round(c.nestY)}`
+        w.nestSites[nestKey] = {
+          progress: c.nestProgress,
+          ownerId: c.id,
+          x: Math.round(c.nestX),
+          y: Math.round(c.nestY),
+        }
+      } else {
+        // Bias velocity toward nest site
+        c.vx += (ddx / dist) * 0.2 * dt
+        c.vy += (ddy / dist) * 0.2 * dt
+      }
+    }
+
     // --- old age --------------------------------------------------------
     if (c.ageSeconds >= lifespanOf(c, bp) * TUNING.lifespanScale) {
       kill(w, c, bp, dead, events, 'aged')
@@ -2200,6 +2247,11 @@ export function tickCreatures(
             generation,
             hatchIn: TUNING.eggHatchSeconds,
           })
+          // Assign nest site when first egg is laid. Issue #3418.
+          if (bp.nestBuilder && c.nestX === undefined) {
+            c.nestX = c.x
+            c.nestY = c.y
+          }
           c.children++
           if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
           else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -2471,6 +2523,23 @@ export function tickCreatures(
   const hatchedEggIds = new Set<number>()
   for (const egg of w.eggs) {
     egg.hatchIn -= dt
+    // Nest hatch bonus: eggs near a complete nest hatch faster. Issue #3418.
+    if (w.nestSites && egg.hatchIn > 0) {
+      const nestBpForEgg = w.blueprints[egg.blueprintId]
+      if (nestBpForEgg?.nestBuilder) {
+        const completeAt = nestBpForEgg.nestCompleteAt ?? 8
+        const radius = nestBpForEgg.nestRadius ?? 3
+        const hatchBonus = nestBpForEgg.nestHatchBonus ?? 0.7
+        for (const nest of Object.values(w.nestSites)) {
+          const ex = egg.x - nest.x, ey = egg.y - nest.y
+          if (nest.progress >= completeAt && Math.sqrt(ex * ex + ey * ey) <= radius) {
+            // Accelerate hatch: reduce remaining time proportionally this tick
+            egg.hatchIn -= dt * (1 / hatchBonus - 1)  // net effect: hatchIn depletes faster
+            break
+          }
+        }
+      }
+    }
     if (egg.hatchIn <= 0) {
       const parentBp = w.blueprints[egg.blueprintId]
       // Holometabolous: eggs from this adult hatch as the larval form. Issue #3336.
