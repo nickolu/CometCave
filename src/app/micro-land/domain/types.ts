@@ -1302,6 +1302,33 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
+/**
+ * Whittaker biome classification — one of eight climate zones.
+ * Assigned per horizontal region band (8 bands from sky to bedrock).
+ * Issue #3377.
+ */
+export type BiomeZoneType =
+  | 'tropical-rainforest'
+  | 'tropical-savanna'
+  | 'desert'
+  | 'temperate-grassland'
+  | 'temperate-forest'
+  | 'boreal'
+  | 'tundra'
+  | 'ice-cap'
+
+/** One classified biome band — a full-width horizontal slice of the world. */
+export interface BiomeZone {
+  /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
+  regionIndex: number
+  /** Classified biome type for this band. */
+  type: BiomeZoneType
+  /** Annual temperature proxy [0, 1]; higher = warmer. Derived from Y position × seasonFactor. */
+  temperature: number
+  /** Average moisture [0, 1] sampled across region tiles. */
+  precipitation: number
+}
+
 export interface WorldState {
   width: number
   height: number
@@ -1406,6 +1433,13 @@ export interface WorldState {
   nextSpawnerId: number
   /** Per-species background-seeding config. Plants default to enabled. */
   generators: WorldGeneratorEntry[]
+  /**
+   * Whittaker biome zones — one entry per horizontal region band.
+   * 8 bands by default (top = coldest/sky, bottom = warmest/deep). Updated
+   * by `updateBiomeZones` every 300 ticks. Undefined until first pass.
+   * Issue #3377.
+   */
+  biomeZones?: BiomeZone[]
 }
 
 // ---------------------------------------------------------------------------

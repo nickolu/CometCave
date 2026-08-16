@@ -14,6 +14,8 @@ import {
 import type { Biome } from '../config/biomes'
 import { DEFAULT_THEME, THEME_BY_ID, type Theme } from '@/app/micro-land/domain/config/themes'
 import {
+  BIOME_REGION_H,
+  NUM_BIOME_REGIONS,
   PLANT_SEED_INTERVAL,
   SURFACE_SEEDING_BIAS,
   WIDTH_SCALE,
@@ -23,6 +25,8 @@ import {
 import { neutralTraits } from '@/app/micro-land/domain/traits'
 import { TUNING } from '@/app/micro-land/domain/tuning'
 import type {
+  BiomeZone,
+  BiomeZoneType,
   Creature,
   CreatureBlueprint,
   MaterialId,
@@ -1152,6 +1156,57 @@ export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
   return counts
+}
+
+/**
+ * Compute Whittaker biome classification for each of the 8 horizontal region
+ * bands. Temperature is derived from the band's Y midpoint and seasonFactor;
+ * precipitation is the mean moisture across the band. Runs every 300 ticks.
+ * Issue #3377.
+ */
+export function updateBiomeZones(w: WorldState, tickCount: number, seasonFactor: number): void {
+  if (tickCount % 300 !== 0) return
+  w.biomeZones ??= []
+  for (let r = 0; r < NUM_BIOME_REGIONS; r++) {
+    const midY = r * BIOME_REGION_H + Math.floor(BIOME_REGION_H / 2)
+    const baseTemp = Math.max(0, 1 - midY / WORLD_H)
+    const temperature = Math.min(1, baseTemp * seasonFactor)
+
+    // Sample moisture across every 4th column of every row in the band
+    const rowStart = r * BIOME_REGION_H
+    const rowEnd = Math.min(rowStart + BIOME_REGION_H, WORLD_H)
+    let sum = 0, count = 0
+    for (let y = rowStart; y < rowEnd; y++) {
+      for (let x = 0; x < WORLD_W; x += 4) {
+        sum += w.moisture[y * WORLD_W + x] ?? 0
+        count++
+      }
+    }
+    const precipitation = count > 0 ? sum / count : 0
+
+    w.biomeZones[r] = { regionIndex: r, type: classifyBiome(temperature, precipitation), temperature, precipitation }
+  }
+}
+
+function classifyBiome(temp: number, precip: number): BiomeZoneType {
+  if (temp < 0.1) return 'ice-cap'
+  if (temp < 0.2) return 'tundra'
+  if (temp < 0.35) return precip >= 0.2 ? 'boreal' : 'desert'
+  if (temp < 0.75) return precip >= 0.3 ? 'temperate-forest' : 'temperate-grassland'
+  // temp >= 0.75 (tropical)
+  if (precip >= 0.5) return 'tropical-rainforest'
+  if (precip >= 0.2) return 'tropical-savanna'
+  return 'desert'
+}
+
+/**
+ * Return the biome type at a given Y tile coordinate, or null if biome zones
+ * have not been computed yet. O(1) lookup. Issue #3377.
+ */
+export function biomeZoneAt(w: WorldState, y: number): BiomeZoneType | null {
+  if (!w.biomeZones) return null
+  const r = Math.min(NUM_BIOME_REGIONS - 1, Math.floor(y / BIOME_REGION_H))
+  return w.biomeZones[r]?.type ?? null
 }
 
 export { AIR }
