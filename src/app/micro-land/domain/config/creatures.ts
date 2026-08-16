@@ -527,6 +527,7 @@ const STALKER = builtin('stalker', {
   // Pack hunters communicate and coordinate well — high cultural transmission.
   socialLearningRate: 0.8,
   brainSize: 0.8,  // apex social predator with complex cooperative strategies
+  canInnovateTechniques: true,  // smart enough to invent and culturally transmit hunting strategies
 })
 
 const DRIFTER_JELLY = builtin('drifter-jelly', {

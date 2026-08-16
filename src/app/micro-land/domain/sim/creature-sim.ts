@@ -177,6 +177,13 @@ const DISRUPTION_FAR_FACTOR = 0.65
 const SEEDLING_MAX_AGE = 30
 
 /**
+ * Named techniques that intelligent creatures can independently invent and
+ * culturally transmit to conspecifics. Each technique is a meme — a unit of
+ * cultural information that spreads via social learning. Issue #3415.
+ */
+const TECHNIQUE_POOL = ['ambush-timing', 'cache-store', 'pry-open', 'mob-defense', 'scent-trail'] as const
+
+/**
  * Probability that a predator's killing blow hits an eyespot (wing edge, tail tip)
  * rather than the prey's body. The prey escapes; the predator gets almost nothing.
  * 0.4 = 40% deflection, matching real-world eyespot attack-diversion research.
@@ -1178,6 +1185,52 @@ export function tickCreatures(
       const forgetRate = 0.0002 * (1 - (cbp?.brainSize ?? 0)) * (1 - ((cbp?.socialLearningRate ?? 0.5) * 0.4))
       if (rng() < forgetRate * dt) {
         c.learnedFoodWashing = false
+      }
+    }
+
+    // Technique innovation and social learning (issue #3415)
+    // Independent invention + peer transmission — techniques spread like cultural memes.
+    if (bp.canInnovateTechniques && !isPlant) {
+      const techBrainSize = bp.brainSize ?? 0
+      if (!c.innovations) c.innovations = []
+
+      // Independent discovery: rare spontaneous invention, scales with brainSize
+      if (c.innovations.length < TECHNIQUE_POOL.length && rng() < techBrainSize * 0.00005) {
+        const unknown = TECHNIQUE_POOL.filter(t => !c.innovations!.includes(t))
+        if (unknown.length > 0) {
+          const discovered = unknown[Math.floor(rng() * unknown.length)]
+          c.innovations.push(discovered)
+          logLife(c, w.elapsed, `Invented: ${discovered}`)
+        }
+      }
+
+      // Efficiency bonus: each known technique reduces hunger slightly
+      if (c.innovations.length > 0) {
+        c.hunger = Math.max(0, c.hunger - 0.00002 * c.innovations.length * dt)
+      }
+
+      // Social transmission: pass techniques to nearby conspecifics within sight
+      if (c.innovations.length > 0) {
+        const techSight = c.traits.sight * bp.senses.sight
+        for (const other of w.creatures) {
+          if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+          const learnerBp = w.blueprints[other.blueprintId]
+          if (!learnerBp?.canInnovateTechniques) continue
+          const tdx2 = distX(c.x, other.x) ** 2
+          const tdy2 = (c.y - other.y) ** 2
+          if (tdx2 + tdy2 > techSight * techSight) continue
+          if (!other.innovations) other.innovations = []
+          // Transmit one unknown technique per tick per observer
+          for (const technique of c.innovations) {
+            if (other.innovations.includes(technique)) continue
+            const socialScale = (learnerBp.socialLearningRate ?? 0.5) * (1 + (learnerBp.brainSize ?? 0))
+            if (rng() < 0.001 * socialScale * dt) {
+              other.innovations.push(technique)
+              logLife(other, w.elapsed, `Learned: ${technique}`)
+              break
+            }
+          }
+        }
       }
     }
 

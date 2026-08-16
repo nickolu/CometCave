@@ -591,6 +591,13 @@ export interface CreatureBlueprint {
    */
   canLearnFoodWashing?: boolean
   /**
+   * When true, individuals of this species can independently invent named
+   * techniques and transmit them to conspecifics via social learning.
+   * Techniques spread culturally like memes — discovered by rare spontaneous
+   * innovation and passed peer-to-peer within sight range.
+   */
+  canInnovateTechniques?: boolean  // can independently invent and transmit cultural techniques
+  /**
    * How readily this species transmits and acquires learned behaviors, 0–1.
    *
    * A multiplier on cultural transmission probability in both directions —
@@ -965,6 +972,14 @@ export interface Creature {
    * When active, eating near water yields 5% more energy per meal.
    */
   learnedFoodWashing?: boolean
+  /**
+   * Cultural techniques this creature knows (e.g. 'ambush-timing', 'cache-store').
+   *
+   * A per-creature learned set, not heritable — acquired either by rare spontaneous
+   * innovation or by observing a conspecific who already knows the technique.
+   * Only active for species with `canInnovateTechniques: true` in their blueprint.
+   */
+  innovations?: string[]  // cultural techniques this creature knows (e.g. 'ambush-timing', 'cache-store')
   /** For snap-trap plants: number of times prey has touched the trap (0–2). */
   trapTriggerCount?: number
   /** For snap-trap plants: countdown in seconds until the trigger resets. */
