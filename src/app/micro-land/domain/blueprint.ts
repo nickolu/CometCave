@@ -686,6 +686,8 @@ export function sanitizeBlueprint(
     colonizedStructure: Array.isArray(b.colonizedStructure) ? (b.colonizedStructure as string[]) : undefined,
     damBuilder: typeof b.damBuilder === 'boolean' ? b.damBuilder : undefined,
     landmarkMemory: typeof b.landmarkMemory === 'boolean' ? b.landmarkMemory : undefined,
+    populationCap: typeof b.populationCap === 'number' ? Math.max(1, Math.floor(b.populationCap)) : undefined,
+    alleeThreshold: typeof b.alleeThreshold === 'number' ? Math.max(1, Math.floor(b.alleeThreshold)) : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

@@ -475,6 +475,13 @@ interface MicroLandState {
   atmosphericCO2: number
   setAtmosphericCO2: (v: number) => void
   /**
+   * Age class pyramid per species. Keyed by blueprintId; each entry holds the
+   * count of juveniles (j), adults (a), and elders (e) alive in this species.
+   * Updated by pushStats() each stats tick. Issue #3290.
+   */
+  agePyramid: Record<string, { j: number; a: number; e: number }>
+  setAgePyramid: (v: Record<string, { j: number; a: number; e: number }>) => void
+  /**
    * Atmospheric O2 level relative to baseline [0, 2]. 1.0 = normal.
    * Mirrored from WorldState on each stats tick. Used by the Field Guide
    * to show the O2 level. Issues #3275, #3276.
@@ -720,6 +727,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   biomeZones: [],
   atmosphericCO2: 0,
   atmosphericO2: 1.0,
+  agePyramid: {},
   migrationStats: {},
   locateCreatureRequest: null,
   traitOverlay: null,
@@ -858,6 +866,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setBiomeZones: zones => set({ biomeZones: zones }),
   setAtmosphericCO2: v => set({ atmosphericCO2: v }),
   setAtmosphericO2: v => set({ atmosphericO2: v }),
+  setAgePyramid: v => set({ agePyramid: v }),
   setMigrationStats: stats => set({ migrationStats: stats }),
   requestLocateCreature: id =>
     set({ locateCreatureRequest: { id, serial: ++locateCreatureSerial } }),
