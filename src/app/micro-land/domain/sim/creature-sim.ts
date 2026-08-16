@@ -749,7 +749,8 @@ export function tickCreatures(
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd
     ) {
       // mismatch: 0 = perfectly timed (breedingGdd=500), 1 = maximally mismatched
-      const mismatch = Math.abs(bp.phenology.breedingGdd - 500) / 500
+      const effectiveBreedingGdd = bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
+      const mismatch = Math.abs(effectiveBreedingGdd - 500) / 500
       c.hunger = Math.min(1, c.hunger + mismatch * 0.00008 * dt)
     }
     if (c.hunger >= 1) {
@@ -1099,7 +1100,7 @@ export function tickCreatures(
     // seasons are disabled (seasonAmplitude=0), worldGdd returns 1000, so the
     // gate is permanently open and existing behaviour is unchanged.
     const inBreedingSeason = !bp.phenology?.breedingGdd ||
-      worldGdd(w.elapsed) >= bp.phenology.breedingGdd
+      worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
     if (
       inBreedingSeason &&
       readyToBreed(c, bp) &&
@@ -1188,6 +1189,19 @@ export function tickCreatures(
             ) {
               child.learnedFoodWashing = true
               child.foodWashingVariant = c.foodWashingVariant ?? mate?.foodWashingVariant
+            }
+            // Phenological timing inheritance with mutation.
+            // Children inherit the midpoint of both parents' offsets, plus a small
+            // random nudge (±10 GDD). Capped at ±200 to prevent runaway drift.
+            // Selection acts through the mismatch penalty: offspring closer to GDD 500
+            // (summer peak) face less hunger during breeding season and outcompete
+            // poorly-timed siblings over generations.
+            if (bp.phenology?.breedingGdd !== undefined) {
+              const parentOffset = (c.phenoOffset ?? 0)
+              const mateOffset = (mate?.phenoOffset ?? 0)
+              const midpoint = mate ? (parentOffset + mateOffset) / 2 : parentOffset
+              const mutated = midpoint + (rng() * 20 - 10)
+              child.phenoOffset = Math.max(-200, Math.min(200, mutated))
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             c.children++
