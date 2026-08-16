@@ -696,6 +696,14 @@ export interface CreatureBlueprint {
    * flag maintain altitude during migration. Issue #3322.
    */
   magnetoreceptive?: boolean
+  /**
+   * Seeds of this species require fire heat to break their hard coat. Dormant
+   * seeds are scarified when lava is detected at their tile or an adjacent tile;
+   * scarified seeds then germinate at 10× the normal probability. Models
+   * serotinous cones (lodgepole pine, banksia) and heat-scarified annuals.
+   * Issue #3353.
+   */
+  fireGerminator?: boolean
 }
 
 /**
@@ -1164,6 +1172,8 @@ export interface SeedEntry {
   y: number
   /** Seconds since this seed entered the seed bank. */
   age: number
+  /** True once lava heat has scarified this seed's coat, enabling germination. Issue #3353. */
+  fireScarified?: boolean
 }
 
 /**

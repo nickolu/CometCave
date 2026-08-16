@@ -61,6 +61,7 @@ const SUNLEAF = builtin('sunleaf', {
   aura: null,
   glow: 0,
   uvNectar: true,
+  fireGerminator: true,  // pioneer plant: fire-scarified seeds germinate in ash-cleared ground
 })
 
 const BRAMBLE = builtin('bramble', {
