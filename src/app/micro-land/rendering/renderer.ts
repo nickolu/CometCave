@@ -33,7 +33,7 @@
  * top to bottom, which is the only reason there is a vertical camera at all —
  * it is pinned to 0 and does nothing until the rows stop fitting.
  */
-import { MATERIAL_BY_INDEX } from '@/app/micro-land/domain/config/materials'
+import { MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import type { Theme } from '@/app/micro-land/domain/config/themes'
 import { VIEW_W, WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { lifespanOf, sizeOf, tintKey } from '@/app/micro-land/domain/traits'
@@ -604,6 +604,7 @@ export class Renderer {
       this.drawStatusDots(w)
       this.drawPollinatorAuras(w)
       this.drawParticles(w)
+      this.drawFireEffects(w)
 
       wctx.restore()
     }
@@ -1374,6 +1375,96 @@ export class Renderer {
       ctx.fillStyle = p.color
       ctx.fillRect(Math.round(p.x), Math.round(p.y), 1, 1)
     }
+    ctx.globalAlpha = 1
+  }
+
+  /**
+   * Animated fire effects: per-frame flickering overlay and rising smoke.
+   *
+   * Fire tiles are baked into the static tile ImageData as a solid #ff4400,
+   * which establishes the base color but cannot animate. This pass draws a
+   * time-varying color wash over every visible fire tile, making it flicker
+   * between deep orange, yellow, and a brief white-hot core — and draws faint
+   * gray smoke rising above each tile.
+   *
+   * Everything here is driven by `performance.now()` so it animates even when
+   * the simulation is paused, and because the tile-bake cache makes the static
+   * color irrelevant once this overlay runs on top.
+   */
+  private drawFireEffects(w: WorldState): void {
+    // Only the primary pass — the seam pass (drawOffset !== 0) is a shifted
+    // duplicate of the world. Fire effects drawn on the primary pass are
+    // already copied into the overhang by the final blit, so we skip the
+    // second pass to avoid double-drawing on the seam tile.
+    if (this.drawOffset !== 0) return
+
+    const FIRE_IDX = MATERIAL_INDEX['fire']
+    if (FIRE_IDX === undefined) return
+
+    const tiles = w.tiles
+    const t = performance.now() / 1000
+
+    const vx = this.spanLeft
+    const vw = this.spanWide
+    const ctx = this.wctx
+
+    // We scan the visible column range, which may span two segments
+    // when the camera straddles the seam.
+    this.forEachSpan(vx, vw, (x0, width) => {
+      for (let x = x0; x < x0 + width; x++) {
+        for (let y = 0; y < WORLD_H; y++) {
+          if (tiles[y * WORLD_W + x] !== FIRE_IDX) continue
+
+          // --- flickering tile overlay ---
+          // Two sine waves at different frequencies and spatial offsets give
+          // each tile a slightly different phase so adjacent fire tiles don't
+          // all pulse in lockstep.
+          const f1 = 0.5 + 0.5 * Math.sin(t * 8 + x * 1.3 + y * 2.1)
+          const f2 = 0.5 + 0.5 * Math.sin(t * 13 + x * 2.7 + y * 0.9)
+
+          // Core flame: orange-to-yellow, brightness driven by f1.
+          const g = Math.round(80 + 140 * f1)
+          const bright = 0.6 + 0.4 * f2
+          ctx.globalAlpha = bright
+          ctx.fillStyle = `rgb(255,${g},0)`
+          ctx.fillRect(x, y, 1, 1)
+
+          // Hot core: white-yellow flash at the top quarter of the tile.
+          // The world canvas is 1 px per tile so "top quarter" is a
+          // sub-pixel stripe — we express it as a semi-transparent dot.
+          ctx.globalAlpha = f1 * 0.5
+          ctx.fillStyle = '#fff0c8'
+          ctx.fillRect(x, y, 1, 1)
+
+          // --- smoke above the fire tile ---
+          // Skip if there is a solid tile directly above (smoke would be
+          // blocked). Also only draw smoke stochastically — roughly 40% of
+          // fire tiles per frame — so adjacent tiles don't produce identical
+          // columns of smoke.
+          const aboveMat = y > 0 ? tiles[(y - 1) * WORLD_W + x] : -1
+          const aboveSolid = aboveMat > 0 && MATERIAL_BY_INDEX[aboveMat]?.solid
+          if (!aboveSolid) {
+            // Lateral wobble and vertical offset keyed to time + tile position.
+            const wobble = Math.sin(t * 2.5 + x * 0.8) * 0.4
+            const alpha1 = 0.12 + 0.07 * Math.sin(t * 4 + x)
+
+            // First smoke puff — one tile above.
+            if (y - 1 >= 0) {
+              ctx.globalAlpha = alpha1
+              ctx.fillStyle = '#888'
+              ctx.fillRect(x + wobble, y - 1, 1, 1)
+            }
+            // Second, fainter puff — two tiles above.
+            if (y - 2 >= 0) {
+              ctx.globalAlpha = alpha1 * 0.55
+              ctx.fillStyle = '#666'
+              ctx.fillRect(x + wobble * 1.4, y - 2, 1, 1)
+            }
+          }
+        }
+      }
+    })
+
     ctx.globalAlpha = 1
   }
 
