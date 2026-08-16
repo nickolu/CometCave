@@ -673,6 +673,13 @@ export interface CreatureBlueprint {
    * that slow down in response to short photoperiods. Issue #3360.
    */
   dormancyPhotoperiod?: boolean
+  /**
+   * Preferred flow-velocity zone for aquatic creatures. Creatures in their
+   * preferred zone get a slight hunger relief; in a mismatched zone, a mild
+   * penalty. Only meaningful for aquatic species. Issue #3370.
+   * 'riffle' = fast oxygenated water, 'run' = intermediate, 'pool' = slow silted.
+   */
+  flowZonePreference?: 'riffle' | 'run' | 'pool'
 }
 
 /**
@@ -1269,6 +1276,12 @@ export interface WorldState {
    * Boosts plant productivity in estuarine tiles. [0, 1] per tile.
    */
   marshDetritus?: Float32Array
+  /**
+   * Per-tile flow velocity zone for river/stream tiles.
+   * 0 = non-water or uncomputed, 1 = pool (slow), 2 = run (intermediate), 3 = riffle (fast).
+   * Only set on water tiles; all other tiles remain 0. Updated every 60 ticks.
+   */
+  flowZone?: Uint8Array
   eggs: Egg[]
   nextEggId: number
   /**
