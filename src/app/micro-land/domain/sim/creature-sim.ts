@@ -1680,6 +1680,37 @@ export function tickCreatures(
       }
     }
 
+    // Migratory fat tracking and stopover refueling. Creatures with a
+    // `stopoverHabitat` array deplete fat while actively migrating; they
+    // pause and refuel when standing on a matching tile, and die of
+    // exhaustion if fat hits zero. Creatures without the field skip all of
+    // this. Issue #3324.
+    if (bp.migratory && bp.stopoverHabitat && bp.stopoverHabitat.length > 0) {
+      c.migratoryFat ??= 1.0
+
+      if (c.migrating) {
+        // Active migration: deplete fat reserves
+        c.migratoryFat = Math.max(0, c.migratoryFat - 0.002 * dt)
+
+        if (c.migratoryFat <= 0) {
+          kill(w, c, bp, dead, events, 'starved')
+          continue
+        }
+
+        // Check for stopover habitat: tile at foot level
+        const stx = Math.floor(c.x)
+        const sty = Math.floor(c.y + 1)  // one tile below creature centre
+        const underfoot = MATERIAL_BY_INDEX[tileAt(w, stx, sty)]?.id
+        if (underfoot && bp.stopoverHabitat.includes(underfoot)) {
+          c.migrating = false  // pause to rest and refuel
+        }
+      } else {
+        // At stopover or destination: slowly refuel
+        c.migratoryFat = Math.min(1, c.migratoryFat + 0.002 * dt)
+      }
+    }
+
+
     // Industrial pollution: creatures with polluter flag deposit soot (ash) on
     // the tiles they walk through, darkening the substrate and creating selection
     // pressure for cryptic variants with ash-hue colouring (industrial melanism).

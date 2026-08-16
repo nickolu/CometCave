@@ -696,6 +696,13 @@ export interface CreatureBlueprint {
    * flag maintain altitude during migration. Issue #3322.
    */
   magnetoreceptive?: boolean
+  /**
+   * Terrain materials that count as suitable stopover habitat for refueling
+   * during migration. When a migrating creature lands on a matching tile it
+   * pauses, refuels, and resumes. Creatures with this set deplete fat while
+   * migrating; those without it are not fat-tracked. Issue #3324.
+   */
+  stopoverHabitat?: string[]
 }
 
 /**
@@ -1075,6 +1082,8 @@ export interface Creature {
   migrating?: boolean
   /** X tile the creature is currently migrating toward. */
   migrationDestX?: number
+  /** Migratory fat reserve [0, 1]. Depletes during active migration; refills at stopover habitat. */
+  migratoryFat?: number
   circadianPhase?: number  // internal clock phase [0, 1]; 0 = subjective dawn, 0.5 = subjective dusk
 }
 
