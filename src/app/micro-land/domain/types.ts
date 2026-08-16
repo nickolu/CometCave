@@ -1060,6 +1060,33 @@ export interface CreatureBlueprint {
    * Issue #3281.
    */
   patchDependent?: boolean
+
+  // --- Coevolution features (#3263–#3267) ---
+
+  /** Predator-prey escalation: predator gains cumulative speed from hunting success. Issue #3263. */
+  predatorEscalation?: boolean
+  /** Predator-prey escalation: prey gains cumulative evasion from surviving predation. Issue #3263. */
+  preyEscalation?: boolean
+
+  /** Pollinator specialization: this creature is a specialized pollinator. Issue #3264. */
+  pollinatorSpecialist?: boolean
+  /** Pollinator specialization: how deep the nectar tube is (0.0–1.0); set on plants. Issue #3264. */
+  flowerTubeDepth?: number
+  /** Pollinator specialization: tongue reach of the pollinator (0.0–1.0). Issue #3264. */
+  tongueLength?: number
+
+  /** Host-parasite immunity: this species acts as a parasite (drains hosts without killing). Issue #3265. */
+  hostParasiteAttacker?: boolean
+  /** Host-parasite immunity: this species can be parasitized and builds immune exposure. Issue #3265. */
+  hostParasite?: boolean
+
+  /** Obligate coevolved pair: blueprintId of the required mutualistic partner species. Issue #3266. */
+  obligatePartner?: string
+
+  /** Mimicry: this species is genuinely toxic/aposematic; predators learn to avoid it. Issue #3267. */
+  toxic?: boolean
+  /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
+  toxicMimic?: boolean
 }
 
 /**
@@ -1535,6 +1562,12 @@ export interface Creature {
    * Computed every 120 ticks for patchDependent species. Issue #3281.
    */
   localPatchScore?: number
+  /** Bonus speed from successful hunts (predator escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedSpeed?: number
+  /** Evasion factor from surviving predation (prey escalation, accumulates, max 0.5). Issue #3263. */
+  escalatedEvasion?: number
+  /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
+  parasiteExposure?: number
 }
 
 /**
@@ -1925,6 +1958,8 @@ export interface WorldState {
    * Computed every 600 ticks. Issue #3283.
    */
   corridorMask?: Uint8Array
+  /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
+  weaselTribunalActive?: boolean
 }
 
 // ---------------------------------------------------------------------------
