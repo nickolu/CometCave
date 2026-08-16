@@ -591,6 +591,7 @@ export function sanitizeBlueprint(
     countershaded: b.countershaded === true,
     bioturbator: b.bioturbator === true,
     rootBankStabilizer: b.rootBankStabilizer === true,
+    carnivorousPlant: b.carnivorousPlant === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {

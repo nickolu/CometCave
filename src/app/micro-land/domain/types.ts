@@ -380,6 +380,22 @@ export interface CreatureBlueprint {
    * `move.kind === 'root'` creatures. Models willows, alders, mangroves.
    */
   rootBankStabilizer?: boolean
+  /**
+   * Plants that supplement nutrient-poor substrate by trapping and digesting prey.
+   *
+   * Inverts the fertility curve: carnivorous plants breed *faster* on low-fertility
+   * tiles (stone, sand, ash) and slower on rich soil, out-competing normal flora on
+   * barren ground. They may also root on stone — normally infertile for plants.
+   *
+   * Breed cooldown uses `max(0.1, 2.0 − fertilityAt)` instead of `fertilityAt`:
+   *   stone (f=0.3) → factor 1.7 → ~5.7× faster than normal plants
+   *   sand  (f=0.5) → factor 1.5 → 3×
+   *   dirt  (f=1.0) → factor 1.0 → neutral
+   *   mud   (f=1.3) → factor 0.7 → slower, outcompeted by normal plants
+   *
+   * Models sundews, pitcher plants, butterworts on acidic bogs and volcanic rock.
+   */
+  carnivorousPlant?: boolean
 }
 
 /**
