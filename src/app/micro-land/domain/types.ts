@@ -1095,6 +1095,16 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
+   * interfere when crowded, reducing effective sight range. Issue #3243.
+   */
+  soundFrequency?: number
+  /**
+   * True if this prey species times movements to ambient noise peaks.
+   * Pauses when no noisy creatures are nearby; moves under noise cover. Issue #3245.
+   */
+  acousticCamouflage?: boolean
 }
 
 /**
@@ -1576,6 +1586,10 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
+  toxinLoad?: number
+  /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
+  carrierTimer?: number
 }
 
 /**
