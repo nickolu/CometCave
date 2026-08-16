@@ -79,6 +79,7 @@ export const BASE_MATERIAL_IDS = [
   'cloud',
   'sap',
   'acid',
+  'shed-skin',
 ] as const satisfies readonly BaseMaterialId[]
 
 const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
@@ -174,6 +175,11 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     corrosive: true,
     glow: 0.4,
     acidProof: true,
+  }),
+  'shed-skin': material('shed-skin', 'Shed Skin', '#d4c9a0', {
+    grain: 0.18,
+    solid: true,
+    fertile: true,
   }),
 }
 

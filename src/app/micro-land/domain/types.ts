@@ -46,6 +46,7 @@ export type BaseMaterialId =
   | 'cloud'
   | 'sap'
   | 'acid'
+  | 'shed-skin'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -812,6 +813,30 @@ export interface CreatureBlueprint {
    * Issue #3338.
    */
   pupalVulnerability?: number
+  /**
+   * This species undergoes incomplete metamorphosis: egg → nymph (instars) → adult.
+   * Eggs from this adult hatch as the nymph form (`nymphBlueprint`). Issue #3340.
+   */
+  hemimetabolous?: boolean
+  /**
+   * BlueprintId of the nymph form. Eggs from this adult hatch as this blueprint.
+   * Only meaningful when `hemimetabolous: true`. Issue #3340.
+   */
+  nymphBlueprint?: string
+  /**
+   * Number of moults before the nymph becomes an adult. Default 3. Issue #3341.
+   */
+  instarCount?: number
+  /**
+   * Seconds per instar before the next moult is triggered. Default 30. Issue #3341.
+   */
+  instarDuration?: number
+  /**
+   * Extra predation fill bonus during moulting. Analogous to pupalVulnerability.
+   * When non-zero, a predator eating a moulting nymph gets (1 + moultVulnerability) ×
+   * normal fill — soft-shelled nymphs are easier prey. Issue #3341.
+   */
+  moultVulnerability?: number
 }
 
 /**
@@ -1215,9 +1240,13 @@ export interface Creature {
    * herbivory damage while active. Set when a network neighbor is attacked. Issue #3331. */
   defenseTimer?: number
   /** Current metamorphic stage — set at hatch time or after each transition. Issue #3336. */
-  lifeStage?: 'larva' | 'pupa' | 'adult'
+  lifeStage?: 'larva' | 'pupa' | 'adult' | 'nymph'
   /** Countdown seconds until adult emergence. Only set on pupa-stage creatures. Issue #3336. */
   pupalTimer?: number
+  /** Current instar number (1..N) for hemimetabolous nymphs. Issue #3340. */
+  instar?: number
+  /** Countdown seconds remaining in a moult pause. Set when moulting begins. Issue #3341. */
+  moultingTimer?: number
 }
 
 /**
