@@ -848,6 +848,24 @@ export interface CreatureBlueprint {
   webRange?: number
   /** Seconds between placing a web tile. Default 5. Issue #3420. */
   webBuildInterval?: number
+  /**
+   * When true, this creature can pick up and carry portable tile materials.
+   * Issues #3412, #3418.
+   */
+  objectManipulator?: boolean
+  /**
+   * When true, this creature actively collects nest materials and delivers them
+   * to a chosen nest site. Eggs laid near a complete nest hatch faster. Issue #3418.
+   */
+  nestBuilder?: boolean
+  /** Materials this nestBuilder collects (e.g. ['grass', 'moss']). Issue #3418. */
+  nestMaterials?: string[]
+  /** Number of tiles needed to consider the nest complete. Default 8. Issue #3418. */
+  nestCompleteAt?: number
+  /** Hatch time multiplier for eggs near a complete nest. Default 0.7 (30% faster). Issue #3418. */
+  nestHatchBonus?: number
+  /** Radius in tiles within which eggs benefit from the nest. Default 3. Issue #3418. */
+  nestRadius?: number
 }
 
 /**
@@ -1262,6 +1280,14 @@ export interface Creature {
   webBuildTimer?: number
   /** True when this flying creature has been caught in a web tile. Issue #3420. */
   webTrapped?: boolean
+  /** Numeric material index this creature is currently carrying. Issue #3412, #3418. */
+  carriedMaterial?: number
+  /** X tile of this nestBuilder's chosen nest site. Issue #3418. */
+  nestX?: number
+  /** Y tile of this nestBuilder's chosen nest site. Issue #3418. */
+  nestY?: number
+  /** Number of tiles delivered to the nest so far. Issue #3418. */
+  nestProgress?: number
 }
 
 /**
@@ -1600,6 +1626,13 @@ export interface WorldState {
    * until first mycorrhizal plant establishes. Issue #3329.
    */
   mycorrhizalLinks?: Record<string, number[]>
+  /**
+   * Active nest sites built by nestBuilder creatures.
+   *
+   * Keyed as `"x,y"`. Each entry tracks the owner, coordinates and number of
+   * tiles delivered. Used for egg hatch bonus and nest rendering. Issues #3412, #3418.
+   */
+  nestSites?: Record<string, { progress: number; ownerId: number; x: number; y: number }>
 }
 
 // ---------------------------------------------------------------------------
