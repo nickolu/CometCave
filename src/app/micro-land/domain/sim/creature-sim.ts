@@ -893,6 +893,35 @@ export function tickCreatures(
     speciesCount[c.blueprintId] = (speciesCount[c.blueprintId] ?? 0) + 1
   }
 
+  // Kestrel Kingdom: at each seasonal boundary, the individual with the most
+  // cumulative meals is crowned Monarch and hunts at 110% speed. The throne
+  // is re-awarded each season with no memory of the previous holder. No
+  // interregnum — if the Monarch dies mid-season kestrels continue normally.
+  // Issue #3304.
+  if (TUNING.seasonPeriod > 0) {
+    const currentSeasonIdx = Math.floor(w.elapsed / TUNING.seasonPeriod)
+    if ((w.kestrelLastSeasonIdx ?? -1) < currentSeasonIdx) {
+      w.kestrelLastSeasonIdx = currentSeasonIdx
+      let bestMeals = -1
+      let newMonarch: typeof w.creatures[0] | null = null
+      for (const c of w.creatures) {
+        const cbp = w.blueprints[c.blueprintId]
+        c.isMonarch = false  // clear throne from everyone
+        if (!cbp?.kestrelKingdom) continue
+        if (c.mealsEaten > bestMeals) {
+          bestMeals = c.mealsEaten
+          newMonarch = c
+        }
+      }
+      if (newMonarch) {
+        newMonarch.isMonarch = true
+        w.kestrelMonarchId = newMonarch.id
+      } else {
+        w.kestrelMonarchId = undefined
+      }
+    }
+  }
+
   // Invasion front tracking: for each invasive species, record origin and
   // track the historical maximum X spread. Runs every 60 ticks (once per
   // second). Issue #3366.
@@ -4599,6 +4628,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (c.symbiosisTimer > 0 ? 1.15 : 1) *
       (c.insightTimer && c.insightTimer > 0 ? 0.05 : 1) *  // insight pause
       (c.drifting ? 0.4 : 1) *  // drift — slower passive flow
+      (c.isMonarch && c.mood === 'hunt' ? 1.1 : 1) *  // Kestrel Kingdom throne bonus. Issue #3304.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
     (1 - diurnalPenalty)
