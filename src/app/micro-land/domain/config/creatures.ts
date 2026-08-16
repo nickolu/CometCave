@@ -454,6 +454,7 @@ const SPRING_TROUT = builtin('spring-trout', {
   heatSensitive: true,
   phenology: { breedingGdd: 200 },  // spring spawner — breeds early, before summer heat
   anadromous: true,  // migrates back to natal headwater to spawn
+  flowZonePreference: 'riffle',  // fast oxygenated headwater — its native habitat
 })
 
 const EMBER_GRUB = builtin('ember-grub', {
@@ -1937,6 +1938,7 @@ const SHIMMER_LARVA = builtin('shimmer-larva', {
   aura: null,
   glow: 0.1,
   canDrift: true,
+  flowZonePreference: 'run',  // intermediate flow — grips substrate but stays in current
 })
 
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
