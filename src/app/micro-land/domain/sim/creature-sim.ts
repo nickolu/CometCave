@@ -177,6 +177,13 @@ const DISRUPTION_FAR_FACTOR = 0.65
 const SEEDLING_MAX_AGE = 30
 
 /**
+ * Named techniques that intelligent creatures can independently invent and
+ * culturally transmit to conspecifics. Each technique is a meme — a unit of
+ * cultural information that spreads via social learning. Issue #3415.
+ */
+const TECHNIQUE_POOL = ['ambush-timing', 'cache-store', 'pry-open', 'mob-defense', 'scent-trail'] as const
+
+/**
  * Probability that a predator's killing blow hits an eyespot (wing edge, tail tip)
  * rather than the prey's body. The prey escapes; the predator gets almost nothing.
  * 0.4 = 40% deflection, matching real-world eyespot attack-diversion research.
@@ -1186,6 +1193,52 @@ export function tickCreatures(
       }
     }
 
+    // Technique innovation and social learning (issue #3415)
+    // Independent invention + peer transmission — techniques spread like cultural memes.
+    if (bp.canInnovateTechniques && !isPlant) {
+      const techBrainSize = bp.brainSize ?? 0
+      if (!c.innovations) c.innovations = []
+
+      // Independent discovery: rare spontaneous invention, scales with brainSize
+      if (c.innovations.length < TECHNIQUE_POOL.length && rng() < techBrainSize * 0.00005) {
+        const unknown = TECHNIQUE_POOL.filter(t => !c.innovations!.includes(t))
+        if (unknown.length > 0) {
+          const discovered = unknown[Math.floor(rng() * unknown.length)]
+          c.innovations.push(discovered)
+          logLife(c, w.elapsed, `Invented: ${discovered}`)
+        }
+      }
+
+      // Efficiency bonus: each known technique reduces hunger slightly
+      if (c.innovations.length > 0) {
+        c.hunger = Math.max(0, c.hunger - 0.00002 * c.innovations.length * dt)
+      }
+
+      // Social transmission: pass techniques to nearby conspecifics within sight
+      if (c.innovations.length > 0) {
+        const techSight = c.traits.sight * bp.senses.sight
+        for (const other of w.creatures) {
+          if (other.id === c.id || other.blueprintId !== c.blueprintId) continue
+          const learnerBp = w.blueprints[other.blueprintId]
+          if (!learnerBp?.canInnovateTechniques) continue
+          const tdx2 = distX(c.x, other.x) ** 2
+          const tdy2 = (c.y - other.y) ** 2
+          if (tdx2 + tdy2 > techSight * techSight) continue
+          if (!other.innovations) other.innovations = []
+          // Transmit one unknown technique per tick per observer
+          for (const technique of c.innovations) {
+            if (other.innovations.includes(technique)) continue
+            const socialScale = (learnerBp.socialLearningRate ?? 0.5) * (1 + (learnerBp.brainSize ?? 0))
+            if (rng() < 0.001 * socialScale * dt) {
+              other.innovations.push(technique)
+              logLife(other, w.elapsed, `Learned: ${technique}`)
+              break
+            }
+          }
+        }
+      }
+    }
+
     // --- nest building --------------------------------------------------------
     // A well-fed, grounded, territorial creature digs a burrow at its home
     // while resting. The nest builds over NEST_BUILD_TIME seconds of rest and
@@ -1366,6 +1419,50 @@ export function tickCreatures(
         if (gy >= 0 && gy < WORLD_H) {
           const idx = gy * WORLD_W + tx
           w.caveNutrient[idx] = Math.min(1, (w.caveNutrient[idx] ?? 0) + 0.0002 * dt)
+        }
+      }
+    }
+
+    // Riparian buffer: root plants within 3 tiles of water absorb surface
+    // nutrients before they reach the stream. The plant benefits (extra growth);
+    // the water body stays cleaner. Issue #3371.
+    if (isPlant) {
+      const rpx = Math.floor(c.x + bw / 2), rpy = Math.floor(c.y + bh / 2)
+      let riparianNearWater = false
+      outer: for (let rdy = -3; rdy <= 3; rdy++) {
+        for (let rdx = -3; rdx <= 3; rdx++) {
+          const rtx = wrapCol(rpx + rdx), rty = rpy + rdy
+          if (rty < 0 || rty >= WORLD_H) continue
+          if (IS_LIQUID[w.tiles[rty * WORLD_W + rtx] ?? 0] && !IS_DEADLY[w.tiles[rty * WORLD_W + rtx] ?? 0]) {
+            riparianNearWater = true
+            break outer
+          }
+        }
+      }
+      if (riparianNearWater && w.caveNutrient) {
+        const rni = rpy * WORLD_W + rpx
+        const ripNutrient = w.caveNutrient[rni] ?? 0
+        if (ripNutrient > 0) {
+          const absorbed = Math.min(ripNutrient, 0.0005 * dt)
+          w.caveNutrient[rni] -= absorbed
+          c.hunger = Math.max(0, c.hunger - absorbed * 0.4)
+        }
+      }
+    }
+
+    // Leaf litter / falling insect bonus: aquatic creatures near overhanging
+    // riparian vegetation receive a small food subsidy from organic inputs.
+    // Issue #3371.
+    if (!isPlant && isNearWater(w, c)) {
+      const llcx = Math.floor(c.x), llcy = Math.floor(c.y)
+      for (const other of w.creatures) {
+        if (other.id === c.id) continue
+        const obp = w.blueprints[other.blueprintId]
+        if (!obp || obp.move.kind !== 'root') continue
+        const lldx = Math.abs(Math.floor(other.x) - llcx), lldy = Math.abs(Math.floor(other.y) - llcy)
+        if (lldx <= 3 && lldy <= 3) {
+          c.hunger = Math.max(0, c.hunger - 0.00002 * dt)
+          break
         }
       }
     }

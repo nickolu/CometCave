@@ -627,6 +627,7 @@ export function sanitizeBlueprint(
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
+    canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
     phenology: b.phenology?.breedingGdd !== undefined
       ? { breedingGdd: Math.max(0, Math.min(1000, b.phenology.breedingGdd)) }
