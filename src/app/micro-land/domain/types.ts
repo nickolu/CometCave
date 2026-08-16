@@ -1095,6 +1095,21 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+  /**
+   * True if this species uses a eusocial caste system (queen, workers, soldiers, drones).
+   * The caste is assigned at birth based on colony needs. Issue #3229.
+   */
+  eusocialSpecies?: boolean
+  /**
+   * True if this species feeds via chemosynthesis (chemical energy from vent tiles).
+   * Gains hunger relief when adjacent to lava tiles while in water, independent of sunlight. Issue #3252.
+   */
+  chemosynthetic?: boolean
+  /**
+   * True if this creature is a phytoplankton species that blooms in spring/summer.
+   * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
+   */
+  phytoplankton?: boolean
 }
 
 /**
@@ -1576,6 +1591,15 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /**
+   * Caste of a eusocial species individual.
+   * Set at birth based on colony composition. Issue #3229.
+   */
+  caste?: 'queen' | 'worker' | 'soldier' | 'drone'
+  /**
+   * Age timer for drones; they die after 30 seconds. Issue #3229.
+   */
+  droneAge?: number
 }
 
 /**
@@ -1968,6 +1992,21 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Mapping from eusocial blueprintId → queen creature id.
+   * Set when the first creature of an eusocial species is born.
+   * Cleared when the queen dies. Issue #3229.
+   */
+  eusocialQueenIds?: Record<string, number>
+  /**
+   * Current ocean current lateral drift velocity, in tiles per second.
+   * Sine wave tied to elapsed time; reverses each half-season. Issue #3250.
+   */
+  oceanCurrentX?: number
+  /**
+   * True when a plankton bloom is active (spring/summer peak). Issue #3254.
+   */
+  planktonBloomActive?: boolean
 }
 
 // ---------------------------------------------------------------------------
