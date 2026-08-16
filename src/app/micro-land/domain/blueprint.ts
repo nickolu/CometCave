@@ -585,6 +585,7 @@ export function sanitizeBlueprint(
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
     cryptic: b.cryptic === true,
+    clearingMaintainer: b.clearingMaintainer === true,
     traitDefaults:
       b.traitDefaults && typeof b.traitDefaults === 'object'
         ? {
