@@ -152,6 +152,7 @@ export function Toolbar({
    */
   const [editing, setEditing] = useState(false)
   const [terrainExpanded, setTerrainExpanded] = useState(false)
+  const [generatorsExpanded, setGeneratorsExpanded] = useState(false)
 
   // Jump to "Yours" the moment a summon is asked for, so the loading slot is
   // under your thumb. Once the creature lands it moves to its species tab —
@@ -882,40 +883,68 @@ export function Toolbar({
           </div>
 
           {/* ── Generators ──────────────────────────────────────────── */}
-          <div style={{ marginTop: 8 }}>
-            <div style={{ ...label, marginBottom: 4 }}>Generators</div>
-            <div
-              style={{
-                display: 'flex',
-                gap: 6,
-                flexWrap: 'wrap',
-              }}
-            >
-              {blueprints.map(bp => {
-                const selected = tool.kind === 'spawner' && tool.blueprintId === bp.id
-                return (
-                  <button
-                    key={bp.id}
-                    type="button"
-                    className="cc-btn shrink-0"
-                    onClick={() => setTool({ kind: 'spawner', blueprintId: bp.id })}
-                    aria-pressed={selected}
-                    title={`Place ${bp.name} spawner`}
-                    style={{
-                      ...swatchStyle(selected),
-                      minWidth: 62,
-                      borderColor: selected
-                        ? 'var(--cc-mint)'
-                        : 'var(--cc-mint-line)',
-                    }}
-                  >
-                    <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
-                      <CreaturePortrait blueprint={bp} size={34} />
-                    </span>
-                    <span style={swatchLabel}>{bp.name}</span>
-                  </button>
-                )
-              })}
+          <div className="-mx-1 flex flex-col gap-1 px-1 pb-1">
+            <span style={label}>Generators</span>
+            {/*
+              Same collapse pattern as the terrain palette: swatch list clips to
+              one row when folded; the expand button lives OUTSIDE the overflow
+              container so it is never clipped away.
+            */}
+            <div className="flex items-start gap-1.5">
+              <div
+                className="flex flex-1 flex-wrap gap-1.5"
+                style={generatorsExpanded ? undefined : { maxHeight: 44, overflow: 'hidden' }}
+              >
+                {blueprints.map(bp => {
+                  const selected = tool.kind === 'spawner' && tool.blueprintId === bp.id
+                  return (
+                    <button
+                      key={bp.id}
+                      type="button"
+                      className="cc-btn shrink-0"
+                      onClick={() => setTool({ kind: 'spawner', blueprintId: bp.id })}
+                      aria-pressed={selected}
+                      title={`Place ${bp.name} spawner`}
+                      style={{
+                        ...swatchStyle(selected),
+                        minWidth: 62,
+                        borderColor: selected ? 'var(--cc-mint)' : 'var(--cc-mint-line)',
+                      }}
+                    >
+                      <span style={{ height: 34, display: 'grid', placeItems: 'center' }}>
+                        <CreaturePortrait blueprint={bp} size={34} />
+                      </span>
+                      <span style={swatchLabel}>{bp.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
+              {/* Expand/collapse — outside the clipped container so it is always reachable */}
+              <button
+                type="button"
+                className="cc-btn shrink-0"
+                onClick={() => setGeneratorsExpanded(x => !x)}
+                aria-expanded={generatorsExpanded}
+                aria-label={generatorsExpanded ? 'Show fewer generators' : `Show all ${blueprints.length} generators`}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '6px 8px',
+                  minWidth: 54,
+                  minHeight: 44,
+                  borderRadius: 5,
+                  border: `1px solid ${generatorsExpanded ? 'var(--cc-mint)' : 'var(--cc-mint-line)'}`,
+                  background: generatorsExpanded ? 'var(--cc-mint-soft)' : 'rgba(255,255,255,0.02)',
+                  color: 'var(--cc-text-muted)',
+                }}
+              >
+                <span style={{ height: 22, display: 'grid', placeItems: 'center' }}>
+                  <Chevron up={generatorsExpanded} />
+                </span>
+                <span style={swatchLabel}>{generatorsExpanded ? 'Less' : `+${blueprints.length}`}</span>
+              </button>
             </div>
           </div>
         </div>
