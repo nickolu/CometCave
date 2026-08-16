@@ -1239,6 +1239,8 @@ export function tickCreatures(
     if (c.defenseTimer !== undefined && c.defenseTimer > 0) {
       c.defenseTimer = Math.max(0, c.defenseTimer - dt)
     }
+    // Stress-signal primed defense: tick down volatile-compound prime. Issue #3239.
+    if (c.primedDefense && c.primedDefense > 0) c.primedDefense = Math.max(0, c.primedDefense - dt)
     if ((c as { symbiosisTimer?: number }).symbiosisTimer === undefined) c.symbiosisTimer = 0
     if (c.symbiosisTimer > 0) c.symbiosisTimer = Math.max(0, c.symbiosisTimer - dt)
     // Jellyfish Judiciary priority: tick down court-granted breeding bonus. Issue #3303.
@@ -3571,12 +3573,31 @@ function look(
     : TUNING.dayLengthSeconds > 0
       ? (1 - Math.cos((2 * Math.PI * w.elapsed) / TUNING.dayLengthSeconds)) / 2
       : 0
-  const diurnalPenalty = underground
-    ? bp.lateralLine
-      ? 0  // lateral-line species navigate by mechanosensory — no darkness penalty
+  // Echolocation: unaffected by night penalty; suppressed in noisy crowds. Issue #3242.
+  const echolocates = bp.echolocates === true
+  const diurnalPenalty = echolocates
+    ? 0  // echolocating creatures navigate by sound — no darkness penalty
+    : underground
+      ? bp.lateralLine
+        ? 0  // lateral-line species navigate by mechanosensory — no darkness penalty
+        : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
       : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-    : Math.max(0, diurnal > 0 ? diurnal * nightFactor : -diurnal * (1 - nightFactor)) * 0.5
-  const baseSight = sightOf(c, bp) * (1 - diurnalPenalty)
+  const rawSight = sightOf(c, bp)
+  // Ambient noise suppression: crowds of 20+ nearby creatures mask echolocation signals.
+  let echoNoiseSuppression = 1
+  if (echolocates) {
+    const noiseRadius = rawSight * 2
+    const noiseRadius2 = noiseRadius * noiseRadius
+    let nearbyCount = 0
+    for (const echoOther of w.creatures) {
+      if (echoOther.id === c.id) continue
+      const ndx = deltaX(c.x, echoOther.x), ndy = echoOther.y - c.y
+      if (ndx * ndx + ndy * ndy < noiseRadius2) nearbyCount++
+      if (nearbyCount > 20) break
+    }
+    if (nearbyCount > 20) echoNoiseSuppression = 0.5  // ambient noise suppresses echolocation
+  }
+  const baseSight = rawSight * (1 - diurnalPenalty) * echoNoiseSuppression
 
   /**
    * Elder wisdom sight adjustment.
@@ -3889,7 +3910,40 @@ function look(
           c.targetId = null
           return
         }
+        // Pack hunting: coordinated attack bonus and large prey protection. Issue #3228.
+        if (bp.packHunting) {
+          const range = bp.coordinationRange ?? 12
+          const range2 = range * range
+          let packCount = 0
+          for (const ally of w.creatures) {
+            if (ally.id === c.id || ally.blueprintId !== c.blueprintId || dead.has(ally.id)) continue
+            const adx = deltaX(c.x, ally.x), ady = c.y - ally.y
+            if (adx * adx + ady * ady < range2) packCount++
+          }
+          const preyBpMass = obp.bodyMass ?? 1.0
+          const threshold = bp.packSizeThreshold ?? 2.0
+          if (preyBpMass > threshold && packCount < 1) {
+            // Prey too large for solo hunter — retreat
+            c.mood = 'wander'
+            c.targetId = null
+            return
+          }
+          // Pack bonus: coordinated kill grants extra energy
+          if (packCount >= 1) {
+            c.hunger = Math.max(0, c.hunger - 0.1)  // bonus energy from coordinated hunt
+          }
+        }
         devour(w, other, obp, dead, events)
+        // Plant stress signaling: eaten plant emits volatiles to warn neighbors. Issue #3239.
+        if (obp.stressSignaler && obp.move.kind === 'root') {
+          for (const neighbor of w.creatures) {
+            if (!w.blueprints[neighbor.blueprintId]?.stressReceiver) continue
+            const ndx = other.x - neighbor.x, ndy = other.y - neighbor.y
+            if (ndx * ndx + ndy * ndy < 64) {  // within 8 tiles
+              neighbor.primedDefense = Math.max(neighbor.primedDefense ?? 0, 60)
+            }
+          }
+        }
         // Chemical signal relay: the eaten plant warns its mycorrhizal-network
         // neighbors via volatile compounds, priming their chemical defenses for
         // 30 s. Only plants (root locomotion) relay the signal. Issue #3331.
@@ -3903,6 +3957,10 @@ function look(
           }
         }
         let fill = mealFill(c, bp, obp, sizeOf(other))
+        // Primed defense: stressed plant less nutritious and unpalatable. Issue #3239.
+        if (other.primedDefense && other.primedDefense > 0) {
+          fill *= 0.7  // 30% less nutrition from chemically-primed plant
+        }
         // Food washing bonus: +5% energy if the creature has learned the behavior
         // and is near non-deadly liquid (water, not lava/acid).
         if (c.learnedFoodWashing && isNearWater(w, c)) {
