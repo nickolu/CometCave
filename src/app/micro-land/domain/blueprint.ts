@@ -684,6 +684,8 @@ export function sanitizeBlueprint(
     stickProbeDamage: typeof b.stickProbeDamage === 'number' ? Math.max(0, Math.min(1, b.stickProbeDamage)) : undefined,
     secondaryColonizer: typeof b.secondaryColonizer === 'boolean' ? b.secondaryColonizer : undefined,
     colonizedStructure: Array.isArray(b.colonizedStructure) ? (b.colonizedStructure as string[]) : undefined,
+    damBuilder: typeof b.damBuilder === 'boolean' ? b.damBuilder : undefined,
+    landmarkMemory: typeof b.landmarkMemory === 'boolean' ? b.landmarkMemory : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)

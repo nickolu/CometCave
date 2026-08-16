@@ -2634,6 +2634,78 @@ const MONITOR_LIZARD = builtin('monitor-lizard', {
   colonizedStructure: ['mound', 'burrow'],
 })
 
+// ---------------------------------------------------------------------------
+// Beaver — dam-building ecosystem engineer. Issue #3422.
+// ---------------------------------------------------------------------------
+
+const BEAVER = builtin('beaver', {
+  name: 'Beaver',
+  blurb: 'An industrious ecosystem engineer that dams streams with wood and mud, creating ponds from dry valleys.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { w: '#8a5c30', b: '#4a2c10', g: '#c8905a' },
+    frames: [['gwg', 'wbw', 'gwg']],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  body: { mass: 1.0, bounce: 0.0, drag: 0.5, buoyancy: 1.1, immuneTo: [] },
+  move: { kind: 'walk', speed: 0.8, jump: 4, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['plant'],
+    fears: [],
+    hungerRate: 0.00004,
+    starveSeconds: 60,
+    breedAt: 0.75,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#8a5c30', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  damBuilder: true,
+  objectManipulator: true,
+})
+
+// ---------------------------------------------------------------------------
+// Arctic Tern — landmark-learning migratory seabird. Issue #3326.
+// ---------------------------------------------------------------------------
+
+const ARCTIC_TERN = builtin('arctic-tern', {
+  name: 'Arctic Tern',
+  blurb: "The world's longest migrant — navigates 70,000 km annually using memorized landmarks and following experienced elders.",
+  size: 1,
+  tags: ['meat', 'bird', 'flier'],
+  art: {
+    palette: { w: '#f0f0f8', b: '#cc2222', g: '#ddddee' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 120,
+    faceMotion: true,
+  },
+  body: { mass: 0.3, bounce: 0.1, drag: 0.6, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'fly', speed: 2.5, jump: 0, hop: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.00003,
+    starveSeconds: 40,
+    breedAt: 0.75,
+    lifespanSeconds: 400,
+  },
+  senses: { sight: 18 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#f0f0f8', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  landmarkMemory: true,
+})
+
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -2702,6 +2774,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   CALEDONIAN_CROW,
   BARN_OWL,
   MONITOR_LIZARD,
+  BEAVER,
+  ARCTIC_TERN,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

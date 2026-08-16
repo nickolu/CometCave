@@ -929,6 +929,17 @@ export interface CreatureBlueprint {
    * Values match structure type keys: 'nest' | 'burrow' | 'mound'. Issue #3423.
    */
   colonizedStructure?: string[]
+  /**
+   * When true, this creature builds dam structures by placing wood tiles across
+   * water channels, backing up water flow into ponds. Issue #3422.
+   */
+  damBuilder?: boolean
+  /**
+   * When true, this creature memorizes its birth position as a home landmark
+   * and navigates back when displaced. Young creatures follow experienced adults.
+   * Issue #3326.
+   */
+  landmarkMemory?: boolean
 }
 
 /**
@@ -1364,6 +1375,12 @@ export interface Creature {
    * colonizer is currently occupying. Undefined when not in a structure. Issue #3423.
    */
   occupiedStructureKey?: string
+  /** Running count of wood tiles placed by a damBuilder creature. Issue #3422. */
+  damProgress?: number
+  /** X tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
+  homeLandmarkX?: number
+  /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
+  homeLandmarkY?: number
 }
 
 /**

@@ -1011,6 +1011,12 @@ export function tickCreatures(
       if (!IS_LIQUID[driftTile]) c.drifting = false
     }
 
+    // Initialize home landmark on first tick. Issue #3326.
+    if (bp.landmarkMemory && c.homeLandmarkX === undefined) {
+      c.homeLandmarkX = c.x
+      c.homeLandmarkY = c.y
+    }
+
     // Circadian clock: advance internal phase at individual period (±10% of day length).
     // Issue #3357, #3358, #3359.
     if (TUNING.dayLengthSeconds > 0) {
@@ -1756,6 +1762,70 @@ export function tickCreatures(
           site.ownerId = c.id  // update occupant
         }
         break
+      }
+    }
+
+    // Landmark homing: navigate back toward memorized home territory. Issue #3326.
+    if (bp.landmarkMemory && c.homeLandmarkX !== undefined && c.ageSeconds > 60) {
+      const lmDx = c.homeLandmarkX - c.x, lmDy = c.homeLandmarkY! - c.y
+      const lmDist = Math.sqrt(lmDx * lmDx + lmDy * lmDy)
+      if (lmDist > 25 && c.hunger > 0.5) {
+        // Strongly displaced and hungry — head home
+        c.vx += (lmDx / lmDist) * 0.4 * dt
+        c.vy += (lmDy / lmDist) * 0.4 * dt
+      }
+    }
+
+    // Juvenile following: young creatures follow experienced adults. Issue #3326.
+    if (bp.landmarkMemory && c.ageSeconds < 30) {
+      let nearestAdult: { x: number; y: number } | null = null
+      let nearestDist = 15
+      for (const other of w.creatures) {
+        if (other.id === c.id || other.blueprintId !== c.blueprintId || other.ageSeconds < 30) continue
+        const jdx = other.x - c.x, jdy = other.y - c.y
+        const jdist = Math.sqrt(jdx * jdx + jdy * jdy)
+        if (jdist < nearestDist) {
+          nearestDist = jdist
+          nearestAdult = other
+        }
+      }
+      if (nearestAdult) {
+        const jdx2 = nearestAdult.x - c.x, jdy2 = nearestAdult.y - c.y
+        const jdist2 = Math.sqrt(jdx2 * jdx2 + jdy2 * jdy2)
+        if (jdist2 > 1) {
+          c.vx += (jdx2 / jdist2) * 0.5 * dt
+          c.vy += (jdy2 / jdist2) * 0.5 * dt
+        }
+      }
+    }
+
+    // Dam construction: beavers place wood tiles to block water channels. Issue #3422.
+    if (bp.damBuilder && rng() < 0.05 * dt) {
+      const cx = Math.round(c.x), cy = Math.round(c.y)
+      const woodMat = MATERIAL_INDEX['wood']
+      const waterMat = MATERIAL_INDEX['water']
+      const airMat = AIR
+      // Find a water tile within 2 radius, with an adjacent air tile (flow gap)
+      damSearch:
+      for (let ddy = -2; ddy <= 2; ddy++) {
+        for (let ddx = -2; ddx <= 2; ddx++) {
+          const tx = cx + ddx, ty = cy + ddy
+          if (tx < 0 || tx >= w.width || ty < 0 || ty >= w.height) continue
+          const tIdx = ty * w.width + tx
+          if (w.tiles[tIdx] !== waterMat) continue
+          // Check for an adjacent air tile we can block
+          for (const [odx, ody] of [[-1,0],[1,0],[0,-1],[0,1]] as const) {
+            const otx = tx + odx, oty = ty + ody
+            if (otx < 0 || otx >= w.width || oty < 0 || oty >= w.height) continue
+            const otIdx = oty * w.width + otx
+            if (w.tiles[otIdx] === airMat) {
+              // Place wood to dam the gap
+              w.tiles[otIdx] = woodMat
+              c.damProgress = (c.damProgress ?? 0) + 1
+              break damSearch
+            }
+          }
+        }
       }
     }
 
