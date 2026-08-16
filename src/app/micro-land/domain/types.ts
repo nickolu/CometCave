@@ -328,6 +328,15 @@ export interface CreatureBlueprint {
    * generations the population drifts toward the local substrate colour.
    */
   cryptic?: boolean
+  /**
+   * False-eye markings that redirect predator strikes to non-vital body parts.
+   *
+   * When a predator lands a killing blow, there is a 40% chance the strike hits
+   * the eyespot (wing edge, tail tip) rather than the body. The prey survives with
+   * a burst of speed, while the predator gets almost nothing from the missed kill.
+   * Models the real-world bite marks found on butterfly wings at eyespot locations.
+   */
+  eyespots?: boolean
 }
 
 /**
