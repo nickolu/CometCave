@@ -654,6 +654,12 @@ export interface CreatureBlueprint {
    * passively with current. Delivers food to downstream fish. Issue #3373.
    */
   canDrift?: boolean
+  /**
+   * Records natal X position at birth; as adults, these fish migrate back toward
+   * that position to spawn. Spawning is fatal — the fish dies and deposits marine
+   * nutrients into the headwater ecosystem. Issue #3374.
+   */
+  anadromous?: boolean
 }
 
 /**
@@ -1026,6 +1032,8 @@ export interface Creature {
   insightCount?: number
   /** Currently in passive drift (stream invertebrate released into current). Issue #3373. */
   drifting?: boolean
+  /** X tile position where this creature was born (for anadromous migration). */
+  natalX?: number
 }
 
 /**

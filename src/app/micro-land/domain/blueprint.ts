@@ -626,6 +626,7 @@ export function sanitizeBlueprint(
     uvNectar: b.uvNectar !== undefined ? !!b.uvNectar : undefined,
     uvSensitive: b.uvSensitive !== undefined ? !!b.uvSensitive : undefined,
     canDrift: b.canDrift !== undefined ? !!b.canDrift : undefined,
+    anadromous: b.anadromous !== undefined ? !!b.anadromous : undefined,
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
