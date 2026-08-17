@@ -1245,6 +1245,21 @@ export interface CreatureBlueprint {
    */
   maxDepth?: number
   /**
+   * True if this species uses a eusocial caste system (queen, workers, soldiers, drones).
+   * The caste is assigned at birth based on colony needs. Issue #3229.
+   */
+  eusocialSpecies?: boolean
+  /**
+   * True if this species feeds via chemosynthesis (chemical energy from vent tiles).
+   * Gains hunger relief when adjacent to lava tiles while in water, independent of sunlight. Issue #3252.
+   */
+  chemosynthetic?: boolean
+  /**
+   * True if this creature is a phytoplankton species that blooms in spring/summer.
+   * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
+   */
+  phytoplankton?: boolean
+  /**
    * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
    * interfere when crowded, reducing effective sight range. Issue #3243.
    */
@@ -1800,6 +1815,15 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /**
+   * Caste of a eusocial species individual.
+   * Set at birth based on colony composition. Issue #3229.
+   */
+  caste?: 'queen' | 'worker' | 'soldier' | 'drone'
+  /**
+   * Age timer for drones; they die after 30 seconds. Issue #3229.
+   */
+  droneAge?: number
   /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
   toxinLoad?: number
   /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
@@ -2259,6 +2283,12 @@ export interface WorldState {
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
 
+  /** Maps eusocial species blueprint ID to current queen creature ID. Issue #3229. */
+  eusocialQueenIds?: Record<string, number>
+  /** Current horizontal ocean current velocity (−0.3 to 0.3). Issue #3252. */
+  oceanCurrentX?: number
+  /** True during a phytoplankton bloom (high season factor). Issue #3253. */
+  planktonBloomActive?: boolean
   /** Current lunar phase day (0–27). Issue #3187. */
   lunarPhaseDay?: number
   /** Current tidal height offset (-1 to 1). Issue #3188. */

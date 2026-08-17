@@ -790,9 +790,9 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
-    // The four polity flags are set once, above. They were duplicated here
-    // verbatim — harmless, since both copies computed the same value, but the
-    // second silently shadowed the first.
+    eusocialSpecies: 'eusocialSpecies' in b ? !!b.eusocialSpecies : undefined,
+    chemosynthetic: 'chemosynthetic' in b ? !!b.chemosynthetic : undefined,
+    phytoplankton: 'phytoplankton' in b ? !!b.phytoplankton : undefined,
     soundFrequency: typeof b.soundFrequency === 'number'
       ? Math.max(0, Math.min(1, b.soundFrequency))
       : undefined,
