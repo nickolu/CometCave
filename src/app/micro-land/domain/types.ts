@@ -333,11 +333,6 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
-   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
-   * soil tiles. Issue #3148.
-   */
-  fixesNitrogen?: boolean
-  /**
    * Decomposer archetype: this creature eats from carcasses (any carcass within 2
    * tiles) and converts the consumed mass into soilNutrient at the carcass site.
    * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
@@ -1153,41 +1148,6 @@ export interface CreatureBlueprint {
   hedgehogHealthcare?: boolean
   /** When true, this species only cooperates with burrowing conspecifics; ignores non-diggers. Issue #3317. */
   xerusXenophobia?: boolean
-   * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
-   *
-   * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
-   * K-selected species (1): long breedCooldown (2.0×), slow egg hatching (1.3×).
-   * Leave undefined for no r/K bias. Issue #3256.
-   */
-  rK?: number
-  /**
-   * Mating system governing partner selection and bonding.
-   *
-   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
-   * 'polygyny': only the most-fed male within sight breeds.
-   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
-   * 'promiscuity': no mate-finding required — reproduces without a partner.
-   * Leave undefined for default partner-seeking behavior. Issue #3257.
-   */
-  matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
-  /**
-   * When true, this species reproduces only once and then dies.
-   *
-   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
-   * After the first successful reproduction the creature is killed via aged death.
-   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
-   */
-  semelparous?: boolean
-  /**
-   * Reproductive rate varies with life stage.
-   *
-   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
-   * 'peak-middle': prime-age adults breed most; young and old rarely do.
-   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
-   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
-   * Leave undefined for age-independent reproduction. Issue #3261.
-   */
-  ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
   /**
    * When true, this species requires large contiguous habitat patches to
    * reproduce normally. Small or fragmented patches suppress breeding.
@@ -1737,8 +1697,6 @@ export interface Creature {
   hasReproduced?: boolean
   /** Active spine-sharing boost from nearby Healthcare pact members. 0 when alone. Issue #3301. */
   spineBoost?: number
-  /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
-  hasReproduced?: boolean
   /**
    * Cached count of same-habitat tiles in the local area.
    * Computed every 120 ticks for patchDependent species. Issue #3281.
