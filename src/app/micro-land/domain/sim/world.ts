@@ -2033,6 +2033,26 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
         const idx = ry * w.width + rx
         if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.03)
       }
+    } else if (w.weatherState === 'blizzard') {
+      // Blizzard: moderate temperature drop and slight moisture boost (snow melting to water).
+      // Creature speed penalty applied in creature-sim. Epic #3075.
+      if (w.tileTemp) {
+        for (let i = 0; i < 8; i++) {
+          const rx = Math.floor(rng() * w.width)
+          const ry = Math.floor(rng() * w.height)
+          const idx = ry * w.width + rx
+          w.tileTemp[idx] = Math.max(0, w.tileTemp[idx] - 0.02)
+        }
+      }
+      // Light moisture from snowmelt on exposed surface tiles
+      for (let i = 0; i < 5; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (!IS_SOLID[w.tiles[idx]] && w.moisture[idx] < 1) {
+          w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.01)
+        }
+      }
     }
   }
 
@@ -2045,6 +2065,7 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
   if (prev === 'clear') {
     if (isSummer && r < 0.08) w.weatherState = 'drought'
     else if (r < 0.12) w.weatherState = 'rain'
+    else if (isWinter && r < 0.06) w.weatherState = 'blizzard'  // blizzard only in winter
     else if (r < 0.04) w.weatherState = 'storm'
     // else stay clear
   } else if (prev === 'rain') {
@@ -2059,6 +2080,11 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
     if (r < 0.55) w.weatherState = 'rain'
     else if (r < 0.80) w.weatherState = 'clear'
     // else continue storm
+  } else if (prev === 'blizzard') {
+    // Blizzard always resolves to clear or storm — never rain (still frozen)
+    if (!isWinter || r < 0.60) w.weatherState = 'clear'
+    else if (r < 0.75) w.weatherState = 'storm'
+    // else continue blizzard
   }
 
   // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)

@@ -6646,6 +6646,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     (1 - diurnalPenalty) *
     // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
     (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1) *
+    // Blizzard: all surface creatures slow 50%. Underground creatures are insulated.
+    // Epic #3075.
+    (w.weatherState === 'blizzard' && !isUnderground(w, c) ? 0.5 : 1) *
     // Amphibian rain bonus: creatures that don't drown thrive in wet conditions.
     // Rain and storm trigger a 20% speed boost — models burst activity in frogs and
     // salamanders following the first wet-season rains. Epic #3075.

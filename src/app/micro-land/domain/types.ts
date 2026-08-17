@@ -2342,7 +2342,7 @@ export interface WorldState {
    * Current weather state for the world. Transitions stochastically based on
    * season and elapsed time. Issues #3094-#3097.
    */
-  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm' | 'blizzard'
   /**
    * Ticks remaining until the next weather transition check.
    * Set to 0 to force an immediate check on the next tick.
