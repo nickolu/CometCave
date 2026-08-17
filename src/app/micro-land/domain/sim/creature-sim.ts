@@ -1642,8 +1642,13 @@ export function tickCreatures(
     }
     if ((c as { stunTimer?: number }).stunTimer === undefined) c.stunTimer = 0
     if (c.stunTimer > 0) c.stunTimer = Math.max(0, c.stunTimer - dt)
-    // Venom slow: tick down venom debuff. Issue #3236.
-    if (c.venomTimer && c.venomTimer > 0) c.venomTimer = Math.max(0, c.venomTimer - dt)
+    // Venom slow + DoT: tick down venom debuff; envenomed creatures also suffer
+    // a hunger drain (damage-over-time), creating real selection pressure for
+    // venomResistance evolution in prey populations. Issue #3236.
+    if (c.venomTimer && c.venomTimer > 0) {
+      c.venomTimer = Math.max(0, c.venomTimer - dt)
+      c.hunger = Math.min(1, c.hunger + 0.003 * dt) // ~0.3% hunger/sec while envenomed
+    }
     if (c.insightTimer && c.insightTimer > 0) c.insightTimer = Math.max(0, c.insightTimer - dt)
     // Chemical defense prime: tick down mycorrhizal-relayed signal. Issue #3331.
     if (c.defenseTimer !== undefined && c.defenseTimer > 0) {
@@ -5261,9 +5266,12 @@ function look(
           }
         }
         // Venom injection: venomous predators inject slow on contact. Issue #3236.
+        // Effective resistance = species baseline + individual heritable trait (coevolves).
         if (bp.venomous && !dead.has(other.id)) {
           const potency = bp.venomPotency ?? 0.5
-          const resistance = obp.venomResistance ?? 0
+          const speciesResistance = obp.venomResistance ?? 0
+          const traitResistance = other.traits.venomResistance ?? 0
+          const resistance = Math.min(1, speciesResistance + traitResistance)
           const effective = potency * (1 - resistance)
           if (effective > 0) {
             other.venomTimer = Math.max(other.venomTimer ?? 0, effective * 20)

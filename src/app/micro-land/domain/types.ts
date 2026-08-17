@@ -1494,6 +1494,15 @@ export interface Traits {
    */
   reproductionCooldown: number
   chronotype?: number  // phase offset trait: negative = early bird, positive = late owl, range [-1, 1]
+  /**
+   * Individual-level venom resistance, heritable [0, 1].
+   *
+   * Added to the species-level `blueprint.venomResistance` to compute effective
+   * resistance. Starts at 0; drifts upward in prey populations repeatedly exposed
+   * to venomous predators — those that survive due to higher resistance breed more,
+   * driving the coevolutionary arms race. Neutral at 0. Issue #3236.
+   */
+  venomResistance: number
 }
 
 /** One living thing in the world. */

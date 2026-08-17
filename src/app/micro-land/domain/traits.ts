@@ -84,6 +84,7 @@ export const NEUTRAL_TRAITS: Traits = Object.freeze({
   immunity: 0.2,
   reproductionCooldown: 1,
   chronotype: 0,
+  venomResistance: 0,
 })
 
 /** A fresh set for a creature that wasn't born here. Always a copy — it's mutable state. */
@@ -117,6 +118,7 @@ export const TRAIT_BOUNDS: Record<Exclude<keyof Traits, 'hue'>, { min: number; m
   immunity: { min: 0, max: 1 },
   reproductionCooldown: { min: TRAIT_MIN, max: TRAIT_MAX },
   chronotype: { min: -1, max: 1 },
+  venomResistance: { min: 0, max: 1 },
 }
 
 function clamp(v: number, lo: number, hi: number): number {
@@ -159,7 +161,7 @@ function wrapHue(h: number): number {
 export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
   const drift = TUNING.traitDrift
   const hueDrift = drift * HUE_DRIFT_SCALE
-  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'chronotype') =>
+  const mix = (key: 'speed' | 'sight' | 'lifespan' | 'shade' | 'roam' | 'territorial' | 'size' | 'camouflage' | 'toxicity' | 'cooperation' | 'diurnal' | 'immunity' | 'reproductionCooldown' | 'chronotype' | 'venomResistance') =>
     b ? ((a[key] ?? 0) + (b[key] ?? 0)) / 2 : (a[key] ?? 0)
 
   /** Blend, nudge, and clamp back into the trait's own range. */
@@ -182,6 +184,7 @@ export function inherit(a: Traits, b: Traits | null, rng: Rng): Traits {
     immunity: drifted('immunity'),
     reproductionCooldown: drifted('reproductionCooldown'),
     chronotype: drifted('chronotype'),
+    venomResistance: drifted('venomResistance'),
   }
 }
 
