@@ -1747,6 +1747,9 @@ export function tickGroundwater(w: WorldState, tickCount: number, isLiquid: Uint
         gw[tileI] = Math.max(0, gw[tileI] - 0.001)
       }
     }
+  }
+}
+
 /**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
  * and applies local effects (water chemistry, plant nutrition). Issue #3179.
