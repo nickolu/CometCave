@@ -2788,6 +2788,46 @@ const ARCTIC_TERN = builtin('arctic-tern', {
 })
 
 // ---------------------------------------------------------------------------
+// Lemming — forms a Legislature and periodically votes to run off the cliff.
+// Issue #3305.
+// ---------------------------------------------------------------------------
+
+const LEMMING = builtin('lemming', {
+  name: 'Lemming',
+  blurb: 'Forms a Legislature of 20 when overcrowded. Periodically votes on The Question. The answer is always Cliff.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#7a4a1e', w: '#d4a96a', r: '#c4623e', g: '#8b6340' },
+    frames: [
+      ['bwb', 'wgw', '.b.'],
+      ['.b.', 'wgw', 'bwb'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 0.7, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.5, jump: 2, restlessness: 0.9 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.009,
+    starveSeconds: 35,
+    breedAt: 0.5,
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a4a1e', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  lemmingLegislature: true,
+  minViablePopulation: 20,
+  bodyMass: 0.08,
+})
+
+// ---------------------------------------------------------------------------
 // Kestrel — hovering raptor with hereditary monarchy. Issue #3304.
 // ---------------------------------------------------------------------------
 
@@ -2826,6 +2866,43 @@ const KESTREL = builtin('kestrel', {
 })
 
 // ---------------------------------------------------------------------------
+// Crab — ratified a Constitution at population 10. Issue #3296.
+// ---------------------------------------------------------------------------
+
+const CRAB = builtin('crab', {
+  name: 'Crab',
+  blurb: "Ratified a Constitution at population 10. Three articles. No Senate yet. The inalienable right to moult without interference has been violated 47 times. The Senate is still forming.",
+  size: 1,
+  tags: ['meat', 'aquatic'],
+  art: {
+    palette: { r: '#c04830', w: '#f0d0b0', b: '#6a2010', g: '#d06040' },
+    frames: [
+      ['rwr', 'gbg', 'rwr'],
+      ['gwg', 'rbr', 'gwg'],
+    ],
+    frameMs: 350,
+    faceMotion: false,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.5, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.5, jump: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: ['meat'],
+    hungerRate: 0.006,
+    starveSeconds: 60,
+    breedAt: 0.7,
+    lifespanSeconds: 280,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#c04830', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  crabConstitution: true,
+  bodyMass: 0.12,
+})
+
 // Otter — river mammal with Oligarchy mechanic. Issue #3308.
 // ---------------------------------------------------------------------------
 
@@ -2976,6 +3053,460 @@ const WEASEL = builtin('weasel', {
   bodyMass: 0.15,
 })
 
+// ---------------------------------------------------------------------------
+// Platypus — Platypus Philosophy. Issue #3309.
+// ---------------------------------------------------------------------------
+
+const PLATYPUS = builtin('platypus', {
+  name: 'Platypus',
+  blurb: 'Lays eggs. Has fur. Has a bill. Has electroreception. The Philosophical Society has been debating this since generation 1. Unresolved.',
+  size: 1,
+  tags: ['meat', 'mammal', 'amphibian'],
+  art: {
+    palette: { b: '#3a2a1a', w: '#8a6a4a', r: '#6a4a2a', g: '#4a6a4a' },
+    frames: [
+      ['bgb', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'bgb'],
+    ],
+    frameMs: 260,
+    faceMotion: true,
+  },
+  body: { mass: 0.6, bounce: 0.05, drag: 0.3, buoyancy: 0.9, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 2, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.008,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 250,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a2a1a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  platypusPhilosophy: true,
+  bodyMass: 0.15,
+})
+
+// ---------------------------------------------------------------------------
+// Ant — eusocial insect with Amphitheater performance mechanic. Issue #3294.
+// ---------------------------------------------------------------------------
+
+const ANT = builtin('ant', {
+  name: 'Ant',
+  blurb: 'Eusocial insect that constructed a 47-seat amphitheater in Season 2. Attendance is mandatory. Reviews are mixed.',
+  size: 0,
+  tags: ['plant', 'insect'],
+  art: {
+    palette: { b: '#1a0a00', r: '#4a1a00', w: '#e0a060' },
+    frames: [
+      ['.b.', 'rbr', '.r.'],
+      ['.r.', 'rbr', '.b.'],
+    ],
+    frameMs: 150,
+    faceMotion: false,
+  },
+  body: { mass: 0.05, bounce: 0.05, drag: 0.2, buoyancy: 0.1, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.8, jump: 0.1, hop: 0, restlessness: 0.9 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00008,
+    starveSeconds: 35,
+    breedAt: 0.6,
+    lifespanSeconds: 80,
+  },
+  senses: { sight: 5 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#1a0a00', particleCount: 2 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  antTheater: true,
+  bodyMass: 0.001,
+})
+
+// ---------------------------------------------------------------------------
+// Bear — omnivore with communal nut banking. Issue #3295.
+// ---------------------------------------------------------------------------
+
+const BEAR = builtin('bear', {
+  name: 'Brown Bear',
+  blurb: 'Founded the First National Nut Bank in Season 1. Has not read the terms and conditions. Neither has anyone else. The bank is thriving.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#2a1a0a', w: '#6a4a2a', g: '#8a6a4a' },
+    frames: [
+      ['gwg', 'wbw', 'gwg'],
+      ['.g.', 'wbw', '.g.'],
+    ],
+    frameMs: 300,
+    faceMotion: true,
+  },
+  body: { mass: 2.0, bounce: 0.05, drag: 0.3, buoyancy: 0.6, immuneTo: [] },
+  move: { kind: 'walk', speed: 0.8, jump: 0.3, hop: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: [],
+    hungerRate: 0.00004,
+    starveSeconds: 90,
+    breedAt: 0.8,
+    lifespanSeconds: 350,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#2a1a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  bearBanking: true,
+  bodyMass: 3.0,
+})
+
+// ---------------------------------------------------------------------------
+// Quail — small bird under quarantine mechanic. Issue #3310.
+// ---------------------------------------------------------------------------
+
+const QUAIL = builtin('quail', {
+  name: 'Common Quail',
+  blurb: 'An entire settlement was quarantined in Season 4 due to a suspicious sneeze. The sneezer has never been identified. The quarantine may never fully end.',
+  size: 0,
+  tags: ['plant', 'bird'],
+  art: {
+    palette: { b: '#3a2a1a', w: '#c0a060', g: '#6a5a3a', r: '#8a6a3a' },
+    frames: [
+      ['.w.', 'wbw', '.g.'],
+      ['.g.', 'wbw', '.w.'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.15, bounce: 0.1, drag: 0.2, buoyancy: 0.3, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.4, jump: 0.8, hop: 0, restlessness: 0.6 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.00007,
+    starveSeconds: 45,
+    breedAt: 0.65,
+    lifespanSeconds: 110,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#3a2a1a', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  quailQuarantine: true,
+  bodyMass: 0.15,
+})
+
+// ---------------------------------------------------------------------------
+// Toad — Toad Taxation. Issue #3313.
+// ---------------------------------------------------------------------------
+
+const TOAD = builtin('toad', {
+  name: 'Toad',
+  blurb: 'Sits on water. Charges a crossing fee. Provides no service. Bites creatures that pay. Bites creatures that resist more. Considers this reasonable.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { g: '#3a5a1a', b: '#1a2a0a', w: '#8ab060', y: '#c0b040' },
+    frames: [
+      ['ggy', 'wgw', 'bwb'],
+      ['bwb', 'wgw', 'ggy'],
+    ],
+    frameMs: 300,
+    faceMotion: false,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 0.7, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.8, jump: 3, hop: 0, restlessness: 0.2 },
+  diet: {
+    eats: ['meat'],
+    fears: [],
+    hungerRate: 0.005,
+    starveSeconds: 60,
+    breedAt: 0.8,
+    lifespanSeconds: 300,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#3a5a1a', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  toadTaxation: true,
+  bodyMass: 0.12,
+})
+
+// ---------------------------------------------------------------------------
+// Duck — holds a Town Hall every 10 days. Issue #3297.
+// ---------------------------------------------------------------------------
+
+const DUCK = builtin('duck', {
+  name: 'Duck',
+  blurb: "Holds a Town Hall every 10 days. Debates major issues. Votes in the direction most were already facing. No duck changes behavior. The Field Guide logs 'Decision Made: [Inconclusive]'.",
+  size: 1,
+  tags: ['meat', 'bird'],
+  art: {
+    palette: { g: '#3a7030', w: '#f0e8d0', b: '#8a5010', y: '#f0c040' },
+    frames: [
+      ['gyg', 'wyw', '.g.'],
+      ['.g.', 'wyw', 'gyg'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 1.3, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 2, restlessness: 0.5 },
+  diet: {
+    eats: ['plant', 'meat'],
+    fears: ['meat'],
+    hungerRate: 0.007,
+    starveSeconds: 45,
+    breedAt: 0.65,
+    lifespanSeconds: 220,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#f0e8d0', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  duckDemocracy: true,
+  bodyMass: 0.3,
+})
+
+// ---------------------------------------------------------------------------
+// Hedgehog — mutual spine-sharing pact. Issue #3301.
+// ---------------------------------------------------------------------------
+
+const HEDGEHOG = builtin('hedgehog', {
+  name: 'Hedgehog',
+  blurb: "Part of the mutual spine-sharing pact. When 2+ kin are within 5 tiles, predators have a 20% chance to miss. Premiums are zero. Claims take forever. This is the healthcare system.",
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#3a2a0a', w: '#d0c090', g: '#6a5a2a', r: '#c08040' },
+    frames: [
+      ['grg', 'wbw', 'grg'],
+    ],
+    frameMs: 400,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.0, jump: 1, restlessness: 0.5 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.008,
+    starveSeconds: 45,
+    breedAt: 0.7,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#3a2a0a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  hedgehogHealthcare: true,
+  bodyMass: 0.3,
+})
+
+// ---------------------------------------------------------------------------
+// Xerus — African ground squirrel with trade embargo on non-diggers. Issue #3317.
+// ---------------------------------------------------------------------------
+
+const XERUS = builtin('xerus', {
+  name: 'Xerus',
+  blurb: "African ground squirrel. Trade policy: diggers only. Fliers are embargoed. An otter attempted to dig once. The Xerus were not impressed. Relations with the otter community remain at historic lows.",
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { b: '#7a5520', w: '#e0c898', g: '#a07830', r: '#c09040' },
+    frames: [
+      ['gbg', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'gbg'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.0, jump: 2, restlessness: 0.6 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.008,
+    starveSeconds: 35,
+    breedAt: 0.6,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a5520', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  xerusXenophobia: true,
+  burrowDigger: true,
+  bodyMass: 0.25,
+})
+
+// Sea Urchin — Urchin Union. Issue #3314.
+// ---------------------------------------------------------------------------
+
+const SEA_URCHIN = builtin('sea-urchin', {
+  name: 'Sea Urchin',
+  blurb: 'Member of the Union. On strike. Demands: stronger currents, lower predator density, improved spinal density conditions. Strike entered its 14th year. Non-union urchins are indistinguishable. Membership has doubled.',
+  size: 1,
+  tags: ['plant', 'aquatic'],
+  art: {
+    palette: { p: '#6a2a8a', w: '#e0d0f0', b: '#2a0a4a', g: '#4a1a6a' },
+    frames: [
+      ['wpw', 'pbp', 'wpw'],
+    ],
+    frameMs: 999,
+    faceMotion: false,
+  },
+  body: { mass: 0.3, bounce: 0.0, drag: 0.8, buoyancy: 1.5, immuneTo: [] },
+  move: { kind: 'swim', speed: 0.5, jump: 0, hop: 0, restlessness: 0.05 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.003,
+    starveSeconds: 80,
+    breedAt: 0.6,
+    lifespanSeconds: 400,
+  },
+  senses: { sight: 6 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#6a2a8a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  urchinUnion: true,
+  bodyMass: 0.2,
+})
+
+// ---------------------------------------------------------------------------
+// Raccoon — omnivore with real estate flipping mechanic. Issue #3311.
+// ---------------------------------------------------------------------------
+
+const RACCOON = builtin('raccoon', {
+  name: 'Raccoon',
+  blurb: 'Flipped 14 den sites last season. Does not disclose commission rates. Market is described as "HOT" in all materials regardless of conditions.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#1a1a1a', w: '#c0c0c0', g: '#6a6a6a', r: '#4a3a2a' },
+    frames: [
+      ['grg', 'wbw', 'gwg'],
+      ['gwg', 'wbw', 'grg'],
+    ],
+    frameMs: 220,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.3, buoyancy: 0.5, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.2, jump: 0.6, hop: 0, restlessness: 0.7 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: [],
+    hungerRate: 0.00006,
+    starveSeconds: 55,
+    breedAt: 0.7,
+    lifespanSeconds: 140,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: [] },
+  death: { becomes: null, particleColor: '#1a1a1a', particleCount: 3 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  raccoonRealEstate: true,
+  bodyMass: 0.5,
+})
+
+// ---------------------------------------------------------------------------
+// Mole — underground postal service. Issue #3306.
+// ---------------------------------------------------------------------------
+
+const MOLE = builtin('mole', {
+  name: 'Mole',
+  blurb: 'Runs an underground postal service. Letters take 2 seasons. The food report is always from last season. Moles are aware of the problem.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#2a1a0a', w: '#d4b896', g: '#3a2a1a', p: '#5a3a2a' },
+    frames: [
+      ['bpb', 'wgw', '.b.'],
+      ['.b.', 'wgw', 'bpb'],
+    ],
+    frameMs: 220,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.05, drag: 0.5, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 1, restlessness: 0.6 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.010,
+    starveSeconds: 40,
+    breedAt: 0.65,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#2a1a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  moleMailCarrier: true,
+  burrowDigger: true,
+  bodyMass: 0.08,
+})
+
+// ---------------------------------------------------------------------------
+// Newt — pond journalist. Issue #3307.
+// ---------------------------------------------------------------------------
+
+const NEWT = builtin('newt', {
+  name: 'Newt',
+  blurb: 'Maintains the only newspaper in the pond. Publishes every 14 days. Page 2 does not exist. Considering a podcast.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { r: '#c04020', b: '#1a3020', w: '#a8c890', g: '#2a5030' },
+    frames: [
+      ['grg', 'wbw', '.g.'],
+      ['.g.', 'wbw', 'grg'],
+    ],
+    frameMs: 280,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.3, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.0, jump: 2, restlessness: 0.4 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.006,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 240,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#c04020', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  newtNewspaper: true,
+  bodyMass: 0.05,
+})
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -3047,11 +3578,25 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MONITOR_LIZARD,
   BEAVER,
   ARCTIC_TERN,
+  LEMMING,
   KESTREL,
+  CRAB,
+  DUCK,
+  HEDGEHOG,
+  XERUS,
   OTTER,
   SQUIRREL,
   VOLE,
   WEASEL,
+  PLATYPUS,
+  TOAD,
+  SEA_URCHIN,
+  ANT,
+  BEAR,
+  QUAIL,
+  RACCOON,
+  MOLE,
+  NEWT,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(

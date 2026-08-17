@@ -49,6 +49,7 @@ export type BaseMaterialId =
   | 'shed-skin'
   | 'web'
   | 'termite-mound'
+  | 'fire'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -105,6 +106,8 @@ export interface Material {
   tintable: boolean
   /** For a tint variant, the material it is a recolor of. */
   tintOf: TintableMaterialId | null
+  /** Burns when adjacent to fire; can be ignited and spread flames. */
+  flammable?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +293,11 @@ export interface CreatureBlueprint {
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
   /**
+   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
+   * soil tiles. Issue #3148.
+   */
+  fixesNitrogen?: boolean
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited
@@ -326,6 +334,13 @@ export interface CreatureBlueprint {
    * dirt's 1.0×, permanently enriching the soil they pass through.
    */
   soilEngineer?: boolean
+  /**
+   * Decomposer archetype: this creature eats from carcasses (any carcass within 2
+   * tiles) and converts the consumed mass into soilNutrient at the carcass site.
+   * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
+   * vultures, and specialized scavengers. Issues #3099, #3100.
+   */
+  decomposer?: boolean
   /**
    * When true, this species uses active camouflage based on colour-matching the
    * tile it stands on. The effective camouflage score becomes
@@ -730,6 +745,13 @@ export interface CreatureBlueprint {
    */
   fireGerminator?: boolean
   /**
+   * Seeds of this fire-adapted species sprout preferentially on fresh ash.
+   * When an ash tile is detected within radius 2 of the seed, the sprout rate
+   * is boosted by 5×. Models pioneer species that colonise post-fire landscapes:
+   * fireweed, lodgepole pine, Ceanothus. Issue #3117.
+   */
+  fireAdapted?: boolean
+  /**
    * Seeds of this species germinate preferentially in light gaps — openings in the
    * canopy created by treefall or disturbance. When `lightGrid` at the seed's tile
    * exceeds 0.4, the seed attempts immediate germination. Models gap-dependent
@@ -776,6 +798,24 @@ export interface CreatureBlueprint {
    * naturally occurring species. Used for Field Guide tracking. Issue #3368.
    */
   biocontrolAgent?: boolean
+  /**
+   * Successional stage this species occupies, 1–4.
+   * 1 = pioneer (colonises bare ground), 2 = early successional,
+   * 3 = mid successional, 4 = climax community.
+   * Seeds and new growth only establish when soilAge at the tile reaches
+   * (successionStage − 1) × 1500 ticks. Leave undefined for no restriction.
+   * Issue #3123.
+   */
+  successionStage?: number
+  /**
+   * Trophic level in the food web, 1–5.
+   * 1 = primary producer (plant / photosynthesiser),
+   * 2 = primary consumer (herbivore), 3 = secondary consumer (carnivore),
+   * 4–5 = apex predator / top predator.
+   * Computed automatically by sanitizeBlueprint() when not set explicitly.
+   * Issue #3119.
+   */
+  trophicLevel?: number
   /** When true, creature takes extra damage in acidic water (pH < 5.5). Models fish, amphibians, invertebrates. Issue #3279. */
   acidSensitive?: boolean
   /**
@@ -1004,6 +1044,70 @@ export interface CreatureBlueprint {
    * with a 12% compliance rate (modelled as a history event). Issue #3316.
    */
   weaselTribunal?: boolean
+  /** When true, bites from this predator inject venom that slows prey. Issue #3236. */
+  venomous?: boolean
+  /** Venom potency 0–1. Higher = longer slow and more hunger drain. Default 0.5. Issue #3236. */
+  venomPotency?: number
+  /** Venom resistance 0–1. Species-level trait that reduces venom effect on this species. Issue #3236. */
+  venomResistance?: number
+  /**
+   * When true, this species actively claims a home range and engages in threat
+   * displays when same-species rivals enter it. Territorial creatures breed
+   * 15% faster when the territory is uncontested. Issue #3226.
+   */
+  territorialBlueprintFlag?: boolean
+  /** Radius in tiles of this species' home territory. Default 8. Issue #3226. */
+  territoryRadius?: number
+  /**
+   * When true, this aquatic species is adapted to deep cold water (below thermocline).
+   * Above-thermocline creatures suffer hunger penalties in cold water; below-thermocline
+   * creatures suffer penalties in warm surface water. Issue #3249.
+   */
+  deepWaterSpecialist?: boolean
+  /** If true, this species is adapted to shallow warm water above the thermocline. Issue #3249. */
+  shallowWaterSpecialist?: boolean
+  /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
+  platypusPhilosophy?: boolean
+  /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
+  toadTaxation?: boolean
+  /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
+  urchinUnion?: boolean
+  /**
+   * When true, this creature navigates and detects prey via echolocation.
+   * Effective sight range is not reduced at night, unlike visual predators.
+   * Suppressed when nearby creature count exceeds 20 (ambient noise). Issue #3242.
+   */
+  echolocates?: boolean
+  /**
+   * When true, this plant species emits stress signals when damaged by herbivory.
+   * Neighboring same-species plants within 8 tiles gain herbivory resistance
+   * for 60 seconds after receiving the signal. Issue #3239.
+   */
+  stressSignaler?: boolean
+  /**
+   * When true, this plant can receive stress signals from neighbors and prime its
+   * chemical defenses. Reduces herbivory meal fill by 30% for primedDefense
+   * duration. Issue #3239.
+   */
+  stressReceiver?: boolean
+  /**
+   * When true, 2+ of this predator species within coordinationRange of the same prey
+   * attack with a combined bonus (1.5× meal fill). Prey with bodyMass > packSizeThreshold
+   * can only be killed when 2+ pack members are present. Issue #3228.
+   */
+  packHunting?: boolean
+  /** Range in tiles within which pack members coordinate. Default 12. Issue #3228. */
+  coordinationRange?: number
+  /** Minimum bodyMass of prey that requires pack take-down. Default 2.0. Issue #3228. */
+  packSizeThreshold?: number
+  /** Ants build mandatory-attendance performance venues each season. Issue #3294. */
+  antTheater?: boolean
+  /** Bears maintain a communal nut bank with seasonal interest rates. Issue #3295. */
+  bearBanking?: boolean
+  /** A quail village under perpetual quarantine since a suspicious sneeze in Season 4. Issue #3310. */
+  quailQuarantine?: boolean
+  /** Raccoons appraise and flip den sites using garbage as currency. Issue #3311. */
+  raccoonRealEstate?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1027,6 +1131,13 @@ export interface CreatureBlueprint {
    */
   minViablePopulation?: number
   /**
+   * r/K selection position: 0=extreme r-selected (fast, many small offspring),
+   * 1=extreme K-selected (slow, few well-provisioned offspring). Issue #3256.
+   * When true, this species forms a Legislature and periodically votes to
+   * collectively run off the nearest world edge when overcrowded. Issue #3305.
+   */
+  lemmingLegislature?: boolean
+  /**
    * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
    *
    * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
@@ -1035,33 +1146,27 @@ export interface CreatureBlueprint {
    */
   rK?: number
   /**
-   * Mating system governing partner selection and bonding.
-   *
-   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
-   * 'polygyny': only the most-fed male within sight breeds.
-   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
-   * 'promiscuity': no mate-finding required — reproduces without a partner.
-   * Leave undefined for default partner-seeking behavior. Issue #3257.
+   * Mating system: affects reproduction rate and mate-finding behavior.
+   * Issue #3257.
    */
   matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
   /**
-   * When true, this species reproduces only once and then dies.
-   *
-   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
-   * After the first successful reproduction the creature is killed via aged death.
-   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
+   * When true, the individual dies immediately after its first successful
+   * reproduction (big-bang reproduction strategy). Issue #3259.
    */
   semelparous?: boolean
   /**
-   * Reproductive rate varies with life stage.
-   *
-   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
-   * 'peak-middle': prime-age adults breed most; young and old rarely do.
-   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
-   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
-   * Leave undefined for age-independent reproduction. Issue #3261.
+   * How reproductive rate varies with age. Issue #3261.
    */
   ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  /** When true, this species ratifies a Constitution when population first reaches 10. Issue #3296. */
+  crabConstitution?: boolean
+  /** When true, this species holds periodic Town Hall votes. Issue #3297. */
+  duckDemocracy?: boolean
+  /** When true, nearby conspecifics provide defensive spine-sharing, increasing effective toxicity. Issue #3301. */
+  hedgehogHealthcare?: boolean
+  /** When true, this species only cooperates with burrowing conspecifics; ignores non-diggers. Issue #3317. */
+  xerusXenophobia?: boolean
   /**
    * When true, this species requires large contiguous habitat patches to
    * reproduce normally. Small or fragmented patches suppress breeding.
@@ -1095,6 +1200,139 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+
+  /**
+   * Blueprint id of the species this one was derived from.
+   * Set on summoned/workshop creatures to track evolutionary lineage.
+   * When set, the Field Guide draws an ancestry chain. Issue #3167.
+   */
+  derivedFrom?: string
+  /**
+   * When true, juvenile creatures (ageSeconds < maturityAge) engage in play.
+   * Each play session incrementally raises traits.speed by 0.001 (capped at +0.1
+   * above baseline). Play costs a small hunger penalty but builds adult skill.
+   * Issue #3232.
+   */
+  playBehavior?: boolean
+  /** Age in seconds below which this creature is considered juvenile. Default 0 (disabled). Issue #3232. */
+  maturityAge?: number
+  /**
+   * When true, creatures ready to breed emit mating calls.
+   * Receptive same-species individuals within matingCallRange tiles navigate
+   * toward the caller. Higher health (low hunger) = longer call range.
+   * Issue #3244.
+   */
+  matingCaller?: boolean
+  /** Radius in tiles within which mating calls are heard. Default 15. Issue #3244. */
+  matingCallRange?: number
+  /**
+   * When true, this diurnal bird species participates in the dawn chorus.
+   * At sunrise (dayTimer 0.05–0.2), these creatures vocalize, establishing
+   * acoustic territory. Other same-species individuals within dawnChorusRange
+   * tiles increase spacing (drift away from caller). Issue #3246.
+   */
+  dawnChorus?: boolean
+  /** Radius of dawn chorus acoustic territory in tiles. Default 12. Issue #3246. */
+  dawnChorusRange?: number
+  /**
+   * Maximum depth this species can withstand in tile units below water surface.
+   * Creatures below this depth take pressure damage proportional to excess depth.
+   * Undefined = no pressure limit. Issue #3248.
+   */
+  maxDepth?: number
+  /**
+   * True if this species uses a eusocial caste system (queen, workers, soldiers, drones).
+   * The caste is assigned at birth based on colony needs. Issue #3229.
+   */
+  eusocialSpecies?: boolean
+  /**
+   * True if this species feeds via chemosynthesis (chemical energy from vent tiles).
+   * Gains hunger relief when adjacent to lava tiles while in water, independent of sunlight. Issue #3252.
+   */
+  chemosynthetic?: boolean
+  /**
+   * True if this creature is a phytoplankton species that blooms in spring/summer.
+   * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
+   */
+  phytoplankton?: boolean
+  /**
+   * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
+   * interfere when crowded, reducing effective sight range. Issue #3243.
+   */
+  soundFrequency?: number
+  /**
+   * True if this prey species times movements to ambient noise peaks.
+   * Pauses when no noisy creatures are nearby; moves under noise cover. Issue #3245.
+   */
+  acousticCamouflage?: boolean
+  /**
+   * Moon phase (0–27) at which this species breeds. When set, breeding is
+   * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
+   * Issue #3190.
+   */
+  lunarBreedingPhase?: number
+  /**
+   * True if this species is adapted to the intertidal zone (shoreline).
+   * At low tide (tidalHeight < −0.3), gains a hunger bonus. At high tide
+   * (tidalHeight > 0.5), takes a hunger penalty. Issue #3191.
+   */
+  intertidal?: boolean
+  /**
+   * When true, this species maintains a dominance hierarchy.
+   * Rank is established through contests in look(); higher rank grants
+   * food access priority and mate priority. Issue #3227.
+   */
+  dominanceHierarchy?: boolean
+  /**
+   * When true, this species exhibits kin selection: offspring inherit parent's
+   * kinGroupId and preferentially share resources with kin. Issue #3230.
+   */
+  kinSelection?: boolean
+  /**
+   * When true, this prey species emits alarm calls when detecting predators.
+   * All same-species individuals within 2× sight range immediately flee.
+   * The caller takes a slight extra predation risk (exposed position). Issue #3231.
+   */
+  alarmCaller?: boolean
+  /**
+   * When true, this toxic species is brightly colored as a warning to predators.
+   * Predators that survive eating one gain a species-specific learned aversion,
+   * reducing future attack probability by 90%. Young/naive predators (mealsEaten < 5)
+   * still attack freely. Issue #3237.
+   */
+  aposematic?: boolean
+  /** When true, this species builds a vertical express shaft and earns a vertical movement bonus. Issue #3298. */
+  earthwormElevator?: boolean
+  /** When true, this species observes the annual Founding Rain ritual; absent frogs become apostates. Issue #3299. */
+  frogFundamentalism?: boolean
+  /** When true, the first individual becomes the Administrator holding all 17 cabinet positions. Issue #3300. */
+  gopherGovernment?: boolean
+  /** When true, this species relays pheromone messages with a 135s delay. Issue #3302. */
+  beetleInternet?: boolean
+  /** When true, this species records food locations and broadcasts them to conspecifics after a 2-season delay. Issue #3306. */
+  moleMailCarrier?: boolean
+  /** When true, this species periodically publishes headlines about local events. Issue #3307. */
+  newtNewspaper?: boolean
+  /** When true, this species is cold-blooded: slower in cold biomes, faster in hot ones. Issue #3134. */
+  coldBlooded?: boolean
+  /** Minimum comfortable temperature [0,1]; hunger penalty below this. Issue #3136. */
+  tempMin?: number
+  /** Maximum comfortable temperature [0,1]; hunger penalty above this. Issue #3136. */
+  tempMax?: number
+  /** When true, females age slightly slower than males (sexual dimorphism). Issue #3165. */
+  sexualDimorphism?: boolean
+  /** When true, this creature leaves chemical pheromone trails that guide conspecifics. Issue #3234. */
+  pheromoneDepositor?: boolean
+  /** Blueprint ID of the definitive host for multi-host parasites. Issue #3185. */
+  intermediateHostId?: string
+  /** When true, this species builds coral reef structures. Issue #3253. */
+  coralPolyp?: boolean
+  /** When true, this species emits audible signals that propagate through the world. Issue #3241. */
+  soundEmitter?: boolean
+  /** When true, this species can detect sound signals from soundEmitter species. Issue #3241. */
+  soundReceptive?: boolean
+  /** Maximum tile distance at which this species detects sound. Issue #3241. */
+  soundReceptiveRange?: number
 }
 
 /**
@@ -1448,6 +1686,14 @@ export interface Creature {
   isChiefVole?: boolean
   /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
   conflictCount?: number
+  /** Total philosophical contemplation sessions completed. Does nothing. Issue #3309. */
+  wisdom?: number
+  /** Countdown seconds until next philosophical contemplation. Issue #3309. */
+  philosophyTimer?: number
+  /** Whether this ant is currently performing at the Amphitheater. Issue #3294. */
+  isPerformer?: boolean
+  /** Raccoon's accumulated garbage currency from property flipping. Issue #3311. */
+  garbageCurrency?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while actually chasing a target or
    * fleeing; drains while resting or eating. Above 0.5 it reduces effective
@@ -1580,8 +1826,15 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True once a semelparous creature has reproduced; prevents second reproduction. Issue #3259. */
+  /** True when this lemming has been elected to the Legislature. Issue #3305. */
+  isLegislator?: boolean
+  /** True when the Legislature has voted Cliff and this creature is marching toward the edge. Issue #3305. */
+  cliffBound?: boolean
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
+  /** Active spine-sharing boost from nearby Healthcare pact members. 0 when alone. Issue #3301. */
+  spineBoost?: number
   /**
    * Cached count of same-habitat tiles in the local area.
    * Computed every 120 ticks for patchDependent species. Issue #3281.
@@ -1593,6 +1846,74 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /**
+   * Caste of a eusocial species individual.
+   * Set at birth based on colony composition. Issue #3229.
+   */
+  caste?: 'queen' | 'worker' | 'soldier' | 'drone'
+  /**
+   * Age timer for drones; they die after 30 seconds. Issue #3229.
+   */
+  droneAge?: number
+  /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
+  toxinLoad?: number
+  /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
+  carrierTimer?: number
+  /** Cumulative skill bonus earned through juvenile play. Issue #3232. */
+  playSkillBonus?: number
+  /** Countdown seconds until next play session. Issue #3232. */
+  playTimer?: number
+  /** World X position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceX?: number
+  /** World Y position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceY?: number
+  /** Whether this creature is currently in its dawn chorus call. Issue #3246. */
+  chorusing?: boolean  /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
+  primedDefense?: number
+  /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
+  venomTimer?: number
+  /** X of this creature's claimed territory center. Issue #3226. */
+  territoryX?: number
+  /** Y of this creature's claimed territory center. Issue #3226. */
+  territoryY?: number
+  /** Seconds remaining on territory threat display cooldown. Issue #3226. */
+  threatDisplayTimer?: number
+  /** Dominance rank 0–1 (0 = lowest, 1 = alpha). Decays with age. Issue #3227. */
+  dominanceRank?: number
+  /** Countdown seconds until next rank contest. Issue #3227. */
+  rankContestCooldown?: number
+  /** Kin group identifier — inherited from parent. Issue #3230. */
+  kinGroupId?: string
+  /** Countdown seconds remaining on alarm call emission. Nearby kin flee while set. Issue #3231. */
+  alarmCallTimer?: number
+  /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
+  learnedAversions?: string[]
+  /** Seconds of frog apostasy countdown — dissenting frog moving away from fundamentalist mob. Issue #3xxx. */
+  frogApostate?: number
+  /** True when this gopher holds the current admin role in the Gopher Grid. Issue #3xxx. */
+  isGopherAdmin?: boolean
+  /** World elapsed time when this beetle recorded its mail message (undefined = no message queued). Issue #3xxx. */
+  beetleMailRecordedAt?: number
+  /** Type of beetle mail queued: 'food' or 'predator'. Issue #3xxx. */
+  beetleMailType?: string
+  /** X tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailX?: number
+  /** Y tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailY?: number
+  /** Elapsed time when this mole last recorded a food location (for 2-season delay mail). Issue #3306. */
+  moleMailRecordedAt?: number
+  /** Recorded food X tile (the stale info moles broadcast). Issue #3306. */
+  moleMailFoodX?: number
+  /** Recorded food Y tile. Issue #3306. */
+  moleMailFoodY?: number
+  /** Countdown until this newt publishes the next headline. Issue #3307. */
+  newtNewsTimer?: number
+  /** Seconds this creature has spent without a conspecific in range (genetic isolation). Issue #3164. */
+  isolationTime?: number
+  /** Biological sex, assigned at birth for species with sexualDimorphism. Issue #3165. */
+  sex?: 'male' | 'female'
+  /** Current lifecycle stage for multi-host parasites ('larval' | 'adult'). Issue #3185. */
+  lifecycleStage?: string
 }
 
 /**
@@ -1780,7 +2101,11 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
-/** One classified biome band — a full-width horizontal slice of the world. */
+/**
+ * Whittaker biome classification — one of eight climate zones.
+ * Assigned per horizontal region band (8 bands from sky to bedrock).
+ * Issue #3377.
+ */
 export interface BiomeZone {
   /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
   regionIndex: number
@@ -1791,6 +2116,10 @@ export interface BiomeZone {
   /** Average moisture [0, 1] sampled across region tiles. */
   precipitation: number
 }
+
+// ---------------------------------------------------------------------------
+// Live world state
+// ---------------------------------------------------------------------------
 
 export interface WorldState {
   width: number
@@ -1944,6 +2273,10 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
+  thermoclineY?: number
+  /** Whether the Urchin Union strike is active. Issue #3314. */
+  urchinStrikeActive?: boolean
   /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
   otterOligarchIds?: number[]
   /** Season index of the last Otter Oligarchy election. Issue #3308. */
@@ -1956,6 +2289,22 @@ export interface WorldState {
   chiefVoleId?: number
   /** Season index of the last Vole Voting election. Issue #3315. */
   chiefVoleLastElectionSeason?: number
+  /** Season index of last Amphitheater Ant performance. Issue #3294. */
+  antLastPerformanceSeason?: number
+  /** Current audience count at the ant performance. Issue #3294. */
+  antAudience?: number
+  /** Total nut balance in the Bear Bank. Issue #3295. */
+  bearBankBalance?: number
+  /** Season index of last Bear Bank cycle. Issue #3295. */
+  bearBankLastSeasonIdx?: number
+  /** Whether the Quail Quarantine is currently active. Issue #3310. */
+  quailQuarantineActive?: boolean
+  /** Season index when quarantine was triggered. Issue #3310. */
+  quailQuarantineSeasonIdx?: number
+  /** Raccoon property registry: "x,y" → value. Issue #3311. */
+  raccoonDenSites?: Record<string, number>
+  /** Season index of last Raccoon Real Estate appraisal. Issue #3311. */
+  raccoonRealEstateLastSeasonIdx?: number
   /**
    * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
    * different material type), 0 otherwise. Computed every 300 ticks.
@@ -1970,6 +2319,80 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+
+  /** Maps eusocial species blueprint ID to current queen creature ID. Issue #3229. */
+  eusocialQueenIds?: Record<string, number>
+  /** Current horizontal ocean current velocity (−0.3 to 0.3). Issue #3252. */
+  oceanCurrentX?: number
+  /** True during a phytoplankton bloom (high season factor). Issue #3253. */
+  planktonBloomActive?: boolean
+  /** Current lunar phase day (0–27). Issue #3187. */
+  lunarPhaseDay?: number
+  /** Current tidal height offset (-1 to 1). Issue #3188. */
+  tidalHeight?: number
+  /** Per-species baseline population for Lemming Legislature voting. Issue #3305. */
+  lemmingBaseline?: Record<string, number>
+  /** World-clock time of the next lemming legislature vote. Issue #3305. */
+  lemmingNextVoteTime?: number
+  /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
+  /**
+   * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
+   * through soil, keeping lowlands moist even without surface water nearby.
+   * Initialized lazily by tickGroundwater. Issue #3114.
+   */
+  groundwater?: Float32Array
+  /**
+   * Per-tile soil age counter. Increments each tick cycle on solid, non-deadly
+   * surface tiles. Resets to 0 when a deadly material (lava, fire) is present —
+   * modelling disturbance-driven succession reset. Used to gate establishment of
+   * later successional species (see CreatureBlueprint.successionStage). Issue #3124.
+   */
+  soilAge?: Float32Array
+  /**
+   * Set of blueprint IDs whose removal would cause ecological cascades.
+   * A species qualifies when 2+ other species depend on it (via diet.eats or
+   * diet.fears). Updated every 3000 ticks. Issue #3122.
+   */
+  keystoneSpeciesIds?: Set<string>
+  /**
+   * Per-tile soil nutrient level [0, 2.0]. 1.0 = baseline fertility.
+   * Initialized lazily. Plants deplete it; nitrogen-fixing plants enrich it.
+   * Issue #3144.
+   */
+  soilNutrient?: Float32Array
+  /**
+   * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windX?: number
+  /**
+   * Current wind direction Y component [-0.2, 0.2]. Positive = downward.
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windY?: number
+  /** How many times the earthworm elevator has been rebuilt this world session. Issue #3298. */
+  earthwormElevatorRebuildCount?: number
+  /** World elapsed time at which the next earthworm elevator rebuild notice fires. Issue #3298. */
+  earthwormElevatorNextRebuild?: number
+  /** Season index of the last Frog Fundamentalism ritual. Issue #3299. */
+  lastFrogRitualSeason?: number
+  /** Creature id of the Gopher Government Administrator. Issue #3300. */
+  gopherAdminId?: number
+  /** Per-tile temperature grid, [0,1]. Updated by heat conduction each tick. Issue #3132. */
+  tileTemp?: Float32Array
+  /** True once the Crab Constitution has been ratified (population first reached 10). Issue #3296. */
+  crabConstitutionRatified?: boolean
+  /** World elapsed time of the last Duck Town Hall vote. Issue #3297. */
+  duckTownHallTime?: number
 }
 
 // ---------------------------------------------------------------------------

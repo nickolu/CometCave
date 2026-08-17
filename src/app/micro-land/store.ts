@@ -524,6 +524,12 @@ interface MicroLandState {
     totalLinks: number
   } | null
   setNetworkStats: (stats: { connected: number; isolated: number; clusterCount: number; totalLinks: number } | null) => void
+  /**
+   * Set of blueprint IDs identified as keystone species — those that 2+ other
+   * species depend on. Updated periodically by updateKeystoneSpecies(). Issue #3122.
+   */
+  keystoneSpeciesIds: ReadonlySet<string>
+  setKeystoneSpeciesIds: (ids: ReadonlySet<string>) => void
 
   /**
    * When set, the renderer draws each creature with a color overlay based on
@@ -554,6 +560,12 @@ interface MicroLandState {
   /** The species whose activity is shown as a heatmap overlay; null = off. */
   heatmapBlueprintId: string | null
   setHeatmapBlueprint: (id: string | null) => void
+  /** When true, render a green soil-fertility heat map across the world. */
+  nutrientOverlayEnabled: boolean
+  setNutrientOverlayEnabled: (enabled: boolean) => void
+  /** When true, render a temperature gradient overlay across the world. */
+  tempOverlayEnabled: boolean
+  setTempOverlayEnabled: (enabled: boolean) => void
   soundEnabled: boolean
   setSoundEnabled: (on: boolean) => void
 
@@ -721,6 +733,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
   shelf: { worlds: [], activeId: null, busy: false, error: null },
   networkDegree: {},
   networkStats: null,
+  keystoneSpeciesIds: new Set<string>(),
   locateRequest: null,
   populationItems: [],
   invasionFront: {},
@@ -739,6 +752,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   replayIndex: 0,
   trailsEnabled: false,
   heatmapBlueprintId: null,
+  nutrientOverlayEnabled: false,
+  tempOverlayEnabled: false,
   soundEnabled: false,
 
   setTheme: themeId => set({ themeId }),
@@ -861,6 +876,7 @@ export const useMicroLand = create<MicroLandState>(set => ({
     set({ locateRequest: { blueprintId, serial: ++locateSerial }, sidebar: null }),
   setNetworkDegree: d => set({ networkDegree: d }),
   setNetworkStats: stats => set({ networkStats: stats }),
+  setKeystoneSpeciesIds: ids => set({ keystoneSpeciesIds: ids }),
   setPopulationItems: items => set({ populationItems: items }),
   setInvasionFront: data => set({ invasionFront: data }),
   setBiomeZones: zones => set({ biomeZones: zones }),
@@ -877,6 +893,8 @@ export const useMicroLand = create<MicroLandState>(set => ({
   setFocusedSpeciesStats: stats => set({ focusedSpeciesStats: stats }),
   setTrailsEnabled: on => set({ trailsEnabled: on }),
   setHeatmapBlueprint: id => set({ heatmapBlueprintId: id }),
+  setNutrientOverlayEnabled: enabled => set({ nutrientOverlayEnabled: enabled }),
+  setTempOverlayEnabled: enabled => set({ tempOverlayEnabled: enabled }),
   setSoundEnabled: on => set({ soundEnabled: on }),
 
   enterReplay: snapshots =>

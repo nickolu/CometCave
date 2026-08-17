@@ -1171,6 +1171,60 @@ export function tickMarshDetritus(w: WorldState, tickCount: number, dt: number):
   }
 }
 
+/**
+ * Soil nutrient cycle: fallow recovery, runoff loss near water tiles.
+ * Runs every 60 ticks. Plant uptake and nitrogen fixation are handled
+ * per-creature in tickCreatures(). Issues #3144, #3149, #3151.
+ */
+export function tickSoilNutrient(w: WorldState, tickCount: number): void {
+  if (tickCount % 60 !== 0) return
+  if (!w.soilNutrient) {
+    w.soilNutrient = new Float32Array(WORLD_W * WORLD_H)
+    w.soilNutrient.fill(1.0)
+  }
+
+  const dirtIdx = MATERIAL_INDEX.dirt
+  const mudIdx = MATERIAL_INDEX.mud
+  const waterIdx = MATERIAL_INDEX.water
+  const grassIdx = MATERIAL_INDEX.grass
+
+  // Fallow recovery: bare soil slowly regains fertility. Issue #3151.
+  // Check every 4th column to stay cheap.
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x += 4) {
+      const i = y * WORLD_W + x
+      const tile = w.tiles[i]
+      if (tile === dirtIdx || tile === mudIdx || tile === grassIdx) {
+        if (w.soilNutrient[i] < 1.0) {
+          w.soilNutrient[i] = Math.min(1.0, w.soilNutrient[i] + 0.00003)
+        }
+      }
+    }
+  }
+
+  // Nutrient runoff: soil adjacent to water loses a small amount. Issue #3149.
+  // Only runs every 5 minutes (300 ticks).
+  if (tickCount % 300 !== 0) return
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      if (w.tiles[y * WORLD_W + x] !== waterIdx) continue
+      // Adjacent soil tiles lose a small fraction to runoff
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = (x + dx + WORLD_W) % WORLD_W
+          const ny = y + dy
+          if (ny < 0 || ny >= WORLD_H) continue
+          const ni = ny * WORLD_W + nx
+          const ntile = w.tiles[ni]
+          if (ntile === dirtIdx || ntile === mudIdx) {
+            w.soilNutrient[ni] = Math.max(0, w.soilNutrient[ni] - 0.004)
+          }
+        }
+      }
+    }
+  }
+}
+
 export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
@@ -1429,6 +1483,59 @@ export function tickWebDecay(w: WorldState, tickCount: number, rng: () => number
   }
 }
 
+/**
+ * Simulate fire spreading and decay.
+ *
+ * Each call (every 30 ticks) processes all fire tiles: each has a 6% chance to
+ * decay to ash, and a 15% chance per adjacent flammable non-liquid tile to
+ * spread. This gives fire an expected lifetime of ~8 s at 60 fps and a
+ * neighbourhood radius that grows over time before guttering out. Issue #3115.
+ */
+export function tickFire(
+  w: WorldState,
+  tickCount: number,
+  rng: () => number,
+  IS_FLAMMABLE: Uint8Array,
+  IS_LIQUID: Uint8Array,
+  fireMatIdx: number,
+  ashMatIdx: number,
+): void {
+  if (tickCount % 30 !== 0) return
+  if (fireMatIdx < 0 || ashMatIdx < 0) return
+
+  const { width, height, tiles } = w
+
+  // Collect fire tile indices to avoid modifying the array while iterating.
+  const fireTiles: number[] = []
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] === fireMatIdx) fireTiles.push(i)
+  }
+
+  for (const tileIdx of fireTiles) {
+    const x = tileIdx % width
+    const y = Math.floor(tileIdx / width)
+
+    // 6% chance per 30-tick check to decay to ash (~8 s expected lifetime).
+    if (rng() < 0.06) {
+      setTile(w, x, y, ashMatIdx)
+      continue
+    }
+
+    // Spread to adjacent flammable, non-liquid, non-fire tiles.
+    const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx
+      const ny = y + dy
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+      const nIdx = ny * width + nx
+      const nMat = tiles[nIdx]
+      if (IS_FLAMMABLE[nMat] && !IS_LIQUID[nMat] && nMat !== fireMatIdx && rng() < 0.15) {
+        setTile(w, nx, ny, fireMatIdx)
+      }
+    }
+  }
+}
+
 // Edge effect mask: marks tiles at habitat boundaries. Issue #3282.
 export function tickEdgeMask(w: WorldState, tickCount: number): void {
   if (tickCount % 300 !== 0) return
@@ -1469,6 +1576,139 @@ export function tickCorridorMask(w: WorldState, tickCount: number): void {
 }
 
 export { AIR }
+
+/**
+ * Per-tile temperature simulation: lava tiles radiate heat; ice tiles stay cold;
+ * water moderates; slow conduction between neighbors. Issues #3132, #3133.
+ * Runs every 90 ticks.
+ */
+export function tickTileTemp(w: WorldState, tickCount: number, seasonFactor: number): void {
+  if (tickCount % 90 !== 0) return
+  const lavaIdx = MATERIAL_INDEX.lava
+  const iceIdx = MATERIAL_INDEX.ice
+  const waterIdx = MATERIAL_INDEX.water
+
+  if (!w.tileTemp) {
+    w.tileTemp = new Float32Array(WORLD_W * WORLD_H)
+    // Initialize from biome zones: top = warm, bottom = cold (Y increases downward)
+    for (let y = 0; y < WORLD_H; y++) {
+      const baseTemp = Math.max(0, 1 - y / WORLD_H)
+      for (let x = 0; x < WORLD_W; x++) {
+        w.tileTemp[y * WORLD_W + x] = baseTemp
+      }
+    }
+  }
+
+  const tmp = w.tileTemp
+
+  // Set extreme tiles: lava = hot, ice = cold. Water moderates.
+  for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+    const tile = w.tiles[i]
+    if (tile === lavaIdx) {
+      tmp[i] = Math.min(1, tmp[i] + 0.05)
+    } else if (tile === iceIdx) {
+      tmp[i] = Math.max(0, tmp[i] - 0.05)
+    } else if (tile === waterIdx) {
+      tmp[i] = tmp[i] * 0.98 + 0.4 * 0.02  // moderate toward 0.4
+    }
+  }
+
+  // Slow conduction: each tile diffuses 3% toward average of 4 neighbors.
+  const scratch = new Float32Array(tmp)
+  const alpha = 0.03
+  for (let y = 1; y < WORLD_H - 1; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const i = y * WORLD_W + x
+      const left = scratch[y * WORLD_W + (x === 0 ? WORLD_W - 1 : x - 1)]
+      const right = scratch[y * WORLD_W + (x === WORLD_W - 1 ? 0 : x + 1)]
+      const up = scratch[(y - 1) * WORLD_W + x]
+      const down = scratch[(y + 1) * WORLD_W + x]
+      const avg = (left + right + up + down) / 4
+      tmp[i] = tmp[i] * (1 - alpha) + avg * alpha
+    }
+  }
+
+  // Seasonal modulation: shift global temperature with season factor
+  if (TUNING.seasonAmplitude > 0) {
+    const seasonShift = (seasonFactor - 1.0) * 0.05  // ±5% shift at max amplitude
+    for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+      tmp[i] = Math.max(0, Math.min(1, tmp[i] + seasonShift))
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Soil age — ecological succession substrate (Issues #3124, #3125)
+// ---------------------------------------------------------------------------
+
+/**
+ * Increment soil age on stable solid surface tiles and reset it on deadly tiles.
+ *
+ * Runs every 60 ticks (~once per second). Processes every 6th column per call
+ * (staggered by tickCount) for performance, completing a full world sweep in
+ * approximately 6 seconds. Deadly tiles (lava/fire) reset soil age to 0,
+ * modelling disturbance-driven succession re-set.
+ *
+ * Issues #3124 (soil age field) and #3125 (disturbance reset).
+ */
+export function tickSoilAge(w: WorldState, tickCount: number): void {
+  if (tickCount % 60 !== 0) return
+  w.soilAge ??= new Float32Array(w.width * w.height)
+  const { width, height, tiles, soilAge } = w
+  const colOffset = Math.floor(tickCount / 60) % 6
+  for (let x = colOffset; x < width; x += 6) {
+    for (let y = 0; y < height; y++) {
+      const idx = y * width + x
+      const mat = tiles[idx]
+      if (IS_DEADLY[mat]) {
+        soilAge[idx] = 0  // lava/fire resets succession
+      } else if (IS_SOLID[mat] && !IS_LIQUID[mat]) {
+        // Only age surface tiles — solid tile with non-solid above it
+        const aboveIdx = y > 0 ? (y - 1) * width + x : -1
+        if (aboveIdx >= 0 && !IS_SOLID[tiles[aboveIdx]]) {
+          soilAge[idx] = Math.min(10000, soilAge[idx] + 1)
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Keystone species detection (Issue #3122)
+// ---------------------------------------------------------------------------
+
+/**
+ * Identify keystone species: blueprints that 2+ other species in the ecosystem
+ * depend on (via diet.eats tags or diet.fears tags). A species is "depended on"
+ * when another species' eats or fears list matches one of its tags.
+ *
+ * Runs every 3000 ticks (~50 seconds). Results stored in
+ * WorldState.keystoneSpeciesIds. Issue #3122.
+ */
+export function updateKeystoneSpecies(w: WorldState, tickCount: number): void {
+  if (tickCount % 3000 !== 0) return
+  const dependencyCount = new Map<string, number>()
+  const bpList = Object.values(w.blueprints)
+  for (const bp of bpList) {
+    const checkedIds = new Set<string>()
+    const allDeps = [...bp.diet.eats, ...bp.diet.fears]
+    for (const tag of allDeps) {
+      for (const other of bpList) {
+        if (other.id === bp.id) continue
+        if (checkedIds.has(other.id)) continue
+        if (other.tags.includes(tag)) {
+          checkedIds.add(other.id)
+          dependencyCount.set(other.id, (dependencyCount.get(other.id) ?? 0) + 1)
+        }
+      }
+    }
+  }
+  const keystones = new Set<string>()
+  for (const [id, count] of dependencyCount) {
+    if (count >= 2) keystones.add(id)
+  }
+  w.keystoneSpeciesIds = keystones
+}
 
 // ---------------------------------------------------------------------------
 // Acid rain from sulfur pollution (Issue #3279)
@@ -1532,5 +1772,349 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
         }
       }
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Water cycle — evaporation, cloud drift, precipitation, groundwater (#3110–#3114)
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaporation: water tiles adjacent to air/cloud above slowly emit cloud vapor.
+ *
+ * Runs every 90 ticks. Samples a random row and checks every 4th column so the
+ * scan stays cheap (~width/4 tiles per pass). Each eligible water tile has a 3%
+ * chance of converting the tile above it to cloud. Issue #3110.
+ */
+export function tickEvaporation(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 90 !== 0) return
+  const { width, height, tiles } = w
+  const waterIdx = MATERIAL_INDEX['water'] ?? -1
+  const cloudIdx = MATERIAL_INDEX['cloud'] ?? -1
+  const airIdx = MATERIAL_INDEX['air'] ?? -1
+  if (waterIdx < 0 || cloudIdx < 0) return
+
+  const row = Math.floor(rng() * height)
+  if (row === 0) return
+  for (let x = 0; x < width; x += 4) {
+    const tileI = row * width + x
+    if (tiles[tileI] !== waterIdx) continue
+    const aboveI = (row - 1) * width + x
+    const above = tiles[aboveI]
+    if ((above === airIdx || above === cloudIdx) && rng() < 0.03) {
+      w.tiles[aboveI] = cloudIdx
+    }
+  }
+}
+
+/**
+ * Cloud drift: cloud tiles move laterally with a wind bias and precipitate when
+ * they form dense clusters.
+ *
+ * Runs every 120 ticks. Uses w.windX if present, else a slight rightward bias.
+ * When a cloud tile has 3+ cloud neighbors it has an 8% chance to precipitate —
+ * dropping rain or snow (based on altitude) on the first air tile below the
+ * cloud column. Issues #3111, #3112.
+ */
+export function tickCloudDrift(
+  w: WorldState,
+  tickCount: number,
+  rng: () => number,
+  setTileFn: (w: WorldState, x: number, y: number, matIdx: number) => void,
+  airMatIdx: number,
+  cloudMatIdx: number,
+  waterMatIdx: number,
+  snowMatIdx: number,
+): void {
+  if (tickCount % 120 !== 0) return
+  const { width, height, tiles } = w
+  if (cloudMatIdx < 0) return
+
+  // Wind bias: use w.windX if available, else slight rightward drift
+  const windBias = (w as unknown as { windX?: number }).windX ?? 0.1
+
+  // Collect cloud tile indices before mutation
+  const cloudTiles: number[] = []
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] === cloudMatIdx) cloudTiles.push(i)
+  }
+
+  for (const tileIdx of cloudTiles) {
+    const x = tileIdx % width
+    const y = Math.floor(tileIdx / width)
+
+    // Lateral drift based on wind direction
+    const drift = windBias > 0 ? 1 : windBias < 0 ? -1 : (rng() < 0.5 ? 1 : -1)
+    const nx = x + drift
+    if (nx >= 0 && nx < width) {
+      const nIdx = y * width + nx
+      if (tiles[nIdx] === airMatIdx) {
+        setTileFn(w, x, y, airMatIdx)
+        setTileFn(w, nx, y, cloudMatIdx)
+      }
+    }
+
+    // Precipitation: count cloud neighbors; dense clusters rain
+    let cloudNeighbors = 0
+    for (let cy = -1; cy <= 1; cy++) {
+      for (let cx = -1; cx <= 1; cx++) {
+        if (cx === 0 && cy === 0) continue
+        const cnx = x + cx
+        const cny = y + cy
+        if (cnx >= 0 && cnx < width && cny >= 0 && cny < height) {
+          if (tiles[cny * width + cnx] === cloudMatIdx) cloudNeighbors++
+        }
+      }
+    }
+
+    if (cloudNeighbors >= 3 && rng() < 0.08) {
+      // Find first non-cloud tile below
+      let rainY = y + 1
+      while (rainY < height && tiles[rainY * width + x] === cloudMatIdx) rainY++
+      if (rainY < height && tiles[rainY * width + x] === airMatIdx) {
+        // Top 20% of world counts as cold → snow; otherwise rain
+        const cold = y < height * 0.2
+        const precipMat = cold && snowMatIdx >= 0 ? snowMatIdx : waterMatIdx
+        if (precipMat >= 0) {
+          setTileFn(w, x, y, airMatIdx)       // cloud dissipates
+          setTileFn(w, x, rainY, precipMat)   // precipitation falls below
+          // Boost moisture at landing tile
+          if (w.moisture) {
+            const mIdx = rainY * width + x
+            w.moisture[mIdx] = Math.min(1, w.moisture[mIdx] + 0.1)
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Groundwater table: subsurface moisture seeps upward through soil from water
+ * tiles below, keeping lowlands moist even without surface water.
+ *
+ * Runs every 150 ticks. Samples every 4th column for performance. Initializes
+ * w.groundwater lazily. Issue #3114.
+ */
+export function tickGroundwater(w: WorldState, tickCount: number, isLiquid: Uint8Array): void {
+  if (tickCount % 150 !== 0) return
+  const { width, height, tiles, moisture } = w
+  if (!moisture) return
+
+  // Lazy-initialize groundwater array
+  if (!w.groundwater) {
+    w.groundwater = new Float32Array(width * height)
+  }
+  const gw = w.groundwater
+
+  for (let y = 1; y < height; y++) {
+    for (let x = 0; x < width; x += 4) {
+      const tileI = y * width + x
+      const belowI = y + 1 < height ? (y + 1) * width + x : -1
+
+      if (belowI < 0) continue
+
+      // Seep moisture upward from liquid tiles below into non-liquid tiles
+      if (isLiquid[tiles[belowI]] === 1 && isLiquid[tiles[tileI]] !== 1) {
+        moisture[tileI] = Math.min(1, moisture[tileI] + 0.003)
+        gw[tileI] = Math.min(1, gw[tileI] + 0.003)
+      }
+
+      // Groundwater level decays slowly
+      if (gw[tileI] > 0) {
+        gw[tileI] = Math.max(0, gw[tileI] - 0.001)
+      }
+    }
+  }
+}
+
+/**
+ * Bone slow decomposition (#3103): bone tiles near moisture slowly convert to soil
+ * and deposit nutrients, modelling the long-term breakdown of skeletal material.
+ *
+ * Runs every 300 ticks. Samples 20 random tiles looking for bone. Each bone tile
+ * in moist conditions has a 3% chance to convert to soil with a +0.2 nutrient boost.
+ */
+export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 300 !== 0) return
+  if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+
+  const { width, height, tiles, moisture } = w
+  const boneIdx = MATERIAL_INDEX['bone'] ?? -1
+  const dirtIdx = MATERIAL_INDEX['dirt'] ?? -1
+  if (boneIdx < 0) return
+
+  for (let i = 0; i < 20; i++) {
+    const x = Math.floor(rng() * width)
+    const y = Math.floor(rng() * height)
+    const tileI = y * width + x
+
+    if (tiles[tileI] !== boneIdx) continue
+
+    const moistureHere = moisture?.[tileI] ?? 0
+    if (moistureHere < 0.2) continue // bone needs moisture to decompose
+
+    if (rng() < 0.03) {
+      // Convert bone tile to dirt (if dirt exists) and add nutrients.
+      if (dirtIdx >= 0) {
+        w.tiles[tileI] = dirtIdx
+      }
+      w.soilNutrient[tileI] = Math.min(1, w.soilNutrient[tileI] + 0.2)
+    }
+  }
+}
+
+
+/**
+ * Stochastic weather state machine: transitions between clear, rain, drought,
+ * and storm states, biased by season. Applies moisture and tile effects each
+ * 60-tick window. Issues #3094, #3095, #3096, #3097.
+ */
+export function tickWeather(w: WorldState, tickCount: number, rng: () => number): void {
+  // Initialize
+  if (w.weatherState === undefined) w.weatherState = 'clear'
+  if (w.weatherTimer === undefined) w.weatherTimer = 0
+
+  w.weatherTimer -= 1
+
+  const seasonFactor =
+    TUNING.seasonAmplitude > 0
+      ? 1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / (TUNING.seasonPeriod * 60))
+      : 1
+  const isSummer = seasonFactor > 1.1
+  const isWinter = seasonFactor < 0.9
+
+  // Apply ongoing weather effects every 60 ticks
+  if (tickCount % 60 === 0) {
+    if (w.weatherState === 'rain') {
+      // Boost moisture on 30 random tiles per check
+      for (let i = 0; i < 30; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.05)
+      }
+    } else if (w.weatherState === 'drought') {
+      // Drain moisture from 15 random non-water tiles
+      for (let i = 0; i < 15; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (!IS_LIQUID[w.tiles[idx]] && w.moisture[idx] > 0) {
+          w.moisture[idx] = Math.max(0, w.moisture[idx] - 0.02)
+        }
+      }
+    } else if (w.weatherState === 'storm') {
+      // Lightning: 5% chance per check to convert a random exposed surface tile to ash
+      if (rng() < 0.05) {
+        const lx = Math.floor(rng() * w.width)
+        const ly = Math.floor(rng() * w.height)
+        const lIdx = ly * w.width + lx
+        if (!IS_SOLID[w.tiles[lIdx]] && !IS_LIQUID[w.tiles[lIdx]]) {
+          setTile(w, lx, ly, MATERIAL_INDEX.ash)
+        }
+      }
+      // Storms also bring rain — boost moisture on 10 random tiles
+      for (let i = 0; i < 10; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.03)
+      }
+    }
+  }
+
+  // Weather transition (only when timer expires)
+  if (w.weatherTimer > 0) return
+
+  const prev = w.weatherState
+  const r = rng()
+
+  if (prev === 'clear') {
+    if (isSummer && r < 0.08) w.weatherState = 'drought'
+    else if (r < 0.12) w.weatherState = 'rain'
+    else if (r < 0.04) w.weatherState = 'storm'
+    // else stay clear
+  } else if (prev === 'rain') {
+    if (r < 0.45) w.weatherState = 'clear'
+    else if (r < 0.55) w.weatherState = 'storm'
+    // else continue rain
+  } else if (prev === 'drought') {
+    if (isWinter || r < 0.35) w.weatherState = 'clear'
+    else if (r < 0.40) w.weatherState = 'rain'
+    // else continue drought
+  } else if (prev === 'storm') {
+    if (r < 0.55) w.weatherState = 'rain'
+    else if (r < 0.80) w.weatherState = 'clear'
+    // else continue storm
+  }
+
+  // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)
+  w.weatherTimer = 600 + Math.floor(rng() * 1800)
+}
+
+/**
+ * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
+ * and applies local effects (water chemistry, plant nutrition). Issue #3179.
+ *
+ * Runs every 1200 ticks (every ~20 seconds of sim time at 60 ticks/s).
+ * Uses a fixed random probe rather than a full scan.
+ */
+export function tickMineralVeins(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 1200 !== 0) return
+  const stoneIdx = MATERIAL_INDEX.stone
+  const waterIdx = MATERIAL_INDEX.water
+
+  // Ore materials and their local nutrient effects
+  const ores: Array<{ id: string; nutrientBoost: number; pHShift: number }> = [
+    { id: 'iron', nutrientBoost: -0.02, pHShift: -0.3 },   // iron → acidifies water, reduces fertility
+    { id: 'gold', nutrientBoost: 0.05, pHShift: 0 },       // gold → inert, mild fertility boost
+    { id: 'gem', nutrientBoost: 0.03, pHShift: 0.1 },      // gem crystal → slightly alkaline
+    { id: 'crystal', nutrientBoost: 0.04, pHShift: 0 },    // crystal → enhances plant growth
+  ]
+
+  // Probe a random column, look for exposed stone in the upper-middle depth
+  // (not at the very surface, which is already well-modelled)
+  const tx = Math.floor(rng() * WORLD_W)
+  const startY = Math.floor(WORLD_H * 0.25)
+  const endY = Math.floor(WORLD_H * 0.75)
+
+  for (let ty = startY; ty < endY; ty++) {
+    const ti = ty * WORLD_W + tx
+    if (w.tiles[ti] !== stoneIdx) continue
+
+    // Only expose ore if adjacent to air or liquid (crack in the rock)
+    const above = ty > 0 ? w.tiles[(ty - 1) * WORLD_W + tx] : 0
+    const hasGap = !IS_SOLID[above] || (ty < WORLD_H - 1 && !IS_SOLID[w.tiles[(ty + 1) * WORLD_W + tx]])
+    if (!hasGap) continue
+
+    // Small chance to convert stone to ore (1 in 8 when conditions met)
+    if (rng() > 0.125) break
+
+    const ore = ores[Math.floor(rng() * ores.length)]
+    setTile(w, tx, ty, MATERIAL_INDEX[ore.id as keyof typeof MATERIAL_INDEX])
+
+    // Apply effects to adjacent water tiles (chemistry) and caveNutrient (plant growth)
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dx = -3; dx <= 3; dx++) {
+        const nx = (tx + dx + WORLD_W) % WORLD_W
+        const ny = ty + dy
+        if (ny < 0 || ny >= WORLD_H) continue
+        const ni = ny * WORLD_W + nx
+
+        if (w.tiles[ni] === waterIdx) {
+          // pH effect on water chemistry (uses existing tilePH system if present)
+          if (w.tilePH && ore.pHShift !== 0) {
+            w.tilePH[ni] = Math.max(0, Math.min(14, (w.tilePH[ni] ?? 7) + ore.pHShift * 0.1))
+          }
+        }
+
+        // Plant nutrition effect via caveNutrient (affects soil fertility)
+        if (ore.nutrientBoost !== 0 && w.caveNutrient) {
+          w.caveNutrient[ni] = Math.max(0, Math.min(1, (w.caveNutrient[ni] ?? 0) + ore.nutrientBoost * 0.05))
+        }
+      }
+    }
+    break
   }
 }

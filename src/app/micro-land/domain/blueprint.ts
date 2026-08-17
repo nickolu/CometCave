@@ -590,6 +590,7 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    decomposer: b.decomposer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
@@ -641,6 +642,7 @@ export function sanitizeBlueprint(
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
+    fireAdapted: b.fireAdapted !== undefined ? !!b.fireAdapted : undefined,
     lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
     biomeRequirements: Array.isArray(b.biomeRequirements)
       ? (b.biomeRequirements as unknown[]).filter((z): z is BiomeZoneType =>
@@ -697,16 +699,33 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    venomous: typeof b.venomous === 'boolean' ? b.venomous : undefined,
+    venomPotency: typeof b.venomPotency === 'number' ? Math.max(0, Math.min(1, b.venomPotency)) : undefined,
+    venomResistance: typeof b.venomResistance === 'number' ? Math.max(0, Math.min(1, b.venomResistance)) : undefined,
+    territorialBlueprintFlag: typeof b.territorialBlueprintFlag === 'boolean' ? b.territorialBlueprintFlag : undefined,
+    territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
+    deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
+    shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
     parentalCare: typeof b.parentalCare === 'boolean' ? b.parentalCare : undefined,
     parentalRadius: typeof b.parentalRadius === 'number' ? Math.max(1, b.parentalRadius) : undefined,
     broodProtection: typeof b.broodProtection === 'number' ? Math.max(0.1, Math.min(1, b.broodProtection)) : undefined,
     broodParasite: typeof b.broodParasite === 'boolean' ? b.broodParasite : undefined,
     broodParasiteHost: Array.isArray(b.broodParasiteHost) ? (b.broodParasiteHost as string[]) : undefined,
+    platypusPhilosophy: typeof b.platypusPhilosophy === 'boolean' ? b.platypusPhilosophy : undefined,
+    toadTaxation: typeof b.toadTaxation === 'boolean' ? b.toadTaxation : undefined,
+    urchinUnion: typeof b.urchinUnion === 'boolean' ? b.urchinUnion : undefined,
     minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
+    lemmingLegislature: typeof b.lemmingLegislature === 'boolean' ? b.lemmingLegislature : undefined,
     rK: typeof b.rK === 'number' ? Math.max(0, Math.min(1, b.rK)) : undefined,
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
     ageReproductionCurve: ['peak-early', 'peak-middle', 'peak-late'].includes(b.ageReproductionCurve as string) ? b.ageReproductionCurve as 'peak-early' | 'peak-middle' | 'peak-late' : undefined,
+    earthwormElevator: typeof b.earthwormElevator === 'boolean' ? b.earthwormElevator : undefined,
+    frogFundamentalism: typeof b.frogFundamentalism === 'boolean' ? b.frogFundamentalism : undefined,
+    gopherGovernment: typeof b.gopherGovernment === 'boolean' ? b.gopherGovernment : undefined,
+    beetleInternet: typeof b.beetleInternet === 'boolean' ? b.beetleInternet : undefined,
+    moleMailCarrier: typeof b.moleMailCarrier === 'boolean' ? b.moleMailCarrier : undefined,
+    newtNewspaper: typeof b.newtNewspaper === 'boolean' ? b.newtNewspaper : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
@@ -750,6 +769,10 @@ export function sanitizeBlueprint(
             }),
           }
         : undefined,
+    crabConstitution: typeof b.crabConstitution === 'boolean' ? b.crabConstitution : undefined,
+    duckDemocracy: typeof b.duckDemocracy === 'boolean' ? b.duckDemocracy : undefined,
+    hedgehogHealthcare: typeof b.hedgehogHealthcare === 'boolean' ? b.hedgehogHealthcare : undefined,
+    xerusXenophobia: typeof b.xerusXenophobia === 'boolean' ? b.xerusXenophobia : undefined,
     patchDependent: b.patchDependent === true,
     // Coevolution features (#3263–#3267)
     predatorEscalation: b.predatorEscalation !== undefined ? !!b.predatorEscalation : undefined,
@@ -771,9 +794,72 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
-    // The four polity flags are set once, above. They were duplicated here
-    // verbatim — harmless, since both copies computed the same value, but the
-    // second silently shadowed the first.
+    eusocialSpecies: 'eusocialSpecies' in b ? !!b.eusocialSpecies : undefined,
+    chemosynthetic: 'chemosynthetic' in b ? !!b.chemosynthetic : undefined,
+    phytoplankton: 'phytoplankton' in b ? !!b.phytoplankton : undefined,
+    soundFrequency: typeof b.soundFrequency === 'number'
+      ? Math.max(0, Math.min(1, b.soundFrequency))
+      : undefined,
+    acousticCamouflage: b.acousticCamouflage === true,
+    lunarBreedingPhase:
+      typeof b.lunarBreedingPhase === 'number'
+        ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
+        : undefined,
+    intertidal: b.intertidal !== undefined ? !!b.intertidal : undefined,
+    fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
+    // Succession stage: gate seed germination on soil maturity (issue #3123)
+    successionStage: typeof b.successionStage === 'number'
+      ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
+      : undefined,
+    // Trophic level: inferred from diet when not explicitly set (issue #3119)
+    trophicLevel: (() => {
+      if (typeof b.trophicLevel === 'number') {
+        return Math.max(1, Math.min(5, Math.floor(b.trophicLevel)))
+      }
+      const moveKind = typeof move.kind === 'string' ? move.kind : 'walk'
+      const eatsArr = Array.isArray(diet.eats) ? diet.eats as string[] : []
+      if (moveKind === 'root' || eatsArr.length === 0) return 1  // producer
+      if (eatsArr.some((e: string) => ['plant', 'seed', 'algae'].includes(e))) return 2  // herbivore
+      if (eatsArr.some((e: string) => ['meat', 'animal', 'fish', 'insect', 'bug'].includes(e))) return 3  // carnivore
+      return 2  // default herbivore
+    })(),
+    dominanceHierarchy: typeof b.dominanceHierarchy === 'boolean' ? b.dominanceHierarchy : undefined,
+    kinSelection: typeof b.kinSelection === 'boolean' ? b.kinSelection : undefined,
+    alarmCaller: typeof b.alarmCaller === 'boolean' ? b.alarmCaller : undefined,
+    aposematic: typeof b.aposematic === 'boolean' ? b.aposematic : undefined,
+    // Issue #3234
+    pheromoneDepositor: 'pheromoneDepositor' in b ? !!b.pheromoneDepositor : undefined,
+    // Issue #3185
+    intermediateHostId: typeof b.intermediateHostId === 'string'
+      ? (b.intermediateHostId.trim() || undefined)
+      : undefined,
+    // Issue #3253
+    coralPolyp: 'coralPolyp' in b ? !!b.coralPolyp : undefined,
+    // Issue #3241
+    soundEmitter: 'soundEmitter' in b ? !!b.soundEmitter : undefined,
+    soundReceptive: 'soundReceptive' in b ? !!b.soundReceptive : undefined,
+    soundReceptiveRange: typeof b.soundReceptiveRange === 'number'
+      ? Math.max(1, Math.min(30, b.soundReceptiveRange))
+      : undefined,
+    playBehavior: typeof b.playBehavior === 'boolean' ? b.playBehavior : undefined,
+    maturityAge: typeof b.maturityAge === 'number' ? Math.max(0, b.maturityAge) : undefined,
+    matingCaller: typeof b.matingCaller === 'boolean' ? b.matingCaller : undefined,
+    matingCallRange: typeof b.matingCallRange === 'number' ? Math.max(1, b.matingCallRange) : undefined,
+    dawnChorus: typeof b.dawnChorus === 'boolean' ? b.dawnChorus : undefined,
+    dawnChorusRange: typeof b.dawnChorusRange === 'number' ? Math.max(1, b.dawnChorusRange) : undefined,
+    maxDepth: typeof b.maxDepth === 'number' ? Math.max(1, b.maxDepth) : undefined,
+    echolocates: typeof b.echolocates === 'boolean' ? b.echolocates : undefined,
+    stressSignaler: typeof b.stressSignaler === 'boolean' ? b.stressSignaler : undefined,
+    stressReceiver: typeof b.stressReceiver === 'boolean' ? b.stressReceiver : undefined,
+    packHunting: typeof b.packHunting === 'boolean' ? b.packHunting : undefined,
+    coordinationRange: typeof b.coordinationRange === 'number' ? Math.max(1, b.coordinationRange) : undefined,
+    packSizeThreshold: typeof b.packSizeThreshold === 'number' ? Math.max(0.1, b.packSizeThreshold) : undefined,
+    // Lineage, food web, and succession features (#3121, #3126, #3167)
+    derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
+    antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
+    bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
+    quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
+    raccoonRealEstate: typeof b.raccoonRealEstate === 'boolean' ? b.raccoonRealEstate : undefined,
   }
 }
 

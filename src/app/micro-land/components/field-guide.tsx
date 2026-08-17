@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { ElderRecord, SpeciesRecord } from '@/app/micro-land/chronicle/types'
 import { canEat, isPlantLike, moveWord, sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
@@ -93,6 +93,7 @@ export function FieldGuidePane() {
   const worldStats = useMicroLand(s => s.worldStats)
   const namedCreatures = useMicroLand(s => s.namedCreatures)
   const foodWeb = useMicroLand(s => s.foodWeb)
+  const keystoneSpeciesIds = useMicroLand(s => s.keystoneSpeciesIds)
   const populationItems = useMicroLand(s => s.populationItems)
   const requestLocateCreature = useMicroLand(s => s.requestLocateCreature)
   const compareId = useMicroLand(s => s.compareId)
@@ -102,7 +103,17 @@ export function FieldGuidePane() {
   const heatmapBlueprintId = useMicroLand(s => s.heatmapBlueprintId)
   const setHeatmapBlueprint = useMicroLand(s => s.setHeatmapBlueprint)
   const elapsed = useMicroLand(s => s.elapsed)
+  const tool = useMicroLand(s => s.tool)
   const allBlueprintNames = Object.fromEntries(blueprints.map(b => [b.id, b.name]))
+
+  // When a creature is selected for placement, scroll its entry into view.
+  const listRef = useRef<HTMLUListElement>(null)
+  const placingBlueprintId = tool.kind === 'creature' ? tool.blueprintId : null
+  useEffect(() => {
+    if (!placingBlueprintId || !listRef.current) return
+    const el = listRef.current.querySelector<HTMLElement>(`[data-blueprint-id="${placingBlueprintId}"]`)
+    el?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [placingBlueprintId])
 
   const [plantsHidden, setPlantsHidden] = useState(false)
   const [compact, setCompact] = useState(() => {
@@ -466,7 +477,7 @@ export function FieldGuidePane() {
           </button>
         </div>
       </div>
-      <ul className="flex flex-col">
+      <ul ref={listRef} className="flex flex-col">
         {ordered.map(bp => (
           <GuideEntry
             key={bp.id}
@@ -484,6 +495,8 @@ export function FieldGuidePane() {
             isHeatmap={heatmapBlueprintId === bp.id}
             onHeatmap={() => setHeatmapBlueprint(heatmapBlueprintId === bp.id ? null : bp.id)}
             elapsed={elapsed}
+            keystoneSpeciesIds={keystoneSpeciesIds}
+            isPlacing={placingBlueprintId === bp.id}
           />
         ))}
       </ul>
@@ -825,8 +838,11 @@ export function FieldGuidePane() {
               </li>
             ))}
           </ul>
+          <FoodWebGraph blueprints={blueprints} populations={counts} foodWeb={foodWeb} />
         </section>
       )}
+
+      <SuccessionBar blueprints={blueprints} populations={counts} elapsed={elapsed} />
 
       {/* World Statistics */}
       <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
@@ -933,6 +949,8 @@ function GuideEntry({
   isHeatmap,
   onHeatmap,
   elapsed,
+  keystoneSpeciesIds,
+  isPlacing,
 }: {
   bp: CreatureBlueprint
   alive: number
@@ -948,6 +966,8 @@ function GuideEntry({
   isHeatmap?: boolean
   onHeatmap?: () => void
   elapsed: number
+  keystoneSpeciesIds?: ReadonlySet<string>
+  isPlacing?: boolean
 }) {
   // Read from the store rather than threaded down as a prop: the invasion
   // front is only rendered for the handful of entries whose species is
@@ -959,7 +979,11 @@ function GuideEntry({
 
   return (
     <li
-      style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}
+      data-blueprint-id={bp.id}
+      style={{
+        borderBottom: '1px solid var(--cc-panel-divider)',
+        ...(isPlacing && { outline: '2px solid var(--cc-mint)', outlineOffset: -2 }),
+      }}
     >
       {thumbs && thumbs.length > 0 && onLocateCreature && (
         <div
@@ -1153,6 +1177,37 @@ function GuideEntry({
             <br />
             <strong style={{ fontWeight: 600 }}>Eaten by:</strong>{' '}
             {eatenBy.length > 0 ? eatenBy.map(e => e.name).join(', ') : 'nothing here'}
+            {bp.trophicLevel !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Trophic level:</strong>{' '}
+                {bp.trophicLevel === 1 ? 'Producer (1)' : bp.trophicLevel === 2 ? 'Herbivore (2)' : bp.trophicLevel === 3 ? 'Carnivore (3)' : `Apex (${bp.trophicLevel})`}
+                {keystoneSpeciesIds?.has(bp.id) && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      background: 'var(--cc-primary)',
+                      color: '#fff',
+                      fontWeight: 700,
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    KEYSTONE
+                  </span>
+                )}
+              </>
+            )}
+            {bp.successionStage !== undefined && (
+              <>
+                <br />
+                <strong style={{ fontWeight: 600 }}>Succession stage:</strong>{' '}
+                {bp.successionStage === 1 ? 'Pioneer' : bp.successionStage === 2 ? 'Early' : bp.successionStage === 3 ? 'Mid' : 'Climax'}
+                {' '}({bp.successionStage}/4)
+              </>
+            )}
             {bp.symbiosisPartnerId && (() => {
               const partner = blueprints.find(b => b.id === bp.symbiosisPartnerId)
               return partner ? (
@@ -1237,6 +1292,23 @@ function GuideEntry({
             <Sparkline data={traitHistory.map(e => e.speed)} label="speed" />
             <Sparkline data={traitHistory.map(e => e.sight)} label="sight" />
             <Sparkline data={traitHistory.map(e => e.size)} label="size" />
+          </div>
+        )}
+
+        {!compact && bp.derivedFrom && (
+          <div style={{ marginTop: 8 }}>
+            <span style={{
+              fontFamily: 'var(--cc-font-mono)',
+              fontSize: 9,
+              letterSpacing: 1.5,
+              textTransform: 'uppercase',
+              color: 'var(--cc-text-muted)',
+              display: 'block',
+              marginBottom: 4,
+            }}>
+              Lineage
+            </span>
+            <LineageTree blueprint={bp} allBlueprints={blueprints} />
           </div>
         )}
       </div>
@@ -1516,6 +1588,301 @@ function Sparkline({
       >
         {label}
       </span>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Feature #3121: Food Web Graph
+// ---------------------------------------------------------------------------
+
+function deriveTrophicLevel(bp: CreatureBlueprint, allBlueprints: CreatureBlueprint[]): number {
+  if (bp.trophicLevel !== undefined) return bp.trophicLevel
+  if (isPlantLike(bp)) return 1
+  const preyBps = allBlueprints.filter(other => canEat(bp, other))
+  if (preyBps.length === 0) return 2
+  const eatsPlants = preyBps.some(p => isPlantLike(p))
+  const eatsMeat = preyBps.some(p => !isPlantLike(p))
+  if (eatsMeat) return 3
+  if (eatsPlants) return 2
+  return 2
+}
+
+function FoodWebGraph({
+  blueprints,
+  populations,
+  foodWeb,
+}: {
+  blueprints: CreatureBlueprint[]
+  populations: Map<string, number>
+  foodWeb: Record<string, string[]>
+}) {
+  const eaterIds = Object.keys(foodWeb)
+  if (eaterIds.length === 0) return null
+
+  const allInvolved = new Set<string>()
+  for (const [eaterId, preyIds] of Object.entries(foodWeb)) {
+    allInvolved.add(eaterId)
+    for (const p of preyIds) allInvolved.add(p)
+  }
+
+  const bpMap = new Map(blueprints.map(b => [b.id, b]))
+  const living = [...allInvolved].filter(id => bpMap.has(id))
+  if (living.length === 0) return null
+
+  const levels = new Map<string, number>()
+  for (const id of living) {
+    const bp = bpMap.get(id)!
+    levels.set(id, deriveTrophicLevel(bp, blueprints))
+  }
+
+  const byLevel = new Map<number, string[]>()
+  for (const [id, lv] of levels.entries()) {
+    const lvCapped = Math.min(lv, 3)
+    if (!byLevel.has(lvCapped)) byLevel.set(lvCapped, [])
+    byLevel.get(lvCapped)!.push(id)
+  }
+
+  const W = 280
+  const H = 200
+  const cx = W / 2
+  const cy = H / 2
+  const ringRadii: Record<number, number> = { 1: 0, 2: 55, 3: 90 }
+
+  const nodePos = new Map<string, { x: number; y: number }>()
+  for (const [lv, ids] of byLevel.entries()) {
+    const r = ringRadii[lv] ?? 80
+    if (r === 0) {
+      ids.forEach((id, i) => {
+        const angle = (i / Math.max(ids.length, 1)) * 2 * Math.PI
+        const spread = ids.length === 1 ? 0 : 20
+        nodePos.set(id, { x: cx + Math.cos(angle) * spread, y: cy + Math.sin(angle) * spread })
+      })
+    } else {
+      ids.forEach((id, i) => {
+        const angle = (i / ids.length) * 2 * Math.PI - Math.PI / 2
+        nodePos.set(id, { x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r })
+      })
+    }
+  }
+
+  const maxPop = Math.max(...living.map(id => populations.get(id) ?? 0), 1)
+  const nodeRadius = (id: string) => 5 + Math.round(((populations.get(id) ?? 0) / maxPop) * 9)
+  const levelColor = (lv: number) => lv === 1 ? '#44aa88' : lv === 2 ? '#f5a623' : '#e55'
+
+  const edges: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+  for (const [eaterId, preyIds] of Object.entries(foodWeb)) {
+    const ePos = nodePos.get(eaterId)
+    if (!ePos) continue
+    for (const preyId of preyIds) {
+      const pPos = nodePos.get(preyId)
+      if (!pPos) continue
+      edges.push({ x1: ePos.x, y1: ePos.y, x2: pPos.x, y2: pPos.y })
+    }
+  }
+
+  return (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      style={{ width: '100%', height: 180, display: 'block', marginTop: 8 }}
+      aria-label="Food web graph"
+    >
+      <defs>
+        <marker id="fw-arrow" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
+          <path d="M0,0 L5,2.5 L0,5 Z" fill="rgba(255,255,255,0.22)" />
+        </marker>
+      </defs>
+      {[55, 90].map(r => (
+        <circle key={r} cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={1} />
+      ))}
+      {edges.map((e, i) => (
+        <line
+          key={i}
+          x1={e.x1}
+          y1={e.y1}
+          x2={e.x2}
+          y2={e.y2}
+          stroke="rgba(255,255,255,0.15)"
+          strokeWidth={1}
+          markerEnd="url(#fw-arrow)"
+        />
+      ))}
+      {living.map(id => {
+        const pos = nodePos.get(id)
+        if (!pos) return null
+        const lv = levels.get(id) ?? 2
+        const bp = bpMap.get(id)
+        const r = nodeRadius(id)
+        const bpColor = bp ? (Object.values(bp.art.palette)[0] ?? levelColor(lv)) : levelColor(lv)
+        return (
+          <g key={id}>
+            <circle
+              cx={pos.x}
+              cy={pos.y}
+              r={r}
+              fill={bpColor}
+              fillOpacity={0.82}
+              stroke={levelColor(lv)}
+              strokeWidth={1.5}
+            />
+            <text
+              x={pos.x}
+              y={pos.y + r + 9}
+              textAnchor="middle"
+              fontSize={7}
+              fill="rgba(255,255,255,0.55)"
+              fontFamily="var(--cc-font-mono)"
+            >
+              {(bp?.name ?? id).slice(0, 11)}
+            </text>
+          </g>
+        )
+      })}
+      <g transform={`translate(4, ${H - 26})`}>
+        {[
+          { label: 'Producer', color: '#44aa88' },
+          { label: 'Herbivore', color: '#f5a623' },
+          { label: 'Carnivore', color: '#e55' },
+        ].map(({ label, color }, i) => (
+          <g key={label} transform={`translate(${i * 76}, 0)`}>
+            <circle cx={5} cy={5} r={4} fill={color} fillOpacity={0.8} />
+            <text x={13} y={9} fontSize={7} fill="rgba(255,255,255,0.4)" fontFamily="var(--cc-font-mono)">{label}</text>
+          </g>
+        ))}
+      </g>
+    </svg>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Feature #3126: Succession Progress Bar
+// ---------------------------------------------------------------------------
+
+function SuccessionBar({
+  blueprints,
+  populations,
+  elapsed,
+}: {
+  blueprints: CreatureBlueprint[]
+  populations: Map<string, number>
+  elapsed: number
+}) {
+  let totalWeight = 0
+  let weightedStage = 0
+  for (const bp of blueprints) {
+    if (bp.successionStage === undefined) continue
+    const pop = populations.get(bp.id) ?? 0
+    if (pop === 0) continue
+    totalWeight += pop
+    weightedStage += bp.successionStage * pop
+  }
+
+  let avgStage: number
+  if (totalWeight > 0) {
+    avgStage = weightedStage / totalWeight
+  } else {
+    if (elapsed < 300) avgStage = 1
+    else if (elapsed < 900) avgStage = 1 + (elapsed - 300) / 600
+    else if (elapsed < 2400) avgStage = 2 + (elapsed - 900) / 1500
+    else avgStage = Math.min(4, 3 + (elapsed - 2400) / 2400)
+  }
+
+  const progress = Math.min(1, Math.max(0, (avgStage - 1) / 3))
+  const stageName =
+    avgStage < 1.5 ? 'Pioneer'
+    : avgStage < 2.5 ? 'Early Succession'
+    : avgStage < 3.5 ? 'Mid-Succession'
+    : 'Climax'
+
+  if (elapsed < 5 && totalWeight === 0) return null
+
+  return (
+    <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
+      <h3 className="pb-2" style={sectionHeading}>
+        Succession
+      </h3>
+      <p style={{ fontSize: 11, color: 'var(--cc-text-muted)', marginBottom: 8 }}>
+        The ecosystem&rsquo;s position on the pioneer-to-climax continuum.
+      </p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, fontFamily: 'var(--cc-font-mono)', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--cc-text-muted)', marginBottom: 4 }}>
+        <span>Pioneer</span>
+        <span>Climax</span>
+      </div>
+      <div style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
+        <div style={{
+          background: 'linear-gradient(to right, #44aa88, #8bc34a)',
+          width: `${Math.max(4, progress * 100)}%`,
+          height: '100%',
+          borderRadius: 4,
+          transition: 'width 0.6s ease',
+        }} />
+      </div>
+      <div style={{ marginTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+        <span style={{ fontSize: 11, color: 'var(--cc-mint)', fontFamily: 'var(--cc-font-mono)', letterSpacing: 0.5 }}>
+          {stageName}
+        </span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {(['Pioneer', 'Early', 'Mid', 'Climax'] as const).map((name, i) => {
+            const stageNum = i + 1
+            const active = Math.round(avgStage) === stageNum
+            return (
+              <span key={name} style={{
+                fontSize: 8,
+                fontFamily: 'var(--cc-font-mono)',
+                letterSpacing: 0.8,
+                textTransform: 'uppercase',
+                color: active ? 'var(--cc-mint)' : 'rgba(255,255,255,0.22)',
+              }}>
+                {name}
+              </span>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Feature #3167: Evolutionary Lineage Tree
+// ---------------------------------------------------------------------------
+
+function LineageTree({
+  blueprint,
+  allBlueprints,
+}: {
+  blueprint: CreatureBlueprint
+  allBlueprints: CreatureBlueprint[]
+}) {
+  const bpMap = new Map(allBlueprints.map(b => [b.id, b]))
+  const chain: CreatureBlueprint[] = []
+  const seen = new Set<string>([blueprint.id])
+  let current: CreatureBlueprint | undefined = blueprint
+  while (current?.derivedFrom) {
+    const parent = bpMap.get(current.derivedFrom)
+    if (!parent || seen.has(parent.id)) break
+    seen.add(parent.id)
+    chain.unshift(parent)
+    current = parent
+  }
+
+  if (chain.length === 0) {
+    return (
+      <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--cc-font-mono)' }}>
+        Origin species
+      </span>
+    )
+  }
+
+  return (
+    <div style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', fontFamily: 'var(--cc-font-mono)' }}>
+      {chain.map(ancestor => (
+        <span key={ancestor.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ color: 'rgba(255,255,255,0.5)' }}>{ancestor.name}</span>
+          <span style={{ color: 'rgba(255,255,255,0.25)' }}>›</span>
+        </span>
+      ))}
+      <strong style={{ color: 'var(--cc-mint)', fontWeight: 600 }}>{blueprint.name}</strong>
     </div>
   )
 }
