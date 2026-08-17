@@ -82,6 +82,7 @@ export const BASE_MATERIAL_IDS = [
   'shed-skin',
   'web',
   'termite-mound',
+  'fire',
 ] as const satisfies readonly BaseMaterialId[]
 
 const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
@@ -193,6 +194,17 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     grain: 0.22,
     solid: true,
     fertile: false,
+  }),
+
+  // --- fire ---------------------------------------------------------------
+  // Fire is non-solid and deadly. It glows brightly. The renderer gives it
+  // animated flickering and rising smoke — see renderer.ts drawFireEffects().
+  fire: material('fire', 'Fire', '#ff4400', {
+    grain: 0.1,
+    solid: false,
+    liquid: false,
+    deadly: true,
+    glow: 0.9,
   }),
 }
 
@@ -309,6 +321,7 @@ export const PAINTABLE: BaseMaterialId[] = [
   'crystal',
   'gem',
   'gold',
+  'fire',
 ]
 
 /** Precomputed flags, indexed the same way as the tile grid (hot path). */
