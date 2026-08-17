@@ -445,15 +445,18 @@ house rule, and the comment is the only record of why.
 
 Append only. Never edit a past row; add a new one that supersedes it.
 
-| ID  | Date       | Hypothesis                 | Change                         | Command                                                | Result                                                                           | Verdict                    |
-| --- | ---------- | -------------------------- | ------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------- | -------------------------- |
-| E0  | 2026-08-16 | baseline                   | none, at `dc973eed`            | `--theme grassland --seconds 1600 --runs 3 --diagnose` | 3 failing; 6/6 animals extinct; 4 animal births                                  | **done** — table above     |
-| E2  | 2026-08-16 | H2, H4 (free, off E0)      | none — re-read E0              | —                                                      | H2 falsified; H4 not applicable to grassland                                     | **done**                   |
-| E1  | 2026-08-16 | noise floor                | none, two disjoint seed sets   | at `9b0f90fe`, as E0, and again with `--seed-start 3`  | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**                         | **done** — below           |
-| E3  | 2026-08-16 | H6                         | `--set breedAtScale=0.7`       | as E1 both arms, `--set breedAtScale=0.7`              | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise.            | **not promoted** — below   |
-| E4  | 2026-08-16 | H7 (free, off E1)          | none — arithmetic + source     | —                                                      | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**                | **done** — below           |
-| E5  | 2026-08-16 | W9 — sunhawk starters      | `sunhawk count: 1 → 2` (3 → 6) | as E1, both arms                                       | `T_ext` 410s / 440s, within noise. **The metric stopped measuring a dice roll.** | **kept** — below           |
-| E6  | 2026-08-16 | fatigue latch + chase-only | code, no knobs                 | as E1, both arms, on top of E5                         | `T_ext` 480s / 450s, within noise. Exhaustion pinning gone (63–80% → 0–3%).      | **kept** — a repair, below |
+| ID  | Date       | Hypothesis                 | Change                            | Command                                                     | Result                                                                             | Verdict                    |
+| --- | ---------- | -------------------------- | --------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| E0  | 2026-08-16 | baseline                   | none, at `dc973eed`               | `--theme grassland --seconds 1600 --runs 3 --diagnose`      | 3 failing; 6/6 animals extinct; 4 animal births                                    | **done** — table above     |
+| E2  | 2026-08-16 | H2, H4 (free, off E0)      | none — re-read E0                 | —                                                           | H2 falsified; H4 not applicable to grassland                                       | **done**                   |
+| E1  | 2026-08-16 | noise floor                | none, two disjoint seed sets      | at `9b0f90fe`, as E0, and again with `--seed-start 3`       | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**                           | **done** — below           |
+| E3  | 2026-08-16 | H6                         | `--set breedAtScale=0.7`          | as E1 both arms, `--set breedAtScale=0.7`                   | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise.              | **not promoted** — below   |
+| E4  | 2026-08-16 | H7 (free, off E1)          | none — arithmetic + source        | —                                                           | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**                  | **done** — below           |
+| E5  | 2026-08-16 | W9 — sunhawk starters      | `sunhawk count: 1 → 2` (3 → 6)    | as E1, both arms                                            | `T_ext` 410s / 440s, within noise. **The metric stopped measuring a dice roll.**   | **kept** — below           |
+| E6  | 2026-08-16 | fatigue latch + chase-only | code, no knobs                    | as E1, both arms, on top of E5                              | `T_ext` 480s / 450s, within noise. Exhaustion pinning gone (63–80% → 0–3%).        | **kept** — a repair, below |
+| W9a | 2026-08-16 | noise floor, re-measured   | none — free, off E5/E6's own arms | —                                                           | **Noise floor is 30s**, not 135s. Two independent estimates agree.                 | **done** — below           |
+| E7  | 2026-08-16 | H6, re-tested post-E5/E6   | `--set breedAtScale=0.7`          | as E1, both arms                                            | `T_ext` 435s / 505s — arms disagree in sign. `underfed` 47%→28%, `too-young` →60%. | **not promoted** — below   |
+| E8  | 2026-08-16 | H8 (free, off one sim run) | none — `sim:micro-land 900s`      | `npm run sim:micro-land -- --theme grassland --seconds 900` | Plants at cap all run. 12 predators, **77 kills**. Grazers are eaten, not starved. | **done** — below           |
 
 ### E3 — the gate opens, three and a half times the babies, nobody is saved
 
@@ -601,6 +604,126 @@ The old fatigue line was dragging the first world's creature out of `rest` to
 match, so the two agreed by accident. Fixed the interleaving; recalibrated the
 two magnitudes against a measured trace.)_
 
+### W9a — the noise floor is 30s, and it cost nothing
+
+E5 and E6 each ran two disjoint seed sets under one unchanged configuration,
+which _is_ the noise-floor measurement — it did not need its own experiment:
+
+| commit          | seeds 0–2 | seeds 3–5 | spread  |
+| --------------- | --------- | --------- | ------- |
+| E5 (`958585a6`) | 410s      | 440s      | **30s** |
+| E6 (`4c52e0f2`) | 480s      | 450s      | **30s** |
+
+Two independent estimates agreeing at 30s, against 135s in E1. The old figure was
+mostly the sunhawk coin flip, exactly as E3 predicted. **Every decision rule in
+this document divides by this number, so re-derive any verdict that used 135s.**
+
+A note on method that generalises: this was recorded as a work item and would
+have cost a fifteen-minute run. It was already sitting in data on disk. The
+skill's "free experiments exist — do them first" is the rule, and the way to
+apply it is to ask what the _existing_ arms already are before designing a new
+one.
+
+### E7 — the gate opens further and the meadow dies at the same rate
+
+`breedAtScale=0.7` again, now on `4c52e0f2` where the metric is un-blinded, the
+calorie economics are better and the floor is 30s. Everything E3 could not be
+judged against is fixed.
+
+| Measure               | E6 (control) | E7 (`breedAtScale=0.7`) |
+| --------------------- | ------------ | ----------------------- |
+| `T_ext`, seeds 0–2    | 480s         | 435s                    |
+| `T_ext`, seeds 3–5    | 450s         | 505s                    |
+| `underfed` blocker    | 46–48%       | **27–29%**              |
+| `too-young` blocker   | 42–46%       | **60–61%**              |
+| `breeding-gate-opens` | 0%           | 1%                      |
+| mite births           | 8            | 18                      |
+
+The arms move in _opposite_ directions, −45s and +55s, both larger than the 30s
+floor. That is not a small effect, it is no effect plus noise slightly wider than
+the estimate — and it is the second time this knob has produced births without
+producing survival. **H6 is answered: the gate is real, and opening it is not
+sufficient.** Stop spending runs on it.
+
+What it bought instead is the blocker mix. With `underfed` roughly halved, the
+constraint underneath is visible, and it is not hunger:
+
+| species | `too-young` | `underfed` | births |
+| ------- | ----------- | ---------- | ------ |
+| woolly  | **98–100%** | 25–30%     | 0      |
+| stalker | 95–97%      | 22–37%     | 0      |
+| dustbee | 85–96%      | 47–48%     | 0      |
+| hopper  | 81–85%      | 19–26%     | 3–4    |
+
+E2 falsified H2 by arguing that a `too-young` share far above 20% means juveniles
+are dying before they grow up. That reasoning was right and is now sharper:
+woolly is `too-young: 100%` with zero births, so every woolly ever sampled was a
+juvenile, and its entire founder population dies each run before maturity at
+600s.
+
+### E8 — the grazers are eaten, and the plants are never touched
+
+One human-read run, `npm run sim:micro-land -- --theme grassland --seconds 900`,
+seed 1000. Free, and it says more than the last three experiments combined.
+
+```
+t=0s    Sunleaf:54 Bramble:36 | Mite:21 Hopper:18 Woolly:15 Dustbee:12 Stalker:6 Sunhawk:6
+t=450s  Sunleaf:70 Bramble:70 | Mite:6  Hopper:6  Sunhawk:6 Stalker:5
+t=900s  Sunleaf:70 Bramble:70 | Sunhawk:6
+```
+
+**The plants sit at `PLANT_SPECIES_CAP` (70) from t=90s to the end.** Food is
+abundant, capped, and largely uneaten. Every hypothesis in this document about
+the food supply — H5 especially — is answered: supply is not the constraint and
+raising it cannot help.
+
+What kills them is arithmetic:
+
+| species | ate        | died                       |
+| ------- | ---------- | -------------------------- |
+| sunhawk | 47 animals | nothing — 6 alive at t=900 |
+| stalker | 30 animals | eaten 5, starved 1         |
+| mite    | 67 plants  | **eaten 22**, starved 1    |
+| hopper  | 55 plants  | **eaten 16**               |
+| woolly  | 21 plants  | **eaten 12**               |
+
+**Twelve predators killed 77 animals in 900 seconds, from a standing stock of 66
+grazers.** Predation exceeds prey turnover by a wide margin, and the grazers need
+400–600s to reach breeding age — so they are removed faster than they mature,
+and every question about whether they are then _allowed_ to breed is downstream
+of a population that no longer exists.
+
+**And the predator pressure never relents.** The sunhawk holds at exactly 6 for
+the entire run: it cannot breed (maturity 760s) and does not die inside the
+window, so unlike a real predator it does not crash when its prey does. A food
+web recovers because the predator starves first. This one does not get the
+chance.
+
+_(Note what the guardrails did here. `population-oscillates` passed at 49–54%
+across a run in which every animal died — the plants were doing the oscillating,
+which is the "Plants only" lie named at the top of this document.
+`species-richness-holds` (W7) was the only check that caught it. That is the
+whole argument for W7 in one run.)_
+
+### H8 — predation removes grazers faster than they can mature
+
+The synthesis of E7 and E8, and it supersedes H1, H5 and H6 as the live
+explanation.
+
+- **Predicts:** removing the predators entirely lets the grazers reach maturity,
+  breed, and hold a population — and `T_ext` becomes censored.
+- **Killed by:** the grazers dying out anyway with no predators in the world,
+  which would put the cause back on maturity and the gate and make predation a
+  red herring.
+- **Next:** that ablation. It is not a shippable change; it is the one run that
+  distinguishes the two, and it should be run before anything is tuned.
+
+**A tension to settle before any fix, not after.** If the answer is "fewer
+predators", it collides with W9's resolution: three sunhawks sit inside the
+stochastic-extinction window and get coin-flipped out, six strip the meadow. That
+may mean grassland should not carry two predator species at all — which is a
+design question about what the meadow _is_, and belongs to whoever owns the game.
+
 ### E4 — the meadow's top predator is deleted by a coin flip
 
 Free: arithmetic off the source and the `--diagnose` output E1 already produced.
@@ -745,11 +868,8 @@ wrong and why. The live queue is:
   roll depend on something other than a bare count). It belongs to whoever owns
   the game. The half that _is_ a straight repair — the death reporting as `aged`,
   which is what hid it — is done.
-- **W9a — re-measure the noise floor on `958585a6`.** The 135s from E1 was mostly
-  the sunhawk coin flip, and the per-run spread has since collapsed from 566s to
-  183s. Every decision rule in this document divides by that number, so it is
-  wrong until re-run. Two disjoint seed sets, no change: cheapest useful run
-  available.
+- ~~**W9a — re-measure the noise floor.**~~ Done, free, off E5 and E6's own arms:
+  **30s**, not 135s. See below.
 - **W10 — identify the 350 ceiling.** Peak population pinned at exactly 350 in all
   six E3 runs and 292–318 at baseline, while grazer starvation rose. Not
   `MAX_CREATURES` (1020). Something is binding and it converts extra births into
@@ -757,6 +877,10 @@ wrong and why. The live queue is:
   the birth rate can be believed. The population series recorded by W1 is on the
   metrics object and is not printed yet — printing it would answer this without a
   new run.
+- **W12 — the predator ablation (H8).** Run grassland with `stalker` and
+  `sunhawk` at 0 and see whether the grazers hold. Not a shippable change — the
+  one measurement that separates "predation is the constraint" from "maturity and
+  the gate are". Everything else in this queue is downstream of its answer.
 - **W11 — `no-headroom` tripled under E3 (4%→15%).** Animals qualifying on
   fullness and failing to afford the child points at `breedCost`. Cheap to test
   once `T_ext` works.
