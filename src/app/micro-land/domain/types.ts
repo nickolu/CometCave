@@ -312,6 +312,14 @@ export interface CreatureBlueprint {
    */
   hibernates?: boolean
   /**
+   * Named season this species can breed in. When set, mating is blocked outside
+   * that season (spring / summer / autumn / winter). Works alongside
+   * `breedingPhotoperiod` and `phenology.breedingGdd` — all gates must pass.
+   * When `TUNING.seasonAmplitude === 0` (seasons disabled), this gate is open.
+   * Epic #3074.
+   */
+  breedingSeason?: 'spring' | 'summer' | 'autumn' | 'winter'
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited

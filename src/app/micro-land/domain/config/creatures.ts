@@ -437,6 +437,7 @@ const FINLING = builtin('finling', {
   aura: null,
   glow: 0,
   phenology: { breedingGdd: 500 }, // midsummer spawner like many fish species
+  breedingSeason: 'summer',  // Epic #3074: finlings spawn in summer when water is warmest
   salinityTolerance: { min: 0.3, max: 1.0 },  // euryhaline — tolerates brackish to marine
   acidSensitive: true,  // freshwater fish are pH-sensitive bioindicators. Issue #3279.
 })
@@ -789,6 +790,7 @@ const WOOLLY = builtin('woolly', {
   // Herd matriarchs remember the safest grazing routes — knowledge lost with them.
   elderWisdom: true,
   phenology: { breedingGdd: 200 }, // early spring breeder
+  breedingSeason: 'spring',  // Epic #3074: seasonal mating gate — woolly only reproduce in spring
   // Herd animals follow leaders — medium-high social transmission rate.
   socialLearningRate: 0.7,
 })
@@ -1141,6 +1143,7 @@ const DUSTBEE = builtin('dustbee', {
   death: { becomes: null, particleColor: '#ffd94a', particleCount: 6 },
   aura: { radius: 20, helps: ['plant'], boost: 2.4, converts: null, convertRate: 0 },
   glow: 0,
+  breedingSeason: 'spring',  // Epic #3074: dustbees emerge and breed when spring flowers bloom
 })
 
 const FLUTTERMOTH = builtin('fluttermoth', {

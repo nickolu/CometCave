@@ -3996,7 +3996,12 @@ export function tickCreatures(
     // short-day breeders require seasonFactor <= 1 (winter/autumn). Issue #3360.
     const photoperiodOk = !bp.breedingPhotoperiod || TUNING.seasonAmplitude === 0 ||
       (bp.breedingPhotoperiod === 'long' ? seasonFactor >= 1.0 : seasonFactor <= 1.0)
-    const inBreedingSeason = photoperiodOk && (
+    // Named season gate: species like deer (spring) or bats (summer) only mate
+    // in the right season. When seasons are disabled the gate is always open.
+    // Epic #3074.
+    const breedingSeasonOk = !bp.breedingSeason || TUNING.seasonAmplitude === 0 ||
+      w.season === bp.breedingSeason
+    const inBreedingSeason = photoperiodOk && breedingSeasonOk && (
       !bp.phenology?.breedingGdd ||
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
     )

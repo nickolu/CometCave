@@ -811,6 +811,10 @@ export function sanitizeBlueprint(
     windDispersed: 'windDispersed' in b ? !!b.windDispersed : undefined,
     // Hibernation: deep winter torpor suppresses hunger and movement (epic #3074)
     hibernates: 'hibernates' in b ? !!b.hibernates : undefined,
+    // Breeding season: named season gate on mating (epic #3074)
+    breedingSeason: ['spring', 'summer', 'autumn', 'winter'].includes(b.breedingSeason as string)
+      ? (b.breedingSeason as 'spring' | 'summer' | 'autumn' | 'winter')
+      : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
       ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
