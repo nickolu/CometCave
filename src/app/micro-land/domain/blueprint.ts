@@ -763,6 +763,10 @@ export function sanitizeBlueprint(
             }),
           }
         : undefined,
+    crabConstitution: typeof b.crabConstitution === 'boolean' ? b.crabConstitution : undefined,
+    duckDemocracy: typeof b.duckDemocracy === 'boolean' ? b.duckDemocracy : undefined,
+    hedgehogHealthcare: typeof b.hedgehogHealthcare === 'boolean' ? b.hedgehogHealthcare : undefined,
+    xerusXenophobia: typeof b.xerusXenophobia === 'boolean' ? b.xerusXenophobia : undefined,
     patchDependent: b.patchDependent === true,
     // Coevolution features (#3263–#3267)
     predatorEscalation: b.predatorEscalation !== undefined ? !!b.predatorEscalation : undefined,
@@ -821,6 +825,20 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    // Issue #3234
+    pheromoneDepositor: 'pheromoneDepositor' in b ? !!b.pheromoneDepositor : undefined,
+    // Issue #3185
+    intermediateHostId: typeof b.intermediateHostId === 'string'
+      ? (b.intermediateHostId.trim() || undefined)
+      : undefined,
+    // Issue #3253
+    coralPolyp: 'coralPolyp' in b ? !!b.coralPolyp : undefined,
+    // Issue #3241
+    soundEmitter: 'soundEmitter' in b ? !!b.soundEmitter : undefined,
+    soundReceptive: 'soundReceptive' in b ? !!b.soundReceptive : undefined,
+    soundReceptiveRange: typeof b.soundReceptiveRange === 'number'
+      ? Math.max(1, Math.min(30, b.soundReceptiveRange))
+      : undefined,
     playBehavior: typeof b.playBehavior === 'boolean' ? b.playBehavior : undefined,
     maturityAge: typeof b.maturityAge === 'number' ? Math.max(0, b.maturityAge) : undefined,
     matingCaller: typeof b.matingCaller === 'boolean' ? b.matingCaller : undefined,

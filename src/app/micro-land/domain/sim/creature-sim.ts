@@ -1286,6 +1286,41 @@ export function tickCreatures(
     }
   }
 
+  // --- Crab Constitution: once-per-world event when 10+ crabs assemble. Issue #3296. ---
+  if (!w.crabConstitutionRatified) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const cbp = w.blueprints[bpId]
+      if (!cbp?.crabConstitution || cnt < 10) continue
+      w.crabConstitutionRatified = true
+      const CLAUSES = [
+        'ARTICLE I: The right to moult without interference is inalienable.',
+        'ARTICLE II: Equal access to shell sizes for all citizens.',
+        'ARTICLE III: A Senate of Shells shall be formed. It has not yet met.',
+      ]
+      const text = `${cbp.name} Constitution ratified. ${CLAUSES[Math.floor(rng() * CLAUSES.length)]} Enforcement mechanism: none.`
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text })
+      break
+    }
+  }
+
+  // --- Duck Democracy: periodic town hall votes. Issue #3297. ---
+  const DUCK_HALL_PERIOD = TUNING.seasonPeriod / 10  // every ~30 seconds ≈ 10 in-game days
+  w.duckTownHallTime ??= w.elapsed + DUCK_HALL_PERIOD
+  if (w.elapsed >= w.duckTownHallTime) {
+    w.duckTownHallTime = w.elapsed + DUCK_HALL_PERIOD
+    for (const [bpId] of Object.entries(speciesCount)) {
+      const dbp = w.blueprints[bpId]
+      if (!dbp?.duckDemocracy) continue
+      const ducks = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      if (ducks.length < 3) continue
+      const facingRight = ducks.filter(d => d.facing === 1).length
+      const ISSUES = ['fish supply', 'predator proximity', 'nesting materials', 'pond water quality', 'bread distribution']
+      const issue = ISSUES[Math.floor(rng() * ISSUES.length)]
+      const outcome = facingRight > ducks.length / 2 ? 'right' : 'left'
+      events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${dbp.name} Town Hall: ${issue} discussed. Decision Made: [Inconclusive] (majority faced ${outcome})` })
+      break
+    }
+  }
   // --- Otter Oligarchy: 5 oligarchs elected by fish catches each season. Issue #3308. ---
   if (TUNING.seasonPeriod > 0) {
     const currentSeason = Math.floor(w.elapsed / TUNING.seasonPeriod)
@@ -1780,6 +1815,35 @@ export function tickCreatures(
       c.migrateTimer = Math.max(0, c.migrateTimer - dt)
     }
 
+    // --- Hedgehog Healthcare: spine-sharing — nearby kin slightly repel threats. Issue #3301. ---
+    if (bp.hedgehogHealthcare) {
+      const nearKin = w.creatures.filter(k =>
+        k.id !== c.id && k.blueprintId === c.blueprintId &&
+        Math.abs(k.x - c.x) < 5 && Math.abs(k.y - c.y) < 5
+      )
+      if (nearKin.length >= 2) {
+        c.spineBoost = 0.2  // active healthcare benefit
+      } else {
+        c.spineBoost = 0
+      }
+    }
+
+    // --- Xerus Xenophobia: ground squirrels ignore non-digger species. Issue #3317. ---
+    if (bp.xerusXenophobia && c.targetId !== null) {
+      const target = w.creatures.find(t => t.id === c.targetId)
+      if (target) {
+        const tbp = w.blueprints[target.blueprintId]
+        // Embargo flying species; 100% tariff on non-diggers (push them away from food target)
+        if (tbp?.move.kind === 'fly') {
+          c.targetId = null  // refuse to interact with fliers
+        } else if (!tbp?.burrowDigger && tbp?.move.kind !== 'walk') {
+          // Non-digger non-flier: ignore their food if another digger source is present
+          // (simplified: just 50% chance to ignore non-digger food target each tick)
+          if (rng() < 0.01 * dt) c.targetId = null
+        }
+      }
+    }
+
     // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
     if (bp.body.locomotion === 'walk') {
       const qs_fx = Math.floor(c.x + body.dx + body.w / 2)
@@ -2142,6 +2206,20 @@ export function tickCreatures(
       c.hunger = Math.min(1, c.hunger + deviation * 0.0004 * dt)
     }
 
+    // Decomposer: gain hunger from mud tiles and convert them back to dirt. Issue #3146.
+    if (bp.decomposer) {
+      const dx2 = Math.floor(c.x), dy2 = Math.floor(c.y)
+      if (dx2 >= 0 && dx2 < WORLD_W && dy2 >= 0 && dy2 < WORLD_H) {
+        const di = dy2 * WORLD_W + wrapCol(dx2)
+        if (w.tiles[di] === MATERIAL_INDEX.mud) {
+          c.hunger = Math.max(0, c.hunger - 0.003 * dt)  // feed on organic matter
+          // Slowly convert mud back to dirt (decomposition complete)
+          if (rng() < 0.0002 * dt) {
+            setTile(w, dx2, dy2, MATERIAL_INDEX.dirt)
+          }
+        }
+      }
+    }
     // Prey escalation: surviving prey slowly builds evasion every 60 ticks. Issue #3263.
     if (tickCount % 60 === 0 && bp.preyEscalation) {
       c.escalatedEvasion = Math.min(0.5, (c.escalatedEvasion ?? 0) + 0.002)
@@ -2153,6 +2231,26 @@ export function tickCreatures(
     // Obligate coevolution: faster starvation when partner species is extinct. Issue #3266.
     if (bp.obligatePartner !== undefined && (speciesCount[bp.obligatePartner] ?? 0) === 0) {
       c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+    }
+    // Genetic isolation tracking: time without nearby conspecific. Issue #3164.
+    if ((tickCount + c.id) % 60 === 0) {
+      const isoReach = 30
+      const isoCount = gather(c.x + bw / 2, isoReach + bw / 2)
+      let hasConspecific = false
+      for (let i = 0; i < isoCount; i++) {
+        const nb = found[i]
+        if (nb.id !== c.id && nb.blueprintId === c.blueprintId) { hasConspecific = true; break }
+      }
+      if (hasConspecific) {
+        c.isolationTime = 0
+      } else {
+        c.isolationTime = (c.isolationTime ?? 0) + 60  // +60 seconds per check interval
+      }
+    }
+    // Sexual dimorphism: females age slightly slower. Issue #3165.
+    if (bp.sexualDimorphism && c.sex === 'female') {
+      // Undo 10% of the age tick to simulate longer lifespan
+      c.ageSeconds = Math.max(0, c.ageSeconds - 0.1 * dt)
     }
     // Intertidal zone: bonus at low tide, penalty at high tide. Issue #3191.
     if (bp.intertidal && w.tidalHeight !== undefined) {
@@ -3889,8 +3987,13 @@ export function tickCreatures(
             (bp.invasive ? 0.67 : 1)
           // r/K selection: rK=0 → shorter cooldown (fast breeders), rK=1 → longer cooldown (slow breeders). Issue #3256.
           if (bp.rK !== undefined) {
-            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
+            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5x at rK=0, 2.0x at rK=1
             c.breedCooldown *= cooldownMultiplier
+          }
+          // Semelparous: die after first reproduction. Issue #3259.
+          if (bp.semelparous) {
+            c.hasReproduced = true
+            kill(w, c, bp, dead, events, 'aged')
           }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
@@ -3919,6 +4022,13 @@ export function tickCreatures(
             c.hasReproduced = true
             kill(w, c, bp, dead, events, 'aged')
           }
+          // Sexual dimorphism: sex-based cooldown modification for parent. Issue #3165.
+          if (bp.sexualDimorphism && c.sex === 'male') {
+            c.breedCooldown *= 0.9  // males breed slightly faster
+          }
+          // Breeding resets isolation counter. Issue #3164.
+          c.isolationTime = 0
+          if (mate) mate.isolationTime = 0
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
           const child = reproduce(w, bp, ox, oy, bw, bh, rng)
@@ -4020,6 +4130,23 @@ export function tickCreatures(
                 }
               }
             }
+            // Sexual dimorphism: assign sex and adjust traits/hue. Issue #3165.
+            if (bp.sexualDimorphism) {
+              child.sex = rng() < 0.5 ? 'male' : 'female'
+              if (child.sex === 'male') {
+                child.traits = { ...child.traits, hue: (child.traits.hue + 30) % 360 }
+              }
+            }
+            // Genetic isolation: extra drift for isolated parents. Issue #3164.
+            if ((c.isolationTime ?? 0) > 1800) {
+              const extraDrift = 0.1  // additional nudge
+              child.traits = {
+                ...child.traits,
+                speed: Math.max(0.6, Math.min(1.6, child.traits.speed + (rng() - 0.5) * extraDrift)),
+                sight: Math.max(0.6, Math.min(1.6, child.traits.sight + (rng() - 0.5) * extraDrift)),
+                size: Math.max(0.8, Math.min(1.2, child.traits.size + (rng() - 0.5) * extraDrift)),
+              }
+            }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
             // Kin selection: offspring inherit parent's kin group. Issue #3230.
             if (bp.kinSelection) {
@@ -4027,6 +4154,10 @@ export function tickCreatures(
             }
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
+            // Multi-host parasite: start as larval stage. Issue #3185.
+            if (bp.intermediateHostId !== undefined) {
+              child.lifecycleStage = 'larval'
+            }
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -4228,6 +4359,13 @@ export function tickCreatures(
                 c.hasReproduced = true
                 kill(w, c, bp, dead, events, 'aged')
               }
+              // Sexual dimorphism: sex-based cooldown modification for parent. Issue #3165.
+              if (bp.sexualDimorphism && c.sex === 'male') {
+                c.breedCooldown *= 0.9  // males breed slightly faster
+              }
+              // Breeding resets isolation counter. Issue #3164.
+              c.isolationTime = 0
+              if (mate) mate.isolationTime = 0
             }
             events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
           } else {
@@ -4437,6 +4575,19 @@ export function tickCreatures(
   // Decay carcasses and remove expired ones.
   for (const car of w.carcasses) {
     car.decaySeconds -= dt
+  }
+  // Organic matter: decayed carcasses on dirt/grass enrich soil to mud. Issue #3145.
+  for (const car of w.carcasses) {
+    if (car.decaySeconds <= 0) {
+      const cx2 = Math.floor(car.x), cy2 = Math.floor(car.y)
+      if (cx2 >= 0 && cx2 < WORLD_W && cy2 >= 0 && cy2 < WORLD_H) {
+        const ti = cy2 * WORLD_W + wrapCol(cx2)
+        const tile = w.tiles[ti]
+        if (tile === MATERIAL_INDEX.dirt || tile === MATERIAL_INDEX.grass) {
+          setTile(w, cx2, cy2, MATERIAL_INDEX.mud)
+        }
+      }
+    }
   }
   // Fossil record: ancient carcasses on stone tiles become bone fossils. Issue #3178.
   for (const car of w.carcasses) {
@@ -5020,6 +5171,10 @@ function look(
         c.hostId = other.id
         c.mood = 'eat'
         c.targetId = null
+        // Multi-host lifecycle: mature from larval to adult when attaching to intermediate host. Issue #3185.
+        if (bp.intermediateHostId !== undefined && c.lifecycleStage === 'larval' && other.blueprintId === bp.intermediateHostId) {
+          c.lifecycleStage = 'adult'
+        }
         if (other.mood === 'wander' || other.mood === 'rest') {
           other.mood = 'flee'
           other.targetId = c.id
@@ -5049,6 +5204,8 @@ function look(
         // moves on. The signal decays in 30 s so the defense is temporary.
         // Issue #3331.
         if (obp.move.kind === 'root' && other.defenseTimer && other.defenseTimer > 0) return
+        // Hedgehog Healthcare: kin-pooled spines give 20% miss chance. Issue #3301.
+        if ((other.spineBoost ?? 0) > 0 && rng() < (other.spineBoost ?? 0)) continue
         // Eyespot deflection: false-eye markings redirect 40% of killing blows to
         // a non-vital region. The prey escapes with a burst of speed; the predator
         // lands a wing-tip bite and gains almost nothing from the missed kill.
@@ -5467,7 +5624,7 @@ function look(
     !threat &&
     c.mood === 'wander' &&
     w.scents.length > 0 &&
-    cooperationVal > 0.5
+    (cooperationVal > 0.5 || bp.pheromoneDepositor === true)
   ) {
     const scentReach2 = sight * sight * 4
     const midX = cx
@@ -5566,6 +5723,28 @@ function look(
     if (nearestPolScent) {
       const weight = 0.35
       c.drift = deltaX(midX, nearestPolScent.x) > 0 ? weight : -weight
+    }
+  }
+
+  // Sound-receptive: flee from nearby sound emitter scents. Issue #3241.
+  if (bp.soundReceptive && c.mood === 'wander' && w.scents.length > 0) {
+    const soundRange = (bp.soundReceptiveRange ?? 12)
+    const soundRange2 = soundRange * soundRange
+    const midX = cx
+    const midY = c.y + bh / 2
+    for (const s of w.scents) {
+      if (s.blueprintId === c.blueprintId) continue  // ignore own species
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      if (sdx * sdx + sdy * sdy < soundRange2) {
+        const soundBp = w.blueprints[s.blueprintId]
+        if (soundBp?.soundEmitter) {
+          c.mood = 'flee'
+          c.vx += sdx > 0 ? -0.3 : 0.3
+          c.vy += sdy > 0 ? -0.2 : 0.2
+          break
+        }
+      }
     }
   }
 
