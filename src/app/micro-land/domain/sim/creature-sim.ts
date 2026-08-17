@@ -3953,6 +3953,10 @@ export function tickCreatures(
             }
             // Record birth position for anadromous migration homing.
             if (bp.anadromous) child.natalX = Math.floor(child.x)
+            // Multi-host parasite: start as larval stage. Issue #3185.
+            if (bp.intermediateHostId !== undefined) {
+              child.lifecycleStage = 'larval'
+            }
             c.children++
             if (c.children === 1) logLife(c, w.elapsed, 'First offspring')
             else if (c.children % 10 === 0) logLife(c, w.elapsed, `${c.children} offspring`)
@@ -4946,6 +4950,10 @@ function look(
         c.hostId = other.id
         c.mood = 'eat'
         c.targetId = null
+        // Multi-host lifecycle: mature from larval to adult when attaching to intermediate host. Issue #3185.
+        if (bp.intermediateHostId !== undefined && c.lifecycleStage === 'larval' && other.blueprintId === bp.intermediateHostId) {
+          c.lifecycleStage = 'adult'
+        }
         if (other.mood === 'wander' || other.mood === 'rest') {
           other.mood = 'flee'
           other.targetId = c.id
@@ -5393,7 +5401,7 @@ function look(
     !threat &&
     c.mood === 'wander' &&
     w.scents.length > 0 &&
-    cooperationVal > 0.5
+    (cooperationVal > 0.5 || bp.pheromoneDepositor === true)
   ) {
     const scentReach2 = sight * sight * 4
     const midX = cx
@@ -5492,6 +5500,28 @@ function look(
     if (nearestPolScent) {
       const weight = 0.35
       c.drift = deltaX(midX, nearestPolScent.x) > 0 ? weight : -weight
+    }
+  }
+
+  // Sound-receptive: flee from nearby sound emitter scents. Issue #3241.
+  if (bp.soundReceptive && c.mood === 'wander' && w.scents.length > 0) {
+    const soundRange = (bp.soundReceptiveRange ?? 12)
+    const soundRange2 = soundRange * soundRange
+    const midX = cx
+    const midY = c.y + bh / 2
+    for (const s of w.scents) {
+      if (s.blueprintId === c.blueprintId) continue  // ignore own species
+      const sdx = deltaX(midX, s.x)
+      const sdy = s.y - midY
+      if (sdx * sdx + sdy * sdy < soundRange2) {
+        const soundBp = w.blueprints[s.blueprintId]
+        if (soundBp?.soundEmitter) {
+          c.mood = 'flee'
+          c.vx += sdx > 0 ? -0.3 : 0.3
+          c.vy += sdy > 0 ? -0.2 : 0.2
+          break
+        }
+      }
     }
   }
 
