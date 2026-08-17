@@ -720,6 +720,8 @@ export function sanitizeBlueprint(
     frogFundamentalism: typeof b.frogFundamentalism === 'boolean' ? b.frogFundamentalism : undefined,
     gopherGovernment: typeof b.gopherGovernment === 'boolean' ? b.gopherGovernment : undefined,
     beetleInternet: typeof b.beetleInternet === 'boolean' ? b.beetleInternet : undefined,
+    moleMailCarrier: typeof b.moleMailCarrier === 'boolean' ? b.moleMailCarrier : undefined,
+    newtNewspaper: typeof b.newtNewspaper === 'boolean' ? b.newtNewspaper : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
