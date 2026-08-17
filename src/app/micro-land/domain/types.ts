@@ -298,6 +298,13 @@ export interface CreatureBlueprint {
    */
   fixesNitrogen?: boolean
   /**
+   * True if this plant produces aerially dispersed seeds (dandelion, maple, grass).
+   * Seeds are biased strongly in the prevailing wind direction; a strong tailwind
+   * carries them many extra tiles while headwind suppresses their reach.
+   * Issue #3154.
+   */
+  windDispersed?: boolean
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited

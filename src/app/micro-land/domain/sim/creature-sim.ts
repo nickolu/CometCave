@@ -4566,8 +4566,12 @@ export function tickCreatures(
     const { w: vw, h: vh } = artSize(victimBp)
     const angle = rng() * Math.PI * 2
     const dist = 20 + rng() * 40
-    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * 25
-    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * 15
+    // Wind-dispersed seeds (dandelion, maple, grass) ride the prevailing wind much
+    // farther than they would go by random scatter alone. Non-windDispersed seeds
+    // (heavy nuts, sticky burrs) don't care which way the wind blows. Issue #3154.
+    const pollinationWindScale = victimBp.windDispersed ? 55 : 0
+    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * pollinationWindScale
+    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * (pollinationWindScale * 0.6)
     const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
     if (seedling) {
       plantsAlive++
@@ -6911,6 +6915,12 @@ function reproduce(
   const spread = isPlant ? 14 : 5
   const body = bodyBox(bp)
 
+  // Wind-dispersed seeds ride the prevailing wind. windX=0.4 → up to 12 tiles extra
+  // in the horizontal direction on self-seeding; vertical is scaled proportionally.
+  // Issue #3154.
+  const selfWindX = isPlant && bp.windDispersed ? (w.windX ?? 0) * 30 : 0
+  const selfWindY = isPlant && bp.windDispersed ? (w.windY ?? 0) * 20 : 0
+
   for (let attempt = 0; attempt < 12; attempt++) {
     const minSpread = isPlant ? TUNING.plantSpreadMin : 0
     // For plants: pick a random direction and land at least minSpread tiles away.
@@ -6918,12 +6928,12 @@ function reproduce(
     const signX = rng() > 0.5 ? 1 : -1
     const signY = rng() > 0.5 ? 1 : -1
     const x = isPlant
-      ? ox + signX * (minSpread + rng() * (spread - minSpread))
+      ? ox + signX * (minSpread + rng() * (spread - minSpread)) + selfWindX
       : ox + (rng() * 2 - 1) * spread
     const ySpread = isPlant ? 6 : spread
     const yMin = isPlant ? minSpread * (6 / 14) : 0
     const y = isPlant
-      ? oy + signY * (yMin + rng() * (ySpread - yMin))
+      ? oy + signY * (yMin + rng() * (ySpread - yMin)) + selfWindY
       : oy + (rng() * 2 - 1) * ySpread
     const cx = wrapX(x)
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
