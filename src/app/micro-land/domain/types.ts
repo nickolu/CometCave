@@ -1241,6 +1241,16 @@ export interface CreatureBlueprint {
    */
   maxDepth?: number
   /**
+   * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
+   * interfere when crowded, reducing effective sight range. Issue #3243.
+   */
+  soundFrequency?: number
+  /**
+   * True if this prey species times movements to ambient noise peaks.
+   * Pauses when no noisy creatures are nearby; moves under noise cover. Issue #3245.
+   */
+  acousticCamouflage?: boolean
+  /**
    * Moon phase (0–27) at which this species breeds. When set, breeding is
    * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
    * Issue #3190.
@@ -1784,6 +1794,10 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
+  toxinLoad?: number
+  /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
+  carrierTimer?: number
   /** Cumulative skill bonus earned through juvenile play. Issue #3232. */
   playSkillBonus?: number
   /** Countdown seconds until next play session. Issue #3232. */
@@ -1793,8 +1807,7 @@ export interface Creature {
   /** World Y position of the nearest detected mating call source. Issue #3244. */
   matingCallSourceY?: number
   /** Whether this creature is currently in its dawn chorus call. Issue #3246. */
-  chorusing?: boolean
-  /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
+  chorusing?: boolean  /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
   primedDefense?: number
   /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
   venomTimer?: number
@@ -2252,6 +2265,16 @@ export interface WorldState {
   lemmingBaseline?: Record<string, number>
   /** World-clock time of the next lemming legislature vote. Issue #3305. */
   lemmingNextVoteTime?: number
+  /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
   /**
    * Current weather state for the world. Transitions stochastically based on
    * season and elapsed time. Issues #3094-#3097.
