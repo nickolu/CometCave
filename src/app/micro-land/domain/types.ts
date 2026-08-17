@@ -333,11 +333,6 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
-   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
-   * soil tiles. Issue #3148.
-   */
-  fixesNitrogen?: boolean
-  /**
    * Decomposer archetype: this creature eats from carcasses (any carcass within 2
    * tiles) and converts the consumed mass into soilNutrient at the carcass site.
    * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
@@ -1131,6 +1126,7 @@ export interface CreatureBlueprint {
    * collectively run off the nearest world edge when overcrowded. Issue #3305.
    */
   lemmingLegislature?: boolean
+  /**
    * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
    *
    * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
