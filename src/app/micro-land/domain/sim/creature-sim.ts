@@ -1737,6 +1737,7 @@ export function tickCreatures(
     // Drought starvation pressure on plant-eaters: food is scarcer when moisture is low. Issue #3096.
     if (w.weatherState === 'drought' && bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')) {
       c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
+    }
     // Plant nutrient bonus (#3101): rooted plants in nutrient-rich soil have lower hunger drain.
     // High soilNutrient up to 50% hunger reduction — fertile soil sustains plants longer.
     if (bp.move.kind === 'root' && w.soilNutrient) {
@@ -4736,6 +4737,7 @@ function look(
         // Nocturnal predators gain an ambush advantage in storms (dark + chaos). Issue #3097.
         if (w.weatherState === 'storm' && ((c.traits as { diurnal?: number }).diurnal ?? 0) < -0.2) {
           fill *= 1.2
+        }
         // Primed defense: stressed plant less nutritious and unpalatable. Issue #3239.
         if (other.primedDefense && other.primedDefense > 0) {
           fill *= 0.7  // 30% less nutrition from chemically-primed plant
