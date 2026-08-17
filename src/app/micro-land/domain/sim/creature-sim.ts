@@ -1351,6 +1351,39 @@ export function tickCreatures(
     }
   }
 
+  // --- Lemming Legislature: periodic cliff votes. Issue #3305. ---
+  const LEMMING_VOTE_PERIOD = TUNING.seasonPeriod / 6  // ~50 s ≈ 15 in-game days
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const lbp = w.blueprints[bpId]
+    if (!lbp?.lemmingLegislature) continue
+    // Record baseline on first observation
+    ;(w.lemmingBaseline ??= {})[bpId] ??= Math.max(50, cnt)
+    // Initialize vote timer
+    w.lemmingNextVoteTime ??= w.elapsed + LEMMING_VOTE_PERIOD
+    if (w.elapsed >= w.lemmingNextVoteTime) {
+      w.lemmingNextVoteTime = w.elapsed + LEMMING_VOTE_PERIOD
+      // Elect up to 20 legislators from the healthiest individuals
+      const eligible = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      for (const c2 of eligible) c2.isLegislator = false
+      if (cnt >= 100) {
+        const legislators = eligible
+          .sort((a, b2) => a.hunger - b2.hunger)  // least hungry = healthiest
+          .slice(0, 20)
+        for (const leg of legislators) leg.isLegislator = true
+      }
+      // The Vote: Cliff or No Cliff
+      const baseline = (w.lemmingBaseline ??= {})[bpId] ?? 100
+      const densityRatio = cnt / baseline
+      if (densityRatio > 2 && cnt >= 100) {
+        // CLIFF VOTE: legislators + 30% of followers march off the edge
+        for (const c2 of eligible) {
+          if (c2.isLegislator || rng() < 0.3) c2.cliffBound = true
+        }
+        events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${lbp.name} Legislature votes: CLIFF` })
+      }
+    }
+  }
+
   // Helpers — bees, worms, anything with an aura. Gathered once per tick
   // because the breeding check below asks "is one of these near me", and there
   // are normally none at all.
@@ -2339,6 +2372,18 @@ export function tickCreatures(
       }
     }
 
+    // --- Cliff march: elected lemmings run toward the nearest world edge. Issue #3305. ---
+    if (c.cliffBound) {
+      const distLeft = c.x
+      const distRight = WORLD_W - 1 - c.x
+      const edgeX = distLeft <= distRight ? 0 : WORLD_W - 1
+      const edgeDx = edgeX - c.x
+      const edgeDist = Math.abs(edgeDx)
+      if (edgeDist > 0.5) {
+        c.vx += (edgeDx / edgeDist) * 2.0 * dt
+      }
+    }
+
     // --- Otter Oligarchy: oligarchs extract 5% of catch from nearby otters. Issue #3308. ---
     if (bp.otterOligarchy && c.isOligarch) {
       for (const other of w.creatures) {
@@ -2644,6 +2689,11 @@ export function tickCreatures(
       }
     }
 
+    // Cliff fall: cliffBound creatures that reach the world edge fall off. Issue #3305.
+    if (c.cliffBound && (c.x <= 0.5 || c.x >= WORLD_W - 1.5)) {
+      kill(w, c, bp, dead, events, 'starved')
+    }
+
     // One timer, two ways to be in the wrong place.
     let inTrouble = false
     if (bp.habitat.needs && bp.habitat.needs.length > 0) {
@@ -2846,6 +2896,94 @@ export function tickCreatures(
               break damSearch
             }
           }
+        }
+      }
+    }
+
+    // Play behavior: juvenile creatures build skills through play. Issue #3232.
+    if (bp.playBehavior && bp.maturityAge && c.ageSeconds < bp.maturityAge) {
+      if (c.playTimer === undefined) c.playTimer = 10 + rng() * 20
+      c.playTimer -= dt
+      if (c.playTimer <= 0) {
+        c.playTimer = 15 + rng() * 15
+        const maxBonus = 0.1
+        if ((c.playSkillBonus ?? 0) < maxBonus) {
+          c.playSkillBonus = Math.min(maxBonus, (c.playSkillBonus ?? 0) + 0.001)
+          c.traits.speed = (c.traits.speed ?? 1) + 0.001
+        }
+        c.hunger = Math.min(1, c.hunger + 0.01)  // play costs energy
+      }
+    }
+
+    // Mating call attractance: ready-to-breed creatures emit calls; receptive ones navigate. Issue #3244.
+    if (bp.matingCaller && tickCount % 60 === 0) {
+      const range = bp.matingCallRange ?? 15
+      // Effective range scales with caller health
+      const effectiveRange = range * (1 - (c.hunger ?? 0) * 0.5)
+      if (readyToBreed(c, bp)) {
+        // Caller: find receptive same-species within range and set their target
+        for (const other of w.creatures) {
+          if (other === c || other.blueprintId !== c.blueprintId) continue
+          if (!readyToBreed(other, bp)) continue
+          const dx = deltaX(c.x, other.x), dy = other.y - c.y
+          if (dx * dx + dy * dy < effectiveRange * effectiveRange) {
+            other.matingCallSourceX = c.x
+            other.matingCallSourceY = c.y
+          }
+        }
+      }
+      // Clear stale call source if creature is no longer receptive
+      if (c.matingCallSourceX !== undefined && !readyToBreed(c, bp)) {
+        c.matingCallSourceX = undefined
+        c.matingCallSourceY = undefined
+      }
+    }
+
+    // Dawn chorus: birds vocalize at sunrise, establishing acoustic territory. Issue #3246.
+    if (bp.dawnChorus) {
+      // nightFactor: 0 = day, 1 = night. dayFraction here: 0 = start of day, 1 = end.
+      // We derive a day fraction from the same cosine formula used for nightFactor.
+      // nightFactor = (1 - cos(2π * elapsed / dayLength)) / 2
+      // Dawn window: nightFactor transitions from 1 toward 0 — we use the raw elapsed
+      // modulus to identify 0.05–0.2 of the day period as the dawn chorus window.
+      const dayLen = TUNING.dayLengthSeconds
+      const dayFraction = dayLen > 0 ? (w.elapsed % dayLen) / dayLen : 0
+      const isDawnWindow = dayFraction > 0.05 && dayFraction < 0.2
+      c.chorusing = isDawnWindow
+      if (isDawnWindow) {
+        const chorusRange = bp.dawnChorusRange ?? 12
+        // Push nearby same-species birds to maintain spacing
+        for (const other of w.creatures) {
+          if (other === c || other.blueprintId !== c.blueprintId) continue
+          const dx = deltaX(c.x, other.x), dy = other.y - c.y
+          const dist2 = dx * dx + dy * dy
+          if (dist2 < chorusRange * chorusRange && dist2 > 0) {
+            const dist = Math.sqrt(dist2)
+            // Gently push other away
+            other.vx += (dx / dist) * 20 * dt
+            other.vy += (dy / dist) * 20 * dt
+          }
+        }
+      }
+    }
+
+    // Water pressure zones: creatures below maxDepth take pressure damage. Issue #3248.
+    if (bp.maxDepth !== undefined && (tickCount + c.id) % 60 === 0) {
+      // Find depth below water surface by scanning up
+      const cx = Math.floor(c.x + bw / 2), cy = Math.floor(c.y + bh / 2)
+      let depth = 0
+      for (let dy = 0; dy < 50; dy++) {
+        const ty = cy - dy
+        if (ty < 0) break
+        if (IS_LIQUID[w.tiles[ty * WORLD_W + (cx % WORLD_W)]] !== 1) break
+        depth = dy
+      }
+      const excess = depth - bp.maxDepth
+      if (excess > 0) {
+        c.hunger = Math.min(1, c.hunger + excess * 0.001)  // pressure damage
+        if (excess > 10) {
+          // Severe pressure: push creature upward
+          c.vy = Math.min(c.vy, -20)
         }
       }
     }
@@ -5930,6 +6068,19 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     wantX = c.drift
     wantY = bp.move.kind === 'fly' || bp.move.kind === 'swim' ? (rng() - 0.5) * 0.6 : 0
     c.targetId = null
+    // Mating call navigation: move toward call source if set. Issue #3244.
+    if (bp.matingCaller && c.matingCallSourceX !== undefined && readyToBreed(c, bp)) {
+      const cdx = deltaX(c.x, c.matingCallSourceX)
+      const cdy = (c.matingCallSourceY ?? c.y) - c.y
+      const dist = Math.sqrt(cdx * cdx + cdy * cdy)
+      if (dist > 2) {
+        wantX = cdx / dist
+        wantY = cdy / dist
+      } else {
+        c.matingCallSourceX = undefined
+        c.matingCallSourceY = undefined
+      }
+    }
   }
 
   // Obstacle avoidance: walk and crawl locomotion steer around solid walls.

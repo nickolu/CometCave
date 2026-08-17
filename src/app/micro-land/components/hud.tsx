@@ -117,6 +117,8 @@ export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const soundEnabled = useMicroLand(s => s.soundEnabled)
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
+  const nutrientOverlayEnabled = useMicroLand(s => s.nutrientOverlayEnabled)
+  const setNutrientOverlayEnabled = useMicroLand(s => s.setNutrientOverlayEnabled)
   const tempOverlayEnabled = useMicroLand(s => s.tempOverlayEnabled)
   const setTempOverlayEnabled = useMicroLand(s => s.setTempOverlayEnabled)
 
@@ -578,6 +580,22 @@ export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
                 {soundEnabled ? 'Sound on' : 'Sound off'}
               </button>
 
+              {/* Nutrient overlay */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => setNutrientOverlayEnabled(!nutrientOverlayEnabled)}
+                aria-pressed={nutrientOverlayEnabled}
+                title="Show soil fertility distribution as a green heat map across the world"
+                style={{
+                  ...overflowItem,
+                  ...(nutrientOverlayEnabled
+                    ? { borderColor: '#00cc44', color: '#00cc44', background: 'rgba(0,204,68,0.08)' }
+                    : {}),
+                }}
+              >
+                {nutrientOverlayEnabled ? 'Nutrients on' : 'Nutrients'}
+              </button>
               {/* Temperature overlay */}
               <button
                 type="button"
