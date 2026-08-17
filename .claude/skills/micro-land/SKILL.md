@@ -161,43 +161,71 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
 
 ## Verifying a change
 
-Run these in order. The third one is the one that actually catches ecosystem
-regressions, and a browser cannot substitute for it.
+Run these in order. Step 3 is the one that actually catches ecosystem
+regressions.
 
 1. `npm run typecheck`
 2. `npm test` — vitest; covers `creature-kit`, `chronicle`, `wire`, `tuning` and
    the world-save `snapshot`/`wire` pair.
-3. `npm run sim:micro-land -- --theme earth --seconds 600 --runs 5`
-   Repeat for `tidepool`, `volcanic`, `station`. This runs the real simulation
-   headless and prints population over time, causes of death, and what ate what.
-   Look for:
-   - `✓ Still alive` at the end of every theme.
-   - A low-water mark well above zero — an oscillation, not a flatline.
-   - **Known-failing since the animal seed rain was removed:** every animal is
-     currently marked `EXTINCT in every run` on all four themes, within 3–8
-     minutes, leaving a plant-only world. The seed rain had been restocking them
-     every four seconds, which hid the fact that no animal population is
-     self-sustaining at the current tuning — grazers starve with the meadow
-     pinned at its species caps, so the problem is reach and distribution rather
-     than a shortage of food. Until that is fixed, read this line as "no *new*
-     species went extinct", not as a pass.
-   - Deaths attributed sensibly (`starved` dominating a grazer means the plants
-     lost; `burned` dominating means the terrain is hostile).
-   - `world still solid` not collapsing — diggers should tunnel, not delete.
-4. `npm run lint`
-5. In the browser at `/micro-land`: paint, place, drag-throw a creature, summon
+3. `npm run eval:micro-land -- --seconds 1600 --runs 3`
+   The ecosystem evals: the real simulation, headless, reduced to pass/fail
+   claims with an exit code. This is the one that catches ecosystem regressions,
+   and a browser cannot substitute for it. Add `--diagnose` to see the breeding
+   probe per species while you tune. `--set knob=value` moves the same knobs the
+   settings panel does, so a number found by dragging a slider can be run through
+   the checks before it becomes a default.
+
+   **Mind the run length.** Maturity is `lifespanSeconds * lifespanScale * 0.2`,
+   and `lifespanScale` is 10 — so a species with `lifespanSeconds: 150` cannot
+   breed until t=300s, and the slowest animal in `grassland` matures at 760s. Any
+   run shorter than about 1600s is measuring how much of a creature's *childhood*
+   fits in the window and reporting it as infertility. `run-outlasts-maturity`
+   fails when this happens; believe nothing below it until that check is green.
+
+   Read failures top-down — the list is in causal order, and only the first
+   failure is worth acting on:
+   `foraging-feeds-animals` → `breeding-gate-opens` → `ready-animals-seek-mates`
+   → `mate-stints-convert`. Gate before priority before pathing; fixing a knob
+   when the priority order is the problem makes the world worse and still shows
+   no births.
+
+   **Known-failing today.** `breeding-gate-opens` sits near 0% on every theme:
+   animals are blocked roughly half by `too-young` and half by `underfed`, and
+   `cooldown` is 0%, so `breedCooldown` is *not* the problem. Several species
+   ship with `breedAt` at 0.9–1.0, which asks for a hunger of almost exactly
+   zero. `foraging-feeds-animals` passes, so this is not a food-reach problem.
+
+4. `npm run sim:micro-land -- --theme grassland --seconds 600` for the human
+   read — population over time, causes of death, what ate what. Use it to see
+   *shape*; use the evals to decide whether a change helped. Themes are `empty`,
+   `grassland`, `tropical-island`, `verdant-forest`, `tidepool` — `earth`,
+   `volcanic` and `station` were retired and any command naming them errors out.
+   Look for deaths attributed sensibly (`starved` dominating a grazer means the
+   plants lost; `burned` means the terrain is hostile) and `world still solid`
+   not collapsing.
+5. `npm run lint`
+6. In the browser at `/micro-land`: paint, place, drag-throw a creature, summon
    one creature and one scene, pan with each input (arrows, minimap, wheel, two
    fingers, one finger in Look mode), open the field guide.
 
-For balance work, compare the harness output *before and after* on the same
-seeds — `runOnce` seeds from `1000 + i * 7919`, so runs are comparable across
-branches. `--set knob=value` moves the same knobs the settings panel does, so a
-number found by dragging a slider can be run through the ten-minute check
-before it becomes a default:
+For balance work, run the evals before and after on the same seeds — `seedFor(i)`
+is `1000 + i * 7919`, so run `i` is the same world on every checkout and a diff
+is attributable rather than a vibe:
 
 ```
-npm run sim:micro-land -- --theme earth --seconds 600 --runs 3 --set plantSpeciesCap=50
+npm run eval:micro-land -- --seconds 1600 --runs 3 --diagnose --set breedAt=0.5
+npm run eval:micro-land -- --json > after.json     # machine-readable, exit 1 on failure
 ```
+
+`npm run eval:micro-land:smoke` is the fast version (120s, one seed) — it is a
+"did I break the harness" check, not an ecosystem check, and it will always fail
+`run-outlasts-maturity` by design.
+
+Adding a check means adding it to `CHECKS` in `harness/evals.ts`. Three rules
+live in that file's header and are worth honouring: a check must be able to fail
+for exactly one reason, thresholds are floors set where behaviour is
+*unambiguously* wrong rather than where the ideal sits, and nothing asserts on a
+single seed.
 
 ## Known hazards
 
