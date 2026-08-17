@@ -3714,7 +3714,6 @@ export function tickCreatures(
 
       // Polygyny: only the most-fed male within sight breeds. Issue #3257.
       if (bp.matingSystem === 'polygyny' && c.id % 2 === 0) {
-        const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12) && o.id % 2 === 0)
         const sight = bp.senses?.sight ?? 12
         const competitors = w.creatures.filter(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight && o.id % 2 === 0)
         if (competitors.some(o => o.mealsEaten > c.mealsEaten)) continue  // dominated — skip
@@ -3722,7 +3721,6 @@ export function tickCreatures(
 
       // Age-structured reproduction: rate varies by life stage. Issue #3261.
       if (bp.ageReproductionCurve) {
-        const lifespan = (bp.diet.lifespanSeconds ?? 100) * TUNING.lifespanScale
         const lifespan = lifespanOf(c, bp) * TUNING.lifespanScale
         const relAge = Math.min(1, c.ageSeconds / lifespan)
         let ageFactor = 1
@@ -3834,9 +3832,6 @@ export function tickCreatures(
             c.hasReproduced = true
             kill(w, c, bp, dead, events, 'aged')
           }
-            const cooldownMultiplier = 0.5 + bp.rK * 1.5  // 0.5× at rK=0, 2.0× at rK=1
-            c.breedCooldown *= cooldownMultiplier
-          }
           payForChild(w, c, bp, bw, bh, helpers)
           if (mate) {
             mate.children++
@@ -3847,17 +3842,9 @@ export function tickCreatures(
           }
           // Monogamy pair-bond: nearby mate reduces next cooldown. Issue #3257.
           if (bp.matingSystem === 'monogamy') {
-            const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < (bp.senses?.sight ?? 12))
-            if (bondMate) c.breedCooldown *= 0.8
-          }
             const sight = bp.senses?.sight ?? 12
             const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
             if (bondMate) c.breedCooldown *= 0.8
-          }
-          // Semelparous: die after first reproduction. Issue #3259.
-          if (bp.semelparous) {
-            c.hasReproduced = true
-            kill(w, c, bp, dead, events, 'aged')
           }
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
