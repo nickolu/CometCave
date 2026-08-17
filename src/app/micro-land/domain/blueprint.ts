@@ -641,6 +641,7 @@ export function sanitizeBlueprint(
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
+    fireAdapted: b.fireAdapted !== undefined ? !!b.fireAdapted : undefined,
     lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
     biomeRequirements: Array.isArray(b.biomeRequirements)
       ? (b.biomeRequirements as unknown[]).filter((z): z is BiomeZoneType =>

@@ -88,7 +88,7 @@ export const BASE_MATERIAL_IDS = [
 const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
   air: material('air', 'Air', '#000000', { grain: 0, solid: false }),
   dirt: material('dirt', 'Dirt', '#6b4a2f', { grain: 0.16, fertile: true }),
-  grass: material('grass', 'Grass', '#4f9d3a', { grain: 0.18, fertile: true }),
+  grass: material('grass', 'Grass', '#4f9d3a', { grain: 0.18, fertile: true, flammable: true }),
   stone: material('stone', 'Stone', '#5c6470'),
   sand: material('sand', 'Sand', '#d9c08a', { grain: 0.12, powder: true, fertile: true }),
   water: material('water', 'Water', '#2f7fd4', {
@@ -110,7 +110,7 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
   glass: material('glass', 'Glass', '#9fd4d8', { grain: 0.06, glow: 0.15, acidProof: true }),
   ash: material('ash', 'Ash', '#4a4550', { grain: 0.18, powder: true, fertile: true }),
   obsidian: material('obsidian', 'Obsidian', '#241f2e', { grain: 0.12, acidProof: true }),
-  wood: material('wood', 'Wood', '#7a5230', { fertile: true }),
+  wood: material('wood', 'Wood', '#7a5230', { fertile: true, flammable: true }),
 
   // --- cold ---------------------------------------------------------------
   // Snow is fertile on purpose: a snowfield made only of snow would have
@@ -169,6 +169,7 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     breathable: true,
     viscous: 0.92,
     glow: 0.06,
+    flammable: true,
   }),
   acid: material('acid', 'Acid', '#8ee02a', {
     grain: 0.16,
@@ -205,6 +206,7 @@ const BASE_MATERIALS: Record<BaseMaterialId, Material> = {
     liquid: false,
     deadly: true,
     glow: 0.9,
+    flammable: false,
   }),
 }
 
@@ -342,4 +344,8 @@ export const IS_ACID_PROOF: Uint8Array = new Uint8Array(
 /** How much each material slows things moving through it, 0..255. */
 export const VISCOSITY: Uint8Array = new Uint8Array(
   MATERIAL_BY_INDEX.map(m => Math.round(m.viscous * 255))
+)
+/** Materials that can ignite and spread fire when adjacent to a fire tile. */
+export const IS_FLAMMABLE: Uint8Array = new Uint8Array(
+  MATERIAL_BY_INDEX.map(m => (m.flammable ? 1 : 0))
 )
