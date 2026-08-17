@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    decomposer: b.decomposer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
@@ -696,6 +697,13 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    venomous: typeof b.venomous === 'boolean' ? b.venomous : undefined,
+    venomPotency: typeof b.venomPotency === 'number' ? Math.max(0, Math.min(1, b.venomPotency)) : undefined,
+    venomResistance: typeof b.venomResistance === 'number' ? Math.max(0, Math.min(1, b.venomResistance)) : undefined,
+    territorialBlueprintFlag: typeof b.territorialBlueprintFlag === 'boolean' ? b.territorialBlueprintFlag : undefined,
+    territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
+    deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
+    shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
     parentalCare: typeof b.parentalCare === 'boolean' ? b.parentalCare : undefined,
     parentalRadius: typeof b.parentalRadius === 'number' ? Math.max(1, b.parentalRadius) : undefined,
     broodProtection: typeof b.broodProtection === 'number' ? Math.max(0.1, Math.min(1, b.broodProtection)) : undefined,
@@ -709,6 +717,12 @@ export function sanitizeBlueprint(
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
     ageReproductionCurve: ['peak-early', 'peak-middle', 'peak-late'].includes(b.ageReproductionCurve as string) ? b.ageReproductionCurve as 'peak-early' | 'peak-middle' | 'peak-late' : undefined,
+    earthwormElevator: typeof b.earthwormElevator === 'boolean' ? b.earthwormElevator : undefined,
+    frogFundamentalism: typeof b.frogFundamentalism === 'boolean' ? b.frogFundamentalism : undefined,
+    gopherGovernment: typeof b.gopherGovernment === 'boolean' ? b.gopherGovernment : undefined,
+    beetleInternet: typeof b.beetleInternet === 'boolean' ? b.beetleInternet : undefined,
+    moleMailCarrier: typeof b.moleMailCarrier === 'boolean' ? b.moleMailCarrier : undefined,
+    newtNewspaper: typeof b.newtNewspaper === 'boolean' ? b.newtNewspaper : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
@@ -772,6 +786,23 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
+    // Succession stage: gate seed germination on soil maturity (issue #3123)
+    successionStage: typeof b.successionStage === 'number'
+      ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
+      : undefined,
+    // Trophic level: inferred from diet when not explicitly set (issue #3119)
+    trophicLevel: (() => {
+      if (typeof b.trophicLevel === 'number') {
+        return Math.max(1, Math.min(5, Math.floor(b.trophicLevel)))
+      }
+      const moveKind = typeof move.kind === 'string' ? move.kind : 'walk'
+      const eatsArr = Array.isArray(diet.eats) ? diet.eats as string[] : []
+      if (moveKind === 'root' || eatsArr.length === 0) return 1  // producer
+      if (eatsArr.some((e: string) => ['plant', 'seed', 'algae'].includes(e))) return 2  // herbivore
+      if (eatsArr.some((e: string) => ['meat', 'animal', 'fish', 'insect', 'bug'].includes(e))) return 3  // carnivore
+      return 2  // default herbivore
+    })(),
     dominanceHierarchy: typeof b.dominanceHierarchy === 'boolean' ? b.dominanceHierarchy : undefined,
     kinSelection: typeof b.kinSelection === 'boolean' ? b.kinSelection : undefined,
     alarmCaller: typeof b.alarmCaller === 'boolean' ? b.alarmCaller : undefined,
@@ -780,6 +811,23 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    echolocates: typeof b.echolocates === 'boolean' ? b.echolocates : undefined,
+    stressSignaler: typeof b.stressSignaler === 'boolean' ? b.stressSignaler : undefined,
+    stressReceiver: typeof b.stressReceiver === 'boolean' ? b.stressReceiver : undefined,
+    packHunting: typeof b.packHunting === 'boolean' ? b.packHunting : undefined,
+    coordinationRange: typeof b.coordinationRange === 'number' ? Math.max(1, b.coordinationRange) : undefined,
+    packSizeThreshold: typeof b.packSizeThreshold === 'number' ? Math.max(0.1, b.packSizeThreshold) : undefined,
+    venomous: typeof b.venomous === 'boolean' ? b.venomous : undefined,
+    venomPotency: typeof b.venomPotency === 'number' ? Math.max(0, Math.min(1, b.venomPotency)) : undefined,
+    venomResistance: typeof b.venomResistance === 'number' ? Math.max(0, Math.min(1, b.venomResistance)) : undefined,
+    territorialBlueprintFlag: typeof b.territorialBlueprintFlag === 'boolean' ? b.territorialBlueprintFlag : undefined,
+    territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
+    deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
+    shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
+    antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
+    bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
+    quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
+    raccoonRealEstate: typeof b.raccoonRealEstate === 'boolean' ? b.raccoonRealEstate : undefined,
   }
 }
 
