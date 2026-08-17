@@ -62,8 +62,14 @@ the world is broken — which is the only reason a long sequence of small
 improvements is measurable at all. It is also directly the sentence at the top of
 this document: "how long until the meadow breaks?"
 
-**It cannot be computed today.** `RunMetrics` records _which_ species went extinct
-and not _when_. Fixing that is W1, and it blocks everything else.
+**Landed in `9b0f90fe` (W1).** `RunMetrics` records when each species first hit
+zero and the eval prints `T_ext` above the checks.
+
+**But read E3 before trusting a number it gives you.** A metric that measures the
+time to an event only measures the world if the _world_ causes that event. Today
+one species is removed by a mechanic unrelated to the ecosystem, always goes
+first, and therefore sets `T_ext` on both arms of every experiment. That is W9,
+and it is the blocking item.
 
 ### Guardrails — all must hold for a result to count
 
@@ -200,13 +206,15 @@ c.breedCooldown <= 0 &&
 its life, by construction and on every species.
 
 **`breedAt` is stricter than it looks.** The modal value across the roster is
-**0.75** (14 species), which demands `hunger ≤ 0.25`. `mealValue` is 0.42, so
-that is two meals up from empty. The tail runs to 0.9+, and some of those are
-deliberate — a `breedAt` of exactly 1 is how a nymph is stopped from breeding
-before it metamorphoses, and reading those as a balance bug would be a mistake.
+**0.75** (14 species), which demands `hunger ≤ 0.25`. `mealValue` is **0.26**
+(not 0.42 — that number was stale in the `micro-land` skill and is corrected
+here), so that is a whole meal's worth of headroom and no more. The tail runs to
+0.9+, and some of those are deliberate — a `breedAt` of exactly 1 is how a nymph
+is stopped from breeding before it metamorphoses, and reading those as a balance
+bug would be a mistake. `breedAtScale` exempts them for that reason.
 
 **A child always costs more than a meal.** Invariant 6 requires
-`mealValue < breedCost` (0.42 < 0.55), and `enforceInvariants` holds that margin
+`mealValue < breedCost` (**0.26 < 0.31**), and `enforceInvariants` holds that margin
 whichever slider moves. This is load-bearing — if one meal paid for a child,
 grazers would breed on every full stomach and strip the plants. So _every_ child
 costs roughly two meals plus maintenance, permanently, by design.
@@ -329,9 +337,11 @@ Ordered by `breedAt`, the `underfed` blocker share is almost perfectly monotone:
 | sunhawk | bug, meat | 0.88      | ≤ 0.12        | 99%        | 0      |
 
 Six species, six points, one line. The two species that bred at all are the two
-loosest gates. With `mealValue` at 0.42, a woolly must be within 0.18 of
-completely full — under half a meal's worth of headroom — and hold that state
-long enough to meet another woolly in the same condition.
+loosest gates. With `mealValue` at **0.26**, a woolly must be within 0.18 of
+completely full — under one meal's worth of headroom — and hold that state long
+enough to meet another woolly in the same condition. E1 makes this stronger, not
+weaker: every one of these species eats 0.44–0.55 times a minute, so they are not
+short of food. They are short of the _last_ mouthful, permanently.
 
 - **Predicts:** scaling `breedAt` down moves `underfed`, `breeding-gate-opens`
   and `T_ext` together, and moves them most for the species highest in the table.
@@ -339,6 +349,32 @@ long enough to meet another woolly in the same condition.
   animals now qualify to breed and still cannot find each other, promoting H3
   from "plausible" to "the answer".
 - **Blocked by W2.** `breedAt` is not a knob; this cannot be tested today.
+
+### H7 — hunger outruns the meal, so fullness is unreachable rather than merely rare
+
+New in E1, and the reason the `underfed` story is not simply "lower `breedAt`".
+
+The sunhawk eats **0.52 meals per creature-minute**, sits at `underfed: 100%` for
+its entire life, and dies of old age at t≈1600s having never once qualified. That
+combination is only possible if hunger accrues faster than 0.26 of a stomach per
+two minutes — i.e. the _equilibrium_ hunger this species settles at is above its
+`breedAt` no matter how well the hunting goes. If so it is not a rare state, it
+is an unreachable one, and no amount of `breedAtScale` short of dropping below
+that equilibrium will produce a single birth.
+
+- **Change:** none yet — first compute, per grassland species, the steady-state
+  hunger implied by `hungerRate * hungerRateScale` against the observed meal rate,
+  and compare it to `breedFullness(bp)`. Arithmetic off the source and one
+  `--diagnose` output already on disk. **Free — do it before spending a run.**
+- **Predicts:** the species ordering of "equilibrium hunger minus `breedAt`"
+  matches the ordering of `underfed` share almost exactly, and the three species
+  with zero births sit on the wrong side of zero.
+- **Killed by:** equilibrium hunger comfortably below `breedAt` for all six, which
+  would mean fullness is reachable and the loss is in how long it is _held_ —
+  promoting H3.
+- **Distinguishes itself from H6** by predicting that `breedAtScale` produces a
+  **threshold**, not a gradient: nothing until the scale crosses a species' line,
+  then that species starts breeding all at once.
 
 ### H5 — the meal economy sets a floor we should stop fighting
 
@@ -409,17 +445,229 @@ house rule, and the comment is the only record of why.
 
 Append only. Never edit a past row; add a new one that supersedes it.
 
-| ID  | Date       | Hypothesis            | Change                       | Command                                                | Result                                          | Verdict                   |
-| --- | ---------- | --------------------- | ---------------------------- | ------------------------------------------------------ | ----------------------------------------------- | ------------------------- |
-| E0  | 2026-08-16 | baseline              | none, at `dc973eed`          | `--theme grassland --seconds 1600 --runs 3 --diagnose` | 3 failing; 6/6 animals extinct; 4 animal births | **done** — table above    |
-| E2  | 2026-08-16 | H2, H4 (free, off E0) | none — re-read E0            | —                                                      | H2 falsified; H4 not applicable to grassland    | **done**                  |
-| E1  |            | noise floor           | none, two disjoint seed sets | as E0, twice                                           |                                                 | _pending — blocked on W1_ |
-| E3  |            | H6                    | `--set breedAtScale=…`       | as E0 + one `--set`                                    |                                                 | _pending — blocked on W2_ |
+| ID  | Date       | Hypothesis            | Change                       | Command                                                | Result                                                                | Verdict                  |
+| --- | ---------- | --------------------- | ---------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------ |
+| E0  | 2026-08-16 | baseline              | none, at `dc973eed`          | `--theme grassland --seconds 1600 --runs 3 --diagnose` | 3 failing; 6/6 animals extinct; 4 animal births                       | **done** — table above   |
+| E2  | 2026-08-16 | H2, H4 (free, off E0) | none — re-read E0            | —                                                      | H2 falsified; H4 not applicable to grassland                          | **done**                 |
+| E1  | 2026-08-16 | noise floor           | none, two disjoint seed sets | at `9b0f90fe`, as E0, and again with `--seed-start 3`  | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**              | **done** — below         |
+| E3  | 2026-08-16 | H6                    | `--set breedAtScale=0.7`     | as E1 both arms, `--set breedAtScale=0.7`              | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise. | **not promoted** — below |
+| E4  | 2026-08-16 | H7 (free, off E1)     | none — arithmetic + source   | —                                                      | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**     | **done** — below         |
+
+### E3 — the gate opens, three and a half times the babies, nobody is saved
+
+Commit `9b0f90fe`, both arms of E1 repeated with exactly one knob moved:
+
+```
+npm run eval:micro-land -- --theme grassland --seconds 1600 --runs 3 --diagnose --set breedAtScale=0.7
+npm run eval:micro-land -- --theme grassland --seconds 1600 --runs 3 --seed-start 3 --diagnose --set breedAtScale=0.7
+```
+
+| Measure                   | Baseline (E1) | `breedAtScale=0.7` |
+| ------------------------- | ------------- | ------------------ |
+| `T_ext` median, seeds 0–2 | 495s          | **225s**           |
+| `T_ext` median, seeds 3–5 | 360s          | **335s**           |
+| `breeding-gate-opens`     | 0–2%          | 4–6%               |
+| `underfed` blocker        | 49%           | 30%                |
+| animal births, seeds 0–2  | 17            | **42**             |
+| animal births, seeds 3–5  | 5             | **19**             |
+| mate stints, seeds 0–2    | 16            | 42                 |
+
+**H6's prediction about the funnel is confirmed.** Scaling `breedAt` down moves
+`underfed` and `breeding-gate-opens` together and multiplies births by ~3.5. The
+stalker is the clearest case: 0 mate stints and 0 births at baseline, 27 stints
+and 11 births at 0.7. The gate was the binding constraint on breeding, exactly as
+claimed.
+
+**And it did not help.** All six species still go extinct in every run.
+`lineages-advance` is still 0.00. `T_ext` went _down_ in both arms — 270s in one
+(beyond the noise floor) and 25s in the other (well inside it).
+
+By the decision rule this is **not promoted**. But the interesting part is why
+the rule cannot actually adjudicate it:
+
+> **`T_ext` is currently blind, and E3 is what proved it.** The first species out
+> was `sunhawk` in **all six** E3 runs and four of six E1 runs — and per E4 the
+> sunhawk is not dying of anything the ecosystem does. It is being deleted by a 1%
+> coin flip, on a timer, at a mean of 500s. Both arms of every experiment are
+> therefore measuring the same dice roll, and a three-draw median of a geometric
+> distribution swings by hundreds of seconds for free. The 135s "noise floor"
+> measured in E1 is mostly _this_.
+>
+> No tuning experiment can be judged on `T_ext` until the sunhawk stops being
+> coin-flipped out of the world. This is now the blocking work item, and it is
+> ahead of every hypothesis in this document.
+
+Two real effects worth keeping, both new:
+
+- **`too-young` and `no-headroom` are what is left.** With `underfed` down to 30%,
+  `too-young` becomes the top blocker at 55% and `no-headroom` roughly triples to
+  14–15%. The second is a genuine signal: those animals now qualify on fullness
+  and cannot _afford_ the child (`hunger + breedCost >= 1`). That points at
+  `breedCost`, which invariant 6 constrains but does not pin.
+- **The world became ceiling-bound.** Peak population sat at exactly **350** in all
+  six E3 runs, against 292–318 across the six baseline runs, and
+  `population-oscillates` fell from 56–58% to 48–50%. Something is capping at 350
+  — not `MAX_CREATURES` (1020) — and `dustbee` starvation rose from 22% to 39%
+  with `mite` at 18%. More babies, crowded out plants, hungrier grazers. That is
+  the failure invariant 6 exists to prevent, arriving by a route it does not
+  cover. See W9.
+
+### E4 — the meadow's top predator is deleted by a coin flip
+
+Free: arithmetic off the source and the `--diagnose` output E1 already produced.
+No run was spent.
+
+**H7 holds for every grazer.** Net stomach change per creature-minute, at each
+species' _observed_ E1 feeding rate, against `hungerRate * hungerRateScale * 60`:
+
+| species | drain/min | gain/min | net/min    | needs hunger ≤ | can it ever get there?         |
+| ------- | --------- | -------- | ---------- | -------------- | ------------------------------ |
+| mite    | 0.204     | 0.138    | **−0.066** | 0.30           | no                             |
+| hopper  | 0.156     | 0.127    | **−0.029** | 0.20           | no                             |
+| woolly  | 0.120     | 0.114    | **−0.006** | 0.18           | no                             |
+| dustbee | 0.168     | 0.081    | **−0.087** | 0.28           | no                             |
+| stalker | 0.132     | 0.143    | +0.011     | 0.15           | ~32 min of perfect foraging    |
+| sunhawk | 0.114     | 0.135    | +0.021     | 0.12           | ~18 min, then maturity at 760s |
+
+All four grazers run a **negative** calorie balance while eating as often as they
+actually manage to. They are not occasionally short of fullness; fullness is
+behind them and receding. That is why `underfed` sits at 59–99% and why no
+`breedAtScale` alone will fix the grazers — the gate is above their ceiling.
+
+**And then the real one.** The two species that _can_ theoretically fill up are
+the two that produced zero births in six runs, and the sunhawk's cause of death
+is `aged: 78–100%` against a nominal lifespan of 3800s in a 1600s run — which is
+impossible. It is not old age. `creature-sim.ts` (stochastic extinction, issue
+#3291) wipes an entire species on a 1% roll every 300 ticks whenever its
+population is **under 5**, and reports every one of those deaths as `aged`.
+
+Grassland seeds the sunhawk at **3** — `count: 1 × WIDTH_SCALE` — in every seed.
+So it is inside the stochastic-extinction window from tick one, rolling 1% every
+five world-seconds. Mean time to deletion is **500s**. Its maturity age is
+**760s**.
+
+> The top predator of the grassland is, on average, erased 260 seconds before it
+> is first allowed to breed. Not usually. Always.
+
+Observed first-extinction seconds for sunhawk across E1's six runs — 55, 165,
+360, 495 — are a geometric distribution with exactly that mean. The stalker is
+seeded at 6, one death clear of the same window, and it starves (83%), so it
+enters the window and follows.
+
+**This is upstream of every breeding hypothesis**, and by the plan's own rule —
+fix the first failure in the causal chain — it comes before H6 and H7 both. It
+also means `T_ext` is currently measuring a dice roll: sunhawk was the first
+species out in four of six runs.
+
+Two separable defects:
+
+1. **The label lies.** Stochastic extinction reports cause `aged`, which is
+   indistinguishable from a creature living a full life. That is the whole reason
+   this survived to now — `sunhawk aged:100%` reads as "died of old age", which
+   is the one cause of death nobody investigates. This is a straight repair.
+2. **Grassland seeds a species below the threshold the mechanic fires at.** That
+   is a design decision with more than one defensible answer, and it belongs to
+   whoever owns the game, not to this document.
+
+### E1 — the noise floor, and a baseline that supersedes E0
+
+Commit `9b0f90fe`, theme `grassland`. Both arms verbatim:
+
+```
+npm run eval:micro-land -- --theme grassland --seconds 1600 --runs 3 --diagnose
+npm run eval:micro-land -- --theme grassland --seconds 1600 --runs 3 --seed-start 3 --diagnose
+```
+
+| Arm | Seeds | `T_ext` per run                           | Median |
+| --- | ----- | ----------------------------------------- | ------ |
+| A   | 0–2   | 555s mite · 495s sunhawk · 165s sunhawk   | 495s   |
+| B   | 3–5   | 55s sunhawk · 621s dustbee · 360s sunhawk | 360s   |
+
+**The noise floor is ≈135s on the median at three seeds.** The individual runs
+span 55s to 621s — a factor of eleven under one configuration — so a single run
+is worth nothing, and a three-seed experiment can only see a change worth several
+minutes of `T_ext`. Five seeds for anything close.
+
+M1 (`T_ext ≥ 1600s`, 3/3) is a long way off: the meadow currently breaks around
+**seven minutes** in.
+
+#### Two things E0 got wrong, both because of the instruments
+
+**Foraging is fine. It was never the problem.** With the worst species reported
+instead of the median, every animal eats 0.26–0.55 meals per creature-minute and
+the slowest is `dustbee` at 0.26. E0's reading — that woolly, stalker and sunhawk
+"never eat" — came from reading `underfed` (a fact about the _breeding gate_) as
+a fact about food. They eat constantly. They are never **full**, which is a
+different claim and points at a different fix. H5's supply-side prediction is
+weaker than it looked.
+
+**`underfed` is now the top blocker, not `too-young`.** 49% vs 41%, where E0 read
+59% too-young / 37% underfed. The difference is skybloom leaving the denominator.
+This strengthens H6 and further deflates H2.
+
+#### What cause-of-death says, now that it prints
+
+Nothing here was visible before W6, and it does not match the story in the
+mechanism section.
+
+| species | died of                      | reading                                             |
+| ------- | ---------------------------- | --------------------------------------------------- |
+| woolly  | **eaten 96%**                | predation, not starvation                           |
+| hopper  | eaten 79–91%                 | predation                                           |
+| mite    | eaten 57–78%, starved 17–35% | predation, some starvation                          |
+| dustbee | eaten 53–59%                 | predation                                           |
+| stalker | **starved 83–84%**           | the mid predator cannot make a living               |
+| sunhawk | **aged 78–100%**             | the top predator dies of old age, having never bred |
+
+So the meadow is not starving to death — it is being **eaten** to death, while
+the two predators doing the eating fail in opposite ways. The sunhawk is the
+starkest: nine founders across six runs, every one of them reaching the end of a
+3800-second nominal lifespan without a single birth, and `underfed: 100%` the
+whole way. It eats at 0.52/min and is never full enough to qualify.
+
+That last row is worth its own hypothesis, because "dies of old age at
+`underfed: 100%` while eating half a meal a minute" is arithmetic that should not
+be possible unless `hungerRate` is outrunning `mealValue` for that species — see
+H7.
+
+#### Guardrails at baseline
+
+`population-oscillates` 56–58% ✓, `world-stays-solid` 38–39% ✓,
+`run-outlasts-maturity` 1.05 ✓. `species-richness-holds` 0/6 in every run ✗ —
+there is no monoculture to guard against yet, because there is nothing left at
+all. `lineages-advance` is 0.00 and failing now that skybloom is excluded; it
+passed at 2.38 in E0 on that flower's 428 births.
+
+`mate-stints-convert` passed on arm A (1.15 off 13 mite stints) and abstained on
+arm B (2 stints total). Both are the honest answer for their sample.
 
 ### Work items falling out of the above
 
-Ordered. The first two block every tuning experiment; the next three are
-corrections to instruments that are currently reporting false passes.
+**W1–W8 landed in `9b0f90fe`.** They are kept below as the record of what was
+wrong and why. The live queue is:
+
+- **W9 — the blocker. Stop the sunhawk being coin-flipped out.** Stochastic
+  extinction (issue #3291) fires on any species under 5 and grassland seeds the
+  sunhawk at 3, so the top predator is deleted at a mean of t=500s and its
+  maturity is 760s. Until this changes, `T_ext` measures that roll and no tuning
+  experiment can be judged. **This is a design decision, not a repair** — the
+  mechanic is deliberate, and there are at least three defensible answers (seed
+  above the threshold, exempt a species that has never been above it, or make the
+  roll depend on something other than a bare count). It belongs to whoever owns
+  the game. The half that _is_ a straight repair — the death reporting as `aged`,
+  which is what hid it — is done.
+- **W10 — identify the 350 ceiling.** Peak population pinned at exactly 350 in all
+  six E3 runs and 292–318 at baseline, while grazer starvation rose. Not
+  `MAX_CREATURES` (1020). Something is binding and it converts extra births into
+  hungrier grazers; that has to be understood before any experiment that raises
+  the birth rate can be believed. The population series recorded by W1 is on the
+  metrics object and is not printed yet — printing it would answer this without a
+  new run.
+- **W11 — `no-headroom` tripled under E3 (4%→15%).** Animals qualifying on
+  fullness and failing to afford the child points at `breedCost`. Cheap to test
+  once `T_ext` works.
+
+The original list, all landed:
 
 - **W1.** `firstExtinctionSecond` + a coarse population series in `RunMetrics`;
   derive `T_ext`. Without it the primary metric does not exist and E1 cannot run.
@@ -445,6 +693,9 @@ corrections to instruments that are currently reporting false passes.
 - **W7.** A `species-richness` guardrail check, so monoculture cannot pass.
 - **W8.** Fix the `micro-land` skill's `--set breedAt=0.5` example, which exits 2.
 
-W3, W4 and W5 are worth doing before any tuning: three of the nine checks are
-currently green for reasons that will not survive contact with a change, and
-tuning against instruments that lie is how a week disappears.
+W3, W4 and W5 were worth doing before any tuning: three of the nine checks were
+green for reasons that did not survive contact with a change, and tuning against
+instruments that lie is how a week disappears. They cost one afternoon and
+immediately overturned two of E0's conclusions — and W6, the smallest of them,
+is what exposed the mechanic in E4 that had been invisible for the life of the
+project.

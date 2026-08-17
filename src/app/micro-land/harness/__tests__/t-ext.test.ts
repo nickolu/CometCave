@@ -19,7 +19,6 @@ import { describe, expect, it } from 'vitest'
 
 import { textMetric } from '@/app/micro-land/harness/evals'
 import { firstAnimalExtinction } from '@/app/micro-land/harness/run'
-
 import type { RunMetrics } from '@/app/micro-land/harness/run'
 
 function metrics(over: Partial<RunMetrics>): RunMetrics {

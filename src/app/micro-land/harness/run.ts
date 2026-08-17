@@ -203,8 +203,17 @@ export function runWorld(opts: RunOptions): RunMetrics {
         else meals[e.blueprintId].animals++
         continue
       }
-      // 'notice' and 'diversity-rescue' are announcements, not deaths.
-      if (e.kind === 'notice' || e.kind === 'diversity-rescue' || e.kind === 'extinction') continue
+      // Announcements and status changes, not deaths. `sick` is a creature
+      // *catching* something and is emitted once per infection — counted as a
+      // death it would show up in the cause-of-death column as a cause nobody
+      // died of, in the one diagnostic whose whole value is being trusted.
+      if (
+        e.kind === 'notice' ||
+        e.kind === 'diversity-rescue' ||
+        e.kind === 'extinction' ||
+        e.kind === 'sick'
+      )
+        continue
       deaths[e.blueprintId] ??= {}
       deaths[e.blueprintId][e.kind] = (deaths[e.blueprintId][e.kind] ?? 0) + 1
     }

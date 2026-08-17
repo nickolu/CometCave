@@ -27,6 +27,13 @@ to change simulation code rather than a knob, you need both.
 3. W1–W8 have landed. `T_ext` prints above the checks, `breedAtScale` is a real
    knob, and the three instruments that were passing for bad reasons have been
    fixed. Anything in an older note claiming otherwise is stale.
+4. **`T_ext` is blind today, and no tuning experiment can be judged until W9.**
+   Stochastic extinction deletes any species under five members on a 1% roll every
+   five seconds; grassland seeds the sunhawk at three, so the top predator is
+   erased at a mean of t=500s — before its maturity at 760s — and it was the first
+   species out in ten of twelve recorded runs. Both arms of every A/B are
+   measuring that dice roll. Do not spend a run on a knob until this is resolved;
+   read E3 and E4 in the plan first.
 
 ## One iteration
 
@@ -50,7 +57,7 @@ The variant arm is the same command plus exactly one `--set knob=value`, or the
 same command on a branch with exactly one code change. Never both.
 
 `--seed-start N` shifts which seeds run without changing how many, which is what
-makes a *disjoint* set possible: `--runs 3` against `--runs 3 --seed-start 3` is
+makes a _disjoint_ set possible: `--runs 3` against `--runs 3 --seed-start 3` is
 six different worlds under one configuration, and the gap between those two
 answers is the noise floor.
 
@@ -62,7 +69,7 @@ It prints above the checks:
 T_ext     ≥1600s   median time to first animal extinction · 420s stalker  ≥1600s  980s hopper
 ```
 
-Median world-second at which the first *seeded animal* species hit zero, per-run
+Median world-second at which the first _seeded animal_ species hit zero, per-run
 values after the dot, and the species that went first. A leading `≥` means
 censored — nothing died, so the number is a floor rather than a measurement, and
 a set of mostly-censored runs means the window is now the binding constraint
@@ -106,6 +113,19 @@ Append only; never edit a past row. Record the **commit and the verbatim
 command** for both arms. A row without them cannot be reproduced and is worth
 nothing six months from now.
 
+## A fifth way, learned the hard way
+
+**The metric can be measuring something other than the world.** `T_ext` is the
+time to the first animal extinction, and if one species is being removed by a
+mechanic unrelated to the ecosystem — a coin flip on small populations, in this
+case — then it is _always_ the first species out, and `T_ext` reports that
+mechanic's timer on both arms of every experiment. E3 moved the entire breeding
+funnel and `T_ext` did not notice, because `T_ext` was not looking at breeding.
+
+Before trusting a `T_ext` number, check **which species** went first. The eval
+prints it. If it is the same species every time, ask what kills it before asking
+what the change did.
+
 ## The four ways a result lies
 
 Check these before believing any improvement. Each one makes the world worse
@@ -136,7 +156,7 @@ the next check anyone adds can make any of them again.
   species against a floor of 0.1 meals/creature-minute and reports the median
   alongside.
 - **`lineages-advance` counted `skybloom`.** A flower that flies — `tags:
-  ['plant']`, eats nothing, needs no partner — which produced 428 of the run's 432
+['plant']`, eats nothing, needs no partner — which produced 428 of the run's 432
   births and held the anti-immortality guard green while the six real animals
   managed four between them. The probe's plant filter was `move.kind === 'root'`
   and is now `isPlantLike`, which fixes every animal-denominated check at once.

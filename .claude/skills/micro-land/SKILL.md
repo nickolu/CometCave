@@ -24,7 +24,7 @@ creature, new theme, new milestone, balance pass).
 Micro Land's product direction belongs to Nick's young daughter, not to the
 codebase and not to you. She chose the empty-by-default world, the theme picker,
 the food chain as the thing that makes creatures feel alive, and summoning that
-works for one creature *or* a whole scene. She named it.
+works for one creature _or_ a whole scene. She named it.
 
 When a change is a design decision rather than a repair, offer real options back
 rather than picking one: plain language, but each option must change what
@@ -37,7 +37,7 @@ empty starting world unless she changes her mind.
 
 A world of 672×132 tiles, each one a material from a fixed table, simulated as
 falling sand at 20 Hz while creatures move over it at 60 Hz. Every creature is a
-plain object literal — pixels, physics, appetite, lifespan — and *nothing* about
+plain object literal — pixels, physics, appetite, lifespan — and _nothing_ about
 a creature is code, which is what lets a model invent one at runtime and drop it
 into a running world. The food chain is a single rule: you can eat something if
 you list one of its tags and it isn't bigger than you. Populations rise and
@@ -53,7 +53,7 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
 1. **A creature is data, not code.** There is no per-species branching anywhere
    in the simulation. Every decision reads the blueprint. Built-in creatures in
    `domain/config/creatures.ts` are written as raw object literals and pushed
-   through the *same* `sanitizeBlueprint` a summoned one goes through — there is
+   through the _same_ `sanitizeBlueprint` a summoned one goes through — there is
    no "built-in creature" code path. If you find yourself writing
    `if (bp.id === 'hopper')`, the feature belongs in the blueprint schema
    instead.
@@ -67,7 +67,7 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
 3. **Material order is load-bearing.** The index into `MATERIAL_IDS` is what's
    stored in the tile grid. `air` must stay at 0 (a zeroed `Uint8Array` is an
    empty world). Appending is safe; reordering is not. Tint variants are
-   generated *after* the base list so adding a color can never shift an existing
+   generated _after_ the base list so adding a color can never shift an existing
    index. The grid is `Uint8Array`, so the whole table is capped at 256 entries
    (currently 26 base + 36 tints = 62).
 
@@ -84,7 +84,7 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
 
 6. **`mealValue` must stay below `breedCost`.** If one meal more than pays for
    a child, grazers breed on every full stomach, overshoot the plants, and take
-   the entire food chain down with them. Currently 0.42 vs 0.55. Both are
+   the entire food chain down with them. Currently 0.26 vs 0.31. Both are
    sliders now, so this is enforced in `tuning.ts` rather than only believed —
    `enforceInvariants` holds the meal a fixed margin under the cost whichever of
    the two was dragged.
@@ -92,12 +92,12 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
 7. **Native plants are the only thing that regrows.** Plants only come from
    plants, so a grazer boom that strips the last one is terminal for everything
    above it — the ground carries their seed instead. `seedNativePlants` makes
-   the *soil* push the plant population back toward `NATIVE_PLANT_TARGET`,
+   the _soil_ push the plant population back toward `NATIVE_PLANT_TARGET`,
    harder the further below it the world falls, and it is deliberately blind to
    whether anything is alive. It is also deliberately slow (a batch every 30s,
    3 sprouts at total bareness): it exists to get a stripped world off zero and
    then let plants spread on their own, not to keep the meadow topped up.
-   Animals have no equivalent. There *was* an animal seed rain (`repopulate`);
+   Animals have no equivalent. There _was_ an animal seed rain (`repopulate`);
    it was removed because a species coming back four seconds after it died out
    made extinction meaningless. An animal that dies out stays out until the
    player places one.
@@ -123,14 +123,13 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
     because a wrapped ceiling in falling sand rains powder out of the sky
     forever. `domain/wrap.ts` owns the whole idea. Two consequences bite
     constantly:
-
     - **`b - a` is not a distance.** Use `deltaX` (signed, and its sign is a
       direction) or `distX`. A plain subtraction compiles, looks right, and
-      produces a creature that can *see* across the seam but walks the long way
+      produces a creature that can _see_ across the seam but walks the long way
       round to get there — which reads as bad AI, not as a wrap bug. The same
-      trap catches any *midpoint*: half of `a + b` is the far side of the world
+      trap catches any _midpoint_: half of `a + b` is the far side of the world
       from both parents when they meet across the seam.
-    - **Terrain has to meet itself.** Generators sample noise around a *ring*
+    - **Terrain has to meet itself.** Generators sample noise around a _ring_
       (`ringXY`, plus `makeNoise3D`/`fbm3` when depth is involved), never along a
       line from x=0 to x=671, which has no reason to arrive back where it
       started. `world-wrap.test.ts` measures the surface jump at column zero
@@ -157,7 +156,7 @@ to can also be kept by name on a "shelf" and reopened mid-simulation.
     world runs; `constants.ts` holds their defaults and the reasoning for them.
     Importing one of those constants into simulation code compiles fine and
     silently makes that slider do nothing. Adding a knob means adding it to
-    `TUNING_DEFAULTS` *and* `KNOBS` — the test asserts those two agree.
+    `TUNING_DEFAULTS` _and_ `KNOBS` — the test asserts those two agree.
 
 ## Verifying a change
 
@@ -176,7 +175,7 @@ regressions.
    the checks before it becomes a default.
 
    **`T_ext` prints above the checks, and it is the one that moves.** Median
-   world-second at which the first *seeded animal* species hit zero, `≥` meaning
+   world-second at which the first _seeded animal_ species hit zero, `≥` meaning
    nothing died and the number is a floor. Every check is a guardrail — binary,
    and stuck on "still failing" for both arms of any experiment run while the
    world is broken. `T_ext` is continuous, so a sequence of small improvements is
@@ -189,7 +188,7 @@ regressions.
    **Mind the run length.** Maturity is `lifespanSeconds * lifespanScale * 0.2`,
    and `lifespanScale` is 10 — so a species with `lifespanSeconds: 150` cannot
    breed until t=300s, and the slowest animal in `grassland` matures at 760s. Any
-   run shorter than about 1600s is measuring how much of a creature's *childhood*
+   run shorter than about 1600s is measuring how much of a creature's _childhood_
    fits in the window and reporting it as infertility. `run-outlasts-maturity`
    fails when this happens; believe nothing below it until that check is green.
 
@@ -200,15 +199,25 @@ regressions.
    when the priority order is the problem makes the world worse and still shows
    no births.
 
-   **Known-failing today.** `breeding-gate-opens` sits near 0% on every theme:
-   animals are blocked roughly half by `too-young` and half by `underfed`, and
-   `cooldown` is 0%, so `breedCooldown` is *not* the problem. Several species
-   ship with `breedAt` at 0.9–1.0, which asks for a hunger of almost exactly
-   zero. `foraging-feeds-animals` passes, so this is not a food-reach problem.
+   **Known-failing today.** Grassland fails five checks and every one of its six
+   animals goes extinct in every run. `breeding-gate-opens` sits near 0%, blocked
+   ~49% `underfed` and ~41% `too-young`; `cooldown` is 0%, so `breedCooldown` is
+   _not_ the problem. Two things measured since are worth not re-deriving:
+   - **Food reach is fine.** Every grassland animal eats 0.26–0.55 times per
+     creature-minute. `underfed` is a fact about the _breeding gate_, not about
+     foraging — those animals eat constantly and are never full. Reading one as
+     the other cost this project its first baseline.
+   - **The top predator is deleted by a coin flip.** Stochastic extinction
+     (#3291) wipes any species under five members on a 1% roll every five
+     seconds, and grassland seeds the sunhawk at three. Mean deletion t=500s;
+     maturity 760s. It has never bred and cannot.
+
+   `docs/micro-land-stability-plan.md` is the live record; load the
+   `micro-land-stability` skill before touching any of it.
 
 4. `npm run sim:micro-land -- --theme grassland --seconds 600` for the human
    read — population over time, causes of death, what ate what. Use it to see
-   *shape*; use the evals to decide whether a change helped. Themes are `empty`,
+   _shape_; use the evals to decide whether a change helped. Themes are `empty`,
    `grassland`, `tropical-island`, `verdant-forest`, `tidepool` — `earth`,
    `volcanic` and `station` were retired and any command naming them errors out.
    Look for deaths attributed sensibly (`starved` dominating a grazer means the
@@ -247,7 +256,7 @@ smaller than the noise floor is not a result.
 Adding a check means adding it to `CHECKS` in `harness/evals.ts`. Three rules
 live in that file's header and are worth honouring: a check must be able to fail
 for exactly one reason, thresholds are floors set where behaviour is
-*unambiguously* wrong rather than where the ideal sits, and nothing asserts on a
+_unambiguously_ wrong rather than where the ideal sits, and nothing asserts on a
 single seed.
 
 ## Known hazards
@@ -276,8 +285,8 @@ single seed.
   or roots can be placed. Never hand-roll this; call `settleOnGround`.
 
 - **Per-species caps are shared budgets.** `MAX_PLANTS` is split across every
-  plant species, so *adding a plant to the roster takes its share out of every
-  other plant*. The roster grew to seven and the grazers started starving; that
+  plant species, so _adding a plant to the roster takes its share out of every
+  other plant_. The roster grew to seven and the grazers started starving; that
   is what `MAX_PLANTS` 150→195 and `PLANT_SPECIES_CAP` 55→46 were fixing.
 
 - **A world can look beautiful and starve.** Terrain with no fertile material
@@ -315,7 +324,7 @@ single seed.
 Prettier: no semicolons, single quotes, 2-space, 100 cols, `arrowParens: avoid`.
 ESLint enforces grouped + alphabetized imports and `@/…` aliases over `../…`.
 
-Comments in this codebase explain *why*, at length, and are load-bearing
+Comments in this codebase explain _why_, at length, and are load-bearing
 documentation — several of them are the only record of a bug that took a day to
 find. Match that register: when you change a tuned number, update the comment
 that justifies it. Commit messages follow the same standard —

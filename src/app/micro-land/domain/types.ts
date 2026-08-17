@@ -1980,7 +1980,8 @@ export interface HistoryEntry {
   /** Human-readable one-liner. */
   detail: string
   /** Death cause — only present when kind === 'died'. */
-  cause?: 'starved' | 'eaten' | 'drowned' | 'burned' | 'aged' | 'diseased'
+  /** `vanished` is the stochastic small-population crash, not old age. */
+  cause?: 'starved' | 'eaten' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'vanished'
   /** Blueprint id of the killer species — only for cause === 'eaten'. */
   killerBlueprintId?: string
   killerSpeciesName?: string

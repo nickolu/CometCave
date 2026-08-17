@@ -466,7 +466,7 @@ export interface SimEvent {
    * going locally extinct (speciesCount was 0 at the moment of germination). The
    * field guide removes the species from the extinctions list on receiving this.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice' | 'extinction'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice' | 'extinction' | 'vanished'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -1085,13 +1085,22 @@ export function tickCreatures(
   }
 
   // Stochastic extinction: tiny populations face random crashes. Issue #3291.
+  //
+  // Reported as `vanished`, not `aged`. It used to say `aged`, and that one word
+  // hid the mechanic for as long as it existed: the grassland's top predator is
+  // seeded at three, so it is inside this window from tick one, and every eval
+  // ever run reported it dying at `aged: 100%` — the one cause of death that
+  // reads as a creature having lived a full life and nobody investigates. Its
+  // nominal lifespan is 3800s and it was disappearing around t=500s, which is
+  // this roll's mean, 260 seconds before the age it is first allowed to breed.
+  // A cause of death that names the wrong cause is worse than no cause at all.
   if (tickCount % 300 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
       if (cnt < 5 && cnt > 0 && rng() < 0.01) {
         const toExtinct = w.creatures.filter(c2 => c2.blueprintId === bpId)
         const extBp = w.blueprints[bpId]
         if (extBp) {
-          for (const c2 of toExtinct) kill(w, c2, extBp, dead, events, 'aged')
+          for (const c2 of toExtinct) kill(w, c2, extBp, dead, events, 'vanished')
           events.push({ kind: 'extinction', blueprintId: bpId, x: 0, y: 0, text: `${extBp.name} went locally extinct` })
         }
       }
