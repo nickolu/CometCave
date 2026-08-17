@@ -1134,6 +1134,38 @@ export function tickCreatures(
     if (w.urchinStrikeActive && !wasStriking) {
       events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${ubp.name} Union on strike. Demands: stronger currents, fewer predators. Management has not responded.` })
     }
+    break
+  }
+
+  // --- Frog Fundamentalism: annual Founding Rain ritual. Issue #3299. ---
+  if (tickCount % 60 === 0) {
+    for (const [bpId, cnt] of Object.entries(speciesCount)) {
+      const fbp = w.blueprints[bpId]
+      if (!fbp?.frogFundamentalism || cnt < 1) continue
+      const currentSeason = TUNING.seasonPeriod > 0 ? Math.floor(w.elapsed / TUNING.seasonPeriod) : 0
+      if ((w.lastFrogRitualSeason ?? -1) < currentSeason) {
+        w.lastFrogRitualSeason = currentSeason
+        // Founding Rain: frogs near water are faithful; distant frogs are apostates
+        const frogsNearWater: number[] = []
+        const apostateFrogs: Creature[] = []
+        for (const frog of w.creatures) {
+          if (frog.blueprintId !== bpId) continue
+          const fx = Math.floor(frog.x), fy = Math.floor(frog.y)
+          let nearWater = false
+          for (let dy = -3; dy <= 3 && !nearWater; dy++) {
+            for (let dx = -3; dx <= 3 && !nearWater; dx++) {
+              const ty = fy + dy, tx = (fx + dx + WORLD_W) % WORLD_W
+              if (ty < 0 || ty >= w.tiles.length / WORLD_W) continue
+              if (IS_LIQUID[w.tiles[ty * WORLD_W + tx]] === 1) nearWater = true
+            }
+          }
+          if (nearWater) frogsNearWater.push(frog.id)
+          else { frog.frogApostate = TUNING.seasonPeriod / 18; apostateFrogs.push(frog) }
+        }
+        events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${fbp.name} Founding Rain observed. ${frogsNearWater.length} faithful, ${apostateFrogs.length} apostates. No theology. Only the rain matters.` })
+      }
+      break
+    }
   }
 
   // MVP warning and rescue effect. Issues #3284, #3285.
@@ -2210,6 +2242,90 @@ export function tickCreatures(
       c.vx = 0
       c.vy = 0
     }
+
+    // --- Earthworm Elevator: express vertical shaft for worms. Issue #3298. ---
+    if (bp.earthwormElevator) {
+      if (Math.abs(c.vy) > Math.abs(c.vx) * 1.5 && Math.abs(c.vy) > 0.2) {
+        c.vy *= 1 + 2 * dt  // small continuous boost that compounds
+      }
+      w.earthwormElevatorNextRebuild ??= w.elapsed + TUNING.seasonPeriod
+      if (w.elapsed >= w.earthwormElevatorNextRebuild) {
+        w.earthwormElevatorNextRebuild = w.elapsed + TUNING.seasonPeriod * (0.8 + rng() * 0.4)
+        w.earthwormElevatorRebuildCount = (w.earthwormElevatorRebuildCount ?? 0) + 1
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} rebuilt the elevator. (Rebuild #${w.earthwormElevatorRebuildCount}) This always surprises them.` })
+      }
+    }
+
+    // --- Frog Fundamentalism: apostates have breeding penalty. Issue #3299. ---
+    if (bp.frogFundamentalism && (c.frogApostate ?? 0) > 0) {
+      c.frogApostate = (c.frogApostate ?? 0) - dt
+      // Breeding penalty: breed cooldown drains 70% slower
+      if (c.breedCooldown > 0) c.breedCooldown += 0.3 * dt  // net: slower recovery
+    }
+
+    // --- Gopher Government: one gopher holds all 17 cabinet positions. Issue #3300. ---
+    if (bp.gopherGovernment) {
+      if (w.gopherAdminId === undefined) {
+        w.gopherAdminId = c.id
+        c.isGopherAdmin = true
+        const CABINET = ['Minister of Tunnels', 'Secretary of Roots', 'Undersecretary of Subterranean Affairs',
+          'Chief Inspector of Moisture', 'Director of Emergency Soil', 'Ambassador to the Surface',
+          'Deputy Commissioner of Worms', 'Minister Without Portfolio (also Tunnels)',
+          'Secretary of State for Mole Relations', 'Administrator General of Burrow Standards',
+          'Chief of Staff (Subterranean Division)', 'Treasurer (no treasury exists)',
+          'Secretary of Defense (against owls)', 'Director of Interior (quite literal)',
+          'Commissioner for Tunnel Safety and Also Danger', 'Undersecretary for Undersecretary Affairs',
+          'Minister Plenipotentiary for Everything Else']
+        const sample = CABINET.slice(0, 3).join(', ') + `, and ${CABINET.length - 3} more`
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} Administrator appointed: ${sample}. Has never attended a meeting with themselves.` })
+      } else if (c.id === w.gopherAdminId) {
+        c.isGopherAdmin = true
+      }
+    }
+
+    // --- Insect Internet: beetles relay stale pheromone messages. Issue #3302. ---
+    if (bp.beetleInternet) {
+      const BEETLE_DELAY = 135  // ~45 in-game minutes
+      // Record food location when eating
+      if (c.mood === 'eat' && c.beetleMailRecordedAt === undefined) {
+        c.beetleMailRecordedAt = w.elapsed
+        c.beetleMailType = 'food'
+        c.beetleMailX = Math.floor(c.x)
+        c.beetleMailY = Math.floor(c.y)
+      }
+      // Record predator location when fleeing
+      if (c.mood === 'flee' && c.targetId !== null && c.beetleMailRecordedAt === undefined) {
+        c.beetleMailRecordedAt = w.elapsed
+        c.beetleMailType = 'predator'
+        c.beetleMailX = Math.floor(c.x)
+        c.beetleMailY = Math.floor(c.y)
+      }
+      // After delay, broadcast stale info to nearby beetles
+      if (c.beetleMailRecordedAt !== undefined && (w.elapsed - c.beetleMailRecordedAt) >= BEETLE_DELAY) {
+        const msgType = c.beetleMailType ?? 'food'
+        const msgX = c.beetleMailX!, msgY = c.beetleMailY!
+        if (rng() < 0.05 * dt) {
+          events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} network packet delivered: "${msgType} here" (${Math.floor(w.elapsed - c.beetleMailRecordedAt)}s out of date). The network is considered a marvel.` })
+        }
+        // Nudge nearby beetles toward old location (probably wrong)
+        for (const recv of w.creatures) {
+          if (recv.id === c.id || recv.blueprintId !== c.blueprintId) continue
+          const rd = Math.sqrt((recv.x - c.x) ** 2 + (recv.y - c.y) ** 2)
+          if (rd > 12 || recv.mood !== 'wander') continue
+          const mdx = msgX - recv.x, mdy = msgY - recv.y
+          const md = Math.sqrt(mdx * mdx + mdy * mdy)
+          if (md > 1) {
+            recv.vx += (mdx / md) * 0.2 * dt
+            recv.vy += (mdy / md) * 0.2 * dt
+          }
+        }
+        c.beetleMailRecordedAt = undefined
+        c.beetleMailType = undefined
+        c.beetleMailX = undefined
+        c.beetleMailY = undefined
+      }
+    }
+
 
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
     if (bp.burrowDigger) {

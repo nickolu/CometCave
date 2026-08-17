@@ -716,6 +716,10 @@ export function sanitizeBlueprint(
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
     ageReproductionCurve: ['peak-early', 'peak-middle', 'peak-late'].includes(b.ageReproductionCurve as string) ? b.ageReproductionCurve as 'peak-early' | 'peak-middle' | 'peak-late' : undefined,
+    earthwormElevator: typeof b.earthwormElevator === 'boolean' ? b.earthwormElevator : undefined,
+    frogFundamentalism: typeof b.frogFundamentalism === 'boolean' ? b.frogFundamentalism : undefined,
+    gopherGovernment: typeof b.gopherGovernment === 'boolean' ? b.gopherGovernment : undefined,
+    beetleInternet: typeof b.beetleInternet === 'boolean' ? b.beetleInternet : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
