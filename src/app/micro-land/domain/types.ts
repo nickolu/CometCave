@@ -106,6 +106,8 @@ export interface Material {
   tintable: boolean
   /** For a tint variant, the material it is a recolor of. */
   tintOf: TintableMaterialId | null
+  /** Burns when adjacent to fire; can be ignited and spread flames. */
+  flammable?: boolean
 }
 
 // ---------------------------------------------------------------------------
@@ -743,6 +745,13 @@ export interface CreatureBlueprint {
    */
   fireGerminator?: boolean
   /**
+   * Seeds of this fire-adapted species sprout preferentially on fresh ash.
+   * When an ash tile is detected within radius 2 of the seed, the sprout rate
+   * is boosted by 5×. Models pioneer species that colonise post-fire landscapes:
+   * fireweed, lodgepole pine, Ceanothus. Issue #3117.
+   */
+  fireAdapted?: boolean
+  /**
    * Seeds of this species germinate preferentially in light gaps — openings in the
    * canopy created by treefall or disturbance. When `lightGrid` at the seed's tile
    * exceeds 0.4, the seed attempts immediate germination. Models gap-dependent
@@ -1250,6 +1259,18 @@ export interface CreatureBlueprint {
    * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
    */
   phytoplankton?: boolean
+  /**
+   * Moon phase (0–27) at which this species breeds. When set, breeding is
+   * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
+   * Issue #3190.
+   */
+  lunarBreedingPhase?: number
+  /**
+   * True if this species is adapted to the intertidal zone (shoreline).
+   * At low tide (tidalHeight < −0.3), gains a hunger bonus. At high tide
+   * (tidalHeight > 0.5), takes a hunger penalty. Issue #3191.
+   */
+  intertidal?: boolean
   /**
    * When true, this species maintains a dominance hierarchy.
    * Rank is established through contests in look(); higher rank grants
@@ -2249,10 +2270,24 @@ export interface WorldState {
   oceanCurrentX?: number
   /** True during a phytoplankton bloom (high season factor). Issue #3253. */
   planktonBloomActive?: boolean
+  /** Current lunar phase day (0–27). Issue #3187. */
+  lunarPhaseDay?: number
+  /** Current tidal height offset (-1 to 1). Issue #3188. */
+  tidalHeight?: number
   /** Per-species baseline population for Lemming Legislature voting. Issue #3305. */
   lemmingBaseline?: Record<string, number>
   /** World-clock time of the next lemming legislature vote. Issue #3305. */
   lemmingNextVoteTime?: number
+  /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
