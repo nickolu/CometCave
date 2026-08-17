@@ -2060,6 +2060,77 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
  * Runs every 1200 ticks (every ~20 seconds of sim time at 60 ticks/s).
  * Uses a fixed random probe rather than a full scan.
  */
+/**
+ * Updates tidal water levels based on the lunar cycle.
+ *
+ * Scans each column for the baseline water surface (topmost water tile in
+ * tidalBaseline). At high tide, floods up to tidalRange rows above that
+ * surface with water. At low tide, exposes up to tidalRange rows of baseline
+ * water as sand. Only active when TUNING.lunarPeriod > 0. Issue #3188.
+ */
+export function tickTidal(w: WorldState, tickCount: number): void {
+  if (TUNING.lunarPeriod <= 0) return
+
+  // Initialize the baseline on first tidal tick — snapshot current terrain.
+  if (!w.tidalBaseline) {
+    w.tidalBaseline = new Uint8Array(w.tiles)
+  }
+
+  const lunarPhase = (w.elapsed % TUNING.lunarPeriod) / TUNING.lunarPeriod
+  w.tidalLevel = Math.sin(lunarPhase * 2 * Math.PI)
+
+  // Throttle tile updates to every 5 ticks for performance.
+  if (tickCount % 5 !== 0) return
+
+  const WATER = MATERIAL_INDEX.water
+  const SAND = MATERIAL_INDEX.sand
+  const tidalRange = Math.max(1, Math.round(TUNING.tidalRange))
+  // Positive offset = high tide (water covers terrain above baseline).
+  // Negative offset = low tide (baseline water exposed as sand).
+  const offset = Math.round(w.tidalLevel * tidalRange)
+
+  for (let x = 0; x < WORLD_W; x++) {
+    // Find the topmost water tile in the baseline for this column.
+    let baselineWaterTop = -1
+    for (let y = 0; y < WORLD_H; y++) {
+      if (w.tidalBaseline[y * WORLD_W + x] === WATER) {
+        baselineWaterTop = y
+        break
+      }
+    }
+    if (baselineWaterTop < 0) continue // no water in this column
+
+    // The intertidal zone spans tidalRange rows above and below the baseline.
+    const zoneTop = Math.max(0, baselineWaterTop - tidalRange)
+    const zoneBottom = Math.min(WORLD_H - 1, baselineWaterTop + tidalRange - 1)
+
+    for (let y = zoneTop; y <= zoneBottom; y++) {
+      const i = y * WORLD_W + x
+      const baseline = w.tidalBaseline[i]
+
+      if (y < baselineWaterTop) {
+        // Above baseline — terrain that floods at high tide.
+        // Flood if within the tide offset (tide is high enough to reach this row).
+        const flooded = y >= baselineWaterTop - offset
+        if (flooded && !IS_SOLID[baseline]) {
+          w.tiles[i] = WATER
+        } else {
+          w.tiles[i] = baseline
+        }
+      } else {
+        // At or below baseline water surface — water exposed at low tide.
+        const exposed = y < baselineWaterTop - offset
+        if (exposed && baseline === WATER) {
+          // Expose as sand (intertidal flat).
+          w.tiles[i] = SAND
+        } else {
+          w.tiles[i] = baseline
+        }
+      }
+    }
+  }
+}
+
 export function tickMineralVeins(w: WorldState, tickCount: number, rng: () => number): void {
   if (tickCount % 1200 !== 0) return
   const stoneIdx = MATERIAL_INDEX.stone

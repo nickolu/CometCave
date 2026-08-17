@@ -1494,6 +1494,15 @@ export interface Traits {
    */
   reproductionCooldown: number
   chronotype?: number  // phase offset trait: negative = early bird, positive = late owl, range [-1, 1]
+  /**
+   * Individual-level venom resistance, heritable [0, 1].
+   *
+   * Added to the species-level `blueprint.venomResistance` to compute effective
+   * resistance. Starts at 0; drifts upward in prey populations repeatedly exposed
+   * to venomous predators — those that survive due to higher resistance breed more,
+   * driving the coevolutionary arms race. Neutral at 0. Issue #3236.
+   */
+  venomResistance: number
 }
 
 /** One living thing in the world. */
@@ -2393,6 +2402,19 @@ export interface WorldState {
   crabConstitutionRatified?: boolean
   /** World elapsed time of the last Duck Town Hall vote. Issue #3297. */
   duckTownHallTime?: number
+  /**
+   * Current tidal level, -1 (low tide) to +1 (high tide).
+   * Computed from lunarPhase = (elapsed % lunarPeriod) / lunarPeriod
+   * as sin(lunarPhase * 2π). Updated each tick when lunarPeriod > 0.
+   * Issue #3188.
+   */
+  tidalLevel?: number
+  /**
+   * Per-tile baseline terrain snapshot taken at world initialization (or first tidal tick).
+   * Used to restore exposed intertidal tiles when the tide retreats.
+   * Issue #3188.
+   */
+  tidalBaseline?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------

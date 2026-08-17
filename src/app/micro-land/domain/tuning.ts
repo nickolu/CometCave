@@ -120,6 +120,16 @@ export const TUNING_DEFAULTS = {
    */
   dayLengthSeconds: 0,
   /**
+   * How long one lunar cycle lasts, in sim seconds.
+   * 0 = no tidal cycle (default). 600 = one cycle every ten real-world minutes at normal speed.
+   */
+  lunarPeriod: 0,
+  /**
+   * Maximum number of tile rows the tide floods or drains from the baseline water surface.
+   * Default 3 tiles.
+   */
+  tidalRange: 3,
+  /**
    * How long an egg takes to hatch, in sim seconds.
    */
   eggHatchSeconds: 15,
@@ -521,6 +531,26 @@ export const KNOBS: Knob[] = [
     min: 0,
     max: 0.5,
     step: 0.05,
+  },
+  {
+    key: 'lunarPeriod',
+    group: 'world',
+    label: 'Tidal cycle length',
+    help: 'How long one full lunar cycle takes in simulation time. 0 disables tides. 600 is one cycle every ten real-world minutes at normal speed. Coastal tiles flood at high tide and drain at low tide.',
+    min: 0,
+    max: 3000,
+    step: 30,
+    unit: 's',
+  },
+  {
+    key: 'tidalRange',
+    group: 'world',
+    label: 'Tidal range (tiles)',
+    help: 'How many tile rows the tide floods or drains from the shoreline. 3 is a gentle tide; 8 creates dramatic tidal flats.',
+    min: 1,
+    max: 12,
+    step: 1,
+    unit: 'tiles',
   },
   {
     key: 'eggHatchSeconds',
