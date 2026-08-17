@@ -1918,7 +1918,17 @@ const GRASSLAND: Theme = {
     { id: 'dustbee', count: 4 },
     // Predators
     { id: 'stalker', count: 2 },
-    { id: 'sunhawk', count: 1 },
+    // Two, not one, and the reason is arithmetic rather than taste.
+    //
+    // Counts here are per screen and multiplied by WIDTH_SCALE, so `1` seeded
+    // three sunhawks — and stochastic extinction (creature-sim, issue #3291)
+    // wipes an entire species on a 1% roll every five seconds while it has
+    // fewer than five members. Three is inside that window from the first tick,
+    // which put the meadow's top predator on a timer with a mean of 500s. Its
+    // maturity age is 760s. It was erased, on average, 260 seconds before it was
+    // ever allowed to breed, in every run ever measured, and it has never once
+    // bred. Six clears the threshold with one to spare.
+    { id: 'sunhawk', count: 2 },
   ],
   build: (tiles, rng) => {
     fill(tiles, 'air')
