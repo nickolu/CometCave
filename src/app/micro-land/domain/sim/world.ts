@@ -2063,10 +2063,22 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
   const prev = w.weatherState
   const r = rng()
 
+  // Volcanic gate: worlds dominated by lava are too geothermally hot to form blizzards.
+  // Sample every 8th tile (same pattern as CO2 accounting) for performance. If more than
+  // 4% of sampled tiles are lava the world is considered volcanic. Epic #3075.
+  const lavaIdx = MATERIAL_INDEX.lava
+  let lavaSampled = 0
+  let lavaSampledCount = 0
+  for (let i = 0; i < w.tiles.length; i += 8) {
+    if (w.tiles[i] === lavaIdx) lavaSampled++
+    lavaSampledCount++
+  }
+  const isVolcanic = lavaSampledCount > 0 && lavaSampled / lavaSampledCount > 0.04
+
   if (prev === 'clear') {
     if (isSummer && r < 0.08) w.weatherState = 'drought'
     else if (r < 0.12) w.weatherState = 'rain'
-    else if (isWinter && r < 0.06) w.weatherState = 'blizzard'  // blizzard only in winter
+    else if (isWinter && !isVolcanic && r < 0.06) w.weatherState = 'blizzard'  // blizzard: winter + not volcanic
     else if (r < 0.04) w.weatherState = 'storm'
     // else stay clear
   } else if (prev === 'rain') {
@@ -2082,8 +2094,9 @@ export function tickWeather(w: WorldState, tickCount: number, rng: () => number)
     else if (r < 0.80) w.weatherState = 'clear'
     // else continue storm
   } else if (prev === 'blizzard') {
-    // Blizzard always resolves to clear or storm — never rain (still frozen)
-    if (!isWinter || r < 0.60) w.weatherState = 'clear'
+    // Blizzard resolves to clear or storm — never rain (still frozen).
+    // Also immediately ends if the world becomes volcanic (e.g. after a theme switch).
+    if (isVolcanic || !isWinter || r < 0.60) w.weatherState = 'clear'
     else if (r < 0.75) w.weatherState = 'storm'
     // else continue blizzard
   }
