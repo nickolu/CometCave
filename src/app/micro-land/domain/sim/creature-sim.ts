@@ -76,6 +76,7 @@ import {
   tickMycorrhizalNetwork,
   tickSalinity,
   tickSoilAge,
+  tickSoilNutrient,
   tickWebDecay,
   tileAt,
   updateBiomeZones,
@@ -882,6 +883,7 @@ export function tickCreatures(
   tickCaveNutrient(w, tickCount, dt)
   tickSalinity(w, tickCount)
   tickMarshDetritus(w, tickCount, dt)
+  tickSoilNutrient(w, tickCount)
   w.eggs ??= []
   w.nextEggId ??= 1
 
@@ -1852,6 +1854,36 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0001 * dt)  // starvation without fungal support
       }
     }
+
+    // Plant nutrient uptake from soil. Issue #3147.
+    if (bp.move.kind === 'root' && w.soilNutrient) {
+      const sni = Math.floor(c.y) * WORLD_W + wrapCol(Math.floor(c.x))
+      if (sni >= 0 && sni < w.soilNutrient.length) {
+        const soilN = w.soilNutrient[sni]
+        // Bonus in nutrient-rich soil
+        if (soilN > 1.1) {
+          c.hunger = Math.max(0, c.hunger - (soilN - 1.0) * 0.0002 * dt)
+        }
+        // Depletion: actively growing plant depletes local soil
+        if (c.hunger < 0.5 && soilN > 0.05) {
+          w.soilNutrient[sni] = Math.max(0.05, soilN - 0.0001 * dt)
+        }
+      }
+    }
+
+    // Nitrogen fixation: enrich nearby soil every 60 ticks. Issue #3148.
+    if (bp.fixesNitrogen && bp.move.kind === 'root' && w.soilNutrient && (tickCount + c.id) % 60 === 0) {
+      const nx = Math.floor(c.x), ny = Math.floor(c.y)
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const tx = wrapCol(nx + dx), ty = ny + dy
+          if (ty < 0 || ty >= WORLD_H) continue
+          const ti = ty * WORLD_W + tx
+          w.soilNutrient[ti] = Math.min(2.0, (w.soilNutrient[ti] ?? 1.0) + 0.0003)
+        }
+      }
+    }
+
     // Low O2 respiration penalty: thin atmosphere reduces metabolic efficiency. Issue #3276.
     const o2Level = w.atmosphericO2 ?? 1.0
     if (o2Level < 0.7 && !bp.tags?.includes('plant')) {
@@ -4032,6 +4064,18 @@ export function tickCreatures(
   for (const car of w.carcasses) {
     car.decaySeconds -= dt
   }
+  // Fossil record: ancient carcasses on stone tiles become bone fossils. Issue #3178.
+  for (const car of w.carcasses) {
+    if (car.decaySeconds <= 0) {
+      const fx = Math.floor(car.x), fy = Math.floor(car.y)
+      if (fx >= 0 && fx < WORLD_W && fy >= 0 && fy < WORLD_H) {
+        const ti = fy * WORLD_W + wrapCol(fx)
+        if (w.tiles[ti] === MATERIAL_INDEX.stone) {
+          setTile(w, fx, fy, MATERIAL_INDEX.bone)
+        }
+      }
+    }
+  }
   if (w.carcasses.some(car => car.decaySeconds <= 0)) {
     // Carcass-to-nutrient conversion (#3100): expired carcasses enrich the soil beneath them.
     if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
@@ -4098,6 +4142,16 @@ export function tickCreatures(
     tickSeedBank(w, dt, tickCount, sbSpeciesCount, plantsRef, rng, events)
   }
 
+  // Rock weathering: exposed stone near surface slowly converts to dirt. Issue #3176.
+  if (tickCount % 600 === 0) {
+    const weatherTx = Math.floor(rng() * WORLD_W)
+    const surfaceY = Math.floor(WORLD_H * 0.3)
+    for (let ty = 0; ty < surfaceY; ty++) {
+      const ti = ty * WORLD_W + wrapCol(weatherTx)
+      if (w.tiles[ti] === MATERIAL_INDEX.stone) {
+        const above = ty > 0 ? w.tiles[(ty - 1) * WORLD_W + wrapCol(weatherTx)] : 0
+        if (!IS_SOLID[above] && !IS_LIQUID[above]) {
+          if (rng() < 0.05) setTile(w, weatherTx, ty, MATERIAL_INDEX.dirt)
   // Wind erosion: high wind strips topsoil from exposed surface tiles. Issue #3159.
   if (tickCount % 120 === 0 && w.windX !== undefined) {
     const windMag = Math.abs(w.windX) + Math.abs(w.windY ?? 0) * 0.5
@@ -4116,6 +4170,10 @@ export function tickCreatures(
           }
           break
         }
+      }
+    }
+  }
+}
       }
     }
   }
