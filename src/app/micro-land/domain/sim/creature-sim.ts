@@ -6652,7 +6652,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Amphibian rain bonus: creatures that don't drown thrive in wet conditions.
     // Rain and storm trigger a 20% speed boost — models burst activity in frogs and
     // salamanders following the first wet-season rains. Epic #3075.
-    (!bp.body.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1)
+    (!bp.habitat.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {
