@@ -328,6 +328,13 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
+   * Decomposer archetype: this creature eats from carcasses (any carcass within 2
+   * tiles) and converts the consumed mass into soilNutrient at the carcass site.
+   * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
+   * vultures, and specialized scavengers. Issues #3099, #3100.
+   */
+  decomposer?: boolean
+  /**
    * When true, this species uses active camouflage based on colour-matching the
    * tile it stands on. The effective camouflage score becomes
    * `max(traits.camouflage, colorMatchScore)`, where colorMatchScore is 1 when
@@ -777,6 +784,24 @@ export interface CreatureBlueprint {
    * naturally occurring species. Used for Field Guide tracking. Issue #3368.
    */
   biocontrolAgent?: boolean
+  /**
+   * Successional stage this species occupies, 1–4.
+   * 1 = pioneer (colonises bare ground), 2 = early successional,
+   * 3 = mid successional, 4 = climax community.
+   * Seeds and new growth only establish when soilAge at the tile reaches
+   * (successionStage − 1) × 1500 ticks. Leave undefined for no restriction.
+   * Issue #3123.
+   */
+  successionStage?: number
+  /**
+   * Trophic level in the food web, 1–5.
+   * 1 = primary producer (plant / photosynthesiser),
+   * 2 = primary consumer (herbivore), 3 = secondary consumer (carnivore),
+   * 4–5 = apex predator / top predator.
+   * Computed automatically by sanitizeBlueprint() when not set explicitly.
+   * Issue #3119.
+   */
+  trophicLevel?: number
   /** When true, creature takes extra damage in acidic water (pH < 5.5). Models fish, amphibians, invertebrates. Issue #3279. */
   acidSensitive?: boolean
   /**
@@ -2130,6 +2155,31 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
+   * through soil, keeping lowlands moist even without surface water nearby.
+   * Initialized lazily by tickGroundwater. Issue #3114.
+   */
+  groundwater?: Float32Array
+  /**
+   * Per-tile soil age counter. Increments each tick cycle on solid, non-deadly
+   * surface tiles. Resets to 0 when a deadly material (lava, fire) is present —
+   * modelling disturbance-driven succession reset. Used to gate establishment of
+   * later successional species (see CreatureBlueprint.successionStage). Issue #3124.
+   */
+  soilAge?: Float32Array
+  /**
+   * Set of blueprint IDs whose removal would cause ecological cascades.
+   * A species qualifies when 2+ other species depend on it (via diet.eats or
+   * diet.fears). Updated every 3000 ticks. Issue #3122.
+   */
+  keystoneSpeciesIds?: Set<string>
+  /**
+   * Per-tile soil fertility [0, 1]. Enriched by carcass decay, grazer waste,
+   * and bone decomposition. Boosts plant germination rate and reduces plant
+   * hunger drain. Initialized lazily. Issues #3099–#3103.
+   */
+  soilNutrient?: Float32Array
   /**
    * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
    * Slow sinusoidal oscillation; updated each tick. Issue #3153.

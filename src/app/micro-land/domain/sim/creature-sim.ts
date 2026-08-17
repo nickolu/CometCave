@@ -63,17 +63,23 @@ import {
   spawnCreature,
   tickAcidRain,
   tickAtmosphericCO2,
+  tickBoneDecomposition,
   tickCaveNutrient,
   tickCorridorMask,
   tickEdgeMask,
+  tickEvaporation,
+  tickCloudDrift,
+  tickGroundwater,
   tickMarshDetritus,
   tickMineralVeins,
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickSoilAge,
   tickWebDecay,
   tileAt,
   updateBiomeZones,
+  updateKeystoneSpecies,
 } from './world'
 
 import type { Rng } from './prng'
@@ -823,6 +829,21 @@ function tickSeedBank(
       continue
     }
 
+    // Succession stage gate: only germinate when soil is mature enough. Issue #3123.
+    if (bp.successionStage && bp.successionStage > 1 && w.soilAge) {
+      const minAge = (bp.successionStage - 1) * 1500
+      const soilAgeHere = w.soilAge[seed.y * WORLD_W + seed.x] ?? 0
+      if (soilAgeHere < minAge) { surviving.push(seed); continue }
+    }
+
+    // Nutrient-modulated sprout rate (#3101): soilNutrient scales germination probability.
+    // 0.5× at zero nutrients, 2× at full nutrients. Fertile soil gives seeds a better chance.
+    if (w.soilNutrient) {
+      const nutrientHere = w.soilNutrient[seed.y * WORLD_W + seed.x] ?? 0
+      const sproutFactor = 0.5 + nutrientHere * 1.5
+      if (rng() > sproutFactor / 2) { surviving.push(seed); continue }
+    }
+
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
@@ -884,6 +905,19 @@ export function tickCreatures(
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
   updateBiomeZones(w, tickCount, seasonFactor)
+  tickSoilAge(w, tickCount)
+  updateKeystoneSpecies(w, tickCount)
+  // Water cycle — Issues #3110, #3111, #3112, #3114
+  tickEvaporation(w, tickCount, rng)
+  tickCloudDrift(
+    w, tickCount, rng, setTile,
+    MATERIAL_INDEX['air'],
+    MATERIAL_INDEX['cloud'],
+    MATERIAL_INDEX['water'],
+    MATERIAL_INDEX['snow'],
+  )
+  tickGroundwater(w, tickCount, IS_LIQUID)
+  tickBoneDecomposition(w, tickCount, rng)  // Bone slow decomposition (#3103)
 
   // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
   const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
@@ -1695,6 +1729,13 @@ export function tickCreatures(
       1,
       c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * klieber * dt
     )
+    // Plant nutrient bonus (#3101): rooted plants in nutrient-rich soil have lower hunger drain.
+    // High soilNutrient up to 50% hunger reduction — fertile soil sustains plants longer.
+    if (bp.move.kind === 'root' && w.soilNutrient) {
+      const nutrientHere = w.soilNutrient[Math.floor(c.y) * w.width + Math.floor(c.x)] ?? 0
+      const nutrientRelief = nutrientHere * 0.5 * bp.diet.hungerRate * TUNING.hungerRateScale * dt
+      c.hunger = Math.max(0, c.hunger - nutrientRelief)
+    }
     // Phenological mismatch penalty: species breeding far from the summer GDD peak
     // (≈ 500) face elevated hunger during their breeding season — prey/plants are
     // scarce when their demand is highest. Penalty is zero when seasons are disabled
@@ -3969,6 +4010,16 @@ export function tickCreatures(
     car.decaySeconds -= dt
   }
   if (w.carcasses.some(car => car.decaySeconds <= 0)) {
+    // Carcass-to-nutrient conversion (#3100): expired carcasses enrich the soil beneath them.
+    if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+    for (const car of w.carcasses) {
+      if (car.decaySeconds <= 0) {
+        const nIdx = Math.floor(car.y) * w.width + Math.floor(car.x)
+        if (nIdx >= 0 && nIdx < w.soilNutrient.length) {
+          w.soilNutrient[nIdx] = Math.min(1, w.soilNutrient[nIdx] + 0.15)
+        }
+      }
+    }
     w.carcasses = w.carcasses.filter(car => car.decaySeconds > 0)
   }
 
@@ -4188,8 +4239,30 @@ function look(
     }
   }
 
-  const sight = baseSight * elderWisdomMultiplier
+  let sight = baseSight * elderWisdomMultiplier
   const sight2 = sight * sight
+
+  /**
+   * Density-dependent fear: prey reduce foraging range when predators are
+   * numerous nearby. When 3+ predators that could eat this creature are within
+   * a 10-tile radius, foraging sight is reduced by 40%. Issue #3120.
+   */
+  if (bp.move.kind !== 'root') {
+    let nearbyPredatorCount = 0
+    const fearRadius2 = 100  // 10 tiles squared
+    for (const other of w.creatures) {
+      if (other.id === c.id) continue
+      const obp = w.blueprints[other.blueprintId]
+      if (!obp) continue
+      if (!obp.diet.eats.some(tag => bp.tags.includes(tag)) || obp.size < bp.size) continue
+      const odx = deltaX(cx, other.x + bw / 2)
+      const ody = other.y - cy
+      if (odx * odx + ody * ody <= fearRadius2) {
+        nearbyPredatorCount++
+        if (nearbyPredatorCount >= 3) { sight = sight * 0.6; break }
+      }
+    }
+  }
 
   /**
    * How far it can find something to eat, which is not how far it can see.
@@ -4265,6 +4338,35 @@ function look(
         c.mood = 'eat'
         c.targetId = null
         car.decaySeconds = 0 // mark for removal at end of tick
+        events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
+        return
+      }
+    }
+  }
+
+  // Decomposer carcass eating (#3099): decomposers eat from nearby carcasses and convert mass to nutrients.
+  if (bp.decomposer && hungry && bp.move.kind !== 'root' && w.carcasses.length > 0) {
+    for (const car of w.carcasses) {
+      if (car.decaySeconds <= 0) continue
+      const dx = deltaX(cx, car.x)
+      const dy = car.y - cy
+      if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2) {
+        const bite = 0.1
+        c.hunger = Math.max(0, c.hunger - bite * 0.5)
+        c.starving = 0
+        c.huntBlockedId = null
+        c.mealsEaten++
+        if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
+        // Accelerate decay — the decomposer has done work on this carcass.
+        car.decaySeconds = Math.max(0, car.decaySeconds - 1)
+        // Convert mass to soil nutrients at the carcass site.
+        if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+        const nIdx = Math.floor(car.y) * w.width + Math.floor(car.x)
+        if (nIdx >= 0 && nIdx < w.soilNutrient.length) {
+          w.soilNutrient[nIdx] = Math.min(1, w.soilNutrient[nIdx] + bite * 0.3)
+        }
+        c.mood = 'eat'
+        c.targetId = null
         events.push({ kind: 'ate', blueprintId: bp.id, victimId: car.blueprintId, x: c.x, y: c.y })
         return
       }
@@ -4615,6 +4717,14 @@ function look(
         c.huntBlockedId = null
         c.mealsEaten++
         if (c.mealsEaten === 1) logLife(c, w.elapsed, 'First meal')
+        // Grazer waste cycle (#3102): herbivores deposit nutrients at their feeding site (manure).
+        if (obp.move.kind === 'root' && bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')) {
+          if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+          const nIdx = Math.floor(c.y) * w.width + Math.floor(c.x)
+          if (nIdx >= 0 && nIdx < w.soilNutrient.length) {
+            w.soilNutrient[nIdx] = Math.min(1, w.soilNutrient[nIdx] + 0.01)
+          }
+        }
         // Predator-prey trait escalation: successful hunts grant a small permanent speed bonus. Issue #3263.
         if (bp.predatorEscalation) {
           c.escalatedSpeed = Math.min(0.5, (c.escalatedSpeed ?? 0) + 0.005)
