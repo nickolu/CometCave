@@ -3594,6 +3594,17 @@ export function tickCreatures(
               const mutated = midpoint + (rng() * 20 - 10)
               child.phenoOffset = Math.max(-200, Math.min(200, mutated))
             }
+            // Bergmann's rule: body size drifts larger in cold regions, smaller in warm. Issue #3270.
+            if (bp.bodyMass !== undefined) {
+              const zone = biomeZoneAt(w, Math.floor(c.y))
+              const coldZones = new Set(['boreal', 'tundra', 'ice-cap'])
+              const warmZones = new Set(['tropical-rainforest', 'tropical-savanna', 'desert'])
+              if (zone && coldZones.has(zone)) {
+                child.traits.size = Math.min(1.2, child.traits.size + 0.015)
+              } else if (zone && warmZones.has(zone)) {
+                child.traits.size = Math.max(0.8, child.traits.size - 0.015)
+              }
+            }
             // Island dwarfism / gigantism: isolated land populations evolve different body sizes. Issue #3271.
             if (bp.bodyMass !== undefined && bp.move.kind === 'walk') {
               const cx = Math.floor(c.x), cy = Math.floor(c.y)
@@ -3905,6 +3916,17 @@ export function tickCreatures(
         if (hatchling) {
           hatchling.generation = egg.generation
           hatchling.traits = egg.traits
+          // Bergmann's rule: body size drifts larger in cold regions, smaller in warm. Issue #3270.
+          if (ebp.bodyMass !== undefined) {
+            const hatchZone = biomeZoneAt(w, Math.floor(egg.y))
+            const coldZ = new Set(['boreal', 'tundra', 'ice-cap'])
+            const warmZ = new Set(['tropical-rainforest', 'tropical-savanna', 'desert'])
+            if (hatchZone && coldZ.has(hatchZone)) {
+              hatchling.traits.size = Math.min(1.2, hatchling.traits.size + 0.015)
+            } else if (hatchZone && warmZ.has(hatchZone)) {
+              hatchling.traits.size = Math.max(0.8, hatchling.traits.size - 0.015)
+            }
+          }
           // Island dwarfism / gigantism at egg hatch. Issue #3271.
           if (ebp.bodyMass !== undefined && ebp.move.kind === 'walk') {
             const ex = Math.floor(egg.x), ey = Math.floor(egg.y)
