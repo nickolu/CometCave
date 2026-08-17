@@ -2833,7 +2833,7 @@ export function tickCreatures(
 
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events, rng)
+      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng)
     }
 
     // --- burrow retreat: when threatened or hungry, head back to burrow. Issue #3419. ---
@@ -4496,6 +4496,7 @@ function look(
   bh: number,
   dead: Set<number>,
   events: SimEvent[],
+  massEmergingSpecies: ReadonlySet<string>,
   rng: Rng
 ): void {
   const cx = c.x + bw / 2
