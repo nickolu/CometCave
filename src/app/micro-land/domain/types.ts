@@ -333,11 +333,6 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
-   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
-   * soil tiles. Issue #3148.
-   */
-  fixesNitrogen?: boolean
-  /**
    * Decomposer archetype: this creature eats from carcasses (any carcass within 2
    * tiles) and converts the consumed mass into soilNutrient at the carcass site.
    * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
@@ -1201,10 +1196,6 @@ export interface CreatureBlueprint {
    */
   sexualDimorphism?: boolean
   /**
-   * True if this creature is a decomposer (fungus/bacteria) that gains
-   * energy from mud tiles (decomposing organic matter). Issue #3146.
-   */
-  decomposer?: boolean
    * When true, this species maintains a dominance hierarchy.
    * Rank is established through contests in look(); higher rank grants
    * food access priority and mate priority. Issue #3227.
@@ -2183,8 +2174,6 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
-  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
-  thermoclineY?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
