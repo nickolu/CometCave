@@ -820,6 +820,10 @@ export function sanitizeBlueprint(
     territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
     deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
     shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
+    // Lineage, food web, and succession features (#3121, #3126, #3167)
+    derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
+    trophicLevel: typeof b.trophicLevel === 'number' && b.trophicLevel >= 1 ? Math.round(b.trophicLevel) : undefined,
+    successionStage: typeof b.successionStage === 'number' && b.successionStage >= 1 && b.successionStage <= 4 ? Math.round(b.successionStage) : undefined,
     antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
     bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
     quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
