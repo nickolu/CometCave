@@ -298,6 +298,13 @@ export interface CreatureBlueprint {
    */
   fixesNitrogen?: boolean
   /**
+   * True if this plant produces aerially dispersed seeds (dandelion, maple, grass).
+   * Seeds are biased strongly in the prevailing wind direction; a strong tailwind
+   * carries them many extra tiles while headwind suppresses their reach.
+   * Issue #3154.
+   */
+  windDispersed?: boolean
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited
@@ -2347,12 +2354,24 @@ export interface WorldState {
    * Current weather state for the world. Transitions stochastically based on
    * season and elapsed time. Issues #3094-#3097.
    */
-  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm' | 'blizzard'
   /**
    * Ticks remaining until the next weather transition check.
    * Set to 0 to force an immediate check on the next tick.
    */
   weatherTimer?: number
+  /**
+   * Current named season: spring, summer, autumn, or winter.
+   * Derived from `elapsed` and `TUNING.seasonPeriod`. Updated every tick.
+   * Used by the chronicle and UI to label events with the season they occurred in.
+   * Epic #3074.
+   */
+  season?: 'spring' | 'summer' | 'autumn' | 'winter'
+  /**
+   * Position within the current season [0, 1]. 0 = start of season, 1 = end.
+   * Epic #3074.
+   */
+  seasonProgress?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.

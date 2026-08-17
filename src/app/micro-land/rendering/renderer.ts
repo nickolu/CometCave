@@ -673,6 +673,7 @@ export class Renderer {
       this.viewRows * this.scale
     )
 
+    this.drawWeather(w)
     this.drawMinimap(w, theme, vx)
     this.drawNameLabels(w, elderId)
     this.drawTombstoneLabels(w)
@@ -1623,6 +1624,75 @@ export class Renderer {
 
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
+  }
+
+  /**
+   * Overlay weather effects on the display canvas.
+   *
+   * Rain and storm use diagonal streaks drawn at display resolution — no
+   * per-tile cost, no interaction with the tile bake, and no need for the sim
+   * rng because the streaks are purely cosmetic. Storm gets heavier precipitation
+   * and a stochastic lightning flash. The wind vector slants the streaks so they
+   * visibly track the wind. Epic #3075.
+   */
+  private drawWeather(w: WorldState): void {
+    const weather = w.weatherState
+    if (!weather || weather === 'clear' || weather === 'drought') return
+
+    const ctx = this.ctx
+    const dw = this.display.width
+    const dh = this.display.height
+
+    // Wind slants the streaks: windX in [-0.4, 0.4] → lateral shift per pixel of length.
+    const windX = w.windX ?? 0
+
+    ctx.save()
+
+    if (weather === 'blizzard') {
+      // Snowflakes: soft white dots floating down with horizontal wind drift.
+      // Slower vertical drop than rain; more horizontal spread. Epic #3075.
+      const count = 220
+      const dotSize = 1.5
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.55)'
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * (dw + 20) - 10
+        const y = Math.random() * dh
+        ctx.beginPath()
+        ctx.arc(x + windX * 12, y, dotSize, 0, Math.PI * 2)
+        ctx.fill()
+      }
+      // Slight blue-white overlay to cool the palette.
+      ctx.globalAlpha = 0.08
+      ctx.fillStyle = '#c8e8ff'
+      ctx.fillRect(0, 0, dw, dh)
+    } else {
+      // Rain / storm: diagonal streaks.
+      const isStorm = weather === 'storm'
+      const count = isStorm ? 300 : 160
+      const len = isStorm ? 9 : 6
+      const alpha = isStorm ? 0.45 : 0.28
+      const slantX = -len * 0.25 + windX * len * 0.7
+
+      ctx.strokeStyle = `rgba(180, 210, 255, ${alpha})`
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      for (let i = 0; i < count; i++) {
+        const x = Math.random() * dw
+        const y = Math.random() * dh
+        ctx.moveTo(x, y)
+        ctx.lineTo(x + slantX, y + len)
+      }
+      ctx.stroke()
+
+      // Storm: brief lightning flash (~0.5% chance per frame, fades in one frame).
+      if (isStorm && Math.random() < 0.005) {
+        ctx.globalAlpha = 0.18
+        ctx.fillStyle = '#fffff0'
+        ctx.fillRect(0, 0, dw, dh)
+      }
+    }
+
+    ctx.restore()
   }
 
   private buildMapImage(w: WorldState, theme: Theme): void {

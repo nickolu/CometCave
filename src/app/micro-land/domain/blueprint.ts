@@ -807,6 +807,8 @@ export function sanitizeBlueprint(
         : undefined,
     intertidal: b.intertidal !== undefined ? !!b.intertidal : undefined,
     fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
+    // Wind seed dispersal: seeds biased toward prevailing wind direction (issue #3154)
+    windDispersed: 'windDispersed' in b ? !!b.windDispersed : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
       ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))

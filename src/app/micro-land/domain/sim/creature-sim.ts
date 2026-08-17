@@ -917,13 +917,30 @@ function tickSeedBank(
       if (rng() > sproutFactor / 2) { surviving.push(seed); continue }
     }
 
+    // Photosynthesis pause: seeds require light to germinate. At deep night (nightFactor
+    // > 0.7) sprouting drops to ~5% of the normal rate — nearly zero. During the day
+    // and especially at dawn the seed bank runs freely. This makes plant colonisation a
+    // daytime phenomenon and gives diurnal species a natural edge over nocturnal ones
+    // in controlling ground cover. Issue #3073.
+    if (TUNING.dayLengthSeconds > 0) {
+      const dayFraction = (w.elapsed % TUNING.dayLengthSeconds) / TUNING.dayLengthSeconds
+      const seedNightFactor = (1 - Math.cos(2 * Math.PI * dayFraction)) / 2
+      if (seedNightFactor > 0.7 && rng() > 0.05) { surviving.push(seed); continue }
+    }
 
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
 
-    // Fire-adapted plants sprout at 5× rate when ash is nearby. Issue #3117.
+    // Spring bloom: seed-bank germination triples in early spring (yearFrac 0–0.25).
+    // Models the real flush of germination after winter stratification is broken —
+    // the first thaw triggers mass sprouting that outpaces summer and autumn combined.
+    // Epic #3074.
     let sproutAttempts = 1
+    if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
+      const yearFrac = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+      if (yearFrac < 0.25) sproutAttempts = 3  // spring: triple germination attempts
+    }
     if (bp.fireAdapted) {
       const ashMatIdx = MATERIAL_INDEX.ash
       const ox = seed.x, oy = seed.y
@@ -990,6 +1007,25 @@ export function tickCreatures(
           1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / TUNING.seasonPeriod)
         )
       : 1
+
+  // Named season and progress: derived from elapsed time, stored for UI and chronicle.
+  // yearFrac 0.0–0.25 = spring (rising), 0.25–0.5 = summer (falling), etc. Epic #3074.
+  if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
+    const yearFrac = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+    if (yearFrac < 0.25) {
+      w.season = 'spring'
+      w.seasonProgress = yearFrac / 0.25
+    } else if (yearFrac < 0.5) {
+      w.season = 'summer'
+      w.seasonProgress = (yearFrac - 0.25) / 0.25
+    } else if (yearFrac < 0.75) {
+      w.season = 'autumn'
+      w.seasonProgress = (yearFrac - 0.5) / 0.25
+    } else {
+      w.season = 'winter'
+      w.seasonProgress = (yearFrac - 0.75) / 0.25
+    }
+  }
 
   // Ocean current conveyor: slow lateral current, reverses each half-season. Issue #3250.
   const CURRENT_PERIOD = TUNING.seasonPeriod * 2
@@ -4671,8 +4707,12 @@ export function tickCreatures(
     const { w: vw, h: vh } = artSize(victimBp)
     const angle = rng() * Math.PI * 2
     const dist = 20 + rng() * 40
-    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * 25
-    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * 15
+    // Wind-dispersed seeds (dandelion, maple, grass) ride the prevailing wind much
+    // farther than they would go by random scatter alone. Non-windDispersed seeds
+    // (heavy nuts, sticky burrs) don't care which way the wind blows. Issue #3154.
+    const pollinationWindScale = victimBp.windDispersed ? 55 : 0
+    const ox = ev.x + Math.cos(angle) * dist + (w.windX ?? 0) * pollinationWindScale
+    const oy = ev.y + Math.sin(angle) * dist + (w.windY ?? 0) * (pollinationWindScale * 0.6)
     const seedling = reproduce(w, victimBp, ox, oy, vw, vh, rng)
     if (seedling) {
       plantsAlive++
@@ -5037,7 +5077,14 @@ function look(
   // search to 4× normal range — enough to detect patches across the world.
   const migrating = c.migrateTimer > 30
   const foodSight = migrating ? sight * 4 : sight * (1 + HUNGER_REACH * desperation * roamOf(c))
-  const foodSight2 = foodSight * foodSight
+  // Nocturnal ambush advantage: nocturnal predators (diurnal < 0) detect prey farther
+  // in the dark, modelling tapetum lucidum, heat-sensitive pits, and evolved night senses.
+  // A fully nocturnal hunter at full night gains 30% extra detection range; the bonus
+  // scales continuously with both the diurnal trait and the darkness level. Issue #3073.
+  const nocturnalBonus = (TUNING.dayLengthSeconds > 0 && diurnal < 0)
+    ? 1 + Math.max(0, -diurnal) * nightFactor * 0.3
+    : 1
+  const foodSight2 = foodSight * foodSight * nocturnalBonus * nocturnalBonus
 
   /**
    * Whether it is worth noticing its own kind this pass.
@@ -6708,7 +6755,14 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       sizeOf(c)) *
     (1 - diurnalPenalty) *
     // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
-    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1)
+    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1) *
+    // Blizzard: all surface creatures slow 50%. Underground creatures are insulated.
+    // Epic #3075.
+    (w.weatherState === 'blizzard' && !isUnderground(w, c) ? 0.5 : 1) *
+    // Amphibian rain bonus: creatures that don't drown thrive in wet conditions.
+    // Rain and storm trigger a 20% speed boost — models burst activity in frogs and
+    // salamanders following the first wet-season rains. Epic #3075.
+    (!bp.habitat.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {
@@ -7021,6 +7075,12 @@ function reproduce(
   const spread = isPlant ? 14 : 5
   const body = bodyBox(bp)
 
+  // Wind-dispersed seeds ride the prevailing wind. windX=0.4 → up to 12 tiles extra
+  // in the horizontal direction on self-seeding; vertical is scaled proportionally.
+  // Issue #3154.
+  const selfWindX = isPlant && bp.windDispersed ? (w.windX ?? 0) * 30 : 0
+  const selfWindY = isPlant && bp.windDispersed ? (w.windY ?? 0) * 20 : 0
+
   for (let attempt = 0; attempt < 12; attempt++) {
     const minSpread = isPlant ? TUNING.plantSpreadMin : 0
     // For plants: pick a random direction and land at least minSpread tiles away.
@@ -7028,12 +7088,12 @@ function reproduce(
     const signX = rng() > 0.5 ? 1 : -1
     const signY = rng() > 0.5 ? 1 : -1
     const x = isPlant
-      ? ox + signX * (minSpread + rng() * (spread - minSpread))
+      ? ox + signX * (minSpread + rng() * (spread - minSpread)) + selfWindX
       : ox + (rng() * 2 - 1) * spread
     const ySpread = isPlant ? 6 : spread
     const yMin = isPlant ? minSpread * (6 / 14) : 0
     const y = isPlant
-      ? oy + signY * (yMin + rng() * (ySpread - yMin))
+      ? oy + signY * (yMin + rng() * (ySpread - yMin)) + selfWindY
       : oy + (rng() * 2 - 1) * ySpread
     const cx = wrapX(x)
     const cy = Math.max(0, Math.min(WORLD_H - bh, y))
