@@ -291,6 +291,11 @@ export interface CreatureBlueprint {
   /** True for anything the player summoned, so we can badge it in the UI. */
   summoned?: boolean
   /**
+   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
+   * soil tiles. Issue #3148.
+   */
+  fixesNitrogen?: boolean
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited
@@ -2180,9 +2185,9 @@ export interface WorldState {
    */
   keystoneSpeciesIds?: Set<string>
   /**
-   * Per-tile soil fertility [0, 1]. Enriched by carcass decay, grazer waste,
-   * and bone decomposition. Boosts plant germination rate and reduces plant
-   * hunger drain. Initialized lazily. Issues #3099–#3103.
+   * Per-tile soil nutrient level [0, 2.0]. 1.0 = baseline fertility.
+   * Initialized lazily. Plants deplete it; nitrogen-fixing plants enrich it.
+   * Issue #3144.
    */
   soilNutrient?: Float32Array
   /**

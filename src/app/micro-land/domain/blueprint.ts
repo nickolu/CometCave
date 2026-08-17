@@ -783,6 +783,7 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
       ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
