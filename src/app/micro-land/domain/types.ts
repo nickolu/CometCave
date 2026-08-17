@@ -2349,6 +2349,18 @@ export interface WorldState {
    */
   weatherTimer?: number
   /**
+   * Current named season: spring, summer, autumn, or winter.
+   * Derived from `elapsed` and `TUNING.seasonPeriod`. Updated every tick.
+   * Used by the chronicle and UI to label events with the season they occurred in.
+   * Epic #3074.
+   */
+  season?: 'spring' | 'summer' | 'autumn' | 'winter'
+  /**
+   * Position within the current season [0, 1]. 0 = start of season, 1 = end.
+   * Epic #3074.
+   */
+  seasonProgress?: number
+  /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
    * Initialized lazily by tickGroundwater. Issue #3114.

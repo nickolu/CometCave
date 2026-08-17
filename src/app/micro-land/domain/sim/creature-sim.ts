@@ -933,6 +933,25 @@ export function tickCreatures(
         )
       : 1
 
+  // Named season and progress: derived from elapsed time, stored for UI and chronicle.
+  // yearFrac 0.0–0.25 = spring (rising), 0.25–0.5 = summer (falling), etc. Epic #3074.
+  if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
+    const yearFrac = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+    if (yearFrac < 0.25) {
+      w.season = 'spring'
+      w.seasonProgress = yearFrac / 0.25
+    } else if (yearFrac < 0.5) {
+      w.season = 'summer'
+      w.seasonProgress = (yearFrac - 0.25) / 0.25
+    } else if (yearFrac < 0.75) {
+      w.season = 'autumn'
+      w.seasonProgress = (yearFrac - 0.5) / 0.25
+    } else {
+      w.season = 'winter'
+      w.seasonProgress = (yearFrac - 0.75) / 0.25
+    }
+  }
+
   // Ocean current conveyor: slow lateral current, reverses each half-season. Issue #3250.
   const CURRENT_PERIOD = TUNING.seasonPeriod * 2
   w.oceanCurrentX = Math.sin(2 * Math.PI * w.elapsed / CURRENT_PERIOD) * 0.3
@@ -6619,7 +6638,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       sizeOf(c)) *
     (1 - diurnalPenalty) *
     // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
-    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1)
+    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1) *
+    // Amphibian rain bonus: creatures that don't drown thrive in wet conditions.
+    // Rain and storm trigger a 20% speed boost — models burst activity in frogs and
+    // salamanders following the first wet-season rains. Epic #3075.
+    (!bp.body.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {

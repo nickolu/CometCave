@@ -1634,6 +1634,19 @@ export function tickTileTemp(w: WorldState, tickCount: number, seasonFactor: num
       tmp[i] = Math.max(0, Math.min(1, tmp[i] + seasonShift))
     }
   }
+
+  // Day/night temperature coupling: tiles are coldest around midnight and warmest
+  // around noon. The daily swing is ±2% of tile temperature — small enough that it
+  // doesn't overwhelm the biome gradient but large enough to matter for ectotherms
+  // and ice formation near the freezing threshold. Issue #3073.
+  if (TUNING.dayLengthSeconds > 0) {
+    const dayFraction = (w.elapsed % TUNING.dayLengthSeconds) / TUNING.dayLengthSeconds
+    // -cos(2π * dayFraction): +1 at noon, -1 at midnight.
+    const diurnalShift = -Math.cos(2 * Math.PI * dayFraction) * 0.02
+    for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+      tmp[i] = Math.max(0, Math.min(1, tmp[i] + diurnalShift))
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
