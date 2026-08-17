@@ -2866,6 +2866,43 @@ const KESTREL = builtin('kestrel', {
 })
 
 // ---------------------------------------------------------------------------
+// Crab — ratified a Constitution at population 10. Issue #3296.
+// ---------------------------------------------------------------------------
+
+const CRAB = builtin('crab', {
+  name: 'Crab',
+  blurb: "Ratified a Constitution at population 10. Three articles. No Senate yet. The inalienable right to moult without interference has been violated 47 times. The Senate is still forming.",
+  size: 1,
+  tags: ['meat', 'aquatic'],
+  art: {
+    palette: { r: '#c04830', w: '#f0d0b0', b: '#6a2010', g: '#d06040' },
+    frames: [
+      ['rwr', 'gbg', 'rwr'],
+      ['gwg', 'rbr', 'gwg'],
+    ],
+    frameMs: 350,
+    faceMotion: false,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.5, buoyancy: 1.0, immuneTo: [] },
+  move: { kind: 'walk', speed: 1.5, jump: 0, restlessness: 0.3 },
+  diet: {
+    eats: ['meat', 'plant'],
+    fears: ['meat'],
+    hungerRate: 0.006,
+    starveSeconds: 60,
+    breedAt: 0.7,
+    lifespanSeconds: 280,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#c04830', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  crabConstitution: true,
+  bodyMass: 0.12,
+})
+
 // Otter — river mammal with Oligarchy mechanic. Issue #3308.
 // ---------------------------------------------------------------------------
 
@@ -3207,6 +3244,119 @@ const TOAD = builtin('toad', {
 })
 
 // ---------------------------------------------------------------------------
+// Duck — holds a Town Hall every 10 days. Issue #3297.
+// ---------------------------------------------------------------------------
+
+const DUCK = builtin('duck', {
+  name: 'Duck',
+  blurb: "Holds a Town Hall every 10 days. Debates major issues. Votes in the direction most were already facing. No duck changes behavior. The Field Guide logs 'Decision Made: [Inconclusive]'.",
+  size: 1,
+  tags: ['meat', 'bird'],
+  art: {
+    palette: { g: '#3a7030', w: '#f0e8d0', b: '#8a5010', y: '#f0c040' },
+    frames: [
+      ['gyg', 'wyw', '.g.'],
+      ['.g.', 'wyw', 'gyg'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 1.3, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 2, restlessness: 0.5 },
+  diet: {
+    eats: ['plant', 'meat'],
+    fears: ['meat'],
+    hungerRate: 0.007,
+    starveSeconds: 45,
+    breedAt: 0.65,
+    lifespanSeconds: 220,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: null, drowns: false },
+  death: { becomes: null, particleColor: '#f0e8d0', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  duckDemocracy: true,
+  bodyMass: 0.3,
+})
+
+// ---------------------------------------------------------------------------
+// Hedgehog — mutual spine-sharing pact. Issue #3301.
+// ---------------------------------------------------------------------------
+
+const HEDGEHOG = builtin('hedgehog', {
+  name: 'Hedgehog',
+  blurb: "Part of the mutual spine-sharing pact. When 2+ kin are within 5 tiles, predators have a 20% chance to miss. Premiums are zero. Claims take forever. This is the healthcare system.",
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#3a2a0a', w: '#d0c090', g: '#6a5a2a', r: '#c08040' },
+    frames: [
+      ['grg', 'wbw', 'grg'],
+    ],
+    frameMs: 400,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.1, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.0, jump: 1, restlessness: 0.5 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.008,
+    starveSeconds: 45,
+    breedAt: 0.7,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#3a2a0a', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  hedgehogHealthcare: true,
+  bodyMass: 0.3,
+})
+
+// ---------------------------------------------------------------------------
+// Xerus — African ground squirrel with trade embargo on non-diggers. Issue #3317.
+// ---------------------------------------------------------------------------
+
+const XERUS = builtin('xerus', {
+  name: 'Xerus',
+  blurb: "African ground squirrel. Trade policy: diggers only. Fliers are embargoed. An otter attempted to dig once. The Xerus were not impressed. Relations with the otter community remain at historic lows.",
+  size: 1,
+  tags: ['plant', 'mammal'],
+  art: {
+    palette: { b: '#7a5520', w: '#e0c898', g: '#a07830', r: '#c09040' },
+    frames: [
+      ['gbg', 'wrw', '.b.'],
+      ['.b.', 'wrw', 'gbg'],
+    ],
+    frameMs: 200,
+    faceMotion: true,
+  },
+  body: { mass: 0.5, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.0, jump: 2, restlessness: 0.6 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.008,
+    starveSeconds: 35,
+    breedAt: 0.6,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 12 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a5520', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  xerusXenophobia: true,
+  burrowDigger: true,
+  bodyMass: 0.25,
+})
+
 // Sea Urchin — Urchin Union. Issue #3314.
 // ---------------------------------------------------------------------------
 
@@ -3430,6 +3580,10 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   ARCTIC_TERN,
   LEMMING,
   KESTREL,
+  CRAB,
+  DUCK,
+  HEDGEHOG,
+  XERUS,
   OTTER,
   SQUIRREL,
   VOLE,

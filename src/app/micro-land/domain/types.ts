@@ -1131,6 +1131,8 @@ export interface CreatureBlueprint {
    */
   minViablePopulation?: number
   /**
+   * r/K selection position: 0=extreme r-selected (fast, many small offspring),
+   * 1=extreme K-selected (slow, few well-provisioned offspring). Issue #3256.
    * When true, this species forms a Legislature and periodically votes to
    * collectively run off the nearest world edge when overcrowded. Issue #3305.
    */
@@ -1144,33 +1146,27 @@ export interface CreatureBlueprint {
    */
   rK?: number
   /**
-   * Mating system governing partner selection and bonding.
-   *
-   * 'monogamy': bonded pair — nearby mate reduces next cooldown by 20%.
-   * 'polygyny': only the most-fed male within sight breeds.
-   * 'polyandry': symmetrical to polygyny but gates on the dominant female.
-   * 'promiscuity': no mate-finding required — reproduces without a partner.
-   * Leave undefined for default partner-seeking behavior. Issue #3257.
+   * Mating system: affects reproduction rate and mate-finding behavior.
+   * Issue #3257.
    */
   matingSystem?: 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity'
   /**
-   * When true, this species reproduces only once and then dies.
-   *
-   * Tracks whether reproduction has occurred on the Creature via `hasReproduced`.
-   * After the first successful reproduction the creature is killed via aged death.
-   * Models Pacific salmon, mayflies, century plants, annual flowers. Issue #3259.
+   * When true, the individual dies immediately after its first successful
+   * reproduction (big-bang reproduction strategy). Issue #3259.
    */
   semelparous?: boolean
   /**
-   * Reproductive rate varies with life stage.
-   *
-   * 'peak-early': juveniles breed fastest; old adults rarely reproduce.
-   * 'peak-middle': prime-age adults breed most; young and old rarely do.
-   * 'peak-late': older adults are the primary breeders; youth rarely reproduces.
-   * Applied as a probabilistic gate (ageFactor) before each breed attempt.
-   * Leave undefined for age-independent reproduction. Issue #3261.
+   * How reproductive rate varies with age. Issue #3261.
    */
   ageReproductionCurve?: 'peak-early' | 'peak-middle' | 'peak-late'
+  /** When true, this species ratifies a Constitution when population first reaches 10. Issue #3296. */
+  crabConstitution?: boolean
+  /** When true, this species holds periodic Town Hall votes. Issue #3297. */
+  duckDemocracy?: boolean
+  /** When true, nearby conspecifics provide defensive spine-sharing, increasing effective toxicity. Issue #3301. */
+  hedgehogHealthcare?: boolean
+  /** When true, this species only cooperates with burrowing conspecifics; ignores non-diggers. Issue #3317. */
+  xerusXenophobia?: boolean
   /**
    * When true, this species requires large contiguous habitat patches to
    * reproduce normally. Small or fragmented patches suppress breeding.
@@ -1317,6 +1313,20 @@ export interface CreatureBlueprint {
   moleMailCarrier?: boolean
   /** When true, this species periodically publishes headlines about local events. Issue #3307. */
   newtNewspaper?: boolean
+  /** When true, females age slightly slower than males (sexual dimorphism). Issue #3165. */
+  sexualDimorphism?: boolean
+  /** When true, this creature leaves chemical pheromone trails that guide conspecifics. Issue #3234. */
+  pheromoneDepositor?: boolean
+  /** Blueprint ID of the definitive host for multi-host parasites. Issue #3185. */
+  intermediateHostId?: string
+  /** When true, this species builds coral reef structures. Issue #3253. */
+  coralPolyp?: boolean
+  /** When true, this species emits audible signals that propagate through the world. Issue #3241. */
+  soundEmitter?: boolean
+  /** When true, this species can detect sound signals from soundEmitter species. Issue #3241. */
+  soundReceptive?: boolean
+  /** Maximum tile distance at which this species detects sound. Issue #3241. */
+  soundReceptiveRange?: number
 }
 
 /**
@@ -1798,12 +1808,15 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True once a semelparous creature has reproduced; prevents second reproduction. Issue #3259. */
   /** True when this lemming has been elected to the Legislature. Issue #3305. */
   isLegislator?: boolean
   /** True when the Legislature has voted Cliff and this creature is marching toward the edge. Issue #3305. */
   cliffBound?: boolean
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
+  /** Active spine-sharing boost from nearby Healthcare pact members. 0 when alone. Issue #3301. */
+  spineBoost?: number
   /**
    * Cached count of same-habitat tiles in the local area.
    * Computed every 120 ticks for patchDependent species. Issue #3281.
@@ -1877,6 +1890,12 @@ export interface Creature {
   moleMailFoodY?: number
   /** Countdown until this newt publishes the next headline. Issue #3307. */
   newtNewsTimer?: number
+  /** Seconds this creature has spent without a conspecific in range (genetic isolation). Issue #3164. */
+  isolationTime?: number
+  /** Biological sex, assigned at birth for species with sexualDimorphism. Issue #3165. */
+  sex?: 'male' | 'female'
+  /** Current lifecycle stage for multi-host parasites ('larval' | 'adult'). Issue #3185. */
+  lifecycleStage?: string
 }
 
 /**
@@ -2350,6 +2369,10 @@ export interface WorldState {
   lastFrogRitualSeason?: number
   /** Creature id of the Gopher Government Administrator. Issue #3300. */
   gopherAdminId?: number
+  /** True once the Crab Constitution has been ratified (population first reached 10). Issue #3296. */
+  crabConstitutionRatified?: boolean
+  /** World elapsed time of the last Duck Town Hall vote. Issue #3297. */
+  duckTownHallTime?: number
 }
 
 // ---------------------------------------------------------------------------
