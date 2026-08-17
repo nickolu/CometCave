@@ -919,6 +919,7 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
   // and deposits floodwater nutrients in floodplain tiles. Issue #3372.
   let springFloodMult = 1
   let nutrientDeposit = 0
+  let summerEvapMult = 1
   if (TUNING.seasonAmplitude > 0) {
     const sPhase = (2 * Math.PI * w.elapsed) / TUNING.seasonPeriod
     const sinP = Math.sin(sPhase)
@@ -927,6 +928,13 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
     if (sinP > 0 && cosP > 0) {
       springFloodMult = 1 + TUNING.seasonAmplitude * sinP * 4
       nutrientDeposit = TUNING.seasonAmplitude * sinP * 0.0001 * timePassed
+    }
+    // Summer heat stress: elevated solar energy increases evaporation from exposed tiles.
+    // At midsummer (sinP = 1) with amplitude = 0.5, evaporation is 50% higher than baseline.
+    // The effect tapers at the seasonal shoulders. Water-adjacent tiles still stay damp —
+    // the springFloodMult fills them back. Epic #3074.
+    if (sinP > 0) {
+      summerEvapMult = 1 + TUNING.seasonAmplitude * sinP
     }
   }
 
@@ -937,7 +945,7 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
   for (let y = 0; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
       const i = y * WORLD_W + x
-      w.moisture[i] = Math.max(0, w.moisture[i] - 0.005 * timePassed)
+      w.moisture[i] = Math.max(0, w.moisture[i] - 0.005 * timePassed * summerEvapMult)
       // Sideways neighbours wrap, so a shoreline at column zero is as damp as
       // one in the middle of the map. Up and down still stop at the walls.
       const rowStart = y * WORLD_W
