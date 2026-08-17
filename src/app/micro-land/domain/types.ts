@@ -1192,6 +1192,10 @@ export interface CreatureBlueprint {
   gopherGovernment?: boolean
   /** When true, this species relays pheromone messages with a 135s delay. Issue #3302. */
   beetleInternet?: boolean
+  /** When true, this species records food locations and broadcasts them to conspecifics after a 2-season delay. Issue #3306. */
+  moleMailCarrier?: boolean
+  /** When true, this species periodically publishes headlines about local events. Issue #3307. */
+  newtNewspaper?: boolean
 }
 
 /**
@@ -1713,6 +1717,14 @@ export interface Creature {
   beetleMailX?: number
   /** Y tile coordinate where the beetle mail event occurred. Issue #3xxx. */
   beetleMailY?: number
+  /** Elapsed time when this mole last recorded a food location (for 2-season delay mail). Issue #3306. */
+  moleMailRecordedAt?: number
+  /** Recorded food X tile (the stale info moles broadcast). Issue #3306. */
+  moleMailFoodX?: number
+  /** Recorded food Y tile. Issue #3306. */
+  moleMailFoodY?: number
+  /** Countdown until this newt publishes the next headline. Issue #3307. */
+  newtNewsTimer?: number
 }
 
 /**

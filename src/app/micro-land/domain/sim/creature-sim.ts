@@ -2449,6 +2449,68 @@ export function tickCreatures(
       }
     }
 
+    // --- Mole Mail: record food location; broadcast stale info after 2 seasons. Issue #3306. ---
+    if (bp.moleMailCarrier) {
+      // Record food location when eating
+      if (c.mood === 'eat' && c.targetId !== null) {
+        if (c.moleMailRecordedAt === undefined) {
+          c.moleMailRecordedAt = w.elapsed
+          c.moleMailFoodX = Math.floor(c.x)
+          c.moleMailFoodY = Math.floor(c.y)
+        }
+      }
+      // After 2 seasons, broadcast stale food location to nearby conspecifics
+      const MAIL_DELAY = TUNING.seasonPeriod * 2
+      if (c.moleMailRecordedAt !== undefined && (w.elapsed - c.moleMailRecordedAt) >= MAIL_DELAY) {
+        const mailX = c.moleMailFoodX!
+        const mailY = c.moleMailFoodY!
+        // Nudge nearby conspecifics toward the (stale) food location
+        for (const recipient of w.creatures) {
+          if (recipient.id === c.id || recipient.blueprintId !== c.blueprintId) continue
+          const rdist = Math.sqrt((recipient.x - c.x) ** 2 + (recipient.y - c.y) ** 2)
+          if (rdist > 15) continue
+          // Push recipient toward old food location (probably empty now)
+          const mdx = mailX - recipient.x, mdy = mailY - recipient.y
+          const mdist = Math.sqrt(mdx * mdx + mdy * mdy)
+          if (mdist > 1 && recipient.mood === 'wander') {
+            recipient.vx += (mdx / mdist) * 0.3 * dt
+            recipient.vy += (mdy / mdist) * 0.3 * dt
+          }
+        }
+        // 99% delivery rate — occasionally fire a notice event
+        if (rng() < 0.01 * dt) {
+          events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} delivers mail: food was at (${mailX}, ${mailY}) two seasons ago` })
+        }
+        // Reset for next mail cycle
+        c.moleMailRecordedAt = undefined
+        c.moleMailFoodX = undefined
+        c.moleMailFoodY = undefined
+      }
+    }
+
+    // --- Newt Newspaper: periodic pond headlines. Issue #3307. ---
+    if (bp.newtNewspaper) {
+      const PAPER_PERIOD = TUNING.seasonPeriod / 7  // ~14 in-game days
+      if (c.newtNewsTimer === undefined) c.newtNewsTimer = PAPER_PERIOD * rng()
+      c.newtNewsTimer -= dt
+      if (c.newtNewsTimer <= 0) {
+        c.newtNewsTimer = PAPER_PERIOD
+        const HEADLINES = [
+          'LARGE ROCK DISPLACES WATER IN NORTH SECTOR',
+          'CREATURE SPOTTED, LEAVES WITHOUT COMMENT',
+          'ALGAE BLOOM: COVERAGE CONTINUES PAGE 2',
+          'LOCAL FISH DOES NOTHING OF NOTE FOR THIRD CONSECUTIVE DAY',
+          'CURRENT SLIGHTLY FASTER THAN YESTERDAY',
+          'POND EDGE REPORT: IT IS STILL THERE',
+          'REED CENSUS SHOWS REEDS',
+          'MYSTERIOUS SPLASH — INVESTIGATION ONGOING',
+          'WATER TEMPERATURE WITHIN NORMAL RANGE',
+          'EDITORIAL: THE CASE FOR STAYING IN THE POND',
+        ]
+        const headline = HEADLINES[Math.floor(rng() * HEADLINES.length)]
+        events.push({ kind: 'notice', blueprintId: bp.id, x: c.x, y: c.y, text: `${bp.name} Newspaper: ${headline}` })
+      }
+    }
 
     // --- burrow excavation: dig through soil tiles downward. Issue #3419. ---
     if (bp.burrowDigger) {

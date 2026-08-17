@@ -3241,6 +3241,82 @@ const RACCOON = builtin('raccoon', {
   bodyMass: 0.5,
 })
 
+// ---------------------------------------------------------------------------
+// Mole — underground postal service. Issue #3306.
+// ---------------------------------------------------------------------------
+
+const MOLE = builtin('mole', {
+  name: 'Mole',
+  blurb: 'Runs an underground postal service. Letters take 2 seasons. The food report is always from last season. Moles are aware of the problem.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#2a1a0a', w: '#d4b896', g: '#3a2a1a', p: '#5a3a2a' },
+    frames: [
+      ['bpb', 'wgw', '.b.'],
+      ['.b.', 'wgw', 'bpb'],
+    ],
+    frameMs: 220,
+    faceMotion: true,
+  },
+  body: { mass: 0.8, bounce: 0.05, drag: 0.5, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.5, jump: 1, restlessness: 0.6 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.010,
+    starveSeconds: 40,
+    breedAt: 0.65,
+    lifespanSeconds: 200,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#2a1a0a', particleCount: 5 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  moleMailCarrier: true,
+  burrowDigger: true,
+  bodyMass: 0.08,
+})
+
+// ---------------------------------------------------------------------------
+// Newt — pond journalist. Issue #3307.
+// ---------------------------------------------------------------------------
+
+const NEWT = builtin('newt', {
+  name: 'Newt',
+  blurb: 'Maintains the only newspaper in the pond. Publishes every 14 days. Page 2 does not exist. Considering a podcast.',
+  size: 1,
+  tags: ['meat', 'amphibian'],
+  art: {
+    palette: { r: '#c04020', b: '#1a3020', w: '#a8c890', g: '#2a5030' },
+    frames: [
+      ['grg', 'wbw', '.g.'],
+      ['.g.', 'wbw', 'grg'],
+    ],
+    frameMs: 280,
+    faceMotion: true,
+  },
+  body: { mass: 0.4, bounce: 0.05, drag: 0.3, buoyancy: 0.8, immuneTo: [] },
+  move: { kind: 'walk', speed: 2.0, jump: 2, restlessness: 0.4 },
+  diet: {
+    eats: ['meat'],
+    fears: ['meat'],
+    hungerRate: 0.006,
+    starveSeconds: 50,
+    breedAt: 0.7,
+    lifespanSeconds: 240,
+  },
+  senses: { sight: 10 },
+  habitat: { needs: ['water'], drowns: false },
+  death: { becomes: null, particleColor: '#c04020', particleCount: 4 },
+  aura: null,
+  glow: 0,
+  egglayer: true,
+  newtNewspaper: true,
+  bodyMass: 0.05,
+})
 export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   SUNLEAF,
   BRAMBLE,
@@ -3324,6 +3400,8 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   BEAR,
   QUAIL,
   RACCOON,
+  MOLE,
+  NEWT,
 ]
 
 export const BUILTIN_BY_ID: Record<string, CreatureBlueprint> = Object.fromEntries(
