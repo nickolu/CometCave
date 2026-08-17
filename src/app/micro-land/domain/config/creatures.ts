@@ -2788,6 +2788,46 @@ const ARCTIC_TERN = builtin('arctic-tern', {
 })
 
 // ---------------------------------------------------------------------------
+// Lemming — forms a Legislature and periodically votes to run off the cliff.
+// Issue #3305.
+// ---------------------------------------------------------------------------
+
+const LEMMING = builtin('lemming', {
+  name: 'Lemming',
+  blurb: 'Forms a Legislature of 20 when overcrowded. Periodically votes on The Question. The answer is always Cliff.',
+  size: 1,
+  tags: ['meat', 'mammal'],
+  art: {
+    palette: { b: '#7a4a1e', w: '#d4a96a', r: '#c4623e', g: '#8b6340' },
+    frames: [
+      ['bwb', 'wgw', '.b.'],
+      ['.b.', 'wgw', 'bwb'],
+    ],
+    frameMs: 180,
+    faceMotion: true,
+  },
+  body: { mass: 0.7, bounce: 0.05, drag: 0.4, buoyancy: 0, immuneTo: [] },
+  move: { kind: 'walk', speed: 3.5, jump: 2, restlessness: 0.9 },
+  diet: {
+    eats: ['plant'],
+    fears: ['meat'],
+    hungerRate: 0.009,
+    starveSeconds: 35,
+    breedAt: 0.5,
+    lifespanSeconds: 120,
+  },
+  senses: { sight: 8 },
+  habitat: { needs: null, drowns: true },
+  death: { becomes: null, particleColor: '#7a4a1e', particleCount: 6 },
+  aura: null,
+  glow: 0,
+  egglayer: false,
+  lemmingLegislature: true,
+  minViablePopulation: 20,
+  bodyMass: 0.08,
+})
+
+// ---------------------------------------------------------------------------
 // Kestrel — hovering raptor with hereditary monarchy. Issue #3304.
 // ---------------------------------------------------------------------------
 
@@ -3538,6 +3578,7 @@ export const BUILTIN_CREATURES: CreatureBlueprint[] = [
   MONITOR_LIZARD,
   BEAVER,
   ARCTIC_TERN,
+  LEMMING,
   KESTREL,
   CRAB,
   DUCK,
