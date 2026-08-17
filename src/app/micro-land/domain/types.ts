@@ -49,6 +49,7 @@ export type BaseMaterialId =
   | 'shed-skin'
   | 'web'
   | 'termite-mound'
+  | 'fire'
 
 /** The colors a tintable material can be painted in. */
 export type TintId =
@@ -1004,12 +1005,70 @@ export interface CreatureBlueprint {
    * with a 12% compliance rate (modelled as a history event). Issue #3316.
    */
   weaselTribunal?: boolean
+  /** When true, bites from this predator inject venom that slows prey. Issue #3236. */
+  venomous?: boolean
+  /** Venom potency 0–1. Higher = longer slow and more hunger drain. Default 0.5. Issue #3236. */
+  venomPotency?: number
+  /** Venom resistance 0–1. Species-level trait that reduces venom effect on this species. Issue #3236. */
+  venomResistance?: number
+  /**
+   * When true, this species actively claims a home range and engages in threat
+   * displays when same-species rivals enter it. Territorial creatures breed
+   * 15% faster when the territory is uncontested. Issue #3226.
+   */
+  territorialBlueprintFlag?: boolean
+  /** Radius in tiles of this species' home territory. Default 8. Issue #3226. */
+  territoryRadius?: number
+  /**
+   * When true, this aquatic species is adapted to deep cold water (below thermocline).
+   * Above-thermocline creatures suffer hunger penalties in cold water; below-thermocline
+   * creatures suffer penalties in warm surface water. Issue #3249.
+   */
+  deepWaterSpecialist?: boolean
+  /** If true, this species is adapted to shallow warm water above the thermocline. Issue #3249. */
+  shallowWaterSpecialist?: boolean
   /** When true, this species periodically pauses for philosophical contemplation, accumulating wisdom. Issue #3309. */
   platypusPhilosophy?: boolean
   /** When true, this species levies a toll on creatures passing within range while on water. Issue #3313. */
   toadTaxation?: boolean
   /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
   urchinUnion?: boolean
+  /**
+   * When true, this creature navigates and detects prey via echolocation.
+   * Effective sight range is not reduced at night, unlike visual predators.
+   * Suppressed when nearby creature count exceeds 20 (ambient noise). Issue #3242.
+   */
+  echolocates?: boolean
+  /**
+   * When true, this plant species emits stress signals when damaged by herbivory.
+   * Neighboring same-species plants within 8 tiles gain herbivory resistance
+   * for 60 seconds after receiving the signal. Issue #3239.
+   */
+  stressSignaler?: boolean
+  /**
+   * When true, this plant can receive stress signals from neighbors and prime its
+   * chemical defenses. Reduces herbivory meal fill by 30% for primedDefense
+   * duration. Issue #3239.
+   */
+  stressReceiver?: boolean
+  /**
+   * When true, 2+ of this predator species within coordinationRange of the same prey
+   * attack with a combined bonus (1.5× meal fill). Prey with bodyMass > packSizeThreshold
+   * can only be killed when 2+ pack members are present. Issue #3228.
+   */
+  packHunting?: boolean
+  /** Range in tiles within which pack members coordinate. Default 12. Issue #3228. */
+  coordinationRange?: number
+  /** Minimum bodyMass of prey that requires pack take-down. Default 2.0. Issue #3228. */
+  packSizeThreshold?: number
+  /** Ants build mandatory-attendance performance venues each season. Issue #3294. */
+  antTheater?: boolean
+  /** Bears maintain a communal nut bank with seasonal interest rates. Issue #3295. */
+  bearBanking?: boolean
+  /** A quail village under perpetual quarantine since a suspicious sneeze in Season 4. Issue #3310. */
+  quailQuarantine?: boolean
+  /** Raccoons appraise and flip den sites using garbage as currency. Issue #3311. */
+  raccoonRealEstate?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1125,6 +1184,14 @@ export interface CreatureBlueprint {
    * still attack freely. Issue #3237.
    */
   aposematic?: boolean
+  /** When true, this species builds a vertical express shaft and earns a vertical movement bonus. Issue #3298. */
+  earthwormElevator?: boolean
+  /** When true, this species observes the annual Founding Rain ritual; absent frogs become apostates. Issue #3299. */
+  frogFundamentalism?: boolean
+  /** When true, the first individual becomes the Administrator holding all 17 cabinet positions. Issue #3300. */
+  gopherGovernment?: boolean
+  /** When true, this species relays pheromone messages with a 135s delay. Issue #3302. */
+  beetleInternet?: boolean
 }
 
 /**
@@ -1477,6 +1544,10 @@ export interface Creature {
   wisdom?: number
   /** Countdown seconds until next philosophical contemplation. Issue #3309. */
   philosophyTimer?: number
+  /** Whether this ant is currently performing at the Amphitheater. Issue #3294. */
+  isPerformer?: boolean
+  /** Raccoon's accumulated garbage currency from property flipping. Issue #3311. */
+  garbageCurrency?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -1610,6 +1681,16 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
+  primedDefense?: number
+  /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
+  venomTimer?: number
+  /** X of this creature's claimed territory center. Issue #3226. */
+  territoryX?: number
+  /** Y of this creature's claimed territory center. Issue #3226. */
+  territoryY?: number
+  /** Seconds remaining on territory threat display cooldown. Issue #3226. */
+  threatDisplayTimer?: number
   /** Dominance rank 0–1 (0 = lowest, 1 = alpha). Decays with age. Issue #3227. */
   dominanceRank?: number
   /** Countdown seconds until next rank contest. Issue #3227. */
@@ -1620,6 +1701,18 @@ export interface Creature {
   alarmCallTimer?: number
   /** Set of blueprint IDs this predator has learned to avoid (aposematism). Issue #3237. */
   learnedAversions?: string[]
+  /** Seconds of frog apostasy countdown — dissenting frog moving away from fundamentalist mob. Issue #3xxx. */
+  frogApostate?: number
+  /** True when this gopher holds the current admin role in the Gopher Grid. Issue #3xxx. */
+  isGopherAdmin?: boolean
+  /** World elapsed time when this beetle recorded its mail message (undefined = no message queued). Issue #3xxx. */
+  beetleMailRecordedAt?: number
+  /** Type of beetle mail queued: 'food' or 'predator'. Issue #3xxx. */
+  beetleMailType?: string
+  /** X tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailX?: number
+  /** Y tile coordinate where the beetle mail event occurred. Issue #3xxx. */
+  beetleMailY?: number
 }
 
 /**
@@ -1807,6 +1900,22 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
+/**
+ * Whittaker biome classification — one of eight climate zones.
+ * Assigned per horizontal region band (8 bands from sky to bedrock).
+ * Issue #3377.
+ */
+export interface BiomeZone {
+  /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
+  regionIndex: number
+  /** Classified biome type for this band. */
+  type: BiomeZoneType
+  /** Annual temperature proxy [0, 1]; higher = warmer. Derived from Y position × seasonFactor. */
+  temperature: number
+  /** Average moisture [0, 1] sampled across region tiles. */
+  precipitation: number
+}
+
 // ---------------------------------------------------------------------------
 // Live world state
 // ---------------------------------------------------------------------------
@@ -1963,6 +2072,8 @@ export interface WorldState {
    * Prevents the election from firing on every tick. Issue #3304.
    */
   kestrelLastSeasonIdx?: number
+  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
+  thermoclineY?: number
   /** Whether the Urchin Union strike is active. Issue #3314. */
   urchinStrikeActive?: boolean
   /** IDs of the currently-elected oligarchs (otterOligarchy species). Issue #3308. */
@@ -1977,6 +2088,22 @@ export interface WorldState {
   chiefVoleId?: number
   /** Season index of the last Vole Voting election. Issue #3315. */
   chiefVoleLastElectionSeason?: number
+  /** Season index of last Amphitheater Ant performance. Issue #3294. */
+  antLastPerformanceSeason?: number
+  /** Current audience count at the ant performance. Issue #3294. */
+  antAudience?: number
+  /** Total nut balance in the Bear Bank. Issue #3295. */
+  bearBankBalance?: number
+  /** Season index of last Bear Bank cycle. Issue #3295. */
+  bearBankLastSeasonIdx?: number
+  /** Whether the Quail Quarantine is currently active. Issue #3310. */
+  quailQuarantineActive?: boolean
+  /** Season index when quarantine was triggered. Issue #3310. */
+  quailQuarantineSeasonIdx?: number
+  /** Raccoon property registry: "x,y" → value. Issue #3311. */
+  raccoonDenSites?: Record<string, number>
+  /** Season index of last Raccoon Real Estate appraisal. Issue #3311. */
+  raccoonRealEstateLastSeasonIdx?: number
   /**
    * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
    * different material type), 0 otherwise. Computed every 300 ticks.
@@ -1991,6 +2118,24 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /**
+   * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windX?: number
+  /**
+   * Current wind direction Y component [-0.2, 0.2]. Positive = downward.
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windY?: number
+  /** How many times the earthworm elevator has been rebuilt this world session. Issue #3298. */
+  earthwormElevatorRebuildCount?: number
+  /** World elapsed time at which the next earthworm elevator rebuild notice fires. Issue #3298. */
+  earthwormElevatorNextRebuild?: number
+  /** Season index of the last Frog Fundamentalism ritual. Issue #3299. */
+  lastFrogRitualSeason?: number
+  /** Creature id of the Gopher Government Administrator. Issue #3300. */
+  gopherAdminId?: number
 }
 
 // ---------------------------------------------------------------------------
