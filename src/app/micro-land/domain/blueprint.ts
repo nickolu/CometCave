@@ -800,6 +800,10 @@ export function sanitizeBlueprint(
     territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
     deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
     shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
+    antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
+    bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
+    quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
+    raccoonRealEstate: typeof b.raccoonRealEstate === 'boolean' ? b.raccoonRealEstate : undefined,
   }
 }
 

@@ -1061,6 +1061,14 @@ export interface CreatureBlueprint {
   coordinationRange?: number
   /** Minimum bodyMass of prey that requires pack take-down. Default 2.0. Issue #3228. */
   packSizeThreshold?: number
+  /** Ants build mandatory-attendance performance venues each season. Issue #3294. */
+  antTheater?: boolean
+  /** Bears maintain a communal nut bank with seasonal interest rates. Issue #3295. */
+  bearBanking?: boolean
+  /** A quail village under perpetual quarantine since a suspicious sneeze in Season 4. Issue #3310. */
+  quailQuarantine?: boolean
+  /** Raccoons appraise and flip den sites using garbage as currency. Issue #3311. */
+  raccoonRealEstate?: boolean
   /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
@@ -1536,6 +1544,10 @@ export interface Creature {
   wisdom?: number
   /** Countdown seconds until next philosophical contemplation. Issue #3309. */
   philosophyTimer?: number
+  /** Whether this ant is currently performing at the Amphitheater. Issue #3294. */
+  isPerformer?: boolean
+  /** Raccoon's accumulated garbage currency from property flipping. Issue #3311. */
+  garbageCurrency?: number
   /**
    * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
    * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
@@ -2076,6 +2088,22 @@ export interface WorldState {
   chiefVoleId?: number
   /** Season index of the last Vole Voting election. Issue #3315. */
   chiefVoleLastElectionSeason?: number
+  /** Season index of last Amphitheater Ant performance. Issue #3294. */
+  antLastPerformanceSeason?: number
+  /** Current audience count at the ant performance. Issue #3294. */
+  antAudience?: number
+  /** Total nut balance in the Bear Bank. Issue #3295. */
+  bearBankBalance?: number
+  /** Season index of last Bear Bank cycle. Issue #3295. */
+  bearBankLastSeasonIdx?: number
+  /** Whether the Quail Quarantine is currently active. Issue #3310. */
+  quailQuarantineActive?: boolean
+  /** Season index when quarantine was triggered. Issue #3310. */
+  quailQuarantineSeasonIdx?: number
+  /** Raccoon property registry: "x,y" → value. Issue #3311. */
+  raccoonDenSites?: Record<string, number>
+  /** Season index of last Raccoon Real Estate appraisal. Issue #3311. */
+  raccoonRealEstateLastSeasonIdx?: number
   /**
    * Per-tile edge mask: 1 if the tile is at a habitat boundary (adjacent to a
    * different material type), 0 otherwise. Computed every 300 ticks.
