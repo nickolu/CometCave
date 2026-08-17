@@ -1449,12 +1449,24 @@ export interface Creature {
   /** Number of lethal confrontations this weasel has recorded (for the tribunal). Issue #3316. */
   conflictCount?: number
   /**
-   * Sprint fatigue, 0–1. Accumulates while chasing or fleeing; drains while
-   * resting or eating. Above 0.5 it reduces effective speed; at 0.9 the
-   * creature enters 'rest' mood until it recovers. Optional so old saves with
-   * no fatigue data default to 0.
+   * Sprint fatigue, 0–1. Accumulates while actually chasing a target or
+   * fleeing; drains while resting or eating. Above 0.5 it reduces effective
+   * speed; at 0.9 the creature enters 'rest' mood until it recovers. Optional so
+   * old saves with no fatigue data default to 0.
    */
   fatigue?: number
+  /**
+   * Latched at fatigue 0.9, cleared at 0.2 — the "until it recovers" above.
+   *
+   * A flag rather than just reading the mood, because the mood is not memory:
+   * `look` re-decides it from scratch every sense pass and knows nothing about
+   * fatigue. Resting was therefore being overwritten with `hunt` a tenth of a
+   * second after it was set, the creature never drained anywhere near 0.2, and
+   * the recovery threshold was unreachable in practice. What the sim actually
+   * produced was an animal pinned at 0.9 forever, flickering between `hunt` and
+   * `rest` at 10 Hz, at 60% speed, losing its target every time it flickered.
+   */
+  exhausted?: boolean
   /**
    * Whether this individual has learned to wash food before eating.
    *

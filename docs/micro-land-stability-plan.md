@@ -445,13 +445,15 @@ house rule, and the comment is the only record of why.
 
 Append only. Never edit a past row; add a new one that supersedes it.
 
-| ID  | Date       | Hypothesis            | Change                       | Command                                                | Result                                                                | Verdict                  |
-| --- | ---------- | --------------------- | ---------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------- | ------------------------ |
-| E0  | 2026-08-16 | baseline              | none, at `dc973eed`          | `--theme grassland --seconds 1600 --runs 3 --diagnose` | 3 failing; 6/6 animals extinct; 4 animal births                       | **done** — table above   |
-| E2  | 2026-08-16 | H2, H4 (free, off E0) | none — re-read E0            | —                                                      | H2 falsified; H4 not applicable to grassland                          | **done**                 |
-| E1  | 2026-08-16 | noise floor           | none, two disjoint seed sets | at `9b0f90fe`, as E0, and again with `--seed-start 3`  | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**              | **done** — below         |
-| E3  | 2026-08-16 | H6                    | `--set breedAtScale=0.7`     | as E1 both arms, `--set breedAtScale=0.7`              | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise. | **not promoted** — below |
-| E4  | 2026-08-16 | H7 (free, off E1)     | none — arithmetic + source   | —                                                      | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**     | **done** — below         |
+| ID  | Date       | Hypothesis                 | Change                         | Command                                                | Result                                                                           | Verdict                    |
+| --- | ---------- | -------------------------- | ------------------------------ | ------------------------------------------------------ | -------------------------------------------------------------------------------- | -------------------------- |
+| E0  | 2026-08-16 | baseline                   | none, at `dc973eed`            | `--theme grassland --seconds 1600 --runs 3 --diagnose` | 3 failing; 6/6 animals extinct; 4 animal births                                  | **done** — table above     |
+| E2  | 2026-08-16 | H2, H4 (free, off E0)      | none — re-read E0              | —                                                      | H2 falsified; H4 not applicable to grassland                                     | **done**                   |
+| E1  | 2026-08-16 | noise floor                | none, two disjoint seed sets   | at `9b0f90fe`, as E0, and again with `--seed-start 3`  | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**                         | **done** — below           |
+| E3  | 2026-08-16 | H6                         | `--set breedAtScale=0.7`       | as E1 both arms, `--set breedAtScale=0.7`              | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise.            | **not promoted** — below   |
+| E4  | 2026-08-16 | H7 (free, off E1)          | none — arithmetic + source     | —                                                      | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**                | **done** — below           |
+| E5  | 2026-08-16 | W9 — sunhawk starters      | `sunhawk count: 1 → 2` (3 → 6) | as E1, both arms                                       | `T_ext` 410s / 440s, within noise. **The metric stopped measuring a dice roll.** | **kept** — below           |
+| E6  | 2026-08-16 | fatigue latch + chase-only | code, no knobs                 | as E1, both arms, on top of E5                         | `T_ext` 480s / 450s, within noise. Exhaustion pinning gone (63–80% → 0–3%).      | **kept** — a repair, below |
 
 ### E3 — the gate opens, three and a half times the babies, nobody is saved
 
@@ -511,6 +513,93 @@ Two real effects worth keeping, both new:
   with `mite` at 18%. More babies, crowded out plants, hungrier grazers. That is
   the failure invariant 6 exists to prevent, arriving by a route it does not
   cover. See W9.
+
+### E5 — six sunhawks, and a metric that finally looks at the world
+
+`sunhawk count: 1 → 2` in the grassland starters (× `WIDTH_SCALE` = 6), the
+option chosen over exempting never-established species and over lowering the
+threshold. Both arms of E1 repeated, nothing else moved.
+
+| Measure            | Baseline (E1)        | 6 sunhawks (E5)               |
+| ------------------ | -------------------- | ----------------------------- |
+| `T_ext`, seeds 0–2 | 495s                 | 410s                          |
+| `T_ext`, seeds 3–5 | 360s                 | 440s                          |
+| first species out  | sunhawk, 4 of 6 runs | woolly ×2, hopper, dustbee ×3 |
+| per-run spread     | 55–621s              | **340–523s**                  |
+
+Both `T_ext` moves are inside the noise floor, so on the primary metric this is a
+null result — and it is nonetheless the most valuable change so far, because of
+the third row. **The sunhawk is no longer the first species out of any run.**
+`T_ext` is now set by grazers dying of grazer problems, which is what it was
+supposed to measure all along.
+
+The fourth row is the same fact said in variance: the per-run spread collapsed
+from 566s to 183s. The 135s noise floor measured in E1 was mostly the coin flip,
+and **it should be re-measured on this commit before it is used to judge
+anything.**
+
+The mechanic itself now shows up honestly in the cause-of-death column, which is
+the other half of the repair: `sunhawk vanished: 22%`, `stalker vanished: 17%`,
+`hopper 9%`, `woolly 4%` — species genuinely declining into the window and
+winking out, which is what #3291 is for. And the sunhawk's real cause of death
+turns out to be **starvation, 78%** — an ecological signal that was completely
+masked for the life of the project by a species that never lived long enough to
+be hungry.
+
+### E6 — the creatures were never resting, they were flickering
+
+Found by watching the game rather than the harness, which is worth recording on
+its own: the player noticed creatures sitting at very high fatigue and "resting
+even when starving", and neither the evals nor the funnel could have named it.
+
+Two defects in the fatigue block, both repairs to stated intent:
+
+- **The recovery threshold was unreachable.** The intent is hysteresis — hit 0.9,
+  rest until 0.2 — but the exit was `mood === 'rest' && fatigue < 0.2`, and the
+  mood is not memory: `look` re-decides it from scratch every sense pass and knows
+  nothing about fatigue. A creature forced to rest was put back on `hunt` a tenth
+  of a second later and tipped over 0.9 again immediately. It never rested and
+  never recovered; it flickered, permanently pinned at exhaustion, at 60% speed,
+  with `targetId` cleared ten times a second.
+- **Walking toward a smell was charged as a sprint.** `hunt` covers both a locked
+  chase and drifting on a bearing toward something only smelled (`targetId ===
+null`). The second is ordinary walking and is most of the hunting a grazer does.
+
+Measured over 600s of grassland, before → after:
+
+| species | mean fatigue | fatigue ≥ 0.85 | resting while starving |
+| ------- | ------------ | -------------- | ---------------------- |
+| mite    | 0.70 → 0.27  | 65% → 3%       | 40% → 37%              |
+| hopper  | 0.76 → 0.28  | 75% → 3%       | 50% → 41%              |
+| woolly  | 0.64 → 0.32  | 63% → 3%       | 43% → 33%              |
+| dustbee | 0.65 → 0.08  | 68% → 1%       | 54% → 5%               |
+| stalker | 0.77 → 0.28  | 80% → 3%       | 60% → 34%              |
+| sunhawk | 0.43 → 0.04  | 42% → 0%       | 27% → 0%               |
+
+**And the ecosystem did not care.** `T_ext` 410→480 and 440→450, both inside the
+noise floor; the gate is still shut at 0%; every species still dies. Kept anyway,
+because the decision rule is for promoting _knob values_ and this is a bug fix —
+the sim now does what its own comment says. But it is not progress on the goal
+and should not be recorded as any.
+
+Two things it did change that matter downstream:
+
+- **`restSlowdown` is live for the first time.** The broken exit was also
+  clobbering `look`'s own "a well-fed grounded creature rests" decision, so the
+  half-hunger-while-resting multiplier had almost never applied to anything.
+  Hunger economics are now different, and per E4 hunger is the binding constraint
+  — any pre-E6 arithmetic about calorie balance needs redoing.
+- **`dustbee` forages worse**: 0.24 → 0.16 meals/creature-minute, with starvation
+  up to 53% in one arm. That is the worst species in the check and it is now
+  within 0.06 of the failure floor. Watch it.
+
+_(Two unit tests moved with this and neither was measuring what it claimed.
+`brain-size` and `slow-metabolism` tick two worlds in one interleaved loop, which
+shares `creature-sim`'s module-level `tickCount`; with both creatures at id 1 the
+arithmetic works out so the second world **never runs its sense pass at all**.
+The old fatigue line was dragging the first world's creature out of `rest` to
+match, so the two agreed by accident. Fixed the interleaving; recalibrated the
+two magnitudes against a measured trace.)_
 
 ### E4 — the meadow's top predator is deleted by a coin flip
 
@@ -656,6 +745,11 @@ wrong and why. The live queue is:
   roll depend on something other than a bare count). It belongs to whoever owns
   the game. The half that _is_ a straight repair — the death reporting as `aged`,
   which is what hid it — is done.
+- **W9a — re-measure the noise floor on `958585a6`.** The 135s from E1 was mostly
+  the sunhawk coin flip, and the per-run spread has since collapsed from 566s to
+  183s. Every decision rule in this document divides by that number, so it is
+  wrong until re-run. Two disjoint seed sets, no change: cheapest useful run
+  available.
 - **W10 — identify the 350 ceiling.** Peak population pinned at exactly 350 in all
   six E3 runs and 292–318 at baseline, while grazer starvation rose. Not
   `MAX_CREATURES` (1020). Something is binding and it converts extra births into

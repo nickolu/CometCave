@@ -116,24 +116,30 @@ describe('slowMetabolism — simulation', () => {
     cNormal.hunger = 0
     cSlow.hunger = 0
 
-    const rng = makeRng(1)
-    // Run 30 s (1800 ticks at 60 Hz)
-    for (let i = 0; i < 1800; i++) {
-      tickCreatures(wNormal, 1 / 60, rng, 1, [])
-      tickCreatures(wSlow, 1 / 60, rng, 1, [])
-    }
+    // One loop each — see the note in brain-size.test.ts. Interleaving two
+    // worlds makes them share `creature-sim`'s module-level `tickCount`, and one
+    // of the two then never runs its sense pass.
+    for (let i = 0; i < 1800; i++) tickCreatures(wNormal, 1 / 60, makeRng(1), 1, [])
+    for (let i = 0; i < 1800; i++) tickCreatures(wSlow, 1 / 60, makeRng(1), 1, [])
 
-    // Normal creature should be quite hungry after 30 s (hungerRate=0.02 × 30=0.6)
-    expect(cNormal.hunger).toBeGreaterThan(0.4)
+    // Quite hungry after 30 s: 25 s of resting at 0.01/s to reach the 0.25 that
+    // ends the resting, then 0.02/s — about 0.35. It was 0.4 when `restSlowdown`
+    // was dead code and the whole climb ran at the fast rate.
+    expect(cNormal.hunger).toBeGreaterThan(0.3)
 
     // Slow-metabolism creature should be ~10× less hungry
     expect(cSlow.hunger).toBeLessThan(cNormal.hunger / 5)
   })
 
   it('normal creature starves but slow-metabolism creature survives the same period', { timeout: 15000 }, () => {
-    // Run 65 s. The normal creature reaches hunger=1 (around ~50-60 s depending
-    // on rest cycles) and, with starveSeconds=3, dies before 65 s. The
-    // slow-metabolism creature (×0.1 rate) won't reach hunger=1 in this window.
+    // Run 75 s. The normal creature climbs at 0.01/s while it is well fed enough
+    // to rest and 0.02/s once it is not (`restSlowdown` halves the rate in
+    // `rest` mood), so it reaches hunger=1 at ~62.5 s and, with starveSeconds=3,
+    // dies at ~65.5 s. The window was 65 s and passed only because a resting
+    // creature used to be dragged straight back out of `rest` by the fatigue
+    // block, which meant `restSlowdown` never applied to anything and the whole
+    // climb ran at the fast rate. The slow-metabolism creature (×0.1 rate) is
+    // nowhere near hunger=1 in this window.
     const wNormal = stoneWorld()
     const wSlow = stoneWorld()
 
@@ -150,12 +156,9 @@ describe('slowMetabolism — simulation', () => {
     wNormal.creatures[0]!.hunger = 0
     wSlow.creatures[0]!.hunger = 0
 
-    const rng = makeRng(1)
-    // 65 s × 60 ticks/s = 3900 ticks
-    for (let i = 0; i < 3900; i++) {
-      tickCreatures(wNormal, 1 / 60, rng, 1, [])
-      tickCreatures(wSlow, 1 / 60, rng, 1, [])
-    }
+    // One loop each — see the note in brain-size.test.ts.
+    for (let i = 0; i < 4500; i++) tickCreatures(wNormal, 1 / 60, makeRng(1), 1, [])
+    for (let i = 0; i < 4500; i++) tickCreatures(wSlow, 1 / 60, makeRng(1), 1, [])
 
     // Normal creature should have starved (removed from world)
     const normalAlive = wNormal.creatures.find(c => c.blueprintId === bpNormal.id)

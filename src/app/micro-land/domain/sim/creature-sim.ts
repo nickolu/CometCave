@@ -2392,25 +2392,53 @@ export function tickCreatures(
     }
 
     // --- fatigue --------------------------------------------------------
+    //
+    // Two things here were wrong for as long as this block existed, and both
+    // read as "the creatures are always resting, even when starving".
+    //
+    // **The recovery threshold was unreachable.** The intent is hysteresis: hit
+    // 0.9, rest until 0.2. But the exit was written as `mood === 'rest' &&
+    // fatigue < 0.2`, and the mood is not memory — `look` re-decides it from
+    // nothing every sense pass, six ticks later, and knows nothing about
+    // fatigue. So a creature forced to rest was put back on `hunt` a tenth of a
+    // second afterwards, drained ~0.014 in the meantime, tipped over 0.9 again
+    // almost immediately, and was forced back. The measured result was a
+    // population sitting at fatigue 0.85+ for 63–80% of its life, permanently at
+    // 60% speed, with `targetId` cleared ten times a second. It never rested and
+    // it never recovered; it just flickered. `exhausted` is the memory the
+    // hysteresis always needed.
+    //
+    // **Walking toward a smell is not a sprint.** `hunt` covers two different
+    // states: locked onto prey it can see, and drifting on a bearing toward
+    // something it can only smell (`targetId === null`, see `look`). The second
+    // is ordinary walking, and it is most of the hunting a grazer ever does — so
+    // this was charging sprint fatigue for the act of foraging. Chasing costs
+    // stamina; going to the shop does not.
     if (bp.move.kind !== 'root') {
       const fatigue = c.fatigue ?? 0
-      const isExerting = c.mood === 'hunt' || c.mood === 'flee'
+      const isChasing = (c.mood === 'hunt' && c.targetId !== null) || c.mood === 'flee'
       const isResting = c.mood === 'rest' || c.mood === 'eat'
       // Larger creatures have more stamina — high size trait slows fatigue build.
       const stamina = c.traits.size ?? 1
-      if (isExerting) {
+      if (isChasing) {
         c.fatigue = Math.min(1, fatigue + (dt * 0.15) / stamina)
       } else if (isResting) {
         c.fatigue = Math.max(0, fatigue - dt * 0.2)
       } else {
         c.fatigue = Math.max(0, fatigue - dt * 0.1)
       }
-      // Enter rest when exhausted; exit when sufficiently recovered.
-      if ((c.fatigue ?? 0) >= 0.9 && c.mood !== 'rest') {
+
+      // Latch on at 0.9, off at 0.2 — and hold it across the sense pass, which
+      // is the whole point.
+      if (c.exhausted) {
+        if ((c.fatigue ?? 0) < 0.2) c.exhausted = false
+      } else if ((c.fatigue ?? 0) >= 0.9) {
+        c.exhausted = true
+      }
+
+      if (c.exhausted && c.mood !== 'rest') {
         c.mood = 'rest'
         c.targetId = null
-      } else if (c.mood === 'rest' && (c.fatigue ?? 0) < 0.2) {
-        c.mood = 'wander'
       }
     }
 

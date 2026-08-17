@@ -88,12 +88,18 @@ describe('brainSize — simulation', () => {
     wHigh.creatures[0]!.hunger = 0
     wZero.creatures[0]!.hunger = 0
 
-    const rng = makeRng(1)
-    // 30 s at 60 Hz = 1800 ticks
-    for (let i = 0; i < 1800; i++) {
-      tickCreatures(wHigh, 1 / 60, rng, 1, [])
-      tickCreatures(wZero, 1 / 60, rng, 1, [])
-    }
+    // One loop each, not one loop ticking both.
+    //
+    // `creature-sim` keeps `tickCount` at module scope and the sense pass runs
+    // on `(tickCount + c.id) % SENSE_EVERY === 0`. Interleaving two worlds means
+    // they see alternating values of a shared counter, and with both creatures
+    // at id 1 the arithmetic works out so that the *second* world never senses
+    // at all — its mood is never updated, so it never rests and never gets the
+    // half hunger rate that resting carries. That made this a comparison
+    // between a creature that thinks and one that does not, dressed up as a
+    // comparison between two brain sizes.
+    for (let i = 0; i < 1800; i++) tickCreatures(wHigh, 1 / 60, makeRng(1), 1, [])
+    for (let i = 0; i < 1800; i++) tickCreatures(wZero, 1 / 60, makeRng(1), 1, [])
 
     const highHunger = wHigh.creatures[0]!.hunger
     const zeroHunger = wZero.creatures[0]!.hunger
