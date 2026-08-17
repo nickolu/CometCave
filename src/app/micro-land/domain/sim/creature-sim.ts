@@ -2823,7 +2823,7 @@ export function tickCreatures(
 
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng)
+      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng, dt)
     }
 
     // --- burrow retreat: when threatened or hungry, head back to burrow. Issue #3419. ---
@@ -4545,7 +4545,8 @@ function look(
   dead: Set<number>,
   events: SimEvent[],
   massEmergingSpecies: ReadonlySet<string>,
-  rng: Rng
+  rng: Rng,
+  dt: number
 ): void {
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2
@@ -5087,7 +5088,7 @@ function look(
         // Predator satiation during mass emergence: when a cohort of the prey's
         // species is emerging simultaneously, the predator is already gorged from
         // the glut and gains only half the normal hunger reduction. Issue #3339.
-        if (massEmerging.has(obp.id)) {
+        if (massEmergingSpecies.has(obp.id)) {
           fill *= 0.5
         }
         // Pupal vulnerability: pupae are easy, rewarding prey — predator gets extra
