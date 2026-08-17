@@ -2033,6 +2033,18 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
+  thermoclineY?: number
+  /**
+   * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windX?: number
+  /**
+   * Current wind direction Y component [-0.2, 0.2]. Positive = downward.
+   * Slow sinusoidal oscillation; updated each tick. Issue #3153.
+   */
+  windY?: number
 }
 
 // ---------------------------------------------------------------------------
