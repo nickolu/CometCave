@@ -1569,6 +1569,66 @@ export function tickCorridorMask(w: WorldState, tickCount: number): void {
 
 export { AIR }
 
+/**
+ * Per-tile temperature simulation: lava tiles radiate heat; ice tiles stay cold;
+ * water moderates; slow conduction between neighbors. Issues #3132, #3133.
+ * Runs every 90 ticks.
+ */
+export function tickTileTemp(w: WorldState, tickCount: number, seasonFactor: number): void {
+  if (tickCount % 90 !== 0) return
+  const lavaIdx = MATERIAL_INDEX.lava
+  const iceIdx = MATERIAL_INDEX.ice
+  const waterIdx = MATERIAL_INDEX.water
+
+  if (!w.tileTemp) {
+    w.tileTemp = new Float32Array(WORLD_W * WORLD_H)
+    // Initialize from biome zones: top = warm, bottom = cold (Y increases downward)
+    for (let y = 0; y < WORLD_H; y++) {
+      const baseTemp = Math.max(0, 1 - y / WORLD_H)
+      for (let x = 0; x < WORLD_W; x++) {
+        w.tileTemp[y * WORLD_W + x] = baseTemp
+      }
+    }
+  }
+
+  const tmp = w.tileTemp
+
+  // Set extreme tiles: lava = hot, ice = cold. Water moderates.
+  for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+    const tile = w.tiles[i]
+    if (tile === lavaIdx) {
+      tmp[i] = Math.min(1, tmp[i] + 0.05)
+    } else if (tile === iceIdx) {
+      tmp[i] = Math.max(0, tmp[i] - 0.05)
+    } else if (tile === waterIdx) {
+      tmp[i] = tmp[i] * 0.98 + 0.4 * 0.02  // moderate toward 0.4
+    }
+  }
+
+  // Slow conduction: each tile diffuses 3% toward average of 4 neighbors.
+  const scratch = new Float32Array(tmp)
+  const alpha = 0.03
+  for (let y = 1; y < WORLD_H - 1; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      const i = y * WORLD_W + x
+      const left = scratch[y * WORLD_W + (x === 0 ? WORLD_W - 1 : x - 1)]
+      const right = scratch[y * WORLD_W + (x === WORLD_W - 1 ? 0 : x + 1)]
+      const up = scratch[(y - 1) * WORLD_W + x]
+      const down = scratch[(y + 1) * WORLD_W + x]
+      const avg = (left + right + up + down) / 4
+      tmp[i] = tmp[i] * (1 - alpha) + avg * alpha
+    }
+  }
+
+  // Seasonal modulation: shift global temperature with season factor
+  if (TUNING.seasonAmplitude > 0) {
+    const seasonShift = (seasonFactor - 1.0) * 0.05  // ±5% shift at max amplitude
+    for (let i = 0; i < WORLD_W * WORLD_H; i++) {
+      tmp[i] = Math.max(0, Math.min(1, tmp[i] + seasonShift))
+    }
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Soil age — ecological succession substrate (Issues #3124, #3125)
 // ---------------------------------------------------------------------------
