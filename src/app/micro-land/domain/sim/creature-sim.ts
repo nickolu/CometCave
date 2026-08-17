@@ -17,7 +17,7 @@ import {
   isPlantLike,
 } from '@/app/micro-land/domain/blueprint'
 import type { BodyBox } from '@/app/micro-land/domain/blueprint'
-import { AIR, IS_DEADLY, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
+import { AIR, IS_DEADLY, IS_FLAMMABLE, IS_LIQUID, IS_SOLID, MATERIAL_BY_INDEX, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import {
   BREATH_SECONDS,
   FORAGE_HUNGER,
@@ -75,9 +75,11 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickFire,
   tickSoilAge,
   tickSoilNutrient,
   tickWebDecay,
+  tickWeather,
   tileAt,
   updateBiomeZones,
   updateKeystoneSpecies,
@@ -849,7 +851,27 @@ function tickSeedBank(
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
-    const germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+
+    // Fire-adapted plants sprout at 5× rate when ash is nearby. Issue #3117.
+    let sproutAttempts = 1
+    if (bp.fireAdapted) {
+      const ashMatIdx = MATERIAL_INDEX.ash
+      const ox = seed.x, oy = seed.y
+      let ashNearby = false
+      outer3117: for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const nx = Math.min(WORLD_W - 1, Math.max(0, ox + dx))
+          const ny = Math.min(WORLD_H - 1, Math.max(0, oy + dy))
+          if (w.tiles[ny * WORLD_W + nx] === ashMatIdx) { ashNearby = true; break outer3117 }
+        }
+      }
+      if (ashNearby) sproutAttempts = 5
+    }
+
+    let germinated: ReturnType<typeof reproduce> = null
+    for (let a = 0; a < sproutAttempts && !germinated; a++) {
+      germinated = reproduce(w, bp, seed.x + 0.5, seed.y, bw, bh, rng)
+    }
     if (germinated) {
       plantsRef.value++
       speciesCount[seed.blueprintId] = (speciesCount[seed.blueprintId] ?? 0) + 1
@@ -898,12 +920,20 @@ export function tickCreatures(
         )
       : 1
 
+  // Lunar phase counter: one full cycle every ~28 "moon days" = 0.9333 × seasonPeriod.
+  // Issues #3187, #3188.
+  const LUNAR_PERIOD = TUNING.seasonPeriod * 0.9333
+  w.lunarPhaseDay = (w.elapsed / LUNAR_PERIOD) * 28 % 28
+  w.tidalHeight = Math.sin(2 * Math.PI * w.lunarPhaseDay / 28)
+
   // Count living plants for CO2 absorption
   const plantCount = w.creatures.filter(c => w.blueprints[c.blueprintId]?.move.kind === 'root').length
   tickAtmosphericCO2(w, tickCount, plantCount)
   tickAcidRain(w, tickCount, rng)
   tickMycorrhizalNetwork(w, tickCount, rng)
   tickWebDecay(w, tickCount, rng)
+  tickFire(w, tickCount, rng, IS_FLAMMABLE, IS_LIQUID, MATERIAL_INDEX.fire, MATERIAL_INDEX.ash)
+  tickWeather(w, tickCount, rng)
   tickMineralVeins(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
@@ -921,7 +951,6 @@ export function tickCreatures(
     MATERIAL_INDEX['snow'],
   )
   tickGroundwater(w, tickCount, IS_LIQUID)
-  tickBoneDecomposition(w, tickCount, rng)  // Bone slow decomposition (#3103)
 
   // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
   const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
@@ -1999,6 +2028,14 @@ export function tickCreatures(
     // Obligate coevolution: faster starvation when partner species is extinct. Issue #3266.
     if (bp.obligatePartner !== undefined && (speciesCount[bp.obligatePartner] ?? 0) === 0) {
       c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+    }
+    // Intertidal zone: bonus at low tide, penalty at high tide. Issue #3191.
+    if (bp.intertidal && w.tidalHeight !== undefined) {
+      if (w.tidalHeight < -0.3) {
+        c.hunger = Math.max(0, c.hunger - 0.002 * dt)
+      } else if (w.tidalHeight > 0.5) {
+        c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+      }
     }
     if (c.hunger >= 1) {
       c.starving += dt
@@ -3550,6 +3587,12 @@ export function tickCreatures(
       !bp.phenology?.breedingGdd ||
       worldGdd(w.elapsed) >= bp.phenology.breedingGdd + (c.phenoOffset ?? 0)
     )
+    // Lunar breeding trigger: species tied to a moon phase can only breed near it. Issue #3190.
+    if (bp.lunarBreedingPhase !== undefined && w.lunarPhaseDay !== undefined) {
+      const phaseDiff = Math.abs(((w.lunarPhaseDay - bp.lunarBreedingPhase + 28) % 28))
+      const phaseDiffWrapped = Math.min(phaseDiff, 28 - phaseDiff)
+      if (phaseDiffWrapped > 2) continue
+    }
     // Quail Quarantine: breeding suspended while quarantine is active. Issue #3310.
     if (bp.quailQuarantine && w.quailQuarantineActive) continue
 
@@ -4891,6 +4934,10 @@ function look(
           }
         }
         let fill = mealFill(c, bp, obp, sizeOf(other))
+        // Nocturnal predators gain an ambush advantage in storms (dark + chaos). Issue #3097.
+        if (w.weatherState === 'storm' && ((c.traits as { diurnal?: number }).diurnal ?? 0) < -0.2) {
+          fill *= 1.2
+        }
         // Primed defense: stressed plant less nutritious and unpalatable. Issue #3239.
         if (other.primedDefense && other.primedDefense > 0) {
           fill *= 0.7  // 30% less nutrition from chemically-primed plant
@@ -6158,7 +6205,9 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       (1 + (c.escalatedSpeed ?? 0)) *   // predator escalation speed bonus. Issue #3263.
       (1 - Math.max(0, (c.fatigue ?? 0) - 0.5))) /
       sizeOf(c)) *
-    (1 - diurnalPenalty)
+    (1 - diurnalPenalty) *
+    // Storm grounds flying creatures — 70% speed penalty. Issue #3097.
+    (w.weatherState === 'storm' && bp.move.kind === 'fly' ? 0.3 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {
