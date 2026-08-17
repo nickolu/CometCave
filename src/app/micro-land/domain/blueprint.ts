@@ -787,6 +787,10 @@ export function sanitizeBlueprint(
     coldBlooded: 'coldBlooded' in b ? !!b.coldBlooded : undefined,
     tempMin: typeof b.tempMin === 'number' ? Math.max(0, Math.min(1, b.tempMin)) : undefined,
     tempMax: typeof b.tempMax === 'number' ? Math.max(0, Math.min(1, b.tempMax)) : undefined,
+    soundFrequency: typeof b.soundFrequency === 'number'
+      ? Math.max(0, Math.min(1, b.soundFrequency))
+      : undefined,
+    acousticCamouflage: b.acousticCamouflage === true,
     lunarBreedingPhase:
       typeof b.lunarBreedingPhase === 'number'
         ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
