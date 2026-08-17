@@ -2073,6 +2073,7 @@ export interface WorldState {
    * diet.fears). Updated every 3000 ticks. Issue #3122.
    */
   keystoneSpeciesIds?: Set<string>
+  /**
    * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
    * Slow sinusoidal oscillation; updated each tick. Issue #3153.
    */
