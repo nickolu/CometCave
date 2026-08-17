@@ -478,7 +478,7 @@ export interface SimEvent {
    * going locally extinct (speciesCount was 0 at the moment of germination). The
    * field guide removes the species from the extinctions list on receiving this.
    */
-  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice' | 'extinction'
+  kind: 'born' | 'eaten' | 'ate' | 'starved' | 'drowned' | 'burned' | 'aged' | 'diseased' | 'sick' | 'diversity-rescue' | 'notice' | 'extinction' | 'vanished'
   blueprintId: string
   /** Only set on `ate`: the blueprint id of what was caught. */
   victimId?: string
@@ -555,7 +555,25 @@ function compareX(a: Creature, b: Creature): number {
 function breedingAge(c: Creature, bp: CreatureBlueprint): number {
   return bp.move.kind === 'root'
     ? TUNING.plantMaturity
-    : lifespanOf(c, bp) * TUNING.lifespanScale * 0.2
+    : founderMaturityAge(bp) * c.traits.lifespan
+}
+
+/**
+ * The age a founder of this species can first breed at, in world seconds.
+ *
+ * Same number `breedingAge` computes, for a creature whose lifespan trait is
+ * still neutral — which every founder's is. Exported because the harness has to
+ * be able to ask "is this run even long enough to see breeding?": maturity is
+ * `lifespanSeconds * lifespanScale * 0.2`, and with `lifespanScale` at 10 that
+ * is *twice* the blueprint's `lifespanSeconds`. A 150-second hopper cannot breed
+ * until t=300s, which is exactly the harness's default run length — so the
+ * default run had been measuring the fraction of a creature's life during which
+ * it is a child, and reporting it as a breeding failure.
+ */
+export function founderMaturityAge(bp: CreatureBlueprint): number {
+  return bp.move.kind === 'root'
+    ? TUNING.plantMaturity
+    : bp.diet.lifespanSeconds * TUNING.lifespanScale * 0.2
 }
 
 /**
@@ -591,13 +609,63 @@ function needsPartner(bp: CreatureBlueprint): boolean {
  * anywhere to put a baby are the caller's business, because they are questions
  * about the population rather than about this animal.
  */
+/**
+ * How full this species has to be before it may breed, after the global knob.
+ *
+ * `breedAt` lives on the blueprint, which made the single most-suspected number
+ * in the ecosystem the one thing that could not be A/B tested: the harness's
+ * `--set` only reaches `TUNING`, so every hypothesis about the breeding gate was
+ * untestable. `breedAtScale` is that lever, and it is a *multiplier* rather than
+ * an override so the roster keeps its shape — a stalker stays stricter than a
+ * mite at every setting, which an absolute value would flatten.
+ *
+ * **`breedAt: 1` is exempt, and that is not an off-by-one.** Three blueprints
+ * use it to mean "this thing does not breed" — a nymph that has to metamorphose
+ * into its adult form first, and one creature that is deliberately sterile.
+ * Scaled like everything else, turning the knob down to 0.7 would quietly hand
+ * those three a working reproductive system, and the run would be measuring a
+ * different roster than the one that ships. A blueprint asking for a completely
+ * full stomach is saying "not yet", not "nearly always".
+ */
+export function breedFullness(bp: CreatureBlueprint): number {
+  const want = bp.diet.breedAt
+  if (want >= 1) return want
+  return Math.max(0.05, Math.min(1, want * TUNING.breedAtScale))
+}
+
 function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
   return (
     c.breedCooldown <= 0 &&
-    1 - c.hunger >= bp.diet.breedAt &&
+    1 - c.hunger >= breedFullness(bp) &&
     c.hunger + TUNING.breedCost < 1 &&
     c.ageSeconds > breedingAge(c, bp)
   )
+}
+
+/** Which clause of `readyToBreed` a creature is currently failing. */
+export type BreedBlocker = 'cooldown' | 'underfed' | 'no-headroom' | 'too-young'
+
+/**
+ * The same four questions `readyToBreed` asks, answered individually.
+ *
+ * Exists for the harness, not the simulation: "no animal is breeding" is a
+ * symptom with four very different causes, and a boolean cannot tell you which
+ * one you have. Knowing that a grazer is ready 40% of the time but never in
+ * `mate` mood points at the priority order in `look`; knowing it is never ready
+ * at all points at `breedAt` or `breedCost`. Those are opposite fixes.
+ *
+ * Deliberately *not* what `readyToBreed` is built from. That runs for every
+ * creature in the sense pass and must stay a short-circuiting boolean rather
+ * than something that allocates an array per call. The two are pinned together
+ * by a test instead — see `breeding-blockers.test.ts`.
+ */
+export function breedingBlockers(c: Creature, bp: CreatureBlueprint): BreedBlocker[] {
+  const blockers: BreedBlocker[] = []
+  if (c.breedCooldown > 0) blockers.push('cooldown')
+  if (1 - c.hunger < breedFullness(bp)) blockers.push('underfed')
+  if (c.hunger + TUNING.breedCost >= 1) blockers.push('no-headroom')
+  if (c.ageSeconds <= breedingAge(c, bp)) blockers.push('too-young')
+  return blockers
 }
 
 /**
@@ -1260,13 +1328,22 @@ export function tickCreatures(
   }
 
   // Stochastic extinction: tiny populations face random crashes. Issue #3291.
+  //
+  // Reported as `vanished`, not `aged`. It used to say `aged`, and that one word
+  // hid the mechanic for as long as it existed: the grassland's top predator is
+  // seeded at three, so it is inside this window from tick one, and every eval
+  // ever run reported it dying at `aged: 100%` — the one cause of death that
+  // reads as a creature having lived a full life and nobody investigates. Its
+  // nominal lifespan is 3800s and it was disappearing around t=500s, which is
+  // this roll's mean, 260 seconds before the age it is first allowed to breed.
+  // A cause of death that names the wrong cause is worse than no cause at all.
   if (tickCount % 300 === 0) {
     for (const [bpId, cnt] of Object.entries(speciesCount)) {
       if (cnt < 5 && cnt > 0 && rng() < 0.01) {
         const toExtinct = w.creatures.filter(c2 => c2.blueprintId === bpId)
         const extBp = w.blueprints[bpId]
         if (extBp) {
-          for (const c2 of toExtinct) kill(w, c2, extBp, dead, events, 'aged')
+          for (const c2 of toExtinct) kill(w, c2, extBp, dead, events, 'vanished')
           events.push({ kind: 'extinction', blueprintId: bpId, x: 0, y: 0, text: `${extBp.name} went locally extinct` })
         }
       }
@@ -3318,25 +3395,53 @@ export function tickCreatures(
     }
 
     // --- fatigue --------------------------------------------------------
+    //
+    // Two things here were wrong for as long as this block existed, and both
+    // read as "the creatures are always resting, even when starving".
+    //
+    // **The recovery threshold was unreachable.** The intent is hysteresis: hit
+    // 0.9, rest until 0.2. But the exit was written as `mood === 'rest' &&
+    // fatigue < 0.2`, and the mood is not memory — `look` re-decides it from
+    // nothing every sense pass, six ticks later, and knows nothing about
+    // fatigue. So a creature forced to rest was put back on `hunt` a tenth of a
+    // second afterwards, drained ~0.014 in the meantime, tipped over 0.9 again
+    // almost immediately, and was forced back. The measured result was a
+    // population sitting at fatigue 0.85+ for 63–80% of its life, permanently at
+    // 60% speed, with `targetId` cleared ten times a second. It never rested and
+    // it never recovered; it just flickered. `exhausted` is the memory the
+    // hysteresis always needed.
+    //
+    // **Walking toward a smell is not a sprint.** `hunt` covers two different
+    // states: locked onto prey it can see, and drifting on a bearing toward
+    // something it can only smell (`targetId === null`, see `look`). The second
+    // is ordinary walking, and it is most of the hunting a grazer ever does — so
+    // this was charging sprint fatigue for the act of foraging. Chasing costs
+    // stamina; going to the shop does not.
     if (bp.move.kind !== 'root') {
       const fatigue = c.fatigue ?? 0
-      const isExerting = c.mood === 'hunt' || c.mood === 'flee'
+      const isChasing = (c.mood === 'hunt' && c.targetId !== null) || c.mood === 'flee'
       const isResting = c.mood === 'rest' || c.mood === 'eat'
       // Larger creatures have more stamina — high size trait slows fatigue build.
       const stamina = c.traits.size ?? 1
-      if (isExerting) {
+      if (isChasing) {
         c.fatigue = Math.min(1, fatigue + (dt * 0.15) / stamina)
       } else if (isResting) {
         c.fatigue = Math.max(0, fatigue - dt * 0.2)
       } else {
         c.fatigue = Math.max(0, fatigue - dt * 0.1)
       }
-      // Enter rest when exhausted; exit when sufficiently recovered.
-      if ((c.fatigue ?? 0) >= 0.9 && c.mood !== 'rest') {
+
+      // Latch on at 0.9, off at 0.2 — and hold it across the sense pass, which
+      // is the whole point.
+      if (c.exhausted) {
+        if ((c.fatigue ?? 0) < 0.2) c.exhausted = false
+      } else if ((c.fatigue ?? 0) >= 0.9) {
+        c.exhausted = true
+      }
+
+      if (c.exhausted && c.mood !== 'rest') {
         c.mood = 'rest'
         c.targetId = null
-      } else if (c.mood === 'rest' && (c.fatigue ?? 0) < 0.2) {
-        c.mood = 'wander'
       }
     }
 
@@ -4776,6 +4881,11 @@ function look(
   bh: number,
   dead: Set<number>,
   events: SimEvent[],
+  /**
+   * Species with a cohort emerging from pupa this tick, computed once per tick
+   * by `tickCreatures`. Passed in rather than recomputed: `look` runs per
+   * creature, and the answer is the same for all of them.
+   */
   massEmergingSpecies: ReadonlySet<string>,
   rng: Rng,
   dt: number

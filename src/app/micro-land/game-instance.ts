@@ -576,7 +576,7 @@ export class GameInstance {
     }
 
     for (const event of events) {
-      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased') continue
+      if (event.kind !== 'eaten' && event.kind !== 'starved' && event.kind !== 'drowned' && event.kind !== 'burned' && event.kind !== 'aged' && event.kind !== 'diseased' && event.kind !== 'vanished') continue
       const bp = this.world.blueprints[event.blueprintId]
       if (!bp) continue
       // Was that the last one? Only interesting for species we'd seen alive.
@@ -607,6 +607,7 @@ export class GameInstance {
         : event.kind === 'drowned' ? `The last ${bp.name} drowned.`
         : event.kind === 'burned' ? `The last ${bp.name} burned.`
         : event.kind === 'aged' ? `The last ${bp.name} lived to old age.`
+        : event.kind === 'vanished' ? `The last ${bp.name} slipped away — too few were left to hold on.`
         : `The last ${bp.name} was eaten.`
       )
       if (isSoundEnabled()) playExtinction()
@@ -639,7 +640,7 @@ export class GameInstance {
     let mostProlificChildren = worldStats.mostProlificChildren
     for (const event of events) {
       if (event.kind === 'born') { totalBorn++ }
-      else if (event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' || event.kind === 'burned' || event.kind === 'aged' || event.kind === 'diseased') {
+      else if (event.kind === 'eaten' || event.kind === 'starved' || event.kind === 'drowned' || event.kind === 'burned' || event.kind === 'aged' || event.kind === 'diseased' || event.kind === 'vanished') {
         totalDeaths++
         if ((event.ageSeconds ?? 0) > longestLived) longestLived = event.ageSeconds ?? 0
         if ((event.children ?? 0) > mostProlificChildren) {
@@ -666,7 +667,7 @@ export class GameInstance {
       let hadBirth = false, hadDeath = false
       for (const ev of events) {
         if (ev.kind === 'born' && !hadBirth) { playBorn(); hadBirth = true }
-        if ((ev.kind === 'aged' || ev.kind === 'starved' || ev.kind === 'drowned' || ev.kind === 'burned' || ev.kind === 'diseased') && !hadDeath) {
+        if ((ev.kind === 'aged' || ev.kind === 'starved' || ev.kind === 'drowned' || ev.kind === 'burned' || ev.kind === 'diseased' || ev.kind === 'vanished') && !hadDeath) {
           playDeath(); hadDeath = true
         }
       }
@@ -679,7 +680,8 @@ export class GameInstance {
     // subset needed to kill the ghost-plant symptom.
     const hadDeath = events.some(e =>
       e.kind === 'eaten' || e.kind === 'starved' || e.kind === 'drowned' ||
-      e.kind === 'burned' || e.kind === 'aged' || e.kind === 'diseased'
+      e.kind === 'burned' || e.kind === 'aged' || e.kind === 'diseased' ||
+      e.kind === 'vanished'
     )
     if (hadDeath) {
       const thumbs = this.world.creatures
@@ -740,7 +742,8 @@ export class GameInstance {
         event.kind === 'drowned' ||
         event.kind === 'burned' ||
         event.kind === 'aged' ||
-        event.kind === 'diseased'
+        event.kind === 'diseased' ||
+        event.kind === 'vanished'
       ) {
         const creatureName = event.creatureName ?? null
         const prefix = creatureName ? `${creatureName} the ${speciesName}` : `A ${speciesName}`
@@ -756,6 +759,8 @@ export class GameInstance {
           detail = `${prefix} drowned`
         } else if (event.kind === 'burned') {
           detail = `${prefix} burned`
+        } else if (event.kind === 'vanished') {
+          detail = `${prefix} slipped away with the last of its kind`
         } else {
           detail = `${prefix} died of disease`
         }

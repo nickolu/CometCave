@@ -274,6 +274,24 @@ export const MEAL_VALUE = 0.26
 export const BREED_COST = 0.31
 
 /**
+ * A multiplier over every blueprint's `breedAt` — how full it has to be to breed.
+ *
+ * Ships at 1, so by itself it changes nothing. It exists because `breedAt` is
+ * per-species data and the ecosystem's hardest open question is whether the
+ * breeding gate is shut by that number rather than by the food supply — and a
+ * number on a blueprint cannot be swept. The harness's `--set` and the settings
+ * panel both reach `TUNING` and only `TUNING`, so without this the most-suspected
+ * lever in the world was the one nobody could move.
+ *
+ * A multiplier and not an override: the roster's *ordering* is deliberate (a
+ * stalker is stricter than a mite because a predator's meal is rarer), and a flat
+ * value would erase that while appearing to answer the question.
+ *
+ * See `breedFullness` in `creature-sim.ts` for why `breedAt: 1` is exempt.
+ */
+export const BREED_AT_SCALE = 1
+
+/**
  * Native plants — the ground's own seed bank, and the only regrowth there is.
  *
  * Animals had a seed bank too once: any native that had died out wandered back
@@ -553,4 +571,4 @@ export const SPAWNER_DEFAULT_MAX_LOCAL = 5
 export const NUM_BIOME_REGIONS = 8
 
 /** Height in rows of each biome region band. */
-export const BIOME_REGION_H = Math.ceil(WORLD_H / NUM_BIOME_REGIONS)  // 17
+export const BIOME_REGION_H = Math.ceil(WORLD_H / NUM_BIOME_REGIONS) // 17

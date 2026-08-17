@@ -527,6 +527,7 @@ export function spawnCreature(
     symbiosisTimer: 0,
     sick: 0,
     fatigue: 0,
+    exhausted: false,
     carryingSeed: null,
     seedTimer: 0,
   }

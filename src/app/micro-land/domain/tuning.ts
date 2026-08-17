@@ -22,6 +22,7 @@
  * game, and a slider that can break the renderer is not an option, it's a trap.
  */
 import {
+  BREED_AT_SCALE,
   BREED_COOLDOWN,
   BREED_COST,
   DISEASE_DURATION,
@@ -32,8 +33,8 @@ import {
   MATE_RADIUS,
   MAX_CREATURES,
   MAX_PLANTS,
-  MIGRATION_THRESHOLD,
   MEAL_VALUE,
+  MIGRATION_THRESHOLD,
   NATIVE_PLANT_SPECIES,
   NATIVE_PLANT_TARGET,
   PLANT_CROWDING_STRENGTH,
@@ -75,6 +76,7 @@ export const TUNING_DEFAULTS = {
   hungerRateScale: HUNGER_RATE_SCALE,
   mealValue: MEAL_VALUE,
   breedCost: BREED_COST,
+  breedAtScale: BREED_AT_SCALE,
   traitDrift: TRAIT_DRIFT,
   /**
    * Base probability per tick that a sick creature infects a healthy neighbour.
@@ -366,7 +368,7 @@ export const KNOBS: Knob[] = [
     key: 'lifespanScale',
     group: 'creatures',
     label: 'Lifespan multiplier',
-    help: 'Scales every creature\'s lifespan. 2× means a species that would normally live 300 s now lives 600 s. Individual creatures still inherit and evolve their own lifespan trait on top of this.',
+    help: "Scales every creature's lifespan. 2× means a species that would normally live 300 s now lives 600 s. Individual creatures still inherit and evolve their own lifespan trait on top of this.",
     min: 0.25,
     max: 10,
     step: 0.25,
@@ -386,7 +388,7 @@ export const KNOBS: Knob[] = [
     key: 'hungerRateScale',
     group: 'creatures',
     label: 'How quickly creatures get hungry',
-    help: 'A multiplier on every species\' hunger rate. At 0, hunger is turned off entirely — animals never starve, so food stops mattering. At 2 they drain twice as fast; boom-and-crash cycles run on a tighter clock.',
+    help: "A multiplier on every species' hunger rate. At 0, hunger is turned off entirely — animals never starve, so food stops mattering. At 2 they drain twice as fast; boom-and-crash cycles run on a tighter clock.",
     min: 0,
     max: 4,
     step: 0.05,
@@ -408,6 +410,16 @@ export const KNOBS: Knob[] = [
     min: 0.1,
     max: 1,
     step: 0.01,
+  },
+  {
+    key: 'breedAtScale',
+    group: 'creatures',
+    label: 'How full an animal has to be',
+    help: 'Every kind of animal has its own idea of "well fed enough to have a baby", and this shifts all of them at once. Below 1 they settle for less; above 1 they hold out for a fuller stomach and have babies more rarely. Animals that are not meant to breed at all stay that way.',
+    min: 0.3,
+    max: 1.3,
+    step: 0.05,
+    unit: '×',
   },
   {
     key: 'traitDrift',
