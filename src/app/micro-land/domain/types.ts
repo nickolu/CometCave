@@ -1837,6 +1837,18 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
+/** One classified biome band — a full-width horizontal slice of the world. */
+export interface BiomeZone {
+  /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
+  regionIndex: number
+  /** Classified biome type for this band. */
+  type: BiomeZoneType
+  /** Annual temperature proxy [0, 1]; higher = warmer. Derived from Y position × seasonFactor. */
+  temperature: number
+  /** Average moisture [0, 1] sampled across region tiles. */
+  precipitation: number
+}
+
 // ---------------------------------------------------------------------------
 // Live world state
 // ---------------------------------------------------------------------------
