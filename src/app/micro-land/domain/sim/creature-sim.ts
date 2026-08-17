@@ -71,6 +71,7 @@ import {
   tickMoisture,
   tickMycorrhizalNetwork,
   tickSalinity,
+  tickTidal,
   tickWebDecay,
   tileAt,
   updateBiomeZones,
@@ -859,6 +860,7 @@ export function tickCreatures(
   tickMoisture(w, tickCount, dt, rng)
   tickCaveNutrient(w, tickCount, dt)
   tickSalinity(w, tickCount)
+  tickTidal(w, tickCount)
   tickMarshDetritus(w, tickCount, dt)
   w.eggs ??= []
   w.nextEggId ??= 1

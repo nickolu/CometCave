@@ -2148,6 +2148,19 @@ export interface WorldState {
   lastFrogRitualSeason?: number
   /** Creature id of the Gopher Government Administrator. Issue #3300. */
   gopherAdminId?: number
+  /**
+   * Current tidal level, -1 (low tide) to +1 (high tide).
+   * Computed from lunarPhase = (elapsed % lunarPeriod) / lunarPeriod
+   * as sin(lunarPhase * 2π). Updated each tick when lunarPeriod > 0.
+   * Issue #3188.
+   */
+  tidalLevel?: number
+  /**
+   * Per-tile baseline terrain snapshot taken at world initialization (or first tidal tick).
+   * Used to restore exposed intertidal tiles when the tide retreats.
+   * Issue #3188.
+   */
+  tidalBaseline?: Uint8Array
 }
 
 // ---------------------------------------------------------------------------
