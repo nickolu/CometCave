@@ -642,6 +642,7 @@ export function sanitizeBlueprint(
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
+    fireAdapted: b.fireAdapted !== undefined ? !!b.fireAdapted : undefined,
     lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
     biomeRequirements: Array.isArray(b.biomeRequirements)
       ? (b.biomeRequirements as unknown[]).filter((z): z is BiomeZoneType =>
@@ -714,6 +715,7 @@ export function sanitizeBlueprint(
     toadTaxation: typeof b.toadTaxation === 'boolean' ? b.toadTaxation : undefined,
     urchinUnion: typeof b.urchinUnion === 'boolean' ? b.urchinUnion : undefined,
     minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
+    lemmingLegislature: typeof b.lemmingLegislature === 'boolean' ? b.lemmingLegislature : undefined,
     rK: typeof b.rK === 'number' ? Math.max(0, Math.min(1, b.rK)) : undefined,
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
@@ -791,6 +793,11 @@ export function sanitizeBlueprint(
     // The four polity flags are set once, above. They were duplicated here
     // verbatim — harmless, since both copies computed the same value, but the
     // second silently shadowed the first.
+    lunarBreedingPhase:
+      typeof b.lunarBreedingPhase === 'number'
+        ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
+        : undefined,
+    intertidal: b.intertidal !== undefined ? !!b.intertidal : undefined,
     fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
@@ -816,6 +823,13 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    playBehavior: typeof b.playBehavior === 'boolean' ? b.playBehavior : undefined,
+    maturityAge: typeof b.maturityAge === 'number' ? Math.max(0, b.maturityAge) : undefined,
+    matingCaller: typeof b.matingCaller === 'boolean' ? b.matingCaller : undefined,
+    matingCallRange: typeof b.matingCallRange === 'number' ? Math.max(1, b.matingCallRange) : undefined,
+    dawnChorus: typeof b.dawnChorus === 'boolean' ? b.dawnChorus : undefined,
+    dawnChorusRange: typeof b.dawnChorusRange === 'number' ? Math.max(1, b.dawnChorusRange) : undefined,
+    maxDepth: typeof b.maxDepth === 'number' ? Math.max(1, b.maxDepth) : undefined,
     echolocates: typeof b.echolocates === 'boolean' ? b.echolocates : undefined,
     stressSignaler: typeof b.stressSignaler === 'boolean' ? b.stressSignaler : undefined,
     stressReceiver: typeof b.stressReceiver === 'boolean' ? b.stressReceiver : undefined,
@@ -829,6 +843,10 @@ export function sanitizeBlueprint(
     territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
     deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
     shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
+    // Lineage, food web, and succession features (#3121, #3126, #3167)
+    derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
+    trophicLevel: typeof b.trophicLevel === 'number' && b.trophicLevel >= 1 ? Math.round(b.trophicLevel) : undefined,
+    successionStage: typeof b.successionStage === 'number' && b.successionStage >= 1 && b.successionStage <= 4 ? Math.round(b.successionStage) : undefined,
     antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
     bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
     quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,

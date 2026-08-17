@@ -552,6 +552,7 @@ export class Renderer {
     highlightId: number | null = null,
     elderId: number | null = null,
     heatmap: Float32Array | null = null,
+    nutrientHeatmap: Float32Array | null = null,
     tempHeatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
@@ -598,6 +599,7 @@ export class Renderer {
       this.drawCarcasses(w)
       this.drawNests(w)
       this.drawTombstones(w)
+      if (nutrientHeatmap) this.drawHeatmap(nutrientHeatmap, vx, vw, '#00cc44', 0.5)
       if (tempHeatmap) this.drawHeatmap(tempHeatmap, vx, vw, '#ff6600', 0.35)
       if (heatmap) this.drawHeatmap(heatmap, vx, vw)
       this.drawEggs(w)
