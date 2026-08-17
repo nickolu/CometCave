@@ -844,6 +844,7 @@ function tickSeedBank(
       if (rng() > sproutFactor / 2) { surviving.push(seed); continue }
     }
 
+
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
