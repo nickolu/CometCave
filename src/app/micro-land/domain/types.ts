@@ -1959,7 +1959,6 @@ export interface WorldGeneratorEntry {
   nextSeed: number
 }
 
-/** One classified biome band — a full-width horizontal slice of the world. */
 /**
  * Whittaker biome classification — one of eight climate zones.
  * Assigned per horizontal region band (8 bands from sky to bedrock).
