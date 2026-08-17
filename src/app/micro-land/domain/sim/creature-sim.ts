@@ -920,6 +920,12 @@ export function tickCreatures(
         )
       : 1
 
+  // Ocean current conveyor: slow lateral current, reverses each half-season. Issue #3250.
+  const CURRENT_PERIOD = TUNING.seasonPeriod * 2
+  w.oceanCurrentX = Math.sin(2 * Math.PI * w.elapsed / CURRENT_PERIOD) * 0.3
+
+  // Plankton bloom: active during spring/summer peak. Issue #3254.
+  w.planktonBloomActive = TUNING.seasonAmplitude > 0 && seasonFactor > 1.2
   // Lunar phase counter: one full cycle every ~28 "moon days" = 0.9333 × seasonPeriod.
   // Issues #3187, #3188.
   const LUNAR_PERIOD = TUNING.seasonPeriod * 0.9333
@@ -1923,19 +1929,45 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0001 * dt)  // starvation without fungal support
       }
     }
-    // Coral reef builder: builds stone reef by converting water tile above. Issue #3253.
-    if (bp.coralPolyp && bp.move.kind === 'root' && tickCount % 600 === c.id % 600) {
-      const cx3 = Math.floor(c.x)
-      const topY = Math.floor(c.y) - 1  // one tile above the coral
-      if (topY >= 0 && topY < WORLD_H) {
-        const aboveIdx = topY * WORLD_W + wrapCol(cx3)
-        const aboveTile = w.tiles[aboveIdx]
-        if (IS_LIQUID[aboveTile] && !IS_DEADLY[aboveTile]) {
-          const occupied = w.creatures.some(other => Math.floor(other.x) === cx3 && Math.floor(other.y) === topY)
-          if (!occupied) {
-            setTile(w, cx3, topY, MATERIAL_INDEX.stone)
+    // Hydrothermal vent chemosynthesis: gain hunger relief near lava. Issue #3252.
+    if (bp.chemosynthetic) {
+      const cx2 = Math.floor(c.x), cy2 = Math.floor(c.y)
+      const thisTile = w.tiles[cy2 * WORLD_W + wrapCol(cx2)] ?? 0
+      if (IS_LIQUID[thisTile] && !IS_DEADLY[thisTile]) {
+        // Check for adjacent lava tiles
+        let nearLava = false
+        for (let dy = -2; dy <= 2 && !nearLava; dy++) {
+          for (let dx2 = -2; dx2 <= 2 && !nearLava; dx2++) {
+            const tx = wrapCol(cx2 + dx2), ty = cy2 + dy
+            if (ty < 0 || ty >= WORLD_H) continue
+            if (w.tiles[ty * WORLD_W + tx] === MATERIAL_INDEX.lava) nearLava = true
           }
         }
+        if (nearLava) c.hunger = Math.max(0, c.hunger - 0.004 * dt)
+      }
+    }
+
+    // Plankton bloom: faster hunger relief during bloom. Issue #3254.
+    if (bp.phytoplankton && w.planktonBloomActive) {
+      c.hunger = Math.max(0, c.hunger - 0.001 * dt)
+    }
+
+    // Eusocial drone age: drones die after 30 seconds. Issue #3229.
+    if (c.caste === 'drone') {
+      c.droneAge = (c.droneAge ?? 0) + dt
+      if (c.droneAge > 30) {
+        kill(w, c, bp, dead, events, 'aged')
+        continue
+      }
+    }
+
+    // Eusocial queen breeds fast; workers are metabolically efficient; soldiers have hunger cost. Issue #3229.
+    if (bp.eusocialSpecies) {
+      if (c.caste === 'queen') {
+        // Queen breeds fast — handled via breedCooldown reduction below
+        c.hunger = Math.max(0, c.hunger - 0.001 * dt)  // queen fed by workers (conceptual)
+      } else if (c.caste === 'worker') {
+        c.hunger = Math.max(0, c.hunger - 0.0005 * dt)  // efficient metabolism
       }
     }
 
@@ -3067,6 +3099,11 @@ export function tickCreatures(
       integrate(w, c, bp, bw, bh, dt, wet, gravityScale)
     }
 
+    // Ocean current conveyor: lateral drift for aquatic creatures. Issue #3250.
+    if (w.oceanCurrentX && (bp.move.kind === 'swim' || bp.habitat?.needs?.includes('water'))) {
+      c.vx += (w.oceanCurrentX ?? 0) * dt * 0.3
+    }
+
     // --- web capture: flying creatures entering a web tile become trapped. Issue #3420. ---
     if (bp.move.kind === 'fly' || bp.move.kind === 'drift') {
       const capTileIdx = Math.round(c.y) * w.width + wrapCol(Math.round(c.x))
@@ -3592,21 +3629,8 @@ export function tickCreatures(
       w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 8, polarized: true })
     }
 
-    // Pheromone trail: deposit scent every 15 ticks while moving. Issue #3234.
-    if (bp.pheromoneDepositor && (tickCount + c.id) % 15 === 0 && w.scents.length < 300) {
-      const speed = Math.hypot(c.vx, c.vy)
-      if (speed > 0.05) {
-        w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 20 })
-      }
-    }
-
-    // Sound propagation: sound emitter broadcasts acoustic signal as scent. Issue #3241.
-    if (bp.soundEmitter && (tickCount + c.id) % SENSE_EVERY === 0 && w.scents.length < 300) {
-      w.scents.push({ x: c.x + bw / 2, y: c.y + bh / 2, blueprintId: c.blueprintId, decaySeconds: 5 })
-    }
-
-    // Multi-host parasite: larval stage cannot breed. Issue #3185.
-    if (bp.intermediateHostId !== undefined && c.lifecycleStage === 'larval') continue
+    // Eusocial workers and soldiers don't breed — only queens do. Issue #3229.
+    if ((c.caste === 'worker' || c.caste === 'soldier') && bp.eusocialSpecies) continue
 
     // --- breeding -------------------------------------------------------
     const isPlant = bp.move.kind === 'root'
@@ -3808,6 +3832,14 @@ export function tickCreatures(
             const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
             if (bondMate) c.breedCooldown *= 0.8
           }
+          // Eusocial queen breeds faster. Issue #3229.
+          if (bp.eusocialSpecies && c.caste === 'queen') {
+            c.breedCooldown *= 0.4
+          }
+          // Plankton bloom: 4× breeding rate during bloom. Issue #3254.
+          if (bp.phytoplankton && w.planktonBloomActive) {
+            c.breedCooldown *= 0.25
+          }
           // Semelparous: die after first reproduction. Issue #3259.
           if (bp.semelparous) {
             c.hasReproduced = true
@@ -3829,6 +3861,26 @@ export function tickCreatures(
             // replaces them, which is what makes "born here" and "put here" two
             // genuinely different things.
             child.traits = inherit(c.traits, mate?.traits ?? null, rng)
+            // Eusocial caste assignment at birth. Issue #3229.
+            if (bp.eusocialSpecies) {
+              w.eusocialQueenIds ??= {}
+              const queenId = w.eusocialQueenIds[bp.id]
+              const queenAlive = queenId !== undefined && !dead.has(queenId) && w.creatures.some(cc => cc.id === queenId)
+              const totalPop = speciesCount[bp.id] ?? 0
+              const soldierCount = w.creatures.filter(cc => cc.blueprintId === bp.id && cc.caste === 'soldier').length
+              const soldierFrac = totalPop > 0 ? soldierCount / totalPop : 0
+              if (!queenAlive) {
+                child.caste = 'queen'
+                w.eusocialQueenIds[bp.id] = child.id
+              } else if (soldierFrac < 0.25 && rng() < 0.4) {
+                child.caste = 'soldier'
+              } else if (rng() < 0.05) {
+                child.caste = 'drone'
+                child.droneAge = 0
+              } else {
+                child.caste = 'worker'
+              }
+            }
             // Food-washing inheritance: 70% chance to inherit from the parent
             // that knows the technique. Models early cultural transmission —
             // offspring raised by a food-washer mostly pick up the behavior.
@@ -4048,6 +4100,10 @@ export function tickCreatures(
                   plantFertilityFactor *
                   localSeasonFactor *
                   salinityBoost)
+              // Plankton bloom: 4× breeding rate during bloom. Issue #3254.
+              if (bp.phytoplankton && w.planktonBloomActive) {
+                c.breedCooldown *= 0.25
+              }
             } else {
               // Both of them paid to be here, so both of them pay for it. Charging
               // only the one whose turn it happened to be would make a baby cost a
@@ -4089,6 +4145,14 @@ export function tickCreatures(
                 const bondMate = w.creatures.find(o => o !== c && o.blueprintId === c.blueprintId && !dead.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < sight)
                 if (bondMate) c.breedCooldown *= 0.8
               }
+              // Eusocial queen breeds faster. Issue #3229.
+              if (bp.eusocialSpecies && c.caste === 'queen') {
+                c.breedCooldown *= 0.4
+              }
+              // Plankton bloom: 4× breeding rate during bloom. Issue #3254.
+              if (bp.phytoplankton && w.planktonBloomActive) {
+                c.breedCooldown *= 0.25
+              }
               // Semelparous: die after first reproduction. Issue #3259.
               if (bp.semelparous) {
                 c.hasReproduced = true
@@ -4110,6 +4174,16 @@ export function tickCreatures(
 
   if (dead.size > 0) {
     w.creatures = creatures.filter(c => !dead.has(c.id))
+  }
+
+  // Eusocial queen succession: clear queen id when queen dies. Issue #3229.
+  if (w.eusocialQueenIds) {
+    for (const [bpId, queenId] of Object.entries(w.eusocialQueenIds)) {
+      if (dead.has(queenId)) {
+        delete w.eusocialQueenIds[bpId]
+        // Next creature of that species will be crowned in the next tick
+      }
+    }
   }
 
   // Mass emergence notice: if >= 3 adults of the same species emerged this tick,

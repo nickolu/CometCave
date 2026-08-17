@@ -1245,35 +1245,20 @@ export interface CreatureBlueprint {
    */
   maxDepth?: number
   /**
-   * This species deposits pheromone trails (scent markers) while moving.
-   * Same-species creatures attracted to these trails regardless of cooperation.
-   * Issue #3234.
+   * True if this species uses a eusocial caste system (queen, workers, soldiers, drones).
+   * The caste is assigned at birth based on colony needs. Issue #3229.
    */
-  pheromoneDepositor?: boolean
+  eusocialSpecies?: boolean
   /**
-   * This parasite requires an intermediate host to mature from larval to adult stage.
-   * Set to the blueprintId of the intermediate host species. Issue #3185.
+   * True if this species feeds via chemosynthesis (chemical energy from vent tiles).
+   * Gains hunger relief when adjacent to lava tiles while in water, independent of sunlight. Issue #3252.
    */
-  intermediateHostId?: string
+  chemosynthetic?: boolean
   /**
-   * True if this plant-like creature is a coral polyp that builds reef structure.
-   * Converts adjacent water tiles to stone at a slow rate. Issue #3253.
+   * True if this creature is a phytoplankton species that blooms in spring/summer.
+   * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
    */
-  coralPolyp?: boolean
-  /**
-   * This creature broadcasts sound signals as extended-range scent beacons.
-   * Other creatures with soundReceptive respond to these signals. Issue #3241.
-   */
-  soundEmitter?: boolean
-  /**
-   * This creature can detect and react to sound signals from soundEmitter species.
-   * Flees from nearby sound events within soundReceptiveRange tiles. Issue #3241.
-   */
-  soundReceptive?: boolean
-  /**
-   * Detection range in tiles for sound receptive creatures. Issue #3241.
-   */
-  soundReceptiveRange?: number
+  phytoplankton?: boolean
   /**
    * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
    * interfere when crowded, reducing effective sight range. Issue #3243.
@@ -1826,11 +1811,14 @@ export interface Creature {
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
   /**
-   * Parasite lifecycle stage: 'larval' cannot breed; 'adult' can breed normally.
-   * Set on birth for multihost parasites; matures after parasitizing intermediateHostId.
-   * Issue #3185.
+   * Caste of a eusocial species individual.
+   * Set at birth based on colony composition. Issue #3229.
    */
-  lifecycleStage?: 'larval' | 'adult'
+  caste?: 'queen' | 'worker' | 'soldier' | 'drone'
+  /**
+   * Age timer for drones; they die after 30 seconds. Issue #3229.
+   */
+  droneAge?: number
   /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
   toxinLoad?: number
   /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
@@ -2290,6 +2278,12 @@ export interface WorldState {
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
 
+  /** Maps eusocial species blueprint ID to current queen creature ID. Issue #3229. */
+  eusocialQueenIds?: Record<string, number>
+  /** Current horizontal ocean current velocity (−0.3 to 0.3). Issue #3252. */
+  oceanCurrentX?: number
+  /** True during a phytoplankton bloom (high season factor). Issue #3253. */
+  planktonBloomActive?: boolean
   /** Current lunar phase day (0–27). Issue #3187. */
   lunarPhaseDay?: number
   /** Current tidal height offset (-1 to 1). Issue #3188. */
