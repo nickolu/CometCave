@@ -1351,6 +1351,39 @@ export function tickCreatures(
     }
   }
 
+  // --- Lemming Legislature: periodic cliff votes. Issue #3305. ---
+  const LEMMING_VOTE_PERIOD = TUNING.seasonPeriod / 6  // ~50 s ≈ 15 in-game days
+  for (const [bpId, cnt] of Object.entries(speciesCount)) {
+    const lbp = w.blueprints[bpId]
+    if (!lbp?.lemmingLegislature) continue
+    // Record baseline on first observation
+    ;(w.lemmingBaseline ??= {})[bpId] ??= Math.max(50, cnt)
+    // Initialize vote timer
+    w.lemmingNextVoteTime ??= w.elapsed + LEMMING_VOTE_PERIOD
+    if (w.elapsed >= w.lemmingNextVoteTime) {
+      w.lemmingNextVoteTime = w.elapsed + LEMMING_VOTE_PERIOD
+      // Elect up to 20 legislators from the healthiest individuals
+      const eligible = w.creatures.filter(c2 => c2.blueprintId === bpId)
+      for (const c2 of eligible) c2.isLegislator = false
+      if (cnt >= 100) {
+        const legislators = eligible
+          .sort((a, b2) => a.hunger - b2.hunger)  // least hungry = healthiest
+          .slice(0, 20)
+        for (const leg of legislators) leg.isLegislator = true
+      }
+      // The Vote: Cliff or No Cliff
+      const baseline = (w.lemmingBaseline ??= {})[bpId] ?? 100
+      const densityRatio = cnt / baseline
+      if (densityRatio > 2 && cnt >= 100) {
+        // CLIFF VOTE: legislators + 30% of followers march off the edge
+        for (const c2 of eligible) {
+          if (c2.isLegislator || rng() < 0.3) c2.cliffBound = true
+        }
+        events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${lbp.name} Legislature votes: CLIFF` })
+      }
+    }
+  }
+
   // Helpers — bees, worms, anything with an aura. Gathered once per tick
   // because the breeding check below asks "is one of these near me", and there
   // are normally none at all.
@@ -2330,6 +2363,18 @@ export function tickCreatures(
       }
     }
 
+    // --- Cliff march: elected lemmings run toward the nearest world edge. Issue #3305. ---
+    if (c.cliffBound) {
+      const distLeft = c.x
+      const distRight = WORLD_W - 1 - c.x
+      const edgeX = distLeft <= distRight ? 0 : WORLD_W - 1
+      const edgeDx = edgeX - c.x
+      const edgeDist = Math.abs(edgeDx)
+      if (edgeDist > 0.5) {
+        c.vx += (edgeDx / edgeDist) * 2.0 * dt
+      }
+    }
+
     // --- Otter Oligarchy: oligarchs extract 5% of catch from nearby otters. Issue #3308. ---
     if (bp.otterOligarchy && c.isOligarch) {
       for (const other of w.creatures) {
@@ -2633,6 +2678,11 @@ export function tickCreatures(
         kill(w, c, bp, dead, events, 'burned')
         continue
       }
+    }
+
+    // Cliff fall: cliffBound creatures that reach the world edge fall off. Issue #3305.
+    if (c.cliffBound && (c.x <= 0.5 || c.x >= WORLD_W - 1.5)) {
+      kill(w, c, bp, dead, events, 'starved')
     }
 
     // One timer, two ways to be in the wrong place.

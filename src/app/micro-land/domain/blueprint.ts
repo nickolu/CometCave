@@ -713,6 +713,7 @@ export function sanitizeBlueprint(
     toadTaxation: typeof b.toadTaxation === 'boolean' ? b.toadTaxation : undefined,
     urchinUnion: typeof b.urchinUnion === 'boolean' ? b.urchinUnion : undefined,
     minViablePopulation: typeof b.minViablePopulation === 'number' ? Math.max(1, Math.floor(b.minViablePopulation)) : undefined,
+    lemmingLegislature: typeof b.lemmingLegislature === 'boolean' ? b.lemmingLegislature : undefined,
     rK: typeof b.rK === 'number' ? Math.max(0, Math.min(1, b.rK)) : undefined,
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,

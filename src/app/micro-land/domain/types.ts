@@ -333,11 +333,6 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
-   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
-   * soil tiles. Issue #3148.
-   */
-  fixesNitrogen?: boolean
-  /**
    * Decomposer archetype: this creature eats from carcasses (any carcass within 2
    * tiles) and converts the consumed mass into soilNutrient at the carcass site.
    * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
@@ -1127,6 +1122,11 @@ export interface CreatureBlueprint {
    */
   minViablePopulation?: number
   /**
+   * When true, this species forms a Legislature and periodically votes to
+   * collectively run off the nearest world edge when overcrowded. Issue #3305.
+   */
+  lemmingLegislature?: boolean
+  /**
    * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
    *
    * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
@@ -1725,6 +1725,10 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True when this lemming has been elected to the Legislature. Issue #3305. */
+  isLegislator?: boolean
+  /** True when the Legislature has voted Cliff and this creature is marching toward the edge. Issue #3305. */
+  cliffBound?: boolean
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
   /**
@@ -2183,6 +2187,11 @@ export interface WorldState {
   corridorMask?: Uint8Array
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
+
+  /** Per-species baseline population for Lemming Legislature voting. Issue #3305. */
+  lemmingBaseline?: Record<string, number>
+  /** World-clock time of the next lemming legislature vote. Issue #3305. */
+  lemmingNextVoteTime?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
