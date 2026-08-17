@@ -864,8 +864,15 @@ function tickSeedBank(
     const { w: bw, h: bh } = artSize(bp)
     const wasExtinct = (speciesCount[seed.blueprintId] ?? 0) === 0
 
-    // Fire-adapted plants sprout at 5× rate when ash is nearby. Issue #3117.
+    // Spring bloom: seed-bank germination triples in early spring (yearFrac 0–0.25).
+    // Models the real flush of germination after winter stratification is broken —
+    // the first thaw triggers mass sprouting that outpaces summer and autumn combined.
+    // Epic #3074.
     let sproutAttempts = 1
+    if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
+      const yearFrac = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
+      if (yearFrac < 0.25) sproutAttempts = 3  // spring: triple germination attempts
+    }
     if (bp.fireAdapted) {
       const ashMatIdx = MATERIAL_INDEX.ash
       const ox = seed.x, oy = seed.y
