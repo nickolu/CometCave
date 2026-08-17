@@ -1740,6 +1740,8 @@ export function tickCreatures(
           kill(w, c, bp, dead, events, 'diseased')
           continue
         }
+        // Recovered-carrier: spreads at 20% rate for 60 s after recovery. Issue #3184.
+        ;(c as { carrierTimer?: number }).carrierTimer = 60
       }
     }
     // Migrate timer: counts seconds hungry with no food found.
@@ -1812,6 +1814,10 @@ export function tickCreatures(
       1,
       c.hunger + bp.diet.hungerRate * TUNING.hungerRateScale * restSlowdown * symbiosisFed * metabolicRate * cognitiveOverhead * migratoryHyperphagia * vFormationFactor * klieber * dt
     )
+    // Drought starvation pressure on plant-eaters: food is scarcer when moisture is low. Issue #3096.
+    if (w.weatherState === 'drought' && bp.diet.eats.includes('plant') && !bp.diet.eats.includes('meat')) {
+      c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
+    }
     // Plant nutrient bonus (#3101): rooted plants in nutrient-rich soil have lower hunger drain.
     // High soilNutrient up to 50% hunger reduction — fertile soil sustains plants longer.
     if (bp.move.kind === 'root' && w.soilNutrient) {
@@ -1980,6 +1986,13 @@ export function tickCreatures(
           c.hunger = Math.min(1, c.hunger + acidDamage * dt)
         }
       }
+    }
+    // Bioaccumulation: decay and apply slow/hunger penalty at high load. Issue #3238.
+    if ((c as { toxinLoad?: number }).toxinLoad !== undefined && (c as { toxinLoad?: number }).toxinLoad! > 0) {
+      c.toxinLoad = Math.max(0, (c.toxinLoad as number) - 0.0001 * dt)
+    }
+    if ((c.toxinLoad as number | undefined ?? 0) > 0.7) {
+      c.hunger = Math.min(1, c.hunger + 0.0003 * dt)
     }
     // Edge effects: habitat boundary stress increases hunger slightly. Issue #3282.
     if (w.edgeMask) {
@@ -4475,7 +4488,7 @@ function look(
     }
     if (nearbyCount > 20) echoNoiseSuppression = 0.5  // ambient noise suppresses echolocation
   }
-  const baseSight = rawSight * (1 - diurnalPenalty) * echoNoiseSuppression
+  let baseSight = rawSight * (1 - diurnalPenalty) * echoNoiseSuppression
 
   /**
    * Elder wisdom sight adjustment.
@@ -4523,6 +4536,21 @@ function look(
       }
       // If elders exist but none are nearby: no bonus, no penalty.
     }
+  }
+
+  // Acoustic frequency interference: crowded same-band species reduce effective sight. Issue #3243.
+  const myFreq = (bp as { soundFrequency?: number }).soundFrequency
+  if (myFreq !== undefined) {
+    let interferenceCount = 0
+    const freqScanCount = gather(cx, baseSight + bw / 2)
+    for (let i = 0; i < freqScanCount; i++) {
+      const nb = found[i]
+      if (nb.blueprintId === bp.id) continue
+      const nbp = w.blueprints[nb.blueprintId]
+      const nbFreq = (nbp as { soundFrequency?: number } | undefined)?.soundFrequency
+      if (nbFreq !== undefined && Math.abs(nbFreq - myFreq) < 0.1) interferenceCount++
+    }
+    if (interferenceCount >= 3) baseSight *= 0.8
   }
 
   let sight = baseSight * elderWisdomMultiplier
@@ -5101,6 +5129,11 @@ function look(
           c.hunger = Math.min(1, c.hunger + TUNING.mealValue * preyToxicity * 0.5 * toxMod)
           c.stunTimer = Math.max((c as { stunTimer?: number }).stunTimer ?? 0, 1.5 * toxMod)
         }
+        // Bioaccumulation: accumulate toxin in own tissues. Issue #3238.
+        if (preyToxicity > 0) {
+          if ((c as { toxinLoad?: number }).toxinLoad === undefined) c.toxinLoad = 0
+          c.toxinLoad = Math.min(1, (c.toxinLoad as number) + preyToxicity * 0.3)
+        }
         // Aposematism: eating a brightly-colored toxic prey teaches the predator to avoid
         // that species in future. Naive predators (mealsEaten < 5) still attack freely. Issue #3237.
         if (obp.aposematic && obp.toxic) {
@@ -5432,6 +5465,8 @@ function look(
   if (c.sick > 0 && bp.move.kind !== 'root') {
     const spreadReach = 4
     const sickNearby = gather(cx, spreadReach + bw / 2)
+    // Epidemic density scaling: higher local density accelerates transmission. Issue #3183.
+    const densityFactor = Math.min(2, sickNearby / 5)
     for (let i = 0; i < sickNearby; i++) {
       const other = found[i]
       if (other.id === c.id || dead.has(other.id)) continue
@@ -5445,11 +5480,33 @@ function look(
       const otherBp = w.blueprints[other.blueprintId]
       const rawOtherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
       const otherImmunity = otherBp?.invasive ? Math.min(1, rawOtherImmunity + 0.56) : rawOtherImmunity
-      if (rng() < TUNING.diseaseSpreadChance * (1 - otherImmunity)) {
+      if (rng() < TUNING.diseaseSpreadChance * densityFactor * (1 - otherImmunity)) {
         if (!other.sick) {
           events.push({ kind: 'sick', blueprintId: other.blueprintId, x: other.x, y: other.y })
         }
         other.sick = TUNING.diseaseDuration
+      }
+    }
+  }
+
+  // Recovered-carrier: can still transmit at 20% rate for 60 s. Issue #3184.
+  if ((c as { carrierTimer?: number }).carrierTimer && (c as { carrierTimer?: number }).carrierTimer! > 0) {
+    ;(c as { carrierTimer?: number }).carrierTimer = Math.max(0, (c as { carrierTimer?: number }).carrierTimer! - dt)
+    if ((c as { carrierTimer?: number }).carrierTimer! > 0) {
+      const carrierReach = 3
+      const nearbyCount = gather(cx, carrierReach + bw / 2)
+      for (let i = 0; i < nearbyCount; i++) {
+        const other = found[i]
+        if (other.id === c.id || dead.has(other.id)) continue
+        if ((other as { sick?: number }).sick) continue
+        const obp = w.blueprints[other.blueprintId]
+        if (!obp || obp.move.kind === 'root') continue
+        const rawOtherImmunity = (other.traits as { immunity?: number }).immunity ?? 0.2
+        const otherImmunity = obp.invasive ? Math.min(1, rawOtherImmunity + 0.56) : rawOtherImmunity
+        if (rng() < TUNING.diseaseSpreadChance * 0.2 * (1 - otherImmunity)) {
+          if (!other.sick) events.push({ kind: 'sick', blueprintId: other.blueprintId, x: other.x, y: other.y })
+          other.sick = TUNING.diseaseDuration
+        }
       }
     }
   }
@@ -6126,6 +6183,25 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     }
   }
 
+  // Acoustic camouflage: pause movement when no noisy creatures are nearby. Issue #3245.
+  if ((bp as { acousticCamouflage?: boolean }).acousticCamouflage) {
+    const camReach = 5
+    const camCount = gather(cx, camReach + bw / 2)
+    let hasNoise = false
+    for (let i = 0; i < camCount; i++) {
+      const nb = found[i]
+      if (nb.id === c.id) continue
+      if (nb.mood === 'flee' || nb.mood === 'eat') { hasNoise = true; break }
+    }
+    if (!hasNoise && rng() < 0.7) {
+      c.vx *= 0.1
+      c.vy *= 0.1
+    } else if (hasNoise) {
+      c.vx *= 1.2
+      c.vy *= 1.2
+    }
+  }
+
   // Poison from a toxic plant halves movement speed for its duration.
   // Larger creatures are slower: size is a denominator, not a multiplier.
   const diurnal = (c.traits as { diurnal?: number }).diurnal ?? 0
@@ -6143,6 +6219,7 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   const speed =
     ((speedOf(c, bp) *
       (c.poisoned > 0 ? 0.5 : 1) *
+      ((c.toxinLoad as number | undefined ?? 0) > 0.7 ? 0.7 : 1) *  // bioaccumulation speed penalty. Issue #3238.
       (c.venomTimer && c.venomTimer > 0 ? 0.5 : 1) *  // venom slows movement. Issue #3236.
       (c.packTimer > 0 ? 1.2 : 1) *
       (c.stunTimer > 0 ? 0.2 : 1) *

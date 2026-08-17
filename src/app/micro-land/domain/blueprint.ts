@@ -793,6 +793,10 @@ export function sanitizeBlueprint(
     // The four polity flags are set once, above. They were duplicated here
     // verbatim — harmless, since both copies computed the same value, but the
     // second silently shadowed the first.
+    soundFrequency: typeof b.soundFrequency === 'number'
+      ? Math.max(0, Math.min(1, b.soundFrequency))
+      : undefined,
+    acousticCamouflage: b.acousticCamouflage === true,
     lunarBreedingPhase:
       typeof b.lunarBreedingPhase === 'number'
         ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
