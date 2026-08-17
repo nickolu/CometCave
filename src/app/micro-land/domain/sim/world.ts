@@ -1475,6 +1475,59 @@ export function tickWebDecay(w: WorldState, tickCount: number, rng: () => number
   }
 }
 
+/**
+ * Simulate fire spreading and decay.
+ *
+ * Each call (every 30 ticks) processes all fire tiles: each has a 6% chance to
+ * decay to ash, and a 15% chance per adjacent flammable non-liquid tile to
+ * spread. This gives fire an expected lifetime of ~8 s at 60 fps and a
+ * neighbourhood radius that grows over time before guttering out. Issue #3115.
+ */
+export function tickFire(
+  w: WorldState,
+  tickCount: number,
+  rng: () => number,
+  IS_FLAMMABLE: Uint8Array,
+  IS_LIQUID: Uint8Array,
+  fireMatIdx: number,
+  ashMatIdx: number,
+): void {
+  if (tickCount % 30 !== 0) return
+  if (fireMatIdx < 0 || ashMatIdx < 0) return
+
+  const { width, height, tiles } = w
+
+  // Collect fire tile indices to avoid modifying the array while iterating.
+  const fireTiles: number[] = []
+  for (let i = 0; i < tiles.length; i++) {
+    if (tiles[i] === fireMatIdx) fireTiles.push(i)
+  }
+
+  for (const tileIdx of fireTiles) {
+    const x = tileIdx % width
+    const y = Math.floor(tileIdx / width)
+
+    // 6% chance per 30-tick check to decay to ash (~8 s expected lifetime).
+    if (rng() < 0.06) {
+      setTile(w, x, y, ashMatIdx)
+      continue
+    }
+
+    // Spread to adjacent flammable, non-liquid, non-fire tiles.
+    const dirs: [number, number][] = [[-1, 0], [1, 0], [0, -1], [0, 1]]
+    for (const [dx, dy] of dirs) {
+      const nx = x + dx
+      const ny = y + dy
+      if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+      const nIdx = ny * width + nx
+      const nMat = tiles[nIdx]
+      if (IS_FLAMMABLE[nMat] && !IS_LIQUID[nMat] && nMat !== fireMatIdx && rng() < 0.15) {
+        setTile(w, nx, ny, fireMatIdx)
+      }
+    }
+  }
+}
+
 // Edge effect mask: marks tiles at habitat boundaries. Issue #3282.
 export function tickEdgeMask(w: WorldState, tickCount: number): void {
   if (tickCount % 300 !== 0) return
@@ -1900,6 +1953,94 @@ export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () 
   }
 }
 
+
+/**
+ * Stochastic weather state machine: transitions between clear, rain, drought,
+ * and storm states, biased by season. Applies moisture and tile effects each
+ * 60-tick window. Issues #3094, #3095, #3096, #3097.
+ */
+export function tickWeather(w: WorldState, tickCount: number, rng: () => number): void {
+  // Initialize
+  if (w.weatherState === undefined) w.weatherState = 'clear'
+  if (w.weatherTimer === undefined) w.weatherTimer = 0
+
+  w.weatherTimer -= 1
+
+  const seasonFactor =
+    TUNING.seasonAmplitude > 0
+      ? 1 + TUNING.seasonAmplitude * Math.sin((2 * Math.PI * w.elapsed) / (TUNING.seasonPeriod * 60))
+      : 1
+  const isSummer = seasonFactor > 1.1
+  const isWinter = seasonFactor < 0.9
+
+  // Apply ongoing weather effects every 60 ticks
+  if (tickCount % 60 === 0) {
+    if (w.weatherState === 'rain') {
+      // Boost moisture on 30 random tiles per check
+      for (let i = 0; i < 30; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.05)
+      }
+    } else if (w.weatherState === 'drought') {
+      // Drain moisture from 15 random non-water tiles
+      for (let i = 0; i < 15; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (!IS_LIQUID[w.tiles[idx]] && w.moisture[idx] > 0) {
+          w.moisture[idx] = Math.max(0, w.moisture[idx] - 0.02)
+        }
+      }
+    } else if (w.weatherState === 'storm') {
+      // Lightning: 5% chance per check to convert a random exposed surface tile to ash
+      if (rng() < 0.05) {
+        const lx = Math.floor(rng() * w.width)
+        const ly = Math.floor(rng() * w.height)
+        const lIdx = ly * w.width + lx
+        if (!IS_SOLID[w.tiles[lIdx]] && !IS_LIQUID[w.tiles[lIdx]]) {
+          setTile(w, lx, ly, MATERIAL_INDEX.ash)
+        }
+      }
+      // Storms also bring rain — boost moisture on 10 random tiles
+      for (let i = 0; i < 10; i++) {
+        const rx = Math.floor(rng() * w.width)
+        const ry = Math.floor(rng() * w.height)
+        const idx = ry * w.width + rx
+        if (w.moisture[idx] < 1) w.moisture[idx] = Math.min(1, w.moisture[idx] + 0.03)
+      }
+    }
+  }
+
+  // Weather transition (only when timer expires)
+  if (w.weatherTimer > 0) return
+
+  const prev = w.weatherState
+  const r = rng()
+
+  if (prev === 'clear') {
+    if (isSummer && r < 0.08) w.weatherState = 'drought'
+    else if (r < 0.12) w.weatherState = 'rain'
+    else if (r < 0.04) w.weatherState = 'storm'
+    // else stay clear
+  } else if (prev === 'rain') {
+    if (r < 0.45) w.weatherState = 'clear'
+    else if (r < 0.55) w.weatherState = 'storm'
+    // else continue rain
+  } else if (prev === 'drought') {
+    if (isWinter || r < 0.35) w.weatherState = 'clear'
+    else if (r < 0.40) w.weatherState = 'rain'
+    // else continue drought
+  } else if (prev === 'storm') {
+    if (r < 0.55) w.weatherState = 'rain'
+    else if (r < 0.80) w.weatherState = 'clear'
+    // else continue storm
+  }
+
+  // Set next transition timer: 600–2400 ticks (10–40 seconds at 60fps)
+  w.weatherTimer = 600 + Math.floor(rng() * 1800)
+}
 
 /**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
