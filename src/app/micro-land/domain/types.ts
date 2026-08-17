@@ -1122,6 +1122,11 @@ export interface CreatureBlueprint {
    */
   minViablePopulation?: number
   /**
+   * When true, this species forms a Legislature and periodically votes to
+   * collectively run off the nearest world edge when overcrowded. Issue #3305.
+   */
+  lemmingLegislature?: boolean
+  /**
    * r/K selection continuum, 0.0 (r-selected) to 1.0 (K-selected).
    *
    * r-selected species (0): short breedCooldown (0.5×), fast egg hatching (0.7×).
@@ -1190,6 +1195,46 @@ export interface CreatureBlueprint {
   toxic?: boolean
   /** Mimicry: harmless species that mimics toxic species to avoid predation. Issue #3267. */
   toxicMimic?: boolean
+
+  /**
+   * Blueprint id of the species this one was derived from.
+   * Set on summoned/workshop creatures to track evolutionary lineage.
+   * When set, the Field Guide draws an ancestry chain. Issue #3167.
+   */
+  derivedFrom?: string
+  /**
+   * When true, juvenile creatures (ageSeconds < maturityAge) engage in play.
+   * Each play session incrementally raises traits.speed by 0.001 (capped at +0.1
+   * above baseline). Play costs a small hunger penalty but builds adult skill.
+   * Issue #3232.
+   */
+  playBehavior?: boolean
+  /** Age in seconds below which this creature is considered juvenile. Default 0 (disabled). Issue #3232. */
+  maturityAge?: number
+  /**
+   * When true, creatures ready to breed emit mating calls.
+   * Receptive same-species individuals within matingCallRange tiles navigate
+   * toward the caller. Higher health (low hunger) = longer call range.
+   * Issue #3244.
+   */
+  matingCaller?: boolean
+  /** Radius in tiles within which mating calls are heard. Default 15. Issue #3244. */
+  matingCallRange?: number
+  /**
+   * When true, this diurnal bird species participates in the dawn chorus.
+   * At sunrise (dayTimer 0.05–0.2), these creatures vocalize, establishing
+   * acoustic territory. Other same-species individuals within dawnChorusRange
+   * tiles increase spacing (drift away from caller). Issue #3246.
+   */
+  dawnChorus?: boolean
+  /** Radius of dawn chorus acoustic territory in tiles. Default 12. Issue #3246. */
+  dawnChorusRange?: number
+  /**
+   * Maximum depth this species can withstand in tile units below water surface.
+   * Creatures below this depth take pressure damage proportional to excess depth.
+   * Undefined = no pressure limit. Issue #3248.
+   */
+  maxDepth?: number
   /**
    * Moon phase (0–27) at which this species breeds. When set, breeding is
    * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
@@ -1714,6 +1759,10 @@ export interface Creature {
   homeLandmarkX?: number
   /** Y tile of memorized home landmark (set at first tick for landmarkMemory creatures). Issue #3326. */
   homeLandmarkY?: number
+  /** True when this lemming has been elected to the Legislature. Issue #3305. */
+  isLegislator?: boolean
+  /** True when the Legislature has voted Cliff and this creature is marching toward the edge. Issue #3305. */
+  cliffBound?: boolean
   /** True once a semelparous creature has reproduced; prevents a second reproduction. Issue #3259. */
   hasReproduced?: boolean
   /**
@@ -1727,6 +1776,16 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Cumulative skill bonus earned through juvenile play. Issue #3232. */
+  playSkillBonus?: number
+  /** Countdown seconds until next play session. Issue #3232. */
+  playTimer?: number
+  /** World X position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceX?: number
+  /** World Y position of the nearest detected mating call source. Issue #3244. */
+  matingCallSourceY?: number
+  /** Whether this creature is currently in its dawn chorus call. Issue #3246. */
+  chorusing?: boolean
   /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
   primedDefense?: number
   /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
@@ -2177,7 +2236,10 @@ export interface WorldState {
   lunarPhaseDay?: number
   /** Current tidal height offset (-1 to 1). Issue #3188. */
   tidalHeight?: number
-
+  /** Per-species baseline population for Lemming Legislature voting. Issue #3305. */
+  lemmingBaseline?: Record<string, number>
+  /** World-clock time of the next lemming legislature vote. Issue #3305. */
+  lemmingNextVoteTime?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
