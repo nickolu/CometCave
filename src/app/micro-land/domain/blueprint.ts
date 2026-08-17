@@ -786,6 +786,10 @@ export function sanitizeBlueprint(
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
     sexualDimorphism: 'sexualDimorphism' in b ? !!b.sexualDimorphism : undefined,
     decomposer: 'decomposer' in b ? !!b.decomposer : undefined,
+    soundFrequency: typeof b.soundFrequency === 'number'
+      ? Math.max(0, Math.min(1, b.soundFrequency))
+      : undefined,
+    acousticCamouflage: b.acousticCamouflage === true,
     lunarBreedingPhase:
       typeof b.lunarBreedingPhase === 'number'
         ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
