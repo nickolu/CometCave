@@ -82,6 +82,7 @@ export function Toolbar({
 }) {
   const tool = useMicroLand(s => s.tool)
   const setTool = useMicroLand(s => s.setTool)
+  const setSidebar = useMicroLand(s => s.setSidebar)
   const brush = useMicroLand(s => s.brush)
   const setBrush = useMicroLand(s => s.setBrush)
   const brushShape = useMicroLand(s => s.brushShape)
@@ -821,11 +822,14 @@ export function Toolbar({
                   key={bp.id}
                   type="button"
                   className="cc-btn shrink-0"
-                  onClick={() =>
-                    removable
-                      ? onRemoveSpecies(bp.id)
-                      : setTool({ kind: 'creature', blueprintId: bp.id })
-                  }
+                  onClick={() => {
+                    if (removable) {
+                      onRemoveSpecies(bp.id)
+                    } else {
+                      setTool({ kind: 'creature', blueprintId: bp.id })
+                      setSidebar('guide')
+                    }
+                  }}
                   aria-pressed={removable ? undefined : selected}
                   aria-label={removable ? `Remove ${bp.name}` : undefined}
                   title={removable ? `Remove ${bp.name}` : bp.blurb}
