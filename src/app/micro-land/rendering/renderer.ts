@@ -673,6 +673,7 @@ export class Renderer {
       this.viewRows * this.scale
     )
 
+    this.drawWeather(w)
     this.drawMinimap(w, theme, vx)
     this.drawNameLabels(w, elderId)
     this.drawTombstoneLabels(w)
@@ -1623,6 +1624,55 @@ export class Renderer {
 
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
+  }
+
+  /**
+   * Overlay weather effects on the display canvas.
+   *
+   * Rain and storm use diagonal streaks drawn at display resolution — no
+   * per-tile cost, no interaction with the tile bake, and no need for the sim
+   * rng because the streaks are purely cosmetic. Storm gets heavier precipitation
+   * and a stochastic lightning flash. The wind vector slants the streaks so they
+   * visibly track the wind. Epic #3075.
+   */
+  private drawWeather(w: WorldState): void {
+    const weather = w.weatherState
+    if (!weather || weather === 'clear' || weather === 'drought') return
+
+    const ctx = this.ctx
+    const dw = this.display.width
+    const dh = this.display.height
+    const isStorm = weather === 'storm'
+
+    // Streak count and length in display pixels.
+    const count = isStorm ? 300 : 160
+    const len = isStorm ? 9 : 6
+    const alpha = isStorm ? 0.45 : 0.28
+
+    // Wind slants the streaks: windX in [-0.4, 0.4] → lateral shift ±3px.
+    const windX = w.windX ?? 0
+    const slantX = -len * 0.25 + windX * len * 0.7
+
+    ctx.save()
+    ctx.strokeStyle = `rgba(180, 210, 255, ${alpha})`
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * dw
+      const y = Math.random() * dh
+      ctx.moveTo(x, y)
+      ctx.lineTo(x + slantX, y + len)
+    }
+    ctx.stroke()
+
+    // Storm: brief lightning flash (~0.5% chance per frame, fades in one frame).
+    if (isStorm && Math.random() < 0.005) {
+      ctx.globalAlpha = 0.18
+      ctx.fillStyle = '#fffff0'
+      ctx.fillRect(0, 0, dw, dh)
+    }
+
+    ctx.restore()
   }
 
   private buildMapImage(w: WorldState, theme: Theme): void {

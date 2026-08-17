@@ -849,6 +849,16 @@ function tickSeedBank(
       if (rng() > sproutFactor / 2) { surviving.push(seed); continue }
     }
 
+    // Photosynthesis pause: seeds require light to germinate. At deep night (nightFactor
+    // > 0.7) sprouting drops to ~5% of the normal rate — nearly zero. During the day
+    // and especially at dawn the seed bank runs freely. This makes plant colonisation a
+    // daytime phenomenon and gives diurnal species a natural edge over nocturnal ones
+    // in controlling ground cover. Issue #3073.
+    if (TUNING.dayLengthSeconds > 0) {
+      const dayFraction = (w.elapsed % TUNING.dayLengthSeconds) / TUNING.dayLengthSeconds
+      const seedNightFactor = (1 - Math.cos(2 * Math.PI * dayFraction)) / 2
+      if (seedNightFactor > 0.7 && rng() > 0.05) { surviving.push(seed); continue }
+    }
 
     // Try to germinate via the same reproduce path the pollinator uses.
     const { w: bw, h: bh } = artSize(bp)
@@ -4931,7 +4941,14 @@ function look(
   // search to 4× normal range — enough to detect patches across the world.
   const migrating = c.migrateTimer > 30
   const foodSight = migrating ? sight * 4 : sight * (1 + HUNGER_REACH * desperation * roamOf(c))
-  const foodSight2 = foodSight * foodSight
+  // Nocturnal ambush advantage: nocturnal predators (diurnal < 0) detect prey farther
+  // in the dark, modelling tapetum lucidum, heat-sensitive pits, and evolved night senses.
+  // A fully nocturnal hunter at full night gains 30% extra detection range; the bonus
+  // scales continuously with both the diurnal trait and the darkness level. Issue #3073.
+  const nocturnalBonus = (TUNING.dayLengthSeconds > 0 && diurnal < 0)
+    ? 1 + Math.max(0, -diurnal) * nightFactor * 0.3
+    : 1
+  const foodSight2 = foodSight * foodSight * nocturnalBonus * nocturnalBonus
 
   /**
    * Whether it is worth noticing its own kind this pass.
