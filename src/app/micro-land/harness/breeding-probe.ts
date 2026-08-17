@@ -33,7 +33,18 @@
  * Plants are excluded throughout. They breed by a different economy (no hunger
  * cost, no mate, their own caps) and including them drags every ratio toward the
  * answer for a species that was never in question.
+ *
+ * "Plant" here means `isPlantLike`, and it used to mean `move.kind === 'root'`,
+ * which is a different question with the same answer for every species but one.
+ * Skybloom is a flower that flies: `tags: ['plant']`, eats nothing, needs no
+ * partner, and rooted-ness says it is an animal. It produced 428 of one
+ * baseline's 432 births and single-handedly held `lineages-advance` green while
+ * the six real animals of the meadow managed four births between them — the
+ * guardrail against "nothing actually bred", satisfied by a flower. Rooted-ness
+ * is about how a thing pays for a child; `isPlantLike` is about whether it is a
+ * plant, and that is the question this file is asking.
  */
+import { isPlantLike } from '@/app/micro-land/domain/blueprint'
 import { type BreedBlocker, breedingBlockers } from '@/app/micro-land/domain/sim/creature-sim'
 import type { CreatureMood, WorldState } from '@/app/micro-land/domain/types'
 
@@ -99,7 +110,7 @@ export function sampleProbe(probe: BreedingProbe, w: WorldState): void {
 
   for (const c of w.creatures) {
     const bp = w.blueprints[c.blueprintId]
-    if (!bp || bp.move.kind === 'root') continue
+    if (!bp || isPlantLike(bp)) continue
 
     alive.add(c.id)
     const s = (probe.species[c.blueprintId] ??= emptySpecies())

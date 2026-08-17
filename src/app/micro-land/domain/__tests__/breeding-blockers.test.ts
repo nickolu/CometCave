@@ -13,12 +13,16 @@
  * equivalence through the one public statement of the same rule: a creature with
  * no blockers is one the simulation will let breed.
  */
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
-import { breedingBlockers, founderMaturityAge } from '@/app/micro-land/domain/sim/creature-sim'
+import {
+  breedFullness,
+  breedingBlockers,
+  founderMaturityAge,
+} from '@/app/micro-land/domain/sim/creature-sim'
 import { createWorld, registerBlueprint, spawnCreature } from '@/app/micro-land/domain/sim/world'
-import { TUNING } from '@/app/micro-land/domain/tuning'
+import { TUNING, resetTuning, setTuning } from '@/app/micro-land/domain/tuning'
 import type { Creature, CreatureBlueprint } from '@/app/micro-land/domain/types'
 
 function grazer(): CreatureBlueprint {
@@ -96,23 +100,80 @@ describe('breedingBlockers', () => {
     const { c, bp } = placed()
     const maturity = founderMaturityAge(bp)
 
-    for (const hunger of [0, 0.2, 0.39, 0.4, 0.41, 0.6, 0.69, 0.7, 1]) {
-      for (const age of [0, maturity - 1, maturity, maturity + 1, maturity * 3]) {
-        for (const cooldown of [0, 2]) {
-          c.hunger = hunger
-          c.ageSeconds = age
-          c.breedCooldown = cooldown
+    // Swept at more than one `breedAtScale`, because the knob is read inside the
+    // gate: a scale applied to one of the two implementations and not the other
+    // would leave this green at the shipped default and wrong everywhere the
+    // experiment actually goes.
+    for (const scale of [1, 0.6, 1.2]) {
+      setTuning({ breedAtScale: scale })
+      for (const hunger of [0, 0.2, 0.39, 0.4, 0.41, 0.6, 0.69, 0.7, 1]) {
+        for (const age of [0, maturity - 1, maturity, maturity + 1, maturity * 3]) {
+          for (const cooldown of [0, 2]) {
+            c.hunger = hunger
+            c.ageSeconds = age
+            c.breedCooldown = cooldown
 
-          const blockers = breedingBlockers(c, bp)
-          const expectedReady =
-            cooldown <= 0 &&
-            1 - hunger >= bp.diet.breedAt &&
-            hunger + TUNING.breedCost < 1 &&
-            age > maturity
+            const blockers = breedingBlockers(c, bp)
+            const expectedReady =
+              cooldown <= 0 &&
+              1 - hunger >= breedFullness(bp) &&
+              hunger + TUNING.breedCost < 1 &&
+              age > maturity
 
-          expect(blockers.length === 0).toBe(expectedReady)
+            expect(blockers.length === 0).toBe(expectedReady)
+          }
         }
       }
     }
+    resetTuning()
+  })
+})
+
+/**
+ * The knob that makes the breeding gate testable, and the carve-out that keeps
+ * it honest.
+ *
+ * `breedAt` is per-species data, so the most-suspected number in the ecosystem
+ * was the one thing `--set` could not reach. `breedAtScale` moves all of them at
+ * once — except the three blueprints that use `breedAt: 1` to mean "this does not
+ * breed", which is a nymph waiting to metamorphose and one deliberately sterile
+ * creature. Scaled like the rest, an experiment at 0.7 would be measuring a
+ * roster with three more breeding species in it than the game ships with.
+ */
+describe('breedAtScale', () => {
+  afterEach(resetTuning)
+
+  it('scales an ordinary threshold', () => {
+    const bp = grazer()
+    expect(bp.diet.breedAt).toBe(0.6)
+
+    setTuning({ breedAtScale: 0.5 })
+    expect(breedFullness(bp)).toBeCloseTo(0.3)
+  })
+
+  it('leaves a `breedAt: 1` non-breeder alone at every scale', () => {
+    const sterile = sanitizeBlueprint({
+      ...grazer(),
+      id: 'test-nymph',
+      diet: { eats: ['plant'], tags: ['animal'], breedAt: 1, lifespanSeconds: 100 },
+    })
+    expect(sterile.diet.breedAt).toBe(1)
+
+    for (const scale of [0.3, 0.7, 1, 1.3]) {
+      setTuning({ breedAtScale: scale })
+      expect(breedFullness(sterile)).toBe(1)
+    }
+  })
+
+  it('keeps the roster in order — a stricter species stays stricter', () => {
+    const loose = grazer()
+    const strict = sanitizeBlueprint({
+      ...grazer(),
+      id: 'test-predator',
+      diet: { eats: ['animal'], tags: ['animal'], breedAt: 0.9, lifespanSeconds: 100 },
+    })
+
+    setTuning({ breedAtScale: 0.6 })
+    expect(breedFullness(strict)).toBeGreaterThan(breedFullness(loose))
   })
 })

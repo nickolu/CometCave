@@ -26,6 +26,7 @@
 import type { BreedBlocker } from '@/app/micro-land/domain/sim/creature-sim'
 
 import { type SpeciesProbe, meanProbe } from './breeding-probe'
+import { firstAnimalExtinction } from './run'
 
 import type { RunMetrics } from './run'
 
@@ -36,6 +37,16 @@ export interface EvalResult {
   /** One line: what a failure means, in terms of where to look. */
   points_at: string
   pass: boolean
+  /**
+   * The check had too little data to say anything, and declined to.
+   *
+   * A third state, because two were not enough. `mate-stints-convert` reported a
+   * confident 1.00 off *two* stints in the baseline and passed, which is worse
+   * than saying nothing: a green check is read as evidence the thing it measures
+   * is working. Abstaining carries `pass: true` so a thin sample cannot fail a
+   * build on its own, and prints as `~` so nobody mistakes it for a result.
+   */
+  abstained?: boolean
   /** The measured number, for trend-watching even when it passes. */
   value: number
   /** Human-readable form of the bar it had to clear. */
@@ -51,9 +62,16 @@ export interface EvalCheck {
   run(runs: RunMetrics[]): Omit<EvalResult, 'id' | 'what' | 'points_at'>
 }
 
-/** Animal species that were seeded into the world, across all runs. */
+/**
+ * Animal species that were seeded into the world, across all runs.
+ *
+ * Reads `RunMetrics.animals` — seeded and not `isPlantLike` — rather than the
+ * probe's keys. Those were the same list until the meadow turned out to contain
+ * a flower that flies, at which point every check built on this one was quietly
+ * counting skybloom as an animal and being answered by it.
+ */
 function animalIds(runs: RunMetrics[]): string[] {
-  return [...new Set(runs.flatMap(r => Object.keys(r.probe.species)))]
+  return [...new Set(runs.flatMap(r => r.animals))]
 }
 
 function median(xs: number[]): number {
@@ -159,32 +177,51 @@ const runOutlastsMaturity: EvalCheck = {
  * an animal that cannot reach food cannot breed, and every downstream check
  * fails with it — while pointing at breeding, which is not where the bug is.
  * Measure eating before believing anything about mating.
+ *
+ * **Judged on the worst species, not the median.** As a median this passed at
+ * 0.43/min in the baseline while woolly, stalker and sunhawk sat at `underfed`
+ * 99%, 93% and 99% — starving, in a check whose whole job is to notice starving.
+ * A food chain does not need every link to break; it needs one, and a median is
+ * structurally blind to exactly that. The median is still reported in the detail
+ * because it is the number to watch when the floor is finally cleared.
  */
 const foragingFeedsAnimals: EvalCheck = {
   id: 'foraging-feeds-animals',
-  what: 'Animals that go hunting actually reach food and eat it.',
+  what: 'Every animal species reaches food often enough to live on it.',
   points_at: 'Pathing/targeting in `look` and `steer` — hunting that never arrives.',
   run(runs) {
     const probe = meanProbe(runs.map(r => r.probe))
     const meals = mergeMeals(runs)
     const rows = Object.entries(probe)
-      .filter(([, s]) => s.samples > 0)
       .map(([id, s]) => {
         // Samples are creature-observations at a fixed cadence, so
         // `samples * SAMPLE_SECONDS` is creature-seconds of life observed.
-        const creatureMinutes = (s.samples * SAMPLE_SECONDS) / 60
+        const creatureSeconds = s.samples * SAMPLE_SECONDS
         const eaten = (meals[id]?.plants ?? 0) + (meals[id]?.animals ?? 0)
-        return { id, rate: creatureMinutes > 0 ? eaten / creatureMinutes : 0, hunt: huntShare(s) }
+        return {
+          id,
+          rate: creatureSeconds > 0 ? eaten / (creatureSeconds / 60) : 0,
+          creatureSeconds,
+          hunt: huntShare(s),
+        }
       })
+      // A species that existed for a handful of creature-seconds produces a rate
+      // built on one meal landing or not landing. Thin, not starving.
+      .filter(r => r.creatureSeconds >= MIN_CREATURE_SECONDS)
+      .sort((a, b) => a.rate - b.rate)
+
+    const worst = rows.length ? rows[0] : null
     const med = median(rows.map(r => r.rate))
     return {
-      pass: med >= 0.25,
-      value: med,
-      bar: 'median species eats ≥ 0.25 times per creature-minute',
-      detail: rows
-        .sort((a, b) => a.rate - b.rate)
-        .map(r => `${r.id} ${r.rate.toFixed(2)}/min (hunt ${pct(r.hunt)})`)
-        .join('  '),
+      pass: worst === null || worst.rate >= 0.1,
+      abstained: worst === null,
+      value: worst?.rate ?? 0,
+      bar: 'every species eats ≥ 0.1 times per creature-minute (median 0.25 is the target)',
+      detail: rows.length
+        ? `median ${med.toFixed(2)}/min · ${rows
+            .map(r => `${r.id} ${r.rate.toFixed(2)}/min (hunt ${pct(r.hunt)})`)
+            .join('  ')}`
+        : 'no species lived long enough to measure',
     }
   },
 }
@@ -227,6 +264,15 @@ const readyAnimalsSeekMates: EvalCheck = {
   },
 }
 
+/**
+ * The last link, and the one that abstains rather than guess.
+ *
+ * In the baseline this read 1.00 and passed on a sample of **two stints** across
+ * the whole meadow — a species that set out to find a mate twice and got lucky
+ * twice. A ratio off n=2 is not a measurement, and a green tick beside it is
+ * actively misleading, because "arrival is fine" is exactly the conclusion that
+ * sends the next person to look somewhere else. Below the sample bar it says so.
+ */
 const mateStintsConvert: EvalCheck = {
   id: 'mate-stints-convert',
   what: 'Having set out to find a partner, an animal arrives often enough.',
@@ -235,14 +281,21 @@ const mateStintsConvert: EvalCheck = {
     const probe = meanProbe(runs.map(r => r.probe))
     const births = mergeBirths(runs)
     const rows = Object.entries(probe)
-      .filter(([, s]) => s.mateStints > 0)
+      .filter(([, s]) => s.mateStints >= MIN_MATE_STINTS)
       .map(([id, s]) => ({ id, rate: (births[id] ?? 0) / s.mateStints, stints: s.mateStints }))
+    const observed = Object.values(probe).reduce((n, s) => n + s.mateStints, 0)
     const med = median(rows.map(r => r.rate))
     return {
-      pass: med >= 0.1,
+      pass: rows.length === 0 || med >= 0.1,
+      abstained: rows.length === 0,
       value: med,
-      bar: 'median species converts ≥ 10% of mate stints into a birth',
-      detail: rows.map(r => `${r.id} ${(r.rate * 100).toFixed(0)}% of ${r.stints}`).join('  '),
+      bar:
+        rows.length === 0
+          ? `not measured — no species reached ${MIN_MATE_STINTS} mate stints (${observed} in total)`
+          : 'median species converts ≥ 10% of mate stints into a birth',
+      detail: rows.length
+        ? rows.map(r => `${r.id} ${(r.rate * 100).toFixed(0)}% of ${r.stints}`).join('  ')
+        : 'nothing went looking often enough to say whether looking works',
     }
   },
 }
@@ -269,6 +322,48 @@ const lineagesAdvance: EvalCheck = {
       value: med,
       bar: 'median surviving animal species averages generation ≥ 1.5',
       detail: gens.length ? `n=${gens.length} species-runs` : 'no species had ≥3 survivors',
+    }
+  },
+}
+
+/**
+ * The guard against winning by lawn.
+ *
+ * `no-animal-extinctions` is all-or-nothing, so once anything has died it stops
+ * distinguishing "the meadow lost its top predator" from "one tough grazer is
+ * all that is left". That difference is the whole difference between a world
+ * worth watching and a monoculture, and almost every cheap way to make the
+ * primary metric go up goes through it — a change that kills five species and
+ * makes the sixth immortal improves `T_ext` and ruins the game.
+ *
+ * Per run rather than pooled: a set of runs each keeping a different four species
+ * out of six would average to something respectable while no single world was.
+ */
+const speciesRichnessHolds: EvalCheck = {
+  id: 'species-richness-holds',
+  what: 'Most of the animal species seeded are still there at the end.',
+  points_at: 'Monoculture — one species outcompeting the roster rather than a food chain.',
+  run(runs) {
+    const ratios = runs.map(r => {
+      const seededAnimals = r.animals.length
+      if (seededAnimals === 0) return 1
+      const alive = r.animals.filter(id => (r.survivors[id] ?? 0) > 0).length
+      return alive / seededAnimals
+    })
+    const worst = Math.min(...ratios)
+    return {
+      pass: worst >= 0.8,
+      value: worst,
+      bar: '≥ 80% of seeded animal species alive at the end, in every run',
+      detail: runs
+        .map(
+          (r, i) =>
+            `seed ${r.seed}: ${r.animals.filter(id => (r.survivors[id] ?? 0) > 0).length}/${r.animals.length}` +
+            (ratios[i] < 0.8
+              ? ` (gone: ${r.animals.filter(id => !r.survivors[id]).join(', ')})`
+              : '')
+        )
+        .join('  '),
     }
   },
 }
@@ -305,6 +400,22 @@ function huntShare(s: SpeciesProbe): number {
  * rescales.
  */
 const SAMPLE_SECONDS = 6 / 60
+
+/**
+ * Creature-seconds a species must have been observed for before its foraging
+ * rate means anything. Ten seconds of one animal's life is one meal landing or
+ * not landing, which is thin rather than starving.
+ */
+const MIN_CREATURE_SECONDS = 60
+
+/**
+ * Mate stints a species needs before its conversion rate is reported.
+ *
+ * Five, because the baseline passed this check at 1.00 off two. The bar is on the
+ * denominator rather than the answer: below it the check abstains, which is the
+ * honest reading of "we saw two attempts".
+ */
+const MIN_MATE_STINTS = 5
 
 function mergeMeals(runs: RunMetrics[]): Record<string, { plants: number; animals: number }> {
   const out: Record<string, { plants: number; animals: number }> = {}
@@ -355,6 +466,7 @@ function describeBlockers(probe: Record<string, SpeciesProbe>): string {
 export const CHECKS: EvalCheck[] = [
   runOutlastsMaturity,
   noAnimalExtinctions,
+  speciesRichnessHolds,
   populationOscillates,
   foragingFeedsAnimals,
   breedingGateOpens,
@@ -366,4 +478,36 @@ export const CHECKS: EvalCheck[] = [
 
 export function runChecks(runs: RunMetrics[]): EvalResult[] {
   return CHECKS.map(c => ({ id: c.id, what: c.what, points_at: c.points_at, ...c.run(runs) }))
+}
+
+export interface TextMetric {
+  /** Median across runs of the first animal extinction, in world seconds. */
+  median: number
+  /** True when at least half the runs never lost an animal — the median is a floor. */
+  censored: boolean
+  /** Per run, ordered as given. */
+  perRun: { seed: number; second: number; censored: boolean; species: string | null }[]
+}
+
+/**
+ * `T_ext` across a set of runs — the number the experiment log is kept in.
+ *
+ * Not a check, deliberately. Checks are guardrails: they answer "is this world
+ * broken" and stop moving once the answer is yes. This is the thing being
+ * optimised, and it has no bar, because the bar is whatever the last experiment
+ * got. Comparing two arms means comparing this on the same seeds.
+ *
+ * A median rather than a mean: one run in which the whole meadow happens to hold
+ * together should not carry the verdict, and one in which the founder stalkers
+ * spawn on a lava field should not sink it.
+ */
+export function textMetric(runs: RunMetrics[]): TextMetric {
+  const perRun = runs.map(r => ({ seed: r.seed, ...firstAnimalExtinction(r) }))
+  return {
+    median: median(perRun.map(p => p.second)),
+    // If half or more of the runs never lost anything, the median second is
+    // itself a censored value: the truth is "at least this".
+    censored: perRun.filter(p => p.censored).length * 2 >= perRun.length,
+    perRun,
+  }
 }

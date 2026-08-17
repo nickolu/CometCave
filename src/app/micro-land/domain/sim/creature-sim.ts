@@ -597,10 +597,34 @@ function needsPartner(bp: CreatureBlueprint): boolean {
  * anywhere to put a baby are the caller's business, because they are questions
  * about the population rather than about this animal.
  */
+/**
+ * How full this species has to be before it may breed, after the global knob.
+ *
+ * `breedAt` lives on the blueprint, which made the single most-suspected number
+ * in the ecosystem the one thing that could not be A/B tested: the harness's
+ * `--set` only reaches `TUNING`, so every hypothesis about the breeding gate was
+ * untestable. `breedAtScale` is that lever, and it is a *multiplier* rather than
+ * an override so the roster keeps its shape — a stalker stays stricter than a
+ * mite at every setting, which an absolute value would flatten.
+ *
+ * **`breedAt: 1` is exempt, and that is not an off-by-one.** Three blueprints
+ * use it to mean "this thing does not breed" — a nymph that has to metamorphose
+ * into its adult form first, and one creature that is deliberately sterile.
+ * Scaled like everything else, turning the knob down to 0.7 would quietly hand
+ * those three a working reproductive system, and the run would be measuring a
+ * different roster than the one that ships. A blueprint asking for a completely
+ * full stomach is saying "not yet", not "nearly always".
+ */
+export function breedFullness(bp: CreatureBlueprint): number {
+  const want = bp.diet.breedAt
+  if (want >= 1) return want
+  return Math.max(0.05, Math.min(1, want * TUNING.breedAtScale))
+}
+
 function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
   return (
     c.breedCooldown <= 0 &&
-    1 - c.hunger >= bp.diet.breedAt &&
+    1 - c.hunger >= breedFullness(bp) &&
     c.hunger + TUNING.breedCost < 1 &&
     c.ageSeconds > breedingAge(c, bp)
   )
@@ -626,7 +650,7 @@ export type BreedBlocker = 'cooldown' | 'underfed' | 'no-headroom' | 'too-young'
 export function breedingBlockers(c: Creature, bp: CreatureBlueprint): BreedBlocker[] {
   const blockers: BreedBlocker[] = []
   if (c.breedCooldown > 0) blockers.push('cooldown')
-  if (1 - c.hunger < bp.diet.breedAt) blockers.push('underfed')
+  if (1 - c.hunger < breedFullness(bp)) blockers.push('underfed')
   if (c.hunger + TUNING.breedCost >= 1) blockers.push('no-headroom')
   if (c.ageSeconds <= breedingAge(c, bp)) blockers.push('too-young')
   return blockers

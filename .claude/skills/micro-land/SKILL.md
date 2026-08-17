@@ -175,6 +175,17 @@ regressions.
    settings panel does, so a number found by dragging a slider can be run through
    the checks before it becomes a default.
 
+   **`T_ext` prints above the checks, and it is the one that moves.** Median
+   world-second at which the first *seeded animal* species hit zero, `≥` meaning
+   nothing died and the number is a floor. Every check is a guardrail — binary,
+   and stuck on "still failing" for both arms of any experiment run while the
+   world is broken. `T_ext` is continuous, so a sequence of small improvements is
+   measurable. Optimise it; read the checks as the things it must not break.
+
+   **A `~` is not a pass.** A check with too thin a sample abstains rather than
+   report a confident number — `mate-stints-convert` once read 1.00 off two
+   observed attempts and passed. `~` means nobody measured it.
+
    **Mind the run length.** Maturity is `lifespanSeconds * lifespanScale * 0.2`,
    and `lifespanScale` is 10 — so a species with `lifespanSeconds: 150` cannot
    breed until t=300s, and the slowest animal in `grassland` matures at 760s. Any
@@ -213,9 +224,21 @@ is `1000 + i * 7919`, so run `i` is the same world on every checkout and a diff
 is attributable rather than a vibe:
 
 ```
-npm run eval:micro-land -- --seconds 1600 --runs 3 --diagnose --set breedAt=0.5
+npm run eval:micro-land -- --seconds 1600 --runs 3 --diagnose --set breedAtScale=0.7
 npm run eval:micro-land -- --json > after.json     # machine-readable, exit 1 on failure
 ```
+
+`--set` reaches `TUNING` and nothing else, so `--set breedAt=0.5` exits 2 with
+`Bad --set`: `breedAt` is per-species data on the blueprint. `breedAtScale`
+multiplies every blueprint's `breedAt` at the point it is read, which is how that
+number gets swept without editing 72 literals. Blueprints at `breedAt: 1` are
+exempt — three of them use it to mean "does not breed", and scaling them would
+quietly hand a nymph a reproductive system mid-experiment.
+
+`--seed-start N` shifts which seeds run without changing how many. Two sets that
+do not overlap under the same configuration (`--runs 3` against
+`--runs 3 --seed-start 3`) is how the noise floor gets measured, and a result
+smaller than the noise floor is not a result.
 
 `npm run eval:micro-land:smoke` is the fast version (120s, one seed) — it is a
 "did I break the harness" check, not an ecosystem check, and it will always fail
