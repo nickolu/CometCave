@@ -907,6 +907,7 @@ export function tickCreatures(
   tickMineralVeins(w, tickCount, rng)
   tickEdgeMask(w, tickCount)
   tickCorridorMask(w, tickCount)
+  tickBoneDecomposition(w, tickCount, rng)  // Bone slow decomposition (#3103)
   updateBiomeZones(w, tickCount, seasonFactor)
   tickSoilAge(w, tickCount)
   updateKeystoneSpecies(w, tickCount)
