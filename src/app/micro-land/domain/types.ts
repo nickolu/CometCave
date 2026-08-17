@@ -333,11 +333,6 @@ export interface CreatureBlueprint {
    */
   soilEngineer?: boolean
   /**
-   * True if this plant species fixes atmospheric nitrogen, enriching surrounding
-   * soil tiles. Issue #3148.
-   */
-  fixesNitrogen?: boolean
-  /**
    * Decomposer archetype: this creature eats from carcasses (any carcass within 2
    * tiles) and converts the consumed mass into soilNutrient at the carcass site.
    * Accelerates carcass removal while enriching the soil. Models fungi, bacteria,
@@ -1207,6 +1202,7 @@ export interface CreatureBlueprint {
    * (tidalHeight > 0.5), takes a hunger penalty. Issue #3191.
    */
   intertidal?: boolean
+  /**
    * When true, this species maintains a dominance hierarchy.
    * Rank is established through contests in look(); higher rank grants
    * food access priority and mate priority. Issue #3227.
@@ -2182,8 +2178,6 @@ export interface WorldState {
   /** Current tidal height offset (-1 to 1). Issue #3188. */
   tidalHeight?: number
 
-  /** Y-tile of the thermocline boundary. Set dynamically based on water depth. Issue #3249. */
-  thermoclineY?: number
   /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
