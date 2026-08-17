@@ -921,7 +921,6 @@ export function tickCreatures(
     MATERIAL_INDEX['snow'],
   )
   tickGroundwater(w, tickCount, IS_LIQUID)
-  tickBoneDecomposition(w, tickCount, rng)  // Bone slow decomposition (#3103)
 
   // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
   const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
@@ -1247,6 +1246,8 @@ export function tickCreatures(
       const outcome = facingRight > ducks.length / 2 ? 'right' : 'left'
       events.push({ kind: 'notice', blueprintId: bpId, x: 0, y: 0, text: `${dbp.name} Town Hall: ${issue} discussed. Decision Made: [Inconclusive] (majority faced ${outcome})` })
       break
+    }
+  }
   // --- Otter Oligarchy: 5 oligarchs elected by fish catches each season. Issue #3308. ---
   if (TUNING.seasonPeriod > 0) {
     const currentSeason = Math.floor(w.elapsed / TUNING.seasonPeriod)
