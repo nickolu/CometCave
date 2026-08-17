@@ -2180,6 +2180,7 @@ export interface WorldState {
    * hunger drain. Initialized lazily. Issues #3099–#3103.
    */
   soilNutrient?: Float32Array
+  /**
    * Current wind direction X component [-0.5, 0.5]. Positive = eastward (right).
    * Slow sinusoidal oscillation; updated each tick. Issue #3153.
    */
