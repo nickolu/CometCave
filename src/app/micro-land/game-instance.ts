@@ -507,6 +507,7 @@ export class GameInstance {
         this.nutrientHeatmap = w.soilNutrient
       } else {
         this.nutrientHeatmap = null
+      }
       // --- temperature overlay ---
       const tempEnabled = useMicroLand.getState().tempOverlayEnabled
       if (tempEnabled) {
