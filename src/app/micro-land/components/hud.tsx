@@ -117,6 +117,8 @@ export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
   const replaySnapshots = useMicroLand(s => s.replaySnapshots)
   const soundEnabled = useMicroLand(s => s.soundEnabled)
   const setSoundEnabled = useMicroLand(s => s.setSoundEnabled)
+  const tempOverlayEnabled = useMicroLand(s => s.tempOverlayEnabled)
+  const setTempOverlayEnabled = useMicroLand(s => s.setTempOverlayEnabled)
 
   const setSummonOpen = useMicroLand(s => s.setSummonOpen)
   const tool = useMicroLand(s => s.tool)
@@ -574,6 +576,23 @@ export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
                 title="Toggle ambient sound"
               >
                 {soundEnabled ? 'Sound on' : 'Sound off'}
+              </button>
+
+              {/* Temperature overlay */}
+              <button
+                type="button"
+                className="cc-btn"
+                onClick={() => setTempOverlayEnabled(!tempOverlayEnabled)}
+                aria-pressed={tempOverlayEnabled}
+                title="Show a temperature gradient overlay across the world"
+                style={{
+                  ...overflowItem,
+                  ...(tempOverlayEnabled
+                    ? { borderColor: 'var(--cc-mint)', color: 'var(--cc-mint)', background: 'rgba(100,220,200,0.08)' }
+                    : {}),
+                }}
+              >
+                {tempOverlayEnabled ? 'Temp overlay on' : 'Temp overlay'}
               </button>
 
               {/* Settings */}
