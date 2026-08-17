@@ -589,6 +589,7 @@ export function sanitizeBlueprint(
     glow: clamp(b.glow, 0, 1, 0),
     summoned: opts.summoned ?? false,
     soilEngineer: b.soilEngineer === true,
+    decomposer: b.decomposer === true,
     cryptic: b.cryptic === true,
     disruptivePattern: b.disruptivePattern === true,
     clearingMaintainer: b.clearingMaintainer === true,
@@ -716,6 +717,12 @@ export function sanitizeBlueprint(
     matingSystem: ['monogamy', 'polygyny', 'polyandry', 'promiscuity'].includes(b.matingSystem as string) ? b.matingSystem as 'monogamy' | 'polygyny' | 'polyandry' | 'promiscuity' : undefined,
     semelparous: typeof b.semelparous === 'boolean' ? b.semelparous : undefined,
     ageReproductionCurve: ['peak-early', 'peak-middle', 'peak-late'].includes(b.ageReproductionCurve as string) ? b.ageReproductionCurve as 'peak-early' | 'peak-middle' | 'peak-late' : undefined,
+    earthwormElevator: typeof b.earthwormElevator === 'boolean' ? b.earthwormElevator : undefined,
+    frogFundamentalism: typeof b.frogFundamentalism === 'boolean' ? b.frogFundamentalism : undefined,
+    gopherGovernment: typeof b.gopherGovernment === 'boolean' ? b.gopherGovernment : undefined,
+    beetleInternet: typeof b.beetleInternet === 'boolean' ? b.beetleInternet : undefined,
+    moleMailCarrier: typeof b.moleMailCarrier === 'boolean' ? b.moleMailCarrier : undefined,
+    newtNewspaper: typeof b.newtNewspaper === 'boolean' ? b.newtNewspaper : undefined,
     winteringX: typeof b.winteringX === 'number' ? Math.round(b.winteringX) : undefined,
     summerX: typeof b.summerX === 'number' ? Math.round(b.summerX) : undefined,
     stopoverHabitat: Array.isArray(b.stopoverHabitat)
@@ -775,6 +782,7 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
+    fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
       ? Math.max(1, Math.min(4, Math.floor(b.successionStage)))
@@ -799,6 +807,12 @@ export function sanitizeBlueprint(
     squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
     voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
     weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
+    echolocates: typeof b.echolocates === 'boolean' ? b.echolocates : undefined,
+    stressSignaler: typeof b.stressSignaler === 'boolean' ? b.stressSignaler : undefined,
+    stressReceiver: typeof b.stressReceiver === 'boolean' ? b.stressReceiver : undefined,
+    packHunting: typeof b.packHunting === 'boolean' ? b.packHunting : undefined,
+    coordinationRange: typeof b.coordinationRange === 'number' ? Math.max(1, b.coordinationRange) : undefined,
+    packSizeThreshold: typeof b.packSizeThreshold === 'number' ? Math.max(0.1, b.packSizeThreshold) : undefined,
     venomous: typeof b.venomous === 'boolean' ? b.venomous : undefined,
     venomPotency: typeof b.venomPotency === 'number' ? Math.max(0, Math.min(1, b.venomPotency)) : undefined,
     venomResistance: typeof b.venomResistance === 'number' ? Math.max(0, Math.min(1, b.venomResistance)) : undefined,
@@ -810,6 +824,10 @@ export function sanitizeBlueprint(
     derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
     trophicLevel: typeof b.trophicLevel === 'number' && b.trophicLevel >= 1 ? Math.round(b.trophicLevel) : undefined,
     successionStage: typeof b.successionStage === 'number' && b.successionStage >= 1 && b.successionStage <= 4 ? Math.round(b.successionStage) : undefined,
+    antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
+    bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
+    quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
+    raccoonRealEstate: typeof b.raccoonRealEstate === 'boolean' ? b.raccoonRealEstate : undefined,
   }
 }
 

@@ -1163,6 +1163,60 @@ export function tickMarshDetritus(w: WorldState, tickCount: number, dt: number):
   }
 }
 
+/**
+ * Soil nutrient cycle: fallow recovery, runoff loss near water tiles.
+ * Runs every 60 ticks. Plant uptake and nitrogen fixation are handled
+ * per-creature in tickCreatures(). Issues #3144, #3149, #3151.
+ */
+export function tickSoilNutrient(w: WorldState, tickCount: number): void {
+  if (tickCount % 60 !== 0) return
+  if (!w.soilNutrient) {
+    w.soilNutrient = new Float32Array(WORLD_W * WORLD_H)
+    w.soilNutrient.fill(1.0)
+  }
+
+  const dirtIdx = MATERIAL_INDEX.dirt
+  const mudIdx = MATERIAL_INDEX.mud
+  const waterIdx = MATERIAL_INDEX.water
+  const grassIdx = MATERIAL_INDEX.grass
+
+  // Fallow recovery: bare soil slowly regains fertility. Issue #3151.
+  // Check every 4th column to stay cheap.
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x += 4) {
+      const i = y * WORLD_W + x
+      const tile = w.tiles[i]
+      if (tile === dirtIdx || tile === mudIdx || tile === grassIdx) {
+        if (w.soilNutrient[i] < 1.0) {
+          w.soilNutrient[i] = Math.min(1.0, w.soilNutrient[i] + 0.00003)
+        }
+      }
+    }
+  }
+
+  // Nutrient runoff: soil adjacent to water loses a small amount. Issue #3149.
+  // Only runs every 5 minutes (300 ticks).
+  if (tickCount % 300 !== 0) return
+  for (let y = 0; y < WORLD_H; y++) {
+    for (let x = 0; x < WORLD_W; x++) {
+      if (w.tiles[y * WORLD_W + x] !== waterIdx) continue
+      // Adjacent soil tiles lose a small fraction to runoff
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const nx = (x + dx + WORLD_W) % WORLD_W
+          const ny = y + dy
+          if (ny < 0 || ny >= WORLD_H) continue
+          const ni = ny * WORLD_W + nx
+          const ntile = w.tiles[ni]
+          if (ntile === dirtIdx || ntile === mudIdx) {
+            w.soilNutrient[ni] = Math.max(0, w.soilNutrient[ni] - 0.004)
+          }
+        }
+      }
+    }
+  }
+}
+
 export function countByBlueprint(w: WorldState): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const c of w.creatures) counts[c.blueprintId] = (counts[c.blueprintId] ?? 0) + 1
@@ -1749,6 +1803,43 @@ export function tickGroundwater(w: WorldState, tickCount: number, isLiquid: Uint
     }
   }
 }
+
+/**
+ * Bone slow decomposition (#3103): bone tiles near moisture slowly convert to soil
+ * and deposit nutrients, modelling the long-term breakdown of skeletal material.
+ *
+ * Runs every 300 ticks. Samples 20 random tiles looking for bone. Each bone tile
+ * in moist conditions has a 3% chance to convert to soil with a +0.2 nutrient boost.
+ */
+export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () => number): void {
+  if (tickCount % 300 !== 0) return
+  if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
+
+  const { width, height, tiles, moisture } = w
+  const boneIdx = MATERIAL_INDEX['bone'] ?? -1
+  const dirtIdx = MATERIAL_INDEX['dirt'] ?? -1
+  if (boneIdx < 0) return
+
+  for (let i = 0; i < 20; i++) {
+    const x = Math.floor(rng() * width)
+    const y = Math.floor(rng() * height)
+    const tileI = y * width + x
+
+    if (tiles[tileI] !== boneIdx) continue
+
+    const moistureHere = moisture?.[tileI] ?? 0
+    if (moistureHere < 0.2) continue // bone needs moisture to decompose
+
+    if (rng() < 0.03) {
+      // Convert bone tile to dirt (if dirt exists) and add nutrients.
+      if (dirtIdx >= 0) {
+        w.tiles[tileI] = dirtIdx
+      }
+      w.soilNutrient[tileI] = Math.min(1, w.soilNutrient[tileI] + 0.2)
+    }
+  }
+}
+
 
 /**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
