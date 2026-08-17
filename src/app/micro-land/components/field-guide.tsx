@@ -969,6 +969,10 @@ function GuideEntry({
   keystoneSpeciesIds?: ReadonlySet<string>
   isPlacing?: boolean
 }) {
+  // Read from the store rather than threaded down as a prop: the invasion
+  // front is only rendered for the handful of entries whose species is
+  // invasive, and the parent pane has no other use for it.
+  const invasionFront = useMicroLand(s => s.invasionFront)
   const eats = blueprints.filter(other => canEat(bp, other))
   const eatenBy = blueprints.filter(other => canEat(other, bp))
   const bpColor = Object.values(bp.art.palette)[0] ?? '#888888'

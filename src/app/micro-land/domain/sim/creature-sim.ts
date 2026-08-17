@@ -1573,6 +1573,20 @@ export function tickCreatures(
       continue
     }
 
+    /**
+     * Whether this creature is a rooted plant.
+     *
+     * Declared at the top of the loop body rather than down in the breeding
+     * section, which is where it is most used and where it used to live.
+     * Habitat features added since — riparian buffers, leaf litter subsidy,
+     * technique innovation — read it hundreds of lines earlier, and a `const`
+     * read above its own declaration is not a hoisting convenience, it is a
+     * temporal dead zone throw. It killed `step()` on the first plant to tick,
+     * which is every world the moment fertile ground is painted. Keep this
+     * above every read.
+     */
+    const isPlant = bp.move.kind === 'root'
+
     // `bw`/`bh` are what the creature *looks* like — used for sight, biting and
     // anything the player can see. `body` is what it collides with. For all but
     // the largest creatures the two are identical.
@@ -1845,7 +1859,10 @@ export function tickCreatures(
     }
 
     // Quicksand: walkers progressively slow and die after 12 s if they can't escape.
-    if (bp.body.locomotion === 'walk') {
+    // `move.kind`, not the `body.locomotion` this used to read — that field went
+    // away with the digging feature, so this whole quicksand branch had been
+    // dead since. Walkers sink again.
+    if (bp.move.kind === 'walk') {
       const qs_fx = Math.floor(c.x + body.dx + body.w / 2)
       const qs_fy = Math.floor(c.y + body.dy + body.h)
       if (MATERIAL_BY_INDEX[tileAt(w, qs_fx, qs_fy)]?.id === 'quicksand') {
@@ -2978,7 +2995,7 @@ export function tickCreatures(
 
     // --- senses ---------------------------------------------------------
     if ((tickCount + c.id) % SENSE_EVERY === 0) {
-      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng)
+      look(w, c, bp, bw, bh, dead, events, massEmergingSpecies, rng, dt)
     }
 
     // --- burrow retreat: when threatened or hungry, head back to burrow. Issue #3419. ---
@@ -3805,7 +3822,7 @@ export function tickCreatures(
     if ((c.caste === 'worker' || c.caste === 'soldier') && bp.eusocialSpecies) continue
 
     // --- breeding -------------------------------------------------------
-    const isPlant = bp.move.kind === 'root'
+    // `isPlant` is declared at the top of the loop body — see the note there.
     // Phenological gate: species with a breedingGdd threshold only mate when
     // accumulated warmth (0–1000) has reached their seasonal window. When
     // seasons are disabled (seasonAmplitude=0), worldGdd returns 1000, so the
@@ -4753,7 +4770,8 @@ function look(
   dead: Set<number>,
   events: SimEvent[],
   massEmergingSpecies: ReadonlySet<string>,
-  rng: Rng
+  rng: Rng,
+  dt: number
 ): void {
   const cx = c.x + bw / 2
   const cy = c.y + bh / 2

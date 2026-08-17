@@ -24,7 +24,8 @@ import { MATERIAL_IDS } from '@/app/micro-land/domain/config/materials'
 import { makeRng } from '@/app/micro-land/domain/sim/prng'
 import { registerBlueprint } from '@/app/micro-land/domain/sim/world'
 import { neutralTraits } from '@/app/micro-land/domain/traits'
-import type { Creature, CreatureMood, WorldState } from '@/app/micro-land/domain/types'
+import type { Creature, CreatureMood, Traits, WorldState } from '@/app/micro-land/domain/types'
+import { wrapCol } from '@/app/micro-land/domain/wrap'
 
 import type { SavedCreature, SavedGenerator, SavedSpawner, WorldSnapshot } from './types'
 
@@ -33,6 +34,23 @@ const MOODS: CreatureMood[] = ['wander', 'hunt', 'flee', 'eat', 'rest', 'mate']
 /** Two decimals is a hundredth of a tile — far finer than a pixel can show. */
 function round(n: number): number {
   return Math.round(n * 100) / 100
+}
+
+/**
+ * Round every trait for storage, whatever the trait set currently is.
+ *
+ * Driven off the object's own keys rather than a written-out list, so that a
+ * trait added to `Traits` is saved without anyone having to remember this file.
+ * `hue` is a whole number of degrees; everything else is a multiplier where two
+ * decimals is already finer than the simulation can act on.
+ */
+function roundTraits(traits: Traits): Partial<Traits> {
+  const out: Record<string, number> = {}
+  for (const [key, value] of Object.entries(traits)) {
+    if (typeof value !== 'number' || !Number.isFinite(value)) continue
+    out[key] = key === 'hue' ? Math.round(value) : round(value)
+  }
+  return out as Partial<Traits>
 }
 
 /**
@@ -157,13 +175,14 @@ export function snapshotWorld(w: WorldState): WorldSnapshot {
       // their blueprints would quietly delete every line the player had grown —
       // and it would look like nothing had happened, because the animals would
       // all still be there.
-      traits: {
-        speed: round(c.traits.speed),
-        sight: round(c.traits.sight),
-        lifespan: round(c.traits.lifespan),
-        hue: Math.round(c.traits.hue),
-        shade: round(c.traits.shade),
-      },
+      //
+      // Every trait, not the five this listed by hand until the set grew to
+      // fourteen. The hand-written list did not fail loudly when a trait was
+      // added — it just stopped saving it, and the thaw handed back neutral, so
+      // a shelved world quietly lost its camouflage, toxicity, cooperation and
+      // six others every time it was reopened. Spreading the object means a
+      // trait added later is persisted the day it exists.
+      traits: roundTraits(c.traits),
       name: c.name,
     })),
     blueprints,
@@ -210,9 +229,39 @@ function thaw(saved: SavedCreature): Creature {
     mealsEaten: saved.mealsEaten,
     children: saved.children,
     generation: saved.generation,
-    traits: saved.traits ? { ...saved.traits } : neutralTraits(),
+    // Merged over neutral rather than spread alone: a save written before a
+    // trait existed has no key for it, and `undefined` on a multiplier that
+    // gets multiplied is NaN, not "no effect".
+    traits: { ...neutralTraits(), ...saved.traits },
     name: saved.name,
     huntPassCount: 0,
+
+    // Transient state, rebuilt rather than stored.
+    //
+    // These are all required on `Creature` and none of them were being set
+    // here, so a thawed creature carried `undefined` where the simulation
+    // expects a number — and `undefined - dt` is NaN, which spreads to the
+    // creature's position on the next tick and never comes back. The type
+    // error that would have said so was masked by the trait mismatch directly
+    // above it, which is the whole argument for not having a `tsc` backlog.
+    //
+    // Zero is the honest value for every timer: a world reopens with nobody
+    // mid-stun, mid-migration or mid-symbiosis, and each one refills within a
+    // tick or two of play. `homeX`/`homeY` are the exception — a creature's
+    // home is where it is standing when the world comes back, matching what
+    // `spawnCreature` does for anything placed rather than born.
+    huntBlockedId: null,
+    poisoned: 0,
+    homeX: wrapCol(Math.round(saved.x)),
+    homeY: Math.round(saved.y),
+    migrateTimer: 0,
+    packTimer: 0,
+    sinking: 0,
+    stunTimer: 0,
+    symbiosisTimer: 0,
+    sick: 0,
+    carryingSeed: null,
+    seedTimer: 0,
   }
 }
 

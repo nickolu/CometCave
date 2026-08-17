@@ -1313,6 +1313,26 @@ export interface CreatureBlueprint {
   moleMailCarrier?: boolean
   /** When true, this species periodically publishes headlines about local events. Issue #3307. */
   newtNewspaper?: boolean
+  /** When true, this species is cold-blooded: slower in cold biomes, faster in hot ones. Issue #3134. */
+  coldBlooded?: boolean
+  /** Minimum comfortable temperature [0,1]; hunger penalty below this. Issue #3136. */
+  tempMin?: number
+  /** Maximum comfortable temperature [0,1]; hunger penalty above this. Issue #3136. */
+  tempMax?: number
+  /** When true, females age slightly slower than males (sexual dimorphism). Issue #3165. */
+  sexualDimorphism?: boolean
+  /** When true, this creature leaves chemical pheromone trails that guide conspecifics. Issue #3234. */
+  pheromoneDepositor?: boolean
+  /** Blueprint ID of the definitive host for multi-host parasites. Issue #3185. */
+  intermediateHostId?: string
+  /** When true, this species builds coral reef structures. Issue #3253. */
+  coralPolyp?: boolean
+  /** When true, this species emits audible signals that propagate through the world. Issue #3241. */
+  soundEmitter?: boolean
+  /** When true, this species can detect sound signals from soundEmitter species. Issue #3241. */
+  soundReceptive?: boolean
+  /** Maximum tile distance at which this species detects sound. Issue #3241. */
+  soundReceptiveRange?: number
 }
 
 /**
@@ -1321,6 +1341,11 @@ export interface CreatureBlueprint {
  * `biomeZoneAt(w, y)` returns one of these based on the tile's y-row.
  * Zones map the world's height into rough latitudinal bands: the sky rows
  * are the warmest (tropical), the deep underground rows are the coldest (ice-cap).
+ *
+ * This is also the Whittaker classification assigned per horizontal region
+ * band (issue #3377) — that landed as a second, byte-identical copy of this
+ * union further down the file, which is a redeclaration rather than a new
+ * type. One declaration, two readings of it.
  */
 export type BiomeZoneType =
   | 'tropical-rainforest'
@@ -1871,6 +1896,12 @@ export interface Creature {
   moleMailFoodY?: number
   /** Countdown until this newt publishes the next headline. Issue #3307. */
   newtNewsTimer?: number
+  /** Seconds this creature has spent without a conspecific in range (genetic isolation). Issue #3164. */
+  isolationTime?: number
+  /** Biological sex, assigned at birth for species with sexualDimorphism. Issue #3165. */
+  sex?: 'male' | 'female'
+  /** Current lifecycle stage for multi-host parasites ('larval' | 'adult'). Issue #3185. */
+  lifecycleStage?: string
 }
 
 /**
@@ -2344,6 +2375,12 @@ export interface WorldState {
   lastFrogRitualSeason?: number
   /** Creature id of the Gopher Government Administrator. Issue #3300. */
   gopherAdminId?: number
+  /** Per-tile temperature grid, [0,1]. Updated by heat conduction each tick. Issue #3132. */
+  tileTemp?: Float32Array
+  /** True once the Crab Constitution has been ratified (population first reached 10). Issue #3296. */
+  crabConstitutionRatified?: boolean
+  /** World elapsed time of the last Duck Town Hall vote. Issue #3297. */
+  duckTownHallTime?: number
 }
 
 // ---------------------------------------------------------------------------

@@ -24,7 +24,7 @@
  * out rather than handed over as-is.
  */
 import type { SanitizedTerrain } from '@/app/micro-land/domain/terrain'
-import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
+import type { CreatureBlueprint, Traits } from '@/app/micro-land/domain/types'
 
 /**
  * Bump when an old save would be *misread* rather than merely come up short.
@@ -74,8 +74,16 @@ export interface SavedCreature {
    * creatures, which is exactly what the sanitizer does with a missing value —
    * and neutral is the right answer, not a lossy one: a world written before the
    * mechanic existed genuinely had no drift in it.
+   *
+   * `Partial` rather than the full `Traits` for the same reason it is optional:
+   * every save written before a given trait existed is missing it, and there
+   * have been three such waves now. The thaw merges whatever is present over
+   * `neutralTraits()`, so an absent field is neutral rather than undefined.
+   * Spelling the five original traits out here — as this did until the set grew
+   * to fourteen — silently dropped every trait added since on save *and* on
+   * load, which reset nine of them to neutral on every reopen.
    */
-  traits?: { speed: number; sight: number; lifespan: number; hue: number; shade: number }
+  traits?: Partial<Traits>
   name: string | null
 }
 

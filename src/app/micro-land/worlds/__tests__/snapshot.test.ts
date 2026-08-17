@@ -4,6 +4,7 @@ import { sanitizeBlueprint } from '@/app/micro-land/domain/blueprint'
 import { MATERIAL_IDS, MATERIAL_INDEX } from '@/app/micro-land/domain/config/materials'
 import { WORLD_H, WORLD_W } from '@/app/micro-land/domain/constants'
 import { createWorld, registerBlueprint, spawnCreature } from '@/app/micro-land/domain/sim/world'
+import { neutralTraits } from '@/app/micro-land/domain/traits'
 import {
   decodeTiles,
   encodeTiles,
@@ -118,7 +119,20 @@ describe('freezing and thawing a world', () => {
    */
   it('brings back what each creature inherited', () => {
     const { w } = populatedWorld()
-    w.creatures[0].traits = { speed: 1.37, sight: 0.72, lifespan: 1.15, hue: 214, shade: 0.9 }
+    // Spread over neutral rather than written out: the trait set has grown from
+    // five to fourteen, and a hand-written literal here is what stopped this
+    // test noticing that the save format had been silently dropping nine of
+    // them. `toxicity` and `camouflage` are asserted below for that reason.
+    w.creatures[0].traits = {
+      ...neutralTraits(),
+      speed: 1.37,
+      sight: 0.72,
+      lifespan: 1.15,
+      hue: 214,
+      shade: 0.9,
+      toxicity: 0.61,
+      camouflage: 0.44,
+    }
 
     const fresh = createWorld(1)
     restoreSnapshot(fresh, snapshotWorld(w))
@@ -129,15 +143,13 @@ describe('freezing and thawing a world', () => {
     expect(first.traits.lifespan).toBeCloseTo(1.15, 2)
     expect(first.traits.hue).toBeCloseTo(214, 0)
     expect(first.traits.shade).toBeCloseTo(0.9, 2)
+    // The two that were being dropped. Not decoration: these fail against the
+    // old five-field save format and pass against the current one.
+    expect(first.traits.toxicity).toBeCloseTo(0.61, 2)
+    expect(first.traits.camouflage).toBeCloseTo(0.44, 2)
     // Untouched creatures stay exactly their species, which is what makes a
     // placed creature and a born one different things.
-    expect(fresh.creatures[1].traits).toEqual({
-      speed: 1,
-      sight: 1,
-      lifespan: 1,
-      hue: 0,
-      shade: 1,
-    })
+    expect(fresh.creatures[1].traits).toEqual(neutralTraits())
   })
 
   it('thaws a world saved before creatures inherited anything into neutral ones', () => {

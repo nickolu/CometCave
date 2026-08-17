@@ -1040,11 +1040,18 @@ export function tickLight(w: WorldState, tickCount: number): void {
       if (IS_SOLID[tileIdx] === 1) {
         light *= 0.25
       } else {
-        // Semi-solid tiles (plants, water) attenuate light partially. Issue #3170.
+        // Semi-solid tiles attenuate light partially. Issue #3170.
+        //
+        // Only `moss` and `grass` are checked because they are the only growth
+        // materials in the table. This originally also tested 'plant',
+        // 'leaves', 'fern' and 'flower', none of which are materials — plants
+        // are *creatures* here, not tiles, so a plant can never appear in the
+        // grid. Those branches were unreachable and are gone; shading from
+        // standing vegetation would have to read `w.creatures` instead.
         const matId = MATERIAL_BY_INDEX[tileIdx]?.id
-        if (matId === 'plant' || matId === 'leaves' || matId === 'moss' || matId === 'fern' || matId === 'grass' || matId === 'flower') {
+        if (matId === 'moss' || matId === 'grass') {
           light *= 0.6  // canopy plants reduce light by 40%
-        } else if (matId === 'water' || matId === 'salt-water') {
+        } else if (matId === 'water') {
           light *= 0.85  // water reduces light by 15%
         }
       }
@@ -1724,7 +1731,9 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
   for (let i = 0; i < w.tiles.length; i++) {
     const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
     if (matId === 'lava') sulfurEmitted += 0.0004
-    if (matId === 'marble' || matId === 'limestone') limestoneCount++
+    // `marble` is the only carbonate in the material table — the 'limestone'
+    // this used to also test is not a material and never matched.
+    if (matId === 'marble') limestoneCount++
   }
 
   // --- Step 2: Update atmospheric sulfur (decays naturally, buffered by limestone) ---
@@ -1740,7 +1749,8 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
 
   for (let i = 0; i < w.tiles.length; i++) {
     const matId = MATERIAL_BY_INDEX[w.tiles[i]]?.id
-    const isWater = matId === 'water' || matId === 'salt-water'
+    // 'salt-water' is not a material; `water` is the only liquid water here.
+    const isWater = matId === 'water'
     const isMoist = (w.moisture?.[i] ?? 0) > 0.5
 
     if (!isWater && !isMoist) continue
@@ -1755,7 +1765,7 @@ export function tickAcidRain(w: WorldState, tickCount: number, _rng: () => numbe
       const ni = (y + dy) * w.width + (x + dx)
       if (ni >= 0 && ni < w.tiles.length) {
         const nMat = MATERIAL_BY_INDEX[w.tiles[ni]]?.id
-        if (nMat === 'marble' || nMat === 'limestone') {
+        if (nMat === 'marble') {
           w.tilePH[i] = Math.min(7.0, w.tilePH[i] + 0.3)
           break
         }

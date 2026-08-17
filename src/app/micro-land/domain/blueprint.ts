@@ -483,6 +483,7 @@ export function sanitizeBlueprint(
   const move = (b.move ?? {}) as Record<string, unknown>
   const diet = (b.diet ?? {}) as Record<string, unknown>
   const senses = (b.senses ?? {}) as Record<string, unknown>
+  const phenology = (b.phenology ?? {}) as Record<string, unknown>
   const habitat = (b.habitat ?? {}) as Record<string, unknown>
   const death = (b.death ?? {}) as Record<string, unknown>
 
@@ -733,9 +734,14 @@ export function sanitizeBlueprint(
     canLearnFoodWashing: !!b.canLearnFoodWashing,
     canInnovateTechniques: b.canInnovateTechniques !== undefined ? !!b.canInnovateTechniques : undefined,
     elderWisdom: !!b.elderWisdom,
-    phenology: b.phenology?.breedingGdd !== undefined
-      ? { breedingGdd: Math.max(0, Math.min(1000, b.phenology.breedingGdd)) }
-      : undefined,
+    // Narrowed by `typeof` rather than tested against `undefined`: `raw` is
+    // hostile input, and a `breedingGdd` of "soon" passes an !== undefined check
+    // and then comes out of Math.min as NaN — which, on a gate that decides
+    // whether a species may breed at all, is a species that never breeds again.
+    phenology:
+      typeof phenology.breedingGdd === 'number' && Number.isFinite(phenology.breedingGdd)
+        ? { breedingGdd: Math.max(0, Math.min(1000, phenology.breedingGdd)) }
+        : undefined,
     brainSize:
       typeof b.brainSize === 'number' && b.brainSize >= 0 && b.brainSize <= 1
         ? b.brainSize
@@ -821,10 +827,6 @@ export function sanitizeBlueprint(
     kinSelection: typeof b.kinSelection === 'boolean' ? b.kinSelection : undefined,
     alarmCaller: typeof b.alarmCaller === 'boolean' ? b.alarmCaller : undefined,
     aposematic: typeof b.aposematic === 'boolean' ? b.aposematic : undefined,
-    otterOligarchy: typeof b.otterOligarchy === 'boolean' ? b.otterOligarchy : undefined,
-    squirrelSocialism: typeof b.squirrelSocialism === 'boolean' ? b.squirrelSocialism : undefined,
-    voleVoting: typeof b.voleVoting === 'boolean' ? b.voleVoting : undefined,
-    weaselTribunal: typeof b.weaselTribunal === 'boolean' ? b.weaselTribunal : undefined,
     // Issue #3234
     pheromoneDepositor: 'pheromoneDepositor' in b ? !!b.pheromoneDepositor : undefined,
     // Issue #3185
@@ -852,17 +854,8 @@ export function sanitizeBlueprint(
     packHunting: typeof b.packHunting === 'boolean' ? b.packHunting : undefined,
     coordinationRange: typeof b.coordinationRange === 'number' ? Math.max(1, b.coordinationRange) : undefined,
     packSizeThreshold: typeof b.packSizeThreshold === 'number' ? Math.max(0.1, b.packSizeThreshold) : undefined,
-    venomous: typeof b.venomous === 'boolean' ? b.venomous : undefined,
-    venomPotency: typeof b.venomPotency === 'number' ? Math.max(0, Math.min(1, b.venomPotency)) : undefined,
-    venomResistance: typeof b.venomResistance === 'number' ? Math.max(0, Math.min(1, b.venomResistance)) : undefined,
-    territorialBlueprintFlag: typeof b.territorialBlueprintFlag === 'boolean' ? b.territorialBlueprintFlag : undefined,
-    territoryRadius: typeof b.territoryRadius === 'number' ? Math.max(1, b.territoryRadius) : undefined,
-    deepWaterSpecialist: typeof b.deepWaterSpecialist === 'boolean' ? b.deepWaterSpecialist : undefined,
-    shallowWaterSpecialist: typeof b.shallowWaterSpecialist === 'boolean' ? b.shallowWaterSpecialist : undefined,
     // Lineage, food web, and succession features (#3121, #3126, #3167)
     derivedFrom: typeof b.derivedFrom === 'string' && b.derivedFrom.length > 0 ? b.derivedFrom : undefined,
-    trophicLevel: typeof b.trophicLevel === 'number' && b.trophicLevel >= 1 ? Math.round(b.trophicLevel) : undefined,
-    successionStage: typeof b.successionStage === 'number' && b.successionStage >= 1 && b.successionStage <= 4 ? Math.round(b.successionStage) : undefined,
     antTheater: typeof b.antTheater === 'boolean' ? b.antTheater : undefined,
     bearBanking: typeof b.bearBanking === 'boolean' ? b.bearBanking : undefined,
     quailQuarantine: typeof b.quailQuarantine === 'boolean' ? b.quailQuarantine : undefined,
