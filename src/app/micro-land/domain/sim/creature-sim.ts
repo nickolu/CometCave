@@ -543,7 +543,25 @@ function compareX(a: Creature, b: Creature): number {
 function breedingAge(c: Creature, bp: CreatureBlueprint): number {
   return bp.move.kind === 'root'
     ? TUNING.plantMaturity
-    : lifespanOf(c, bp) * TUNING.lifespanScale * 0.2
+    : founderMaturityAge(bp) * c.traits.lifespan
+}
+
+/**
+ * The age a founder of this species can first breed at, in world seconds.
+ *
+ * Same number `breedingAge` computes, for a creature whose lifespan trait is
+ * still neutral — which every founder's is. Exported because the harness has to
+ * be able to ask "is this run even long enough to see breeding?": maturity is
+ * `lifespanSeconds * lifespanScale * 0.2`, and with `lifespanScale` at 10 that
+ * is *twice* the blueprint's `lifespanSeconds`. A 150-second hopper cannot breed
+ * until t=300s, which is exactly the harness's default run length — so the
+ * default run had been measuring the fraction of a creature's life during which
+ * it is a child, and reporting it as a breeding failure.
+ */
+export function founderMaturityAge(bp: CreatureBlueprint): number {
+  return bp.move.kind === 'root'
+    ? TUNING.plantMaturity
+    : bp.diet.lifespanSeconds * TUNING.lifespanScale * 0.2
 }
 
 /**
@@ -586,6 +604,32 @@ function readyToBreed(c: Creature, bp: CreatureBlueprint): boolean {
     c.hunger + TUNING.breedCost < 1 &&
     c.ageSeconds > breedingAge(c, bp)
   )
+}
+
+/** Which clause of `readyToBreed` a creature is currently failing. */
+export type BreedBlocker = 'cooldown' | 'underfed' | 'no-headroom' | 'too-young'
+
+/**
+ * The same four questions `readyToBreed` asks, answered individually.
+ *
+ * Exists for the harness, not the simulation: "no animal is breeding" is a
+ * symptom with four very different causes, and a boolean cannot tell you which
+ * one you have. Knowing that a grazer is ready 40% of the time but never in
+ * `mate` mood points at the priority order in `look`; knowing it is never ready
+ * at all points at `breedAt` or `breedCost`. Those are opposite fixes.
+ *
+ * Deliberately *not* what `readyToBreed` is built from. That runs for every
+ * creature in the sense pass and must stay a short-circuiting boolean rather
+ * than something that allocates an array per call. The two are pinned together
+ * by a test instead — see `breeding-blockers.test.ts`.
+ */
+export function breedingBlockers(c: Creature, bp: CreatureBlueprint): BreedBlocker[] {
+  const blockers: BreedBlocker[] = []
+  if (c.breedCooldown > 0) blockers.push('cooldown')
+  if (1 - c.hunger < bp.diet.breedAt) blockers.push('underfed')
+  if (c.hunger + TUNING.breedCost >= 1) blockers.push('no-headroom')
+  if (c.ageSeconds <= breedingAge(c, bp)) blockers.push('too-young')
+  return blockers
 }
 
 /**
