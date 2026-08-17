@@ -1557,6 +1557,10 @@ export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () 
       }
       w.soilNutrient[tileI] = Math.min(1, w.soilNutrient[tileI] + 0.2)
     }
+  }
+}
+
+/**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
  * and applies local effects (water chemistry, plant nutrition). Issue #3179.
  *
