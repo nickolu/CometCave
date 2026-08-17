@@ -2132,6 +2132,20 @@ export function tickCreatures(
         c.hunger = Math.min(1, c.hunger + 0.0005 * dt)
       }
     }
+    // Decomposer: gain hunger from mud tiles and convert them back to dirt. Issue #3146.
+    if (bp.decomposer) {
+      const dx2 = Math.floor(c.x), dy2 = Math.floor(c.y)
+      if (dx2 >= 0 && dx2 < WORLD_W && dy2 >= 0 && dy2 < WORLD_H) {
+        const di = dy2 * WORLD_W + wrapCol(dx2)
+        if (w.tiles[di] === MATERIAL_INDEX.mud) {
+          c.hunger = Math.max(0, c.hunger - 0.003 * dt)  // feed on organic matter
+          // Slowly convert mud back to dirt (decomposition complete)
+          if (rng() < 0.0002 * dt) {
+            setTile(w, dx2, dy2, MATERIAL_INDEX.dirt)
+          }
+        }
+      }
+    }
     // Prey escalation: surviving prey slowly builds evasion every 60 ticks. Issue #3263.
     if (tickCount % 60 === 0 && bp.preyEscalation) {
       c.escalatedEvasion = Math.min(0.5, (c.escalatedEvasion ?? 0) + 0.002)
@@ -2143,6 +2157,26 @@ export function tickCreatures(
     // Obligate coevolution: faster starvation when partner species is extinct. Issue #3266.
     if (bp.obligatePartner !== undefined && (speciesCount[bp.obligatePartner] ?? 0) === 0) {
       c.hunger = Math.min(1, c.hunger + 0.001 * dt)
+    }
+    // Genetic isolation tracking: time without nearby conspecific. Issue #3164.
+    if ((tickCount + c.id) % 60 === 0) {
+      const isoReach = 30
+      const isoCount = gather(c.x + bw / 2, isoReach + bw / 2)
+      let hasConspecific = false
+      for (let i = 0; i < isoCount; i++) {
+        const nb = found[i]
+        if (nb.id !== c.id && nb.blueprintId === c.blueprintId) { hasConspecific = true; break }
+      }
+      if (hasConspecific) {
+        c.isolationTime = 0
+      } else {
+        c.isolationTime = (c.isolationTime ?? 0) + 60  // +60 seconds per check interval
+      }
+    }
+    // Sexual dimorphism: females age slightly slower. Issue #3165.
+    if (bp.sexualDimorphism && c.sex === 'female') {
+      // Undo 10% of the age tick to simulate longer lifespan
+      c.ageSeconds = Math.max(0, c.ageSeconds - 0.1 * dt)
     }
     // Intertidal zone: bonus at low tide, penalty at high tide. Issue #3191.
     if (bp.intertidal && w.tidalHeight !== undefined) {
@@ -3914,6 +3948,13 @@ export function tickCreatures(
             c.hasReproduced = true
             kill(w, c, bp, dead, events, 'aged')
           }
+          // Sexual dimorphism: sex-based cooldown modification for parent. Issue #3165.
+          if (bp.sexualDimorphism && c.sex === 'male') {
+            c.breedCooldown *= 0.9  // males breed slightly faster
+          }
+          // Breeding resets isolation counter. Issue #3164.
+          c.isolationTime = 0
+          if (mate) mate.isolationTime = 0
           events.push({ kind: 'born', blueprintId: bp.id, x: ox, y: oy })
         } else {
           const child = reproduce(w, bp, ox, oy, bw, bh, rng)
@@ -4013,6 +4054,23 @@ export function tickCreatures(
                 } else if (isPredator) {
                   child.traits.size = Math.min(1.2, child.traits.size + 0.02)
                 }
+              }
+            }
+            // Sexual dimorphism: assign sex and adjust traits/hue. Issue #3165.
+            if (bp.sexualDimorphism) {
+              child.sex = rng() < 0.5 ? 'male' : 'female'
+              if (child.sex === 'male') {
+                child.traits = { ...child.traits, hue: (child.traits.hue + 30) % 360 }
+              }
+            }
+            // Genetic isolation: extra drift for isolated parents. Issue #3164.
+            if ((c.isolationTime ?? 0) > 1800) {
+              const extraDrift = 0.1  // additional nudge
+              child.traits = {
+                ...child.traits,
+                speed: Math.max(0.6, Math.min(1.6, child.traits.speed + (rng() - 0.5) * extraDrift)),
+                sight: Math.max(0.6, Math.min(1.6, child.traits.sight + (rng() - 0.5) * extraDrift)),
+                size: Math.max(0.8, Math.min(1.2, child.traits.size + (rng() - 0.5) * extraDrift)),
               }
             }
             child.lifeLog = [{ elapsed: w.elapsed, text: `Born (gen ${child.generation})` }]
@@ -4227,6 +4285,13 @@ export function tickCreatures(
                 c.hasReproduced = true
                 kill(w, c, bp, dead, events, 'aged')
               }
+              // Sexual dimorphism: sex-based cooldown modification for parent. Issue #3165.
+              if (bp.sexualDimorphism && c.sex === 'male') {
+                c.breedCooldown *= 0.9  // males breed slightly faster
+              }
+              // Breeding resets isolation counter. Issue #3164.
+              c.isolationTime = 0
+              if (mate) mate.isolationTime = 0
             }
             events.push({ kind: 'born', blueprintId: bp.id, x: child.x, y: child.y })
           } else {
@@ -4436,6 +4501,19 @@ export function tickCreatures(
   // Decay carcasses and remove expired ones.
   for (const car of w.carcasses) {
     car.decaySeconds -= dt
+  }
+  // Organic matter: decayed carcasses on dirt/grass enrich soil to mud. Issue #3145.
+  for (const car of w.carcasses) {
+    if (car.decaySeconds <= 0) {
+      const cx2 = Math.floor(car.x), cy2 = Math.floor(car.y)
+      if (cx2 >= 0 && cx2 < WORLD_W && cy2 >= 0 && cy2 < WORLD_H) {
+        const ti = cy2 * WORLD_W + wrapCol(cx2)
+        const tile = w.tiles[ti]
+        if (tile === MATERIAL_INDEX.dirt || tile === MATERIAL_INDEX.grass) {
+          setTile(w, cx2, cy2, MATERIAL_INDEX.mud)
+        }
+      }
+    }
   }
   // Fossil record: ancient carcasses on stone tiles become bone fossils. Issue #3178.
   for (const car of w.carcasses) {
