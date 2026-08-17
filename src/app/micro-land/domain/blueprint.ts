@@ -784,8 +784,9 @@ export function sanitizeBlueprint(
         : undefined,
     toxic: b.toxic !== undefined ? !!b.toxic : undefined,
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
-    sexualDimorphism: 'sexualDimorphism' in b ? !!b.sexualDimorphism : undefined,
-    decomposer: 'decomposer' in b ? !!b.decomposer : undefined,
+    eusocialSpecies: 'eusocialSpecies' in b ? !!b.eusocialSpecies : undefined,
+    chemosynthetic: 'chemosynthetic' in b ? !!b.chemosynthetic : undefined,
+    phytoplankton: 'phytoplankton' in b ? !!b.phytoplankton : undefined,
     soundFrequency: typeof b.soundFrequency === 'number'
       ? Math.max(0, Math.min(1, b.soundFrequency))
       : undefined,

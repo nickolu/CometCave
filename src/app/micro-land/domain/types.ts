@@ -1245,10 +1245,20 @@ export interface CreatureBlueprint {
    */
   maxDepth?: number
   /**
-   * True if this species has sexual dimorphism: males and females differ
-   * in appearance and behavior. Issue #3165.
+   * True if this species uses a eusocial caste system (queen, workers, soldiers, drones).
+   * The caste is assigned at birth based on colony needs. Issue #3229.
    */
-  sexualDimorphism?: boolean
+  eusocialSpecies?: boolean
+  /**
+   * True if this species feeds via chemosynthesis (chemical energy from vent tiles).
+   * Gains hunger relief when adjacent to lava tiles while in water, independent of sunlight. Issue #3252.
+   */
+  chemosynthetic?: boolean
+  /**
+   * True if this creature is a phytoplankton species that blooms in spring/summer.
+   * Breeds 4× faster and gains bonus hunger relief during a plankton bloom. Issue #3254.
+   */
+  phytoplankton?: boolean
   /**
    * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
    * interfere when crowded, reducing effective sight range. Issue #3243.
@@ -1801,14 +1811,14 @@ export interface Creature {
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
   /**
-   * Seconds without a nearby conspecific; resets to 0 on breeding.
-   * Drives faster trait drift in isolated populations. Issue #3164.
+   * Caste of a eusocial species individual.
+   * Set at birth based on colony composition. Issue #3229.
    */
-  isolationTime?: number
+  caste?: 'queen' | 'worker' | 'soldier' | 'drone'
   /**
-   * Sex of this individual for sexually dimorphic species. Issue #3165.
+   * Age timer for drones; they die after 30 seconds. Issue #3229.
    */
-  sex?: 'male' | 'female'
+  droneAge?: number
   /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
   toxinLoad?: number
   /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
@@ -2268,6 +2278,12 @@ export interface WorldState {
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
 
+  /** Maps eusocial species blueprint ID to current queen creature ID. Issue #3229. */
+  eusocialQueenIds?: Record<string, number>
+  /** Current horizontal ocean current velocity (−0.3 to 0.3). Issue #3252. */
+  oceanCurrentX?: number
+  /** True during a phytoplankton bloom (high season factor). Issue #3253. */
+  planktonBloomActive?: boolean
   /** Current lunar phase day (0–27). Issue #3187. */
   lunarPhaseDay?: number
   /** Current tidal height offset (-1 to 1). Issue #3188. */
