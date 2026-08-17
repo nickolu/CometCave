@@ -641,6 +641,7 @@ export function sanitizeBlueprint(
     migratory: b.migratory !== undefined ? !!b.migratory : undefined,
     magnetoreceptive: b.magnetoreceptive !== undefined ? !!b.magnetoreceptive : undefined,
     fireGerminator: b.fireGerminator !== undefined ? !!b.fireGerminator : undefined,
+    fireAdapted: b.fireAdapted !== undefined ? !!b.fireAdapted : undefined,
     lightGapGerminator: b.lightGapGerminator !== undefined ? !!b.lightGapGerminator : undefined,
     biomeRequirements: Array.isArray(b.biomeRequirements)
       ? (b.biomeRequirements as unknown[]).filter((z): z is BiomeZoneType =>
@@ -785,6 +786,11 @@ export function sanitizeBlueprint(
     toxicMimic: b.toxicMimic !== undefined ? !!b.toxicMimic : undefined,
     sexualDimorphism: 'sexualDimorphism' in b ? !!b.sexualDimorphism : undefined,
     decomposer: 'decomposer' in b ? !!b.decomposer : undefined,
+    lunarBreedingPhase:
+      typeof b.lunarBreedingPhase === 'number'
+        ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))
+        : undefined,
+    intertidal: b.intertidal !== undefined ? !!b.intertidal : undefined,
     fixesNitrogen: 'fixesNitrogen' in b ? !!b.fixesNitrogen : undefined,
     // Succession stage: gate seed germination on soil maturity (issue #3123)
     successionStage: typeof b.successionStage === 'number'
