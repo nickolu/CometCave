@@ -4755,6 +4755,7 @@ function look(
         // Nocturnal predators gain an ambush advantage in storms (dark + chaos). Issue #3097.
         if (w.weatherState === 'storm' && ((c.traits as { diurnal?: number }).diurnal ?? 0) < -0.2) {
           fill *= 1.2
+        }
         // Primed defense: stressed plant less nutritious and unpalatable. Issue #3239.
         if (other.primedDefense && other.primedDefense > 0) {
           fill *= 0.7  // 30% less nutrition from chemically-primed plant
