@@ -1034,6 +1034,34 @@ export interface CreatureBlueprint {
   /** When true, this species refuses to move when overcrowded (identical to normal behavior). Issue #3314. */
   urchinUnion?: boolean
   /**
+   * When true, this creature navigates and detects prey via echolocation.
+   * Effective sight range is not reduced at night, unlike visual predators.
+   * Suppressed when nearby creature count exceeds 20 (ambient noise). Issue #3242.
+   */
+  echolocates?: boolean
+  /**
+   * When true, this plant species emits stress signals when damaged by herbivory.
+   * Neighboring same-species plants within 8 tiles gain herbivory resistance
+   * for 60 seconds after receiving the signal. Issue #3239.
+   */
+  stressSignaler?: boolean
+  /**
+   * When true, this plant can receive stress signals from neighbors and prime its
+   * chemical defenses. Reduces herbivory meal fill by 30% for primedDefense
+   * duration. Issue #3239.
+   */
+  stressReceiver?: boolean
+  /**
+   * When true, 2+ of this predator species within coordinationRange of the same prey
+   * attack with a combined bonus (1.5× meal fill). Prey with bodyMass > packSizeThreshold
+   * can only be killed when 2+ pack members are present. Issue #3228.
+   */
+  packHunting?: boolean
+  /** Range in tiles within which pack members coordinate. Default 12. Issue #3228. */
+  coordinationRange?: number
+  /** Minimum bodyMass of prey that requires pack take-down. Default 2.0. Issue #3228. */
+  packSizeThreshold?: number
+  /**
    * When true, this species stays near its nest when eggs are present, and
    * intercepts predators approaching those eggs. Issue #3258.
    */
@@ -1633,6 +1661,8 @@ export interface Creature {
   escalatedEvasion?: number
   /** Cumulative host-parasite exposure (0–1, decays over time). Issue #3265. */
   parasiteExposure?: number
+  /** Seconds remaining of stress-signal-primed chemical defense. Reduces herbivory by 30%. Issue #3239. */
+  primedDefense?: number
   /** Seconds remaining of venom slow debuff. Reduces speed to 0.5× while > 0. Issue #3236. */
   venomTimer?: number
   /** X of this creature's claimed territory center. Issue #3226. */
@@ -1843,17 +1873,6 @@ export interface WorldGeneratorEntry {
  * Assigned per horizontal region band (8 bands from sky to bedrock).
  * Issue #3377.
  */
-export type BiomeZoneType =
-  | 'tropical-rainforest'
-  | 'tropical-savanna'
-  | 'desert'
-  | 'temperate-grassland'
-  | 'temperate-forest'
-  | 'boreal'
-  | 'tundra'
-  | 'ice-cap'
-
-/** One classified biome band — a full-width horizontal slice of the world. */
 export interface BiomeZone {
   /** Region index (0 = top/coldest, NUM_BIOME_REGIONS-1 = bottom/warmest). */
   regionIndex: number
