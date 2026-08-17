@@ -1787,42 +1787,6 @@ export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () 
 }
 
 /**
- * Bone slow decomposition (#3103): bone tiles near moisture slowly convert to soil
- * and deposit nutrients, modelling the long-term breakdown of skeletal material.
- *
- * Runs every 300 ticks. Samples 20 random tiles looking for bone. Each bone tile
- * in moist conditions has a 3% chance to convert to soil with a +0.2 nutrient boost.
- */
-export function tickBoneDecomposition(w: WorldState, tickCount: number, rng: () => number): void {
-  if (tickCount % 300 !== 0) return
-  if (!w.soilNutrient) w.soilNutrient = new Float32Array(w.width * w.height)
-
-  const { width, height, tiles, moisture } = w
-  const boneIdx = MATERIAL_INDEX['bone'] ?? -1
-  const dirtIdx = MATERIAL_INDEX['dirt'] ?? -1
-  if (boneIdx < 0) return
-
-  for (let i = 0; i < 20; i++) {
-    const x = Math.floor(rng() * width)
-    const y = Math.floor(rng() * height)
-    const tileI = y * width + x
-
-    if (tiles[tileI] !== boneIdx) continue
-
-    const moistureHere = moisture?.[tileI] ?? 0
-    if (moistureHere < 0.2) continue // bone needs moisture to decompose
-
-    if (rng() < 0.03) {
-      // Convert bone tile to dirt (if dirt exists) and add nutrients.
-      if (dirtIdx >= 0) {
-        w.tiles[tileI] = dirtIdx
-      }
-      w.soilNutrient[tileI] = Math.min(1, w.soilNutrient[tileI] + 0.2)
-    }
-  }
-}
-
-/**
  * Mineral vein exposure: periodically converts exposed stone tiles to ore deposits
  * and applies local effects (water chemistry, plant nutrition). Issue #3179.
  *
