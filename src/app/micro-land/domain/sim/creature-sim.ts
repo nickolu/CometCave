@@ -3792,6 +3792,10 @@ export function tickCreatures(
     }
   }
 }
+      }
+    }
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Larval niche separation helpers. Issue #3337.
