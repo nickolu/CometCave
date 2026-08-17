@@ -919,6 +919,7 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
   // and deposits floodwater nutrients in floodplain tiles. Issue #3372.
   let springFloodMult = 1
   let nutrientDeposit = 0
+  let summerEvapMult = 1
   if (TUNING.seasonAmplitude > 0) {
     const sPhase = (2 * Math.PI * w.elapsed) / TUNING.seasonPeriod
     const sinP = Math.sin(sPhase)
@@ -928,19 +929,18 @@ export function tickMoisture(w: WorldState, tickCount: number, dt: number, rng: 
       springFloodMult = 1 + TUNING.seasonAmplitude * sinP * 4
       nutrientDeposit = TUNING.seasonAmplitude * sinP * 0.0001 * timePassed
     }
+    // Summer heat stress: elevated solar energy increases evaporation from exposed tiles.
+    // At midsummer (sinP = 1) with amplitude = 0.5, evaporation is 50% higher than baseline.
+    // The effect tapers at the seasonal shoulders. Water-adjacent tiles still stay damp —
+    // the springFloodMult fills them back. Epic #3074.
+    if (sinP > 0) {
+      summerEvapMult = 1 + TUNING.seasonAmplitude * sinP
+    }
   }
 
   if (nutrientDeposit > 0) {
     w.caveNutrient ??= new Float32Array(WORLD_W * WORLD_H)
   }
-
-  // Summer heat stress: elevated solar energy increases evaporation from exposed tiles.
-  // At midsummer (sinP = 1) with amplitude = 0.5, evaporation is 50% higher than baseline.
-  // The effect tapers at the seasonal shoulders. Water-adjacent tiles still stay damp —
-  // the springFloodMult fills them back. Epic #3074.
-  const summerEvapMult = (TUNING.seasonAmplitude > 0 && sinP > 0)
-    ? 1 + TUNING.seasonAmplitude * sinP
-    : 1
 
   for (let y = 0; y < WORLD_H; y++) {
     for (let x = 0; x < WORLD_W; x++) {
