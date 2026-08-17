@@ -1313,6 +1313,12 @@ export interface CreatureBlueprint {
   moleMailCarrier?: boolean
   /** When true, this species periodically publishes headlines about local events. Issue #3307. */
   newtNewspaper?: boolean
+  /** When true, this species is cold-blooded: slower in cold biomes, faster in hot ones. Issue #3134. */
+  coldBlooded?: boolean
+  /** Minimum comfortable temperature [0,1]; hunger penalty below this. Issue #3136. */
+  tempMin?: number
+  /** Maximum comfortable temperature [0,1]; hunger penalty above this. Issue #3136. */
+  tempMax?: number
   /** When true, females age slightly slower than males (sexual dimorphism). Issue #3165. */
   sexualDimorphism?: boolean
   /** When true, this creature leaves chemical pheromone trails that guide conspecifics. Issue #3234. */
@@ -2369,6 +2375,8 @@ export interface WorldState {
   lastFrogRitualSeason?: number
   /** Creature id of the Gopher Government Administrator. Issue #3300. */
   gopherAdminId?: number
+  /** Per-tile temperature grid, [0,1]. Updated by heat conduction each tick. Issue #3132. */
+  tileTemp?: Float32Array
   /** True once the Crab Constitution has been ratified (population first reached 10). Issue #3296. */
   crabConstitutionRatified?: boolean
   /** World elapsed time of the last Duck Town Hall vote. Issue #3297. */
