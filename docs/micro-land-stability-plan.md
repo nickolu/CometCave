@@ -445,18 +445,19 @@ house rule, and the comment is the only record of why.
 
 Append only. Never edit a past row; add a new one that supersedes it.
 
-| ID  | Date       | Hypothesis                 | Change                            | Command                                                     | Result                                                                             | Verdict                    |
-| --- | ---------- | -------------------------- | --------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
-| E0  | 2026-08-16 | baseline                   | none, at `dc973eed`               | `--theme grassland --seconds 1600 --runs 3 --diagnose`      | 3 failing; 6/6 animals extinct; 4 animal births                                    | **done** — table above     |
-| E2  | 2026-08-16 | H2, H4 (free, off E0)      | none — re-read E0                 | —                                                           | H2 falsified; H4 not applicable to grassland                                       | **done**                   |
-| E1  | 2026-08-16 | noise floor                | none, two disjoint seed sets      | at `9b0f90fe`, as E0, and again with `--seed-start 3`       | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**                           | **done** — below           |
-| E3  | 2026-08-16 | H6                         | `--set breedAtScale=0.7`          | as E1 both arms, `--set breedAtScale=0.7`                   | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise.              | **not promoted** — below   |
-| E4  | 2026-08-16 | H7 (free, off E1)          | none — arithmetic + source        | —                                                           | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**                  | **done** — below           |
-| E5  | 2026-08-16 | W9 — sunhawk starters      | `sunhawk count: 1 → 2` (3 → 6)    | as E1, both arms                                            | `T_ext` 410s / 440s, within noise. **The metric stopped measuring a dice roll.**   | **kept** — below           |
-| E6  | 2026-08-16 | fatigue latch + chase-only | code, no knobs                    | as E1, both arms, on top of E5                              | `T_ext` 480s / 450s, within noise. Exhaustion pinning gone (63–80% → 0–3%).        | **kept** — a repair, below |
-| W9a | 2026-08-16 | noise floor, re-measured   | none — free, off E5/E6's own arms | —                                                           | **Noise floor is 30s**, not 135s. Two independent estimates agree.                 | **done** — below           |
-| E7  | 2026-08-16 | H6, re-tested post-E5/E6   | `--set breedAtScale=0.7`          | as E1, both arms                                            | `T_ext` 435s / 505s — arms disagree in sign. `underfed` 47%→28%, `too-young` →60%. | **not promoted** — below   |
-| E8  | 2026-08-16 | H8 (free, off one sim run) | none — `sim:micro-land 900s`      | `npm run sim:micro-land -- --theme grassland --seconds 900` | Plants at cap all run. 12 predators, **77 kills**. Grazers are eaten, not starved. | **done** — below           |
+| ID  | Date       | Hypothesis                  | Change                            | Command                                                     | Result                                                                             | Verdict                    |
+| --- | ---------- | --------------------------- | --------------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------- |
+| E0  | 2026-08-16 | baseline                    | none, at `dc973eed`               | `--theme grassland --seconds 1600 --runs 3 --diagnose`      | 3 failing; 6/6 animals extinct; 4 animal births                                    | **done** — table above     |
+| E2  | 2026-08-16 | H2, H4 (free, off E0)       | none — re-read E0                 | —                                                           | H2 falsified; H4 not applicable to grassland                                       | **done**                   |
+| E1  | 2026-08-16 | noise floor                 | none, two disjoint seed sets      | at `9b0f90fe`, as E0, and again with `--seed-start 3`       | `T_ext` 495s vs 360s. **Noise floor ≈ 135s at 3 seeds.**                           | **done** — below           |
+| E3  | 2026-08-16 | H6                          | `--set breedAtScale=0.7`          | as E1 both arms, `--set breedAtScale=0.7`                   | Gate opens (0–2%→4–6%), births ×3.5. `T_ext` **worse**, within noise.              | **not promoted** — below   |
+| E4  | 2026-08-16 | H7 (free, off E1)           | none — arithmetic + source        | —                                                           | H7 confirmed for 4/6. **Sunhawk cannot survive by construction.**                  | **done** — below           |
+| E5  | 2026-08-16 | W9 — sunhawk starters       | `sunhawk count: 1 → 2` (3 → 6)    | as E1, both arms                                            | `T_ext` 410s / 440s, within noise. **The metric stopped measuring a dice roll.**   | **kept** — below           |
+| E6  | 2026-08-16 | fatigue latch + chase-only  | code, no knobs                    | as E1, both arms, on top of E5                              | `T_ext` 480s / 450s, within noise. Exhaustion pinning gone (63–80% → 0–3%).        | **kept** — a repair, below |
+| W9a | 2026-08-16 | noise floor, re-measured    | none — free, off E5/E6's own arms | —                                                           | **Noise floor is 30s**, not 135s. Two independent estimates agree.                 | **done** — below           |
+| E7  | 2026-08-16 | H6, re-tested post-E5/E6    | `--set breedAtScale=0.7`          | as E1, both arms                                            | `T_ext` 435s / 505s — arms disagree in sign. `underfed` 47%→28%, `too-young` →60%. | **not promoted** — below   |
+| E8  | 2026-08-16 | H8 (free, off one sim run)  | none — `sim:micro-land 900s`      | `npm run sim:micro-land -- --theme grassland --seconds 900` | Plants at cap all run. 12 predators, **77 kills**. Grazers are eaten, not starved. | **done** — below           |
+| E9  | 2026-08-17 | does main's work change it? | merge `origin/main` (107 commits) | as E1, both arms, on `3e414946`                             | `T_ext` 385s / 564s. Nothing fixed. **Noise floor back up to ~179s.**              | **done** — below           |
 
 ### E3 — the gate opens, three and a half times the babies, nobody is saved
 
@@ -604,7 +605,53 @@ The old fatigue line was dragging the first world's creature out of `rest` to
 match, so the two agreed by accident. Fixed the interleaving; recalibrated the
 two magnitudes against a measured trace.)_
 
+### E9 — 107 commits of main, and the meadow dies the same way
+
+`origin/main` merged in (`3e414946`) and both arms re-run. Main had added a
+temperature system with cold-blooded scaling and thermoregulation, ice formation,
+mineral veins, a fire renderer, and — most promisingly — a commit called _the
+world stops dying the moment it grows a plant_. None of it touches this.
+
+| Measure               | Pre-merge (E6) | Post-merge (E9) |
+| --------------------- | -------------- | --------------- |
+| `T_ext`, seeds 0–2    | 480s           | 385s            |
+| `T_ext`, seeds 3–5    | 450s           | 564s            |
+| animal species alive  | 0 / 6          | 0 / 6           |
+| `breeding-gate-opens` | 0%             | 0–1%            |
+| top blocker           | `underfed` 46% | `underfed` 48%  |
+
+Same five checks failing, same causes of death — mite `eaten: 64–90%`, woolly
+`eaten: 87–89%`, sunhawk `starved: 72–100%`. **H8 survives the merge unchanged:
+the grazers are eaten before they mature.**
+
+**The noise floor did not survive it.** The two arms come out 179s apart, against
+30s pre-merge, with per-run values spanning 185–610s. Main's world is
+substantially more stochastic — plausibly the temperature and ice systems adding
+environmental mortality, and `vanished` reappearing across three species says
+populations are dipping under the stochastic-extinction threshold more often.
+
+Consequences, and they are not small:
+
+- **Every verdict in this log was measured pre-merge and against a 30s floor.**
+  They are internally consistent and no longer describe the shipping world.
+  E1–E8 stand as a record of how the instruments were built and what they found;
+  they are not current measurements.
+- **A 179s floor makes `T_ext` nearly useless at three seeds**, since the whole
+  quantity is only 300–600s. Either the run count goes up substantially — five
+  seeds is the plan's own bar for a decision and is now the bar for _any_ read —
+  or the metric needs to be something less sensitive to a single species' luck.
+- **W12 (the predator ablation) is now the only cheap decisive move left**, because
+  it predicts a categorical difference — grazers surviving at all versus not —
+  rather than a shift of a few hundred seconds inside a 179s band.
+
+_(Test suite post-merge: `carnivorous-plant` and `invasive-species` fail. Both are
+stochastic plant-breeding tests, both fail on `origin/main` itself, and neither
+touches this work. `allelopathic` — failing before the merge — now passes, which
+is its own evidence that these three flap.)_
+
 ### W9a — the noise floor is 30s, and it cost nothing
+
+**Superseded by E9: post-merge it is ~179s.** Kept for the method, not the number.
 
 E5 and E6 each ran two disjoint seed sets under one unchanged configuration,
 which _is_ the noise-floor measurement — it did not need its own experiment:
