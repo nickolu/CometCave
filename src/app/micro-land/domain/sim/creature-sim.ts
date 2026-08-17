@@ -921,7 +921,6 @@ export function tickCreatures(
     MATERIAL_INDEX['snow'],
   )
   tickGroundwater(w, tickCount, IS_LIQUID)
-  tickBoneDecomposition(w, tickCount, rng)  // Bone slow decomposition (#3103)
 
   // Wind direction: slow sinusoidal oscillation, independent from seasons. Issue #3153.
   const WIND_PERIOD_X = TUNING.seasonPeriod * 3.1
