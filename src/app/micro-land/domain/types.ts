@@ -1206,17 +1206,6 @@ export interface CreatureBlueprint {
   toxicMimic?: boolean
 
   /**
-   * Trophic level in the food web: 1 = producer, 2 = primary consumer, 3 = secondary consumer, 4+ = apex.
-   * Optional — derived at runtime by the Field Guide if not set. Issue #3121.
-   */
-  trophicLevel?: number
-  /**
-   * Ecological succession stage this species is associated with.
-   * 1 = pioneer, 2 = early succession, 3 = mid-succession, 4 = climax.
-   * Optional. Used by the succession progress bar in the Field Guide. Issue #3126.
-   */
-  successionStage?: number
-  /**
    * Blueprint id of the species this one was derived from.
    * Set on summoned/workshop creatures to track evolutionary lineage.
    * When set, the Field Guide draws an ancestry chain. Issue #3167.
@@ -1255,6 +1244,18 @@ export interface CreatureBlueprint {
    * Undefined = no pressure limit. Issue #3248.
    */
   maxDepth?: number
+  /**
+   * Moon phase (0–27) at which this species breeds. When set, breeding is
+   * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
+   * Issue #3190.
+   */
+  lunarBreedingPhase?: number
+  /**
+   * True if this species is adapted to the intertidal zone (shoreline).
+   * At low tide (tidalHeight < −0.3), gains a hunger bonus. At high tide
+   * (tidalHeight > 0.5), takes a hunger penalty. Issue #3191.
+   */
+  intertidal?: boolean
   /**
    * When true, this species maintains a dominance hierarchy.
    * Rank is established through contests in look(); higher rank grants
@@ -2240,6 +2241,10 @@ export interface WorldState {
   /** True when a Weasel War Crimes Tribunal is active. Issue #3316. */
   weaselTribunalActive?: boolean
 
+  /** Current lunar phase day (0–27). Issue #3187. */
+  lunarPhaseDay?: number
+  /** Current tidal height offset (-1 to 1). Issue #3188. */
+  tidalHeight?: number
   /** Per-species baseline population for Lemming Legislature voting. Issue #3305. */
   lemmingBaseline?: Record<string, number>
   /** World-clock time of the next lemming legislature vote. Issue #3305. */
