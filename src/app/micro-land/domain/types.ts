@@ -2260,6 +2260,16 @@ export interface WorldState {
    */
   weatherTimer?: number
   /**
+   * Current weather state for the world. Transitions stochastically based on
+   * season and elapsed time. Issues #3094-#3097.
+   */
+  weatherState?: 'clear' | 'rain' | 'drought' | 'storm'
+  /**
+   * Ticks remaining until the next weather transition check.
+   * Set to 0 to force an immediate check on the next tick.
+   */
+  weatherTimer?: number
+  /**
    * Per-tile subsurface water level [0, 1]. Seeps upward from water tiles
    * through soil, keeping lowlands moist even without surface water nearby.
    * Initialized lazily by tickGroundwater. Issue #3114.
