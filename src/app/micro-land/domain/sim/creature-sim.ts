@@ -939,7 +939,15 @@ function tickSeedBank(
     let sproutAttempts = 1
     if (TUNING.seasonAmplitude > 0 && TUNING.seasonPeriod > 0) {
       const yearFrac = (w.elapsed % TUNING.seasonPeriod) / TUNING.seasonPeriod
-      if (yearFrac < 0.25) sproutAttempts = 3  // spring: triple germination attempts
+      if (yearFrac < 0.25) {
+        sproutAttempts = 3  // spring: triple germination attempts (spring bloom)
+      } else if (yearFrac >= 0.75) {
+        // Winter die-back: cold soil suppresses germination entirely.
+        // Seeds remain viable through winter stratification and surge in spring.
+        // Models the real phenomenon where ground frost blocks germination.
+        // Epic #3074.
+        sproutAttempts = 0
+      }
     }
     if (bp.fireAdapted) {
       const ashMatIdx = MATERIAL_INDEX.ash
@@ -2120,6 +2128,15 @@ export function tickCreatures(
     if (bp.dormancyPhotoperiod && TUNING.seasonAmplitude > 0 && seasonFactor < 0.7) {
       const dormancyDepth = Math.max(0, 0.7 - seasonFactor) / 0.7  // 0→1 as season goes from 0.7→0
       c.hunger = Math.max(0, c.hunger - dormancyDepth * 0.0003 * dt)
+    }
+    // Hibernation: bears and similar mammals enter deep torpor in winter (seasonFactor < 0.7).
+    // Metabolism drops to ~4% of normal — they live off stored fat and do not need to feed.
+    // This is much stronger than dormancyPhotoperiod; the creature is functionally asleep.
+    // Epic #3074.
+    if (bp.hibernates && TUNING.seasonAmplitude > 0 && seasonFactor < 0.7) {
+      // Undo most of the hunger increment we just applied — only 4% of normal drain remains.
+      const reduction = bp.diet.hungerRate * TUNING.hungerRateScale * klieber * dt * 0.96
+      c.hunger = Math.max(0, c.hunger - reduction)
     }
     // Wind chill: warm-blooded creatures lose heat faster in cold wind. Issue #3156.
     if (bp.warmBlooded && TUNING.seasonAmplitude > 0 && seasonFactor < 0.8 && w.windX !== undefined) {
@@ -6762,7 +6779,11 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     // Amphibian rain bonus: creatures that don't drown thrive in wet conditions.
     // Rain and storm trigger a 20% speed boost — models burst activity in frogs and
     // salamanders following the first wet-season rains. Epic #3075.
-    (!bp.habitat.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1)
+    (!bp.habitat.drowns && (w.weatherState === 'rain' || w.weatherState === 'storm') ? 1.2 : 1) *
+    // Hibernation: deep torpor creatures barely move in winter. 2% of normal speed
+    // models the occasional semi-conscious shuffle — enough to avoid clipping through
+    // walls but not enough to constitute foraging. Epic #3074.
+    (bp.hibernates && w.season === 'winter' ? 0.02 : 1)
   const accel = speed * 6
 
   switch (bp.move.kind) {

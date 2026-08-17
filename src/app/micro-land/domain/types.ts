@@ -305,6 +305,13 @@ export interface CreatureBlueprint {
    */
   windDispersed?: boolean
   /**
+   * True for mammals that enter deep winter torpor (bears, groundhogs, bats).
+   * Hibernating creatures reduce metabolism to ~4% of normal and move at ~2%
+   * speed while `seasonFactor < 0.7` (deep winter). They consume negligible food
+   * and survive until spring without starving. Epic #3074.
+   */
+  hibernates?: boolean
+  /**
    * Whether this species lays eggs rather than giving live birth.
    *
    * When true, breeding drops an Egg at the breeding spot with inherited

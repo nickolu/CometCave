@@ -3165,6 +3165,7 @@ const BEAR = builtin('bear', {
   egglayer: false,
   bearBanking: true,
   bodyMass: 3.0,
+  hibernates: true,  // Epic #3074: winter torpor — bears sleep through winter on stored fat
 })
 
 // ---------------------------------------------------------------------------
