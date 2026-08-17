@@ -387,8 +387,7 @@ export class GameInstance {
       const replayWorld = { ...this.world, creatures: snap.creatures }
       this.renderer.render(replayWorld, theme, undefined, undefined, null)
     } else {
-      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.nutrientHeatmap)
-      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.tempHeatmap)
+      this.renderer.render(this.world, theme, this.inspectedId, this.elderId, this.heatmap, this.nutrientHeatmap, this.tempHeatmap)
     }
   }
 

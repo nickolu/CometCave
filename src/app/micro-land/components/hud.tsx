@@ -595,6 +595,7 @@ export function Hud({ onOpenHistory }: { onOpenHistory: () => void }) {
                 }}
               >
                 {nutrientOverlayEnabled ? 'Nutrients on' : 'Nutrients'}
+              </button>
               {/* Temperature overlay */}
               <button
                 type="button"

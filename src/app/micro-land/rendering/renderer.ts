@@ -552,7 +552,7 @@ export class Renderer {
     highlightId: number | null = null,
     elderId: number | null = null,
     heatmap: Float32Array | null = null,
-    nutrientHeatmap: Float32Array | null = null
+    nutrientHeatmap: Float32Array | null = null,
     tempHeatmap: Float32Array | null = null
   ): void {
     const vx = this.viewLeft()
