@@ -787,6 +787,10 @@ export function sanitizeBlueprint(
     eusocialSpecies: 'eusocialSpecies' in b ? !!b.eusocialSpecies : undefined,
     chemosynthetic: 'chemosynthetic' in b ? !!b.chemosynthetic : undefined,
     phytoplankton: 'phytoplankton' in b ? !!b.phytoplankton : undefined,
+    soundFrequency: typeof b.soundFrequency === 'number'
+      ? Math.max(0, Math.min(1, b.soundFrequency))
+      : undefined,
+    acousticCamouflage: b.acousticCamouflage === true,
     lunarBreedingPhase:
       typeof b.lunarBreedingPhase === 'number'
         ? Math.max(0, Math.min(27, Math.round(b.lunarBreedingPhase)))

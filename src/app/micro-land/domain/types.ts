@@ -1260,6 +1260,16 @@ export interface CreatureBlueprint {
    */
   phytoplankton?: boolean
   /**
+   * Acoustic frequency band [0–1]. Species with overlapping bands (within 0.1)
+   * interfere when crowded, reducing effective sight range. Issue #3243.
+   */
+  soundFrequency?: number
+  /**
+   * True if this prey species times movements to ambient noise peaks.
+   * Pauses when no noisy creatures are nearby; moves under noise cover. Issue #3245.
+   */
+  acousticCamouflage?: boolean
+  /**
    * Moon phase (0–27) at which this species breeds. When set, breeding is
    * restricted to within ±2 days of this phase. E.g. 14 = full moon only.
    * Issue #3190.
@@ -1809,6 +1819,10 @@ export interface Creature {
    * Age timer for drones; they die after 30 seconds. Issue #3229.
    */
   droneAge?: number
+  /** Accumulated toxin load from eating toxic prey [0–1]. Issue #3238. */
+  toxinLoad?: number
+  /** Seconds remaining in recovered-carrier state; can still spread disease. Issue #3184. */
+  carrierTimer?: number
   /** Cumulative skill bonus earned through juvenile play. Issue #3232. */
   playSkillBonus?: number
   /** Countdown seconds until next play session. Issue #3232. */
