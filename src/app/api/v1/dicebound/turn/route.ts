@@ -42,6 +42,17 @@ import {
   skillsOf,
 } from '@/app/dicebound/domain/attributes'
 import {
+  type Body,
+  CONDITION_LABEL,
+  CONDITION_PHRASE,
+  DAMAGE_TABLE,
+  DEFAULT_DANGER,
+  SEVERITY_ORDER,
+  type Severity,
+  applyDamage,
+  validateSeverity,
+} from '@/app/dicebound/domain/body'
+import {
   CONDENSE_AT,
   type Campaign,
   type CheckEntry,
@@ -104,6 +115,14 @@ import {
   shouldNameClass,
 } from '@/app/dicebound/domain/klass'
 import {
+  PROVENANCES,
+  type Provenance,
+  describeQuality,
+  rollQuality,
+  traitsFor,
+  worthOf,
+} from '@/app/dicebound/domain/loot'
+import {
   GRANT_ITEM_TOOL,
   GRANT_POWER_TOOL,
   NARRATE_TOOL,
@@ -116,14 +135,6 @@ import {
   partitionTurnCalls,
 } from '@/app/dicebound/domain/turn'
 import { bool, boundedInt, isPlainObject, oneOf, slug, str } from '@/app/dicebound/domain/validate'
-import {
-  PROVENANCES,
-  type Provenance,
-  describeQuality,
-  rollQuality,
-  traitsFor,
-  worthOf,
-} from '@/app/dicebound/domain/loot'
 import {
   EDGE_KINDS,
   ENTITY_KINDS,
@@ -220,6 +231,23 @@ const MOVE_LINES = BAND_ORDER.map(band => `  ${BAND_LABEL[band]} — ${BAND_MOVE
 
 const HARD_MOVE_LINES = HARD_MOVES.map(move => `  - ${move}`).join('\n')
 
+/**
+ * The severity table, rendered from the same rows the tool enum is built from.
+ *
+ * The examples are not decoration and this is the only place the model ever
+ * reads them. The failure they exist to prevent is a DM reaching for `lethal`
+ * because the sentence was dramatic — the player writes "I climb down into the
+ * ravine" and a forty-turn character is gone. Nothing downstream can fix that,
+ * because by the time the roll resolves the row has already been chosen. So the
+ * rows are anchored in things a reader can picture, exactly the way `DC_LINES`
+ * anchors difficulty.
+ *
+ * What is deliberately *not* rendered is `DamageRow.fatal` or anything about
+ * how many rungs a row costs. The DM picks a row and is told the result; a
+ * model shown the mapping starts tuning it.
+ */
+const SEVERITY_LINES = DAMAGE_TABLE.map(row => `  ${row.label} — ${row.example}`).join('\n')
+
 const SKILL_LINES = ATTRIBUTE_IDS.map(
   id =>
     `  ${ATTRIBUTES[id].name} — ${skillsOf(id)
@@ -255,6 +283,14 @@ Pick the row that honestly fits the attempt. Do not soften a DC because you like
 
 SITUATIONAL MODIFIERS
 Add small bonuses and penalties for what is true in the scene right now: the floor is wet (−2), you have rope (+2), you just mentioned his daughter (−3), you spent the last scene earning her trust (+2). Each is at most ±${MAX_SITUATIONAL}. Name them plainly — the player sees every one on the die card, and this is where they learn that the fiction affects the odds.
+
+WHEN A CHECK CAN HURT THEM
+Most cannot, and leaving severity off is the ordinary case. Picking a lock badly costs time, not blood. Losing an argument costs the argument. A DM that stamps a severity on every check has turned a story into a war of attrition, and the player will feel it long before they can say why.
+Fill it in only when the scene itself contains something that could physically hurt them — a drop, an edge, a fire, a blade already in the air. Then pick the row that matches what is actually there, not the row that matches how exciting the moment feels:
+${SEVERITY_LINES}
+You are choosing this BEFORE the dice are thrown, and that is the entire point of putting it here: you do not yet know whether it lands. A success costs them nothing at all, whatever row you named.
+Never pick lethal for something the player could not have seen coming. If the fiction did not already tell them this could kill them, it is not that row — and if you are reaching for it because the scene needs weight, use a hard move instead.
+The game decides what a hit costs. You are told afterwards what state they are in, and you narrate that and nothing heavier. Do not decide how badly they are hurt, do not describe a wound the roll did not give them, and do not soften one it did.
 
 ATTRIBUTES AND SKILLS
 Every check names one attribute. It may also name one sub-skill, and you should whenever a specific one genuinely applies:
@@ -335,6 +371,12 @@ const RollCheckSchema = z.object({
       'Ids of things the character is carrying that genuinely bear on THIS attempt. Name them and the game decides what they are worth — most are worth nothing, and are named on the card anyway because the reason is real even when the number is not.'
     ),
   dc: z.number().int().min(0).max(30).describe('The difficulty, from the table. Be honest.'),
+  severity: z
+    .enum(SEVERITY_ORDER as unknown as [Severity, ...Severity[]])
+    .optional()
+    .describe(
+      'Only when failing this could physically hurt them, which is not most checks. The row from the table matching what is actually in the scene. Omit it entirely when nothing here can draw blood — that is the ordinary case. A success costs nothing whatever you name here.'
+    ),
   situational: z
     .array(
       z.object({
@@ -490,7 +532,9 @@ const ProvenanceEnum = z.enum(['underfoot', 'given', 'bought', 'taken', 'hoard']
 const GrantItemSchema = z.object({
   name: z
     .string()
-    .describe('What the player would call it. The game slugs this into a stable id — reuse the same name for the same thing.'),
+    .describe(
+      'What the player would call it. The game slugs this into a stable id — reuse the same name for the same thing.'
+    ),
   note: z
     .string()
     .optional()
@@ -501,7 +545,9 @@ const GrantItemSchema = z.object({
   from: z
     .string()
     .optional()
-    .describe('The id of the world entity it came from, if any. Looked up — if it does not exist in the graph, the item is still granted.'),
+    .describe(
+      'The id of the world entity it came from, if any. Looked up — if it does not exist in the graph, the item is still granted.'
+    ),
   consumable: z.boolean().optional().describe('True if using it uses it up.'),
   uses: z.number().int().min(1).max(9).optional().describe('For a consumable: how many times.'),
   traits: z
@@ -509,14 +555,18 @@ const GrantItemSchema = z.object({
       z.object({
         label: z
           .string()
-          .describe('What is true because they have it, as the player would say it: "you have rope". The game assigns the number.'),
+          .describe(
+            'What is true because they have it, as the player would say it: "you have rope". The game assigns the number.'
+          ),
         applies: z
           .object({
             attributes: z.array(AttributeEnum).optional(),
             skills: z.array(SkillEnum).optional(),
           })
           .optional()
-          .describe('Leave empty when it applies everywhere. Name attributes or skills to narrow it.'),
+          .describe(
+            'Leave empty when it applies everywhere. Name attributes or skills to narrow it.'
+          ),
       })
     )
     .max(2)
@@ -525,7 +575,9 @@ const GrantItemSchema = z.object({
   replace: z
     .string()
     .optional()
-    .describe('Id of an item already in the pack to swap out. Use this when the pack is full and the player chose what to put down.'),
+    .describe(
+      'Id of an item already in the pack to swap out. Use this when the pack is full and the player chose what to put down.'
+    ),
 })
 
 const GRANT_ITEM: ToolDef = {
@@ -895,6 +947,10 @@ Resolve it, then call narrate with what happens.`,
   // reopening it, and a turn that never stops is a turn that never comes back.
   let fuseAnswered = false
   let kit = campaign.kit
+  // Carried through the turn the way `kit` and `world` are, rather than being
+  // written back to the campaign at each roll. A turn can roll three times, and
+  // the third blow has to land on the body the first two left behind.
+  let body = campaign.body
   // Both fixed for the whole turn, on purpose.
   //
   // `level` is read once so a skill that ranks up mid-turn cannot also unlock a
@@ -1043,8 +1099,9 @@ Resolve it, then call narrate with what happens.`,
       results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
     for (const call of rolls) {
-      const { entry, brief } = rollFor(campaign, kit, powers, call.input)
+      const { entry, brief, body: afterBlow } = rollFor(campaign, kit, body, powers, call.input)
       entries.push(entry)
+      body = afterBlow
 
       // Spend one charge per named item that bore on this check.
       const rawInput = (call.input ?? {}) as { items?: unknown }
@@ -1145,7 +1202,7 @@ Resolve it, then call narrate with what happens.`,
     })
   }
 
-  return { entries, synopsis, dropped, world, chapters, kit }
+  return { entries, synopsis, dropped, world, chapters, kit, body }
 }
 
 /**
@@ -1220,11 +1277,7 @@ function recallFor(world: World, input: unknown): string {
  * nothing on the die, it describes a sword. That is the same loop `roll_check`
  * runs — commit first, then narrate around a number you did not choose.
  */
-function grantFor(
-  kit: Kit,
-  world: World,
-  input: unknown
-): { kit: Kit; note: string } {
+function grantFor(kit: Kit, world: World, input: unknown): { kit: Kit; note: string } {
   const now = world.clock.elapsed
   const raw = isPlainObject(input) ? input : {}
 
@@ -1462,9 +1515,10 @@ function grantPowerFor(
 function rollFor(
   campaign: Campaign,
   kit: Kit,
+  body: Body,
   powers: TurnPowers,
   input: unknown
-): { entry: CheckEntry; brief: string } {
+): { entry: CheckEntry; brief: string; body: Body } {
   const raw = (input ?? {}) as {
     attempt?: unknown
     attribute?: unknown
@@ -1472,6 +1526,7 @@ function rollFor(
     dc?: unknown
     situational?: unknown
     items?: unknown
+    severity?: unknown
   }
 
   const attribute: AttributeId = isAttributeId(raw.attribute) ? raw.attribute : 'wisdom'
@@ -1520,6 +1575,17 @@ function rollFor(
 
   const outcome = resolveCheck({ dc, modifiers, advantage: claimed.map(entry => entry.source) })
 
+  // Read *before* `validateSeverity`, not through it. That function repairs an
+  // unrecognised row to the mildest one, which is right for a garbled field and
+  // catastrophic for a missing one: passing `undefined` straight through would
+  // stamp `bruising` on every check in the game and turn the ordinary case —
+  // no severity at all — into a slow bleed nobody chose.
+  const severity = typeof raw.severity === 'string' ? validateSeverity(raw.severity) : null
+  // `DEFAULT_DANGER` until the dial exists (#3777). It is passed rather than
+  // defaulted inside `applyDamage` so that the day `Campaign.danger` lands, the
+  // only edit is this argument.
+  const change = severity ? applyDamage(body, severity, outcome.band, DEFAULT_DANGER) : null
+
   const entry: CheckEntry = {
     kind: 'check',
     attempt: typeof raw.attempt === 'string' ? raw.attempt.slice(0, 300) : 'the attempt',
@@ -1549,12 +1615,43 @@ function rollFor(
     // top of a long prompt loses to whatever the model feels like doing by the
     // time a roll comes back; the move quoted next to the number does not.
     `YOUR MOVE: ${BAND_MOVE[outcome.band]}`,
+    // What the model is told about a number changes how it narrates
+    // (invariant 19), and nowhere more sharply than here. A DM told a blow
+    // landed but not how hard writes a maiming, because a maiming is the more
+    // interesting sentence — and then the prose and the sheet describe two
+    // different injuries, which is a bug no test can see.
+    woundBrief(change, outcome.succeeded),
     'Narrate this outcome. Do not restate the numbers — the player can already see them.',
   ]
     .filter(Boolean)
     .join(' ')
 
-  return { entry, brief }
+  return { entry, brief, body: change ? change.body : body }
+}
+
+/**
+ * What the DM is told a wound actually cost, in words.
+ *
+ * The rung is reported and the arithmetic is not. The model named a row and is
+ * handed a state; it never learns how many steps a row is worth, because a
+ * model that can see the mapping can aim at it, and aiming at it is how a DM
+ * that likes the protagonist arranges for them to sit one rung above dead
+ * forever.
+ *
+ * A check the DM flagged as dangerous and then *passed* says nothing at all.
+ * The character is fine, that is what passing means, and a line reading "it did
+ * not hurt them" invites a paragraph about the wound they nearly took.
+ */
+function woundBrief(change: ReturnType<typeof applyDamage> | null, succeeded: boolean): string {
+  if (!change || succeeded) return ''
+  if (change.steps > 0) {
+    return `THAT HURT THEM. They are now ${CONDITION_LABEL[change.to].toLowerCase()}: ${CONDITION_PHRASE[change.to]} Narrate the injury at exactly that weight — not heavier because the moment deserved it, and not lighter because you would rather they were fine.`
+  }
+  // The blow landed on a body the table could not move: a failure whose row
+  // cost nothing at this danger, or `bruising` on someone already dying, where
+  // the floor holds. Said out loud because silence here reads as a success.
+  if (change.from === 'unhurt') return 'It did not mark them. Do not narrate a wound.'
+  return `It cost them nothing further — they are still ${CONDITION_LABEL[change.to].toLowerCase()}. Do not narrate a new wound.`
 }
 
 /**
@@ -1638,7 +1735,35 @@ function sheetBlock(campaign: Campaign): string {
   return `THE CHARACTER
 ${c.name} — ${c.concept}
 Attributes: ${attributes}
-Earned skills: ${skills}${windowBlock(campaign)}${powersBlock(campaign.kit)}${packBlock(campaign.kit)}`
+Earned skills: ${skills}${bodyBlock(campaign.body)}${windowBlock(campaign)}${powersBlock(campaign.kit)}${packBlock(campaign.kit)}`
+}
+
+/**
+ * What is wrong with them, when anything is.
+ *
+ * Absent entirely for an unhurt character, and that is not just tidiness. A
+ * standing line reading "Condition: unhurt" puts the track in front of the DM
+ * on every one of the many turns where nobody is in any danger, and a model
+ * shown a health bar starts looking for reasons to move it. A character who has
+ * never been hurt should not be able to tell this system is here.
+ *
+ * The harder question is whether to show it at all, because the DM both reads
+ * this and picks the severity — which is the exact pairing #3769 warns about: a
+ * model that can see the rung and choose the damage will keep the protagonist
+ * one step above dead. It is shown anyway, for a failure that is worse and
+ * certain rather than gradual and possible. Without it the DM has no memory of
+ * injury across turns, so a character bleeding out gets narrated as fine on the
+ * very next line, and the track becomes a number on a sheet that the story
+ * never once acknowledges — which is a longer way of saying it does not exist.
+ *
+ * What keeps the pairing safe is that seeing the rung buys the model no
+ * arithmetic. It can pick a milder row, and that is a real risk; it cannot pick
+ * a smaller number, cannot see the mapping, and cannot know the die when it
+ * chooses. #3779 is what measures whether the mild-row drift actually happens.
+ */
+function bodyBlock(body: Body): string {
+  if (body.condition === 'unhurt') return ''
+  return `\nCondition: ${CONDITION_LABEL[body.condition].toLowerCase()} — ${CONDITION_PHRASE[body.condition]} Let this show in how they move and what they can face. Do not heal it, and do not forget it.`
 }
 
 /**
