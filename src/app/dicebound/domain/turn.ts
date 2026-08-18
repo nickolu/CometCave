@@ -25,6 +25,7 @@ export const RECALL_TOOL = 'recall'
 export const GRANT_ITEM_TOOL = 'grant_item'
 export const GRANT_POWER_TOOL = 'grant_power'
 export const USE_POWER_TOOL = 'use_power'
+export const HARM_TOOL = 'harm'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
@@ -50,6 +51,14 @@ export interface TurnCalls<T extends ToolCall> {
    * to be told what the power made available before it can narrate around it.
    */
   powerUses: T[]
+  /**
+   * `harm` calls — damage with no check behind it.
+   *
+   * Answered and the turn continues, like a lookup and unlike a roll. A turn
+   * where an ambush lands still owes the player the narration of it, and
+   * ending on the tool result would leave them reading nothing at all.
+   */
+  harms: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -82,6 +91,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   const grants = calls.filter(call => call.name === GRANT_ITEM_TOOL)
   const powerGrants = calls.filter(call => call.name === GRANT_POWER_TOOL)
   const powerUses = calls.filter(call => call.name === USE_POWER_TOOL)
+  const harms = calls.filter(call => call.name === HARM_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
   // A narration sent alongside a lookup is as blind as one sent alongside a
@@ -89,14 +99,30 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   // for cannot be in it. A power grant belongs in this list for a sharper
   // reason than the others — the grant can be *refused*, and narration written
   // beside it describes the character learning something they did not get.
+  //
+  // `harm` is in the list for the same reason as the die. The model names a
+  // severity; the game decides what that severity costs, and it may cost
+  // nothing at all. Narration composed in the same breath describes a wound
+  // whose weight had not been assigned yet, and the model's guess at that
+  // weight is the exact thing this tool exists to take away from it.
   if (
     rolls.length > 0 ||
     recalls.length > 0 ||
     grants.length > 0 ||
     powerGrants.length > 0 ||
-    powerUses.length > 0
+    powerUses.length > 0 ||
+    harms.length > 0
   ) {
-    return { rolls, recalls, grants, powerGrants, powerUses, ending: null, premature: narrations }
+    return {
+      rolls,
+      recalls,
+      grants,
+      powerGrants,
+      powerUses,
+      harms,
+      ending: null,
+      premature: narrations,
+    }
   }
 
   // Only the first narration ends the turn. A second one is a duplicate, not a
@@ -107,6 +133,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
     grants,
     powerGrants,
     powerUses,
+    harms,
     ending: narrations[0] ?? null,
     premature: narrations.slice(1),
   }

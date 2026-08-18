@@ -50,6 +50,7 @@ import {
   SEVERITY_ORDER,
   type Severity,
   applyDamage,
+  applyHarm,
   validateSeverity,
 } from '@/app/dicebound/domain/body'
 import {
@@ -125,6 +126,7 @@ import {
 import {
   GRANT_ITEM_TOOL,
   GRANT_POWER_TOOL,
+  HARM_TOOL,
   NARRATE_TOOL,
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
@@ -291,6 +293,14 @@ ${SEVERITY_LINES}
 You are choosing this BEFORE the dice are thrown, and that is the entire point of putting it here: you do not yet know whether it lands. A success costs them nothing at all, whatever row you named.
 Never pick lethal for something the player could not have seen coming. If the fiction did not already tell them this could kill them, it is not that row — and if you are reaching for it because the scene needs weight, use a hard move instead.
 The game decides what a hit costs. You are told afterwards what state they are in, and you narrate that and nothing heavier. Do not decide how badly they are hurt, do not describe a wound the roll did not give them, and do not soften one it did.
+
+WHEN THE WORLD HURTS THEM ANYWAY
+Not all damage comes from a failed attempt. An ambush lands before anyone can react. A thread they have been ignoring catches up with them. Poison, fever, cold and hunger do what they were always going to do, whatever the player does that turn. When the fiction is already hurting them and no attempt of theirs is being tested, call harm — the same severity table as roll_check, plus a few words saying why.
+Call it BEFORE you narrate, exactly as you call roll_check before you narrate. You do not know what the injury cost until the game tells you, and a wound you describe first is a wound you invented.
+The line between the two tools is not a matter of taste and nothing sits in the middle:
+- They tried something and it could have gone wrong -> roll_check with a severity. ALWAYS, even when you are certain it fails.
+- Nothing they did is being tested -> harm.
+Do not use harm to avoid setting a DC. At most one in a turn.
 
 ATTRIBUTES AND SKILLS
 Every check names one attribute. It may also name one sub-skill, and you should whenever a specific one genuinely applies:
@@ -483,6 +493,46 @@ const ROLL_CHECK: ToolDef = {
   description:
     'Roll the dice for an uncertain attempt. Returns the roll, the total, and how far above or below the DC it landed. Call this BEFORE narrating an uncertain outcome — you do not know whether it works until you do.',
   input_schema: toolSchema(RollCheckSchema),
+}
+
+/**
+ * Damage with no check behind it.
+ *
+ * `roll_check` covers exactly one case: the player attempted something and the
+ * die went against them. It covers none of the others — a fuse fires and the
+ * thing they have been ignoring catches up, an ambush starts, a fever does what
+ * it promised five turns ago, the cold finally gets through. Without a tool for
+ * those, the dungeon master's only options are to narrate a wound the sheet
+ * never records, or to invent a roll the player never earned. Both are worse
+ * than a second tool.
+ *
+ * There is no outcome field, and there is no DC. The model says *that*
+ * something hurt them and roughly how badly, from the same table `roll_check`
+ * uses, and the game says what it cost.
+ *
+ * `reason` is not decoration and it is not stored anywhere. It is a commitment
+ * device, the same job `uncertain` does on `roll_check`: a model that has to
+ * write "the fever takes hold" before it learns what the fever cost reaches for
+ * this tool less freely than one that only has to pick an enum. A `harm` whose
+ * reason cannot be stated in a few words is usually a `roll_check` the model
+ * did not want to make.
+ */
+const HarmSchema = z.object({
+  severity: z
+    .enum(SEVERITY_ORDER as unknown as [Severity, ...Severity[]])
+    .describe('How badly this hurts, from the same table roll_check uses.'),
+  reason: z
+    .string()
+    .describe(
+      'Why, in a few words, as the player would understand it: "the fever takes hold", "the beam comes down". If the character was attempting something, this is the wrong tool — call roll_check instead.'
+    ),
+})
+
+const HARM: ToolDef = {
+  name: HARM_TOOL,
+  description:
+    'The world hurts the character, with no attempt of theirs being tested: an ambush landing, a thread catching up with them, poison, fever, cold. Call this BEFORE narrating the injury — it returns what state they are now in, and you narrate that. If they tried something that could go wrong, use roll_check with a severity instead. At most once per turn.',
+  input_schema: toolSchema(HarmSchema),
 }
 
 /**
@@ -951,6 +1001,10 @@ Resolve it, then call narrate with what happens.`,
   // written back to the campaign at each roll. A turn can roll three times, and
   // the third blow has to land on the body the first two left behind.
   let body = campaign.body
+  // One harm per turn, latched across passes rather than counted within one.
+  // A turn that rolls, harms, and then rolls again has had its harm — the
+  // ceiling is on the turn the player experiences, not on a single message.
+  let harmed = false
   // Both fixed for the whole turn, on purpose.
   //
   // `level` is read once so a skill that ranks up mid-turn cannot also unlock a
@@ -1004,11 +1058,11 @@ Resolve it, then call narrate with what happens.`,
       // left on the board.
       tools: lastStep
         ? [narrate]
-        : [ROLL_CHECK, RECALL, GRANT_ITEM, GRANT_POWER, USE_POWER, narrate],
+        : [ROLL_CHECK, HARM, RECALL, GRANT_ITEM, GRANT_POWER, USE_POWER, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, recalls, grants, powerGrants, powerUses, ending, premature } =
+    const { rolls, recalls, grants, powerGrants, powerUses, harms, ending, premature } =
       partitionTurnCalls(toolUses(data))
 
     if (ending) {
@@ -1077,6 +1131,7 @@ Resolve it, then call narrate with what happens.`,
       grants.length === 0 &&
       powerGrants.length === 0 &&
       powerUses.length === 0 &&
+      harms.length === 0 &&
       premature.length === 0
     ) {
       // The model answered in prose instead of declaring the end of the turn.
@@ -1114,6 +1169,15 @@ Resolve it, then call narrate with what happens.`,
           : brief
 
       results.push({ type: 'tool_result', tool_use_id: call.id, content: fullBrief })
+    }
+    // After the rolls, so that a model sending both in one message gets them in
+    // the order it meant them: the thing they attempted resolves, and then the
+    // world does whatever it was going to do regardless.
+    for (const call of harms) {
+      const { body: afterHarm, note, spent } = harmFor(body, harmed, call.input)
+      body = afterHarm
+      harmed = harmed || spent
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
     for (const call of grants) {
       const { kit: next, note } = grantFor(kit, world, call.input)
@@ -1221,6 +1285,7 @@ function fuseBrief(world: World, fired: readonly string[]): string {
   return [
     `Your narration has been discarded — it described time that did not happen. The player did not get the span they asked for: ${names.join('; ') || 'something they had been ignoring'} caught up with them first, and it is now ${describeClock(world.clock)}.`,
     'Narrate the whole turn again from the start, short, ending on that interruption as a hard move. Begin where they began, cover only the time that actually passed, and never mention a clock or say that less time went by than they wanted — just let the thing arrive.',
+    'If the thing that caught up with them hurts them on the way in, call harm first and narrate the injury the game gives you back. This is the case that tool exists for.',
   ].join(' ')
 }
 
@@ -1627,6 +1692,56 @@ function rollFor(
     .join(' ')
 
   return { entry, brief, body: change ? change.body : body }
+}
+
+/**
+ * Resolve one `harm` call.
+ *
+ * `already` is whether this turn has spent its one harm. The ceiling is real
+ * rather than advisory, and it is enforced here instead of in the prompt
+ * because the failure it prevents is not the model misunderstanding the rule —
+ * it is a model that reaches for the simpler tool twice in a scene that felt
+ * like it deserved it, and drains a character across a turn nobody rolled a die
+ * in. A refusal is answered plainly and the turn carries on; it is a normal
+ * answer, not an error, and the DM narrates the scene without the second blow.
+ */
+function harmFor(
+  body: Body,
+  already: boolean,
+  input: unknown
+): { body: Body; note: string; spent: boolean } {
+  if (already) {
+    return {
+      body,
+      spent: false,
+      note: 'They have already been hurt once this turn, and once is the limit. Narrate what is happening to them without a second injury — a scene can be desperate without costing them twice.',
+    }
+  }
+
+  const raw = (input ?? {}) as { severity?: unknown; reason?: unknown }
+  // Unlike `roll_check`, severity is required here: a `harm` with no severity is
+  // not a milder harm, it is a tool call with nothing in it. Repairing it to the
+  // gentlest row is right — the alternative is refusing, and a refused harm on a
+  // turn where the fiction has already committed to an ambush leaves the DM
+  // narrating a blow the sheet never took.
+  const severity = validateSeverity(raw.severity)
+  const change = applyHarm(body, severity, DEFAULT_DANGER)
+  const reason = typeof raw.reason === 'string' ? raw.reason.slice(0, 120) : ''
+
+  return {
+    body: change.body,
+    spent: true,
+    note: [
+      reason ? `${reason} —` : '',
+      change.steps > 0
+        ? `that hurt them. They are now ${CONDITION_LABEL[change.to].toLowerCase()}: ${CONDITION_PHRASE[change.to]} Narrate it at exactly that weight, no heavier.`
+        : change.from === 'unhurt'
+          ? 'it did not mark them. Narrate the moment without an injury.'
+          : `it cost them nothing further — they are still ${CONDITION_LABEL[change.to].toLowerCase()}. Do not narrate a new wound.`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+  }
 }
 
 /**

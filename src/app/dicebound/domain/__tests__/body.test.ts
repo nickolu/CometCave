@@ -19,7 +19,9 @@ import {
   DEFAULT_DANGER,
   SEVERITY_ORDER,
   TRACK_LENGTH,
+  UNCONTESTED_BAND,
   applyDamage,
+  applyHarm,
   conditionIndex,
   damageFor,
   damageRow,
@@ -278,5 +280,50 @@ describe('reading a body off the wire', () => {
     expect(validateDanger(undefined)).toBe(DEFAULT_DANGER)
     expect(validateDanger('reckless')).toBe(DEFAULT_DANGER)
     expect(validateDanger('gentle')).toBe('gentle')
+  })
+})
+
+describe('harm — damage with nothing rolled against it', () => {
+  it('can never kill a healthy character, at any severity or danger', () => {
+    // The guarantee that falls out of resolving at the mildest band. Something
+    // has to have hurt them first, which means a die was thrown somewhere.
+    for (const danger of DANGER_ORDER) {
+      for (const severity of SEVERITY_ORDER) {
+        expect(applyHarm(undamagedBody(), severity, danger).to).not.toBe('dead')
+      }
+    }
+  })
+
+  it('never costs more than losing the same check would have', () => {
+    // The point of pinning it to the cheapest band: the tool that is easier to
+    // reach for is also the weakest move on the board, so a dungeon master
+    // never gains anything by skipping the die.
+    for (const danger of DANGER_ORDER) {
+      for (const severity of SEVERITY_ORDER) {
+        for (const band of ['failure', 'strong-failure', 'critical-failure'] as const) {
+          expect(damageFor(severity, UNCONTESTED_BAND, danger)).toBeLessThanOrEqual(
+            damageFor(severity, band, danger)
+          )
+        }
+      }
+    }
+  })
+
+  it('inherits the rule that bruising cannot kill', () => {
+    // `applyHarm` goes through `applyDamage`, so the floor on the row holds.
+    // This must not become the path that bypasses the guarantee.
+    for (const danger of DANGER_ORDER) {
+      expect(applyHarm({ condition: 'dying' }, 'bruising', danger).to).toBe('dying')
+    }
+  })
+
+  it('still finishes someone who was already dying, when the fiction meant it', () => {
+    expect(applyHarm({ condition: 'dying' }, 'lethal', 'ordinary').died).toBe(true)
+  })
+
+  it('resolves at the mildest band that costs anything', () => {
+    expect(UNCONTESTED_BAND).toBe('failure')
+    expect(applyHarm(undamagedBody(), 'bruising').steps).toBe(0)
+    expect(applyHarm(undamagedBody(), 'grievous').to).toBe('grazed')
   })
 })

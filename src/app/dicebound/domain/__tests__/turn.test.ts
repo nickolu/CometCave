@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   GRANT_POWER_TOOL,
+  HARM_TOOL,
   NARRATE_TOOL,
   RECALL_TOOL,
   ROLL_CHECK_TOOL,
@@ -173,5 +174,44 @@ describe('partitionTurnCalls and use_power', () => {
     expect(powerUses.map(c => c.id)).toEqual(['a'])
     expect(ending).toBeNull()
     expect(premature.map(c => c.id)).toEqual(['b'])
+  })
+})
+
+const harmCall = (id: string): ToolCall & { id: string } => ({
+  id,
+  name: HARM_TOOL,
+  input: { severity: 'bloody', reason: 'the beam comes down' },
+})
+
+describe('partitionTurnCalls and harm', () => {
+  it('does not end the turn — a player owed an ambush is owed the narration of it', () => {
+    const { harms, ending } = partitionTurnCalls([harmCall('a')])
+
+    expect(harms.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+  })
+
+  it('discards narration written in the same breath as the harm', () => {
+    // Invariant 2, and the same reason as the die. The model named a severity;
+    // the game decides what that severity costs, and it may cost nothing at
+    // all. Narration composed beside it describes a wound whose weight had not
+    // been assigned yet — and the model's guess at that weight is exactly what
+    // this tool exists to take away from it.
+    const { harms, ending, premature } = partitionTurnCalls([
+      harmCall('a'),
+      narrate('b', 'The beam takes your leg and you will not walk again.'),
+    ])
+
+    expect(harms.map(c => c.id)).toEqual(['a'])
+    expect(ending).toBeNull()
+    expect(premature.map(c => c.id)).toEqual(['b'])
+  })
+
+  it('carries a harm sent alongside a roll, so the loop can order them itself', () => {
+    const { rolls, harms, ending } = partitionTurnCalls([roll('a'), harmCall('b')])
+
+    expect(rolls.map(c => c.id)).toEqual(['a'])
+    expect(harms.map(c => c.id)).toEqual(['b'])
+    expect(ending).toBeNull()
   })
 })
