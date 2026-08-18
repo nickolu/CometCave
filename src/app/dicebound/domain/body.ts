@@ -411,6 +411,47 @@ export function worsen(condition: Condition, steps: number, fatal: boolean): Con
 }
 
 /**
+ * The band an uncontested harm is resolved at, and why it is the mildest one.
+ *
+ * `damageFor` is written against outcome bands, and some damage has no die
+ * behind it at all — a fuse fires, an ambush starts, a fever that was applied
+ * five turns ago finally does what it said it would. None of those are a check
+ * the player lost, so one of the six bands has to stand in for "no check
+ * happened".
+ *
+ * It is `failure`, the mildest band that costs anything, and the choice is a
+ * safety property rather than a taste. `harm` is *easier to reach for* than
+ * `roll_check` — no DC, no attribute, no clause about what could go wrong — and
+ * the failure mode of the whole tool is a dungeon master that drifts toward it
+ * because it is simpler, draining a character without ever throwing a die.
+ * Pinning it to the cheapest row means the shortcut is also the weakest move on
+ * the board: a real failed check is always at least as bad as an uncontested
+ * harm at the same severity, so nothing is ever gained by skipping the roll.
+ *
+ * It buys one more guarantee for free. At `failure`, the worst row at the worst
+ * danger setting is three steps, and the track is six — so **harm can never
+ * kill a healthy character**, whatever the DM names. Something has to have hurt
+ * them first, which means a die was thrown somewhere along the way.
+ */
+export const UNCONTESTED_BAND: OutcomeBand = 'failure'
+
+/**
+ * Damage with nothing rolled against it.
+ *
+ * A separate export rather than making callers remember to pass
+ * `UNCONTESTED_BAND` themselves, for the same reason `applyDamage` exists
+ * beside `damageFor` and `worsen`: the interesting rule is in the argument, and
+ * an argument a caller assembles by hand is an argument a caller gets wrong.
+ */
+export function applyHarm(
+  body: Body,
+  severity: Severity,
+  danger: Danger = DEFAULT_DANGER
+): BodyChange {
+  return applyDamage(body, severity, UNCONTESTED_BAND, danger)
+}
+
+/**
  * The whole of taking a hit: table, floor, and the record of what moved.
  *
  * This is the function routes and tools should call. `damageFor` and `worsen`
