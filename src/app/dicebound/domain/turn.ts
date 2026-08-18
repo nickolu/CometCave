@@ -8,6 +8,7 @@
  */
 import { type Character, recordSkillUse } from './character'
 
+import type { Body } from './body'
 import type { Campaign, CampaignStats, CheckEntry, TranscriptEntry } from './campaign'
 import type { Kit } from './kit'
 import type { World } from './world'
@@ -131,6 +132,17 @@ export interface TurnResult {
   /** The pack after anything the turn handed over. */
   kit?: Kit
   /**
+   * The body after anything the turn did to it.
+   *
+   * Absent on the opening turn and on any path that never reached a roll, and
+   * absent means *unchanged* rather than restored — the same rule `world` and
+   * `kit` follow. A missing field that read as an undamaged body would make
+   * every failed turn a free heal, which is a subtler bug than it sounds: the
+   * player would never see it happen, they would only notice that nothing they
+   * take ever seems to stay taken.
+   */
+  body?: Body
+  /**
    * The chapter counter after an archive. Set only on a turn that condensed and
    * successfully wrote what it dropped — a failed archive leaves the counter
    * alone, so the next condense reuses the index and overwrites rather than
@@ -208,6 +220,7 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
     synopsis: result.synopsis ?? campaign.synopsis,
     world: result.world ?? campaign.world,
     kit: result.kit ?? campaign.kit,
+    body: result.body ?? campaign.body,
     chapters: result.chapters ?? campaign.chapters,
     character,
     transcript: [...kept, ...entries],
