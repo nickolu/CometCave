@@ -23,6 +23,7 @@ import {
   SKILLS,
   type SkillId,
 } from '@/app/dicebound/domain/attributes'
+import { type Body, CONDITION_LABEL, CONDITION_PHRASE } from '@/app/dicebound/domain/body'
 import type { Campaign } from '@/app/dicebound/domain/campaign'
 import { type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
 
@@ -47,6 +48,7 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
         <p className="mt-1 text-body-md text-on-surface-variant">{character.concept}</p>
         <SpeciesLine species={campaign.kit.species} />
         <Standing campaign={campaign} />
+        <Condition body={campaign.body} />
         {character.reading && (
           <p className="mt-3 border-l-2 border-ds-tertiary/50 pl-3 text-sm italic text-on-surface-variant">
             {character.reading}
@@ -123,6 +125,66 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
         </dl>
       </section>
     </div>
+  )
+}
+
+/**
+ * What is wrong with them, when anything is.
+ *
+ * **Nothing renders until it exists.** An unhurt character gets no element at
+ * all — no empty bar, no greyed-out track with six rungs showing where the
+ * damage will go, no "Condition: unhurt". The reason is not tidiness: a new
+ * character shown a full-height damage track knows the game is about to hurt
+ * them, and that is a promise the first ten minutes should not be making. It is
+ * also the difference between a character sheet and a form to fill in. The same
+ * rule governs `Standing`, `Powers`, `Items` and every section of the world
+ * panel, and a test guards it here because it is the kind of rule a later
+ * change breaks without anyone noticing.
+ *
+ * Words, not a bar and not a number. A segmented health meter reads as a
+ * quantity to manage, and avoiding exactly that is why damage is a track rather
+ * than hit points (#3769). The strings come from `domain/body.ts` so the sheet
+ * and the dungeon master's prompt agree word for word — a player reading
+ * "bloodied" here and hearing something else from the DM is the same class of
+ * bug as prose disagreeing with the die card.
+ *
+ * `dying` looks different, and does not rely on colour to do it. The word
+ * itself is the signal, which is what a screen reader and a monochrome display
+ * both get; the heavier weight and the warmer rule are reinforcement on top of
+ * a distinction that is already carried by text (CLAUDE.md #8). No alarm
+ * styling beyond that — this is the cave, and the shell stays quiet even when
+ * the news is bad.
+ *
+ * It is a labelled section rather than a bare adjective dropped between the
+ * concept and the attributes, so it is announced as a sentence: "Condition.
+ * Bloodied — bleeding in a way that is not going to simply stop."
+ */
+function Condition({ body }: { body: Body }) {
+  if (body.condition === 'unhurt') return null
+
+  const grave = body.condition === 'dying' || body.condition === 'dead'
+
+  return (
+    <section aria-labelledby="dicebound-condition" className="mt-3">
+      <h3 id="dicebound-condition" className="sr-only">
+        Condition
+      </h3>
+      <p
+        className={`border-l-2 pl-3 text-sm ${
+          grave
+            ? 'border-ds-error text-on-surface'
+            : 'border-ds-tertiary/50 text-on-surface-variant'
+        }`}
+      >
+        <span
+          className={`font-headline ${grave ? 'font-extrabold text-ds-error' : 'font-bold text-on-surface'}`}
+        >
+          {CONDITION_LABEL[body.condition]}
+        </span>
+        <span className="mx-1.5 text-on-surface-variant/50">—</span>
+        {CONDITION_PHRASE[body.condition]}
+      </p>
+    </section>
   )
 }
 
