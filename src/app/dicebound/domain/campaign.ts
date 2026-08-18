@@ -2,7 +2,7 @@
  * A campaign — everything Dicebound remembers between visits.
  *
  * One campaign per player at a time: a premise, a character, the transcript of
- * everything that has happened, and — since version 2 — a world.
+ * everything that has happened, a world (version 2) and a body (version 3).
  *
  * The transcript is still the story and still authoritative. What `world` adds
  * is an *index* over it: the handful of facts that have to be checkable rather
@@ -20,6 +20,7 @@
  * Set, a Date or a class.
  */
 import { ATTRIBUTE_IDS, isAttributeId, isSkillId } from './attributes'
+import { type Body, undamagedBody, validateBody } from './body'
 import { MAX_SKILL_RANK, blankAttributes, normalizeAttributes } from './character'
 import { type Kit, emptyKit, validateKit } from './kit'
 import { boundedInt, int, isPlainObject, str } from './validate'
@@ -39,11 +40,16 @@ import type { Modifier, OutcomeBand, RolledTwice } from './dice'
  * transcript it already has. Refusing it instead — which is what this file used
  * to do on any mismatch — would silently delete every story in existence and
  * show the player an empty game.
+ *
+ * Version 3 added the body: a condition track that can reach death. Same rule,
+ * and the stakes of getting it wrong are now a step higher — a version 2
+ * campaign reads as a valid campaign with an undamaged body, because the only
+ * honest reading of "this save predates injury" is that nobody has been injured.
  */
-export const CAMPAIGN_VERSION = 2
+export const CAMPAIGN_VERSION = 3
 
 /** Versions this code can read. Anything else is genuinely not a campaign. */
-export const SUPPORTED_VERSIONS: readonly number[] = [1, 2]
+export const SUPPORTED_VERSIONS: readonly number[] = [1, 2, 3]
 
 export interface NarrationEntry {
   kind: 'narration'
@@ -106,6 +112,8 @@ export interface Campaign {
   /** The DM's title for the story, set on the opening turn. */
   title: string
   character: Character
+  /** Where the character is on the condition track. Added in version 3. */
+  body: Body
   /** Places, people, things and threads, plus the clock. Added in version 2. */
   world: World
   /** Carried items, powers, species and the discovered class. Added in version 2. */
@@ -177,6 +185,7 @@ export function newCampaign(
     premise,
     title: 'An Untitled Story',
     character,
+    body: undamagedBody(),
     world: emptyWorld(),
     kit: emptyKit(),
     transcript: [],
@@ -248,6 +257,12 @@ export function validateCampaign(value: unknown): Campaign | null {
     premise: str(value.premise, MAX_PREMISE),
     title: str(value.title, 120, 'An Untitled Story'),
     character,
+    // No `migrating` guard, unlike the two below it. `validateBody` already
+    // reads an absent body as an undamaged one, so the version 2 → 3 migration
+    // is the ordinary path through it rather than a branch that has to be
+    // remembered — and a branch nobody has to remember is a branch that cannot
+    // be forgotten at the next bump.
+    body: validateBody(value.body),
     world: migrating ? emptyWorld() : validateWorld(value.world),
     kit: migrating ? emptyKit() : validateKit(value.kit),
     transcript: transcript.slice(-CONDENSE_AT * 2),
