@@ -7,6 +7,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
+import { undamagedBody } from '@/app/dicebound/domain/body'
 import {
   CAMPAIGN_VERSION,
   emptyStats,
@@ -64,6 +65,10 @@ describe('version 1 campaigns', () => {
     expect(campaign?.chapters).toBe(0)
   })
 
+  it('arrive with an undamaged body, because injury did not exist when they were saved', () => {
+    expect(validateCampaign(v1())?.body).toEqual(undamagedBody())
+  })
+
   it('ignore any version 2 fields that somehow came along', () => {
     const campaign = validateCampaign(v1({ kit: { className: 'Cat Burglar' }, chapters: 4 }))
     expect(campaign?.kit.className).toBeNull()
@@ -88,6 +93,31 @@ describe('version 2 campaigns', () => {
     expect(campaign?.world.entities.kell?.name).toBe('Bosun Kell')
     expect(campaign?.kit.className).toBe('Cat Burglar')
     expect(campaign?.chapters).toBe(2)
+  })
+
+  it('load with an undamaged body — the whole of the version 2 to 3 migration', () => {
+    // The stakes here are a step above the last bump. Refusing a version 2
+    // campaign would delete every story in existence; repairing its missing body
+    // toward the middle of the track would kill characters over an absent field.
+    const campaign = validateCampaign({ ...v1(), version: 2 })
+    expect(campaign?.body).toEqual(undamagedBody())
+    expect(campaign?.version).toBe(CAMPAIGN_VERSION)
+  })
+})
+
+describe('version 3 campaigns', () => {
+  it('keep the rung the character was actually on', () => {
+    const campaign = validateCampaign({ ...v1(), version: 3, body: { condition: 'bloodied' } })
+    expect(campaign?.body.condition).toBe('bloodied')
+  })
+
+  it('read a body full of garbage from the wire as undamaged rather than throwing', () => {
+    // A body is the one field where a parse failure could cost the player a
+    // character rather than an index, so it repairs in the survivable direction.
+    expect(validateCampaign({ ...v1(), version: 3, body: 'dead' })?.body).toEqual(undamagedBody())
+    expect(
+      validateCampaign({ ...v1(), version: 3, body: { condition: 'exploded' } })?.body
+    ).toEqual(undamagedBody())
   })
 })
 
