@@ -20,10 +20,12 @@ import { useAuth } from '@/hooks/useAuth'
 import { accountBackend, localBackend } from './backend'
 import { Composer } from './components/composer'
 import { Creation } from './components/creation'
+import { Ending } from './components/ending'
 import { ShareButton } from './components/share'
 import { Sheet } from './components/sheet'
 import { SignInInvite } from './components/sign-in-invite'
 import { Transcript } from './components/transcript'
+import { isEnded } from './domain/campaign'
 import { useDicebound } from './store'
 
 export function DiceboundGame() {
@@ -75,6 +77,9 @@ export function DiceboundGame() {
   if (phase === 'creating' || !campaign) {
     return <Creation onBegin={begin} pending={pending} error={error} />
   }
+
+  const ended = isEnded(campaign)
+  const anonymous = !configured || Boolean(user?.isAnonymous)
 
   return (
     <div className="flex h-[calc(100dvh-var(--dicebound-chrome,8rem))] gap-0 md:gap-6">
@@ -130,7 +135,16 @@ export function DiceboundGame() {
           </p>
         )}
 
-        <Composer onSend={act} disabled={pending} suggestions={suggestions} />
+        {/*
+          The composer is not disabled at the end, it is gone. A greyed-out
+          input under a finished story invites the player to work out what they
+          would have to do to re-enable it, and the answer is nothing.
+        */}
+        {ended ? (
+          <Ending campaign={campaign} onBegin={() => void abandon()} invite={anonymous} />
+        ) : (
+          <Composer onSend={act} disabled={pending} suggestions={suggestions} />
+        )}
       </div>
 
       {/* Desktop: the sheet is always there. Mobile: it slides over. */}
@@ -153,19 +167,27 @@ export function DiceboundGame() {
           </button>
         )}
         <Sheet campaign={campaign} />
-        <div className="flex flex-col gap-4 p-5 pt-0">
-          {(!configured || user?.isAnonymous) && <SignInInvite streak={campaign.currentStreak} />}
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm('Leave this story behind? It will not come back.')) void abandon()
-            }}
-            disabled={pending}
-            className="text-sm text-on-surface-variant/70 underline hover:text-ds-error focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-error disabled:opacity-50"
-          >
-            Begin a different story
-          </button>
-        </div>
+        {/*
+          Both of these move to the ending screen once there is one, rather than
+          being shown twice. The invite in particular: asking in two places at
+          the same moment is the difference between an offer and a nag.
+        */}
+        {!ended && (
+          <div className="flex flex-col gap-4 p-5 pt-0">
+            {anonymous && <SignInInvite streak={campaign.currentStreak} />}
+            <button
+              type="button"
+              onClick={() => {
+                if (window.confirm('Leave this story behind? It will not come back.'))
+                  void abandon()
+              }}
+              disabled={pending}
+              className="text-sm text-on-surface-variant/70 underline hover:text-ds-error focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-error disabled:opacity-50"
+            >
+              Begin a different story
+            </button>
+          </div>
+        )}
       </aside>
     </div>
   )

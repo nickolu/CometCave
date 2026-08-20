@@ -20,10 +20,17 @@
  * Set, a Date or a class.
  */
 import { ATTRIBUTE_IDS, isAttributeId, isSkillId } from './attributes'
-import { type Body, undamagedBody, validateBody } from './body'
+import {
+  type Body,
+  CONDITION_ORDER,
+  type Condition,
+  isDead,
+  undamagedBody,
+  validateBody,
+} from './body'
 import { MAX_SKILL_RANK, blankAttributes, normalizeAttributes } from './character'
 import { type Kit, emptyKit, validateKit } from './kit'
-import { boundedInt, int, isPlainObject, str } from './validate'
+import { boundedInt, int, isPlainObject, oneOf, str } from './validate'
 import { type World, emptyWorld, validateWorld } from './world'
 
 import type { AttributeId, SkillId } from './attributes'
@@ -45,6 +52,11 @@ import type { Modifier, OutcomeBand, RolledTwice } from './dice'
  * and the stakes of getting it wrong are now a step higher — a version 2
  * campaign reads as a valid campaign with an undamaged body, because the only
  * honest reading of "this save predates injury" is that nobody has been injured.
+ *
+ * `ending` is deliberately *not* a fourth version. A campaign saved without one
+ * is a story still going, which is true of every campaign that ever had no
+ * `ending` field — except a character already sitting on the last rung, and
+ * that one case is stamped on read rather than versioned. See `readEnding`.
  */
 export const CAMPAIGN_VERSION = 3
 
@@ -105,6 +117,35 @@ export interface CampaignStats {
   naturalOnes: number
 }
 
+/**
+ * How a story stopped.
+ *
+ * A written record rather than `body.condition === 'dead'` read back, and the
+ * difference is the sentence in #3769 saying that nothing built here may assume
+ * permanence is forever. An ending *inferred* from the track is an ending
+ * welded to the track: the day a gentler mode arrives — a run that can be
+ * walked away from, a death that costs something other than the character —
+ * there is nowhere to write that down, and the softer path becomes a rewrite
+ * instead of a branch. Everything downstream reads this field and re-decides
+ * nothing.
+ *
+ * It is also what makes the ending survivable in the other direction. The
+ * campaign is not deleted when it ends; this is the flag that says the
+ * transcript sitting in storage is a finished story rather than one waiting for
+ * its next turn.
+ *
+ * `cause` has exactly one value today, and is a field for the same reason.
+ */
+export interface Ending {
+  cause: 'death'
+  /** The rung it ended on, so the screen can name it in the game's own words. */
+  condition: Condition
+  /** Clock minute of the fiction. Story time — "day four, dusk" — not a timestamp. */
+  at: number
+  /** Wall-clock ms, which is the only thing here that can say "a week ago". */
+  endedAt: number
+}
+
 export interface Campaign {
   version: number
   /** The player's one-line answer to "where does your story begin?". */
@@ -114,6 +155,11 @@ export interface Campaign {
   character: Character
   /** Where the character is on the condition track. Added in version 3. */
   body: Body
+  /**
+   * Set once, when the run ends. Null for a story still being told, which is
+   * almost all of them — nothing renders until it exists (CLAUDE.md #17).
+   */
+  ending: Ending | null
   /** Places, people, things and threads, plus the clock. Added in version 2. */
   world: World
   /** Carried items, powers, species and the discovered class. Added in version 2. */
@@ -186,6 +232,7 @@ export function newCampaign(
     title: 'An Untitled Story',
     character,
     body: undamagedBody(),
+    ending: null,
     world: emptyWorld(),
     kit: emptyKit(),
     transcript: [],
@@ -252,18 +299,23 @@ export function validateCampaign(value: unknown): Campaign | null {
   // there was never anything in these fields to lose.
   const migrating = value.version < 2
 
+  const body = validateBody(value.body)
+  const world = migrating ? emptyWorld() : validateWorld(value.world)
+  const updatedAt = int(value.updatedAt)
+
   return {
     version: CAMPAIGN_VERSION,
     premise: str(value.premise, MAX_PREMISE),
     title: str(value.title, 120, 'An Untitled Story'),
     character,
-    // No `migrating` guard, unlike the two below it. `validateBody` already
+    // No `migrating` guard, unlike `world` and `kit`. `validateBody` already
     // reads an absent body as an undamaged one, so the version 2 → 3 migration
     // is the ordinary path through it rather than a branch that has to be
     // remembered — and a branch nobody has to remember is a branch that cannot
-    // be forgotten at the next bump.
-    body: validateBody(value.body),
-    world: migrating ? emptyWorld() : validateWorld(value.world),
+    // be forgotten at the next bump. `readEnding` is built the same way.
+    body,
+    ending: readEnding(value.ending, body, world.clock.elapsed, updatedAt),
+    world,
     kit: migrating ? emptyKit() : validateKit(value.kit),
     transcript: transcript.slice(-CONDENSE_AT * 2),
     synopsis: str(value.synopsis, 8000),
@@ -280,8 +332,63 @@ export function validateCampaign(value: unknown): Campaign | null {
     currentStreak: Math.max(0, int(value.currentStreak)),
     longestStreak: Math.max(0, int(value.longestStreak)),
     startedAt: int(value.startedAt),
-    updatedAt: int(value.updatedAt),
+    updatedAt,
   }
+}
+
+/**
+ * Whether the last step has been taken.
+ *
+ * `endedAt` is the caller's clock rather than this module's, for the reason
+ * everything in `domain/` takes its time as an argument: a pure function cannot
+ * read one, and a run whose ending time depended on when the save happened to
+ * be validated would be a different story every time it loaded.
+ */
+export function endingFor(body: Body, at: number, endedAt: number): Ending | null {
+  if (!isDead(body)) return null
+  return { cause: 'death', condition: body.condition, at, endedAt }
+}
+
+/**
+ * Whether this story is over.
+ *
+ * Reads the track as well as the record, and the redundancy is the point. The
+ * record is what the ending screen renders from; the track is the thing no code
+ * path can forget to set, because it is where the damage already landed. The
+ * failure this shape prevents is narrow and bad: a campaign that is dead but
+ * not marked ended is a dead character being handed a composer, and the turn
+ * after that is a dungeon master narrating for someone who is not there.
+ */
+export function isEnded(campaign: Campaign): boolean {
+  return campaign.ending !== null || isDead(campaign.body)
+}
+
+/**
+ * An ending off the wire, or the one that should already have been written.
+ *
+ * The second half is a migration, not a repair. The condition track shipped
+ * before endings did, so there is a window of saved campaigns whose character
+ * is on the last rung with nothing recording that the story stopped — and
+ * "dead but still playable" is the one state nothing downstream knows how to
+ * render. It is stamped from what the campaign already holds: the clock it died
+ * on is the clock it is still sitting at, because nothing has happened since,
+ * and `updatedAt` is the turn that killed them for exactly the same reason.
+ *
+ * A malformed stored ending is repaired rather than dropped. Losing the record
+ * would resurrect the character, and of the two ways to be wrong about a
+ * finished story — showing the ending screen over a slightly wrong day number,
+ * or handing a dead character their turn back — only one of them is a game.
+ */
+function readEnding(value: unknown, body: Body, at: number, updatedAt: number): Ending | null {
+  if (isPlainObject(value)) {
+    return {
+      cause: 'death',
+      condition: oneOf(value.condition, CONDITION_ORDER, 'dead'),
+      at: Math.max(0, int(value.at, at)),
+      endedAt: int(value.endedAt, updatedAt),
+    }
+  }
+  return endingFor(body, at, updatedAt)
 }
 
 export function validateCharacter(value: unknown): Character | null {

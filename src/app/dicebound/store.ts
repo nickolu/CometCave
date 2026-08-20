@@ -40,7 +40,14 @@ import { getTodayPST, getYesterdayOf } from '@/lib/dates'
 
 import { createCharacter, fetchSuggestions, takeTurn } from './api'
 import { type CampaignBackend, nullBackend } from './backend'
-import { type Campaign, MAX_CONCEPT, MAX_PREMISE, newCampaign, withVisit } from './domain/campaign'
+import {
+  type Campaign,
+  MAX_CONCEPT,
+  MAX_PREMISE,
+  isEnded,
+  newCampaign,
+  withVisit,
+} from './domain/campaign'
 import { applyTurn } from './domain/turn'
 
 import type { Character } from './domain/character'
@@ -164,6 +171,11 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
   async act(action) {
     const { campaign, pending } = get()
     if (!campaign || pending) return
+    // A finished story takes no more turns. The UI renders the ending screen
+    // where the composer was, so nothing can reach this — but the route refuses
+    // an ended campaign with a 409, and a client that could still send one would
+    // turn "your character is dead" into an error bar the player has to dismiss.
+    if (isEnded(campaign)) return
 
     const text = action.trim()
     if (!text) return
@@ -223,6 +235,11 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
   async refreshSuggestions() {
     const campaign = get().campaign
     if (!campaign || campaign.transcript.length === 0) return
+    // Nothing to suggest to someone with no next move. This also matters on
+    // load: `attach` asks for three every time a story is opened, and a
+    // finished one would pay for a model call on every visit to a screen whose
+    // whole point is that there is nothing left to try.
+    if (isEnded(campaign)) return
     if (get().suggestionsHidden) return
 
     const seq = get().suggestSeq + 1
