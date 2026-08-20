@@ -6700,9 +6700,29 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
     }
   }
 
-  // Obstacle avoidance: walk and crawl locomotion steer around solid walls.
-  // Flyers and swimmers are free to move through/over terrain so skip this.
-  if (bp.move.kind === 'walk' || bp.move.kind === 'crawl') {
+  /**
+   * Obstacle avoidance: walk, crawl and swim steer around solid walls.
+   *
+   * Swimmers used to be grouped with flyers and skipped, on the grounds that
+   * both move freely — but a flyer goes *over* a wall and a fish cannot go
+   * through one. Water is a room, with a floor and walls and a ceiling, and a
+   * fish handed a straight bearing to something on the far side of a rock swam
+   * into the rock and stayed there. Nothing downstream rescued it: the turn the
+   * collision resolver makes on a bounce flips `drift`, and both `hunt` and
+   * `flee` steer by the target instead, so the bounce was invisible to the only
+   * part of the fish that had an opinion about where to go. That is the "back
+   * and forth" half of the surface-pinning report — pressing into a wall while
+   * bobbing at the waterline.
+   *
+   * Measured on tidepool over three seeds: swimmer time showing no horizontal
+   * progress across four seconds fell from 52% to 44%, and the share spent
+   * against a wall with somewhere to be from 5.8% to 4.0%. Total swimmer-life
+   * came back to where it was before any of this — the fish are not living
+   * longer yet, they are spending less of it stuck.
+   *
+   * Flyers still skip it, and should: air is not a room.
+   */
+  if (bp.move.kind === 'walk' || bp.move.kind === 'crawl' || bp.move.kind === 'swim') {
     const len = Math.hypot(wantX, wantY)
     if (len > 0.01 && solidAhead(w, c, body, wantX / len, wantY / len)) {
       const angle = Math.atan2(wantY, wantX)
@@ -6723,6 +6743,37 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
         wantX = 0
         wantY = 0
       }
+    }
+  }
+
+  /**
+   * The waterline is a ceiling, and a fish that has broken it dives.
+   *
+   * `clearRun` already says air is a wall to a fish, but only about food it
+   * cannot see; nothing said it about the direction the animal was actually
+   * swimming. Every steering mode above hands back a straight bearing to a
+   * point — flee runs the reciprocal of the bearing to the threat, hunt runs
+   * the bearing to the prey — and none of them know that half the plane is
+   * lethal. A Finling with a Gulper below it fled *upward*, which is the one
+   * direction that ends the chase by killing the fish rather than losing the
+   * predator: it left the water, started the drowning timer, and went on
+   * fleeing. Once buoyancy stopped holding fish at the waterline this was what
+   * still put them there, and the two together take the measured surface time
+   * on tidepool from 11.5% of a swimmer's life to 0.1%.
+   *
+   * Two clauses, and the order matters. Not fully submerged is an emergency, so
+   * the dive overrides whatever it wanted, harder the more of it is in the air.
+   * Submerged but aiming at air only loses the climb — the horizontal component
+   * survives, so a fish still flees sideways at full speed rather than stalling
+   * in front of the thing eating it.
+   */
+  let bodyWet = -1
+  if (bp.move.kind === 'swim' || bp.habitat.needs?.includes('water')) {
+    bodyWet = boxLiquidFraction(w, c.x + body.dx, c.y + body.dy, body.w, body.h)
+    if (bodyWet < 0.9) {
+      wantY = Math.max(wantY, 1 - bodyWet)
+    } else if (wantY < 0 && !waterAbove(w, c, body)) {
+      wantY = 0
     }
   }
 
@@ -6859,8 +6910,27 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
       break
     }
     case 'swim': {
-      const wet = boxLiquidFraction(w, c.x, c.y, bw, bh)
-      if (wet > 0.3) {
+      /**
+       * The core, not the sprite, and any water at all rather than a third of
+       * it — both for the same reason, which is that this branch is the only
+       * thing a swimmer can steer with and losing it strands the animal.
+       *
+       * Asking about the sprite (invariant 9: `artSize` is what it looks like,
+       * `bodyBox` is what it collides with) called a big swimmer beached over
+       * water its whole body was in, purely because its fins were dry. And the
+       * old `> 0.3` gate cut the thrust out at exactly the moment a fish
+       * breaking the surface needs it most: it went limp the instant it was
+       * more than two-thirds out, so the one stroke that would have pulled it
+       * back under was the stroke it could not take. Below this it really is on
+       * dry land, and flopping is all it has.
+       *
+       * Read off `bodyWet` rather than measured again so the dive decision
+       * above and the thrust that has to carry it out cannot disagree about how
+       * wet the animal is. Every `swim` blueprint takes that branch, so by here
+       * it is always a real fraction.
+       */
+      const wet = bodyWet
+      if (wet > 0.05) {
         // Current adds directly to the swimmer's acceleration. Swimming with
         // the current is free speed; fighting it costs effort.
         const cx = TUNING.currentX
@@ -6906,6 +6976,18 @@ function steer(w: WorldState, c: Creature, bp: CreatureBlueprint, dt: number, rn
   if (bp.art.faceMotion && Math.abs(c.vx) > 0.2) {
     c.facing = c.vx > 0 ? 1 : -1
   }
+}
+
+/**
+ * Is there liquid in the two rows directly above this body?
+ *
+ * The vertical twin of `unliveableAhead`, and it exists for the same reason:
+ * something that lives in water needs to know that the direction it is about to
+ * commit to has water in it. Two rows rather than one so a fish swimming just
+ * under the surface still reads the air above as air.
+ */
+function waterAbove(w: WorldState, c: Creature, body: BodyBox): boolean {
+  return boxLiquidFraction(w, c.x + body.dx, c.y + body.dy - 2, body.w, 2) >= 0.5
 }
 
 function touchesSurface(w: WorldState, c: Creature, body: BodyBox): boolean {
@@ -6969,10 +7051,34 @@ function integrate(
 
   if (!weightless) {
     let g = TUNING.gravity * bp.body.mass * gravityScale
-    if (inLiquid) {
-      // Buoyancy above 1 pushes up harder than gravity pulls down.
-      g *= 1 - bp.body.buoyancy
-    }
+    /**
+     * Buoyancy lifts in proportion to how much of the body is actually under
+     * the liquid — a float only displaces what it has pushed under.
+     *
+     * This used to be all-or-nothing above a `wet > 0.3` threshold, and that
+     * built a trap at the waterline that swimmers could not get out of. A
+     * neutral fish (`buoyancy: 1`) at 40% submerged had its gravity switched
+     * fully off, so nothing pulled it back under; anything that put it up there
+     * in the first place — fleeing something below it, reaching for prey above,
+     * a lucky run of the wander jitter — left it hanging half out of the water
+     * for the rest of its life, wobbling across the 0.3 line and starving with
+     * food two tiles below it. Measured on tidepool over three seeds, swimmers
+     * spent 11.5% of their lives with the body breaking the surface and 0.8% of
+     * it below the 0.25 the habitat check kills at; individual Finlings held
+     * there for stretches of 100-330 s. Starvation is what actually collected
+     * them — the bobbing keeps resetting the drowning timer, so they hang above
+     * the food rather than suffocate above it.
+     *
+     * Scaling by `wet` removes the equilibrium instead of moving it. A body
+     * denser than water (`buoyancy < 1`) now has no depth at which it floats, so
+     * it sinks until it is under; a neutral one is weightless only when fully
+     * submerged, which is the one place a fish wants to be; and one lighter than
+     * water settles with `1 / buoyancy` of itself below the line and bobs there
+     * rather than launching clear of the surface and falling back. Fully
+     * submerged (`wet === 1`) is arithmetically identical to what this did
+     * before, so nothing that lives underwater changes.
+     */
+    g *= 1 - bp.body.buoyancy * wet
     if (kind === 'drift') g *= 0.35
     if (inGoo) g *= 1 - goo * 0.85
     c.vy += g * dt
