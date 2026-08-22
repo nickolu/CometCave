@@ -86,14 +86,55 @@ describe('warm-up rotations', () => {
   })
 
   it('resolves to the borrowed videos, named after the week they came from', () => {
-    const w5a = items.find(i => i.id === 'w5a')!
-    const resolved = videosFor(w5a)
-    expect(resolved).toHaveLength(3)
-    expect(resolved[0].label).toContain('Cheryl Porter')
+    // Week 6 offers every Phase 1 warm-up back to her, then a cool-down.
+    const resolved = videosFor(items.find(i => i.id === 'w6a')!)
+    expect(resolved).toHaveLength(6)
+    expect(resolved[0].label).toContain('Week 1')
+    expect(resolved[3].label).toContain('Week 4')
   })
 
-  it('expands a borrowed step that itself has two videos', () => {
-    // w16a rotates w6a, which is a warm-up paired with a cool-down.
-    expect(videosFor(items.find(i => i.id === 'w16a')!)).toHaveLength(2)
+  it("puts a step's own video after the ones it borrows", () => {
+    // The cool-down belongs after the warm-up she picks, not before it.
+    for (const id of ['w6a', 'w16a']) {
+      const resolved = videosFor(items.find(i => i.id === id)!)
+      expect(resolved[resolved.length - 1].label).toContain('Cool-down')
+      expect(resolved.slice(0, -1).every(v => v.label?.startsWith('Week'))).toBe(true)
+    }
+  })
+
+  it('shares one cool-down between the two weeks that end with one', () => {
+    const cooldowns = items.flatMap(videosFor).filter(v => v.label?.includes('Cool-down'))
+    expect(cooldowns).toHaveLength(2)
+    expect(new Set(cooldowns.map(v => v.url)).size).toBe(1)
+  })
+})
+
+describe('warm-ups are pitched for a beginner', () => {
+  const warmupsIn = (phaseId: string) =>
+    COURSE.find(p => p.id === phaseId)!.weeks.flatMap(w => w.items.filter(i => i.type === 'warmup'))
+
+  it('keeps the intense Cheryl Porter workout out of Phase 1', () => {
+    // It was Weeks 1, 2 and 4 and is too much to start on; it survives as the
+    // Week 12 "level up" pick and nowhere earlier.
+    const cheryl = '1XHXezdnL0A'
+    const phase1 = warmupsIn('p1').flatMap(videosFor)
+    expect(phase1.some(v => v.url.includes(cheryl))).toBe(false)
+
+    const w12a = items.find(i => i.id === 'w12a')!
+    expect(videosFor(w12a)[0].url).toContain(cheryl)
+  })
+
+  it('starts Phase 1 on warm-ups made for young voices', () => {
+    const firstTwo = ['w1a', 'w2a'].map(id => items.find(i => i.id === id)!)
+    expect(firstTwo.every(i => i.title.includes('Young Voices'))).toBe(true)
+    expect(firstTwo.every(i => i.min <= 10)).toBe(true)
+  })
+
+  it('rotates the later weeks over the young-voice pair plus the longer Jacobs', () => {
+    for (const id of ['w13a', 'w14a', 'w15a', 'w16a']) {
+      const item = items.find(i => i.id === id)!
+      expect(item.rotates).toEqual(['w1a', 'w2a', 'w7a'])
+    }
+    expect(videosFor(items.find(i => i.id === 'w7a')!)[0].url).toContain('ck1pzgy07ZU')
   })
 })
