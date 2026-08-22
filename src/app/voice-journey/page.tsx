@@ -7,6 +7,7 @@ import {
   type CourseItem,
   type CoursePhase,
   type ItemType,
+  videosFor,
 } from '@/lib/voice-journey/curriculum'
 
 import { type SyncState, localDayKey, todayLocal, useProgress } from './use-progress'
@@ -374,21 +375,26 @@ export default function VoiceJourneyPage() {
                     about {nextItem.min} min
                   </div>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                    <a
-                      href={nextItem.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        background: 'var(--vj-pink)',
-                        color: 'var(--vj-card)',
-                        textDecoration: 'none',
-                        fontWeight: 800,
-                        padding: '12px 18px',
-                        borderRadius: 14,
-                      }}
-                    >
-                      ▶ Watch on YouTube
-                    </a>
+                    {videosFor(nextItem).map(video => (
+                      <a
+                        key={video.url}
+                        href={video.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          background: 'var(--vj-pink)',
+                          color: 'var(--vj-card)',
+                          textDecoration: 'none',
+                          fontWeight: 800,
+                          padding: '12px 18px',
+                          borderRadius: 14,
+                        }}
+                      >
+                        {video.search
+                          ? '🔎 Find one on YouTube'
+                          : `▶ ${video.label ?? 'Watch on YouTube'}`}
+                      </a>
+                    ))}
                     <button
                       type="button"
                       className="bigbtn"
@@ -572,6 +578,12 @@ export default function VoiceJourneyPage() {
                         {week.items.map((item: CourseItem) => {
                           const done = !!completed[item.id]
                           const meta = TYPE_META[item.type]
+                          const videos = videosFor(item)
+                          // One video: the title is the link. More than one — parts, or a
+                          // rotation she chooses from — the title stays plain text and every
+                          // option is listed by name, so nothing is hidden behind the title.
+                          const single = videos.length === 1 ? videos[0] : undefined
+                          const listed = videos.length > 1 ? videos : []
                           return (
                             <div
                               key={item.id}
@@ -616,23 +628,60 @@ export default function VoiceJourneyPage() {
                               >
                                 {meta.label}
                               </span>
-                              <a
-                                href={item.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{
-                                  fontSize: 14,
-                                  fontWeight: 700,
-                                  // Longhand, not the `textDecoration` shorthand: React warns
-                                  // when a shorthand and a longhand for the same property both
-                                  // change on a rerender, and this row does exactly that.
-                                  textDecorationLine: done ? 'line-through' : 'underline',
-                                  textDecorationColor: 'var(--vj-underline)',
-                                  color: done ? 'var(--vj-faded)' : 'var(--vj-ink)',
-                                }}
-                              >
-                                {item.title}
-                              </a>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                                {single ? (
+                                  <a
+                                    href={single.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: 700,
+                                      // Longhand, not the `textDecoration` shorthand: React
+                                      // warns when a shorthand and a longhand for the same
+                                      // property both change on a rerender, and this row does.
+                                      textDecorationLine: done ? 'line-through' : 'underline',
+                                      textDecorationColor: 'var(--vj-underline)',
+                                      color: done ? 'var(--vj-faded)' : 'var(--vj-ink)',
+                                    }}
+                                  >
+                                    {item.title}
+                                  </a>
+                                ) : (
+                                  // Nothing to watch — a step she just does.
+                                  <span
+                                    style={{
+                                      fontSize: 14,
+                                      fontWeight: 700,
+                                      textDecorationLine: done ? 'line-through' : 'none',
+                                      color: done ? 'var(--vj-faded)' : 'var(--vj-ink)',
+                                    }}
+                                  >
+                                    {item.title}
+                                  </span>
+                                )}
+                                {listed.length > 0 && (
+                                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                                    {listed.map(video => (
+                                      <a
+                                        key={video.url}
+                                        href={video.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{
+                                          fontSize: 12,
+                                          fontWeight: 800,
+                                          color: 'var(--vj-purple)',
+                                          textDecorationLine: 'underline',
+                                          textDecorationColor: 'var(--vj-underline)',
+                                        }}
+                                      >
+                                        ▶ {video.label ?? 'Also watch'}
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           )
                         })}
