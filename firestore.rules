@@ -46,6 +46,11 @@ service cloud.firestore {
       match /diceboundChapters/{docId} { allow read, write: if false; }
     }
 
+    // Singing course progress — one unlisted page, no account behind it.
+    // Written only through /api/v1/voice-journey, which validates every key
+    // against the curriculum. The client must never reach it directly.
+    match /voiceJourney/{docId} { allow read, write: if false; }
+
     // Nicknames uniqueness index — server only
     match /nicknames/{name} { allow read, write: if false; }
 

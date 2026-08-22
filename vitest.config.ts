@@ -23,6 +23,7 @@ export default defineConfig({
       'src/app/dicebound/**/*.test.ts',
       'src/app/dicebound/**/*.test.tsx',
       'src/lib/dicebound/**/*.test.ts',
+      'src/lib/voice-journey/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

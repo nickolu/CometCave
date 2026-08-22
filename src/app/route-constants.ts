@@ -16,4 +16,6 @@ export const ROUTE_CONSTANTS = {
   DISNEYLAND_HUNT: '/disneyland-hunt',
   MICRO_LAND: '/micro-land',
   DICEBOUND: '/dicebound',
+  // Unlisted on purpose — not on the home grid, not in the nav.
+  VOICE_JOURNEY: '/voice-journey',
 }

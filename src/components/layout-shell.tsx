@@ -1,7 +1,9 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+
 import { ROUTE_CONSTANTS } from '@/app/route-constants'
+
 import type { ReactNode } from 'react'
 
 const IMMERSIVE_ROUTES = [
@@ -9,6 +11,7 @@ const IMMERSIVE_ROUTES = [
   ROUTE_CONSTANTS.MICRO_LAND,
   `${ROUTE_CONSTANTS.SPECK_WARS}/play`,
   `${ROUTE_CONSTANTS.SPECK_WARS}/skirmish`,
+  ROUTE_CONSTANTS.VOICE_JOURNEY,
 ]
 
 export function LayoutShell({
@@ -24,7 +27,11 @@ export function LayoutShell({
   const isImmersive = IMMERSIVE_ROUTES.some(r => pathname.startsWith(r))
 
   if (isImmersive) {
-    return <main id="main-content" className="flex-1 z-20 relative">{children}</main>
+    return (
+      <main id="main-content" className="flex-1 z-20 relative">
+        {children}
+      </main>
+    )
   }
 
   return (
@@ -36,7 +43,9 @@ export function LayoutShell({
         Skip to main content
       </a>
       {nav}
-      <main id="main-content" className="flex-1 container mx-auto p-4 z-20 relative">{children}</main>
+      <main id="main-content" className="flex-1 container mx-auto p-4 z-20 relative">
+        {children}
+      </main>
       {footer}
     </>
   )
