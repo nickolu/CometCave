@@ -7,19 +7,40 @@
  * marks — but changing an `id` orphans whatever was ticked against the old one,
  * and the server will drop it on the next write (see `sanitizeProgress`).
  * Add weeks by appending; ids only ever need to be unique.
+ *
+ * A step is not always one video. Some pair a warm-up with a cool-down or run
+ * to two parts, some are a thing she does rather than watches, and the warm-up
+ * rotations deliberately point back at earlier weeks rather than repeating
+ * their links — one video, one place to fix it.
  */
 
 export type ItemType = 'warmup' | 'concept' | 'song'
+
+export interface CourseVideo {
+  url: string
+  /** Names this one when a step offers more than one. */
+  label?: string
+  /**
+   * A YouTube search rather than a video we picked. Honest about itself so the
+   * page can say "find one" instead of promising a specific lesson.
+   */
+  search?: boolean
+}
 
 export interface CourseItem {
   id: string
   type: ItemType
   /** What she actually does. Shown as the step title. */
   title: string
-  /** A YouTube search, not a fixed video — results stay fresh as channels change. */
-  url: string
   /** Rough minutes, so a day can be sized before it starts. */
   min: number
+  /** Watch these, in order. Empty when the step is something she does. */
+  videos: CourseVideo[]
+  /**
+   * Ids of earlier steps whose videos this one offers instead of its own — the
+   * warm-ups she rotates through. Resolved by `videosFor`.
+   */
+  rotates?: string[]
 }
 
 export interface CourseWeek {
@@ -35,7 +56,18 @@ export interface CoursePhase {
   weeks: CourseWeek[]
 }
 
-const yt = (q: string) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`
+const watch = (id: string, label?: string): CourseVideo =>
+  label
+    ? { url: `https://www.youtube.com/watch?v=${id}`, label }
+    : { url: `https://www.youtube.com/watch?v=${id}` }
+
+/** For the few steps where no single video is the right answer. */
+const search = (q: string): CourseVideo[] => [
+  { url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, search: true },
+]
+
+/** The three warm-ups Phase 3 rotates between, and Week 5 and 12 pick from. */
+const WARMUP_ROTATION = ['w1a', 'w3a', 'w7a']
 
 export const COURSE: CoursePhase[] = [
   {
@@ -50,23 +82,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w1a',
             type: 'warmup',
-            title: 'Cheryl Porter — beginner warm-up',
-            url: yt('Cheryl Porter vocal warm up beginner'),
+            title: 'Cheryl Porter — 10 Minute Daily Vocal Workout',
             min: 10,
+            videos: [watch('1XHXezdnL0A')],
           },
           {
             id: 'w1b',
             type: 'concept',
-            title: 'Posture & breathing basics (VLTW Ep. 1)',
-            url: yt('Voice Lessons To The World Ep 1'),
+            title: 'VLTTW Ep. 98 — Voice Lessons for Beginners, Pt 1',
             min: 12,
+            videos: [watch('1dPPo3MvTbc')],
           },
           {
             id: 'w1c',
             type: 'song',
             title: 'Sing an easy favorite song, focus on posture',
-            url: yt('easy songs to sing for beginners'),
             min: 10,
+            videos: search('easy songs to sing for beginners'),
           },
         ],
       },
@@ -77,23 +109,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w2a',
             type: 'warmup',
-            title: 'Cheryl Porter — lip trills & sirens',
-            url: yt('Cheryl Porter lip trill warm up'),
+            title: 'Cheryl Porter — 10 Minute Vocal Workout',
             min: 10,
+            videos: [watch('6tbii7Azhzg')],
           },
           {
             id: 'w2b',
             type: 'concept',
-            title: 'Breathing from the diaphragm (Dr. Dan)',
-            url: yt('Dr Dan Voice Essentials diaphragm breathing'),
+            title: 'Dr Dan — Breath Management for Voice',
             min: 12,
+            videos: [watch('gvb9jQm_GVs')],
           },
           {
             id: 'w2c',
             type: 'song',
             title: 'Same song — breathe low before each phrase',
-            url: yt('how to breathe while singing a song'),
             min: 10,
+            videos: search('how to breathe while singing a song'),
           },
         ],
       },
@@ -104,23 +136,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w3a',
             type: 'warmup',
-            title: 'Jacobs Vocal Academy — daily warm-up',
-            url: yt('Jacobs Vocal Academy 10 minute warm up'),
+            title: 'Jacobs Vocal Academy — 10 Minute Vocal Warm Up',
             min: 10,
+            videos: [watch('ck1pzgy07ZU')],
           },
           {
             id: 'w3b',
             type: 'concept',
-            title: 'Matching pitch & singing in tune',
-            url: yt('how to match pitch singing beginner'),
+            title: '30 Day Singer — How to Match Pitch for Beginners',
             min: 12,
+            videos: [watch('-PExRMSit_I')],
           },
           {
             id: 'w3c',
             type: 'song',
             title: 'Record yourself once — listen back for pitch',
-            url: yt('how to practice singing with recording'),
             min: 10,
+            videos: search('how to practice singing with recording'),
           },
         ],
       },
@@ -131,23 +163,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w4a',
             type: 'warmup',
-            title: 'Cheryl Porter — five-tone scales',
-            url: yt('Cheryl Porter five tone scale exercise'),
+            title: 'Cheryl Porter — 10 Minute Daily Vocal Workout (2023)',
             min: 10,
+            videos: [watch('9dVW9E40-Gw')],
           },
           {
             id: 'w4b',
             type: 'concept',
-            title: 'Vocal Nebula — breathing for singing pt. 1–2',
-            url: yt('Vocal Nebula breathing for singing beginners'),
+            title: 'Vocal Nebula — Breathing for Singing, Pt 1 & 2',
             min: 15,
+            videos: [watch('FZcgYe4zljQ', 'Part 1'), watch('H8Ve6Hzozik', 'Part 2')],
           },
           {
             id: 'w4c',
             type: 'song',
             title: 'New song of her choice, apply breath support',
-            url: yt('breath support singing practice'),
             min: 10,
+            videos: search('breath support singing practice'),
           },
         ],
       },
@@ -158,23 +190,24 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w5a',
             type: 'warmup',
-            title: 'Rotate her favorite warm-up so far',
-            url: yt('vocal warm up for kids and teens'),
+            title: 'Her pick — a warm-up she already knows',
             min: 10,
+            videos: [],
+            rotates: ['w1a', 'w2a', 'w3a'],
           },
           {
             id: 'w5b',
             type: 'concept',
-            title: 'Good tone without pushing (VLTW)',
-            url: yt('Voice Lessons To The World tone quality'),
+            title: 'VLTTW Ep. 99 — Voice Lessons for Beginners, Pt 2',
             min: 12,
+            videos: [watch('9427xS0X1dM')],
           },
           {
             id: 'w5c',
             type: 'song',
             title: 'Sing soft vs. loud on purpose — dynamics play',
-            url: yt('singing dynamics exercise beginner'),
             min: 10,
+            videos: search('singing dynamics exercise beginner'),
           },
         ],
       },
@@ -185,23 +218,26 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w6a',
             type: 'warmup',
-            title: 'Warm-up + gentle cool-down (Dr. Dan)',
-            url: yt('Dr Dan vocal cool down'),
+            title: 'Jacobs — 5 Minute Warm Up, then a cool-down',
             min: 12,
+            videos: [
+              watch('YCLyAmXtpfY', 'Warm-up · Jacobs'),
+              watch('4SaweGqe4dA', 'Cool-down · Vocal Warmups with Kathleen'),
+            ],
           },
           {
             id: 'w6b',
             type: 'concept',
-            title: 'Phase recap — what does good practice feel like?',
-            url: yt('how to practice singing effectively beginner'),
+            title: 'Dr Dan — Turbocharge Your Vocal Practice',
             min: 10,
+            videos: [watch('aI_r-yUvMd8')],
           },
           {
             id: 'w6c',
             type: 'song',
             title: "Mini 'concert': perform 1–2 songs for family",
-            url: yt('performing for family practice confidence'),
             min: 15,
+            videos: search('performing for family practice confidence'),
           },
         ],
       },
@@ -219,23 +255,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w7a',
             type: 'warmup',
-            title: 'Daily warm-up rotation',
-            url: yt('Jacobs Vocal Academy warm up head voice'),
+            title: 'Jacobs — 15 Minute Vocal Warm Up',
             min: 10,
+            videos: [watch('1f_SVJMRx5s')],
           },
           {
             id: 'w7b',
             type: 'concept',
-            title: 'Chest voice vs. head voice (VLTW)',
-            url: yt('Voice Lessons To The World chest voice head voice'),
+            title: 'VLTTW Ep. 86 — How to Sing Chest Voice',
             min: 12,
+            videos: [watch('Rg2qjuzloKE')],
           },
           {
             id: 'w7c',
             type: 'song',
-            title: 'Find both voices in a song she knows',
-            url: yt('chest voice head voice song examples'),
-            min: 10,
+            title: 'VLTTW Ep. 87 — How to Sing Head Voice, then find both in a song',
+            min: 12,
+            videos: [watch('KaMJ9YvnUNw')],
           },
         ],
       },
@@ -247,22 +283,22 @@ export const COURSE: CoursePhase[] = [
             id: 'w8a',
             type: 'warmup',
             title: 'Sirens & slides warm-up',
-            url: yt('vocal siren exercise warm up'),
             min: 10,
+            videos: search('vocal siren exercise warm up'),
           },
           {
             id: 'w8b',
             type: 'concept',
-            title: 'Releasing the vocal break (Madeleine Harvey)',
-            url: yt('Madeleine Harvey vocal break'),
+            title: 'VLTTW Ep. 88 — How to Sing Mix Voice',
             min: 12,
+            videos: [watch('obzz4a3tO4U')],
           },
           {
             id: 'w8c',
             type: 'song',
             title: 'Gentle passes over the break in a song',
-            url: yt('smooth vocal break singing exercise'),
             min: 10,
+            videos: search('smooth vocal break singing exercise'),
           },
         ],
       },
@@ -273,23 +309,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w9a',
             type: 'warmup',
-            title: 'Vowel-focused warm-up',
-            url: yt('vowel modification warm up singing'),
+            title: 'VLTTW Ep. 61 — The Open “Oh” Vowel',
             min: 10,
+            videos: [watch('4MGTAjklUQ4')],
           },
           {
             id: 'w9b',
             type: 'concept',
-            title: 'Vowels & clear words while singing (VLTW)',
-            url: yt('Voice Lessons To The World vowels diction'),
+            title: 'VLTTW Ep. 38 — The Deadly “I” Vowel',
             min: 12,
+            videos: [watch('YAOqF2lc57Q')],
           },
           {
             id: 'w9c',
             type: 'song',
             title: 'Exaggerate vowels in a chorus, then relax them',
-            url: yt('singing diction exercise'),
             min: 10,
+            videos: search('singing diction exercise'),
           },
         ],
       },
@@ -301,22 +337,22 @@ export const COURSE: CoursePhase[] = [
             id: 'w10a',
             type: 'warmup',
             title: 'Range-stretch warm-up (gentle!)',
-            url: yt('gentle range extension warm up singing'),
             min: 10,
+            videos: search('gentle range extension warm up singing'),
           },
           {
             id: 'w10b',
             type: 'concept',
-            title: 'Extending range safely (Dr. Dan)',
-            url: yt('Dr Dan Voice Essentials extend vocal range safely'),
+            title: 'Dr Dan — How to Expand Your Vocal Range Safely',
             min: 12,
+            videos: [watch('Mve47WHSumY')],
           },
           {
             id: 'w10c',
             type: 'song',
             title: "Move a song's key up/down to fit her voice",
-            url: yt('change song key to fit your voice'),
             min: 10,
+            videos: search('change song key to fit your voice'),
           },
         ],
       },
@@ -327,23 +363,23 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w11a',
             type: 'warmup',
-            title: 'Agility runs — simple riffs',
-            url: yt('Cheryl Porter riffs and runs beginner'),
+            title: 'Jacobs — Riffs and Runs (Beginner)',
             min: 10,
+            videos: [watch('wOgDwAsQUxg')],
           },
           {
             id: 'w11b',
             type: 'concept',
-            title: 'Intro to riffs & runs (start slow)',
-            url: yt('riffs and runs for beginners slow'),
+            title: '30 Day Singer — Riffs and Runs, Super Easy for Beginners',
             min: 12,
+            videos: [watch('wqNHZHi984k')],
           },
           {
             id: 'w11c',
             type: 'song',
             title: 'Learn ONE tiny riff from a song she loves',
-            url: yt('easy riffs to learn singing'),
             min: 10,
+            videos: search('easy riffs to learn singing'),
           },
         ],
       },
@@ -354,23 +390,24 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w12a',
             type: 'warmup',
-            title: 'Her pick — favorite warm-up',
-            url: yt('fun vocal warm up'),
+            title: 'Her pick — a warm-up she already knows',
             min: 10,
+            videos: [],
+            rotates: WARMUP_ROTATION,
           },
           {
             id: 'w12b',
             type: 'concept',
-            title: 'Vibrato basics — what it is, no forcing',
-            url: yt('what is vibrato singing beginner'),
+            title: 'Singeo — How to Sing With Vibrato',
             min: 12,
+            videos: [watch('gXVVQ-5o5YE')],
           },
           {
             id: 'w12c',
             type: 'song',
             title: 'Record & compare to Week 3 recording',
-            url: yt('track singing progress recording'),
             min: 15,
+            videos: search('track singing progress recording'),
           },
         ],
       },
@@ -389,22 +426,23 @@ export const COURSE: CoursePhase[] = [
             id: 'w13a',
             type: 'warmup',
             title: 'Warm-up rotation',
-            url: yt('daily vocal warm up 10 minutes'),
             min: 10,
+            videos: [],
+            rotates: WARMUP_ROTATION,
           },
           {
             id: 'w13b',
             type: 'concept',
-            title: 'Song breakdown — how pros learn a song',
-            url: yt('Tara Simon song breakdown tutorial'),
+            title: '30 Day Singer — How to Sing a Song for Beginners',
             min: 12,
+            videos: [watch('v2D0RsSvwD0')],
           },
           {
             id: 'w13c',
             type: 'song',
             title: "Pick a 'project song' for the month",
-            url: yt('how to learn a song step by step singing'),
             min: 15,
+            videos: search('how to learn a song step by step singing'),
           },
         ],
       },
@@ -416,22 +454,23 @@ export const COURSE: CoursePhase[] = [
             id: 'w14a',
             type: 'warmup',
             title: 'Warm-up rotation',
-            url: yt('vocal warm up before singing songs'),
             min: 10,
+            videos: [],
+            rotates: WARMUP_ROTATION,
           },
           {
             id: 'w14b',
             type: 'concept',
-            title: 'Phrasing & emotion (Eric Arceneaux)',
-            url: yt('Eric Arceneaux phrasing emotion singing'),
+            title: 'Stevie Mackey — How to Sing with Emotion',
             min: 12,
+            videos: [watch('4rxr_vTw9LE')],
           },
           {
             id: 'w14c',
             type: 'song',
             title: 'Project song: verse + chorus polished',
-            url: yt('song phrasing practice'),
             min: 15,
+            videos: search('song phrasing practice'),
           },
         ],
       },
@@ -443,22 +482,23 @@ export const COURSE: CoursePhase[] = [
             id: 'w15a',
             type: 'warmup',
             title: 'Warm-up rotation',
-            url: yt('vocal warm up routine'),
             min: 10,
+            videos: [],
+            rotates: WARMUP_ROTATION,
           },
           {
             id: 'w15b',
             type: 'concept',
-            title: 'Stage presence & confidence basics',
-            url: yt('stage presence for young singers'),
+            title: '30 Day Singer — Build Singing Confidence On-Stage',
             min: 12,
+            videos: [watch('x8U6lwfAK8M')],
           },
           {
             id: 'w15c',
             type: 'song',
             title: 'Full run-throughs, standing, like a show',
-            url: yt('performance practice singing'),
             min: 15,
+            videos: search('performance practice singing'),
           },
         ],
       },
@@ -470,22 +510,24 @@ export const COURSE: CoursePhase[] = [
             id: 'w16a',
             type: 'warmup',
             title: 'Warm-up + cool-down',
-            url: yt('vocal warm up and cool down'),
             min: 12,
+            videos: [],
+            rotates: ['w6a'],
           },
+          // Nothing to watch — the whole step is her answering the question.
           {
             id: 'w16b',
             type: 'concept',
             title: "Reflect: favorite thing she's learned",
-            url: yt('singing progress reflection'),
             min: 5,
+            videos: [],
           },
           {
             id: 'w16c',
             type: 'song',
             title: 'Living-room concert! Record the performance',
-            url: yt('home concert performance'),
             min: 20,
+            videos: search('home concert performance'),
           },
         ],
       },
@@ -493,9 +535,38 @@ export const COURSE: CoursePhase[] = [
   },
 ]
 
-/** Every item id the course knows about — the allowlist the server validates against. */
-export const ITEM_IDS: ReadonlySet<string> = new Set(
-  COURSE.flatMap(p => p.weeks.flatMap(w => w.items.map(i => i.id)))
+const BY_ID = new Map<string, { item: CourseItem; week: CourseWeek }>(
+  COURSE.flatMap(p => p.weeks.flatMap(w => w.items.map(i => [i.id, { item: i, week: w }] as const)))
 )
+
+/**
+ * What this step actually offers to watch, with rotations expanded.
+ *
+ * A rotating warm-up borrows from the weeks it points at and is labelled with
+ * their titles, so "her pick" reads as a real choice between lessons she has
+ * already done rather than three anonymous links. One level deep only: a
+ * rotation never points at another rotation.
+ */
+export function videosFor(item: CourseItem): CourseVideo[] {
+  if (!item.rotates?.length) return item.videos
+
+  const borrowed = item.rotates.flatMap(id => {
+    const source = BY_ID.get(id)
+    if (!source) return []
+    // Named by the week as well as the title: the rotation offers two Cheryl
+    // Porter workouts whose names differ by one word, and "Week 1" is what
+    // actually tells them apart.
+    const from = `${source.week.label} · ${source.item.title}`
+    return source.item.videos.map(video => ({
+      ...video,
+      label: video.label ? `${from} · ${video.label}` : from,
+    }))
+  })
+
+  return [...item.videos, ...borrowed]
+}
+
+/** Every item id the course knows about — the allowlist the server validates against. */
+export const ITEM_IDS: ReadonlySet<string> = new Set(BY_ID.keys())
 
 export const TOTAL_ITEMS = ITEM_IDS.size
