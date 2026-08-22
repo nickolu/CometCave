@@ -66,8 +66,18 @@ const search = (q: string): CourseVideo[] => [
   { url: `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`, search: true },
 ]
 
-/** The three warm-ups Phase 3 rotates between, and Week 5 and 12 pick from. */
-const WARMUP_ROTATION = ['w1a', 'w3a', 'w7a']
+/**
+ * The cool-down that closes Week 6 and Week 16. Defined once and shared, so the
+ * two weeks that end with one cannot drift apart.
+ */
+const COOL_DOWN = watch('4SaweGqe4dA', 'Cool-down · Vocal Warmups with Kathleen')
+
+/**
+ * What the later weeks rotate between: the two Young Voices warm-ups, pitched
+ * at her age group, and the ten-minute Jacobs — the step up from the
+ * five-minute one she starts on in Week 3.
+ */
+const WARMUP_ROTATION = ['w1a', 'w2a', 'w7a']
 
 export const COURSE: CoursePhase[] = [
   {
@@ -82,9 +92,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w1a',
             type: 'warmup',
-            title: 'Cheryl Porter — 10 Minute Daily Vocal Workout',
-            min: 10,
-            videos: [watch('1XHXezdnL0A')],
+            title: 'Vocal Warmups for Young Voices #1 (Kathleen)',
+            min: 9,
+            videos: [watch('it5Ztro4Dsw')],
           },
           {
             id: 'w1b',
@@ -109,9 +119,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w2a',
             type: 'warmup',
-            title: 'Cheryl Porter — 10 Minute Vocal Workout',
+            title: 'Vocal Warmups for Young Voices #2 (Kathleen)',
             min: 10,
-            videos: [watch('6tbii7Azhzg')],
+            videos: [watch('Smg6deHOQVY')],
           },
           {
             id: 'w2b',
@@ -136,9 +146,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w3a',
             type: 'warmup',
-            title: 'Jacobs Vocal Academy — 10 Minute Vocal Warm Up',
-            min: 10,
-            videos: [watch('ck1pzgy07ZU')],
+            title: 'Jacobs — 5 Minute Vocal Warm Up (piano-led, no talking)',
+            min: 6,
+            videos: [watch('YCLyAmXtpfY')],
           },
           {
             id: 'w3b',
@@ -163,9 +173,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w4a',
             type: 'warmup',
-            title: 'Cheryl Porter — 10 Minute Daily Vocal Workout (2023)',
-            min: 10,
-            videos: [watch('9dVW9E40-Gw')],
+            title: 'Dots Singing — 5 Minute Warm Up for Beginner Singers',
+            min: 5,
+            videos: [watch('hULyHfs6BTE')],
           },
           {
             id: 'w4b',
@@ -190,10 +200,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w5a',
             type: 'warmup',
-            title: 'Her pick — a warm-up she already knows',
-            min: 10,
-            videos: [],
-            rotates: ['w1a', 'w2a', 'w3a'],
+            title: 'New Victory Arts Break — Vocal Warm Up for Kids',
+            min: 7,
+            videos: [watch('bYd8YZa4UTE')],
           },
           {
             id: 'w5b',
@@ -218,12 +227,10 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w6a',
             type: 'warmup',
-            title: 'Jacobs — 5 Minute Warm Up, then a cool-down',
-            min: 12,
-            videos: [
-              watch('YCLyAmXtpfY', 'Warm-up · Jacobs'),
-              watch('4SaweGqe4dA', 'Cool-down · Vocal Warmups with Kathleen'),
-            ],
+            title: 'Her favourite warm-up so far, then a cool-down',
+            min: 14,
+            videos: [COOL_DOWN],
+            rotates: ['w1a', 'w2a', 'w3a', 'w4a', 'w5a'],
           },
           {
             id: 'w6b',
@@ -255,9 +262,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w7a',
             type: 'warmup',
-            title: 'Jacobs — 15 Minute Vocal Warm Up',
+            title: 'Jacobs — 10 Minute Vocal Warm Up (the step up)',
             min: 10,
-            videos: [watch('1f_SVJMRx5s')],
+            videos: [watch('ck1pzgy07ZU')],
           },
           {
             id: 'w7b',
@@ -390,10 +397,9 @@ export const COURSE: CoursePhase[] = [
           {
             id: 'w12a',
             type: 'warmup',
-            title: 'Her pick — a warm-up she already knows',
+            title: 'Cheryl Porter — 10 Minute Daily Vocal Workout (level up!)',
             min: 10,
-            videos: [],
-            rotates: WARMUP_ROTATION,
+            videos: [watch('1XHXezdnL0A')],
           },
           {
             id: 'w12b',
@@ -510,9 +516,9 @@ export const COURSE: CoursePhase[] = [
             id: 'w16a',
             type: 'warmup',
             title: 'Warm-up + cool-down',
-            min: 12,
-            videos: [],
-            rotates: ['w6a'],
+            min: 14,
+            videos: [COOL_DOWN],
+            rotates: WARMUP_ROTATION,
           },
           // Nothing to watch — the whole step is her answering the question.
           {
@@ -545,7 +551,8 @@ const BY_ID = new Map<string, { item: CourseItem; week: CourseWeek }>(
  * A rotating warm-up borrows from the weeks it points at and is labelled with
  * their titles, so "her pick" reads as a real choice between lessons she has
  * already done rather than three anonymous links. One level deep only: a
- * rotation never points at another rotation.
+ * rotation never points at another rotation, which is why Week 16 rotates the
+ * same set Week 6 does rather than rotating Week 6 itself.
  */
 export function videosFor(item: CourseItem): CourseVideo[] {
   if (!item.rotates?.length) return item.videos
@@ -563,7 +570,10 @@ export function videosFor(item: CourseItem): CourseVideo[] {
     }))
   })
 
-  return [...item.videos, ...borrowed]
+  // Borrowed first, then this step's own: Week 6 and Week 16 each hold a
+  // cool-down of their own, and a cool-down belongs after the warm-up she picks,
+  // not before it.
+  return [...borrowed, ...item.videos]
 }
 
 /** Every item id the course knows about — the allowlist the server validates against. */
