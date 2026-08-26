@@ -16,6 +16,37 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = getFirestoreDb()
+
+    const activeParam = request.nextUrl.searchParams.get('active')
+    if (activeParam === 'true') {
+      const snap = await db
+        .collection(`users/${uid}/triviaInfinite`)
+        .where('endedAt', '==', null)
+        .orderBy('startedAt', 'desc')
+        .limit(1)
+        .get()
+
+      if (snap.empty) return NextResponse.json({ activeRun: null })
+
+      const doc = snap.docs[0]
+      const data = doc.data()
+      return NextResponse.json({
+        activeRun: {
+          runId: data.runId,
+          mode: data.mode,
+          categoryFilters: data.categoryFilters ?? [],
+          customCategory: data.customCategory ?? null,
+          score: data.score ?? 0,
+          livesRemaining: data.livesRemaining ?? 5,
+          currentStreak: data.currentStreak ?? 0,
+          longestStreak: data.longestStreak ?? 0,
+          questionsAnswered: data.answers?.length ?? 0,
+          skipsUsed: data.skipsUsed ?? 0,
+          startedAt: data.startedAt?.toMillis() ?? null,
+        }
+      })
+    }
+
     const snap = await db
       .collection(`users/${uid}/triviaInfinite`)
       .where('endedAt', '!=', null)

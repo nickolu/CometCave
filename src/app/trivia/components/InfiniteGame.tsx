@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { TIER_EMOJI, useCategoryMedals } from '@/app/trivia/hooks/useCategoryMedals'
 import { useInfiniteRun } from '@/app/trivia/hooks/useInfiniteRun'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+import { getAuth } from 'firebase/auth'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
@@ -31,7 +32,7 @@ interface Props {
 
 export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored', initialCustomCategory, sampleExistingOnly = false }: Props) {
   const { user, loading: authLoading } = useAuth()
-  const { state, startRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
+  const { state, startRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
@@ -51,6 +52,22 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   const ratingsRef = useRef<Map<string, 'up' | 'down'>>(new Map())
   const bonusLifeTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const medalTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const [activeRun, setActiveRun] = useState<{
+    runId: string
+    mode: InfiniteMode
+    categoryFilters: number[]
+    customCategory: string | null
+    score: number
+    livesRemaining: number
+    currentStreak: number
+    longestStreak: number
+    questionsAnswered: number
+    skipsUsed: number
+  } | null>(null)
+  const [activeRunLoading, setActiveRunLoading] = useState(false)
+  const [showAbandonConfirm, setShowAbandonConfirm] = useState(false)
+  const pendingNavigateRef = useRef<(() => void) | null>(null)
 
   const categoryEntries = Object.entries(CATEGORY_META).map(([id, meta]) => ({
     id: Number(id),
@@ -168,6 +185,64 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     setShowPreGame(true)
   }, [])
 
+  // Fetch active (in-progress) run when the pre-game screen is shown.
+  useEffect(() => {
+    if (!showPreGame || !user || user.isAnonymous || authLoading) return
+    setActiveRunLoading(true)
+    const fetchActive = async () => {
+      try {
+        const token = await getAuth().currentUser?.getIdToken()
+        if (!token) return
+        const res = await fetch('/api/v1/trivia/infinite/runs?active=true', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        setActiveRun(data.activeRun ?? null)
+      } catch {
+        setActiveRun(null)
+      } finally {
+        setActiveRunLoading(false)
+      }
+    }
+    fetchActive()
+  }, [showPreGame, user, authLoading])
+
+  const handleSafeBack = useCallback(() => {
+    const isRunning = ['playing', 'answered', 'answering', 'loading', 'awaiting-ready'].includes(state.phase)
+    if (isRunning) {
+      pendingNavigateRef.current = onBack
+      setShowAbandonConfirm(true)
+    } else {
+      onBack()
+    }
+  }, [state.phase, onBack])
+
+  const handleAbandonConfirm = useCallback(() => {
+    setShowAbandonConfirm(false)
+    if (timerRef.current) clearInterval(timerRef.current)
+    endRun()
+    const nav = pendingNavigateRef.current
+    pendingNavigateRef.current = null
+    nav?.()
+  }, [endRun])
+
+  const handleAbandonCancel = useCallback(() => {
+    setShowAbandonConfirm(false)
+    pendingNavigateRef.current = null
+  }, [])
+
+  // Warn on browser close/refresh during an active run
+  useEffect(() => {
+    const isRunning = ['playing', 'answered', 'answering'].includes(state.phase)
+    if (!isRunning) return
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener('beforeunload', handler)
+    return () => window.removeEventListener('beforeunload', handler)
+  }, [state.phase])
+
   // Pre-game screen — inline, not a modal
   if (showPreGame) {
     const selectionCount = selectedCategoryIds.size
@@ -191,6 +266,53 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             How to play →
           </button>
         </div>
+
+        {/* Resume card — shown when an in-progress run is found */}
+        {activeRun && !activeRunLoading && (
+          <div className="bg-ds-primary/10 border border-ds-primary/30 rounded-ds-md p-4 flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg" aria-hidden="true">⏸</span>
+              <div>
+                <div className="font-medium text-on-surface text-sm">Run in progress</div>
+                <div className="text-on-surface/60 text-xs">
+                  Score: {activeRun.score.toLocaleString()} · Streak: {activeRun.currentStreak} · {activeRun.questionsAnswered} questions answered
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <ChunkyButton
+                variant="primary"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setShowPreGame(false)
+                  resumeRun({
+                    ...activeRun,
+                    categoryIds: activeRun.categoryFilters,
+                  })
+                }}
+              >
+                Resume
+              </ChunkyButton>
+              <ChunkyButton
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  const token = getAuth().currentUser?.getIdToken()
+                  token?.then(t => {
+                    fetch(`/api/v1/trivia/infinite/runs/${activeRun.runId}/end`, {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' }
+                    })
+                  })
+                  setActiveRun(null)
+                }}
+              >
+                Discard
+              </ChunkyButton>
+            </div>
+          </div>
+        )}
 
         {/* All Categories quick-pick stays above the scrollable grid so
             it doesn't get hidden when the player scrolls through tiles. */}
@@ -356,6 +478,22 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
             </div>
           </div>
         )}
+      </div>
+    )
+  }
+
+  // Abandon confirmation dialog — shown on top of all game states
+  if (showAbandonConfirm) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-8 max-w-lg mx-auto text-center">
+        <h2 className="font-headline text-xl text-on-surface">Abandon this run?</h2>
+        <p className="text-on-surface/60 text-sm">
+          Your progress (score: {state.score.toLocaleString()}, streak: {state.longestStreak}) will be saved, but the run will end.
+        </p>
+        <div className="flex gap-3">
+          <ChunkyButton variant="secondary" onClick={handleAbandonCancel}>Keep playing</ChunkyButton>
+          <ChunkyButton variant="primary" onClick={handleAbandonConfirm}>End run</ChunkyButton>
+        </div>
       </div>
     )
   }
