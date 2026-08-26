@@ -190,6 +190,10 @@ import {
 import { archiveChapter, loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
 import { noteDamage } from '@/lib/dicebound/telemetry'
 
+/** Callback for streaming turn events to the client as they happen. */
+type TurnEmitter = (event: { type: 'check'; entry: CheckEntry }) => void
+const noopEmit: TurnEmitter = () => {}
+
 /** The DM can be slow, and a scene worth waiting for is worth the headroom. */
 export const maxDuration = 120
 
@@ -842,73 +846,131 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Say what you do.' }, { status: 400 })
   }
 
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 105_000)
-
+  // Check for a missing API key synchronously before starting the stream.
+  // A NoApiKeyError after streaming has begun cannot be expressed as an HTTP
+  // error status, so we surface it here instead.
+  let apiKey: string
   try {
-    const apiKey = requireApiKey()
-    const result = isOpening
-      ? await openStory(apiKey, campaign, controller.signal)
-      : await playTurn(apiKey, campaign, action, controller.signal, uid)
-
-    // Anonymous-first (CLAUDE.md #1). `uid` is null only when there is no
-    // Firebase at all, and that player still gets their turn — they just apply
-    // and store it themselves, exactly as before.
-    if (uid === null) return NextResponse.json({ result })
-
-    // The server folds the turn in and hands back what it saved. Returning the
-    // whole campaign rather than a diff is deliberate: the client applying its
-    // own `applyTurn` to a result is precisely the client-side authority this
-    // issue removes, and two implementations of that arithmetic is two chances
-    // for the sheet and the save file to disagree. The request is a sentence;
-    // it is the response that carries the story.
-    const next = applyTurn(campaign, result, Date.now())
-    try {
-      await saveCampaign(uid, trimToFit(next))
-    } catch (error) {
-      // The turn happened and the player is owed it. A failed save reads as a
-      // dropped turn next reload, which is worse than nothing but far better
-      // than throwing away narration the model has already been paid for.
-      console.error('dicebound turn save failed:', error)
-    }
-    return NextResponse.json({ result, campaign: next })
+    apiKey = requireApiKey()
   } catch (error) {
-    clearTimeout(timeout)
-
     if (error instanceof NoApiKeyError) {
       return NextResponse.json(
         { error: 'The dungeon master is not answering tonight.' },
         { status: 503 }
       )
     }
-    if (error instanceof RefusedError) {
-      // In voice, and playable — the story continues, it just goes somewhere
-      // else. Breaking character to deliver a policy notice would be worse for
-      // this audience than a locked door.
-      return NextResponse.json({
-        result: {
-          entries: [
-            {
-              kind: 'narration',
-              text: 'That thread goes somewhere the story will not follow. The moment passes, and the world waits for you to try something else.',
-            },
-          ],
-        } satisfies TurnResult,
-      })
-    }
-
-    console.error('dicebound turn failed:', error)
-    return NextResponse.json({ error: 'The telling faltered. Try that again.' }, { status: 502 })
-  } finally {
-    clearTimeout(timeout)
+    throw error
   }
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 105_000)
+  const encoder = new TextEncoder()
+
+  const stream = new ReadableStream<Uint8Array>({
+    async start(streamCtrl) {
+      const emit: TurnEmitter = (event) => {
+        try {
+          streamCtrl.enqueue(encoder.encode(JSON.stringify(event) + '\n'))
+        } catch {
+          // Client disconnected; ignore
+        }
+      }
+
+      const emitRaw = (event: object) => {
+        try {
+          streamCtrl.enqueue(encoder.encode(JSON.stringify(event) + '\n'))
+        } catch {
+          // Client disconnected; ignore
+        }
+      }
+
+      try {
+        const result = isOpening
+          ? await openStory(apiKey, campaign, controller.signal, emit)
+          : await playTurn(apiKey, campaign, action, controller.signal, uid, emit)
+
+        clearTimeout(timeout)
+
+        // Anonymous-first (CLAUDE.md #1). `uid` is null only when there is no
+        // Firebase at all, and that player still gets their turn — they just
+        // apply and store it themselves, exactly as before.
+        if (uid === null) {
+          emitRaw({ type: 'done', result })
+          streamCtrl.close()
+          return
+        }
+
+        // The server folds the turn in and hands back what it saved. Returning
+        // the whole campaign rather than a diff is deliberate: the client
+        // applying its own `applyTurn` to a result is precisely the
+        // client-side authority this issue removes, and two implementations of
+        // that arithmetic is two chances for the sheet and the save file to
+        // disagree. The request is a sentence; it is the response that carries
+        // the story.
+        //
+        // The turn is durable server-side: if the stream connection drops
+        // after a check event and before the done event, the server still
+        // saves the full result here. The client may miss the visual but the
+        // data is preserved.
+        const next = applyTurn(campaign, result, Date.now())
+        try {
+          await saveCampaign(uid, trimToFit(next))
+        } catch (saveError) {
+          // The turn happened and the player is owed it. A failed save reads
+          // as a dropped turn next reload, which is worse than nothing but far
+          // better than throwing away narration the model has already been
+          // paid for.
+          console.error('dicebound turn save failed:', saveError)
+        }
+        emitRaw({ type: 'done', result, campaign: next })
+      } catch (error) {
+        clearTimeout(timeout)
+
+        if (error instanceof RefusedError) {
+          // In voice, and playable — the story continues, it just goes
+          // somewhere else. Breaking character to deliver a policy notice
+          // would be worse for this audience than a locked door.
+          emitRaw({
+            type: 'done',
+            result: {
+              entries: [
+                {
+                  kind: 'narration',
+                  text: 'That thread goes somewhere the story will not follow. The moment passes, and the world waits for you to try something else.',
+                },
+              ],
+            } satisfies TurnResult,
+          })
+        } else {
+          console.error('dicebound turn failed:', error)
+          emitRaw({ type: 'error', message: 'The telling faltered. Try that again.' })
+        }
+      } finally {
+        clearTimeout(timeout)
+        try {
+          streamCtrl.close()
+        } catch {
+          // already closed
+        }
+      }
+    },
+  })
+
+  return new NextResponse(stream, {
+    headers: {
+      'Content-Type': 'application/x-ndjson',
+      'Cache-Control': 'no-cache, no-transform',
+      'X-Content-Type-Options': 'nosniff',
+    },
+  })
 }
 
 /** The first turn: a title and a scene, with no player action to react to. */
 async function openStory(
   apiKey: string,
   campaign: Campaign,
-  signal: AbortSignal
+  signal: AbortSignal,
+  emit: TurnEmitter = noopEmit
 ): Promise<TurnResult> {
   const input = (await callForTool({
     apiKey,
@@ -958,7 +1020,8 @@ async function playTurn(
   campaign: Campaign,
   action: string,
   signal: AbortSignal,
-  uid: string | null
+  uid: string | null,
+  emit: TurnEmitter = noopEmit
 ): Promise<TurnResult> {
   // Condense before building the prompt, so a long campaign sends a bounded
   // window and the synopsis the model reads is already current.
@@ -1203,6 +1266,7 @@ Resolve it, then call narrate with what happens.`,
       const { entry, brief, body: afterBlow } = rollFor(campaign, kit, body, powers, call.input)
       entries.push(entry)
       body = afterBlow
+      emit({ type: 'check', entry })
 
       // Spend one charge per named item that bore on this check.
       const rawInput = (call.input ?? {}) as { items?: unknown }

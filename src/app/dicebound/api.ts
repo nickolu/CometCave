@@ -5,7 +5,7 @@
  * and their voice, so there is nothing to do here but carry JSON and turn a
  * non-OK response into a thrown `TurnError` the UI can render in character.
  */
-import type { Campaign } from './domain/campaign'
+import type { Campaign, CheckEntry } from './domain/campaign'
 import type { Character } from './domain/character'
 import type { TurnResult } from './domain/turn'
 
@@ -67,7 +67,8 @@ export interface TurnResponse {
  */
 export async function takeTurn(
   action: string,
-  { token, campaign }: { token: string | null; campaign: Campaign }
+  { token, campaign }: { token: string | null; campaign: Campaign },
+  onCheck?: (entry: CheckEntry) => void
 ): Promise<TurnResponse> {
   const creating = campaign.transcript.length === 0
   const body = token ? (creating ? { action, campaign } : { action }) : { campaign, action }
@@ -85,7 +86,58 @@ export async function takeTurn(
     throw await errorFrom(response, 'The telling faltered. Try that again.')
   }
 
-  return (await response.json()) as TurnResponse
+  // Parse the NDJSON stream. Each line is a JSON event: check, done, or error.
+  if (!response.body) {
+    // Should not happen with the new server, but guard for safety
+    return (await response.json()) as TurnResponse
+  }
+
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let finalResponse: TurnResponse | undefined
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      buffer += decoder.decode(value, { stream: true })
+      const lines = buffer.split('\n')
+      buffer = lines.pop() ?? ''
+
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        let event: Record<string, unknown>
+        try {
+          event = JSON.parse(trimmed) as Record<string, unknown>
+        } catch {
+          continue
+        }
+
+        if (event.type === 'check' && onCheck) {
+          onCheck(event.entry as CheckEntry)
+        } else if (event.type === 'done') {
+          finalResponse = {
+            result: event.result as TurnResult,
+            ...(event.campaign ? { campaign: event.campaign as Campaign } : {}),
+          }
+        } else if (event.type === 'error') {
+          throw new TurnError(
+            typeof event.message === 'string' ? event.message : 'The telling faltered. Try that again.'
+          )
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  if (!finalResponse) {
+    throw new TurnError('The telling faltered. Try that again.')
+  }
+  return finalResponse
 }
 
 /**

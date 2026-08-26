@@ -151,7 +151,11 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       set({ campaign, phase: 'playing' })
 
       const token = await get().backend.token()
-      const { result, campaign: authoritative } = await takeTurn('', { token, campaign })
+      const { result, campaign: authoritative } = await takeTurn('', { token, campaign }, (entry) => {
+        const current = get().campaign
+        if (!current) return
+        set({ campaign: { ...current, transcript: [...current.transcript, entry] } })
+      })
       const opened = authoritative ?? applyTurn(campaign, result, Date.now())
 
       set({ campaign: opened, pending: false })
@@ -196,7 +200,12 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       // `campaign` here is the pre-optimistic one on purpose. On the local path
       // it is what the result gets applied to, and applying a turn to a
       // campaign that already contains the player's line would record it twice.
-      const { result, campaign: authoritative } = await takeTurn(text, { token, campaign })
+      const { result, campaign: authoritative } = await takeTurn(text, { token, campaign }, (entry) => {
+        // Die card appears immediately as roll_check resolves, mid-turn
+        const current = get().campaign
+        if (!current) return
+        set({ campaign: { ...current, transcript: [...current.transcript, entry] } })
+      })
       const next = authoritative ?? applyTurn(campaign, result, Date.now())
 
       set({ campaign: next, pending: false })
