@@ -385,7 +385,7 @@ export function GamePlayView() {
               disabled={selectedCardIds.length === 0 || remainingHands === 0 || isScoring}
               onClick={scoreHand}
             >
-              Play Hand <span style={{ marginLeft: 4 }}>↑</span>
+              Play Hand <span style={{ opacity: 0.55, marginLeft: 4 }}>{remainingHands}</span>
             </PrimaryButton>
           </div>
 
@@ -997,7 +997,7 @@ export function GamePlayView() {
                 disabled={selectedCardIds.length === 0 || remainingHands === 0 || isScoring}
                 onClick={scoreHand}
               >
-                Play Hand <span style={{ marginLeft: 6 }}>↑</span>
+                Play Hand <span style={{ opacity: 0.55, marginLeft: 6 }}>{remainingHands}</span>
               </PrimaryButton>
               <GhostButton onClick={() => setShowDeck(true)}>Show Deck</GhostButton>
               <GhostButton onClick={() => setShowHands(true)}>Show Hands</GhostButton>
