@@ -24,9 +24,12 @@ import {
   type Body,
   CONDITION_ORDER,
   type Condition,
+  type Danger,
+  DEFAULT_DANGER,
   isDead,
   undamagedBody,
   validateBody,
+  validateDanger,
 } from './body'
 import { MAX_SKILL_RANK, blankAttributes, normalizeAttributes } from './character'
 import { type Kit, emptyKit, validateKit } from './kit'
@@ -155,6 +158,8 @@ export interface Campaign {
   character: Character
   /** Where the character is on the condition track. Added in version 3. */
   body: Body
+  /** How lethal the player wants their world to be. Defaults to 'ordinary'. */
+  danger: Danger
   /**
    * Set once, when the run ends. Null for a story still being told, which is
    * almost all of them — nothing renders until it exists (CLAUDE.md #17).
@@ -224,7 +229,8 @@ export function newCampaign(
   premise: string,
   character: Character,
   now: number,
-  today: string | null
+  today: string | null,
+  danger: Danger = DEFAULT_DANGER
 ): Campaign {
   return {
     version: CAMPAIGN_VERSION,
@@ -232,6 +238,7 @@ export function newCampaign(
     title: 'An Untitled Story',
     character,
     body: undamagedBody(),
+    danger,
     ending: null,
     world: emptyWorld(),
     kit: emptyKit(),
@@ -314,6 +321,7 @@ export function validateCampaign(value: unknown): Campaign | null {
     // remembered — and a branch nobody has to remember is a branch that cannot
     // be forgotten at the next bump. `readEnding` is built the same way.
     body,
+    danger: validateDanger(value.danger),
     ending: readEnding(value.ending, body, world.clock.elapsed, updatedAt),
     world,
     kit: migrating ? emptyKit() : validateKit(value.kit),

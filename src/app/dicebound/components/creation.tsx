@@ -16,7 +16,14 @@
 import { useState } from 'react'
 
 import { MAX_CONCEPT, MAX_PREMISE } from '@/app/dicebound/domain/campaign'
+import { type Danger, DANGER_ORDER } from '@/app/dicebound/domain/body'
 import { ChunkyButton } from '@/components/ui/chunky-button'
+
+const DANGER_LABELS: Record<Danger, { label: string; hint: string }> = {
+  gentle: { label: 'Gentle', hint: 'The story is the point. Death is possible but walks slowly.' },
+  ordinary: { label: 'Ordinary', hint: 'The default. A bad roll costs something real.' },
+  perilous: { label: 'Perilous', hint: 'A single wrong step can end the story.' },
+}
 
 const PREMISES = [
   'a heist in a clockwork city',
@@ -38,12 +45,13 @@ export function Creation({
   pending,
   error,
 }: {
-  onBegin: (premise: string, concept: string) => void
+  onBegin: (premise: string, concept: string, danger: Danger) => void
   pending: boolean
   error: string | null
 }) {
   const [premise, setPremise] = useState('')
   const [concept, setConcept] = useState('')
+  const [danger, setDanger] = useState<Danger>('ordinary')
 
   const ready = premise.trim().length > 1 && concept.trim().length > 1
 
@@ -79,6 +87,39 @@ export function Creation({
         disabled={pending}
       />
 
+      <section className="flex flex-col gap-3">
+        <label className="font-headline text-xl font-extrabold text-on-surface">
+          How dangerous is this world?
+        </label>
+        <p className="-mt-2 text-sm text-on-surface-variant">
+          You can change this any time during the story.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          {DANGER_ORDER.map(option => {
+            const { label, hint } = DANGER_LABELS[option]
+            const selected = danger === option
+            return (
+              <button
+                key={option}
+                type="button"
+                disabled={pending}
+                onClick={() => setDanger(option)}
+                className={`flex flex-1 flex-col gap-1 rounded-ds-sm border-2 px-4 py-3 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary disabled:opacity-50 ${
+                  selected
+                    ? 'border-ds-primary bg-ds-primary/10 text-on-surface'
+                    : 'border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-ds-primary/50'
+                }`}
+              >
+                <span className={`font-headline font-bold ${selected ? 'text-ds-primary' : ''}`}>
+                  {label}
+                </span>
+                <span className="text-sm">{hint}</span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
       {error && (
         <p role="alert" className="text-center text-body-md text-ds-error">
           {error}
@@ -90,7 +131,7 @@ export function Creation({
           variant="primary"
           size="hero"
           disabled={!ready || pending}
-          onClick={() => onBegin(premise, concept)}
+          onClick={() => onBegin(premise, concept, danger)}
         >
           {pending ? 'Rolling up…' : 'Begin the story'}
         </ChunkyButton>

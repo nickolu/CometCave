@@ -23,9 +23,10 @@ import {
   SKILLS,
   type SkillId,
 } from '@/app/dicebound/domain/attributes'
-import { type Body, CONDITION_LABEL, CONDITION_PHRASE } from '@/app/dicebound/domain/body'
+import { type Body, CONDITION_LABEL, CONDITION_PHRASE, type Danger, DANGER_ORDER } from '@/app/dicebound/domain/body'
 import type { Campaign } from '@/app/dicebound/domain/campaign'
 import { type SkillRecord, usesToNextRank } from '@/app/dicebound/domain/character'
+import { useDicebound } from '@/app/dicebound/store'
 
 import { Items, Powers, SpeciesLine, Standing } from './kit'
 import { WorldPanel } from './world'
@@ -36,6 +37,7 @@ function sign(value: number): string {
 
 export function Sheet({ campaign }: { campaign: Campaign }) {
   const { character, stats } = campaign
+  const setDanger = useDicebound(state => state.setDanger)
 
   const touched = Object.entries(character.skills)
     .map(([skill, record]) => ({ skill: skill as SkillId, record: record as SkillRecord }))
@@ -49,6 +51,7 @@ export function Sheet({ campaign }: { campaign: Campaign }) {
         <SpeciesLine species={campaign.kit.species} />
         <Standing campaign={campaign} />
         <Condition body={campaign.body} />
+        <DangerDial danger={campaign.danger} onChange={setDanger} />
         {character.reading && (
           <p className="mt-3 border-l-2 border-ds-tertiary/50 pl-3 text-sm italic text-on-surface-variant">
             {character.reading}
@@ -184,6 +187,54 @@ function Condition({ body }: { body: Body }) {
         <span className="mx-1.5 text-on-surface-variant/50">—</span>
         {CONDITION_PHRASE[body.condition]}
       </p>
+    </section>
+  )
+}
+
+const DANGER_LABELS: Record<Danger, { label: string; hint: string }> = {
+  gentle: { label: 'Gentle', hint: 'Death walks slowly.' },
+  ordinary: { label: 'Ordinary', hint: 'A bad roll costs something real.' },
+  perilous: { label: 'Perilous', hint: 'A single wrong step can end the story.' },
+}
+
+/**
+ * The lethality dial, shown from turn 1.
+ *
+ * This is a setting, not a stat — it shows regardless of condition, even on an
+ * unhurt character. The danger setting changes arithmetic only; it is not sent
+ * to the DM in the prompt (telling the DM would soften narrative on top of softer
+ * numbers, doubling the effect without anyone choosing it).
+ */
+function DangerDial({ danger, onChange }: { danger: Danger; onChange: (danger: Danger) => void }) {
+  return (
+    <section aria-labelledby="dicebound-danger" className="mt-3">
+      <h3
+        id="dicebound-danger"
+        className="font-label text-label-caps text-xs uppercase tracking-widest text-on-surface-variant"
+      >
+        Danger
+      </h3>
+      <div className="mt-2 flex gap-1.5">
+        {DANGER_ORDER.map(option => {
+          const { label, hint } = DANGER_LABELS[option]
+          const selected = danger === option
+          return (
+            <button
+              key={option}
+              type="button"
+              title={hint}
+              onClick={() => onChange(option)}
+              className={`flex-1 rounded border-2 px-2 py-1.5 text-center text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary ${
+                selected
+                  ? 'border-ds-primary bg-ds-primary/10 text-ds-primary'
+                  : 'border-outline-variant bg-surface-container-low text-on-surface-variant hover:border-ds-primary/50 hover:text-on-surface'
+              }`}
+            >
+              {label}
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }

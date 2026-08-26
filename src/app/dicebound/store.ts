@@ -48,6 +48,7 @@ import {
   newCampaign,
   withVisit,
 } from './domain/campaign'
+import { type Danger, DEFAULT_DANGER } from './domain/body'
 import { applyTurn } from './domain/turn'
 
 import type { Character } from './domain/character'
@@ -85,17 +86,18 @@ interface DiceboundState {
   suggestionsHidden: boolean
 
   attach: (backend: CampaignBackend) => Promise<void>
-  begin: (premise: string, concept: string) => Promise<void>
+  begin: (premise: string, concept: string, danger: Danger) => Promise<void>
   act: (action: string) => Promise<void>
   abandon: () => Promise<void>
   dismissError: () => void
+  setDanger: (danger: Danger) => void
   /** Ask for a fresh three. Called by the store itself after anything that moves the story. */
   refreshSuggestions: () => Promise<void>
   toggleSuggestions: () => void
 }
 
-function freshCampaign(premise: string, character: Character, now: number): Campaign {
-  return newCampaign(premise, character, now, getTodayPST())
+function freshCampaign(premise: string, character: Character, now: number, danger: Danger): Campaign {
+  return newCampaign(premise, character, now, getTodayPST(), danger)
 }
 
 export const useDicebound = create<DiceboundState>((set, get) => ({
@@ -134,14 +136,14 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
     void get().refreshSuggestions()
   },
 
-  async begin(premise, concept) {
+  async begin(premise, concept, danger = DEFAULT_DANGER) {
     if (get().pending) return
     set({ pending: true, error: null })
 
     try {
       const trimmedPremise = premise.trim().slice(0, MAX_PREMISE)
       const character = await createCharacter(concept.trim().slice(0, MAX_CONCEPT), trimmedPremise)
-      const campaign = freshCampaign(trimmedPremise, character, Date.now())
+      const campaign = freshCampaign(trimmedPremise, character, Date.now(), danger)
 
       // Straight into the opening scene. A character sheet with no story
       // attached is a form the player just filled in; the first paragraph is
@@ -230,6 +232,14 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
 
   dismissError() {
     set({ error: null })
+  },
+
+  setDanger(danger) {
+    const { campaign, backend } = get()
+    if (!campaign) return
+    const updated = { ...campaign, danger }
+    set({ campaign: updated })
+    void backend.save(updated)
   },
 
   async refreshSuggestions() {
