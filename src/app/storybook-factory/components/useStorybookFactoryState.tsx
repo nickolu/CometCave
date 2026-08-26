@@ -285,9 +285,10 @@ export function useStorybookFactoryState(): StorybookFactoryState {
 
     const storyContext = `A ${generatedStory.layout.type} story called "${generatedStory.layout.title}"`
     let failedCount = 0
+    const CONCURRENCY = 3
 
-    for (const { key, prompt } of illustrationPanels) {
-      if (controller.signal.aborted) break
+    const generateOne = async (key: string, prompt: string) => {
+      if (controller.signal.aborted) return
       try {
         const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
           method: 'POST',
@@ -308,12 +309,18 @@ export function useStorybookFactoryState(): StorybookFactoryState {
           failedCount++
         }
       } catch (err) {
-        if ((err as Error)?.name === 'AbortError') break
+        if ((err as Error)?.name === 'AbortError') return
         console.error(`Failed to generate illustration for ${key}:`, err)
         failedCount++
       }
-
       setIllustrationProgress(prev => ({ ...prev, completed: prev.completed + 1 }))
+    }
+
+    // Generate illustrations in parallel batches (CONCURRENCY at a time) for speed.
+    for (let i = 0; i < illustrationPanels.length; i += CONCURRENCY) {
+      if (controller.signal.aborted) break
+      const batch = illustrationPanels.slice(i, i + CONCURRENCY)
+      await Promise.all(batch.map(({ key, prompt }) => generateOne(key, prompt)))
     }
 
     if (!controller.signal.aborted) {
