@@ -125,7 +125,9 @@ import {
   traitsFor,
   worthOf,
 } from '@/app/dicebound/domain/loot'
+import { MAX_STATUSES, applyStatus, expire } from '@/app/dicebound/domain/status'
 import {
+  AFFLICT_TOOL,
   GRANT_ITEM_TOOL,
   GRANT_POWER_TOOL,
   HARM_TOOL,
@@ -537,6 +539,25 @@ const HARM: ToolDef = {
   description:
     'The world hurts the character, with no attempt of theirs being tested: an ambush landing, a thread catching up with them, poison, fever, cold. Call this BEFORE narrating the injury — it returns what state they are now in, and you narrate that. If they tried something that could go wrong, use roll_check with a severity instead. At most once per turn.',
   input_schema: toolSchema(HarmSchema),
+}
+
+const AfflictSchema = z.object({
+  name: z.string(),
+  effect: z.string(),
+  duration: z.number(),
+})
+
+const AFFLICT: ToolDef = {
+  name: AFFLICT_TOOL,
+  description: `Apply a timed affliction to the character. Use only when the fiction has clearly established something wrong with them — venom, a curse, a wound that will take days to leave, a fever, a haunting dread.
+
+name: the DM's own words for it ('toad venom sickness', 'arrow-grazed shoulder'). Never a category.
+effect: what it does to them, in prose. No numbers — this field has no numeric type on purpose. If the affliction bears on a specific check, name it in situational (already clamped, already shown on the die card).
+duration: fiction minutes.
+
+Cap: ${MAX_STATUSES} live afflictions. Re-applying the same name refreshes the timer. Applying past the cap drops the one expiring soonest.
+Afflictions only. Use grant_power for anything that helps.`,
+  input_schema: toolSchema(AfflictSchema),
 }
 
 /**
@@ -1082,11 +1103,11 @@ Resolve it, then call narrate with what happens.`,
       // left on the board.
       tools: lastStep
         ? [narrate]
-        : [ROLL_CHECK, HARM, RECALL, GRANT_ITEM, GRANT_POWER, USE_POWER, narrate],
+        : [ROLL_CHECK, HARM, AFFLICT, RECALL, GRANT_ITEM, GRANT_POWER, USE_POWER, narrate],
       toolChoice: lastStep ? { type: 'tool', name: NARRATE_TOOL } : { type: 'auto' },
     })
 
-    const { rolls, recalls, grants, powerGrants, powerUses, harms, ending, premature } =
+    const { rolls, recalls, grants, powerGrants, powerUses, harms, afflicts, ending, premature } =
       partitionTurnCalls(toolUses(data))
 
     if (ending) {
@@ -1101,6 +1122,7 @@ Resolve it, then call narrate with what happens.`,
       const before = world.clock.elapsed
       const applied = applyWorldDelta(world, delta)
       world = applied.world
+      body = { ...body, statuses: expire(body.statuses, world.clock.elapsed) }
 
       // Measured from the clock the server actually moved, not from the
       // `elapsed` the model asked for. `advance` stops at a fuse, so a DM that
@@ -1201,6 +1223,11 @@ Resolve it, then call narrate with what happens.`,
       const { body: afterHarm, note, spent } = harmFor(body, harmed, call.input, campaign.danger)
       body = afterHarm
       harmed = harmed || spent
+      results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
+    }
+    for (const call of afflicts) {
+      const { body: afterAfflict, note } = afflictFor(body, world, call.input)
+      body = afterAfflict
       results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
     }
     for (const call of grants) {
@@ -1820,6 +1847,39 @@ function harmFor(
 }
 
 /**
+ * Apply a timed affliction from a tool call.
+ *
+ * No numeric field on Status is the safety property — the DM can name any
+ * affliction it likes and still cannot move a die, because there is nowhere to
+ * write a number. If the status bears on a specific roll, the DM puts it through
+ * `situational`, which is already clamped and already shown on the die card.
+ *
+ * Returns the same body when the name cannot be slugged, rather than throwing.
+ * An affliction nobody can name is one nothing can clear, so it is dropped at
+ * the source.
+ */
+function afflictFor(
+  body: Body,
+  world: World,
+  input: unknown,
+): { body: Body; note: string } {
+  const raw = AfflictSchema.safeParse(input)
+  if (!raw.success) {
+    return { body, note: 'Not applied — unreadable input.' }
+  }
+  const { name, effect, duration } = raw.data
+  const newStatuses = applyStatus(body.statuses, name, effect, duration, world.clock.elapsed)
+  if (newStatuses === body.statuses) {
+    // applyStatus returns the same reference only when the name slugged to
+    // nothing. An affliction nobody can name is one nothing can clear.
+    return { body, note: 'Not applied — name could not be identified.' }
+  }
+  const newBody = { ...body, statuses: newStatuses }
+  const list = newStatuses.map(s => `${s.name} — ${s.effect}`).join('; ')
+  return { body: newBody, note: `Applied. Currently wrong with them: ${list}` }
+}
+
+/**
  * What the DM is told a wound actually cost, in words.
  *
  * The rung is reported and the arithmetic is not. The model named a row and is
@@ -1933,7 +1993,7 @@ function sheetBlock(campaign: Campaign): string {
   return `THE CHARACTER
 ${c.name} — ${c.concept}
 Attributes: ${attributes}
-Earned skills: ${skills}${bodyBlock(campaign.body)}${windowBlock(campaign)}${powersBlock(campaign.kit)}${packBlock(campaign.kit)}`
+Earned skills: ${skills}${bodyBlock(campaign.body)}${statusBlock(campaign.body)}${windowBlock(campaign)}${powersBlock(campaign.kit)}${packBlock(campaign.kit)}`
 }
 
 /**
@@ -1962,6 +2022,25 @@ Earned skills: ${skills}${bodyBlock(campaign.body)}${windowBlock(campaign)}${pow
 function bodyBlock(body: Body): string {
   if (body.condition === 'unhurt') return ''
   return `\nCondition: ${CONDITION_LABEL[body.condition].toLowerCase()} — ${CONDITION_PHRASE[body.condition]} Let this show in how they move and what they can face. Do not heal it, and do not forget it.`
+}
+
+/**
+ * Current afflictions, for the DM to narrate around.
+ *
+ * Absent when empty — same reasoning as bodyBlock: showing an empty list puts
+ * the system in front of the DM on every turn, and a model shown a list starts
+ * looking for reasons to fill it. The prompt should make afflicting the uncommon
+ * case; hiding this when there is nothing to show is half of that.
+ *
+ * Prose-only. No numbers anywhere. The safety property of Status is that
+ * `effect` is a string with nowhere to write a modifier — the model cannot turn
+ * this into arithmetic no matter how helpfully it tries. When one bears on a
+ * specific check, it goes through `situational`, which is already clamped.
+ */
+function statusBlock(body: Body): string {
+  if (body.statuses.length === 0) return ''
+  const lines = body.statuses.map(s => `  ${s.name} — ${s.effect}`)
+  return `\nAfflictions (narrate around these; if one bears on a check, name it in situational):\n${lines.join('\n')}`
 }
 
 /**

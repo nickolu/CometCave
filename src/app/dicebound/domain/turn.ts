@@ -27,6 +27,7 @@ export const GRANT_ITEM_TOOL = 'grant_item'
 export const GRANT_POWER_TOOL = 'grant_power'
 export const USE_POWER_TOOL = 'use_power'
 export const HARM_TOOL = 'harm'
+export const AFFLICT_TOOL = 'afflict'
 
 /** One pass's tool calls, sorted into what the loop does with each. */
 export interface TurnCalls<T extends ToolCall> {
@@ -60,6 +61,16 @@ export interface TurnCalls<T extends ToolCall> {
    * ending on the tool result would leave them reading nothing at all.
    */
   harms: T[]
+  /**
+   * `afflict` calls — timed afflictions applied without a check.
+   *
+   * Answered and the turn continues, like harm. Narration written beside an
+   * afflict is discarded: the DM sent the affliction and a narrative about its
+   * effect in the same breath, before the server stamped the clock expiry and
+   * applied the cap rule. Keeping both would narrate an outcome the DM could not
+   * yet have known.
+   */
+  afflicts: T[]
   /** The `narrate` call that ends the turn, or null while the turn continues. */
   ending: T | null
   /**
@@ -93,6 +104,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
   const powerGrants = calls.filter(call => call.name === GRANT_POWER_TOOL)
   const powerUses = calls.filter(call => call.name === USE_POWER_TOOL)
   const harms = calls.filter(call => call.name === HARM_TOOL)
+  const afflicts = calls.filter(call => call.name === AFFLICT_TOOL)
   const narrations = calls.filter(call => call.name === NARRATE_TOOL)
 
   // A narration sent alongside a lookup is as blind as one sent alongside a
@@ -112,7 +124,8 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
     grants.length > 0 ||
     powerGrants.length > 0 ||
     powerUses.length > 0 ||
-    harms.length > 0
+    harms.length > 0 ||
+    afflicts.length > 0
   ) {
     return {
       rolls,
@@ -121,6 +134,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
       powerGrants,
       powerUses,
       harms,
+      afflicts,
       ending: null,
       premature: narrations,
     }
@@ -135,6 +149,7 @@ export function partitionTurnCalls<T extends ToolCall>(calls: T[]): TurnCalls<T>
     powerGrants,
     powerUses,
     harms,
+    afflicts,
     ending: narrations[0] ?? null,
     premature: narrations.slice(1),
   }
