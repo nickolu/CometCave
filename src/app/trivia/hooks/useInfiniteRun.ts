@@ -31,6 +31,9 @@ export interface InfiniteRunState {
   customCategory: string | null
   // When true, custom-category runs sample from existing questions only (no generation).
   sampleExistingOnly: boolean
+  // Set when playing a replay run (challenge from another player's shared run)
+  replayRunId: string | null
+  replaySourceRunId: string | null
   runId: string | null
   question: InfiniteQuestion | null
   livesRemaining: number
@@ -71,6 +74,8 @@ export function useInfiniteRun() {
     categoryIds: [],
     customCategory: null,
     sampleExistingOnly: false,
+    replayRunId: null,
+    replaySourceRunId: null,
     runId: null,
     question: null,
     livesRemaining: LIVES_START,
@@ -138,7 +143,7 @@ export function useInfiniteRun() {
     prefetchPromiseRef.current = null
   }, [])
 
-  const startPrefetch = useCallback((streak: number, categoryIds: number[], customCategory: string | null, sampleExistingOnly = false) => {
+  const startPrefetch = useCallback((streak: number, categoryIds: number[], customCategory: string | null, sampleExistingOnly = false, replayRunId: string | null = null) => {
     cancelPrefetch()
     const controller = new AbortController()
     prefetchAbortRef.current = controller
@@ -146,7 +151,9 @@ export function useInfiniteRun() {
       try {
         const headers = await getAuthHeaders()
         const params = new URLSearchParams({ streak: String(streak) })
-        if (customCategory) {
+        if (replayRunId) {
+          params.set('replayRunId', replayRunId)
+        } else if (customCategory) {
           params.set('customCategory', customCategory)
         } else if (categoryIds.length > 0) {
           params.set('categoryIds', categoryIds.join(','))
@@ -238,6 +245,47 @@ export function useInfiniteRun() {
     }
   }, [getAuthHeaders, cancelPrefetch])
 
+  const startReplayRun = useCallback(async (replayRunId: string, replaySourceRunId: string) => {
+    cancelPrefetch()
+    setState(s => ({ ...s, phase: 'loading', replayRunId, replaySourceRunId, error: null }))
+    try {
+      const headers = await getAuthHeaders()
+      // Fetch first question
+      const qRes = await fetch(`/api/v1/trivia/infinite/next?replayRunId=${encodeURIComponent(replayRunId)}&streak=0`, { headers })
+      if (qRes.status === 204) {
+        setState(s => ({ ...s, phase: 'exhausted', runId: replayRunId }))
+        return
+      }
+      if (!qRes.ok) throw new Error('Failed to fetch first replay question')
+      const question = await qRes.json()
+
+      setState(s => ({
+        ...s,
+        phase: 'awaiting-ready',
+        runId: replayRunId,
+        replayRunId,
+        replaySourceRunId,
+        question,
+        livesRemaining: LIVES_START,
+        currentStreak: 0,
+        longestStreak: 0,
+        score: 0,
+        questionsAnswered: 0,
+        trailblazes: 0,
+        bonusLivesEarned: 0,
+        skipsRemaining: SKIPS_PER_RUN,
+        skipsUsed: 0,
+        flaggedQuestionIds: [],
+        lastAnswer: null,
+        correctsByCategoryThisRun: {},
+        answers: [],
+      }))
+    } catch (err) {
+      console.error('[infinite] startReplayRun failed:', err)
+      setState(s => ({ ...s, phase: 'error', error: 'Failed to start replay.' }))
+    }
+  }, [getAuthHeaders, cancelPrefetch])
+
   const submitAnswer = useCallback(async (answer: string) => {
     if (state.phase !== 'playing' || !state.runId || !state.question) return
 
@@ -268,7 +316,7 @@ export function useInfiniteRun() {
       // Kick off the next question fetch in the background while the player
       // reads their feedback — only when the run is continuing.
       if (!result.runOver) {
-        startPrefetch(result.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly)
+        startPrefetch(result.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly, state.replayRunId)
       }
 
       // If this was a correct answer in scored mode, increment the live
@@ -312,7 +360,7 @@ export function useInfiniteRun() {
       console.error('[infinite] submitAnswer failed:', err)
       setState(s => ({ ...s, phase: 'error', error: 'Failed to submit answer.' }))
     }
-  }, [state.phase, state.runId, state.question, state.categoryIds, state.customCategory, state.sampleExistingOnly, getAuthHeaders, startPrefetch, cancelPrefetch])
+  }, [state.phase, state.runId, state.question, state.categoryIds, state.customCategory, state.sampleExistingOnly, state.replayRunId, getAuthHeaders, startPrefetch, cancelPrefetch])
 
   const nextQuestion = useCallback(async () => {
     if (state.phase !== 'answered' || !state.runId) return
@@ -380,7 +428,9 @@ export function useInfiniteRun() {
       try {
         const headers = await getAuthHeaders()
         const nextParams = new URLSearchParams({ streak: String(state.currentStreak) })
-        if (state.customCategory) {
+        if (state.replayRunId) {
+          nextParams.set('replayRunId', state.replayRunId)
+        } else if (state.customCategory) {
           nextParams.set('customCategory', state.customCategory)
         } else if (state.categoryIds.length > 0) {
           nextParams.set('categoryIds', state.categoryIds.join(','))
@@ -406,7 +456,7 @@ export function useInfiniteRun() {
     } finally {
       nextQuestionInFlightRef.current = false
     }
-  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly, getAuthHeaders, cancelPrefetch, detachPrefetch])
+  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly, state.replayRunId, getAuthHeaders, cancelPrefetch, detachPrefetch])
 
   // Player clicked "Ready" on the gated loading screen — start the
   // per-question timer now and reveal the question.
@@ -583,5 +633,5 @@ export function useInfiniteRun() {
     })
   }, [])
 
-  return { state, startRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged }
+  return { state, startRun, startReplayRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged }
 }

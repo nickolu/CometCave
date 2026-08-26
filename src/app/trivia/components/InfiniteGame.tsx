@@ -28,16 +28,19 @@ interface Props {
   mode?: InfiniteMode
   initialCustomCategory?: string | null
   sampleExistingOnly?: boolean
+  replayRunId?: string | null
+  replaySourceRunId?: string | null
 }
 
-export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored', initialCustomCategory, sampleExistingOnly = false }: Props) {
+export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored', initialCustomCategory, sampleExistingOnly = false, replayRunId, replaySourceRunId }: Props) {
   const { user, loading: authLoading } = useAuth()
-  const { state, startRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
+  const { state, startRun, startReplayRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
   const hasStartedRef = useRef(false)
   const autoStartedRef = useRef(false)
+  const replayStartedRef = useRef(false)
   const [showPreGame, setShowPreGame] = useState(true)
   // Empty set = "All Categories" (no filter). Players toggle individual
   // tiles to build up a multi-category selection.
@@ -84,6 +87,14 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
     setShowPreGame(false)
     startRun(mode === 'practice' ? 'practice' : 'scored', [], initialCustomCategory, sampleExistingOnly)
   }, [initialCustomCategory, sampleExistingOnly, mode, startRun, authLoading])
+
+  // Auto-start when launched from a shared run link (replay mode).
+  useEffect(() => {
+    if (!replayRunId || replayStartedRef.current || authLoading) return
+    replayStartedRef.current = true
+    setShowPreGame(false)
+    startReplayRun(replayRunId, replaySourceRunId ?? '')
+  }, [replayRunId, replaySourceRunId, startReplayRun, authLoading])
 
   const handleStart = useCallback((chosenMode: InfiniteMode) => {
     if (typeof window !== 'undefined') {
@@ -545,7 +556,7 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
 
   // End of run
   if (state.phase === 'ended') {
-    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} onViewLeaderboard={onViewLeaderboard} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} ratings={ratingsRef.current} />
+    return <InfiniteRunSummary state={state} onPlayAgain={handlePlayAgain} onBack={onBack} onViewStats={onViewStats} onViewLeaderboard={onViewLeaderboard} mode={state.mode} runId={state.runId} onFlagged={handleQuestionFlagged} ratings={ratingsRef.current} replaySourceRunId={state.replaySourceRunId} />
   }
 
   // Playing or answered
