@@ -86,6 +86,12 @@ const sealVar: Partial<Record<PlayingCardFlags['seal'], string>> = {
   red: 'var(--cc-seal-red)',
 }
 
+const editionLabel: Partial<Record<PlayingCardFlags['edition'], string>> = {
+  foil: 'foil +50',
+  holographic: 'holo +10',
+  polychrome: 'poly ×1.5',
+}
+
 export function BrandCard({
   card,
   selected = false,
@@ -374,7 +380,7 @@ export function BrandCard({
             padding: '2px 0',
           }}
         >
-          {card.flags.edition}
+          {editionLabel[card.flags.edition] ?? card.flags.edition}
         </div>
       )}
     </button>
