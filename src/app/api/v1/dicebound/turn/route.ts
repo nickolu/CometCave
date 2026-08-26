@@ -184,6 +184,7 @@ import {
   toolUses,
 } from '@/lib/dicebound/anthropic'
 import { archiveChapter, loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
+import { noteDamage } from '@/lib/dicebound/telemetry'
 
 /** The DM can be slow, and a scene worth waiting for is worth the headroom. */
 export const maxDuration = 120
@@ -1650,6 +1651,18 @@ function rollFor(
   // defaulted inside `applyDamage` so that the day `Campaign.danger` lands, the
   // only edit is this argument.
   const change = severity ? applyDamage(body, severity, outcome.band, DEFAULT_DANGER) : null
+  // Every check, including the ones that named nothing — "most checks are not
+  // dangerous" is a claim in the prompt, and it can only be read against the
+  // checks that carried no severity at all.
+  noteDamage({
+    tool: 'roll_check',
+    severity,
+    band: outcome.band,
+    from: change?.from ?? body.condition,
+    to: change?.to ?? body.condition,
+    steps: change?.steps ?? 0,
+    applied: true,
+  })
 
   const entry: CheckEntry = {
     kind: 'check',
@@ -1711,6 +1724,18 @@ function harmFor(
   input: unknown
 ): { body: Body; note: string; spent: boolean } {
   if (already) {
+    // Recorded too. A DM reaching for a second harm is the drift this ceiling
+    // exists to stop, and a refusal that left no trace would make the ceiling
+    // look unnecessary precisely when it was working.
+    noteDamage({
+      tool: 'harm',
+      severity: null,
+      band: null,
+      from: body.condition,
+      to: body.condition,
+      steps: 0,
+      applied: false,
+    })
     return {
       body,
       spent: false,
@@ -1727,6 +1752,16 @@ function harmFor(
   const severity = validateSeverity(raw.severity)
   const change = applyHarm(body, severity, DEFAULT_DANGER)
   const reason = typeof raw.reason === 'string' ? raw.reason.slice(0, 120) : ''
+
+  noteDamage({
+    tool: 'harm',
+    severity,
+    band: null,
+    from: change.from,
+    to: change.to,
+    steps: change.steps,
+    applied: true,
+  })
 
   return {
     body: change.body,
