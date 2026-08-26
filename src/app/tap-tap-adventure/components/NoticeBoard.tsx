@@ -71,11 +71,29 @@ function generateRumors(character: FantasyCharacter): string[] {
 
 export function NoticeBoard({ character, activeQuest, onAcceptQuest, onClose }: NoticeBoardProps) {
   const [generatedQuest, setGeneratedQuest] = useState<TimedQuest | null>(null)
+  const [isLoading, setIsLoading] = useState(!activeQuest)
 
   useEffect(() => {
-    if (!activeQuest) {
-      setGeneratedQuest(generateTimedQuest(character))
-    }
+    if (activeQuest) return
+
+    setIsLoading(true)
+    fetch('/api/v1/tap-tap-adventure/quest/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ character }),
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then((data: TimedQuest) => {
+        setGeneratedQuest(data)
+        setIsLoading(false)
+      })
+      .catch(() => {
+        setGeneratedQuest(generateTimedQuest(character))
+        setIsLoading(false)
+      })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -126,6 +144,10 @@ export function NoticeBoard({ character, activeQuest, onAcceptQuest, onClose }: 
                 ? 'Quest expired!'
                 : `${activeQuest.deadlineDay - currentDay} day(s) remaining`}
             </div>
+          </div>
+        ) : isLoading ? (
+          <div className="bg-[#252638] border border-indigo-700/20 rounded p-2">
+            <div className="text-sm text-slate-400 italic">The board considers your request…</div>
           </div>
         ) : generatedQuest ? (
           <div className="bg-[#252638] border border-indigo-700/40 rounded p-2 space-y-1.5">
