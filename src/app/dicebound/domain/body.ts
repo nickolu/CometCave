@@ -43,6 +43,7 @@
 import { isPlainObject, oneOf } from './validate'
 
 import type { OutcomeBand } from './dice'
+import { type Status, validateStatuses } from './status'
 
 // ------------------------------------------------------------------ the track
 
@@ -149,10 +150,12 @@ export function isDead(body: Body): boolean {
  */
 export interface Body {
   condition: Condition
+  /** Active afflictions. Empty for an undamaged body. */
+  statuses: readonly Status[]
 }
 
 export function undamagedBody(): Body {
-  return { condition: 'unhurt' }
+  return { condition: 'unhurt', statuses: [] }
 }
 
 /**
@@ -167,10 +170,15 @@ export function undamagedBody(): Body {
  *
  * A campaign saved before this file existed has no `body` at all, which lands in
  * exactly the same place. That is the whole of the version 2 → 3 migration.
+ * A body without `statuses` validates to `statuses: []`, so no version bump is
+ * needed.
  */
 export function validateBody(value: unknown): Body {
   if (!isPlainObject(value)) return undamagedBody()
-  return { condition: oneOf(value.condition, CONDITION_ORDER, 'unhurt') }
+  return {
+    condition: oneOf(value.condition, CONDITION_ORDER, 'unhurt'),
+    statuses: validateStatuses(value.statuses),
+  }
 }
 
 // ----------------------------------------------------------- the severity table
