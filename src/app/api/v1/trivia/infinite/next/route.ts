@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
     ? customCategoryParam.trim()
     : null
 
+  // When sampleExistingOnly=1, custom-category runs sample from the existing
+  // question pool instead of generating fresh questions. On exhaustion the
+  // route returns 204 (no new generation).
+  const sampleExistingOnly = searchParams.get('sampleExistingOnly') === '1'
+
   // Parse optional categoryIds (comma-separated). Legacy single
   // ?categoryId= is honored too. Ignored when customCategory is set.
   const categoryIdsParam = searchParams.get('categoryIds')
@@ -42,16 +47,35 @@ export async function GET(request: NextRequest) {
     .filter((n) => !isNaN(n) && n in CATEGORY_META)
 
   try {
-    // Custom category runs always generate fresh questions — no pre-existing
-    // question pool exists for arbitrary topics.
-    let question = customCategory ? null : await sampleNextQuestion({
-      uid: auth.claims.uid,
-      streak: parsedStreak,
-      type: 'free-text',
-      categoryIds,
-    })
+    // When sampleExistingOnly is set with a customCategory: sample from the
+    // existing question pool for that topic. Returns null if exhausted, which
+    // triggers 204 (end the run) rather than generation.
+    // Without sampleExistingOnly: custom category runs always generate fresh
+    // questions (no pre-existing pool to draw from in the normal flow).
+    let question = (customCategory && sampleExistingOnly)
+      ? await sampleNextQuestion({
+          uid: auth.claims.uid,
+          streak: parsedStreak,
+          type: 'free-text',
+          customCategory,
+        })
+      : customCategory
+        ? null  // existing behavior: always generate for custom topics
+        : await sampleNextQuestion({
+            uid: auth.claims.uid,
+            streak: parsedStreak,
+            type: 'free-text',
+            categoryIds,
+          })
 
     if (question === null) {
+      // When playing existing-only from the library, a null sample means the
+      // player has seen all questions for this custom topic — end the run
+      // cleanly without generating new questions.
+      if (customCategory && sampleExistingOnly) {
+        return new NextResponse(null, { status: 204 })
+      }
+
       // Pool exhausted for this player — generate a fresh question on demand,
       // gated by a per-uid rate limit so a single client can't burn the
       // OpenAI budget by hammering /next.

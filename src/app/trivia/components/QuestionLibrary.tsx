@@ -390,24 +390,56 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
                 </div>
               </div>
 
-              {/* Custom view: dropdown to pick which custom label. */}
+              {/* Custom view: dropdown to pick which custom label, plus a
+                  "Play this topic" button to start a run from existing
+                  questions for the selected topic. */}
               {view.kind === 'custom' && (
-                <div className="flex items-center gap-1.5">
-                  <label className="text-xs text-on-surface/50 uppercase tracking-widest whitespace-nowrap">
-                    Topic
-                  </label>
-                  <DarkSelect
-                    value={selectedCustomLabel}
-                    onChange={(e) => setSelectedCustomLabel(e.target.value)}
-                    className="max-w-full"
-                  >
-                    {grouped.customLabels.map(({ label, count }) => (
-                      <option key={label} value={label}>
-                        {label} ({count})
-                      </option>
-                    ))}
-                  </DarkSelect>
-                </div>
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-xs text-on-surface/50 uppercase tracking-widest whitespace-nowrap">
+                      Topic
+                    </label>
+                    <DarkSelect
+                      value={selectedCustomLabel}
+                      onChange={(e) => setSelectedCustomLabel(e.target.value)}
+                      className="max-w-full"
+                    >
+                      {grouped.customLabels.map(({ label, count }) => (
+                        <option key={label} value={label}>
+                          {label} ({count})
+                        </option>
+                      ))}
+                    </DarkSelect>
+                  </div>
+                  {selectedCustomLabel && (() => {
+                    const selectedCount = grouped.customLabels.find(
+                      ({ label }) => label === selectedCustomLabel
+                    )?.count ?? 0
+                    const tooFew = selectedCount < 5
+                    return (
+                      <div className="flex flex-col gap-1">
+                        {tooFew && selectedCount > 0 && (
+                          <p className="text-xs text-amber-400">
+                            Only {selectedCount} question{selectedCount !== 1 ? 's' : ''} available — more may be generated as others play.
+                          </p>
+                        )}
+                        <ChunkyButton
+                          variant="primary"
+                          disabled={selectedCount === 0}
+                          onClick={() => {
+                            const url = new URL('/trivia/infinite', window.location.origin)
+                            url.searchParams.set('customCategory', selectedCustomLabel)
+                            url.searchParams.set('existing', '1')
+                            window.location.href = url.toString()
+                          }}
+                          className="self-start"
+                        >
+                          ▶ Play {selectedCustomLabel}
+                        </ChunkyButton>
+                      </div>
+                    )
+                  })()}
+                </>
               )}
 
               {/* Tab toggle: All vs Mine */}

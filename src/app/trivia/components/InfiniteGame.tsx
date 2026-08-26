@@ -25,15 +25,18 @@ interface Props {
   onViewStats?: () => void
   onViewLeaderboard?: () => void
   mode?: InfiniteMode
+  initialCustomCategory?: string | null
+  sampleExistingOnly?: boolean
 }
 
-export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored' }: Props) {
+export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 'scored', initialCustomCategory, sampleExistingOnly = false }: Props) {
   const { user, loading: authLoading } = useAuth()
   const { state, startRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged } = useInfiniteRun()
   const [timeRemaining, setTimeRemaining] = useState(TIME_LIMIT)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const timerStartRef = useRef<number>(0)
   const hasStartedRef = useRef(false)
+  const autoStartedRef = useRef(false)
   const [showPreGame, setShowPreGame] = useState(true)
   // Empty set = "All Categories" (no filter). Players toggle individual
   // tiles to build up a multi-category selection.
@@ -55,6 +58,15 @@ export function InfiniteGame({ onBack, onViewStats, onViewLeaderboard, mode = 's
   }))
 
   const { byCategoryId: medalsByCategoryId } = useCategoryMedals()
+
+  // Auto-start when launched from the question library with a custom topic.
+  // Wait for auth to resolve before firing so the run fetch has credentials.
+  useEffect(() => {
+    if (!initialCustomCategory || autoStartedRef.current || authLoading) return
+    autoStartedRef.current = true
+    setShowPreGame(false)
+    startRun(mode === 'practice' ? 'practice' : 'scored', [], initialCustomCategory, sampleExistingOnly)
+  }, [initialCustomCategory, sampleExistingOnly, mode, startRun, authLoading])
 
   const handleStart = useCallback((chosenMode: InfiniteMode) => {
     if (typeof window !== 'undefined') {
