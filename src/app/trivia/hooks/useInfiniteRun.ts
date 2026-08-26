@@ -29,6 +29,8 @@ export interface InfiniteRunState {
   categoryIds: number[]
   // Custom topic for on-the-fly question generation. Mutually exclusive with categoryIds.
   customCategory: string | null
+  // When true, custom-category runs sample from existing questions only (no generation).
+  sampleExistingOnly: boolean
   runId: string | null
   question: InfiniteQuestion | null
   livesRemaining: number
@@ -68,6 +70,7 @@ export function useInfiniteRun() {
     mode: 'scored',
     categoryIds: [],
     customCategory: null,
+    sampleExistingOnly: false,
     runId: null,
     question: null,
     livesRemaining: LIVES_START,
@@ -135,7 +138,7 @@ export function useInfiniteRun() {
     prefetchPromiseRef.current = null
   }, [])
 
-  const startPrefetch = useCallback((streak: number, categoryIds: number[], customCategory: string | null) => {
+  const startPrefetch = useCallback((streak: number, categoryIds: number[], customCategory: string | null, sampleExistingOnly = false) => {
     cancelPrefetch()
     const controller = new AbortController()
     prefetchAbortRef.current = controller
@@ -148,6 +151,7 @@ export function useInfiniteRun() {
         } else if (categoryIds.length > 0) {
           params.set('categoryIds', categoryIds.join(','))
         }
+        if (sampleExistingOnly) params.set('sampleExistingOnly', '1')
         const qRes = await fetch(`/api/v1/trivia/infinite/next?${params.toString()}`, {
           headers,
           signal: controller.signal,
@@ -168,9 +172,9 @@ export function useInfiniteRun() {
     prefetchPromiseRef.current = promise
   }, [cancelPrefetch, getAuthHeaders])
 
-  const startRun = useCallback(async (mode: InfiniteMode = 'scored', categoryIds: number[] = [], customCategory: string | null = null) => {
+  const startRun = useCallback(async (mode: InfiniteMode = 'scored', categoryIds: number[] = [], customCategory: string | null = null, sampleExistingOnly = false) => {
     cancelPrefetch()
-    setState(s => ({ ...s, phase: 'loading', mode, categoryIds, customCategory, error: null }))
+    setState(s => ({ ...s, phase: 'loading', mode, categoryIds, customCategory, sampleExistingOnly, error: null }))
     try {
       const headers = await getAuthHeaders()
       const body: Record<string, unknown> = { mode, categoryIds }
@@ -190,6 +194,7 @@ export function useInfiniteRun() {
       } else if (categoryIds.length > 0) {
         firstParams.set('categoryIds', categoryIds.join(','))
       }
+      if (sampleExistingOnly) firstParams.set('sampleExistingOnly', '1')
       const qRes = await fetch(`/api/v1/trivia/infinite/next?${firstParams.toString()}`, { headers })
       if (qRes.status === 204) {
         setState(s => ({ ...s, phase: 'exhausted', runId: data.runId }))
@@ -210,6 +215,7 @@ export function useInfiniteRun() {
         mode,
         categoryIds,
         customCategory,
+        sampleExistingOnly,
         runId: data.runId,
         question,
         livesRemaining: data.livesRemaining,
@@ -262,7 +268,7 @@ export function useInfiniteRun() {
       // Kick off the next question fetch in the background while the player
       // reads their feedback — only when the run is continuing.
       if (!result.runOver) {
-        startPrefetch(result.currentStreak, state.categoryIds, state.customCategory)
+        startPrefetch(result.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly)
       }
 
       // If this was a correct answer in scored mode, increment the live
@@ -306,7 +312,7 @@ export function useInfiniteRun() {
       console.error('[infinite] submitAnswer failed:', err)
       setState(s => ({ ...s, phase: 'error', error: 'Failed to submit answer.' }))
     }
-  }, [state.phase, state.runId, state.question, state.categoryIds, state.customCategory, getAuthHeaders, startPrefetch, cancelPrefetch])
+  }, [state.phase, state.runId, state.question, state.categoryIds, state.customCategory, state.sampleExistingOnly, getAuthHeaders, startPrefetch, cancelPrefetch])
 
   const nextQuestion = useCallback(async () => {
     if (state.phase !== 'answered' || !state.runId) return
@@ -379,6 +385,7 @@ export function useInfiniteRun() {
         } else if (state.categoryIds.length > 0) {
           nextParams.set('categoryIds', state.categoryIds.join(','))
         }
+        if (state.sampleExistingOnly) nextParams.set('sampleExistingOnly', '1')
         const qRes = await fetch(`/api/v1/trivia/infinite/next?${nextParams.toString()}`, { headers })
         if (qRes.status === 204) {
           setState(s => ({ ...s, phase: 'exhausted' }))
@@ -399,7 +406,7 @@ export function useInfiniteRun() {
     } finally {
       nextQuestionInFlightRef.current = false
     }
-  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, getAuthHeaders, cancelPrefetch, detachPrefetch])
+  }, [state.phase, state.runId, state.currentStreak, state.categoryIds, state.customCategory, state.sampleExistingOnly, getAuthHeaders, cancelPrefetch, detachPrefetch])
 
   // Player clicked "Ready" on the gated loading screen — start the
   // per-question timer now and reveal the question.

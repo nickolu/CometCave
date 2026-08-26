@@ -18,6 +18,10 @@ export interface SamplerOptions {
   // List of category ids to draw from. Empty/undefined = all categories.
   // Single-element arrays behave the same as the old single-category mode.
   categoryIds?: number[]
+  // Free-form topic string for custom category runs. Mutually exclusive
+  // with categoryIds — when set, questions are sampled directly from the
+  // aiQuestions collection filtered by this exact category string.
+  customCategory?: string
 }
 
 // Number of candidates to fetch around a random cursor on the all-
@@ -88,10 +92,14 @@ function freshnessWeight(timesShown: number): number {
 
 // Build the base candidate query (status + type + optional category filter).
 // Returned as a Query so callers can layer ordering/cursors on top.
+// When customCategory is set, it takes precedence over categoryIds and the
+// query is filtered by that exact category string (custom topics are stored
+// verbatim in the aiQuestions collection, not mapped to CATEGORY_META ids).
 function buildCandidateQuery(
   db: FirebaseFirestore.Firestore,
   type: 'free-text',
   categoryIds: number[] | undefined,
+  customCategory?: string,
 ): FirebaseFirestore.Query {
   // `status == 'active'` is the flag filter: when any user flags a
   // question, the flag route flips status to 'flagged' atomically with
@@ -102,6 +110,13 @@ function buildCandidateQuery(
     .collection('aiQuestions')
     .where('status', '==', 'active')
     .where('type', '==', type)
+
+  // Custom-category filter: the topic string is stored verbatim on the
+  // question doc; filter by exact match. Mutually exclusive with the
+  // preset categoryIds path below.
+  if (customCategory) {
+    return query.where('category', '==', customCategory)
+  }
 
   // Resolve the optional category filter to category-name strings.
   // Questions are stored with the OpenTDB-prefixed name (e.g.
@@ -236,7 +251,7 @@ function pickFromPool(
 }
 
 export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQuestion | null> {
-  const { uid, streak, type = 'free-text', categoryIds } = options
+  const { uid, streak, type = 'free-text', categoryIds, customCategory } = options
   const normalizedCategoryIds = categoryIds ?? []
   const db = getFirestoreDb()
 
@@ -249,6 +264,21 @@ export async function sampleNextQuestion(options: SamplerOptions): Promise<AIQue
     state = await ensureMigratedTriviaState(uid)
   }
   const seenSet = new Set(state.recentSeen)
+
+  // Custom-category sampling: bypass pool cache, fetch directly.
+  // These pools are small (user-generated per topic) and not worth caching
+  // per-player — a direct query is cheaper than maintaining a per-user
+  // cache keyed on an arbitrary string, and avoids cache-key collisions.
+  if (customCategory) {
+    const query = buildCandidateQuery(db, type, undefined, customCategory)
+    const candidates = await fetchSingleCategoryCandidates(query, SINGLE_CATEGORY_FETCH)
+    const unseen = candidates.filter((q) => !seenSet.has(q.id))
+    const selected = pickFromPool(unseen.map(toPoolEntry), streak)
+    if (!selected) return null
+    const doc = await db.collection('aiQuestions').doc(selected.id).get()
+    if (!doc.exists) return null
+    return { id: doc.id, ...(doc.data() as Omit<AIQuestion, 'id'>) }
+  }
 
   // 2. Decide whether to use the cached unanswered pool or rebuild it.
   //    Rebuild when:
