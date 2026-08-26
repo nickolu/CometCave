@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import { Sheet } from '@/app/dicebound/components/sheet'
 import type { SkillId } from '@/app/dicebound/domain/attributes'
+import { CONDITION_LABEL, CONDITION_ORDER } from '@/app/dicebound/domain/body'
 import { type Campaign, newCampaign } from '@/app/dicebound/domain/campaign'
 import {
   RANK_THRESHOLDS,
@@ -59,5 +60,56 @@ describe('Sheet skill progress', () => {
 
     expect(screen.getByText('innate')).toBeTruthy()
     expect(screen.queryByText(/^4\//)).toBeNull()
+  })
+})
+
+describe('Sheet condition', () => {
+  it('shows nothing at all on an unhurt character — the system is invisible until it bites', () => {
+    // Nothing renders until it exists. A new character shown a damage track,
+    // even an empty one, has been told the game is about to hurt them, and that
+    // is a promise the first ten minutes should not be making. This is the rule
+    // with the least protection anywhere on this screen.
+    render(<Sheet campaign={campaignWith({})} />)
+
+    expect(screen.queryByText('Condition')).toBeNull()
+    expect(screen.queryByText(/Unhurt/)).toBeNull()
+    for (const condition of CONDITION_ORDER) {
+      expect(screen.queryByText(CONDITION_LABEL[condition])).toBeNull()
+    }
+  })
+
+  it('names the rung and says what it feels like, once there is one', () => {
+    render(<Sheet campaign={{ ...campaignWith({}), body: { condition: 'bloodied' } }} />)
+
+    expect(screen.getByText('Bloodied')).toBeTruthy()
+    // The phrase comes from domain/body.ts so the sheet and the DM's prompt
+    // agree word for word. A player reading one thing here and hearing another
+    // from the dungeon master is the die card disagreeing with the prose again.
+    expect(screen.getByText(/bleeding in a way that is not going to simply stop/i)).toBeTruthy()
+  })
+
+  it('announces the condition as a sentence rather than an adjective between two numbers', () => {
+    render(<Sheet campaign={{ ...campaignWith({}), body: { condition: 'hurt' } }} />)
+
+    const section = screen.getByRole('region', { name: 'Condition' })
+    expect(section.textContent).toContain('Hurt')
+  })
+
+  it('carries the last rung in the word, not only in the colour', () => {
+    // CLAUDE.md #8. A player at the step before the end must be able to tell
+    // without counting, and without seeing colour at all.
+    render(<Sheet campaign={{ ...campaignWith({}), body: { condition: 'dying' } }} />)
+
+    expect(screen.getByText('Dying')).toBeTruthy()
+    expect(screen.getByText(/on the ground and going/i)).toBeTruthy()
+  })
+
+  it('renders no quantity anywhere — a track is not a health bar', () => {
+    // Settled in #3769: a number or a meter hands the player something to
+    // optimise, which is the whole reason damage is not hit points.
+    render(<Sheet campaign={{ ...campaignWith({}), body: { condition: 'broken' } }} />)
+
+    const region = screen.getByRole('region', { name: 'Condition' })
+    expect(region.textContent).not.toMatch(/\d/)
   })
 })
