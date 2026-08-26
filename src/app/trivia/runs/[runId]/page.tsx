@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getRunByIdPublic } from '@/lib/trivia/infiniteRuns'
+import { CATEGORY_META } from '@/lib/trivia/categories'
 import { RunSharePage } from './RunSharePage'
 
 interface PageProps {
@@ -36,11 +37,23 @@ export default async function Page({ params }: PageProps) {
   const result = await getRunByIdPublic(runId)
   if (!result) notFound()
   const { run } = result
+
+  let categoryLabel = ''
+  if (run.customCategory) {
+    categoryLabel = run.customCategory
+  } else if (run.categoryFilters && run.categoryFilters.length === 1) {
+    categoryLabel = CATEGORY_META[run.categoryFilters[0]]?.name ?? ''
+  } else if (run.categoryFilters && run.categoryFilters.length > 1) {
+    categoryLabel = `${run.categoryFilters.length} Categories`
+  }
+
   return <RunSharePage run={{
+    runId,
     longestStreak: run.longestStreak,
     score: run.score,
     questionsAnswered: run.answers.length,
     trailblazes: run.trailblazes,
     mode: run.mode,
+    categoryLabel,
   }} />
 }

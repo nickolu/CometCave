@@ -18,6 +18,11 @@ function InfiniteTriviaPageInner() {
     : null
   const sampleExistingOnly = searchParams.get('existing') === '1'
 
+  const replayRunIdParam = searchParams.get('replayRunId')
+  const replayRunId = replayRunIdParam && replayRunIdParam.trim() ? replayRunIdParam.trim() : null
+  const replaySourceRunIdParam = searchParams.get('replaySourceRunId')
+  const replaySourceRunId = replaySourceRunIdParam && replaySourceRunIdParam.trim() ? replaySourceRunIdParam.trim() : null
+
   return (
     <InfiniteGame
       onBack={() => router.push('/trivia')}
@@ -26,6 +31,8 @@ function InfiniteTriviaPageInner() {
       mode={mode}
       initialCustomCategory={initialCustomCategory}
       sampleExistingOnly={sampleExistingOnly}
+      replayRunId={replayRunId}
+      replaySourceRunId={replaySourceRunId}
     />
   )
 }
