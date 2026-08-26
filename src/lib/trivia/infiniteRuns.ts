@@ -27,6 +27,10 @@ export interface RunDoc {
   // When set, the run generates questions about this custom topic on-the-fly.
   // Mutually exclusive with categoryFilters (stored as [] when customCategory is set).
   customCategory?: string | null
+  // Set on replay runs to link back to the original shared run
+  challengeSourceRunId?: string
+  // Ordered question IDs for replay mode (set on replay runs only)
+  replayQuestionIds?: string[]
   score: number
   livesRemaining: number
   currentStreak: number
@@ -53,7 +57,8 @@ export async function startRun(
   uid: string,
   mode: 'scored' | 'practice' = 'scored',
   categoryIds: number[] = [],
-  customCategory?: string | null
+  customCategory?: string | null,
+  opts?: { challengeSourceRunId?: string; replayQuestionIds?: string[] }
 ): Promise<{ runId: string; livesRemaining: number; currentStreak: number }> {
   const db = getFirestoreDb()
   const runRef = db.collection(`users/${uid}/triviaInfinite`).doc()
@@ -80,6 +85,8 @@ export async function startRun(
   if (customCategory) {
     docData.customCategory = customCategory
   }
+  if (opts?.challengeSourceRunId) docData.challengeSourceRunId = opts.challengeSourceRunId
+  if (opts?.replayQuestionIds) docData.replayQuestionIds = opts.replayQuestionIds
   await runRef.set(docData)
   return { runId: runRef.id, livesRemaining: LIVES_START, currentStreak: 0 }
 }

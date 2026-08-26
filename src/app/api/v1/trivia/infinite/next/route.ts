@@ -7,6 +7,7 @@ import { saveAIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
 import { MAX_GENERATIONS_PER_WINDOW, WINDOW_MS, checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
+import { getFirestoreDb } from '@/lib/firebase/server'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
 import { warmQuestionPoolForUser } from '@/lib/trivia/warmQuestionPool'
@@ -28,6 +29,9 @@ export async function GET(request: NextRequest) {
     ? customCategoryParam.trim()
     : null
 
+  const replayRunIdParam = searchParams.get('replayRunId')
+  const replayRunId = replayRunIdParam && replayRunIdParam.trim() ? replayRunIdParam.trim() : null
+
   // When sampleExistingOnly=1, custom-category runs sample from the existing
   // question pool instead of generating fresh questions. On exhaustion the
   // route returns 204 (no new generation).
@@ -45,6 +49,40 @@ export async function GET(request: NextRequest) {
   const categoryIds = rawIds
     .map((s) => parseInt(s, 10))
     .filter((n) => !isNaN(n) && n in CATEGORY_META)
+
+  // Replay mode: serve questions in the exact sequence of the original run.
+  // Uses the run doc's replayQuestionIds array, indexed by current answers.length.
+  if (replayRunId) {
+    try {
+      const db = getFirestoreDb()
+      const runRef = db.doc(`users/${auth.claims.uid}/triviaInfinite/${replayRunId}`)
+      const runSnap = await runRef.get()
+      if (!runSnap.exists) return NextResponse.json({ error: 'Replay run not found' }, { status: 404 })
+      const runData = runSnap.data()!
+      const replayQuestionIds: string[] = runData.replayQuestionIds ?? []
+      const position = (runData.answers?.length ?? 0)
+
+      if (position >= replayQuestionIds.length) {
+        return new NextResponse(null, { status: 204 })
+      }
+
+      const questionId = replayQuestionIds[position]
+      const qSnap = await db.collection('aiQuestions').doc(questionId).get()
+      if (!qSnap.exists) {
+        // Question deleted/removed — skip to next one by returning 204 to end naturally
+        return new NextResponse(null, { status: 204 })
+      }
+
+      const qData = qSnap.data() as Record<string, unknown>
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { correctAnswer, seed, ...rest } = qData
+      const safeQuestion = { id: qSnap.id, ...rest }
+      return NextResponse.json(safeQuestion)
+    } catch (err) {
+      console.error('[trivia/infinite/next] replay fetch failed:', err)
+      return NextResponse.json({ error: 'Failed to fetch replay question' }, { status: 500 })
+    }
+  }
 
   try {
     // When sampleExistingOnly is set with a customCategory: sample from the

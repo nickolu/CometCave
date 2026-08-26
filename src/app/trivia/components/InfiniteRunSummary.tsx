@@ -25,6 +25,7 @@ interface Props {
   runId?: string | null
   onFlagged?: (questionId: string, result: FlagResult) => void
   ratings?: Map<string, 'up' | 'down'>
+  replaySourceRunId?: string | null
 }
 
 function formatTime(ms: number): string {
@@ -44,12 +45,29 @@ const ANSWERS_PAGE_SIZE = 20
 
 type AnswerEntry = InfiniteRunState['answers'][number]
 
-export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged, ratings }: Props) {
+export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, onViewLeaderboard, mode = 'scored', runId, onFlagged, ratings, replaySourceRunId }: Props) {
   const { user } = useAuth()
   const [copied, setCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const [showAllAnswers, setShowAllAnswers] = useState(false)
   const [detailFor, setDetailFor] = useState<AnswerEntry | null>(null)
+
+  const [originalRun, setOriginalRun] = useState<{
+    score: number
+    longestStreak: number
+    questionsAnswered: number
+    categoryLabel: string
+  } | null>(null)
+
+  useEffect(() => {
+    if (!replaySourceRunId) return
+    fetch(`/api/v1/trivia/infinite/runs/${encodeURIComponent(replaySourceRunId)}/public`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data) setOriginalRun(data)
+      })
+      .catch(() => {})
+  }, [replaySourceRunId])
 
   useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
 
@@ -128,6 +146,31 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, on
         <Pill tone="hot" icon="local_fire_department">
           {state.longestStreak} streak!
         </Pill>
+      )}
+
+      {originalRun && (
+        <ChunkyCard variant="surface-variant" className="w-full">
+          <ChunkyCardContent className="pt-4 pb-4">
+            <h3 className="font-headline text-sm text-on-surface/60 uppercase tracking-widest mb-3 text-center">
+              Head to Head
+            </h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-on-surface">{state.score.toLocaleString()}</div>
+                <div className="text-xs text-on-surface/50 mb-1">Your Score</div>
+                <div className="text-sm text-on-surface/70">🔥 {state.longestStreak} streak</div>
+              </div>
+              <div className="text-center opacity-60">
+                <div className="text-2xl font-bold text-on-surface">{originalRun.score.toLocaleString()}</div>
+                <div className="text-xs text-on-surface/50 mb-1">Their Score</div>
+                <div className="text-sm text-on-surface/70">🔥 {originalRun.longestStreak} streak</div>
+              </div>
+            </div>
+            <div className="text-center mt-3 font-headline text-sm">
+              {state.score > originalRun.score ? '🏆 You win!' : state.score < originalRun.score ? 'They win! Better luck next time.' : 'It\'s a tie!'}
+            </div>
+          </ChunkyCardContent>
+        </ChunkyCard>
       )}
 
       {/* Per-question breakdown */}
