@@ -141,6 +141,7 @@ export const PartyMemberCombatStateSchema = z.object({
   attack: z.number(),
   defense: z.number(),
   isKnockedOut: z.boolean().default(false),
+  relationship: z.number().default(0),
 })
 export type PartyMemberCombatState = z.infer<typeof PartyMemberCombatStateSchema>
 

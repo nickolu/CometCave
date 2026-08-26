@@ -622,7 +622,37 @@ export function applyPartyMemberAttacks(
     // Attack: strength-based damage with variance
     const baseDmg = member.attack
     const raw = baseDmg - updatedEnemy.defense * 0.3 + (Math.random() - 0.5) * baseDmg * 0.3
-    const damage = Math.max(1, Math.round(raw))
+
+    // Apply relationship modifier to damage
+    const relationship = member.relationship ?? 0
+    let damageMultiplier = 1.0
+    let relationshipNote = ''
+    if (relationship >= 80) {
+      damageMultiplier = 1.15
+      relationshipNote = ' (Bonded)'
+    } else if (relationship >= 50) {
+      damageMultiplier = 1.10
+      relationshipNote = ' (Trusted)'
+    } else if (relationship >= 20) {
+      damageMultiplier = 1.05
+      relationshipNote = ' (Friendly)'
+    } else if (relationship <= -30) {
+      // Hostile: occasionally refuses to attack
+      if (Math.random() < 0.25) {
+        logs.push({
+          turn: turnNumber,
+          actor: 'party_member' as const,
+          action: 'defend',
+          description: `${member.icon} ${member.name} hesitates — their loyalty is fractured.`,
+        })
+        continue
+      }
+      damageMultiplier = 0.85
+    } else if (relationship <= -10) {
+      damageMultiplier = 0.90
+    }
+
+    const damage = Math.max(1, Math.round(raw * damageMultiplier))
     updatedEnemy = { ...updatedEnemy, hp: Math.max(0, updatedEnemy.hp - damage) }
 
     logs.push({
@@ -630,7 +660,7 @@ export function applyPartyMemberAttacks(
       actor: 'party_member' as const,
       action: 'attack',
       damage,
-      description: `${member.icon} ${member.name} attacks ${enemy.name} for ${damage} damage!`,
+      description: `${member.icon} ${member.name} attacks ${enemy.name} for ${damage} damage!${relationshipNote}`,
     })
 
     if (updatedEnemy.hp <= 0) {

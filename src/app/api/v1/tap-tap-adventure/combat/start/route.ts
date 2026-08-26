@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
         attack: m.stats?.strength ?? 5,
         defense: Math.floor((m.stats?.strength ?? 5) / 2),
         isKnockedOut: false,
+        relationship: m.relationship ?? 0,
       }))
 
     const partySize = partyMemberStates.length
