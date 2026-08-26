@@ -73,8 +73,10 @@ export async function GET(request: NextRequest) {
         return new NextResponse(null, { status: 204 })
       }
 
+      const qData = qSnap.data() as Record<string, unknown>
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { correctAnswer, seed, ...safeQuestion } = { id: qSnap.id, ...(qSnap.data() as Record<string, unknown>) }
+      const { correctAnswer, seed, ...rest } = qData
+      const safeQuestion = { id: qSnap.id, ...rest }
       return NextResponse.json(safeQuestion)
     } catch (err) {
       console.error('[trivia/infinite/next] replay fetch failed:', err)
