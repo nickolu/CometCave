@@ -553,6 +553,65 @@ export function useInfiniteRun() {
     setState(s => ({ ...s, phase: 'ended' }))
   }, [state.runId, state.lastAnswer, getAuthHeaders, cancelPrefetch])
 
+  const resumeRun = useCallback(async (activeRun: {
+    runId: string
+    mode: InfiniteMode
+    categoryIds: number[]
+    customCategory: string | null
+    score: number
+    livesRemaining: number
+    currentStreak: number
+    longestStreak: number
+    questionsAnswered: number
+    skipsUsed: number
+  }) => {
+    cancelPrefetch()
+    setState(s => ({ ...s, phase: 'loading', mode: activeRun.mode, error: null,
+      runId: activeRun.runId,
+      categoryIds: activeRun.categoryIds,
+      customCategory: activeRun.customCategory,
+      sampleExistingOnly: false,
+      score: activeRun.score,
+      livesRemaining: activeRun.livesRemaining,
+      currentStreak: activeRun.currentStreak,
+      longestStreak: activeRun.longestStreak,
+      questionsAnswered: activeRun.questionsAnswered,
+      skipsUsed: activeRun.skipsUsed,
+      skipsRemaining: Math.max(0, SKIPS_PER_RUN - activeRun.skipsUsed),
+    }))
+    try {
+      const headers = await getAuthHeaders()
+      const params = new URLSearchParams({ streak: String(activeRun.currentStreak) })
+      if (activeRun.customCategory) {
+        params.set('customCategory', activeRun.customCategory)
+      } else if (activeRun.categoryIds.length > 0) {
+        params.set('categoryIds', activeRun.categoryIds.join(','))
+      }
+      const qRes = await fetch(`/api/v1/trivia/infinite/next?${params.toString()}`, { headers })
+      if (qRes.status === 204) {
+        setState(s => ({ ...s, phase: 'exhausted', runId: activeRun.runId }))
+        return
+      }
+      if (!qRes.ok) throw new Error('Failed to fetch question for resumed run')
+      const question = await qRes.json()
+
+      setState(s => ({
+        ...s,
+        phase: 'awaiting-ready',
+        question,
+        lastAnswer: null,
+        correctsByCategoryThisRun: {},
+        answers: [],
+        flaggedQuestionIds: [],
+        trailblazes: activeRun.questionsAnswered,
+        bonusLivesEarned: 0,
+      }))
+    } catch (err) {
+      console.error('[infinite] resumeRun failed:', err)
+      setState(s => ({ ...s, phase: 'error', error: 'Failed to resume run.' }))
+    }
+  }, [getAuthHeaders, cancelPrefetch])
+
   const handleQuestionFlagged = useCallback((questionId: string, result: { bonusLifeGranted: boolean }) => {
     setState(s => {
       const newFlaggedQuestionIds = s.flaggedQuestionIds.includes(questionId)
@@ -574,5 +633,5 @@ export function useInfiniteRun() {
     })
   }, [])
 
-  return { state, startRun, startReplayRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged }
+  return { state, startRun, startReplayRun, resumeRun, submitAnswer, nextQuestion, confirmReady, skipQuestion, endRun, handleQuestionFlagged }
 }
