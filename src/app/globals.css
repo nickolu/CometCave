@@ -734,6 +734,23 @@ body {
   animation: dicebound-suggestions-in 0.3s ease-out;
 }
 
+/* ───────────────────────────────────────────────────────────────────
+   Dicebound — the ending, arriving where the composer was.
+   Slower than anything else in the game on purpose: the player is
+   still reading the paragraph their character died in, and a panel
+   that snaps into place under it reads as a dialog rather than as a
+   thing the story did. Reduced motion is handled by the global rule.
+   ─────────────────────────────────────────────────────────────────── */
+
+@keyframes dicebound-ending-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.dicebound-ending {
+  animation: dicebound-ending-in 1.2s ease-out;
+}
+
 @media print {
   /* Page break control */
   .break-after-page {

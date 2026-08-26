@@ -82,6 +82,11 @@ export async function saveCampaign(uid: string, campaign: Campaign): Promise<voi
     level: levelFor(earnedRanks(campaign.character)),
     className: campaign.kit.className ?? null,
     species: campaign.kit.species?.name ?? null,
+    // A finished story, readable without parsing the blob. This file's own
+    // rule: anything a future home page or shelf has to ask about becomes a
+    // scalar here, because the alternative is reading every player's whole
+    // campaign to answer "which of these are over".
+    endedAt: campaign.ending?.endedAt ?? null,
     storyDay: dayOf(campaign.world.clock),
     entities: Object.keys(campaign.world.entities).length,
     chapters: campaign.chapters,

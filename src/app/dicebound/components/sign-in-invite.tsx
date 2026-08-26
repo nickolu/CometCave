@@ -1,12 +1,25 @@
 'use client'
 
 /**
- * Sign-up prompt (interaction model 4, trigger 2 — streak threshold).
+ * Sign-up prompt (interaction model 4, triggers 1 and 2).
  *
- * A run-loop game has no end-of-session beat to hang trigger 1 on, so the
- * honest moment here is the one where the player has something worth losing:
- * a character several days deep, kept on one device against an anonymous uid.
- * Three days is the threshold the model names.
+ * Two moments, one component. The streak threshold came first because a
+ * run-loop game had no end-of-session beat to hang trigger 1 on: the honest
+ * moment was the one where the player had something worth losing — a character
+ * several days deep, kept on one device against an anonymous uid. Three days is
+ * the threshold the model names.
+ *
+ * Now a run can end, and `ending` is trigger 1 arriving late. It is the
+ * stronger of the two by some distance: a player who has just lost a character
+ * they spent a week on is being offered a reason to keep the record, which is
+ * the honest version of that pitch rather than a growth prompt wearing one. It
+ * ignores the streak, because a story that finished on day two still finished.
+ *
+ * What it does **not** ignore is a dismissal. A player who said "not now" a
+ * week ago has answered this question, and the ending being a bigger moment is
+ * a reason to ask well rather than a licence to ask again — the file's own rule
+ * is that erring toward asking less often is the right direction to be wrong
+ * in, and an ending is exactly where that rule earns its keep.
  *
  * It sells depth, not access — the campaign already saves without an account,
  * and the copy says so rather than implying otherwise. It is inline in the
@@ -37,7 +50,7 @@ function suppressedUntil(): number {
   }
 }
 
-export function SignInInvite({ streak }: { streak: number }) {
+export function SignInInvite({ streak, ending = false }: { streak: number; ending?: boolean }) {
   /**
    * Read once, in a lazy initializer rather than an effect.
    *
@@ -47,7 +60,8 @@ export function SignInInvite({ streak }: { streak: number }) {
    */
   const [dismissed, setDismissed] = useState(() => Date.now() <= suppressedUntil())
 
-  if (dismissed || streak < INVITE_AT_STREAK) return null
+  if (dismissed) return null
+  if (!ending && streak < INVITE_AT_STREAK) return null
 
   const dismiss = () => {
     setDismissed(true)
@@ -61,7 +75,9 @@ export function SignInInvite({ streak }: { streak: number }) {
   return (
     <aside className="rounded-ds-sm border-2 border-ds-tertiary/40 bg-surface-container p-4">
       <p className="text-body-md text-on-surface">
-        {streak} days deep. Sign in and the cave will carry this story to your other devices.
+        {ending
+          ? 'That was a whole story, start to finish. Sign in and it stays yours — on this device and any other.'
+          : `${streak} days deep. Sign in and the cave will carry this story to your other devices.`}
       </p>
       <div className="mt-3 flex items-center gap-4">
         <a
