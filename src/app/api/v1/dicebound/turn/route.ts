@@ -51,6 +51,7 @@ import {
   type Severity,
   applyDamage,
   applyHarm,
+  isDead,
   validateSeverity,
 } from '@/app/dicebound/domain/body'
 import {
@@ -60,6 +61,7 @@ import {
   MAX_ACTION,
   TRANSCRIPT_WINDOW,
   type TranscriptEntry,
+  isEnded,
   trimToFit,
   validateCampaign,
 } from '@/app/dicebound/domain/campaign'
@@ -184,6 +186,7 @@ import {
   toolUses,
 } from '@/lib/dicebound/anthropic'
 import { archiveChapter, loadCampaign, saveCampaign } from '@/lib/dicebound/campaign-store'
+import { noteDamage } from '@/lib/dicebound/telemetry'
 
 /** The DM can be slow, and a scene worth waiting for is worth the headroom. */
 export const maxDuration = 120
@@ -293,6 +296,7 @@ ${SEVERITY_LINES}
 You are choosing this BEFORE the dice are thrown, and that is the entire point of putting it here: you do not yet know whether it lands. A success costs them nothing at all, whatever row you named.
 Never pick lethal for something the player could not have seen coming. If the fiction did not already tell them this could kill them, it is not that row — and if you are reaching for it because the scene needs weight, use a hard move instead.
 The game decides what a hit costs. You are told afterwards what state they are in, and you narrate that and nothing heavier. Do not decide how badly they are hurt, do not describe a wound the roll did not give them, and do not soften one it did.
+A character can die. You never decide that and you are never asked — if a blow ends them you will be told so in the result, plainly, and then the story is over. Narrate their death once, in voice, and stop. Do not leave them clinging on and do not write a rescue the dice did not give them.
 
 WHEN THE WORLD HURTS THEM ANYWAY
 Not all damage comes from a failed attempt. An ambush lands before anyone can react. A thread they have been ignoring catches up with them. Poison, fever, cold and hunger do what they were always going to do, whatever the player does that turn. When the fiction is already hurting them and no attempt of theirs is being tested, call harm — the same severity table as roll_check, plus a few words saying why.
@@ -798,6 +802,18 @@ export async function POST(request: NextRequest) {
 
   const { campaign, uid } = found
 
+  // A finished story does not take another turn.
+  //
+  // Nothing this game ships sends one — the client renders the ending screen
+  // where the composer was — but the campaign is what is authoritative, so the
+  // rule lives where the authority is rather than where the button is. It is
+  // also the last line of defence for the thing the whole epic is about: a
+  // player who kept a tab open across the turn that killed them, or who
+  // replays a request, must not get to play on past their own ending.
+  if (isEnded(campaign)) {
+    return NextResponse.json({ error: 'That story has already found its ending.' }, { status: 409 })
+  }
+
   const action = typeof body.action === 'string' ? body.action.trim().slice(0, MAX_ACTION) : ''
   const isOpening = campaign.transcript.length === 0
 
@@ -1038,7 +1054,15 @@ Resolve it, then call narrate with what happens.`,
   }
 
   for (let step = 0; step <= MAX_CHECKS; step++) {
-    const lastStep = step === MAX_CHECKS
+    // The final pass — or the pass after the one that killed them.
+    //
+    // A dead character has no more attempts left in them, so the turn stops
+    // offering the tools that would take one. `narrate` is forced exactly as it
+    // is at `MAX_CHECKS`, and for exactly the same reason: finishing is the
+    // only move on the board. It also closes the fuse path below, which is
+    // right — a thread catching up with someone who is already gone is a
+    // deadline landing on an empty room.
+    const lastStep = step === MAX_CHECKS || isDead(body)
     // Whether anything has actually been rolled this turn, which is what sets
     // the word budget. Derived from the entries rather than the step counter: a
     // model that spent a pass on nothing has not earned the longer budget.
@@ -1216,8 +1240,14 @@ Resolve it, then call narrate with what happens.`,
 
   if (!narration) {
     // Every pass returned tool calls and the forced final call still produced
-    // nothing usable. Rare, but the player is owed a turn either way.
-    narration = 'The moment resolves, and the situation has changed. Look around.'
+    // nothing usable. Rare, but the player is owed a turn either way — and on
+    // the one turn that can never be taken again, owed it more than usual. The
+    // ordinary fallback hands the player back the initiative, which is the one
+    // thing a death does not do; told to "look around" after dying they would
+    // reasonably conclude the game had broken rather than ended.
+    narration = isDead(body)
+      ? 'The story stops here, in the middle of itself, the way they do.'
+      : 'The moment resolves, and the situation has changed. Look around.'
   }
 
   entries.push({ kind: 'narration', text: narration })
@@ -1232,7 +1262,11 @@ Resolve it, then call narrate with what happens.`,
   // `className === null` is the whole of the once-ness. Nothing re-reads the
   // histogram at level 3, and whether a class should ever be revisited is a
   // decision this issue deliberately does not settle by accident.
-  if (kit.className === null) {
+  //
+  // `!isDead(body)` because the cave forming an opinion about what somebody was,
+  // one paragraph after they stopped being it, is the single worst place this
+  // line could land. A death is not a level-up screen.
+  if (kit.className === null && !isDead(body)) {
     const { character: credited } = creditSkills(campaign.character, entries, world.clock.elapsed)
     if (shouldNameClass(kit, levelFor(earnedRanks(credited)))) {
       const shape = classShape(credited)
@@ -1257,7 +1291,11 @@ Resolve it, then call narrate with what happens.`,
   // It goes in the transcript rather than into a field, which is also how the
   // DM finds out: next turn it reads this line back, and the powers block in
   // the prompt already shows the refilled counts.
-  if (restoredCharges > 0) {
+  //
+  // Not for someone who is not there. A rest that "settles" after a death reads
+  // as an afterlife the fiction never offered, and a turn can absolutely end
+  // with both — a safe span of travel that a fuse fires into.
+  if (restoredCharges > 0 && !isDead(body)) {
     entries.push({
       kind: 'narration',
       text: rested
@@ -1650,6 +1688,18 @@ function rollFor(
   // defaulted inside `applyDamage` so that the day `Campaign.danger` lands, the
   // only edit is this argument.
   const change = severity ? applyDamage(body, severity, outcome.band, DEFAULT_DANGER) : null
+  // Every check, including the ones that named nothing — "most checks are not
+  // dangerous" is a claim in the prompt, and it can only be read against the
+  // checks that carried no severity at all.
+  noteDamage({
+    tool: 'roll_check',
+    severity,
+    band: outcome.band,
+    from: change?.from ?? body.condition,
+    to: change?.to ?? body.condition,
+    steps: change?.steps ?? 0,
+    applied: true,
+  })
 
   const entry: CheckEntry = {
     kind: 'check',
@@ -1711,6 +1761,18 @@ function harmFor(
   input: unknown
 ): { body: Body; note: string; spent: boolean } {
   if (already) {
+    // Recorded too. A DM reaching for a second harm is the drift this ceiling
+    // exists to stop, and a refusal that left no trace would make the ceiling
+    // look unnecessary precisely when it was working.
+    noteDamage({
+      tool: 'harm',
+      severity: null,
+      band: null,
+      from: body.condition,
+      to: body.condition,
+      steps: 0,
+      applied: false,
+    })
     return {
       body,
       spent: false,
@@ -1728,16 +1790,28 @@ function harmFor(
   const change = applyHarm(body, severity, DEFAULT_DANGER)
   const reason = typeof raw.reason === 'string' ? raw.reason.slice(0, 120) : ''
 
+  noteDamage({
+    tool: 'harm',
+    severity,
+    band: null,
+    from: change.from,
+    to: change.to,
+    steps: change.steps,
+    applied: true,
+  })
+
   return {
     body: change.body,
     spent: true,
     note: [
       reason ? `${reason} —` : '',
-      change.steps > 0
-        ? `that hurt them. They are now ${CONDITION_LABEL[change.to].toLowerCase()}: ${CONDITION_PHRASE[change.to]} Narrate it at exactly that weight, no heavier.`
-        : change.from === 'unhurt'
-          ? 'it did not mark them. Narrate the moment without an injury.'
-          : `it cost them nothing further — they are still ${CONDITION_LABEL[change.to].toLowerCase()}. Do not narrate a new wound.`,
+      change.died
+        ? 'that killed them. The story ends here, and this is the last thing you will ever write in it. Narrate their death once, in voice, and stop — no clinging on, no help arriving.'
+        : change.steps > 0
+          ? `that hurt them. They are now ${CONDITION_LABEL[change.to].toLowerCase()}: ${CONDITION_PHRASE[change.to]} Narrate it at exactly that weight, no heavier.`
+          : change.from === 'unhurt'
+            ? 'it did not mark them. Narrate the moment without an injury.'
+            : `it cost them nothing further — they are still ${CONDITION_LABEL[change.to].toLowerCase()}. Do not narrate a new wound.`,
     ]
       .filter(Boolean)
       .join(' '),
@@ -1759,6 +1833,14 @@ function harmFor(
  */
 function woundBrief(change: ReturnType<typeof applyDamage> | null, succeeded: boolean): string {
   if (!change || succeeded) return ''
+  // Told plainly, and told *here*, because there is no version of this where a
+  // dungeon master that has not been told writes the right paragraph. It has
+  // spent the whole campaign narrating consequences it can walk back; this is
+  // the one it cannot, and a model left to infer it from the word "dead" on a
+  // sheet writes a wound and a rescue. The instruction is what buys the ending.
+  if (change.died) {
+    return 'THAT KILLED THEM. The story ends here, and this is the last thing you will ever write in it. Narrate their death — once, in the voice you have been telling this in, inside the budget. Do not leave them clinging on, do not put help on the way, and do not soften it into a wound they might survive. Close on the fiction and stop.'
+  }
   if (change.steps > 0) {
     return `THAT HURT THEM. They are now ${CONDITION_LABEL[change.to].toLowerCase()}: ${CONDITION_PHRASE[change.to]} Narrate the injury at exactly that weight — not heavier because the moment deserved it, and not lighter because you would rather they were fine.`
   }

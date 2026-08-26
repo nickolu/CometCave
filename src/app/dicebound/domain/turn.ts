@@ -6,6 +6,7 @@
  * so the interesting arithmetic — streaks, skill ranks, the running tally of
  * natural 20s — can be tested without a network or a browser.
  */
+import { endingFor } from './campaign'
 import { type Character, recordSkillUse } from './character'
 
 import type { Body } from './body'
@@ -235,6 +236,7 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
   // turn never reached a narrate and so produced no world.
   const clock = (result.world ?? campaign.world).clock.elapsed
   const { character, entries } = creditSkills(campaign.character, result.entries, clock)
+  const body = result.body ?? campaign.body
 
   const kept =
     result.dropped && result.dropped > 0
@@ -247,7 +249,19 @@ export function applyTurn(campaign: Campaign, result: TurnResult, now: number): 
     synopsis: result.synopsis ?? campaign.synopsis,
     world: result.world ?? campaign.world,
     kit: result.kit ?? campaign.kit,
-    body: result.body ?? campaign.body,
+    body,
+    // The one place a run ends.
+    //
+    // Here rather than in the route, because both paths through a turn come
+    // back through this function — the server-authoritative one and the
+    // anonymous local one — and an ending stamped in only one of them is a
+    // dead character who can keep playing as long as Firebase is switched off.
+    //
+    // `campaign.ending ??` is the whole of permanence. An ending is written
+    // once and never revised, which also means this function does not need an
+    // opinion about whether death can be undone later: that is a decision about
+    // what may *clear* the field, and it stays a branch somewhere else.
+    ending: campaign.ending ?? endingFor(body, clock, now),
     chapters: result.chapters ?? campaign.chapters,
     character,
     transcript: [...kept, ...entries],
