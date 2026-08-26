@@ -46,7 +46,7 @@ import {
   CONDITION_LABEL,
   CONDITION_PHRASE,
   DAMAGE_TABLE,
-  DEFAULT_DANGER,
+  type Danger,
   SEVERITY_ORDER,
   type Severity,
   applyDamage,
@@ -1198,7 +1198,7 @@ Resolve it, then call narrate with what happens.`,
     // the order it meant them: the thing they attempted resolves, and then the
     // world does whatever it was going to do regardless.
     for (const call of harms) {
-      const { body: afterHarm, note, spent } = harmFor(body, harmed, call.input)
+      const { body: afterHarm, note, spent } = harmFor(body, harmed, call.input, campaign.danger)
       body = afterHarm
       harmed = harmed || spent
       results.push({ type: 'tool_result', tool_use_id: call.id, content: note })
@@ -1684,10 +1684,10 @@ function rollFor(
   // stamp `bruising` on every check in the game and turn the ordinary case —
   // no severity at all — into a slow bleed nobody chose.
   const severity = typeof raw.severity === 'string' ? validateSeverity(raw.severity) : null
-  // `DEFAULT_DANGER` until the dial exists (#3777). It is passed rather than
-  // defaulted inside `applyDamage` so that the day `Campaign.danger` lands, the
-  // only edit is this argument.
-  const change = severity ? applyDamage(body, severity, outcome.band, DEFAULT_DANGER) : null
+  // The danger setting changes arithmetic only. It is intentionally not sent to
+  // the DM in the prompt: telling the DM would soften narrative on top of softer
+  // numbers, doubling the effect without anyone choosing it.
+  const change = severity ? applyDamage(body, severity, outcome.band, campaign.danger) : null
   // Every check, including the ones that named nothing — "most checks are not
   // dangerous" is a claim in the prompt, and it can only be read against the
   // checks that carried no severity at all.
@@ -1758,7 +1758,8 @@ function rollFor(
 function harmFor(
   body: Body,
   already: boolean,
-  input: unknown
+  input: unknown,
+  danger: Danger
 ): { body: Body; note: string; spent: boolean } {
   if (already) {
     // Recorded too. A DM reaching for a second harm is the drift this ceiling
@@ -1787,7 +1788,7 @@ function harmFor(
   // turn where the fiction has already committed to an ambush leaves the DM
   // narrating a blow the sheet never took.
   const severity = validateSeverity(raw.severity)
-  const change = applyHarm(body, severity, DEFAULT_DANGER)
+  const change = applyHarm(body, severity, danger)
   const reason = typeof raw.reason === 'string' ? raw.reason.slice(0, 120) : ''
 
   noteDamage({
