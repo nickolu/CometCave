@@ -246,8 +246,9 @@ body {
    ─────────────────────────────────────────────────────────────────── */
 
 @keyframes foil-sweep {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%          { background-position: -200% 0; }
+  20%         { background-position:  200% 0; }
+  20.1%, 100% { background-position: -200% 0; }
 }
 
 @keyframes holo-shift {
@@ -269,13 +270,13 @@ body {
   background: linear-gradient(
     105deg,
     transparent 30%,
-    rgba(200, 220, 255, 0.15) 45%,
-    rgba(255, 255, 255, 0.25) 50%,
-    rgba(200, 220, 255, 0.15) 55%,
+    rgba(200, 220, 255, 0.07) 45%,
+    rgba(255, 255, 255, 0.10) 50%,
+    rgba(200, 220, 255, 0.07) 55%,
     transparent 70%
   );
   background-size: 200% 100%;
-  animation: foil-sweep 3s ease-in-out infinite;
+  animation: foil-sweep 10s ease-in-out infinite;
   mix-blend-mode: screen;
 }
 
