@@ -8,6 +8,7 @@ import { computeRoundIncome } from '../economy/gold'
 import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_TO_NEXT_LEVEL } from '../shop/tier-odds'
 import { applyLevelBonus, survivedRound } from '../levels/survival'
 import { computeLossDamage, applyDamage, MAX_PLAYER_HP } from '../matchmaking/hp'
+import { isGymRound } from '../gauntlet/schedule'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -242,7 +243,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       return e.unitId.startsWith('opponent-')
     }).length
     const survivingEnemies = opponentCatalog.length - opponentFaints
-    const damage = computeLossDamage(run.round, survivingEnemies, false)  // isGym handled in B-5.6
+    const damage = computeLossDamage(run.round, survivingEnemies, isGymRound(run.round))
     const newHp = applyDamage(run.playerHp, damage)
     return {
       ...run,
