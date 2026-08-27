@@ -4,6 +4,7 @@ import { ARENA_SCHEDULE } from '../data/arenas'
 import { runBattle } from '../battle/runner'
 import type { BattleUnit, Team } from '../battle/types'
 import type { BattleResult } from '../battle/events'
+import { computeRoundIncome } from '../economy/gold'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -18,6 +19,9 @@ export interface BlitzRun {
   opponentTeams: CatalogUnit[][]  // pre-generated, one per round (8 total)
   won: boolean           // true if completed round 8
   lost: boolean          // true if lost a battle
+  gold: number          // current gold
+  winStreak: number     // consecutive rounds won
+  lossStreak: number    // consecutive rounds lost
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +133,9 @@ export function startBlitz(seed: number): BlitzRun {
     opponentTeams,
     won: false,
     lost: false,
+    gold: 0,
+    winStreak: 0,
+    lossStreak: 0,
   }
 }
 
@@ -189,15 +196,23 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
 
   if (!playerWon) {
     // Loss — run ends
+    const newLossStreak = run.lossStreak + 1
+    const income = computeRoundIncome(run.gold, newLossStreak)
     return {
       ...run,
       lastBattleResult: result,
       phase: 'summary',
       lost: true,
+      gold: run.gold + income,
+      winStreak: 0,
+      lossStreak: newLossStreak,
     }
   }
 
   // Player won
+  const newWinStreak = run.winStreak + 1
+  const income = computeRoundIncome(run.gold, newWinStreak)
+
   // Check if last picked unit can evolve
   const lastPicked = run.lastPickedDexId !== null
     ? UNIT_CATALOG.find(u => u.dexId === run.lastPickedDexId)
@@ -211,6 +226,9 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       lastBattleResult: result,
       phase: 'summary',
       won: true,
+      gold: run.gold + income,
+      winStreak: newWinStreak,
+      lossStreak: 0,
     }
   }
 
@@ -220,6 +238,9 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       ...run,
       lastBattleResult: result,
       phase: 'evolve',
+      gold: run.gold + income,
+      winStreak: newWinStreak,
+      lossStreak: 0,
     }
   }
 
@@ -233,6 +254,9 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
     round: nextRound,
     phase: 'draft',
     offers: newOffers,
+    gold: run.gold + income,
+    winStreak: newWinStreak,
+    lossStreak: 0,
   }
 }
 
