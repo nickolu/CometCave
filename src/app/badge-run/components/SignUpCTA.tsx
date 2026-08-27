@@ -1,6 +1,12 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
+import { useAuth } from '@/hooks/useAuth'
+
+interface SignUpCTAProps {
+  outcome?: 'won' | 'lost' | 'eliminated'
+  badgesEarned?: number
+}
 
 const KEY = 'badge-run:signup-dismissed-until'
 const SUPPRESS_DAYS = 14
@@ -24,9 +30,11 @@ function dismiss(): void {
   } catch {}
 }
 
-export function SignUpCTA() {
+export function SignUpCTA({ outcome, badgesEarned = 0 }: SignUpCTAProps = {}) {
   const [visible, setVisible] = useState(shouldShow)
+  const { user } = useAuth()
   if (!visible) return null
+  if (user && !user.isAnonymous) return null
 
   function handleDismiss() {
     dismiss()
@@ -47,10 +55,18 @@ export function SignUpCTA() {
     }}>
       <div>
         <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: '0 0 2px' }}>
-          Save your run history
+          {outcome === 'won'
+            ? 'your legend is forming'
+            : badgesEarned >= 4
+              ? `${badgesEarned} badges. make it count.`
+              : 'save your run history'}
         </p>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, margin: 0 }}>
-          Your runs are anonymous now. Sign in to track your record across devices.
+          {outcome === 'won'
+            ? 'sign in to keep your champion record and climb the leaderboard.'
+            : badgesEarned >= 4
+              ? 'sign in to track your best runs across devices.'
+              : 'your runs are anonymous. sign in to save them across devices.'}
         </p>
       </div>
       <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
