@@ -5,21 +5,33 @@ import { useBlitzStore } from './store'
 import { DraftScreen } from './components/DraftScreen'
 import { BattleScreen } from './components/BattleScreen'
 import { SummaryScreen } from './components/SummaryScreen'
+import { NarratorScreen } from './components/NarratorScreen'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
-export default function BadgeRunPage() {
-  const { run, startDailyRun } = useBlitzStore()
+function BadgeRunInner() {
+  const { run, alreadyPlayedToday, startDailyRun, playAgain } = useBlitzStore()
 
   useEffect(() => {
-    if (!run) startDailyRun()
-  }, [run, startDailyRun])
+    if (!run && !alreadyPlayedToday) startDailyRun()
+  }, [run, alreadyPlayedToday, startDailyRun])
+
+  if (alreadyPlayedToday && !run) {
+    return (
+      <NarratorScreen
+        headline="the cave remembers you"
+        body="you already faced the gauntlet today. the arena rests until tomorrow — but the stars never fully sleep."
+        action={{ label: 'play again anyway', onClick: playAgain }}
+      />
+    )
+  }
 
   if (!run || run.phase === 'idle') {
     return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, letterSpacing: 1 }}>
-          Summoning the arena…
-        </p>
-      </div>
+      <NarratorScreen
+        headline="summoning the arena"
+        body="the constellations are aligning. your opponents are already waiting."
+        dim
+      />
     )
   }
 
@@ -28,4 +40,12 @@ export default function BadgeRunPage() {
   if (run.phase === 'summary') return <SummaryScreen />
 
   return null
+}
+
+export default function BadgeRunPage() {
+  return (
+    <ErrorBoundary>
+      <BadgeRunInner />
+    </ErrorBoundary>
+  )
 }
