@@ -56,8 +56,15 @@ export function DraftScreen() {
             {xpToNextLevel ? ` · ${run.xp}/${xpToNextLevel} XP` : ' · Max level'}
           </p>
           {xpToNextLevel && (
-            <div style={{ height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, marginTop: 6 }}>
-              <div style={{ height: '100%', width: `${Math.min(100, xpProgress * 100)}%`, background: '#7c6aff', borderRadius: 2, transition: 'width 0.3s' }} />
+            <div
+              role="progressbar"
+              aria-label={`XP: ${run.xp} of ${xpToNextLevel}`}
+              aria-valuenow={run.xp}
+              aria-valuemin={0}
+              aria-valuemax={xpToNextLevel}
+              style={{ height: 3, background: 'rgba(255,255,255,0.12)', borderRadius: 2, marginTop: 6 }}
+            >
+              <div className="br-progress-bar" style={{ width: `${Math.min(100, xpProgress * 100)}%` }} />
             </div>
           )}
         </div>
@@ -124,11 +131,16 @@ export function DraftScreen() {
           Choose one
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {run.offers.map((unit) => (
+          {run.offers.map((unit) => {
+            const typeList = unit.types.join(', ')
+            const moveHint = unit.signatureMove ? `. Move: ${unit.signatureMove}` : ''
+            const offerLabel = `Pick ${unit.name} — ${unit.tier}, ${typeList}${moveHint}`
+            return (
             <button
               key={unit.dexId}
               className="br-btn"
               onClick={() => pick(unit.dexId)}
+              aria-label={offerLabel}
               style={{
                 background: 'rgba(255,255,255,0.05)',
                 border: '1px solid rgba(255,255,255,0.12)',
@@ -159,7 +171,7 @@ export function DraftScreen() {
                 </p>
               )}
             </button>
-          ))}
+          )})}
         </div>
       </div>
     </div>
