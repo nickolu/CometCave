@@ -43,14 +43,14 @@ export function SummaryScreen() {
 
       {run.team.length > 0 && (
         <div style={{ width: '100%' }}>
-          <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 8px' }}>
+          <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 8px' }}>
             Your team
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {run.team.map((unit, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'rgba(255,255,255,0.04)', borderRadius: 6, border: '1px solid rgba(255,255,255,0.08)' }}>
                 <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{unit.name}</span>
-                <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>{unit.tier} · {unit.types.join('/')}</span>
+                <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12 }}>{unit.tier} · {unit.types.join('/')}</span>
               </div>
             ))}
           </div>
@@ -58,7 +58,7 @@ export function SummaryScreen() {
       )}
 
       <div style={{ width: '100%', background: 'rgba(255,255,255,0.04)', borderRadius: 8, padding: '12px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 4px' }}>Share</p>
+        <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 4px' }}>Share</p>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'monospace', margin: 0 }}>{shareText}</p>
       </div>
 
@@ -66,12 +66,15 @@ export function SummaryScreen() {
 
       <div style={{ display: 'flex', gap: 12 }}>
         <button
+          className="br-btn"
+          aria-label="Copy share text"
           onClick={copyShare}
           style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 13 }}
         >
-          {copied ? 'Copied' : 'Copy'}
+          <span aria-live="polite">{copied ? 'Copied!' : 'Copy'}</span>
         </button>
         <button
+          className="br-btn"
           onClick={reset}
           style={{ padding: '10px 20px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: 'rgba(255,255,255,0.6)', cursor: 'pointer', fontSize: 13 }}
         >

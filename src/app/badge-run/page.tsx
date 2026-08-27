@@ -1,4 +1,5 @@
 'use client'
+import './badge-run.css'
 import { useEffect } from 'react'
 import { useBlitzStore } from './store'
 import { DraftScreen } from './components/DraftScreen'
