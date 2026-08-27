@@ -3,6 +3,7 @@ import { useBlitzStore } from '../store'
 import { ARENA_SCHEDULE, getArena } from '../domain/data/arenas'
 import { computeInterest } from '../domain/economy/gold'
 import { REROLL_COST, XP_COST, XP_TO_NEXT_LEVEL, maxSlotsForLevel } from '../domain/shop/tier-odds'
+import { BoardEditor } from './BoardEditor'
 
 export function DraftScreen() {
   const { run, pick, reroll, buyXP } = useBlitzStore()
@@ -103,22 +104,17 @@ export function DraftScreen() {
         </button>
       </div>
 
-      {/* Team */}
-      {run.team.length > 0 && (
+      {/* Board: drag/keyboard unit positioning */}
+      {(run.team.length > 0 || run.maxSlots > 0) && (
         <div>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, letterSpacing: 1, margin: '0 0 6px', textTransform: 'uppercase' }}>
-            Your team ({run.team.length}/{maxSlots})
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, letterSpacing: 1, margin: '0 0 10px', textTransform: 'uppercase' }}>
+            Team board
           </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {run.team.map(u => (
-              <span key={u.dexId} style={{ fontSize: 12, color: 'rgba(255,255,255,0.70)', background: 'rgba(255,255,255,0.07)', padding: '3px 8px', borderRadius: 6 }}>
-                {u.name}
-                {(run.boardLevels[u.dexId] ?? 0) > 0 && (
-                  <span style={{ color: '#7c6aff', marginLeft: 4, fontSize: 10 }}>Lv.{run.boardLevels[u.dexId]}</span>
-                )}
-              </span>
-            ))}
-          </div>
+          <BoardEditor
+            team={run.team}
+            boardLevels={run.boardLevels}
+            maxSlots={run.maxSlots}
+          />
         </div>
       )}
 

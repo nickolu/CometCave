@@ -396,6 +396,27 @@ export function rerollOffers(run: BlitzRun): BlitzRun {
 }
 
 /**
+ * Swap two units in the team by board position index (0-5).
+ * Indices 0-2 are front row, 3-5 are back row.
+ * Swapping with an empty slot moves the unit to that position.
+ */
+export function swapTeamPositions(run: BlitzRun, fromIdx: number, toIdx: number): BlitzRun {
+  if (fromIdx === toIdx) return run
+
+  // Build padded 6-slot array (null = empty slot)
+  const slots: Array<(typeof run.team)[0] | null> = Array(6).fill(null)
+  run.team.forEach((u, i) => { slots[i] = u })
+
+  // Swap the two positions
+  ;[slots[fromIdx], slots[toIdx]] = [slots[toIdx], slots[fromIdx]]
+
+  // Re-pack: keep non-null items, maintaining slot order
+  const newTeam = slots.filter((u): u is (typeof run.team)[0] => u !== null)
+
+  return { ...run, team: newTeam }
+}
+
+/**
  * Buy XP. Costs XP_COST gold, grants XP_PER_BUY XP.
  * May trigger a level-up if XP threshold is crossed.
  */
