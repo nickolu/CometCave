@@ -1,8 +1,11 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useBlitzStore } from '../store'
 import { SignUpCTA } from './SignUpCTA'
+import { DailyLeaderboard } from './DailyLeaderboard'
 import { GAUNTLET_SCHEDULE } from '../domain/gauntlet/schedule'
+import { localBadgeRunBackend } from '../backend'
+import { runDateKey, runDocId } from '../domain/run-record'
 
 const BOSS_NAMES: Record<string, string> = {
   brock:    'Brock', misty: 'Misty', surge: 'Lt. Surge', erika: 'Erika',
@@ -46,6 +49,29 @@ function buildShareText(round: number, won: boolean, eliminated: boolean, badges
 export function SummaryScreen() {
   const { run, startDailyRun } = useBlitzStore()
   const [copied, setCopied] = useState(false)
+
+  useEffect(() => {
+    if (!run || run.phase !== 'summary') return
+    const date = runDateKey(new Date())
+    const uid = 'anon'
+    const record = {
+      id: runDocId(date, uid),
+      uid,
+      date,
+      seed: run.seed,
+      outcome: (run.won ? 'won' : run.eliminated ? 'eliminated' : 'lost') as 'won' | 'lost' | 'eliminated',
+      badgesEarned: countBadges(run.round, run.won),
+      finalRound: run.round,
+      teamDexIds: run.team.map(u => u.dexId),
+      boardLevels: Object.fromEntries(
+        Object.entries(run.boardLevels ?? {}).map(([k, v]) => [String(k), v])
+      ),
+      draftSequence: run.draftSequence ?? [],
+      timestamp: Date.now(),
+    }
+    localBadgeRunBackend.saveRun(record).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.phase])
 
   if (!run || run.phase !== 'summary') return null
 
@@ -168,6 +194,8 @@ export function SummaryScreen() {
           </button>
         </div>
       </div>
+
+      <DailyLeaderboard />
 
       <SignUpCTA />
     </div>
