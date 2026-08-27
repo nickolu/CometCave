@@ -8,6 +8,7 @@ import {
   resolveEvolution,
   rerollOffers,
   buyXP as buyXPFn,
+  swapTeamPositions,
 } from './domain/blitz/run'
 
 interface BlitzStore {
@@ -26,6 +27,8 @@ interface BlitzStore {
   reroll: () => void
   /** Buy XP for XP_COST gold */
   buyXP: () => void
+  /** Swap two team slots by board position index (0-5) */
+  swap: (fromIdx: number, toIdx: number) => void
   /** Reset back to idle */
   reset: () => void
 }
@@ -82,6 +85,12 @@ export const useBlitzStore = create<BlitzStore>((set, get) => ({
     } catch {
       // Insufficient gold — no-op
     }
+  },
+
+  swap: (fromIdx, toIdx) => {
+    const run = get().run
+    if (!run) return
+    set({ run: swapTeamPositions(run, fromIdx, toIdx) })
   },
 
   reset: () => set({ run: null }),
