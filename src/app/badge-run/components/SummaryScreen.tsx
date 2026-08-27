@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useBlitzStore, getDailySeed } from '../store'
+import { SignUpCTA } from './SignUpCTA'
 
 function buildShareString(run: { round: number; won: boolean; lost: boolean }): string {
   const today = new Date()
@@ -60,6 +61,8 @@ export function SummaryScreen() {
         <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase', margin: '0 0 4px' }}>Share</p>
         <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, fontFamily: 'monospace', margin: 0 }}>{shareText}</p>
       </div>
+
+      <SignUpCTA />
 
       <div style={{ display: 'flex', gap: 12 }}>
         <button
