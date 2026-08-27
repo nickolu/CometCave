@@ -6,6 +6,7 @@ import type { BattleUnit, Team } from '../battle/types'
 import type { BattleResult } from '../battle/events'
 import { computeRoundIncome } from '../economy/gold'
 import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_TO_NEXT_LEVEL } from '../shop/tier-odds'
+import { applyLevelBonus, survivedRound } from '../levels/survival'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -27,6 +28,7 @@ export interface BlitzRun {
   xp: number            // accumulated XP toward next level
   maxSlots: number      // max team size (1-6, derived from level)
   rerollCount: number   // number of rerolls this round (for seeding)
+  boardLevels: Record<number, number>  // dexId → survival level (0-25)
 }
 
 // ---------------------------------------------------------------------------
@@ -36,7 +38,15 @@ export interface BlitzRun {
 /**
  * Convert a CatalogUnit to a BattleUnit for use in runBattle.
  */
-function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number): BattleUnit {
+function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number, survivalLevel: number = 0): BattleUnit {
+  const stats = applyLevelBonus({
+    hp: cat.baseStats.hp,
+    attack: cat.baseStats.attack,
+    defense: cat.baseStats.defense,
+    specialAttack: cat.baseStats.specialAttack,
+    specialDefense: cat.baseStats.specialDefense,
+    speed: cat.baseStats.speed,
+  }, survivalLevel)
   return {
     instanceId: `${prefix}-${idx}`,
     dexId: cat.dexId,
@@ -44,13 +54,13 @@ function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number): BattleUni
     types: cat.types,
     tier: cat.tier,
     kin: cat.kin,
-    maxHp: cat.baseStats.hp,
-    currentHp: cat.baseStats.hp,
-    attack: cat.baseStats.attack,
-    defense: cat.baseStats.defense,
-    specialAttack: cat.baseStats.specialAttack,
-    specialDefense: cat.baseStats.specialDefense,
-    speed: cat.baseStats.speed,
+    maxHp: stats.hp,
+    currentHp: stats.hp,
+    attack: stats.attack,
+    defense: stats.defense,
+    specialAttack: stats.specialAttack,
+    specialDefense: stats.specialDefense,
+    speed: stats.speed,
     signatureMove: cat.signatureMove,
     fainted: false,
   }
@@ -159,6 +169,7 @@ export function startBlitz(seed: number): BlitzRun {
     xp: 0,
     maxSlots: 1,
     rerollCount: 0,
+    boardLevels: {},
   }
 }
 
@@ -204,7 +215,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
   // Build attacker team from player's team
   const attackerTeam: Team = {
     id: 'player',
-    units: run.team.map((u, i) => catalogToUnit(u, 'player', i)),
+    units: run.team.map((u, i) => catalogToUnit(u, 'player', i, run.boardLevels[u.dexId] ?? 0)),
   }
 
   // Build defender team from pre-generated opponent team
@@ -235,6 +246,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
   // Player won
   const newWinStreak = run.winStreak + 1
   const income = computeRoundIncome(run.gold, newWinStreak)
+  const newBoardLevels = survivedRound(run.boardLevels, run.team.map(u => u.dexId))
 
   // Check if last picked unit can evolve
   const lastPicked = run.lastPickedDexId !== null
@@ -252,6 +264,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       gold: run.gold + income,
       winStreak: newWinStreak,
       lossStreak: 0,
+      boardLevels: newBoardLevels,
     }
   }
 
@@ -264,6 +277,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       gold: run.gold + income,
       winStreak: newWinStreak,
       lossStreak: 0,
+      boardLevels: newBoardLevels,
     }
   }
 
@@ -280,6 +294,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
     gold: run.gold + income,
     winStreak: newWinStreak,
     lossStreak: 0,
+    boardLevels: newBoardLevels,
   }
 }
 
@@ -318,6 +333,7 @@ export function resolveEvolution(run: BlitzRun): BlitzRun {
       team: newTeam,
       phase: 'summary',
       won: true,
+      boardLevels: run.boardLevels,
     }
   }
 
@@ -329,6 +345,7 @@ export function resolveEvolution(run: BlitzRun): BlitzRun {
     round: nextRound,
     phase: 'draft',
     offers: newOffers,
+    boardLevels: run.boardLevels,
   }
 }
 
