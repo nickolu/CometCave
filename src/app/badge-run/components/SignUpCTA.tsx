@@ -49,7 +49,7 @@ export function SignUpCTA() {
         <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: '0 0 2px' }}>
           Save your run history
         </p>
-        <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, margin: 0 }}>
+        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, margin: 0 }}>
           Your runs are anonymous now. Sign in to track your record across devices.
         </p>
       </div>
@@ -61,8 +61,9 @@ export function SignUpCTA() {
           Sign in
         </Link>
         <button
+          className="br-btn"
           onClick={handleDismiss}
-          style={{ padding: '8px 10px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: 12 }}
+          style={{ padding: '8px 10px', background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.60)', cursor: 'pointer', fontSize: 12 }}
           aria-label="Dismiss"
         >
           Not now

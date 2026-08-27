@@ -1,0 +1,14 @@
+/* Badge Run — shared accessibility styles */
+
+/* Focus visible indicator for all interactive elements */
+.br-btn:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.8);
+  outline-offset: 3px;
+}
+
+/* Respect prefers-reduced-motion: disable transitions */
+@media (prefers-reduced-motion: reduce) {
+  .br-btn {
+    transition: none !important;
+  }
+}
