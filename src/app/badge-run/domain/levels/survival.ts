@@ -1,8 +1,15 @@
 /** Maximum survival level a unit can accumulate. */
 export const MAX_SURVIVAL_LEVEL = 25
 
-/** Stat multiplier bonus per survival level (4%). */
-export const STAT_BONUS_PER_LEVEL = 0.04
+/**
+ * Stat multiplier bonus per survival level (2.5%).
+ *
+ * Reduced from 4% (B-8.4 balance pass).
+ * At 4%, a maxed T1 unit (BST × 2.0) outperformed fresh T5 units,
+ * making "never sell" always dominant. At 2.5%, maxed T1 (BST × 1.625)
+ * loses to fresh T3+ units, creating meaningful sell decisions at T3 and above.
+ */
+export const STAT_BONUS_PER_LEVEL = 0.025
 
 /**
  * Apply survival level stat bonus to raw stats.
