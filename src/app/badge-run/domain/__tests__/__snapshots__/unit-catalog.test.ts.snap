@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`UNIT_CATALOG > tier distribution snapshot 1`] = `
+{
+  "T1": 52,
+  "T2": 39,
+  "T3": 50,
+  "T4": 4,
+  "T5": 4,
+}
+`;
