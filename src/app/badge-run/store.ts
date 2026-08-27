@@ -6,6 +6,8 @@ import {
   pickUnit,
   resolveBattle,
   resolveEvolution,
+  rerollOffers,
+  buyXP as buyXPFn,
 } from './domain/blitz/run'
 
 interface BlitzStore {
@@ -20,6 +22,10 @@ interface BlitzStore {
   battle: () => void
   /** Apply the evolution after a won battle */
   evolve: () => void
+  /** Reroll the shop offers for REROLL_COST gold */
+  reroll: () => void
+  /** Buy XP for XP_COST gold */
+  buyXP: () => void
   /** Reset back to idle */
   reset: () => void
 }
@@ -56,6 +62,26 @@ export const useBlitzStore = create<BlitzStore>((set, get) => ({
     const { run } = get()
     if (!run || run.phase !== 'evolve') return
     set({ run: resolveEvolution(run) })
+  },
+
+  reroll: () => {
+    const run = get().run
+    if (!run || run.phase !== 'draft') return
+    try {
+      set({ run: rerollOffers(run) })
+    } catch {
+      // Insufficient gold — no-op
+    }
+  },
+
+  buyXP: () => {
+    const run = get().run
+    if (!run) return
+    try {
+      set({ run: buyXPFn(run) })
+    } catch {
+      // Insufficient gold — no-op
+    }
   },
 
   reset: () => set({ run: null }),
