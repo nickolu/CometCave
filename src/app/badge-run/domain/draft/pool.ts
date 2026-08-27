@@ -1,11 +1,11 @@
 import { UNIT_CATALOG, type CatalogUnit, type Tier } from '../unit-catalog'
 
 const TIER_COPIES: Record<Tier, number> = {
-  T1: 20,
-  T2: 16,
-  T3: 12,
-  T4: 9,
-  T5: 6,
+  T1: 4,
+  T2: 3,
+  T3: 2,
+  T4: 2,
+  T5: 1,
 }
 
 export interface PoolEntry {
