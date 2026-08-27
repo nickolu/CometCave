@@ -61,18 +61,30 @@ export function GauntletProgress({ currentRound, playerHp, maxHp = 100 }: Gauntl
           <span style={{ color: 'rgba(255,255,255,0.65)', fontSize: 11, letterSpacing: 1, textTransform: 'uppercase' }}>
             HP
           </span>
-          <span style={{ color: playerHp > 30 ? '#4ade80' : '#f87171', fontSize: 13, fontWeight: 700 }}>
+          <span
+            style={{ color: playerHp > 30 ? '#4ade80' : '#f87171', fontSize: 13, fontWeight: 700 }}
+            aria-label={`Player HP: ${playerHp} of ${maxHp}${playerHp <= 30 ? ' — critical' : ''}`}
+          >
             {playerHp} / {maxHp}
           </span>
         </div>
-        <div style={{ height: 6, background: 'rgba(255,255,255,0.10)', borderRadius: 3 }}>
-          <div style={{
-            height: '100%',
-            width: `${Math.min(100, (playerHp / maxHp) * 100)}%`,
-            background: playerHp > 30 ? '#4ade80' : '#f87171',
-            borderRadius: 3,
-            transition: 'width 0.3s, background 0.3s',
-          }} />
+        <div
+          role="progressbar"
+          aria-label="Player HP"
+          aria-valuenow={playerHp}
+          aria-valuemin={0}
+          aria-valuemax={maxHp}
+          style={{ height: 6, background: 'rgba(255,255,255,0.10)', borderRadius: 3 }}
+        >
+          <div
+            className="br-hp-bar"
+            style={{
+              height: '100%',
+              width: `${Math.min(100, (playerHp / maxHp) * 100)}%`,
+              background: playerHp > 30 ? '#4ade80' : '#f87171',
+              borderRadius: 3,
+            }}
+          />
         </div>
       </div>
 
@@ -137,7 +149,7 @@ export function GauntletProgress({ currentRound, playerHp, maxHp = 100 }: Gauntl
                     color: '#fff',
                     fontWeight: 700,
                   }}>
-                    {isEliteFour ? '⬡ ' : ''}{bossName}
+                    {isEliteFour ? <span aria-hidden="true">⬡ </span> : ''}{bossName}
                   </span>
                   {!info.draftEnabled && (
                     <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.50)', marginLeft: 6 }}>
@@ -177,7 +189,7 @@ export function GauntletProgress({ currentRound, playerHp, maxHp = 100 }: Gauntl
               ) : null}
 
               {isCurrent && (
-                <span style={{ fontSize: 10, color: '#7c6aff', fontWeight: 700 }}>◀</span>
+                <span aria-hidden="true" style={{ fontSize: 10, color: '#7c6aff', fontWeight: 700 }}>◀</span>
               )}
             </div>
           )

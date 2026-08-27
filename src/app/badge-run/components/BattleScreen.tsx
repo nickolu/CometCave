@@ -36,6 +36,7 @@ export function BattleScreen() {
         <button
           className="br-btn"
           onClick={battle}
+          aria-label={`Fight — round ${run.round}`}
           style={{ padding: '12px 32px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#fff', cursor: 'pointer', fontSize: 15, fontWeight: 600, letterSpacing: 1 }}
         >
           Fight
@@ -105,6 +106,8 @@ export function BattleScreen() {
       <button
         className="br-btn"
         onClick={run.phase === 'evolve' ? evolve : undefined}
+        disabled={run.phase !== 'evolve'}
+        aria-label={run.phase === 'evolve' ? 'Evolve your unit and continue to next round' : 'Waiting — battle in progress'}
         style={{ padding: '10px 24px', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 6, color: '#fff', cursor: run.phase === 'evolve' ? 'pointer' : 'default', fontSize: 14, alignSelf: 'center' }}
       >
         {run.phase === 'evolve' ? 'Evolve and continue' : 'Continue'}

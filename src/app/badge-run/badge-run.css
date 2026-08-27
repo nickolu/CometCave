@@ -8,7 +8,23 @@
 
 /* Respect prefers-reduced-motion: disable transitions */
 @media (prefers-reduced-motion: reduce) {
-  .br-btn {
+  .br-btn,
+  .br-progress-bar,
+  .br-hp-bar {
     transition: none !important;
   }
+}
+
+/* Progress bars: width transitions moved to CSS so prefers-reduced-motion applies */
+.br-progress-bar {
+  height: 100%;
+  background: #7c6aff;
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+
+.br-hp-bar {
+  height: '100%';
+  border-radius: 4px;
+  transition: width 0.3s, background 0.3s;
 }
