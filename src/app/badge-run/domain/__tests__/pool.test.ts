@@ -22,43 +22,45 @@ describe('createPool', () => {
     pool = createPool()
   })
 
+  // Copy counts updated for B-3.5 gate recommendation (target ~11% pool utilization).
   it('initializes correct copy counts for a T1 unit (Bulbasaur)', () => {
     const entry = pool.get(1)
     expect(entry).toBeDefined()
-    expect(entry!.available).toBe(20)
-    expect(entry!.total).toBe(20)
+    expect(entry!.available).toBe(4)
+    expect(entry!.total).toBe(4)
   })
 
   it('initializes correct copy counts for a T2 unit (Ivysaur)', () => {
     const entry = pool.get(2)
     expect(entry).toBeDefined()
-    expect(entry!.available).toBe(16)
-    expect(entry!.total).toBe(16)
+    expect(entry!.available).toBe(3)
+    expect(entry!.total).toBe(3)
   })
 
   it('initializes correct copy counts for a T3 unit (Venusaur)', () => {
     const entry = pool.get(3)
     expect(entry).toBeDefined()
-    expect(entry!.available).toBe(12)
-    expect(entry!.total).toBe(12)
+    expect(entry!.available).toBe(2)
+    expect(entry!.total).toBe(2)
   })
 
   it('initializes correct copy counts for a T4 unit (Gyarados)', () => {
     const entry = pool.get(130)
     expect(entry).toBeDefined()
-    expect(entry!.available).toBe(9)
-    expect(entry!.total).toBe(9)
+    expect(entry!.available).toBe(2)
+    expect(entry!.total).toBe(2)
   })
 
   it('initializes correct copy counts for a T5 unit (Dragonite)', () => {
     const entry = pool.get(149)
     expect(entry).toBeDefined()
-    expect(entry!.available).toBe(6)
-    expect(entry!.total).toBe(6)
+    expect(entry!.available).toBe(1)
+    expect(entry!.total).toBe(1)
   })
 
   it('total available on fresh pool equals sum of (tier copies × units of that tier)', () => {
-    const TIER_COPIES: Record<string, number> = { T1: 20, T2: 16, T3: 12, T4: 9, T5: 6 }
+    // Updated counts: T1:4, T2:3, T3:2, T4:2, T5:1 (see B-3.5 gate findings)
+    const TIER_COPIES: Record<string, number> = { T1: 4, T2: 3, T3: 2, T4: 2, T5: 1 }
     const expected = UNIT_CATALOG.reduce((sum, u) => sum + TIER_COPIES[u.tier], 0)
     expect(totalAvailable(pool)).toBe(expected)
   })
@@ -75,17 +77,15 @@ describe('takeUnit', () => {
     const unit = takeUnit(pool, 1)
     expect(unit).not.toBeNull()
     expect(unit!.dexId).toBe(1)
-    expect(pool.get(1)!.available).toBe(19)
+    expect(pool.get(1)!.available).toBe(3) // T1 has 4 copies; 4-1=3
   })
 
   it('returns null when copies run out (take all then try one more)', () => {
-    // Exhaust all T5 copies of Dragonite (6 total)
-    for (let i = 0; i < 6; i++) {
-      const result = takeUnit(pool, 149)
-      expect(result).not.toBeNull()
-    }
-    const result = takeUnit(pool, 149)
-    expect(result).toBeNull()
+    // Exhaust all T5 copies of Dragonite (1 copy at new counts)
+    const result1 = takeUnit(pool, 149)
+    expect(result1).not.toBeNull()
+    const result2 = takeUnit(pool, 149)
+    expect(result2).toBeNull()
   })
 
   it('cannot double-take the same dexId more than total times', () => {
@@ -109,9 +109,9 @@ describe('returnUnit', () => {
 
   it('restores availability after taking', () => {
     takeUnit(pool, 1)
-    expect(pool.get(1)!.available).toBe(19)
+    expect(pool.get(1)!.available).toBe(3) // T1 has 4 copies; 4-1=3
     returnUnit(pool, 1)
-    expect(pool.get(1)!.available).toBe(20)
+    expect(pool.get(1)!.available).toBe(4) // back to 4
   })
 
   it('throws when returning a unit that was never taken (already at full)', () => {
