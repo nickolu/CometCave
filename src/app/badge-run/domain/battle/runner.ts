@@ -8,6 +8,8 @@ import type { BattleEvent, BattleResult } from './events'
 import type { Type } from '../type-chart'
 import { applyHouseRulePowerModifier, getEffectiveness, applyBlizzardSpeed } from './arena-effects'
 import { getTargets } from './positioning'
+import { applyKinSynergies } from './kin-synergies'
+import { applyFactionSynergies } from './faction-synergies'
 
 const MAX_ROUNDS = 100
 
@@ -71,6 +73,24 @@ export function runBattle(
   const arena = getArena(arenaId)
   const rng = makePRNG(seed)
   const events: BattleEvent[] = []
+
+  // --- Resolve synergies (pre-battle, turn 0) ---
+  const synergyEvents: BattleEvent[] = []
+  for (const [team] of [[attacker], [defender]] as const) {
+    const kinResults = applyKinSynergies(team.units)
+    const factionResults = applyFactionSynergies(team.units)
+    for (const s of [...kinResults, ...factionResults]) {
+      synergyEvents.push({
+        type: 'synergy_applied',
+        turn: 0,
+        synergyId: s.synergyId,
+        affectedUnitIds: s.affectedUnitIds,
+        effect: s.effect,
+      })
+    }
+  }
+  // Prepend synergy events (they happen before turn 1)
+  events.push(...synergyEvents)
 
   let turn = 0
   let winnerId: string | null = null
