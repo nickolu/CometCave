@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useBlitzStore } from '../store'
 import { SignUpCTA } from './SignUpCTA'
+import { DailyLeaderboard } from './DailyLeaderboard'
 import { GAUNTLET_SCHEDULE } from '../domain/gauntlet/schedule'
 import { localBadgeRunBackend } from '../backend'
 import { runDateKey, runDocId } from '../domain/run-record'
@@ -193,6 +194,8 @@ export function SummaryScreen() {
           </button>
         </div>
       </div>
+
+      <DailyLeaderboard />
 
       <SignUpCTA />
     </div>
