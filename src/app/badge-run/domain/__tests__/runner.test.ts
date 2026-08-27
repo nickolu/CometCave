@@ -93,9 +93,13 @@ describe('runBattle', () => {
 
     expect(events.length).toBeGreaterThan(0)
 
-    // All events have a turn field >= 1
+    // synergy_applied events fire at turn 0 (pre-battle); all others are >= 1
     for (const ev of events) {
-      expect(ev.turn).toBeGreaterThanOrEqual(1)
+      if (ev.type === 'synergy_applied') {
+        expect(ev.turn).toBe(0)
+      } else {
+        expect(ev.turn).toBeGreaterThanOrEqual(1)
+      }
     }
 
     // battle_end is the last event
