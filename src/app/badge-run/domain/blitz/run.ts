@@ -5,6 +5,7 @@ import { runBattle } from '../battle/runner'
 import type { BattleUnit, Team } from '../battle/types'
 import type { BattleResult } from '../battle/events'
 import { computeRoundIncome } from '../economy/gold'
+import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_TO_NEXT_LEVEL } from '../shop/tier-odds'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -22,6 +23,10 @@ export interface BlitzRun {
   gold: number          // current gold
   winStreak: number     // consecutive rounds won
   lossStreak: number    // consecutive rounds lost
+  level: number         // player level 1-10
+  xp: number            // accumulated XP toward next level
+  maxSlots: number      // max team size (1-6, derived from level)
+  rerollCount: number   // number of rerolls this round (for seeding)
 }
 
 // ---------------------------------------------------------------------------
@@ -75,11 +80,13 @@ function generateOpponentTeam(seed: number, round: number): CatalogUnit[] {
 /**
  * Generate 3 draft offers from UNIT_CATALOG, excluding units already on the team.
  * Uses a seeded PRNG derived from the main seed and round number.
+ * Picks units by tier based on the player's current level.
  */
 function generateOffers(
   seed: number,
   round: number,
   existingTeam: CatalogUnit[],
+  level: number = 1,
 ): [CatalogUnit, CatalogUnit, CatalogUnit] {
   const rng = makePRNG((seed ^ (round * 0x45d9f3b)) >>> 0)
   const teamDexIds = new Set(existingTeam.map(u => u.dexId))
@@ -87,9 +94,21 @@ function generateOffers(
   const used = new Set<number>()
 
   while (picks.length < 3) {
-    const idx = rng.nextInt(UNIT_CATALOG.length)
-    const unit = UNIT_CATALOG[idx]
-    if (!used.has(unit.dexId) && !teamDexIds.has(unit.dexId)) {
+    // Pick a tier based on level odds
+    const tierRand = rng.nextInt(1000000) / 1000000
+    const tier = pickTierByOdds(level, tierRand)
+
+    // Get available units of that tier
+    const tierUnits = UNIT_CATALOG.filter(u => u.tier === tier && !used.has(u.dexId) && !teamDexIds.has(u.dexId))
+    if (tierUnits.length === 0) {
+      // Fall back to any available unit if no units of this tier available
+      const anyUnit = UNIT_CATALOG.filter(u => !used.has(u.dexId) && !teamDexIds.has(u.dexId))
+      if (anyUnit.length === 0) break
+      const unit = anyUnit[rng.nextInt(anyUnit.length)]
+      used.add(unit.dexId)
+      picks.push(unit)
+    } else {
+      const unit = tierUnits[rng.nextInt(tierUnits.length)]
       used.add(unit.dexId)
       picks.push(unit)
     }
@@ -120,7 +139,7 @@ export function startBlitz(seed: number): BlitzRun {
     opponentTeams.push(generateOpponentTeam(seed, r))
   }
 
-  const offers = generateOffers(seed, 1, [])
+  const offers = generateOffers(seed, 1, [], 1)
 
   return {
     seed,
@@ -136,6 +155,10 @@ export function startBlitz(seed: number): BlitzRun {
     gold: 0,
     winStreak: 0,
     lossStreak: 0,
+    level: 1,
+    xp: 0,
+    maxSlots: 1,
+    rerollCount: 0,
   }
 }
 
@@ -246,7 +269,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
 
   // No evolution — advance round and generate new offers
   const nextRound = run.round + 1
-  const newOffers = generateOffers(run.seed, nextRound, run.team)
+  const newOffers = generateOffers(run.seed, nextRound, run.team, run.level)
 
   return {
     ...run,
@@ -298,7 +321,7 @@ export function resolveEvolution(run: BlitzRun): BlitzRun {
     }
   }
 
-  const newOffers = generateOffers(run.seed, nextRound, newTeam)
+  const newOffers = generateOffers(run.seed, nextRound, newTeam, run.level)
 
   return {
     ...run,
@@ -306,5 +329,62 @@ export function resolveEvolution(run: BlitzRun): BlitzRun {
     round: nextRound,
     phase: 'draft',
     offers: newOffers,
+  }
+}
+
+/**
+ * Reroll the current draft offers. Costs REROLL_COST gold.
+ * Uses rerollCount to produce a unique seed each time.
+ */
+export function rerollOffers(run: BlitzRun): BlitzRun {
+  if (run.phase !== 'draft') {
+    throw new Error(`Cannot reroll in phase '${run.phase}'`)
+  }
+  if (run.gold < REROLL_COST) {
+    throw new Error(`Insufficient gold: have ${run.gold}, need ${REROLL_COST}`)
+  }
+
+  const newRerollCount = run.rerollCount + 1
+  // Derive a unique seed for this reroll from the base seed, round, and reroll count
+  const rerollSeed = (run.seed ^ (run.round * 0x45d9f3b) ^ (newRerollCount * 0xf3a4b5)) >>> 0
+  const newOffers = generateOffers(rerollSeed, 0, run.team, run.level)
+
+  return {
+    ...run,
+    gold: run.gold - REROLL_COST,
+    offers: newOffers,
+    rerollCount: newRerollCount,
+  }
+}
+
+/**
+ * Buy XP. Costs XP_COST gold, grants XP_PER_BUY XP.
+ * May trigger a level-up if XP threshold is crossed.
+ */
+export function buyXP(run: BlitzRun): BlitzRun {
+  if (run.gold < XP_COST) {
+    throw new Error(`Insufficient gold: have ${run.gold}, need ${XP_COST}`)
+  }
+
+  let newXp = run.xp + XP_PER_BUY
+  let newLevel = run.level
+
+  // Level up while XP meets or exceeds the threshold, and level is not capped
+  while (newLevel < 10) {
+    const threshold = XP_TO_NEXT_LEVEL[newLevel]
+    if (newXp >= threshold) {
+      newXp -= threshold
+      newLevel++
+    } else {
+      break
+    }
+  }
+
+  return {
+    ...run,
+    gold: run.gold - XP_COST,
+    xp: newXp,
+    level: newLevel,
+    maxSlots: maxSlotsForLevel(newLevel),
   }
 }
