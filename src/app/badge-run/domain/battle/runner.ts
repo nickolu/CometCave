@@ -1,12 +1,12 @@
 import { makePRNG } from '../rng'
 import { getArena } from '../data/arenas'
-import { effectiveness } from '../type-chart'
 import { buildTurnQueue } from './turn-queue'
 import { computeDamage } from './damage'
 import type { MoveData, MoveCategory } from './damage'
 import type { BattleUnit, Team } from './types'
 import type { BattleEvent, BattleResult } from './events'
 import type { Type } from '../type-chart'
+import { applyHouseRulePowerModifier, getEffectiveness, applyBlizzardSpeed } from './arena-effects'
 
 const MAX_ROUNDS = 100
 
@@ -49,7 +49,14 @@ function buildMove(unit: BattleUnit, arena: ReturnType<typeof getArena>): MoveDa
     }
   }
 
-  return { name, type, category, power }
+  const move: MoveData = { name, type, category, power }
+
+  // Apply house rule power modifiers (e.g. rain penalizes Fire, volcano penalizes Ice)
+  if (arena && arena.houseRules.length > 0) {
+    return applyHouseRulePowerModifier(move, arena.houseRules)
+  }
+
+  return move
 }
 
 export function runBattle(
@@ -117,7 +124,20 @@ export function runBattle(
     if (checkWin()) break
 
     // --- Build turn queue ---
-    const queue = buildTurnQueue(attacker.units, defender.units, rng)
+    // Apply blizzard speed reduction for turn ordering (does not mutate units permanently)
+    const houseRules = arena ? arena.houseRules : []
+    const attackerUnitsForQueue = attacker.units.map(u => applyBlizzardSpeed(u, houseRules))
+    const defenderUnitsForQueue = defender.units.map(u => applyBlizzardSpeed(u, houseRules))
+    const rawQueue = buildTurnQueue(attackerUnitsForQueue, defenderUnitsForQueue, rng)
+
+    // Remap queue entries to live unit references (so fainted/HP changes are visible)
+    const unitById = new Map<string, BattleUnit>()
+    for (const u of attacker.units) unitById.set(u.instanceId, u)
+    for (const u of defender.units) unitById.set(u.instanceId, u)
+    const queue = rawQueue.map(entry => ({
+      unit: unitById.get(entry.unit.instanceId) ?? entry.unit,
+      teamId: entry.teamId,
+    }))
 
     // --- Process each unit's action ---
     for (const entry of queue) {
@@ -142,8 +162,20 @@ export function runBattle(
         moveName: move.name,
       })
 
-      const dmg = computeDamage(entry.unit, target, move)
-      const effectivenessValue = effectiveness(move.type, target.types as Type[])
+      const effectivenessValue = getEffectiveness(move.type, target.types, houseRules)
+      // computeDamage uses effectiveness internally; if houseRules override it (e.g. excavation),
+      // compute damage manually with the overridden value instead.
+      let dmg: number
+      if (houseRules.includes('excavation') && move.type === 'Ground' && target.types.includes('Flying')) {
+        // Override: compute damage with overridden effectiveness
+        const atk = move.category === 'physical' ? entry.unit.attack : entry.unit.specialAttack
+        const def = move.category === 'physical' ? target.defense : target.specialDefense
+        const stab = entry.unit.types.includes(move.type) ? 1.5 : 1
+        const raw = move.power * (atk / def) * effectivenessValue * stab
+        dmg = effectivenessValue === 0 ? 0 : Math.max(1, Math.floor(raw))
+      } else {
+        dmg = computeDamage(entry.unit, target, move)
+      }
 
       target.currentHp = Math.max(0, target.currentHp - dmg)
 
