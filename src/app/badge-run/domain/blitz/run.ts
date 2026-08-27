@@ -7,6 +7,7 @@ import type { BattleResult } from '../battle/events'
 import { computeRoundIncome } from '../economy/gold'
 import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_TO_NEXT_LEVEL } from '../shop/tier-odds'
 import { applyLevelBonus, survivedRound } from '../levels/survival'
+import { computeLossDamage, applyDamage, MAX_PLAYER_HP } from '../matchmaking/hp'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -29,6 +30,8 @@ export interface BlitzRun {
   maxSlots: number      // max team size (1-6, derived from level)
   rerollCount: number   // number of rerolls this round (for seeding)
   boardLevels: Record<number, number>  // dexId → survival level (0-25)
+  playerHp: number      // player HP, starts at 100
+  eliminated: boolean   // true when playerHp reaches 0
 }
 
 // ---------------------------------------------------------------------------
@@ -170,6 +173,8 @@ export function startBlitz(seed: number): BlitzRun {
     maxSlots: 1,
     rerollCount: 0,
     boardLevels: {},
+    playerHp: MAX_PLAYER_HP,
+    eliminated: false,
   }
 }
 
@@ -232,6 +237,13 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
     // Loss — run ends
     const newLossStreak = run.lossStreak + 1
     const income = computeRoundIncome(run.gold, newLossStreak)
+    const opponentFaints = result.events.filter(e => {
+      if (e.type !== 'faint') return false
+      return e.unitId.startsWith('opponent-')
+    }).length
+    const survivingEnemies = opponentCatalog.length - opponentFaints
+    const damage = computeLossDamage(run.round, survivingEnemies, false)  // isGym handled in B-5.6
+    const newHp = applyDamage(run.playerHp, damage)
     return {
       ...run,
       lastBattleResult: result,
@@ -240,6 +252,8 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       gold: run.gold + income,
       winStreak: 0,
       lossStreak: newLossStreak,
+      playerHp: newHp,
+      eliminated: newHp <= 0,
     }
   }
 
