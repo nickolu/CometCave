@@ -1,12 +1,13 @@
 'use client'
 import { useBlitzStore } from '../store'
-import { ARENA_SCHEDULE } from '../domain/data/arenas'
+import { ARENA_SCHEDULE, getArena } from '../domain/data/arenas'
 
 export function DraftScreen() {
   const { run, pick } = useBlitzStore()
   if (!run || !run.offers) return null
 
-  const arena = ARENA_SCHEDULE[(run.round - 1) % ARENA_SCHEDULE.length]
+  const arenaId = ARENA_SCHEDULE[(run.round - 1) % ARENA_SCHEDULE.length]
+  const arena = getArena(arenaId)
 
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '24px 16px', gap: 24, maxWidth: 640, margin: '0 auto', width: '100%' }}>
@@ -15,9 +16,9 @@ export function DraftScreen() {
           Round {run.round} of 8
         </p>
         <h2 style={{ color: '#fff', fontSize: 22, fontWeight: 700, margin: '4px 0 0', letterSpacing: 1 }}>
-          {arena.name}
+          {arena?.name ?? arenaId}
         </h2>
-        {arena.houseRules.length > 0 && (
+        {arena && arena.houseRules.length > 0 && (
           <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, margin: '4px 0 0' }}>
             {arena.houseRules.join(' · ')}
           </p>
