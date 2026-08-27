@@ -22,6 +22,7 @@
     "eval:trivia:smoke": "tsx --env-file=.env.local scripts/eval-trivia.ts --smoke",
     "seed-ai-questions": "tsx --env-file=.env.local scripts/seed-ai-questions.ts",
     "sim:micro-land": "tsx scripts/micro-land-sim.ts",
+    "sim:badge-run": "tsx scripts/badge-run-sim.ts",
     "eval:micro-land": "tsx scripts/micro-land-eval.ts",
     "eval:micro-land:smoke": "tsx scripts/micro-land-eval.ts --seconds 120 --runs 1 --theme grassland",
     "voice:dicebound": "tsx --env-file-if-exists=.env.local scripts/dicebound-voice-check.ts",
