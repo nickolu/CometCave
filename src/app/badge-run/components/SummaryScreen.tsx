@@ -197,7 +197,7 @@ export function SummaryScreen() {
 
       <DailyLeaderboard />
 
-      <SignUpCTA />
+      <SignUpCTA outcome={run.won ? 'won' : run.eliminated ? 'eliminated' : 'lost'} badgesEarned={badges} />
     </div>
   )
 }
