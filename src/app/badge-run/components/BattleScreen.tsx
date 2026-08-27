@@ -1,7 +1,6 @@
 'use client'
 import { useBlitzStore } from '../store'
 import { ScoutingPanel } from './ScoutingPanel'
-import { GauntletProgress } from './GauntletProgress'
 
 function effectivenessLabel(e: number): { text: string; color: string } | null {
   if (e >= 2) return { text: 'Super effective!', color: '#f5c542' }
@@ -28,10 +27,6 @@ export function BattleScreen() {
         <ScoutingPanel
           opponentTeams={run.opponentTeams}
           currentRound={run.round}
-        />
-        <GauntletProgress
-          currentRound={run.round}
-          playerHp={run.playerHp}
         />
         <button
           className="br-btn"
