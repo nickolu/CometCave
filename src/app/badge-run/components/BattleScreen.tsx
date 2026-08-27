@@ -1,5 +1,6 @@
 'use client'
 import { useBlitzStore } from '../store'
+import { ScoutingPanel } from './ScoutingPanel'
 
 function effectivenessLabel(e: number): { text: string; color: string } | null {
   if (e >= 2) return { text: 'Super effective!', color: '#f5c542' }
@@ -22,6 +23,11 @@ export function BattleScreen() {
         <p style={{ color: 'rgba(255,255,255,0.70)', fontSize: 14, margin: 0 }}>
           Your team enters the arena.
         </p>
+        {/* Rival type preview for this round */}
+        <ScoutingPanel
+          opponentTeams={run.opponentTeams}
+          currentRound={run.round}
+        />
         <button
           className="br-btn"
           onClick={battle}
