@@ -7,6 +7,7 @@ import type { BattleUnit, Team } from './types'
 import type { BattleEvent, BattleResult } from './events'
 import type { Type } from '../type-chart'
 import { applyHouseRulePowerModifier, getEffectiveness, applyBlizzardSpeed } from './arena-effects'
+import { getTargets } from './positioning'
 
 const MAX_ROUNDS = 100
 
@@ -144,15 +145,17 @@ export function runBattle(
       if (entry.unit.fainted) continue
 
       // Pick a random alive enemy
-      const enemies =
+      const enemyUnits =
         entry.teamId === 'attacker'
-          ? aliveUnits(defender.units)
-          : aliveUnits(attacker.units)
+          ? defender.units
+          : attacker.units
+
+      const move = buildMove(entry.unit, arena)
+      const enemies = getTargets(enemyUnits, move, houseRules)
 
       if (enemies.length === 0) break
 
       const target = enemies[rng.nextInt(enemies.length)]
-      const move = buildMove(entry.unit, arena)
 
       events.push({
         type: 'unit_acts',
