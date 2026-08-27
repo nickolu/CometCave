@@ -9,6 +9,7 @@ import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_
 import { applyLevelBonus, survivedRound } from '../levels/survival'
 import { computeLossDamage, applyDamage, MAX_PLAYER_HP } from '../matchmaking/hp'
 import { isGymRound, getRoundInfo } from '../gauntlet/schedule'
+import { detectActiveSecrets, getUnitSecretMultiplier, applySecretBonus } from '../secrets/secrets'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -33,6 +34,7 @@ export interface BlitzRun {
   boardLevels: Record<number, number>  // dexId → survival level (0-25)
   playerHp: number      // player HP, starts at 100
   eliminated: boolean   // true when playerHp reaches 0
+  firstTeamDexIds: number[]  // team dexIds recorded after round 1 win (for Old Friend secret)
 }
 
 // ---------------------------------------------------------------------------
@@ -41,9 +43,10 @@ export interface BlitzRun {
 
 /**
  * Convert a CatalogUnit to a BattleUnit for use in runBattle.
+ * secretMultiplier is the total secret stat bonus for this unit (0 if none).
  */
-function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number, survivalLevel: number = 0): BattleUnit {
-  const stats = applyLevelBonus({
+function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number, survivalLevel: number = 0, secretMultiplier: number = 0): BattleUnit {
+  const survivedStats = applyLevelBonus({
     hp: cat.baseStats.hp,
     attack: cat.baseStats.attack,
     defense: cat.baseStats.defense,
@@ -51,6 +54,7 @@ function catalogToUnit(cat: CatalogUnit, prefix: string, idx: number, survivalLe
     specialDefense: cat.baseStats.specialDefense,
     speed: cat.baseStats.speed,
   }, survivalLevel)
+  const stats = applySecretBonus(survivedStats, secretMultiplier)
   return {
     instanceId: `${prefix}-${idx}`,
     dexId: cat.dexId,
@@ -176,6 +180,7 @@ export function startBlitz(seed: number): BlitzRun {
     boardLevels: {},
     playerHp: MAX_PLAYER_HP,
     eliminated: false,
+    firstTeamDexIds: [],
   }
 }
 
@@ -224,10 +229,20 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
   const arenaId = arenaForRound(run.round)
   const battleSeed = run.seed ^ (run.round * 0xdeadbeef)
 
-  // Build attacker team from player's team
+  // Detect active secrets for the player's team this round
+  const activeSecrets = detectActiveSecrets({
+    team: run.team,
+    boardLevels: run.boardLevels,
+    round: run.round,
+    firstTeamDexIds: run.firstTeamDexIds,
+  })
+
+  // Build attacker team from player's team (applying survival levels + secret bonuses)
   const attackerTeam: Team = {
     id: 'player',
-    units: run.team.map((u, i) => catalogToUnit(u, 'player', i, run.boardLevels[u.dexId] ?? 0)),
+    units: run.team.map((u, i) =>
+      catalogToUnit(u, 'player', i, run.boardLevels[u.dexId] ?? 0, getUnitSecretMultiplier(u.dexId, activeSecrets))
+    ),
   }
 
   // Build defender team from pre-generated opponent team
@@ -269,6 +284,11 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
   const income = computeRoundIncome(run.gold, newWinStreak)
   const newBoardLevels = survivedRound(run.boardLevels, run.team.map(u => u.dexId))
 
+  // Record team composition after round 1 win (used by Old Friend secret)
+  const newFirstTeamDexIds = run.firstTeamDexIds.length === 0 && run.round === 1
+    ? run.team.map(u => u.dexId)
+    : run.firstTeamDexIds
+
   // Check if last picked unit can evolve
   const lastPicked = run.lastPickedDexId !== null
     ? UNIT_CATALOG.find(u => u.dexId === run.lastPickedDexId)
@@ -286,6 +306,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       winStreak: newWinStreak,
       lossStreak: 0,
       boardLevels: newBoardLevels,
+      firstTeamDexIds: newFirstTeamDexIds,
     }
   }
 
@@ -299,6 +320,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
       winStreak: newWinStreak,
       lossStreak: 0,
       boardLevels: newBoardLevels,
+      firstTeamDexIds: newFirstTeamDexIds,
     }
   }
 
@@ -316,6 +338,7 @@ export function resolveBattle(run: BlitzRun): BlitzRun {
     winStreak: newWinStreak,
     lossStreak: 0,
     boardLevels: newBoardLevels,
+    firstTeamDexIds: newFirstTeamDexIds,
   }
 }
 
