@@ -10,6 +10,7 @@ import { applyLevelBonus, survivedRound } from '../levels/survival'
 import { computeLossDamage, applyDamage, MAX_PLAYER_HP } from '../matchmaking/hp'
 import { isGymRound, getRoundInfo } from '../gauntlet/schedule'
 import { detectActiveSecrets, getUnitSecretMultiplier, applySecretBonus } from '../secrets/secrets'
+import type { DraftPick } from '../run-record'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -35,6 +36,7 @@ export interface BlitzRun {
   playerHp: number      // player HP, starts at 100
   eliminated: boolean   // true when playerHp reaches 0
   firstTeamDexIds: number[]  // team dexIds recorded after round 1 win (for Old Friend secret)
+  draftSequence: DraftPick[]  // ordered list of picks — ghost replay log
 }
 
 // ---------------------------------------------------------------------------
@@ -181,6 +183,7 @@ export function startBlitz(seed: number): BlitzRun {
     playerHp: MAX_PLAYER_HP,
     eliminated: false,
     firstTeamDexIds: [],
+    draftSequence: [],
   }
 }
 
@@ -208,12 +211,19 @@ export function pickUnit(run: BlitzRun, dexId: number): BlitzRun {
     throw new Error(`dexId ${dexId} is not among the current offers`)
   }
 
+  const pick: DraftPick = {
+    round: run.round,
+    pick: dexId,
+    offers: run.offers.map(u => u.dexId),
+  }
+
   return {
     ...run,
     team: [...run.team, picked],
     lastPickedDexId: dexId,
     offers: null,
     phase: 'battle',
+    draftSequence: [...run.draftSequence, pick],
   }
 }
 
