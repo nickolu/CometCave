@@ -99,3 +99,19 @@ describe('BOSS_BOARDS', () => {
     }
   })
 })
+
+describe('B-5.7 — Elite Four draft lock', () => {
+  it('rounds 25-29 have draftEnabled: false', () => {
+    for (let r = 25; r <= 29; r++) {
+      const info = getRoundInfo(r)
+      expect(info.draftEnabled).toBe(false)
+    }
+  })
+
+  it('rounds 1-24 have draftEnabled: true', () => {
+    for (let r = 1; r <= 24; r++) {
+      const info = getRoundInfo(r)
+      expect(info.draftEnabled).toBe(true)
+    }
+  })
+})

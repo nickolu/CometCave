@@ -8,7 +8,7 @@ import { computeRoundIncome } from '../economy/gold'
 import { maxSlotsForLevel, pickTierByOdds, XP_PER_BUY, XP_COST, REROLL_COST, XP_TO_NEXT_LEVEL } from '../shop/tier-odds'
 import { applyLevelBonus, survivedRound } from '../levels/survival'
 import { computeLossDamage, applyDamage, MAX_PLAYER_HP } from '../matchmaking/hp'
-import { isGymRound } from '../gauntlet/schedule'
+import { isGymRound, getRoundInfo } from '../gauntlet/schedule'
 
 export type BlitzPhase = 'idle' | 'draft' | 'battle' | 'evolve' | 'summary'
 
@@ -188,6 +188,12 @@ export function pickUnit(run: BlitzRun, dexId: number): BlitzRun {
   if (run.phase !== 'draft') {
     throw new Error(`Cannot pick unit in phase '${run.phase}'`)
   }
+
+  const roundInfo = getRoundInfo(run.round)
+  if (!roundInfo.draftEnabled) {
+    throw new Error(`Draft is locked for round ${run.round} (Elite Four / Champion)`)
+  }
+
   if (!run.offers) {
     throw new Error('No offers available')
   }
