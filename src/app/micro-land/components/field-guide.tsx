@@ -318,7 +318,7 @@ export function FieldGuidePane() {
       {namedCreatures.some(e => !e.alive) && (
         <section style={{ borderBottom: '1px solid var(--cc-panel-divider)' }}>
           <h3 className="px-4 pb-1 pt-3" style={sectionHeading}>
-            Graveyard · {namedCreatures.filter(e => !e.alive).length}
+            Deceased · {namedCreatures.filter(e => !e.alive).length}
           </h3>
           <ul className="flex flex-col">
             {namedCreatures
@@ -523,7 +523,7 @@ export function FieldGuidePane() {
       {milestones.length > 0 && (
         <section className="px-4 py-3" style={{ borderTop: '1px solid var(--cc-panel-divider)' }}>
           <h3 className="pb-2" style={sectionHeading}>
-            Things that have happened
+            Milestones
           </h3>
           <ul className="flex flex-col gap-1.5">
             {milestones.map(m => (

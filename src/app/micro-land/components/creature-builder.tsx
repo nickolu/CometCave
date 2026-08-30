@@ -346,7 +346,7 @@ export function CreatureBuilder({
       return
     }
     setTool({ kind: 'creature', blueprintId: result.blueprint.id })
-    notify(`${result.blueprint.name} steps out of the drawing.`)
+    notify(`${result.blueprint.name} added to world.`)
     setOpen(false)
   }
 
@@ -362,7 +362,7 @@ export function CreatureBuilder({
     setTool({ kind: 'creature', blueprintId: result.blueprint.id })
     notify(
       result.living > 0
-        ? `Every ${result.blueprint.name} changes at once.`
+        ? `All ${result.blueprint.name} updated.`
         : `${result.blueprint.name} is redrawn. Tap the world to place some.`
     )
     setOpen(false)
@@ -408,7 +408,7 @@ export function CreatureBuilder({
     }
 
     setSaving(false)
-    notify(`${applied.blueprint.name} is written into the roster. Commit it to keep it.`)
+    notify(`${applied.blueprint.name} saved to roster.`)
     setOpen(false)
   }
 

@@ -256,10 +256,10 @@ export function MicroLandGame() {
       identityRef.current = identity
 
       void keepWorld(game.toSave(identity))
-        .then(() => notify(`${name} is kept. It will be waiting exactly like this.`))
+        .then(() => notify(`${name} saved.`))
         .catch(() => {
           identityRef.current = previous
-          notify('The cave could not hold that world.')
+          notify("That world couldn't be saved.")
         })
     },
     [notify]
@@ -288,7 +288,7 @@ export function MicroLandGame() {
         // After `adoptSave`, which changes the theme and so releases whatever
         // world was active before it.
         setActiveWorld(save.id)
-        notify(`${save.name} picks up where it left off.`)
+        notify(`${save.name} loaded.`)
       })()
     },
     [notify]
@@ -297,7 +297,7 @@ export function MicroLandGame() {
   const handleForgetWorld = useCallback(
     (id: string) => {
       if (identityRef.current?.id === id) identityRef.current = null
-      void removeWorld(id).then(() => notify('That world is off the shelf.'))
+      void removeWorld(id).then(() => notify('World deleted.'))
     },
     [notify]
   )
@@ -313,12 +313,12 @@ export function MicroLandGame() {
 
   const handleClearLife = useCallback(() => {
     gameRef.current?.clearLife()
-    notify('Everything living is gone. The land waits.')
+    notify('All creatures removed.')
   }, [notify])
 
   const handleClearWorld = useCallback(() => {
     gameRef.current?.clearWorld()
-    notify('The land is gone too. Nothing but sky.')
+    notify('World cleared.')
   }, [notify])
 
   const handleIntroduce = useCallback((raw: unknown, count: number) => {
