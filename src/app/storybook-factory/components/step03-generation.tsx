@@ -10,7 +10,7 @@ const ILLUSTRATION_STATUS_MESSAGES = [
   'Adding colors and shadows...',
   'Sketching the backgrounds...',
   'Polishing the artwork...',
-  'Making it magical...',
+  'Finalizing the artwork...',
 ]
 
 const STATUS_MESSAGES = [
@@ -50,7 +50,7 @@ function GeneratingAnimation() {
       <div className="text-center space-y-2">
         <h3 className="font-headline text-xl text-on-surface">Creating Your Story...</h3>
         <p className="font-body text-body-md text-on-surface-variant">
-          Our AI is crafting your illustrated story
+          Generating your illustrated story
         </p>
       </div>
 
@@ -275,7 +275,7 @@ export function Step03Generation({
       <div className="bg-surface-container rounded-lg p-6 space-y-2">
         <h2 className="font-headline text-2xl text-on-surface">Generating Your Story</h2>
         <p className="font-body text-body-md text-on-surface-variant">
-          AI is crafting your illustrated story — sit tight!
+          Generating your story — this may take a moment
         </p>
       </div>
 

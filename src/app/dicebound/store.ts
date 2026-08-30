@@ -169,7 +169,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       set({
         pending: false,
         phase: get().campaign ? 'playing' : 'creating',
-        error: error instanceof Error ? error.message : 'The cave is quiet. Try again.',
+        error: error instanceof Error ? error.message : 'Something went wrong. Try again.',
       })
     }
   },
@@ -220,7 +220,7 @@ export const useDicebound = create<DiceboundState>((set, get) => ({
       set({
         campaign,
         pending: false,
-        error: error instanceof Error ? error.message : 'The telling faltered. Try that again.',
+        error: error instanceof Error ? error.message : 'Something went wrong. Try that again.',
       })
     }
   },

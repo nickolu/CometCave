@@ -77,7 +77,7 @@ export function SignInInvite({ streak, ending = false }: { streak: number; endin
       <p className="text-body-md text-on-surface">
         {ending
           ? 'That was a whole story, start to finish. Sign in and it stays yours — on this device and any other.'
-          : `${streak} days deep. Sign in and the cave will carry this story to your other devices.`}
+          : `${streak} days in. Sign in to save this story to your account.`}
       </p>
       <div className="mt-3 flex items-center gap-4">
         <a
