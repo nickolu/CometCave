@@ -290,7 +290,7 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
             <div className="flex flex-col gap-3">
               <p className="text-on-surface/70 text-sm">
                 {statsLoading
-                  ? 'Tallying the cave…'
+                  ? 'Loading categories…'
                   : 'Pick a category to browse its questions.'}
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -516,8 +516,8 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
                   title="✨ See questions you generated"
                   description={
                     user?.isAnonymous
-                      ? 'Create an account to track every question your play has added to the cave.'
-                      : 'Sign in to see questions your play has added to the cave.'
+                      ? 'Create an account to see all questions generated during your play.'
+                      : 'Sign in to see questions generated during your play.'
                   }
                 />
               ) : (
