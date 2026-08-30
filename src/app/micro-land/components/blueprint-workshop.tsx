@@ -177,7 +177,7 @@ export function WorkshopPane() {
             */}
             {displayList.length === 0 && (
               <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
-                The roster is still waking up…
+                Loading roster…
               </p>
             )}
           </div>

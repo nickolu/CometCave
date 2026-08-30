@@ -91,7 +91,7 @@ export function WorldsPane({
   // The land the player asked the model for is a template too — it is the one
   // land they cannot get back any other way once they have left it.
   const templates = summonedLand
-    ? [...THEMES, { id: SUMMONED_THEME_ID, name: summonedLand, blurb: 'The land you asked for.' }]
+    ? [...THEMES, { id: SUMMONED_THEME_ID, name: summonedLand, blurb: 'Your generated world.' }]
     : THEMES
 
   // Through the same cleaner the server would apply, so a world is called the
@@ -110,8 +110,8 @@ export function WorldsPane({
         <h3 style={heading}>{active ? 'Saved as' : 'Save this world'}</h3>
         <p style={{ fontSize: 12, color: 'var(--cc-text-muted)' }}>
           {active
-            ? `${active.name} — everything you do here is written back on its own.`
-            : `${here}, ${total} alive. Give it a name and it will be waiting exactly like this.`}
+            ? `${active.name} — changes are saved automatically.`
+            : `${here}, ${total} alive. Name it to save the current state.`}
         </p>
         <div className="flex items-center gap-2">
           <label className="sr-only" htmlFor="micro-land-world-name">

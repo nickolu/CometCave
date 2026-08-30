@@ -259,7 +259,7 @@ export function Inspector({ onName }: { onName: (name: string) => boolean }) {
                 color: 'var(--cc-gold)',
               }}
             >
-              ✦ Oldest this land remembers
+              ✦ Oldest creature
             </div>
 
             {inspected.name ? null : naming ? (
