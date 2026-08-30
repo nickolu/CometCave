@@ -55,7 +55,7 @@ export default function WrongAnswersGalleryPage() {
         <ChunkyCard variant="surface-variant" className="w-full bg-surface-container/80 border-outline-variant">
           <ChunkyCardContent className="pt-6 pb-6 text-center">
             <p className="text-on-surface/50">
-              The cave has no wrong answers yet — play some trivia!
+              No wrong answers yet — play some trivia!
             </p>
           </ChunkyCardContent>
         </ChunkyCard>
