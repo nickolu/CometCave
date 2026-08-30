@@ -72,14 +72,13 @@ export function StarmatchSetup({
       {/* Brand */}
       <div className="text-center max-w-2xl">
         <Pill tone="info" icon="hub" className="mb-4">
-          Spot the twin
+          Match the symbol
         </Pill>
         <h1 className="font-headline text-headline-lg text-on-surface drop-shadow-[0_4px_0_var(--surface-container-lowest)]">
           Star<span className="text-ds-primary">match</span>
         </h1>
         <p className="mt-3 text-body-lg text-on-surface-variant">
-          Two star charts drift into view. Exactly one sign is shared between them — trace it before
-          anyone else and the point is yours.
+          Two star charts appear. One symbol is in both. Find it first and you score the point.
         </p>
       </div>
 
@@ -87,7 +86,7 @@ export function StarmatchSetup({
       <ChunkyCard variant="surface-variant" className="w-full max-w-2xl" cornerGlow="primary">
         <ChunkyCardContent className="pt-6 pb-6">
           <h2 className="font-label uppercase tracking-widest text-sm text-on-surface-variant mb-4 flex items-center gap-2">
-            Voyagers
+            Players
             <span className="text-ds-tertiary tabular-nums">({state.players.length})</span>
           </h2>
 
@@ -100,8 +99,8 @@ export function StarmatchSetup({
                 <button
                   type="button"
                   onClick={() => onCycleLook(p.id)}
-                  title="Change sigil & color"
-                  aria-label={`Change ${p.name}'s sigil and color`}
+                  title="Change symbol and color"
+                  aria-label={`Change ${p.name}'s symbol and color`}
                   className="flex-none grid place-items-center w-12 h-12 rounded-full text-2xl shadow-button-sm active:translate-y-[2px]"
                   style={{ backgroundColor: p.color, color: 'var(--sm-ink)' }}
                 >
@@ -114,7 +113,7 @@ export function StarmatchSetup({
                   type="text"
                   value={p.name}
                   maxLength={16}
-                  aria-label={`Voyager ${i + 1} name`}
+                  aria-label={`Player ${i + 1} name`}
                   onChange={(e) => onRenamePlayer(p.id, e.target.value)}
                   className="flex-1 min-w-0 bg-transparent border-0 outline-none text-on-surface font-body font-semibold text-lg focus:border-b-2 focus:border-ds-tertiary py-1"
                 />
@@ -146,7 +145,7 @@ export function StarmatchSetup({
                 </span>
               }
             >
-              Add voyager
+              Add player
             </ChunkyButton>
           )}
         </ChunkyCardContent>
@@ -157,7 +156,7 @@ export function StarmatchSetup({
         <ChunkyCardContent className="pt-6 pb-6 flex flex-col gap-6">
           <div>
             <div className="font-label uppercase tracking-widest text-xs text-on-surface-variant mb-2.5">
-              Chart density — signs per chart
+              Difficulty — symbols per chart
             </div>
             <div className="flex gap-2 flex-wrap">
               {DIFF_ORDER.map((key) => (
@@ -166,7 +165,7 @@ export function StarmatchSetup({
                   active={state.diff === key}
                   onClick={() => onSetDiff(key)}
                   title={DIFFS[key].label}
-                  sub={`${DIFFS[key].sym} signs`}
+                  sub={`${DIFFS[key].sym} symbols`}
                 />
               ))}
             </div>
@@ -201,13 +200,13 @@ export function StarmatchSetup({
           </span>
         }
       >
-        Open the charts
+        Start game
       </ChunkyButton>
 
       <p className="text-sm text-on-surface-variant/70 text-center max-w-lg">
         {solo
-          ? 'Solo drift — just trace the shared sign as fast as you can.'
-          : 'Buzz in with your number key (or tap your sigil), then trace the shared sign. A wrong trace sits you out for the round.'}
+          ? 'Solo mode — find the matching symbol as fast as you can.'
+          : 'Press your number key (or tap your symbol) to claim a round, then find the matching symbol. A wrong pick sits you out for that round.'}
       </p>
     </div>
   )

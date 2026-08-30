@@ -37,7 +37,7 @@ export function DailyLeaderboard() {
       <div>
         <p style={sectionHeader}>Today's leaderboard</p>
         <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: 0, fontStyle: 'italic' }}>
-          the cave is consulting the records…
+          Loading leaderboard...
         </p>
       </div>
     )
@@ -48,7 +48,7 @@ export function DailyLeaderboard() {
       <div>
         <p style={sectionHeader}>Today's leaderboard</p>
         <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: 0, fontStyle: 'italic' }}>
-          the leaderboard shimmers and fades
+          Couldn't load the leaderboard.
         </p>
       </div>
     )
@@ -61,7 +61,7 @@ export function DailyLeaderboard() {
       <div>
         <p style={sectionHeader}>Today's leaderboard</p>
         <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: 0, fontStyle: 'italic' }}>
-          no adventurers have crossed the threshold yet
+          No entries yet today.
         </p>
       </div>
     )

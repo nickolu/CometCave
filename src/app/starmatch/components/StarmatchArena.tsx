@@ -70,7 +70,7 @@ export function StarmatchArena({
               First to <b className="text-ds-tertiary">{state.target}</b>
             </>
           ) : (
-            'Endless drift'
+            'Endless'
           )}
         </div>
 
@@ -79,7 +79,7 @@ export function StarmatchArena({
             Reveal
           </ChunkyButton>
           <ChunkyButton variant="utility" size="sm" onClick={onNewPair} iconStart={<Icon name="shuffle" />}>
-            New pair
+            Next round
           </ChunkyButton>
           <ChunkyButton
             variant="ghost"

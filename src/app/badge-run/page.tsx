@@ -18,8 +18,8 @@ function BadgeRunInner() {
   if (alreadyPlayedToday && !run) {
     return (
       <NarratorScreen
-        headline="the cave remembers you"
-        body="you already faced the gauntlet today. the arena rests until tomorrow — but the stars never fully sleep."
+        headline="You already played today"
+        body="Come back tomorrow to play again."
         action={{ label: 'play again anyway', onClick: playAgain }}
       />
     )
@@ -28,8 +28,8 @@ function BadgeRunInner() {
   if (!run || run.phase === 'idle') {
     return (
       <NarratorScreen
-        headline="summoning the arena"
-        body="the constellations are aligning. your opponents are already waiting."
+        headline="Setting up your run..."
+        body="Loading..."
         dim
       />
     )

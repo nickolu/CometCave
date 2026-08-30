@@ -94,7 +94,7 @@ function AuthPageInner() {
         </div>
         <div className="text-center">
           <h1 className="font-headline text-headline-md text-on-surface">
-            {mode === 'signin' ? 'Trainer ID' : 'New Recruit'}
+            {mode === 'signin' ? 'Sign in' : 'Create account'}
           </h1>
           <p className="text-on-surface-variant text-sm mt-1">
             Save your trivia stats and compete on the leaderboard

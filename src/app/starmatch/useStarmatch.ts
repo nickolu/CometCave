@@ -61,7 +61,7 @@ export const TARGET_OPTIONS: { value: number; label: string }[] = [
   { value: 3, label: 'First to 3' },
   { value: 5, label: 'First to 5' },
   { value: 10, label: 'First to 10' },
-  { value: 0, label: 'Endless drift' },
+  { value: 0, label: 'Endless' },
 ]
 
 let PID = 0
@@ -78,7 +78,7 @@ function mkPlayer(name: string, idx: number): Player {
 function initialState(): StarmatchState {
   return {
     phase: 'setup',
-    players: [mkPlayer('Voyager 1', 0), mkPlayer('Voyager 2', 1)],
+    players: [mkPlayer('Player 1', 0), mkPlayer('Player 2', 1)],
     diff: 'medium',
     target: 5,
     muted: false,
@@ -100,13 +100,13 @@ function initialState(): StarmatchState {
 
 function computeBanner(s: StarmatchState): Banner {
   if (s.players.length === 1) {
-    return { text: 'Trace the sign both charts share.', kind: 'idle' }
+    return { text: 'Find the symbol that appears in both charts.', kind: 'idle' }
   }
   if (s.activeClaimer != null) {
     const p = s.players.find((x) => x.id === s.activeClaimer)
     if (p) return { text: `${p.glyph}  ${p.name} — spot it!`, kind: 'claim', color: p.color }
   }
-  return { text: 'Buzz in — press your number, or tap your sigil.', kind: 'idle' }
+  return { text: 'Press your number key or tap your symbol to claim the round.', kind: 'idle' }
 }
 
 export function useStarmatch(burst: (x: number, y: number, color?: string) => void) {
@@ -221,7 +221,7 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
     if (st.resolving) return
     st.resolving = true
     st.matchState = 'reveal'
-    st.banner = { text: 'The shared sign surfaces…', kind: 'idle' }
+    st.banner = { text: 'Revealing the match...', kind: 'idle' }
     setSnapshot({ ...s.current })
     roundTimer.current = setTimeout(nextRound, 1500)
   }, [nextRound])
@@ -232,7 +232,7 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
       if (st.resolving) return
       const multi = st.players.length > 1
       if (multi && st.activeClaimer == null) {
-        flashBanner('Buzz in first — press your number!', 'bad')
+        flashBanner('Press your player number first!', 'bad')
         return
       }
       const responder = st.activeClaimer
@@ -248,7 +248,7 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
         st.activeClaimer = null
         const alive = st.players.some((p) => !st.locked[p.id])
         if (!alive) {
-          st.banner = { text: 'Every voyager is lost — revealing…', kind: 'bad' }
+          st.banner = { text: 'All players out — revealing...', kind: 'bad' }
           setSnapshot({ ...s.current })
           roundTimer.current = setTimeout(reveal, 900)
         } else {
@@ -318,7 +318,7 @@ export function useStarmatch(burst: (x: number, y: number, color?: string) => vo
   const addPlayer = useCallback(() => {
     const st = s.current
     if (st.players.length >= MAX_PLAYERS) return
-    st.players = [...st.players, mkPlayer(`Voyager ${st.players.length + 1}`, st.players.length)]
+    st.players = [...st.players, mkPlayer(`Player ${st.players.length + 1}`, st.players.length)]
     setSnapshot({ ...s.current })
   }, [])
 
