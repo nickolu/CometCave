@@ -538,7 +538,7 @@ export function QuestionLibrary({ onBack }: QuestionLibraryProps) {
                   {hasLoaded && questions.length === 0 && !browseLoading && (
                     <p className="text-on-surface/50 text-sm">
                       {tab === 'mine'
-                        ? "You haven't generated any questions yet. Play infinite mode — each question the cave generates for you shows up here."
+                        ? "You haven't generated any questions yet. Play infinite mode — each question you generate shows up here."
                         : 'No questions found with these filters.'}
                     </p>
                   )}
