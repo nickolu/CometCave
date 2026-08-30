@@ -136,7 +136,7 @@ export function Creation({
           {pending ? 'Rolling up…' : 'Begin the story'}
         </ChunkyButton>
         <p className="text-sm text-on-surface-variant">
-          No account needed. The cave keeps your story either way.
+          No account needed. Your story is saved either way.
         </p>
       </div>
     </div>

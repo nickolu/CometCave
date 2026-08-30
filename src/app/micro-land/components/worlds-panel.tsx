@@ -153,7 +153,7 @@ export function WorldsPane({
           </p>
         )}
         {shelf.error && (
-          <p style={{ fontSize: 11, color: 'var(--cc-gold)' }}>The cave says: {shelf.error}</p>
+          <p style={{ fontSize: 11, color: 'var(--cc-gold)' }}>{shelf.error}</p>
         )}
       </section>
 
