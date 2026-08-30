@@ -33,7 +33,7 @@ export async function createCharacter(concept: string, premise: string): Promise
   })
 
   if (!response.ok) {
-    throw await errorFrom(response, 'The cave could not picture you. Try again.')
+    throw await errorFrom(response, 'Couldn\'t generate your character. Try again.')
   }
 
   const body = (await response.json()) as { character: Character }
