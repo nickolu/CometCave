@@ -3,6 +3,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+import { getLastAnteSeed } from '@/app/comet-cards/domain/daily/create-last-ante-run'
+import type { GameMode } from '@/app/comet-cards/domain/daily/types'
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import type { GamePhase, GameState } from '@/app/comet-cards/domain/game/types'
 import { getCurrentDayAsSeedStringPST } from '@/app/comet-cards/domain/randomness'
@@ -11,10 +13,20 @@ import { defaultGameState } from './domain/game/default-game-state'
 import { reduceGame } from './domain/game/reduce-game'
 
 interface StaleSessionData {
+  mode: GameMode
   gameSeed: string
   totalScore: bigint
   handsPlayed: number
   roundIndex: number
+}
+
+/**
+ * The seed a run of this mode would have today. The Last Ante runs on its own
+ * seed, so comparing every run against the bare date would treat a live Last
+ * Ante run as stale and throw it away on the next page load.
+ */
+function todaysSeedForMode(mode: GameMode): string {
+  return mode === 'lastAnte' ? getLastAnteSeed() : getCurrentDayAsSeedStringPST()
 }
 
 let _pendingStaleSession: StaleSessionData | null = null
@@ -84,9 +96,10 @@ export const useCometCardsStore = create<CometCardsStore>()(
           localStorage.removeItem(name)
         },
       },
-      version: 1,
+      version: 2,
       migrate: (persisted, version) => {
-        if (version === 0 || !persisted) return { game: defaultGameState }
+        // v2 added `mode` and `lastAnte`; anything older has neither.
+        if (version < 2 || !persisted) return { game: defaultGameState }
         return persisted as { game: GameState }
       },
       merge: (persisted, current) => {
@@ -96,12 +109,13 @@ export const useCometCardsStore = create<CometCardsStore>()(
         if (!persistedState.game) return current
 
         // If the persisted seed doesn't match today (PST), the session is stale
-        const todaySeed = getCurrentDayAsSeedStringPST()
-        if (persistedState.game.gameSeed !== todaySeed) {
+        const mode = persistedState.game.mode ?? 'endless'
+        if (persistedState.game.gameSeed !== todaysSeedForMode(mode)) {
           // If the player was mid-game, capture the session for score recording
           const phase = persistedState.game.gamePhase
           if (phase !== 'mainMenu' && phase !== 'gameOver') {
             _pendingStaleSession = {
+              mode,
               gameSeed: persistedState.game.gameSeed,
               totalScore: persistedState.game.totalScore,
               handsPlayed: persistedState.game.handsPlayed,

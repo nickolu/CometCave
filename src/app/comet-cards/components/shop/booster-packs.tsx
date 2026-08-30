@@ -47,10 +47,10 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
   const isCelestialPack = packDefinition.cardType === 'celestialCard'
   const hasAstronomer = game.jokers.some(j => j.jokerId === 'astronomer')
   const discountedPrice =
-    isCelestialPack && hasAstronomer
+    pack.isFree || (isCelestialPack && hasAstronomer)
       ? 0
       : Math.floor(packDefinition.price * game.shopState.priceMultiplier)
-  const canAffordPack = canAffordToBuy(discountedPrice, game)
+  const canAffordPack = pack.isFree || canAffordToBuy(discountedPrice, game)
   return (
     <div className="flex flex-col items-stretch gap-2">
       <TokenCard
@@ -65,7 +65,7 @@ function BoosterPackForSale({ pack }: { pack: PackState }) {
         disabled={!canAffordPack}
         onClick={() => eventEmitter.emit({ type: 'SHOP_OPEN_PACK', id: pack.id })}
       >
-        Open · ${discountedPrice}
+        {pack.isFree ? 'Open · Free' : `Open · $${discountedPrice}`}
       </PrimaryButton>
     </div>
   )

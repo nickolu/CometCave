@@ -149,7 +149,19 @@ export function removeOwnedCard(game: GameState, cardId: string): void {
  * @returns The IDs of cards that were dealt
  */
 export function dealCardsFromDrawPile(game: GameState, count: number): string[] {
-  const cardIdsToDeal = game.gamePlayState.drawPileIds.splice(0, count)
+  // A card cannot be in hand twice. Callers that rebuild the draw pile from the
+  // whole deck can otherwise deal a card the player is already holding, which
+  // surfaces as duplicate React keys and a card rendered twice.
+  const inHand = new Set(game.gamePlayState.handIds)
+  const cardIdsToDeal: string[] = []
+
+  while (cardIdsToDeal.length < count && game.gamePlayState.drawPileIds.length > 0) {
+    const cardId = game.gamePlayState.drawPileIds.shift()
+    if (!cardId || inHand.has(cardId)) continue
+    inHand.add(cardId)
+    cardIdsToDeal.push(cardId)
+  }
+
   game.gamePlayState.handIds.push(...cardIdsToDeal)
   return cardIdsToDeal
 }

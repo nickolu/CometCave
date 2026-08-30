@@ -1,4 +1,5 @@
 import { TarotCardState } from '@/app/comet-cards/domain/consumable/types'
+import type { RememberedHandId } from '@/app/comet-cards/domain/daily/types'
 import type { GameState, ScoreState } from '@/app/comet-cards/domain/game/types'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
 import type { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
@@ -64,7 +65,35 @@ export type GameEvent =
   | PackOpenSkipEvent
   | GiveUpEvent
   | ShopClosePackEvent
+  | StartLastAnteEvent
+  | OpeningConfirmedEvent
+  | MemoryAllocatedEvent
+  | DiscardsRememberedEvent
+  | MemoriesConfirmedEvent
 
+/** Begin a Last Ante run: the short daily. */
+export type StartLastAnteEvent = {
+  type: 'START_LAST_ANTE'
+}
+/** Done with the free opening packs — move on to the shop. */
+export type OpeningConfirmedEvent = {
+  type: 'OPENING_CONFIRMED'
+}
+/** Set how many times a hand type was played in the run the player never played. */
+export type MemoryAllocatedEvent = {
+  type: 'MEMORY_ALLOCATED'
+  handId: RememberedHandId
+  count: number
+}
+/** Set how many hands were thrown away in the run the player never played. */
+export type DiscardsRememberedEvent = {
+  type: 'DISCARDS_REMEMBERED'
+  count: number
+}
+/** Lock in the declared history and start the first blind. */
+export type MemoriesConfirmedEvent = {
+  type: 'MEMORIES_CONFIRMED'
+}
 export type ShopBuyCardEvent = {
   type: 'SHOP_BUY_CARD'
 }

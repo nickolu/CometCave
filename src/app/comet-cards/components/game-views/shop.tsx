@@ -27,6 +27,7 @@ import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
+import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { useGameState } from '@/app/comet-cards/useGameState'
 
 import { Modal } from '@/app/comet-cards/components/ui/modal'
@@ -40,8 +41,17 @@ export function ShopView() {
   const autoFocusRef = useAutoFocus()
   const { containerRef: cardsForSaleRef, handleKeyDown: handleCardsKeyDown, focusedIndexRef: cardsFocusedRef } = useGridKeyboardNav()
   const [showGiveUpModal, setShowGiveUpModal] = useState(false)
-  const { todayRun } = useRunHistory()
-  const isPractice = todayRun !== null
+  const { findTodayRun } = useRunHistory()
+  const isPractice = findTodayRun(game.mode) !== null
+
+  // Shop 0 on a Last Ante run is the draft: it is wider, it names the boss the
+  // player is drafting against, and leaving it opens the memory phase rather
+  // than a blind.
+  const isDraft = game.mode === 'lastAnte' && game.lastAnte?.draftResolved === false
+  const continueLabel = isDraft ? 'Continue → Memories' : 'Continue → Blind'
+  const boss = isDraft
+    ? bossBlinds.find(blind => blind.name === game.rounds[game.roundIndex].bossBlindName)
+    : undefined
   useEffect(() => {
     if (!game.shopState.isOpen) {
       eventEmitter.emit({ type: 'SHOP_OPEN' })
@@ -71,7 +81,7 @@ export function ShopView() {
             <PrimaryButton
               onClick={() => eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })}
             >
-              Continue → Blind
+              {continueLabel}
             </PrimaryButton>
             <DangerButton
               disabled={game.money < rerollPrice}
@@ -87,7 +97,7 @@ export function ShopView() {
                 style={{ width: '100%' }}
                 onClick={() => eventEmitter.emit({ type: 'SHOP_SELECT_BLIND' })}
               >
-                Continue → Blind
+                {continueLabel}
               </PrimaryButton>
               <DangerButton
                 style={{ width: '100%' }}
@@ -102,8 +112,48 @@ export function ShopView() {
       }
     >
       <div className="flex flex-col" ref={autoFocusRef} style={{ gap: 18 }}>
+        {boss && (
+          <div
+            style={{
+              border: '1px solid var(--cc-pink-border)',
+              background: 'var(--cc-pink-bg)',
+              borderRadius: 10,
+              padding: '14px 16px',
+            }}
+          >
+            <div
+              className="uppercase"
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 10,
+                letterSpacing: 2,
+                opacity: 0.6,
+              }}
+            >
+              Tonight you play
+            </div>
+            <div
+              style={{
+                fontFamily: 'var(--cc-font-mono)',
+                fontSize: 17,
+                fontWeight: 700,
+                color: 'var(--cc-pink)',
+                marginTop: 4,
+              }}
+            >
+              {boss.name}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.8, marginTop: 4, lineHeight: 1.45 }}>
+              {boss.description}
+            </div>
+            <div style={{ fontSize: 12, opacity: 0.55, marginTop: 10, lineHeight: 1.5 }}>
+              Buy the run you wish you had played. Whatever you leave this shop with is what your
+              memories will have been charging all along.
+            </div>
+          </div>
+        )}
         <Panel
-          title="Shop"
+          title={isDraft ? 'The Draft' : 'Shop'}
           subtitle={`$${game.money} on hand`}
         >
           <div className="flex flex-col" style={{ padding: 16, gap: 18 }}>

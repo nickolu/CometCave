@@ -2,9 +2,15 @@
 
 import { useCallback, useSyncExternalStore } from 'react'
 
+import type { GameMode } from '@/app/comet-cards/domain/daily/types'
 import { getTodayPST } from '@/lib/dates'
 
 export interface RunSummary {
+  /**
+   * Which daily this run was. Absent on runs recorded before The Last Ante
+   * existed, which were all full runs.
+   */
+  mode?: GameMode
   seed: string
   date: string           // ISO date string (YYYY-MM-DD)
   totalScore: string     // bigint stored as string for JSON safety
@@ -69,7 +75,15 @@ export function useRunHistory() {
   const history = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   const today = typeof window !== 'undefined' ? getTodayPST() : ''
-  const todayRun = history.runs.find(r => r.date === today) ?? null
+
+  const findTodayRun = useCallback(
+    (mode: GameMode) =>
+      history.runs.find(run => run.date === today && (run.mode ?? 'endless') === mode) ?? null,
+    [history.runs, today]
+  )
+
+  const todayRun = findTodayRun('endless')
+  const todayLastAnteRun = findTodayRun('lastAnte')
 
   const addRun = useCallback((run: RunSummary) => {
     const current = readFromStorage()
@@ -88,5 +102,5 @@ export function useRunHistory() {
     emitChange()
   }, [])
 
-  return { history, todayRun, addRun }
+  return { history, todayRun, todayLastAnteRun, findTodayRun, addRun }
 }

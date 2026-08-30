@@ -25,9 +25,9 @@ import {
   uuid,
 } from '@/app/comet-cards/domain/randomness'
 import { getInProgressBlind } from '@/app/comet-cards/domain/round/blinds'
+import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { getRandomTarotCards } from '@/app/comet-cards/domain/shop/utils'
 import { initializeTag } from '@/app/comet-cards/domain/tag/utils'
-import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { getRandomVoucherType } from '@/app/comet-cards/domain/voucher/utils'
 
 export function handleCardSelected(draft: GameState, event: CardSelectedEvent) {
@@ -367,6 +367,16 @@ export function handleHandScoringDoneCardScoring(draft: GameState) {
     currentBlind.additionalRewards.reduce((acc, reward) => acc + reward[1], 0)
   draft.money += totalReward
   currentBlind.status = 'completed'
+
+  // The Last Ante is one round. Beating its boss ends the run rather than
+  // opening a shop for a round that does not exist.
+  if (draft.mode === 'lastAnte' && currentBlind.type === 'bossBlind') {
+    if (draft.lastAnte) draft.lastAnte.outcome = 'won'
+    draft.gamePhase = 'gameOver'
+    draft.gamePlayState.isScoring = false
+    return
+  }
+
   draft.gamePhase = 'shop'
   // Only generate a new voucher after completing the small blind (start of new round)
   if (currentBlind.type === 'smallBlind') {

@@ -159,6 +159,7 @@ export function handleHandScoringEnd(draft: Draft<GameState>, event: GameEvent) 
       resetScoreForNextHand(draft.gamePlayState, playedHand)
       return
     }
+    if (draft.lastAnte) draft.lastAnte.outcome = 'lost'
     draft.gamePhase = 'gameOver'
     draft.gamePlayState.isScoring = false
     return

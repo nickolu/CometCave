@@ -1,5 +1,6 @@
 'use client'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+
 import { CosmicShell } from './components/cosmic/shell'
 import { BlindRewardsView } from './components/game-views/blind-rewards'
 import { BlindSelectionView } from './components/game-views/blind-selection'
@@ -10,6 +11,8 @@ import { GamePlayView } from './components/game-views/gameplay'
 import { HowToPlayView } from './components/game-views/how-to-play'
 import { JokersView } from './components/game-views/jokers'
 import { MainMenuView } from './components/game-views/main-menu'
+import { MemoriesView } from './components/game-views/memories'
+import { OpeningView } from './components/game-views/opening'
 import { PackOpenView } from './components/game-views/pack-open'
 import { ShopView } from './components/game-views/shop'
 import { SpectralCardsView } from './components/game-views/spectral-cards'
@@ -43,6 +46,10 @@ function PhaseView() {
   switch (game.gamePhase) {
     case 'mainMenu':
       view = <MainMenuView />; break
+    case 'memories':
+      view = <MemoriesView />; break
+    case 'opening':
+      view = <OpeningView />; break
     case 'shop':
       view = <ShopView />; break
     case 'blindSelection':

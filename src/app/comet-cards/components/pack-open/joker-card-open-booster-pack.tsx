@@ -1,14 +1,15 @@
 'use client'
 
+import { type Variants, motion, useReducedMotion } from 'framer-motion'
+
 import { CurrentConsumables } from '@/app/comet-cards/components/consumables/current-consumables'
 import { CurrentJokers } from '@/app/comet-cards/components/joker/current-jokers'
 import { BuyableCard } from '@/app/comet-cards/components/shop/buyable-card'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useGridKeyboardNav } from '@/app/comet-cards/hooks/useGridKeyboardNav'
+import { packPrompt, usePackCompletion } from '@/app/comet-cards/hooks/usePackCompletion'
 import { useGameState } from '@/app/comet-cards/useGameState'
 import { Button } from '@/components/ui/button'
-import { type Variants, motion, useReducedMotion } from 'framer-motion'
-import { useEffect } from 'react'
 
 const containerVariants = {
   hidden: {},
@@ -32,14 +33,7 @@ export function JokerCardOpenBoosterPack() {
 
   const remainingCardsToSelect = game.shopState.openPackState?.remainingCardsToSelect
 
-  useEffect(() => {
-    if (remainingCardsToSelect === 0) {
-      const timer = setTimeout(() => {
-        eventEmitter.emit({ type: 'SHOP_CLOSE_PACK' })
-      }, 1200)
-      return () => clearTimeout(timer)
-    }
-  }, [remainingCardsToSelect])
+  const { isSpent, spentProps } = usePackCompletion(remainingCardsToSelect)
 
   if (!game.shopState.openPackState) return <div>No pack open</div>
   const cardsForSale = game.shopState.openPackState.cards
@@ -65,8 +59,7 @@ export function JokerCardOpenBoosterPack() {
       <div className="flex">
         <div className="flex flex-col gap-2 w-3/4">
           <h2 className="text-xl font-bold">
-            Select {game.shopState.openPackState.remainingCardsToSelect} joker
-            {game.shopState.openPackState.remainingCardsToSelect > 1 ? 's' : ''}
+            {packPrompt('Select', remainingCardsToSelect, 'joker')}
           </h2>
           <motion.div
             ref={containerRef}
@@ -76,8 +69,8 @@ export function JokerCardOpenBoosterPack() {
             variants={containerVariants}
             initial={reducedMotion ? false : 'hidden'}
             animate="visible"
-            onKeyDown={handleKeyDown}
-            style={{ pointerEvents: remainingCardsToSelect === 0 ? 'none' : 'auto' }}
+            onKeyDown={isSpent ? undefined : handleKeyDown}
+            {...spentProps}
           >
             {cardsForSale.map((buyableCard, i) => (
               <motion.div key={buyableCard.card.id} variants={itemVariants} className="flex flex-col gap-2">

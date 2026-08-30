@@ -27,7 +27,7 @@ import {
   addOwnedCard,
   dealCardsFromDrawPile,
 } from '@/app/comet-cards/domain/game/card-registry-utils'
-import { HAND_SIZE } from '@/app/comet-cards/domain/game/constants'
+import { HAND_SIZE, SHOP_CARDS_FOR_SALE } from '@/app/comet-cards/domain/game/constants'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import {
   collectEffects,
@@ -46,10 +46,10 @@ import { VOUCHER_PRICE } from '@/app/comet-cards/domain/voucher/constants'
 import { initializeVoucherState } from '@/app/comet-cards/domain/voucher/utils'
 import { vouchers } from '@/app/comet-cards/domain/voucher/vouchers'
 
-export function handleShopOpen(draft: GameState, event: GameEvent) {
+export function handleShopOpen(draft: GameState, event: GameEvent, packCount: number = 2) {
   draft.shopState.isOpen = true
   draft.shopState.cardsForSale = []
-  draft.shopState.packsForSale = getRandomPacks(draft, 2)
+  draft.shopState.packsForSale = getRandomPacks(draft, packCount)
 
   // Dispatch tag/voucher/joker effects after initializing packs so effects
   // that add packs (Meteor, Buffoon tags) or guaranteed cards can append
@@ -103,6 +103,17 @@ export function handleShopOpen(draft: GameState, event: GameEvent) {
 
 export function handleShopSelectBlind(draft: GameState) {
   draft.shopState.isOpen = false
+
+  // Leaving Shop 0 on a Last Ante run does not start a blind — it opens the
+  // memory phase. Memories charge jokers the player already owns, so the draft
+  // has to be fully settled before history can be written onto it.
+  if (draft.mode === 'lastAnte' && draft.lastAnte && !draft.lastAnte.memoriesResolved) {
+    draft.lastAnte.draftResolved = true
+    draft.shopState.maxCardsForSale = SHOP_CARDS_FOR_SALE
+    draft.gamePhase = 'memories'
+    return
+  }
+
   draft.gamePhase = 'blindSelection'
   populateTags(draft)
 }
@@ -119,7 +130,10 @@ export function handleShopSelectPlayingCardFromPack(
   addOwnedCard(draft as unknown as GameState, card.card)
   if (!draft.shopState.openPackState) return
 
-  draft.shopState.openPackState.remainingCardsToSelect -= 1
+  // Take the card off the shelf. Every other pack path does this; without it a
+  // mega pack (choose 2) lets the same card be chosen twice, which pushes one
+  // id into the deck twice.
+  removeCardFromPack(draft.shopState.openPackState, id)
   // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
   // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
 }
@@ -133,6 +147,9 @@ export function handleShopSelectJokerFromPack(
   const buyableCard = draft.shopState.openPackState?.cards.find(card => card.card.id === id)
   if (!buyableCard) return
   if (!isJokerState(buyableCard.card)) return
+  // Joker slots are finite. Nothing else on this path was checking, which only
+  // went unnoticed because buying from a pack used to be rare.
+  if (draft.jokers.length >= draft.maxJokers) return
 
   // Add the joker to the player's jokers
   draft.jokers.push(buyableCard.card)
@@ -344,7 +361,7 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
   // Astronomer joker: celestial packs are free
   const isCelestialPack = packDefinition.cardType === 'celestialCard'
   const hasAstronomer = draft.jokers.some(j => j.jokerId === 'astronomer')
-  if (!(isCelestialPack && hasAstronomer)) {
+  if (!pack.isFree && !(isCelestialPack && hasAstronomer)) {
     draft.money -= Math.floor(packDefinition.price * draft.shopState.priceMultiplier)
   }
   draft.shopState.packsForSale = draft.shopState.packsForSale.filter(pack => pack.id !== id)
@@ -352,22 +369,24 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
   draft.shopState.openPackState = pack
   const nextBlind = getNextBlind(draft)
 
-  if (packDefinition.cardType === 'tarotCard') {
-    const seed = buildSeedString([
-      draft.gameSeed,
-      draft.roundIndex.toString(),
-      draft.shopState.rerollsUsed.toString(),
-      nextBlind?.type.toString() ?? '0',
-      'tarotCardOpenPack',
-    ])
-    draft.gamePlayState.drawPileIds = shuffleCardIds({
-      cardIds: draft.ownedCardIds,
-      seed: seed,
-      iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
-    })
-    dealCardsFromDrawPile(draft, HAND_SIZE + draft.handSizeModifier)
-  }
-  if (packDefinition.cardType === 'spectralCard') {
+  // Tarot and Spectral packs need cards in hand to act on, so they deal a
+  // fresh hand off the whole deck.
+  //
+  // The hand has to be emptied first. Without that, opening a second such pack
+  // deals eight more cards on top of the eight already there — and since the
+  // draw pile was just rebuilt from every owned card, the cards still in hand
+  // are dealt again. React then sees two children with the same key and the
+  // player sees the same card twice.
+  //
+  // The pack's own id goes into the seed for the same reason: two packs opened
+  // in the same shop otherwise share every seed input and deal the identical
+  // eight cards, which makes a run of Arcana packs pointless as well as buggy.
+  const dealsAHand =
+    packDefinition.cardType === 'tarotCard' || packDefinition.cardType === 'spectralCard'
+
+  if (dealsAHand) {
+    draft.gamePlayState.handIds = []
+    draft.gamePlayState.selectedCardIds = []
     draft.gamePlayState.drawPileIds = shuffleCardIds({
       cardIds: draft.ownedCardIds,
       seed: buildSeedString([
@@ -375,7 +394,8 @@ export function handleShopOpenPack(draft: GameState, event: ShopOpenPackEvent) {
         draft.roundIndex.toString(),
         draft.shopState.rerollsUsed.toString(),
         nextBlind?.type.toString() ?? '0',
-        'spectralCardOpenPack',
+        pack.id,
+        `${packDefinition.cardType}OpenPack`,
       ]),
       iteration: draft.roundIndex + blindIndices[nextBlind?.type ?? 'smallBlind'],
     })
