@@ -1,7 +1,6 @@
+import { generateStartingTarotCards } from '@/app/comet-cards/domain/decks/deck-consumables'
 import { decks, initialDeckStates } from '@/app/comet-cards/domain/decks/decks'
 import { DeckDefinition } from '@/app/comet-cards/domain/decks/types'
-import { spectralCards } from '@/app/comet-cards/domain/spectral/spectal-cards'
-import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 import {
   fiveOfAKindHand,
   flushFiveHand,
@@ -19,9 +18,11 @@ import {
 import { initializeHand } from '@/app/comet-cards/domain/hand/utils'
 import { getCurrentDayAsSeedStringPST } from '@/app/comet-cards/domain/randomness'
 import { initializeRounds } from '@/app/comet-cards/domain/round/rounds'
-import { generateStartingTarotCards } from '@/app/comet-cards/domain/decks/deck-consumables'
+import { spectralCards } from '@/app/comet-cards/domain/spectral/spectal-cards'
+import { initializeSpectralCard } from '@/app/comet-cards/domain/spectral/utils'
 import { applyStartingVouchers } from '@/app/comet-cards/domain/voucher/deck-vouchers'
 
+import { SHOP_CARDS_FOR_SALE } from './constants'
 import { GameState } from './types'
 
 const gameSeed = getCurrentDayAsSeedStringPST()
@@ -57,6 +58,8 @@ const gameState: GameState = {
   },
   gameSeed: gameSeed,
   handsPlayed: 0,
+  mode: 'endless',
+  lastAnte: null,
   selectedDeck: 'pokerDeck',
   jokers: [],
   maxConsumables: 2,
@@ -90,7 +93,7 @@ const gameState: GameState = {
     cardsForSale: [],
     celestialMultiplier: 1,
     guaranteedForSaleItems: [],
-    maxCardsForSale: 2,
+    maxCardsForSale: SHOP_CARDS_FOR_SALE,
     maxVouchersForSale: 0,
     openPackState: null,
     packsForSale: [],

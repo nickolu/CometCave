@@ -11,6 +11,8 @@ import { useGameState } from '@/app/comet-cards/useGameState'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
 import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
+import { calculateAnte, getBlindDefinition } from '@/app/comet-cards/domain/game/utils'
+import { getTodayPST } from '@/lib/dates'
 
 import { ViewTemplate } from './view-template'
 
@@ -51,13 +53,34 @@ export function GameOverView() {
   const { game } = useGameState()
   const [hasCopied, setHasCopied] = useState(false)
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const { addRun, todayRun } = useRunHistory()
+  const { addRun, findTodayRun } = useRunHistory()
   const reducedMotion = useReducedMotion()
 
-  const totalRounds = 8
-  const roundsCompleted = Math.max(0, Math.min(totalRounds, game.roundIndex - 1))
-  const didWin = roundsCompleted >= totalRounds
-  const isPractice = todayRun !== null
+  const isLastAnte = game.mode === 'lastAnte'
+
+  const totalRounds = isLastAnte ? 1 : 8
+  const didWin = isLastAnte
+    ? game.lastAnte?.outcome === 'won'
+    : game.roundIndex - 1 >= totalRounds
+  const roundsCompleted = isLastAnte
+    ? didWin
+      ? 1
+      : 0
+    : Math.max(0, Math.min(totalRounds, game.roundIndex - 1))
+  const isPractice = findTodayRun(game.mode) !== null
+
+  /**
+   * The Last Ante is scored on overkill, not on pass/fail. Everyone who clears
+   * the boss gets a number that is comparable to everyone else's — same seed,
+   * same deck, same boss — which is the part worth arguing about.
+   */
+  const overkill = useMemo(() => {
+    if (!isLastAnte || !didWin) return null
+    const round = game.rounds[game.roundIndex]
+    const bossScore = round.bossBlind.score
+    const target = calculateAnte(round.baseAnte, getBlindDefinition('bossBlind', round).anteMultiplier)
+    return bossScore - target
+  }, [didWin, game.rounds, game.roundIndex, isLastAnte])
 
   useEffect(() => () => { clearTimeout(copiedTimerRef.current) }, [])
   const hasSaved = useRef(false)
@@ -65,11 +88,13 @@ export function GameOverView() {
     if (hasSaved.current || isPractice) return
     hasSaved.current = true
     addRun({
+      mode: game.mode,
       seed: game.gameSeed,
-      date: new Date().toISOString().split('T')[0],
+      // PST, to match how `todayRun` looks a run up.
+      date: getTodayPST(),
       totalScore: game.totalScore.toString(),
       handsPlayed: game.handsPlayed,
-      roundsCompleted: Math.max(0, Math.min(totalRounds, game.roundIndex - 1)),
+      roundsCompleted,
       totalRounds,
       won: didWin,
     })
@@ -77,6 +102,18 @@ export function GameOverView() {
 
   const shareText = useMemo(() => {
     const link = 'https://cometcave.com/comet-cards'
+    if (isLastAnte) {
+      const lines = [
+        didWin ? 'Comet Cards — The Last Ante ✅' : 'Comet Cards — The Last Ante ❌',
+        '',
+        didWin ? `Overkill: ${overkill?.toString()}` : `Fell short at ${game.totalScore.toString()}`,
+        `Hands Played: ${game.handsPlayed}`,
+      ]
+      if (game.gameSeed) lines.push('', `Seed: ${game.gameSeed}`)
+      lines.push('', `Play: ${link}`)
+      return lines.join('\n')
+    }
+
     const progressBar =
       '🟩 '.repeat(roundsCompleted) + '🟥 '.repeat(Math.max(0, totalRounds - roundsCompleted))
     const lines = [
@@ -90,7 +127,7 @@ export function GameOverView() {
     if (game.gameSeed) lines.push('', `Seed: ${game.gameSeed}`)
     lines.push('', `Play: ${link}`)
     return lines.join('\n')
-  }, [didWin, game.handsPlayed, game.gameSeed, game.totalScore, roundsCompleted, totalRounds])
+  }, [didWin, game.handsPlayed, game.gameSeed, game.totalScore, isLastAnte, overkill, roundsCompleted, totalRounds])
 
   const onShare = useCallback(async () => {
     if (navigator.share) {
@@ -115,7 +152,13 @@ export function GameOverView() {
   const isLandscape = useLandscapeMobile()
   const accent = didWin ? 'var(--cc-mint)' : 'var(--cc-pink)'
   const eyebrow = isPractice ? 'Practice Run' : didWin ? 'Victory' : 'Run Ended'
-  const headline = didWin ? 'The cave aligns.' : 'The cave goes quiet.'
+  const headline = isLastAnte
+    ? didWin
+      ? 'You talked your way out.'
+      : 'The table keeps you.'
+    : didWin
+      ? 'The cave aligns.'
+      : 'The cave goes quiet.'
 
   return (
     <ViewTemplate>
@@ -163,7 +206,7 @@ export function GameOverView() {
                   marginTop: 8,
                 }}
               >
-                Total Score
+                {overkill !== null ? 'Overkill' : 'Total Score'}
               </div>
             </FadeUp>
             <motion.div
@@ -181,7 +224,7 @@ export function GameOverView() {
                   textShadow: '0 0 60px rgba(94,234,212,0.3)',
                 }}
               >
-                {game.totalScore.toString()}
+                {(overkill ?? game.totalScore).toString()}
               </div>
             </motion.div>
             <FadeUp delay={0.6}>

@@ -31,7 +31,9 @@
     "voice:dicebound": "tsx --env-file-if-exists=.env.local scripts/dicebound-voice-check.ts",
     "damage:dicebound": "tsx --env-file-if-exists=.env.local scripts/dicebound-damage-check.ts",
     "migrate:daily-trivia": "tsx --env-file=.env.local scripts/migrate-daily-trivia-to-firestore.ts",
-    "hp:badge-run": "tsx scripts/badge-run-hp-sim.ts"
+    "hp:badge-run": "tsx scripts/badge-run-hp-sim.ts",
+    "sim:last-ante": "tsx scripts/comet-cards-last-ante-sim.ts",
+    "audit:last-ante": "tsx scripts/comet-cards-memory-audit.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.12",

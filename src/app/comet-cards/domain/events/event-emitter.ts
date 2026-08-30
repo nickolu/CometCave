@@ -3,6 +3,11 @@ import { GameEvent } from '@/app/comet-cards/domain/events/types'
 class EventEmitter {
   private events: Record<GameEvent['type'], Array<(event: GameEvent) => void>> = {
     BIG_BLIND_SELECTED: [],
+    START_LAST_ANTE: [],
+    OPENING_CONFIRMED: [],
+    MEMORY_ALLOCATED: [],
+    DISCARDS_REMEMBERED: [],
+    MEMORIES_CONFIRMED: [],
     BLIND_SKIPPED: [],
     BLIND_REWARDS_END: [],
     BLIND_REWARDS_START: [],

@@ -53,6 +53,8 @@ export interface PackState {
   cards: BuyableCard[]
   rarity: 'jumbo' | 'normal' | 'mega'
   remainingCardsToSelect: number
+  /** Packs handed out in The Last Ante's opening phase cost nothing. */
+  isFree?: boolean
 }
 export interface BuyableCard {
   type: 'celestialCard' | 'tarotCard' | 'jokerCard' | 'playingCard' | 'spectralCard'

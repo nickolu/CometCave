@@ -1,13 +1,15 @@
 import { produce } from 'immer'
 
+import { createLastAnteRun } from '@/app/comet-cards/domain/daily/create-last-ante-run'
 import { dispatchEffects } from '@/app/comet-cards/domain/events/dispatch-effects'
 import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 import { dealCardsFromDrawPile } from '@/app/comet-cards/domain/game/card-registry-utils'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 
-import { createGameStateWithDeck } from './default-game-state'
+
 import { HAND_SIZE } from './constants'
+import { createGameStateWithDeck } from './default-game-state'
 import { handleHandScoringEnd } from './handlers'
 import {
   handleBigBlindSelected,
@@ -28,6 +30,13 @@ import {
   handleHandScoringDoneCardScoring,
   handleHandScoringStart,
 } from './handlers/gameplay'
+import {
+  handleDiscardsRemembered,
+  handleLastAnteStart,
+  handleMemoriesConfirmed,
+  handleMemoryAllocated,
+  handleOpeningConfirmed,
+} from './handlers/last-ante'
 import { handleGameStart } from './handlers/navigation'
 import {
   handleShopBuyAndUseCard,
@@ -47,6 +56,15 @@ import { collectEffects, getEffectContext, removeJoker } from './utils'
 
 import type { GameState } from './types'
 
+/**
+ * Where closing a pack lands you. During The Last Ante's opening phase the
+ * player is working through a shelf of free packs, so they go back to the
+ * shelf rather than into a shop that has not opened yet.
+ */
+function phaseAfterPack(draft: { mode: GameState['mode']; lastAnte: GameState['lastAnte'] }): GameState['gamePhase'] {
+  return draft.mode === 'lastAnte' && draft.lastAnte?.openingResolved === false ? 'opening' : 'shop'
+}
+
 export function reduceGame(game: GameState, event: GameEvent): GameState {
   return produce(game, draft => {
     switch (event.type) {
@@ -60,6 +78,32 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         handleGameStart(draft, event)
         return
       }
+      /*
+       * THE LAST ANTE — the short daily
+       */
+
+      case 'START_LAST_ANTE': {
+        Object.assign(draft, structuredClone(createLastAnteRun()))
+        handleLastAnteStart(draft)
+        return
+      }
+      case 'OPENING_CONFIRMED': {
+        handleOpeningConfirmed(draft, event)
+        return
+      }
+      case 'MEMORY_ALLOCATED': {
+        handleMemoryAllocated(draft, event)
+        return
+      }
+      case 'DISCARDS_REMEMBERED': {
+        handleDiscardsRemembered(draft, event)
+        return
+      }
+      case 'MEMORIES_CONFIRMED': {
+        handleMemoriesConfirmed(draft)
+        return
+      }
+
       case 'BACK_TO_MAIN_MENU': {
         draft.gamePhase = 'mainMenu'
         return
@@ -254,14 +298,14 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
       }
       case 'PACK_OPEN_SKIP': {
         if (!draft.shopState.openPackState) return
-        draft.gamePhase = 'shop'
+        draft.gamePhase = phaseAfterPack(draft)
         draft.shopState.openPackState = null
         const packSkipCtx = getEffectContext(draft, event)
         dispatchEffects(event, packSkipCtx, collectEffects(packSkipCtx.game))
         return
       }
       case 'SHOP_CLOSE_PACK': {
-        draft.gamePhase = 'shop'
+        draft.gamePhase = phaseAfterPack(draft)
         draft.shopState.openPackState = null
         return
       }

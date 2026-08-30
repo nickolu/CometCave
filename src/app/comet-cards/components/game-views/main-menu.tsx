@@ -9,7 +9,8 @@ import { useAutoFocus } from '@/app/comet-cards/hooks/useAutoFocus'
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { useLandscapeMobile } from '@/app/comet-cards/hooks/useLandscapeMobile'
-import { useRunHistory } from '@/app/comet-cards/hooks/useRunHistory'
+import { useRunHistory, type RunSummary } from '@/app/comet-cards/hooks/useRunHistory'
+import type { GameEvent } from '@/app/comet-cards/domain/events/types'
 
 const REFERENCE_BUTTONS = [
   { event: 'DISPLAY_JOKERS', label: 'Jokers' },
@@ -21,9 +22,116 @@ const REFERENCE_BUTTONS = [
   { event: 'DISPLAY_SPECTRAL_CARDS', label: 'Spectral Cards' },
 ] as const
 
+/**
+ * One of the two dailies. The card doubles as a status board — principle 3 says
+ * the regular should learn something from the tap they were going to make
+ * anyway, so each card says where today stands before they choose.
+ */
+function ModeCard({
+  name,
+  tagline,
+  meta,
+  event,
+  todaysRun,
+}: {
+  name: string
+  tagline: string
+  meta: string
+  event: GameEvent
+  todaysRun: RunSummary | null
+}) {
+  const played = todaysRun !== null
+
+  return (
+    <div
+      className="flex flex-col"
+      style={{
+        border: '1px solid var(--cc-panel-border)',
+        background: 'linear-gradient(180deg, var(--cc-panel-grad-from), var(--cc-panel-grad-to))',
+        borderRadius: 10,
+        padding: 16,
+        gap: 10,
+        textAlign: 'left',
+      }}
+    >
+      <div className="flex items-baseline justify-between gap-2">
+        <div
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 13,
+            fontWeight: 700,
+            letterSpacing: 1,
+            color: 'var(--cc-mint)',
+          }}
+        >
+          {name}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 10,
+            opacity: 0.45,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {meta}
+        </div>
+      </div>
+
+      <div style={{ fontSize: 12, opacity: 0.6, lineHeight: 1.5, flex: '1 1 auto' }}>{tagline}</div>
+
+      {played ? (
+        <div
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 11,
+            color: todaysRun.won ? 'var(--cc-mint)' : 'var(--cc-pink)',
+          }}
+        >
+          {todaysRun.won ? 'Cleared' : 'Fell'} · {todaysRun.totalScore}
+        </div>
+      ) : (
+        <div style={{ fontFamily: 'var(--cc-font-mono)', fontSize: 11, opacity: 0.4 }}>
+          Not played today
+        </div>
+      )}
+
+      {played ? (
+        <GhostButton
+          style={{ fontSize: 11, letterSpacing: 1.5 }}
+          onClick={() => eventEmitter.emit(event)}
+        >
+          Play Again
+        </GhostButton>
+      ) : (
+        <PrimaryButton
+          style={{ fontSize: 12, letterSpacing: 2 }}
+          onClick={() => eventEmitter.emit(event)}
+        >
+          Play
+        </PrimaryButton>
+      )}
+
+      {played && (
+        <div
+          style={{
+            fontFamily: 'var(--cc-font-mono)',
+            fontSize: 9,
+            letterSpacing: 1.2,
+            textTransform: 'uppercase',
+            opacity: 0.3,
+          }}
+        >
+          Practice — score won't be recorded
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function MainMenuView() {
   const isLandscape = useLandscapeMobile()
-  const { history, todayRun } = useRunHistory()
+  const { history, todayRun, todayLastAnteRun } = useRunHistory()
   const [showHistory, setShowHistory] = useState(false)
   const autoFocusRef = useAutoFocus()
   return (
@@ -64,94 +172,42 @@ export function MainMenuView() {
       >
         Daily Cards
       </h1>
-      {todayRun ? (
-        <>
-          <p
-            style={{
-              fontSize: 14,
-              opacity: 0.65,
-              maxWidth: 460,
-              lineHeight: 1.55,
-              margin: 0,
-              fontStyle: 'italic',
-            }}
-          >
-            Today's path is walked. Play again to practice — your recorded score won't change.
-          </p>
-          <div
-            className="flex flex-col items-center"
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                fontSize: 11,
-                letterSpacing: 2,
-                textTransform: 'uppercase',
-                opacity: 0.45,
-              }}
-            >
-              Today's Score
-            </div>
-            <div
-              style={{
-                fontSize: 32,
-                fontWeight: 200,
-                letterSpacing: -1,
-                color: todayRun.won ? 'var(--cc-mint)' : 'var(--cc-pink)',
-                textShadow: todayRun.won
-                  ? '0 0 40px rgba(94,234,212,0.3)'
-                  : '0 0 40px rgba(255,107,157,0.3)',
-              }}
-            >
-              {todayRun.totalScore}
-            </div>
-            <div style={{ fontSize: 11, opacity: 0.5 }}>
-              {todayRun.won ? 'Victory' : 'Defeated'} · {todayRun.roundsCompleted}/{todayRun.totalRounds} rounds · {todayRun.handsPlayed} hands
-            </div>
-          </div>
-          <GhostButton
-            style={{ padding: '10px 24px', fontSize: 12, letterSpacing: 2 }}
-            onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
-          >
-            Play Again
-          </GhostButton>
-          <div
-            style={{
-              fontFamily: 'var(--cc-font-mono)',
-              fontSize: 9,
-              letterSpacing: 1.5,
-              textTransform: 'uppercase',
-              opacity: 0.35,
-              marginTop: -12,
-            }}
-          >
-            Practice run — score won't be recorded
-          </div>
-        </>
-      ) : (
-        <>
-          <p
-            style={{
-              fontSize: 14,
-              opacity: 0.65,
-              maxWidth: 460,
-              lineHeight: 1.55,
-              margin: 0,
-            }}
-          >
-            A new run, every day. Stack chips, multiply, and bend the rules with jokers.
-          </p>
-          <PrimaryButton
-            style={{ padding: '14px 32px', fontSize: 13, letterSpacing: 3 }}
-            onClick={() => eventEmitter.emit({ type: 'GAME_START' })}
-          >
-            Start Run
-          </PrimaryButton>
-        </>
-      )}
+      <p
+        style={{
+          fontSize: 14,
+          opacity: 0.65,
+          maxWidth: 460,
+          lineHeight: 1.55,
+          margin: 0,
+        }}
+      >
+        Two tables, both dealt fresh at midnight. Take the long way down, or arrive at the end and
+        talk your way out of it.
+      </p>
+
+      <div
+        className="grid w-full"
+        style={{
+          gridTemplateColumns: isLandscape ? '1fr 1fr' : 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 12,
+          maxWidth: 560,
+        }}
+      >
+        <ModeCard
+          name="The Last Ante"
+          tagline="One round. Four minutes. You start at the end."
+          meta="~4 min"
+          event={{ type: 'START_LAST_ANTE' }}
+          todaysRun={todayLastAnteRun}
+        />
+        <ModeCard
+          name="The Long Fall"
+          tagline="Eight rounds from nothing. The full descent."
+          meta="~30 min"
+          event={{ type: 'GAME_START' }}
+          todaysRun={todayRun}
+        />
+      </div>
 
       {history.runs.length === 0 && (
         <div

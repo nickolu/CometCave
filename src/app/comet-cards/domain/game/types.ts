@@ -2,6 +2,7 @@ import type {
   CelestialCardState,
   TarotCardState,
 } from '@/app/comet-cards/domain/consumable/types'
+import type { GameMode, LastAnteState } from '@/app/comet-cards/domain/daily/types'
 import type { PokerHandDefinition, PokerHandsState } from '@/app/comet-cards/domain/hand/types'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
 import type { PlayingCardState } from '@/app/comet-cards/domain/playing-card/types'
@@ -23,6 +24,12 @@ export interface GameState {
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
   gameSeed: string
   handsPlayed: number
+
+  /** Which daily this is: the full run, or The Last Ante. */
+  mode: GameMode
+  /** Only populated on a Last Ante run. */
+  lastAnte: LastAnteState | null
+
   selectedDeck: string
   jokers: JokerState[]
   maxConsumables: number
@@ -73,6 +80,8 @@ export type GamePhase =
   | 'howToPlay'
   | 'jokers'
   | 'mainMenu'
+  | 'memories'
+  | 'opening'
   | 'packOpening'
   | 'shop'
   | 'spectralCards'
