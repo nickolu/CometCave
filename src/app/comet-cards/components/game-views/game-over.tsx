@@ -154,11 +154,11 @@ export function GameOverView() {
   const eyebrow = isPractice ? 'Practice Run' : didWin ? 'Victory' : 'Run Ended'
   const headline = isLastAnte
     ? didWin
-      ? 'You talked your way out.'
-      : 'The table keeps you.'
+      ? 'You win!'
+      : 'Run over.'
     : didWin
-      ? 'The cave aligns.'
-      : 'The cave goes quiet.'
+      ? 'You win!'
+      : 'Run over.'
 
   return (
     <ViewTemplate>
@@ -328,10 +328,10 @@ export function GameOverView() {
                 }}
               >
                 {didWin
-                  ? 'The cave aligns. Return tomorrow to test your fortune again.'
+                  ? 'You won! Return tomorrow for a new game.'
                   : roundsCompleted >= 4
-                    ? 'So close. Can you thread the needle tomorrow?'
-                    : 'The cave awaits your return. Tomorrow brings fresh cards.'}
+                    ? 'So close. Try again tomorrow.'
+                    : 'Return tomorrow for a fresh game.'}
               </div>
               <div className="flex items-center justify-center" style={{ gap: 12, marginTop: 16 }}>
                 <PrimaryButton onClick={() => eventEmitter.emit({ type: 'GAME_START' })}>
