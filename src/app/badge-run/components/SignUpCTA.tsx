@@ -56,9 +56,9 @@ export function SignUpCTA({ outcome, badgesEarned = 0 }: SignUpCTAProps = {}) {
       <div>
         <p style={{ color: '#fff', fontSize: 14, fontWeight: 600, margin: '0 0 2px' }}>
           {outcome === 'won'
-            ? 'your legend is forming'
+            ? 'You won!'
             : badgesEarned >= 4
-              ? `${badgesEarned} badges. make it count.`
+              ? `${badgesEarned} badges earned.`
               : 'save your run history'}
         </p>
         <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, margin: 0 }}>

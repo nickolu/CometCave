@@ -36,9 +36,9 @@ export function StarmatchWin({ state, onPlayAgain, onNewMatch }: WinProps) {
         className="font-headline text-headline-lg text-on-surface"
         aria-live="polite"
       >
-        <span style={{ color: winner.color }}>{winner.name}</span> reads the stars best
+        <span style={{ color: winner.color }}>{winner.name}</span> wins!
       </h2>
-      <p className="text-on-surface-variant">Most twin signs traced across the drift.</p>
+      <p className="text-on-surface-variant">Most matches found.</p>
 
       <ChunkyCard variant="surface-variant" className="w-full max-w-md">
         <ChunkyCardContent className="pt-4 pb-4 flex flex-col gap-2">
@@ -82,14 +82,14 @@ export function StarmatchWin({ state, onPlayAgain, onNewMatch }: WinProps) {
             </span>
           }
         >
-          Chart again
+          Play again
         </ChunkyButton>
         <ChunkyButton variant="ghost" size="lg" onClick={onNewMatch}>
           New match
         </ChunkyButton>
         <Link href={ROUTE_CONSTANTS.HOME}>
           <ChunkyButton variant="ghost" size="lg">
-            Return to the cave
+            Go home
           </ChunkyButton>
         </Link>
       </div>
