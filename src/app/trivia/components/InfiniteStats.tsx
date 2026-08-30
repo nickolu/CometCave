@@ -167,7 +167,7 @@ export function InfiniteStats() {
       <div className="flex flex-col items-center gap-6 max-w-lg mx-auto py-8">
         <h2 className="text-3xl font-bold text-ds-tertiary">Infinite Stats</h2>
         <SignInCard
-          title="Your constellation awaits"
+          title="Sign in to track your stats"
           description="Sign in to track your infinite trivia journey — accuracy, streaks, and category mastery."
         />
         <ChunkyButton variant="secondary" onClick={onBack} className="w-full">
@@ -186,9 +186,9 @@ export function InfiniteStats() {
           className="w-full bg-surface-container/80 border-outline-variant"
         >
           <ChunkyCardContent className="pt-6 text-center">
-            <p className="text-on-surface/70 text-lg mb-2">The stars haven&apos;t aligned yet</p>
+            <p className="text-on-surface/70 text-lg mb-2">No runs yet</p>
             <p className="text-on-surface/50 text-sm">
-              Complete your first infinite run to begin mapping your constellation.
+              Complete your first infinite run to start building your stats.
             </p>
           </ChunkyCardContent>
         </ChunkyCard>
@@ -247,7 +247,7 @@ export function InfiniteStats() {
     <div className="flex flex-col gap-5 max-w-lg mx-auto py-6">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-ds-tertiary mb-1">Infinite Stats</h2>
-        <p className="text-on-surface/50 text-sm">Your endless trivia journey</p>
+        <p className="text-on-surface/50 text-sm">Your infinite trivia stats</p>
       </div>
 
       {/* Hero stats */}

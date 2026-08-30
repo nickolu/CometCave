@@ -211,7 +211,7 @@ export function TriviaStats() {
           My Stats
           <ResetNoticeButton />
         </h2>
-        <p className="text-on-surface/50 text-sm">Your trivia journey so far</p>
+        <p className="text-on-surface/50 text-sm">Your daily trivia stats</p>
       </div>
 
       {/* Top-level stats grid */}

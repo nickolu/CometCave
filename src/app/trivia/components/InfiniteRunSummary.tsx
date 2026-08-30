@@ -252,11 +252,11 @@ export function InfiniteRunSummary({ state, onPlayAgain, onBack, onViewStats, on
 
       {(!user || user.isAnonymous) && (
         <SignInCard
-          title={user?.isAnonymous ? '✨ Lock in your progress' : "🔒 Your run wasn't saved"}
+          title={user?.isAnonymous ? 'Save your progress' : "Your run wasn't saved"}
           description={
             user?.isAnonymous
-              ? 'Create an account to keep your runs across devices, build your constellation, and compete on the leaderboard.'
-              : 'Sign in to save your runs, build your constellation, and compete on the leaderboard.'
+              ? 'Create an account to save your runs across devices and compete on the leaderboard.'
+              : 'Sign in to save your runs and compete on the leaderboard.'
           }
         />
       )}

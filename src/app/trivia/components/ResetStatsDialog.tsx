@@ -84,11 +84,11 @@ export function ResetStatsDialog({ onClose, onResetComplete }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="reset-stats-title" className="text-lg font-bold text-ds-tertiary mb-3">
-          Begin again?
+          Reset your stats?
         </h2>
         <p className="text-on-surface/80 text-sm mb-4">
-          Pick what to dissolve. Streaks, runs, and leaderboard rank will scatter back into
-          the cave dust. Future games count toward fresh totals.
+          Select what to reset. Your streaks, runs, and leaderboard rank will be cleared.
+          Future games will count toward new totals.
         </p>
 
         <div className="flex flex-col gap-3 mb-5">

@@ -222,7 +222,7 @@ export function TriviaLanding() {
         <ChunkyCardContent className="flex flex-col items-center gap-3 pt-6">
           <div className="text-center">
             <h3 className="text-on-surface font-bold text-lg">Endless Run</h3>
-            <p className="text-on-surface/50 text-sm">The cave doesn&apos;t sleep. How far can you go?</p>
+            <p className="text-on-surface/50 text-sm">Answer as many questions as you can in a row.</p>
           </div>
           <Link href="/trivia/infinite" className="w-full">
             <ChunkyButton

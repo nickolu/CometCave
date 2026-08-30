@@ -11,10 +11,10 @@ interface Props {
 }
 
 const RESEARCH_LINES = [
-  'Combing the cosmos for a question worth your time…',
-  'Pulling threads from the archive…',
-  'Cross-referencing things only the cave remembers…',
-  'Asking around. Quietly. So nobody panics…',
+  'Generating your next question…',
+  'Searching the question library…',
+  'Finding a question in your category…',
+  'Loading your question…',
 ]
 
 const ESCALATE_AFTER_MS = 900
@@ -69,12 +69,12 @@ export function InfiniteLoadingState({ phase, onReady }: Props) {
 
       <div className="flex flex-col gap-2 min-h-[3.5rem]">
         <p className="text-on-surface text-base sm:text-lg leading-snug font-medium">
-          {isReady ? 'Found something good.' : RESEARCH_LINES[lineIndex]}
+          {isReady ? 'Your next question is ready.' : RESEARCH_LINES[lineIndex]}
         </p>
         <p className="text-on-surface/50 text-xs sm:text-sm">
           {isReady
             ? 'Click when you’re ready — the timer waits for you.'
-            : 'The cave is researching.'}
+            : 'This may take a moment…'}
         </p>
       </div>
 
