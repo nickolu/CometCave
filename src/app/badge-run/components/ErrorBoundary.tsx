@@ -50,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
               margin: 0,
             }}
           >
-            the arena went dark
+            Something went wrong
           </h2>
           <p
             style={{
@@ -61,7 +61,7 @@ export class ErrorBoundary extends Component<Props, State> {
               margin: 0,
             }}
           >
-            something unknown interrupted the run. the stars have not aligned today.
+            An error occurred and the run couldn't continue.
           </p>
           <button
             onClick={() => { this.setState({ error: null }); window.location.reload() }}
