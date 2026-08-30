@@ -36,11 +36,11 @@ export default function Home() {
             Comet Cave
           </h1>
           <p className="text-body-lg text-on-surface-variant max-w-xl">
-            AI Dream Arcade — explore an infinite galaxy of games, challenges, and cosmic adventures.
+            A collection of browser games — play daily trivia, card games, strategy, and more.
           </p>
           <Link href={ROUTE_CONSTANTS.TRIVIA}>
             <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined" aria-hidden="true">play_circle</span>}>
-              START QUESTING
+              PLAY NOW
             </ChunkyButton>
           </Link>
         </ChunkyCardContent>

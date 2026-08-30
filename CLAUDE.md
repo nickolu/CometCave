@@ -23,9 +23,9 @@ The primary user is a returning daily visitor, not a first-time browser. Optimiz
 - **Do** make today's game findable in one tap from the home.
 - **Don't** re-onboard returning users or repeat first-visit framing.
 
-### 4. Mystical voice in the chrome, game voice inside
-Copy in headers, empty states, errors, tooltips, and notifications stays in the **cosmic-narrator** register. Inside a game, voice is the game's own. Stay in character even in error states ("the cave is sleeping…").
-- **Do** convey character through text and visuals.
+### 4. Plain language in the chrome, game voice inside
+Copy in headers, empty states, errors, tooltips, and notifications uses **plain, direct language** — say what is actually happening. Inside a game, voice is the game's own. Do not let mystical/atmospheric phrasing bleed into chrome copy (no "the cave is sleeping…", no "the stars haven't aligned yet").
+- **Do** write clearly: "Something went wrong. Try again." not "the cave is sleeping…"; "Page not found" not "The cave has no memory of this path".
 - **Don't** rely on audio for character — voice never depends on sound.
 
 ### 5. AI is invisible

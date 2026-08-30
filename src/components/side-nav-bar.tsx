@@ -54,7 +54,7 @@ export function SideNavBar() {
 
       <div className="px-4 pt-4 border-t border-t-outline-variant/30">
         <p className="text-xs text-on-surface-variant/60 font-label uppercase tracking-widest">
-          CometCave Arcade
+          CometCave
         </p>
       </div>
     </aside>
