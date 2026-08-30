@@ -69,7 +69,7 @@ export function DiceboundGame() {
   if (phase === 'loading') {
     return (
       <p className="py-24 text-center text-body-lg italic text-on-surface-variant">
-        The table is being set…
+        Loading…
       </p>
     )
   }
