@@ -18,10 +18,10 @@ export default function Error({
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center">
       <div className="text-8xl font-bold text-on-surface/10 select-none mb-2">!</div>
       <h1 className="text-2xl font-bold text-on-surface mb-3">
-        The cave is sleeping…
+        Something went wrong.
       </h1>
       <p className="text-on-surface/50 text-sm max-w-sm mb-8">
-        Something stirred in the dark and the lights went out. It may wake on its own — or you can try calling it back.
+        An error occurred. Refresh the page or try again.
       </p>
       <ChunkyButton variant="secondary" size="md" onClick={reset}>
         Try again

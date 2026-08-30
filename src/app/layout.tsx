@@ -33,8 +33,8 @@ const lexend = Lexend({
 })
 
 export const metadata: Metadata = {
-  title: 'CometCave - AI Galaxy Arcade',
-  description: 'Fun games for space hermits',
+  title: 'CometCave',
+  description: 'A collection of browser games.',
 }
 
 export default function RootLayout({
