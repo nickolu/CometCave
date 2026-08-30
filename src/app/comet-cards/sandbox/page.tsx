@@ -119,7 +119,7 @@ function SandboxContent() {
 
 export default function SandboxPage() {
   const { isOwner, loading } = useIsOwner()
-  if (loading) return <LockedView message="the cave is waking…" />
-  if (!isOwner) return <LockedView message="the cave is sleeping…" />
+  if (loading) return <LockedView message="Loading…" />
+  if (!isOwner) return <LockedView message="Access denied." />
   return <SandboxContent />
 }

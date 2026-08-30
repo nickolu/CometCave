@@ -220,7 +220,7 @@ export function MainMenuView() {
             lineHeight: 1.6,
           }}
         >
-          Your first hand awaits. The cave remembers every run.
+          No runs yet.
         </div>
       )}
 
