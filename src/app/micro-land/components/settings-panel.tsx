@@ -200,8 +200,8 @@ export function SettingsPane() {
               className="pb-1 pt-1"
               style={{ fontSize: 11, color: 'var(--cc-text-muted)', opacity: 0.8, lineHeight: 1.5 }}
             >
-              The cave breathes these species into existence on a quiet timer. Plants are on by default;
-              animals wait for you to wake them.
+              These species spawn on a timer. Plants are on by default;
+              animals are off until you turn them on.
             </p>
 
             {/* Plants */}
