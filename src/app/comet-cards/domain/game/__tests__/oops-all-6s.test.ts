@@ -49,17 +49,18 @@ describe('Oops! All 6s joker', () => {
     expect(after.staticRules.probabilityMultiplier).toBe(1)
   })
 
-  it('stacks with multiple copies (each new purchase triggers all existing oopsAll6s jokers)', () => {
+  it('stacks once per copy', () => {
     const game: GameState = structuredClone(defaultGameState)
     game.jokers = []
 
     const afterFirst = buyOopsAll6s(game)
     expect(afterFirst.staticRules.probabilityMultiplier).toBe(2)
 
-    // When a second oopsAll6s is bought, JOKER_ADDED fires for ALL jokers including
-    // the first copy, so both copies double the multiplier: 2 * 2 = 4, then * 2 = 8
+    // Buying a second copy doubles once more, not once per copy held. JOKER_ADDED
+    // used to be broadcast to every joker the player owned, so the first copy
+    // doubled again on the second purchase and the multiplier reached 8.
     const afterSecond = buyOopsAll6s(afterFirst)
-    expect(afterSecond.staticRules.probabilityMultiplier).toBe(8)
+    expect(afterSecond.staticRules.probabilityMultiplier).toBe(4)
   })
 
   it('multiplier cannot go below 1 after removal', () => {

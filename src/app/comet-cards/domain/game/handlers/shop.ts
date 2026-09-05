@@ -31,6 +31,7 @@ import { HAND_SIZE, SHOP_CARDS_FOR_SALE } from '@/app/comet-cards/domain/game/co
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import {
   collectEffects,
+  collectJokerEffects,
   getEffectContext,
   populateTags,
   shuffleCardIds,
@@ -158,10 +159,16 @@ export function handleShopSelectJokerFromPack(
   if (!draft.shopState.openPackState) return
   removeCardFromPack(draft.shopState.openPackState, id)
 
-  // Emit JOKER_ADDED event for effects that react to new jokers
+  // JOKER_ADDED belongs to the joker that just arrived, so only its own
+  // effects hear it. Broadcasting to every held joker re-ran their one-time
+  // acquire effects on every later purchase.
   const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
   const ctx = getEffectContext(draft, event)
-  dispatchEffects(jokerAddedEvent, ctx, collectEffects(ctx.game))
+  dispatchEffects(
+    jokerAddedEvent,
+    { ...ctx, event: jokerAddedEvent },
+    collectJokerEffects(buyableCard.card)
+  )
 
   // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
   // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
@@ -277,7 +284,6 @@ export function handleShopBuyCard(draft: GameState, event: ShopBuyCardEvent) {
 
   if (!selectedCard) return
   draft.money -= Math.floor(selectedCard.price * draft.shopState.priceMultiplier)
-  const didAddJoker = isJokerState(selectedCard.card)
   if (isJokerState(selectedCard.card)) {
     draft.jokers.push(selectedCard.card)
   } else if (isPlayingCardState(selectedCard.card)) {
@@ -298,9 +304,13 @@ export function handleShopBuyCard(draft: GameState, event: ShopBuyCardEvent) {
 
   // When a joker is purchased, also emit a more semantic lifecycle event so jokers can
   // react without needing to inspect shop selection state.
-  if (didAddJoker) {
+  if (isJokerState(selectedCard.card)) {
     const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
-    dispatchEffects(jokerAddedEvent, { ...ctx, event: jokerAddedEvent }, collectEffects(ctx.game))
+    dispatchEffects(
+      jokerAddedEvent,
+      { ...ctx, event: jokerAddedEvent },
+      collectJokerEffects(selectedCard.card)
+    )
   }
 
   draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(
