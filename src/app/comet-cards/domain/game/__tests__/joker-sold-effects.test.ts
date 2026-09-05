@@ -1,19 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('comet-cards joker sold effects', () => {
   it('Four Fingers resets staticRules back to 5 when sold and no other Four Fingers remains', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.fourFingersJoker, game)]
-    game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
+    const started = startRunWithJokers([jokers.fourFingersJoker])
 
     // Ensure the Four Fingers static rule is active.
-    const started = reduceGame(game, { type: 'GAME_START' })
     expect(started.staticRules.numberOfCardsRequiredForFlushAndStraight).toBe(4)
 
     const fourFingersInstance = started.jokers.find(j => j.jokerId === jokers.fourFingersJoker.id)
@@ -31,14 +27,8 @@ describe('comet-cards joker sold effects', () => {
   })
 
   it('Four Fingers does not reset staticRules if another Four Fingers remains after selling one', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [
-      initializeJoker(jokers.fourFingersJoker, defaultGameState),
-      initializeJoker(jokers.fourFingersJoker, defaultGameState),
-    ]
-    game.staticRules.numberOfCardsRequiredForFlushAndStraight = 5
+    const started = startRunWithJokers([jokers.fourFingersJoker, jokers.fourFingersJoker])
 
-    const started = reduceGame(game, { type: 'GAME_START' })
     expect(started.staticRules.numberOfCardsRequiredForFlushAndStraight).toBe(4)
 
     const allFourFingers = started.jokers.filter(j => j.jokerId === jokers.fourFingersJoker.id)

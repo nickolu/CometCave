@@ -1,25 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
 
+import { startRunWithJokers } from './helpers/start-run'
+
 describe('Cloud 9 joker', () => {
-  it('earns $1 per 9 in deck at ROUND_END', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.cloud9Joker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
-
-    // Count 9s in the default deck
-    const nineCount = started.ownedCardIds.filter(id => {
-      const card = started.cards[id]
+  function nineIds(game: GameState): string[] {
+    return game.ownedCardIds.filter(id => {
+      const card = game.cards[id]
       return card && playingCards[card.playingCardId]?.value === '9'
-    }).length
+    })
+  }
 
-    expect(nineCount).toBe(4) // standard deck has 4 nines
+  it('earns $1 per 9 in deck at ROUND_END', () => {
+    const started = startRunWithJokers([jokers.cloud9Joker])
+
+    expect(nineIds(started)).toHaveLength(4) // standard deck has 4 nines
 
     const initialMoney = started.money
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
@@ -27,23 +26,18 @@ describe('Cloud 9 joker', () => {
   })
 
   it('earns nothing if no 9s in deck', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.cloud9Joker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.cloud9Joker])
 
     // Remove all 9s from owned cards
-    const nineIds = started.ownedCardIds.filter(id => {
-      const card = started.cards[id]
-      return card && playingCards[card.playingCardId]?.value === '9'
-    })
-
+    const nines = nineIds(started)
     const noNines: GameState = {
       ...started,
-      ownedCardIds: started.ownedCardIds.filter(id => !nineIds.includes(id)),
+      ownedCardIds: started.ownedCardIds.filter(id => !nines.includes(id)),
     }
 
     const initialMoney = noNines.money
     const afterRound = reduceGame(noNines, { type: 'ROUND_END' })
+    expect(afterRound.jokers.some(j => j.jokerId === 'cloud9Joker')).toBe(true)
     expect(afterRound.money).toBe(initialMoney)
   })
 })

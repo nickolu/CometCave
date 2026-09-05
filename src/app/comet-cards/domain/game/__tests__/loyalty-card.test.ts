@@ -1,17 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
+
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { inGameplay, startRunWithJokers } from './helpers/start-run'
 
 describe('Loyalty Card joker', () => {
   function setupGame(): GameState {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.loyaltyCard, game)]
-    game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
-    game.gamePhase = 'gameplay'
-    return reduceGame(game, { type: 'GAME_START' })
+    return inGameplay(startRunWithJokers([jokers.loyaltyCard]))
   }
 
   function playHand(state: GameState): GameState {
@@ -29,15 +26,24 @@ describe('Loyalty Card joker', () => {
     )
   }
 
+  function firedX4(state: GameState): boolean {
+    return state.gamePlayState.scoringEvents.some(
+      e =>
+        'source' in e &&
+        e.source === 'Loyalty Card' &&
+        'operator' in e &&
+        e.operator === 'x' &&
+        'value' in e &&
+        e.value === 4
+    )
+  }
+
   it('does not apply X4 Mult on hands 1 through 5', () => {
     let state = setupGame()
     for (let i = 0; i < 5; i++) {
       state = playHand(state)
-      expect(
-        state.gamePlayState.scoringEvents.some(
-          e => 'source' in e && e.source === 'Loyalty Card'
-        )
-      ).toBe(false)
+      expect(state.jokers.some(j => j.jokerId === 'loyaltyCard')).toBe(true)
+      expect(firedX4(state)).toBe(false)
     }
   })
 
@@ -46,17 +52,7 @@ describe('Loyalty Card joker', () => {
     for (let i = 0; i < 6; i++) {
       state = playHand(state)
     }
-    expect(
-      state.gamePlayState.scoringEvents.some(
-        e =>
-          'source' in e &&
-          e.source === 'Loyalty Card' &&
-          'operator' in e &&
-          e.operator === 'x' &&
-          'value' in e &&
-          e.value === 4
-      )
-    ).toBe(true)
+    expect(firedX4(state)).toBe(true)
   })
 
   it('counter resets and X4 fires again on hand 12', () => {
@@ -64,16 +60,6 @@ describe('Loyalty Card joker', () => {
     for (let i = 0; i < 12; i++) {
       state = playHand(state)
     }
-    expect(
-      state.gamePlayState.scoringEvents.some(
-        e =>
-          'source' in e &&
-          e.source === 'Loyalty Card' &&
-          'operator' in e &&
-          e.operator === 'x' &&
-          'value' in e &&
-          e.value === 4
-      )
-    ).toBe(true)
+    expect(firedX4(state)).toBe(true)
   })
 })

@@ -1,19 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('Gift Card joker', () => {
   it('adds $1 bonusSellValue to all jokers at ROUND_END', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [
-      initializeJoker(jokers.giftCard, game),
-      initializeJoker(jokers.egg, game),
-    ]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.giftCard, jokers.egg])
 
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
 
@@ -25,9 +19,7 @@ describe('Gift Card joker', () => {
   })
 
   it('accumulates bonusSellValue over multiple rounds', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.giftCard, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.giftCard])
 
     let state = reduceGame(started, { type: 'ROUND_END' })
     state = reduceGame(state, { type: 'ROUND_END' })
@@ -38,9 +30,7 @@ describe('Gift Card joker', () => {
   })
 
   it('adds bonusSellValue to sell price when sold', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.giftCard, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.giftCard])
 
     let state = reduceGame(started, { type: 'ROUND_END' })
     state = reduceGame(state, { type: 'ROUND_END' })

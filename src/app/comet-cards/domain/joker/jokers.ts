@@ -451,13 +451,6 @@ export const fourFingersJoker: JokerDefinition = {
   price: 7,
   effects: [
     {
-      event: { type: 'GAME_START' }, // handle game start in case the game starts with jokers
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        ctx.game.staticRules.numberOfCardsRequiredForFlushAndStraight = 4
-      },
-    },
-    {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
@@ -509,23 +502,6 @@ export const turtleBeanJoker: JokerDefinition = {
   description: '+5 hand size, reduces by 1 each round',
   price: 6,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      // Called once per instance by the effect system. Apply bonus for exactly one uninitialized instance.
-      apply: (ctx: EffectContext) => {
-        const tb = ctx.game.jokers.find(
-          j => j.jokerId === 'turtleBeanJoker' && !(j.metadata as Record<string, unknown>)?.__gameStartApplied
-        )
-        if (!tb) return
-        if (!tb.metadata?.handSizeBonus) {
-          tb.metadata = { ...tb.metadata, handSizeBonus: 5 }
-        }
-        const bonus = tb.metadata?.handSizeBonus ?? 5
-        ctx.game.handSizeModifier += bonus
-        ;(tb.metadata as Record<string, unknown>).__gameStartApplied = true
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -600,15 +576,6 @@ export const toTheMoonJoker: JokerDefinition = {
   price: 5,
   effects: [
     {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        if (ctx.game.jokers.some(j => j.jokerId === 'toTheMoonJoker')) {
-          ctx.game.maxInterest += 100
-        }
-      },
-    },
-    {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
@@ -660,16 +627,6 @@ export const rocketJoker: JokerDefinition = {
   description: 'Earn $1 at end of round. Payout increases by $2 when Boss Blind is defeated',
   price: 6,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        const rk = ctx.game.jokers.find(j => j.jokerId === 'rocketJoker')
-        if (rk) {
-          rk.metadata = { ...rk.metadata, payout: rk.metadata?.payout ?? 1, lastBossRound: -1 }
-        }
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -992,16 +949,6 @@ export const weeJokerJoker: JokerDefinition = {
   price: 8,
   effects: [
     {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        const wj = ctx.game.jokers.find(j => j.jokerId === 'weeJokerJoker')
-        if (wj) {
-          wj.metadata = { ...wj.metadata, chipsBonus: wj.metadata?.chipsBonus ?? 0 }
-        }
-      },
-    },
-    {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
@@ -1080,15 +1027,6 @@ export const stuntmanJoker: JokerDefinition = {
   description: '+250 Chips, -2 hand size',
   price: 7,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        if (ctx.game.jokers.some(j => j.jokerId === 'stuntmanJoker')) {
-          ctx.game.handSizeModifier -= 2
-        }
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -1170,16 +1108,6 @@ export const spareTrousersJoker: JokerDefinition = {
   description: 'This Joker gains +2 Mult if played hand contains a Two Pair',
   price: 6,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        const st = ctx.game.jokers.find(j => j.jokerId === 'spareTrousersJoker')
-        if (st) {
-          st.metadata = { ...st.metadata, multBonus: st.metadata?.multBonus ?? 0 }
-        }
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -1387,17 +1315,6 @@ export const merryAndyJoker: JokerDefinition = {
   price: 7,
   effects: [
     {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        if (ctx.game.jokers.some(j => j.jokerId === 'merryAndyJoker')) {
-          ctx.game.maxDiscards += 3
-          ctx.game.gamePlayState.remainingDiscards += 3
-          ctx.game.handSizeModifier -= 1
-        }
-      },
-    },
-    {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
@@ -1439,16 +1356,6 @@ export const flashCardJoker: JokerDefinition = {
   description: 'This Joker gains +2 Mult per reroll in the shop',
   price: 5,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        const fc = ctx.game.jokers.find(j => j.jokerId === 'flashCardJoker')
-        if (fc) {
-          fc.metadata = { ...fc.metadata, multBonus: fc.metadata?.multBonus ?? 0 }
-        }
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -1611,16 +1518,6 @@ export const drunkardJoker: JokerDefinition = {
   price: 4,
   effects: [
     {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        if (ctx.game.jokers.some(j => j.jokerId === 'drunkardJoker')) {
-          ctx.game.maxDiscards += 1
-          ctx.game.gamePlayState.remainingDiscards += 1
-        }
-      },
-    },
-    {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
@@ -1659,15 +1556,6 @@ export const jugglerJoker: JokerDefinition = {
   description: '+1 hand size',
   price: 4,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        if (ctx.game.jokers.some(j => j.jokerId === 'jugglerJoker')) {
-          ctx.game.handSizeModifier += 1
-        }
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
@@ -5067,13 +4955,6 @@ export const pareidoliaJoker: JokerDefinition = {
   description: 'All cards are considered face cards',
   price: 5,
   effects: [
-    {
-      event: { type: 'GAME_START' },
-      priority: 1,
-      apply: (ctx: EffectContext) => {
-        ctx.game.staticRules.areAllCardsFaceCards = true
-      },
-    },
     {
       event: { type: 'JOKER_ADDED' },
       priority: 1,

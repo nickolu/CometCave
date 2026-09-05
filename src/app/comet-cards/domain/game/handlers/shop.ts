@@ -31,7 +31,7 @@ import { HAND_SIZE, SHOP_CARDS_FOR_SALE } from '@/app/comet-cards/domain/game/co
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import {
   collectEffects,
-  collectJokerEffects,
+  dispatchJokerAdded,
   getEffectContext,
   populateTags,
   shuffleCardIds,
@@ -162,13 +162,7 @@ export function handleShopSelectJokerFromPack(
   // JOKER_ADDED belongs to the joker that just arrived, so only its own
   // effects hear it. Broadcasting to every held joker re-ran their one-time
   // acquire effects on every later purchase.
-  const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
-  const ctx = getEffectContext(draft, event)
-  dispatchEffects(
-    jokerAddedEvent,
-    { ...ctx, event: jokerAddedEvent },
-    collectJokerEffects(buyableCard.card)
-  )
+  dispatchJokerAdded(draft, buyableCard.card)
 
   // Don't immediately close the pack — the UI will detect remainingCardsToSelect === 0
   // and emit SHOP_CLOSE_PACK after a delay so the player can see the effect.
@@ -305,12 +299,7 @@ export function handleShopBuyCard(draft: GameState, event: ShopBuyCardEvent) {
   // When a joker is purchased, also emit a more semantic lifecycle event so jokers can
   // react without needing to inspect shop selection state.
   if (isJokerState(selectedCard.card)) {
-    const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
-    dispatchEffects(
-      jokerAddedEvent,
-      { ...ctx, event: jokerAddedEvent },
-      collectJokerEffects(selectedCard.card)
-    )
+    dispatchJokerAdded(draft, selectedCard.card)
   }
 
   draft.shopState.cardsForSale = draft.shopState.cardsForSale.filter(

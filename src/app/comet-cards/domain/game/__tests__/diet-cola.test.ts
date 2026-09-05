@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('Diet Cola joker', () => {
   it('creates a Double Tag when sold', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.dietColaJoker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.dietColaJoker])
 
     expect(started.tags.filter(t => t.tagType === 'double')).toHaveLength(0)
 
@@ -26,12 +23,7 @@ describe('Diet Cola joker', () => {
   })
 
   it('does not create a tag when another joker is sold', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [
-      initializeJoker(jokers.dietColaJoker, game),
-      initializeJoker(jokers.jokerJoker, game),
-    ]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.dietColaJoker, jokers.jokerJoker])
 
     // Sell the basic Joker, not Diet Cola
     const basicJoker = started.jokers.find(j => j.jokerId === 'jokerJoker')!
@@ -44,5 +36,17 @@ describe('Diet Cola joker', () => {
     // Diet Cola should still be there, and no Double Tag created
     expect(afterSale.jokers.some(j => j.jokerId === 'dietColaJoker')).toBe(true)
     expect(afterSale.tags.filter(t => t.tagType === 'double')).toHaveLength(0)
+
+    // ...and selling Diet Cola out of that same state does produce the tag,
+    // so the empty result above is the sale being scoped, not a dead effect.
+    const dcInstance = afterSale.jokers.find(j => j.jokerId === 'dietColaJoker')!
+    const afterSellingDietCola = reduceGame(
+      {
+        ...afterSale,
+        gamePlayState: { ...afterSale.gamePlayState, selectedJokerId: dcInstance.id },
+      },
+      { type: 'JOKER_SOLD' }
+    )
+    expect(afterSellingDietCola.tags.filter(t => t.tagType === 'double')).toHaveLength(1)
   })
 })

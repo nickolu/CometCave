@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRun, startRunWithJokers } from './helpers/start-run'
 
 describe('Chaos the Clown joker', () => {
   it('adds 1 freeReroll when the shop opens', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.chaosTheClown, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.chaosTheClown])
 
     expect(started.shopState.freeRerolls).toBe(0)
 
@@ -19,11 +16,7 @@ describe('Chaos the Clown joker', () => {
   })
 
   it('allows one free reroll before charging money', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.chaosTheClown, game)]
-    game.money = 10
-
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = { ...startRunWithJokers([jokers.chaosTheClown]), money: 10 }
     const afterShopOpen = reduceGame(started, { type: 'SHOP_OPEN' })
 
     expect(afterShopOpen.shopState.freeRerolls).toBe(1)
@@ -41,10 +34,7 @@ describe('Chaos the Clown joker', () => {
   })
 
   it('does not grant a free reroll without the joker', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.money = 10
-
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = { ...startRun(), money: 10 }
     const afterShopOpen = reduceGame(started, { type: 'SHOP_OPEN' })
 
     expect(afterShopOpen.shopState.freeRerolls).toBe(0)

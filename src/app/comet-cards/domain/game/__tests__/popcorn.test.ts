@@ -1,30 +1,32 @@
 import { describe, expect, it } from 'vitest'
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
+
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { inGameplay, startRunWithJokers } from './helpers/start-run'
 
 describe('Popcorn joker', () => {
   function setupGame(): GameState {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.popcorn, game)]
-    game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
-    game.gamePhase = 'gameplay'
-    return reduceGame(game, { type: 'GAME_START' })
+    return inGameplay(startRunWithJokers([jokers.popcorn]))
+  }
+
+  function playHand(state: GameState): GameState {
+    return reduceGame(
+      {
+        ...state,
+        gamePlayState: {
+          ...state.gamePlayState,
+          selectedHand: ['pair', []],
+          score: { chips: 0, mult: 1 },
+        },
+      },
+      { type: 'HAND_SCORING_FINALIZE' }
+    )
   }
 
   it('gives +20 Mult on first hand (counter initializes to 20)', () => {
-    const started = setupGame()
-    const hand: GameState = {
-      ...started,
-      gamePlayState: {
-        ...started.gamePlayState,
-        selectedHand: ['pair', []],
-        score: { chips: 0, mult: 1 },
-      },
-    }
-    const after = reduceGame(hand, { type: 'HAND_SCORING_FINALIZE' })
+    const after = playHand(setupGame())
     expect(after.gamePlayState.scoringEvents.some(
       e => 'source' in e && e.source === 'Popcorn' && 'value' in e && e.value === 20
     )).toBe(true)
@@ -32,16 +34,7 @@ describe('Popcorn joker', () => {
 
   it('decreases counter by 4 on ROUND_END', () => {
     // First fire HAND_SCORING_FINALIZE to initialize counter to 20
-    const started = setupGame()
-    const hand: GameState = {
-      ...started,
-      gamePlayState: {
-        ...started.gamePlayState,
-        selectedHand: ['pair', []],
-        score: { chips: 0, mult: 1 },
-      },
-    }
-    const afterHand = reduceGame(hand, { type: 'HAND_SCORING_FINALIZE' })
+    const afterHand = playHand(setupGame())
     const popcornBefore = afterHand.jokers.find(j => j.jokerId === 'popcorn')
     expect(popcornBefore?.counter).toBe(20)
 
@@ -51,19 +44,9 @@ describe('Popcorn joker', () => {
   })
 
   it('self-destructs when counter reaches 0', () => {
-    const started = setupGame()
-
     // Play 5 rounds to deplete from 20 to 0 (20 / 4 = 5 rounds)
     // First trigger HAND_SCORING_FINALIZE to initialize counter
-    const hand: GameState = {
-      ...started,
-      gamePlayState: {
-        ...started.gamePlayState,
-        selectedHand: ['pair', []],
-        score: { chips: 0, mult: 1 },
-      },
-    }
-    let state: GameState = reduceGame(hand, { type: 'HAND_SCORING_FINALIZE' })
+    let state = playHand(setupGame())
 
     for (let i = 0; i < 5; i++) {
       state = reduceGame(state, { type: 'ROUND_END' })
