@@ -198,3 +198,35 @@ describe('a history is played with different cards each time', () => {
     expect(read(a)).toBe(read(b))
   })
 })
+
+describe('one-time joker effects survive the memory phase', () => {
+  /**
+   * `applyMemories` broadcasts `JOKER_ADDED` to prime scaling jokers, whose
+   * accumulators are all `?? 0` initialisers and safe to repeat. Slot changes
+   * are not — a declared history used to cost the player two more cards of
+   * hand size for holding Stuntman.
+   */
+  it('does not charge Stuntman a second time', () => {
+    const game = newGame(['stuntmanJoker'])
+    // The purchase already paid the cost.
+    game.handSizeModifier = -2
+    game.jokers[0].metadata = { onAddApplied: 1 }
+
+    const after = previewMemories(game, { hands: { pair: 2 }, discards: 0 })
+
+    expect(after.handSizeModifier).toBe(-2)
+  })
+
+  it('does not hand Merry Andy another three discards', () => {
+    const game = newGame(['merryAndyJoker'])
+    game.maxDiscards += 3
+    game.handSizeModifier = -1
+    game.jokers[0].metadata = { onAddApplied: 1 }
+    const discardsBefore = game.maxDiscards
+
+    const after = previewMemories(game, { hands: { pair: 2 }, discards: 1 })
+
+    expect(after.maxDiscards).toBe(discardsBefore)
+    expect(after.handSizeModifier).toBe(-1)
+  })
+})

@@ -27,6 +27,26 @@ import { bossBlinds } from '@/app/comet-cards/domain/round/boss-blinds'
 import { JokerDefinition, JokerState } from './types'
 import { bonusOnCardScored, bonusOnHandPlayed, isJokerState } from './utils'
 
+/**
+ * Claim a joker's one-time "on acquire" effect, or return undefined if it has
+ * already been claimed.
+ *
+ * A few jokers pay out permanent slot changes the moment they arrive — Stuntman
+ * costs two cards of hand size, Troubadour trades a hand for two. Those must
+ * land exactly once per copy. `JOKER_ADDED` is dispatched at purchase, but The
+ * Last Ante's memory phase also broadcasts it to prime scaling jokers, and
+ * every accumulator it primes is written with `?? 0` so repeats are harmless.
+ * Slot changes are not, so they mark themselves instead.
+ */
+function claimOnAdd(ctx: EffectContext, jokerId: string): JokerState | undefined {
+  const joker = ctx.game.jokers.find(
+    j => j.jokerId === jokerId && !j.metadata?.onAddApplied
+  )
+  if (!joker) return undefined
+  joker.metadata = { ...joker.metadata, onAddApplied: 1 }
+  return joker
+}
+
 export const jokerJoker: JokerDefinition = {
   id: 'jokerJoker',
   name: 'Joker',
@@ -592,6 +612,7 @@ export const toTheMoonJoker: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'toTheMoonJoker')) return
         ctx.game.maxInterest += 100
       },
     },
@@ -1072,6 +1093,7 @@ export const stuntmanJoker: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'stuntmanJoker')) return
         ctx.game.handSizeModifier -= 2
       },
     },
@@ -1379,6 +1401,7 @@ export const merryAndyJoker: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'merryAndyJoker')) return
         ctx.game.maxDiscards += 3
         ctx.game.gamePlayState.remainingDiscards += 3
         ctx.game.handSizeModifier -= 1
@@ -1601,6 +1624,7 @@ export const drunkardJoker: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'drunkardJoker')) return
         ctx.game.maxDiscards += 1
         ctx.game.gamePlayState.remainingDiscards += 1
       },
@@ -1648,6 +1672,7 @@ export const jugglerJoker: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'jugglerJoker')) return
         ctx.game.handSizeModifier += 1
       },
     },
@@ -4339,6 +4364,7 @@ export const troubadour: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'troubadour')) return
         ctx.game.handSizeModifier += 2
         ctx.game.maxHands -= 1
         ctx.game.gamePlayState.remainingHands = Math.max(0, ctx.game.gamePlayState.remainingHands - 1)
@@ -4763,6 +4789,7 @@ export const oopsAll6s: JokerDefinition = {
       event: { type: 'JOKER_ADDED' },
       priority: 1,
       apply: (ctx: EffectContext) => {
+        if (!claimOnAdd(ctx, 'oopsAll6s')) return
         ctx.game.staticRules.probabilityMultiplier =
           (ctx.game.staticRules.probabilityMultiplier ?? 1) * 2
       },

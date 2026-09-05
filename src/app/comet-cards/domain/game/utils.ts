@@ -71,6 +71,22 @@ function resolveJokerEffects(
   return def.effects
 }
 
+/**
+ * The effects belonging to one joker.
+ *
+ * `JOKER_ADDED` is a lifecycle event about a single joker, so it must not be
+ * dispatched through `collectEffects` — that returns every held joker's
+ * effects, which re-runs the one-time "on acquire" work of jokers the player
+ * bought earlier. Stuntman took another two cards off the hand with every
+ * later purchase until the blind dealt nothing at all.
+ *
+ * Blueprint and Brainstorm copy scoring effects, not lifecycle ones, so this
+ * reads the joker's own definition rather than resolving copies.
+ */
+export function collectJokerEffects(joker: JokerState): Effect[] {
+  return jokers[joker.jokerId]?.effects ?? []
+}
+
 export function collectEffects(game: GameState): Effect[] {
   const effects: Effect[] = []
 

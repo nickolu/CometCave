@@ -197,8 +197,16 @@ export function createGameStateWithDeck(deckId: string): GameState {
     throw new Error(`Unknown deck: ${deckId}`)
   }
 
+  // `gameState` is built once at module load, so its seed is the day the page
+  // was opened. A tab left open across midnight PST would otherwise start
+  // today's run on yesterday's puzzle — and the next page load would expire
+  // that run as stale and record it as an abandoned loss.
+  const gameSeed = getCurrentDayAsSeedStringPST()
+
   const baseState: GameState = {
     ...gameState,
+    gameSeed,
+    rounds: initializeRounds(gameSeed),
     selectedDeck: deckId,
   }
 
