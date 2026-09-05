@@ -5,6 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutGroup } from 'framer-motion'
 
 import {
+  describeConsumable,
+  getConsumableUseEvent,
+  getHeldConsumableSellValue,
+  isConsumablePlayable,
+} from '@/app/comet-cards/components/consumables/consumable-actions'
+import {
   DangerButton,
   GhostButton,
   PrimaryButton,
@@ -22,7 +28,7 @@ import { TickingNumber } from '@/app/comet-cards/components/animations/ticking-n
 import { Modal } from '@/app/comet-cards/components/ui/modal'
 import { Vouchers } from '@/app/comet-cards/components/voucher/vouchers'
 import { countConsumableSlots, getConsumableDefinition } from '@/app/comet-cards/domain/consumable/utils'
-import { getJokerSellValue, getConsumableSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
+import { getJokerSellValue } from '@/app/comet-cards/domain/shop/sell-utils'
 import { eventEmitter } from '@/app/comet-cards/domain/events/event-emitter'
 import { scoreHand as domainScoreHand } from '@/app/comet-cards/domain/game/score-hand'
 import { isCustomScoringEvent } from '@/app/comet-cards/domain/game/types'
@@ -166,6 +172,9 @@ export function GamePlayView() {
   const selectedConsumable = gamePlayState.selectedConsumable
   const selectedConsumableDefinition = selectedConsumable
     ? getConsumableDefinition(selectedConsumable)
+    : undefined
+  const selectedConsumableDetail = selectedConsumable
+    ? describeConsumable(selectedConsumable, selectedConsumableDefinition)
     : undefined
 
   const selectedJoker = game.jokers.find(j => j.id === gamePlayState.selectedJokerId)
@@ -453,9 +462,7 @@ export function GamePlayView() {
             })}
             {game.consumables.map(consumable => {
               const def = getConsumableDefinition(consumable)
-              const isTarot = consumable.consumableType === 'tarotCard'
-              const accent = isTarot ? 'var(--cc-pink)' : 'var(--cc-gold)'
-              const glyph = isTarot ? '◈' : '✷'
+              const { accent, glyph, name } = describeConsumable(consumable, def)
               const isSelected = selectedConsumable?.id === consumable.id
               return (
                 <button
@@ -480,7 +487,7 @@ export function GamePlayView() {
                     cursor: 'pointer',
                   }}
                 >
-                  {glyph} {def.name}
+                  {glyph} {name}
                 </button>
               )
             })}
@@ -589,26 +596,23 @@ export function GamePlayView() {
                   </DangerButton>
                 </>
               )}
-              {selectedConsumable && selectedConsumableDefinition && (
+              {selectedConsumable && selectedConsumableDetail && (
                 <>
-                  <span style={{ color: selectedConsumable.consumableType === 'tarotCard' ? 'var(--cc-pink)' : 'var(--cc-gold)', fontWeight: 600 }}>
-                    {selectedConsumableDefinition.name}
+                  <span style={{ color: selectedConsumableDetail.accent, fontWeight: 600 }}>
+                    {selectedConsumableDetail.name}
                   </span>
-                  <span style={{ opacity: 0.5, fontSize: 9 }}>{selectedConsumableDefinition.description}</span>
+                  <span style={{ opacity: 0.5, fontSize: 9 }}>{selectedConsumableDetail.description}</span>
                   <PrimaryButton
-                    disabled={!selectedConsumableDefinition.isPlayable(game)}
+                    disabled={!isConsumablePlayable(selectedConsumableDefinition, game)}
                     onClick={() => {
-                      if (selectedConsumable.consumableType === 'tarotCard') {
-                        eventEmitter.emit({ type: 'TAROT_CARD_USED' })
-                      } else {
-                        eventEmitter.emit({ type: 'CELESTIAL_CARD_USED' })
-                      }
+                      const useEvent = getConsumableUseEvent(selectedConsumable)
+                      if (useEvent) eventEmitter.emit(useEvent)
                     }}
                   >
                     Use
                   </PrimaryButton>
                   <DangerButton onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}>
-                    Sell ${getConsumableSellValue(selectedConsumableDefinition)}
+                    Sell ${getHeldConsumableSellValue(selectedConsumable)}
                   </DangerButton>
                 </>
               )}
@@ -1083,15 +1087,13 @@ export function GamePlayView() {
               <div className="cc-scroll" style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '35vh', overflowY: 'auto' }}>
                 {game.consumables.map(consumable => {
                   const def = getConsumableDefinition(consumable)
-                  const isTarot = consumable.consumableType === 'tarotCard'
-                  const accent = isTarot ? 'var(--cc-pink)' : 'var(--cc-gold)'
-                  const glyph = isTarot ? '◈' : '✷'
+                  const { accent, glyph, name, description } = describeConsumable(consumable, def)
                   const isSelected = selectedConsumable?.id === consumable.id
                   return (
                     <ItemRow
                       key={consumable.id}
-                      name={def.name}
-                      description={def.description}
+                      name={name}
+                      description={description}
                       accent={accent}
                       glyph={glyph}
                       selected={isSelected}
@@ -1110,16 +1112,13 @@ export function GamePlayView() {
                 }).map((_, i) => (
                   <EmptySlot key={`consumable-empty-${i}`} />
                 ))}
-                {selectedConsumable && selectedConsumableDefinition && (
+                {selectedConsumable && (
                   <div className="flex flex-wrap gap-2">
                     <PrimaryButton
-                      disabled={!selectedConsumableDefinition.isPlayable(game)}
+                      disabled={!isConsumablePlayable(selectedConsumableDefinition, game)}
                       onClick={() => {
-                        if (selectedConsumable.consumableType === 'tarotCard') {
-                          eventEmitter.emit({ type: 'TAROT_CARD_USED' })
-                        } else {
-                          eventEmitter.emit({ type: 'CELESTIAL_CARD_USED' })
-                        }
+                        const useEvent = getConsumableUseEvent(selectedConsumable)
+                        if (useEvent) eventEmitter.emit(useEvent)
                       }}
                     >
                       Use
@@ -1127,7 +1126,7 @@ export function GamePlayView() {
                     <DangerButton
                       onClick={() => eventEmitter.emit({ type: 'CONSUMABLE_SOLD' })}
                     >
-                      Sell (${getConsumableSellValue(selectedConsumableDefinition)})
+                      Sell (${getHeldConsumableSellValue(selectedConsumable)})
                     </DangerButton>
                   </div>
                 )}
