@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
@@ -6,22 +7,21 @@ import { jokers } from '@/app/comet-cards/domain/joker/jokers'
 import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import type { BuyableCard } from '@/app/comet-cards/domain/shop/types'
 
+import { inGameplay, startRunWithJokers } from './helpers/start-run'
+
 describe('Wee Joker', () => {
   it('initializes with 0 chips bonus', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.weeJokerJoker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.weeJokerJoker])
     const wj = started.jokers.find(j => j.jokerId === 'weeJokerJoker')
     expect(wj?.metadata?.chipsBonus).toBe(0)
   })
 
   it('does not add chips on HAND_SCORING_FINALIZE when no 2s scored', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.weeJokerJoker, game)]
-    game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
-    game.gamePhase = 'gameplay'
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = inGameplay(startRunWithJokers([jokers.weeJokerJoker]))
     const afterScore = reduceGame(started, { type: 'HAND_SCORING_FINALIZE' })
+    expect(
+      afterScore.jokers.find(j => j.jokerId === 'weeJokerJoker')?.metadata?.chipsBonus
+    ).toBe(0)
     expect(afterScore.gamePlayState.scoringEvents.some(
       e => 'source' in e && e.source === 'Wee Joker'
     )).toBe(false)

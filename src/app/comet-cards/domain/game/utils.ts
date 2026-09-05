@@ -87,6 +87,24 @@ export function collectJokerEffects(joker: JokerState): Effect[] {
   return jokers[joker.jokerId]?.effects ?? []
 }
 
+/**
+ * Announce a newly acquired joker to its own effects.
+ *
+ * A joker's one-time "on acquire" work belongs on `JOKER_ADDED` and nowhere
+ * else: a run always begins with no jokers, so a `GAME_START` handler on a
+ * joker could never fire. Every path that hands the player a joker — shop
+ * purchase, booster pack, and the test helpers that build a run — calls this,
+ * so arrival is announced exactly once, to the joker that arrived.
+ */
+export function dispatchJokerAdded(draft: GameState, joker: JokerState) {
+  const jokerAddedEvent: GameEvent = { type: 'JOKER_ADDED' }
+  dispatchEffects(
+    jokerAddedEvent,
+    getEffectContext(draft, jokerAddedEvent),
+    collectJokerEffects(joker)
+  )
+}
+
 export function collectEffects(game: GameState): Effect[] {
   const effects: Effect[] = []
 

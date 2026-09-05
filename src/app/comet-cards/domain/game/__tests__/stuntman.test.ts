@@ -1,24 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
+
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { inGameplay, startRunWithJokers } from './helpers/start-run'
 
 describe('Stuntman joker', () => {
-  it('reduces hand size by 2 on GAME_START', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.stuntmanJoker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+  it('reduces hand size by 2 when acquired', () => {
+    const started = startRunWithJokers([jokers.stuntmanJoker])
     expect(started.handSizeModifier).toBe(-2)
   })
 
   it('adds +250 Chips on HAND_SCORING_FINALIZE', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.stuntmanJoker, game)]
-    game.rounds[game.roundIndex].smallBlind.status = 'inProgress'
-    game.gamePhase = 'gameplay'
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = inGameplay(startRunWithJokers([jokers.stuntmanJoker]))
     const afterScore = reduceGame(started, { type: 'HAND_SCORING_FINALIZE' })
     expect(afterScore.gamePlayState.scoringEvents.some(
       e => 'source' in e && e.source === 'Stuntman' && e.value === 250
@@ -26,9 +20,7 @@ describe('Stuntman joker', () => {
   })
 
   it('reverts hand size when sold', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.stuntmanJoker, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.stuntmanJoker])
     expect(started.handSizeModifier).toBe(-2)
     const instance = started.jokers.find(j => j.jokerId === 'stuntmanJoker')!
     const selected = { ...started, gamePlayState: { ...started.gamePlayState, selectedJokerId: instance.id } }

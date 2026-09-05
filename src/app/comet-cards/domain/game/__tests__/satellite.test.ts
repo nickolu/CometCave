@@ -1,60 +1,49 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('Satellite joker', () => {
+  function runWithConsumablesUsed(used: GameState['consumablesUsed']): GameState {
+    return { ...startRunWithJokers([jokers.satellite]), consumablesUsed: used }
+  }
+
   it('earns $1 per unique Planet card used at ROUND_END', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.satellite, game)]
-    game.consumablesUsed = [
+    const started = runWithConsumablesUsed([
       { id: '1', consumableType: 'celestialCard', handId: 'highCard' },
       { id: '2', consumableType: 'celestialCard', handId: 'pair' },
       { id: '3', consumableType: 'celestialCard', handId: 'twoPair' },
-    ]
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const initialMoney = started.money
+    ])
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
-    expect(afterRound.money).toBe(initialMoney + 3)
+    expect(afterRound.money).toBe(started.money + 3)
   })
 
   it('earns $0 when no Planet cards used', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.satellite, game)]
-    game.consumablesUsed = []
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const initialMoney = started.money
+    const started = runWithConsumablesUsed([])
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
-    expect(afterRound.money).toBe(initialMoney)
+    expect(afterRound.jokers.some(j => j.jokerId === 'satellite')).toBe(true)
+    expect(afterRound.money).toBe(started.money)
   })
 
   it('counts duplicate Planet cards only once', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.satellite, game)]
-    game.consumablesUsed = [
+    const started = runWithConsumablesUsed([
       { id: '1', consumableType: 'celestialCard', handId: 'pair' },
       { id: '2', consumableType: 'celestialCard', handId: 'pair' },
       { id: '3', consumableType: 'celestialCard', handId: 'pair' },
-    ]
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const initialMoney = started.money
+    ])
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
-    expect(afterRound.money).toBe(initialMoney + 1)
+    expect(afterRound.money).toBe(started.money + 1)
   })
 
   it('ignores Tarot cards when counting', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.satellite, game)]
-    game.consumablesUsed = [
+    const started = runWithConsumablesUsed([
       { id: '1', consumableType: 'celestialCard', handId: 'flush' },
-      { id: '2', consumableType: 'tarotCard', tarotType: 'theFool' } as any,
-    ]
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const initialMoney = started.money
+      { id: '2', consumableType: 'tarotCard', tarotType: 'theFool' } as never,
+    ])
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
-    expect(afterRound.money).toBe(initialMoney + 1)
+    expect(afterRound.money).toBe(started.money + 1)
   })
 })

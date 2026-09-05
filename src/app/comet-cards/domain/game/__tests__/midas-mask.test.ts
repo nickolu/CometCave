@@ -1,32 +1,15 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
 import { playingCards } from '@/app/comet-cards/domain/playing-card/playing-cards'
+
+import { inGameplay, startRunWithJokers } from './helpers/start-run'
 
 describe('Midas Mask joker', () => {
   function createGameWithMidasMask(): GameState {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.midasMaskJoker, game)]
-    return game
-  }
-
-  function withInProgressBlind(game: GameState): GameState {
-    const round = game.rounds[game.roundIndex]
-    return {
-      ...game,
-      rounds: game.rounds.map((r, i) =>
-        i === game.roundIndex
-          ? {
-              ...r,
-              smallBlind: { ...r.smallBlind, status: 'inProgress' },
-            }
-          : r
-      ),
-    }
+    return inGameplay(startRunWithJokers([jokers.midasMaskJoker]))
   }
 
   function findCardByValue(game: GameState, value: string): string | undefined {
@@ -37,9 +20,7 @@ describe('Midas Mask joker', () => {
   }
 
   it('converts face cards to Gold when scored', () => {
-    const game = createGameWithMidasMask()
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const withBlind = withInProgressBlind(started)
+    const withBlind = createGameWithMidasMask()
 
     // Find a Jack in the cards
     const jackId = findCardByValue(withBlind, 'J')
@@ -63,9 +44,7 @@ describe('Midas Mask joker', () => {
   })
 
   it('does not convert non-face cards', () => {
-    const game = createGameWithMidasMask()
-    const started = reduceGame(game, { type: 'GAME_START' })
-    const withBlind = withInProgressBlind(started)
+    const withBlind = createGameWithMidasMask()
 
     // Find a number card (e.g., '5')
     const fiveId = findCardByValue(withBlind, '5')
@@ -81,6 +60,7 @@ describe('Midas Mask joker', () => {
 
     const afterScore = reduceGame(withScoring, { type: 'CARD_SCORED' })
 
+    expect(afterScore.jokers.some(j => j.jokerId === 'midasMaskJoker')).toBe(true)
     expect(afterScore.cards[fiveId!].flags.enchantment).not.toBe('gold')
   })
 })

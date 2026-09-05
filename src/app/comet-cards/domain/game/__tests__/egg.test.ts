@@ -1,16 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
-import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('Egg joker', () => {
   it('increases bonusSellValue by 3 on ROUND_END', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.egg, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.egg])
 
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
     const eggInstance = afterRound.jokers.find(j => j.jokerId === 'egg')
@@ -18,9 +15,7 @@ describe('Egg joker', () => {
   })
 
   it('accumulates bonusSellValue over multiple rounds', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.egg, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.egg])
 
     let state = reduceGame(started, { type: 'ROUND_END' })
     state = reduceGame(state, { type: 'ROUND_END' })
@@ -30,9 +25,7 @@ describe('Egg joker', () => {
   })
 
   it('adds bonusSellValue to sell price when sold', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.egg, game)]
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.egg])
 
     let state = reduceGame(started, { type: 'ROUND_END' })
     state = reduceGame(state, { type: 'ROUND_END' })

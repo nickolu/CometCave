@@ -1,31 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRun, startRunWithJokers } from './helpers/start-run'
 
 describe('Turtle Bean joker', () => {
   function createGameWithTurtleBean(): GameState {
-    const game: GameState = structuredClone(defaultGameState)
-    const tb = initializeJoker(jokers.turtleBeanJoker, game)
-    tb.metadata = { handSizeBonus: 5 }
-    game.jokers = [tb]
-    return game
+    return startRunWithJokers([jokers.turtleBeanJoker])
   }
 
-  it('adds +5 hand size modifier on GAME_START', () => {
-    const game = createGameWithTurtleBean()
-    expect(game.handSizeModifier).toBe(0)
+  it('adds +5 hand size modifier when acquired', () => {
+    expect(startRun().handSizeModifier).toBe(0)
 
-    const started = reduceGame(game, { type: 'GAME_START' })
-    expect(started.handSizeModifier).toBe(5)
+    expect(createGameWithTurtleBean().handSizeModifier).toBe(5)
   })
 
   it('reduces hand size modifier by 1 on ROUND_END', () => {
-    const game = createGameWithTurtleBean()
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = createGameWithTurtleBean()
     expect(started.handSizeModifier).toBe(5)
 
     const afterRound1 = reduceGame(started, { type: 'ROUND_END' })
@@ -37,7 +30,6 @@ describe('Turtle Bean joker', () => {
 
   it('self-destructs after 5 rounds', () => {
     let game = createGameWithTurtleBean()
-    game = reduceGame(game, { type: 'GAME_START' })
 
     for (let i = 0; i < 5; i++) {
       game = reduceGame(game, { type: 'ROUND_END' })
@@ -48,14 +40,7 @@ describe('Turtle Bean joker', () => {
   })
 
   it('decrements each instance independently with multiple Turtle Beans', () => {
-    const game: GameState = structuredClone(defaultGameState)
-    const tb1 = initializeJoker(jokers.turtleBeanJoker, game)
-    tb1.metadata = { handSizeBonus: 5 }
-    const tb2 = initializeJoker(jokers.turtleBeanJoker, game)
-    tb2.metadata = { handSizeBonus: 5 }
-    game.jokers = [tb1, tb2]
-
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = startRunWithJokers([jokers.turtleBeanJoker, jokers.turtleBeanJoker])
     expect(started.handSizeModifier).toBe(10)
 
     const afterRound1 = reduceGame(started, { type: 'ROUND_END' })
@@ -72,8 +57,7 @@ describe('Turtle Bean joker', () => {
   })
 
   it('reverts hand size modifier when sold', () => {
-    const game = createGameWithTurtleBean()
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = createGameWithTurtleBean()
     expect(started.handSizeModifier).toBe(5)
 
     // Sell after 2 rounds (bonus should be 3)

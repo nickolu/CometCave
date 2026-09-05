@@ -1,28 +1,24 @@
 import { describe, expect, it } from 'vitest'
 
-import { defaultGameState } from '@/app/comet-cards/domain/game/default-game-state'
 import { reduceGame } from '@/app/comet-cards/domain/game/reduce-game'
 import type { GameState } from '@/app/comet-cards/domain/game/types'
 import { jokers } from '@/app/comet-cards/domain/joker/jokers'
-import { initializeJoker } from '@/app/comet-cards/domain/joker/utils'
+
+import { startRunWithJokers } from './helpers/start-run'
 
 describe('Rocket joker', () => {
   function createGameWithRocket(): GameState {
-    const game: GameState = structuredClone(defaultGameState)
-    game.jokers = [initializeJoker(jokers.rocketJoker, game)]
-    return game
+    return startRunWithJokers([jokers.rocketJoker])
   }
 
-  it('initializes payout to 1 on GAME_START', () => {
-    const game = createGameWithRocket()
-    const started = reduceGame(game, { type: 'GAME_START' })
+  it('initializes payout to 1 when acquired', () => {
+    const started = createGameWithRocket()
     const rk = started.jokers.find(j => j.jokerId === 'rocketJoker')
     expect(rk?.metadata?.payout).toBe(1)
   })
 
   it('pays out $1 on ROUND_END', () => {
-    const game = createGameWithRocket()
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = createGameWithRocket()
     const initialMoney = started.money
 
     const afterRound = reduceGame(started, { type: 'ROUND_END' })
@@ -30,8 +26,7 @@ describe('Rocket joker', () => {
   })
 
   it('increases payout by $2 when boss blind is completed', () => {
-    const game = createGameWithRocket()
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = createGameWithRocket()
 
     // Simulate boss blind completed
     const withBossCompleted: GameState = {
@@ -49,8 +44,7 @@ describe('Rocket joker', () => {
   })
 
   it('does not increase payout on non-boss blind rounds', () => {
-    const game = createGameWithRocket()
-    const started = reduceGame(game, { type: 'GAME_START' })
+    const started = createGameWithRocket()
 
     // Boss blind is notStarted (default)
     const afterRound = reduceGame(started, { type: 'ROUND_END' })

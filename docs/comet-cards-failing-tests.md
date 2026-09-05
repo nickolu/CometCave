@@ -1,110 +1,72 @@
-# Comet Cards: 70 failing tests
+# Comet Cards: the 70 failing tests (resolved)
 
-**Status:** open, pre-existing on `main`. Not caused by PR #4001 — that PR left the count
-unchanged (it fixed one of them as a side effect of correcting an assertion).
+**Status:** fixed. `npx vitest run src/app/comet-cards` → 810 passing, 0 failing.
 
-## The facts
+## What was wrong
 
-```
-npx vitest run src/app/comet-cards
-Tests  70 failed | 741 passed (811)
-```
-
-Stable across runs. 70 failures across 31 files, **all one root cause**.
-
-Every failing file matches the same shape:
+31 test files installed a joker and *then* dispatched `GAME_START`:
 
 ```ts
-const game: GameState = structuredClone(defaultGameState)
 game.jokers = [initializeJoker(jokers.egg, game)]
 const started = reduceGame(game, { type: 'GAME_START' })   // ← wipes game.jokers
-
-const afterRound = reduceGame(started, { type: 'ROUND_END' })
-expect(afterRound.jokers.find(j => j.jokerId === 'egg')?.bonusSellValue).toBe(3)
-//     ^ undefined: there is no Egg. There are no jokers at all.
 ```
 
-Verified mechanically: all 70 failures are in files containing both `.jokers =` and
-`{ type: 'GAME_START' }`. No failure falls outside that shape.
+Since `e42b9b83` (#1642), `GAME_START` deals a fresh run and discards whatever state it
+was handed — correct behaviour for a restart, but it means the tests asserted against a
+run with no jokers in it. All 70 failures were that one thing.
 
-The symptoms vary (`expected undefined to be 3`, `expected +0 to be 4`,
-`Cannot read properties of undefined`) but they are all the same thing: the joker under
-test no longer exists by the time the assertion runs.
+## The decision: the tests were stale, the code was right
 
-## Why
+All 12 joker `GAME_START` effects were unreachable. `createGameStateWithDeck` always
+returns `jokers: []`, `DeckModifiers` has no `startingJokers` field, and no deck defines
+`effects`, so the guard `if (ctx.game.jokers.some(j => j.jokerId === 'x'))` could never be
+true. Every one of the 12 had a `JOKER_ADDED` twin doing the same work — usually a better
+version of it, since the `JOKER_ADDED` handlers claim their effect once per copy via
+`metadata.onAddApplied` (see PR #4001) while the `GAME_START` ones did not.
 
-`e42b9b83` — *"fix: reset game state on restart so player returns to blind selection (#1642)"* —
-made `GAME_START` reset the whole run:
+So they were deleted. Nothing was lost: `startRunWithJokers` reproduces every value the
+deleted handlers used to produce (Turtle Bean +5, Stuntman −2, To the Moon 105, Rocket
+payout 1, Four Fingers 4, Wee Joker `chipsBonus: 0`, and the rest).
 
-```ts
-// src/app/comet-cards/domain/game/reduce-game.ts
-case 'GAME_START': {
-  const freshState = createGameStateWithDeck(draft.selectedDeck)
-  Object.assign(draft, structuredClone(freshState))
-  handleGameStart(draft, event)
-  return
-}
-```
+## What replaced them
 
-That is correct product behaviour — restarting should not keep your old jokers. The tests
-were written against the older `GAME_START`, which only moved `gamePhase` to
-`blindSelection` and left state alone. They used it as "begin a run", and it now means
-"throw the run away and begin a new one".
+- `dispatchJokerAdded(draft, joker)` in `domain/game/utils.ts` — the one place a joker's
+  arrival is announced. Both shop paths (purchase, booster pack) now call it, instead of
+  each assembling the same dispatch by hand.
+- `domain/game/__tests__/helpers/start-run.ts` — `startRun`, `addJoker`,
+  `startRunWithJokers`, `inGameplay`. A test now starts the run *first* and then acquires
+  jokers through the same `JOKER_ADDED` path a purchase uses, which is the only order the
+  real game can produce.
 
-## The bigger question this exposes
+## Verifying the rewrite
 
-**All 12 joker `GAME_START` effects are unreachable in production.** They are written as:
+Green was not the goal, so each of the 70 was checked by mutation: gut the joker under
+test (`effects: []`), re-run its file, confirm the test fails. **All 70 fail under
+mutation.** Two needed a control added to get there — "selling Invisible Joker before 2
+rounds does not duplicate" and "To Do List earns no money on a non-target hand" both
+passed happily against a joker that did nothing, so each now also asserts the positive
+case from the same state.
 
-```ts
-{
-  event: { type: 'GAME_START' },
-  apply: ctx => {
-    if (ctx.game.jokers.some(j => j.jokerId === 'stuntmanJoker')) {
-      ctx.game.handSizeModifier -= 2
-    }
-  },
-}
-```
+Other tests in those files still survive mutation, by their nature and not by accident:
 
-The guard can never be true. `createGameStateWithDeck` always produces `jokers: []`, and
-`DeckModifiers` has no `startingJokers` field, so no deck can seed one. Every one of these
-handlers is dead code, duplicating what the joker's `JOKER_ADDED` effect already does.
+- Pure negative assertions that were already passing before this work ("adds 0 Mult when
+  money is less than $5", "earns nothing if no 9s in deck", and similar). Their positive
+  counterpart in the same file is the control, and that one dies.
+- The three `JOKER_ADDED`-scope tests from PR #4001 (Flash Card, Spare Trousers, Wee
+  Joker). They guard against a *re-run* effect, so removing the effect cannot fail them.
+- Four Luchador tests that set `staticRules.bossBlindDisabled` directly and never hold the
+  joker.
 
-Affected: `fourFingersJoker`, `turtleBeanJoker`, `toTheMoonJoker`, `rocketJoker`,
-`weeJokerJoker`, `stuntmanJoker`, `spareTrousersJoker`, `merryAndyJoker`, `flashCardJoker`,
-`drunkardJoker`, `jugglerJoker`, `pareidolia`.
+Two tests that had been passing vacuously — Ice Cream and Popcorn "self-destructs" — now
+run against a real joker for the first time and still pass.
 
-So this is not purely a test problem. Decide the code question first, then the tests follow.
+One test was merged rather than kept: "Invisible Joker counter starts at 0" asserted a
+value that `initializeJoker` sets, not an effect, so it can never fail under mutation. It
+is now the opening assertion of "counter starts at 0 and increments by 1 on each
+ROUND_END". That is why the suite reports 810 tests rather than 811.
 
-## Two directions
+## Note for later
 
-**A. The tests are stale; the code is right.** Stop using `GAME_START` as run setup. Add a
-shared helper — something like `startedRunWithJokers(['egg'])` that runs `GAME_START`
-*first* and attaches jokers to the resulting state — and rewrite the 31 files against it.
-Then delete the 12 dead `GAME_START` joker effects, since nothing reaches them.
-
-Mechanical, ~31 files, no product change. This is the likely answer.
-
-**B. `GAME_START` should not wipe jokers.** Only plausible if jokers are ever meant to
-survive a restart or be granted at run start (a future deck with a starting joker, a
-"keep your build" mode). Nothing in the code wants that today. If you pick this, #1642's
-actual bug comes back and needs a different fix.
-
-Recommendation: **A**. Confirm with the repo owner before touching 31 test files, since the
-tests encode intent and rewriting them in bulk is exactly where a real regression can hide.
-
-## Watch out for
-
-- **Tests can encode the bug.** `oops-all-6s.test.ts` asserted `probabilityMultiplier` reached
-  ×8 for two copies, with a comment explaining that each purchase re-triggers every held
-  copy — it was documenting a bug as expected behaviour. PR #4001 corrected it to ×4. Assume
-  others in this set may do the same. Read what each test *means* before making it green.
-- **Green is not the goal.** Deleting the `GAME_START` assertions would clear the board and
-  test nothing. Each rewritten test must still fail if its joker's effect is removed.
-- Run from the repo root; `vitest run src/app/comet-cards` silently matches zero files from a
-  subdirectory.
-
-## Related
-
-- PR #4001 — `JOKER_ADDED` was broadcast to every held joker; fixed, with the reasoning in
-  the PR body. Same area of the code, different bug.
+`handleGameStart` still dispatches `GAME_START` to `collectEffects`. Nothing listens to it
+today. It is kept as the extension point for decks, vouchers and tags, which — unlike
+jokers — do exist at the moment a run begins.
