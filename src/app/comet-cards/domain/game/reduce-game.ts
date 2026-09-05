@@ -20,6 +20,7 @@ import {
 import {
   handleConsumableSold,
   handleUseConsumableCelestialCard,
+  handleUseConsumableSpectralCard,
   handleUseConsumableTarotCard,
 } from './handlers/consumable'
 import {
@@ -340,8 +341,10 @@ export function reduceGame(game: GameState, event: GameEvent): GameState {
         return
       }
       case 'SPECTRAL_CARD_USED': {
-        // Spectral cards are currently only usable from packs via SHOP_USE_SPECTRAL_CARD_FROM_PACK
-        // This case handles the event for effect dispatching purposes
+        // A Spectral taken straight off a pack goes through
+        // SHOP_USE_SPECTRAL_CARD_FROM_PACK, which dispatches its own effects.
+        // This is the held-in-a-slot path, and it no-ops when nothing is selected.
+        handleUseConsumableSpectralCard(draft, event)
         return
       }
       case 'CARD_DESTROYED': {

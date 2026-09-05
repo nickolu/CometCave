@@ -18,15 +18,21 @@ export function getRandomSpectralCardType(game: GameState): SpectralCardType {
 export function initializeSpectralCard(definition: SpectralCardDefinition): SpectralCardState {
   return {
     id: uuid(),
+    consumableType: 'spectralCard',
     spectralType: definition.spectralType,
   }
 }
 
+// Spectral cards are the only consumable with a `spectralType`, and runs saved
+// before they carried a `consumableType` are still in localStorage, so the shape
+// is the guard rather than the discriminant.
 export function isSpectralCardState(card: unknown): card is SpectralCardState {
-  return (
-    typeof card === 'object' &&
-    card !== null &&
-    'spectralType' in card &&
-    !('consumableType' in card)
-  )
+  return typeof card === 'object' && card !== null && 'spectralType' in card
 }
+
+/**
+ * What a held Spectral sells for. Spectral cards are never priced — they come
+ * out of packs and decks, not shops — so selling one pays a flat amount rather
+ * than half of a price it does not have.
+ */
+export const SPECTRAL_SELL_VALUE = 2

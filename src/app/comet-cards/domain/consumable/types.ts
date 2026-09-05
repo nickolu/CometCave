@@ -1,6 +1,7 @@
 import { Effect } from '@/app/comet-cards/domain/events/types'
 import { GameState } from '@/app/comet-cards/domain/game/types'
 import type { PokerHandDefinition } from '@/app/comet-cards/domain/hand/types'
+import type { SpectralCardState } from '@/app/comet-cards/domain/spectral/types'
 
 export type Consumable = CelestialCardDefinition | TarotCardDefinition
 
@@ -63,3 +64,6 @@ export interface TarotCardState extends ConsumableState {
   consumableType: 'tarotCard'
   tarotType: TarotCardDefinition['tarotType']
 }
+
+/** Everything that can occupy a consumable slot. */
+export type HeldConsumableState = CelestialCardState | TarotCardState | SpectralCardState

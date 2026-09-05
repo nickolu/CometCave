@@ -1,4 +1,7 @@
 import { uuid } from '@/app/comet-cards/domain/randomness'
+import { implementedSpectralCards } from '@/app/comet-cards/domain/spectral/spectal-cards'
+import type { SpectralCardDefinition } from '@/app/comet-cards/domain/spectral/types'
+import { isSpectralCardState } from '@/app/comet-cards/domain/spectral/utils'
 
 import { celestialCards } from './celestial-cards'
 import { tarotCards } from './tarot-cards'
@@ -7,20 +10,28 @@ import {
   CelestialCardState,
   ConsumableEdition,
   ConsumableState,
+  HeldConsumableState,
   TarotCardDefinition,
   TarotCardState,
 } from './types'
 
+/**
+ * The definition behind a held consumable.
+ *
+ * Returns `undefined` for a Spectral the game does not implement yet, so
+ * callers render "Not Implemented" rather than a nameless card.
+ */
 export function getConsumableDefinition(
-  consumable: TarotCardState | CelestialCardState
-): TarotCardDefinition | CelestialCardDefinition {
+  consumable: HeldConsumableState
+): TarotCardDefinition | CelestialCardDefinition | SpectralCardDefinition | undefined {
+  if (isSpectralCardState(consumable)) return implementedSpectralCards[consumable.spectralType]
   return consumable.consumableType === 'tarotCard'
     ? tarotCards[consumable.tarotType]
     : celestialCards[consumable.handId]
 }
 
 export const findLastTarotOrCelestialCard = (
-  consumables: (CelestialCardState | TarotCardState)[]
+  consumables: HeldConsumableState[]
 ): TarotCardState | CelestialCardState | undefined => {
   // Find the LAST (most recent) tarot or celestial card, not the first
   return consumables.findLast(

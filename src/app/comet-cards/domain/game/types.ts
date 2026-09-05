@@ -1,7 +1,4 @@
-import type {
-  CelestialCardState,
-  TarotCardState,
-} from '@/app/comet-cards/domain/consumable/types'
+import type { HeldConsumableState } from '@/app/comet-cards/domain/consumable/types'
 import type { GameMode, LastAnteState } from '@/app/comet-cards/domain/daily/types'
 import type { PokerHandDefinition, PokerHandsState } from '@/app/comet-cards/domain/hand/types'
 import type { JokerState } from '@/app/comet-cards/domain/joker/types'
@@ -17,8 +14,8 @@ export interface GameState {
   // Card registry: single source of truth for all card state
   cards: Record<string, PlayingCardState>
 
-  consumables: (CelestialCardState | TarotCardState)[]
-  consumablesUsed: (CelestialCardState | TarotCardState)[]
+  consumables: HeldConsumableState[]
+  consumablesUsed: HeldConsumableState[]
   discardsPlayed: number
   gamePhase: GamePhase
   gamePlayState: GamePlayState // values which reset between hands, blinds, or rounds
@@ -121,7 +118,7 @@ export interface GamePlayState {
   scoringEvents: (ScoringEvent | CustomScoringEvent)[]
   selectedCardIds: string[]
   selectedHand?: [PokerHandDefinition['id'], PlayingCardState[]]
-  selectedConsumable?: CelestialCardState | TarotCardState
+  selectedConsumable?: HeldConsumableState
   selectedJokerId?: string
 }
 

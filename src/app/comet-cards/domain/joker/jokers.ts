@@ -4506,7 +4506,7 @@ export const seance: JokerDefinition = {
           'seance',
         ])
         const spectralCard = getRandomSpectralCards(1, seed)[0]
-        ctx.game.consumables.push(initializeSpectralCard(spectralCard) as any)
+        ctx.game.consumables.push(initializeSpectralCard(spectralCard))
       },
     },
   ],
@@ -4541,7 +4541,7 @@ export const sixthSense: JokerDefinition = {
           'sixthSense',
         ])
         const spectralCard = getRandomSpectralCards(1, seed)[0]
-        ctx.game.consumables.push(initializeSpectralCard(spectralCard) as any)
+        ctx.game.consumables.push(initializeSpectralCard(spectralCard))
       },
     },
   ],
