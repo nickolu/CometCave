@@ -130,6 +130,16 @@ body {
   --sm-c7: #a3e635;  /* lime */
   --sm-ink: #08111c; /* dark text on a bright sigil */
 
+  /* --- Clusters difficulty tiers (easiest -> hardest) -------------- */
+  /* Fills carrying near-black text -- the inverse of the rest of the
+     app, which is what makes a solved banner read as a trophy. Blue and
+     purple reuse the Starmatch values above. */
+  --cl-yellow: #f6d84f;  /* easiest */
+  --cl-green:  #7ed48f;
+  --cl-blue:   #63b3ff;
+  --cl-purple: #c084fc;  /* hardest */
+  --cl-ink:    #12131f;  /* text on any tier fill */
+
   /* --- Spacing ---------------------------------------------------- */
   --space-unit: 8px;
   --space-stack-gap: 16px;

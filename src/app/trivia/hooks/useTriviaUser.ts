@@ -15,6 +15,11 @@ import type { TriviaGameResult } from '@/app/trivia/models/trivia'
 import { useAuth } from '@/hooks/useAuth'
 import { hasPlayedToday } from '@/lib/dates'
 import { getFirebaseFirestore } from '@/lib/firebase/client'
+import {
+  NICKNAME_MAX_LENGTH,
+  NicknameInUseError,
+  sanitizeNickname,
+} from '@/lib/users/nickname'
 
 export interface TriviaStats {
   gamesPlayed: number
@@ -36,18 +41,8 @@ const EMPTY_STATS: TriviaStats = {
   lastPlayedDate: null,
 }
 
-export const NICKNAME_MAX_LENGTH = 20
-
-export function sanitizeNickname(raw: string): string {
-  return raw.trim().slice(0, NICKNAME_MAX_LENGTH)
-}
-
-export class NicknameInUseError extends Error {
-  constructor() {
-    super('Nickname is already taken')
-    this.name = 'NicknameInUseError'
-  }
-}
+// Re-exported for existing trivia call sites; defined in @/lib/users/nickname.
+export { NICKNAME_MAX_LENGTH, NicknameInUseError, sanitizeNickname }
 
 function normalizeStats(data: DocumentData | undefined): TriviaStats {
   if (!data) return EMPTY_STATS

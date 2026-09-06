@@ -41,6 +41,19 @@ service cloud.firestore {
       // transcript. Owner-only, accessed via /api/v1/dicebound/campaign.
       match /dicebound/{docId} { allow read, write: if false; }
 
+      // Clusters - the daily word-grouping game. Profile and finished games
+      // are owner-readable so the stats page can subscribe directly.
+      match /clustersProfile/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+      match /clustersGames/{docId} {
+        allow read: if request.auth != null && request.auth.uid == uid;
+      }
+      // The live run. Server-only: it is the single source of truth for
+      // mistakes and solved groups, written only inside the guess
+      // transaction in /api/v1/clusters/guess.
+      match /clustersSessions/{docId} { allow read, write: if false; }
+
       // Dicebound chapters — transcript that condense has archived out of the
       // live campaign. Write-once, never read during a turn, owner-only.
       match /diceboundChapters/{docId} { allow read, write: if false; }
@@ -50,6 +63,11 @@ service cloud.firestore {
     // Written only through /api/v1/voice-journey, which validates every key
     // against the curriculum. The client must never reach it directly.
     match /voiceJourney/{docId} { allow read, write: if false; }
+
+    // Clusters puzzle bank - server only. LOAD-BEARING: the client must
+    // never read this collection. If it can, the whole server-authoritative
+    // guess-checking design is decorative.
+    match /dailyClusters/{date} { allow read, write: if false; }
 
     // Nicknames uniqueness index — server only
     match /nicknames/{name} { allow read, write: if false; }

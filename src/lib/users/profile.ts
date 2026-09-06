@@ -1,8 +1,13 @@
 import { FieldValue, Timestamp } from 'firebase-admin/firestore'
 
 import { getFirestoreDb } from '@/lib/firebase/server'
+import {
+  NICKNAME_MAX_LENGTH,
+  NicknameInUseError,
+  sanitizeNickname,
+} from '@/lib/users/nickname'
 
-export const NICKNAME_MAX_LENGTH = 20
+export { NICKNAME_MAX_LENGTH, NicknameInUseError, sanitizeNickname }
 
 export interface UserProfile {
   uid: string
@@ -22,10 +27,6 @@ export interface AuthClaims {
   name?: string
   picture?: string
   isAnonymous: boolean
-}
-
-export function sanitizeNickname(raw: string): string {
-  return raw.trim().slice(0, NICKNAME_MAX_LENGTH)
 }
 
 function userDocRef(uid: string) {
@@ -79,13 +80,6 @@ export async function ensureAnonymousFlag(claims: AuthClaims): Promise<void> {
     { isAnonymous: claims.isAnonymous, updatedAt: FieldValue.serverTimestamp() },
     { merge: true }
   )
-}
-
-export class NicknameInUseError extends Error {
-  constructor() {
-    super('Nickname is already taken')
-    this.name = 'NicknameInUseError'
-  }
 }
 
 export async function setNickname(uid: string, raw: string): Promise<{ nickname: string }> {

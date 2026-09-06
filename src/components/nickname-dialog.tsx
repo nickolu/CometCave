@@ -2,21 +2,30 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { Input } from '@/components/ui/input'
 import {
   NICKNAME_MAX_LENGTH,
   NicknameInUseError,
   sanitizeNickname,
-} from '@/app/trivia/hooks/useTriviaUser'
-import { ChunkyButton } from '@/components/ui/chunky-button'
-import { Input } from '@/components/ui/input'
+} from '@/lib/users/nickname'
 
 interface NicknameDialogProps {
   initialValue: string
   onClose: () => void
   onSave: (nickname: string) => Promise<void>
+  /** Each game words this for itself; the default suits a leaderboard game. */
+  subtitle?: string
+  title?: string
 }
 
-export function NicknameDialog({ initialValue, onClose, onSave }: NicknameDialogProps) {
+export function NicknameDialog({
+  initialValue,
+  onClose,
+  onSave,
+  subtitle = 'Shown on the leaderboard and wherever your name appears.',
+  title = 'Choose your nickname',
+}: NicknameDialogProps) {
   const [value, setValue] = useState(initialValue)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -75,11 +84,9 @@ export function NicknameDialog({ initialValue, onClose, onSave }: NicknameDialog
           id="nickname-dialog-title"
           className="text-lg font-bold text-ds-tertiary mb-1"
         >
-          Choose your nickname
+          {title}
         </h2>
-        <p className="text-on-surface/60 text-sm mb-4">
-          Shown on the leaderboard and wherever your name appears.
-        </p>
+        <p className="text-on-surface/60 text-sm mb-4">{subtitle}</p>
         <Input
           ref={inputRef}
           value={value}
