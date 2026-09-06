@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 
-import { buildShareText, copyShareText } from '@/app/clusters/lib/shareGrid'
+import { buildShare, copyShareText } from '@/app/clusters/lib/shareGrid'
 import {
   type ClusterGroup,
   type ClustersProfile,
@@ -60,10 +60,17 @@ export function ClustersResults({
   const streak = displayedStreak(profile, today)
   const stats = statsFrom(profile)
 
-  const shareText = buildShareText({ puzzleNumber, guesses, groups: solution, status })
+  const share = buildShare({
+    puzzleNumber,
+    guesses,
+    groups: solution,
+    solved: groups,
+    status,
+    mistakes,
+  })
 
   async function onShare() {
-    const ok = await copyShareText(shareText)
+    const ok = await copyShareText(share.text)
     setCopied(ok)
     if (ok) setTimeout(() => setCopied(false), 2500)
   }
@@ -113,10 +120,16 @@ export function ClustersResults({
         ))}
       </div>
 
+      {/* A preview of exactly what gets copied, typeset a piece at a time so
+          the emoji grid and the link can each be sized for what they are. */}
       <ChunkyCard variant="surface-container">
         <ChunkyCardContent className="flex flex-col gap-4 py-5">
-          <div className="flex flex-col items-center gap-1">
-            <pre className="font-mono text-lg leading-[1.35] tracking-[0.12em]">{shareText}</pre>
+          <div className="flex flex-col items-center gap-2">
+            <p className="font-headline text-sm font-bold text-on-surface">{share.title}</p>
+            <pre className="font-mono text-lg leading-[1.35] tracking-[0.12em]">
+              {share.rows.join('\n')}
+            </pre>
+            <p className="break-all text-center text-xs text-on-surface-variant">{share.url}</p>
           </div>
           <ChunkyButton variant="primary" size="lg" onClick={onShare} className="w-full">
             {copied ? 'Copied' : 'Share result'}

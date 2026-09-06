@@ -487,20 +487,37 @@ Win or loss, the same screen: the four groups in tier order, the guess-by-guess 
 grid, mistakes used, updated streak, and — the pact's fixed slots — a **Share** button
 and, for anonymous players only, the **sign-up CTA** (model #3 and #4).
 
-Share copies an emoji grid, one row per guess, four tier-colored squares per row in the
-order the player selected them:
+Share copies the result title, an emoji grid — one row per guess, four tier-coloured
+squares in the order the player selected them — and a link to play:
 
 ```
-Clusters #86
+Clusters #86 · perfect
 🟪🟪🟪🟪
 🟨🟨🟩🟨
 🟨🟨🟨🟨
 🟩🟩🟩🟩
 🟦🟦🟦🟦
+
+https://cometcave.com/clusters
 ```
 
-Generated from the server-held guess history. No words, no titles — the share must not
-spoil the puzzle for whoever receives it.
+The title reports the outcome — `perfect`, `2 mistakes`, or `unsolved` — because the
+grid alone does not make the cost legible at a glance.
+
+**The link points at today's puzzle, not the dated archive URL** *(build)*. A share
+has to drop the reader straight into play (Principle 1), and a day can only ever be
+played once — so linking a specific archive date would silently burn that day for
+them, and an archive play builds no streak. In the case that actually happens,
+sharing minutes after playing, today's puzzle *is* the one being shared about.
+
+**The forced last group still gets a row** *(build)*. Solving three groups
+auto-resolves the fourth (§3.3), which records no guess — so a grid built from the
+guess history alone drops it, and a clean win goes out as three rows instead of four.
+The builder appends a row for any solved group with no guess of its own, and does so
+only on a win, because on a loss `solved` also carries the groups the reveal added.
+
+The grid carries no words and no titles: a share must never spoil the puzzle for
+whoever receives it.
 
 ### 7.7 The rest of the pact (Principle 6)
 
@@ -540,6 +557,7 @@ src/app/clusters/
   hooks/       useClustersUser.ts      # profile + history subscription
                useClustersGame.ts      # session state machine, guess mutation
   lib/         shareGrid.ts  tiers.ts
+               __tests__/shareGrid.test.ts
   models/      clusters.ts
 
 src/lib/clusters/
@@ -549,7 +567,7 @@ src/lib/clusters/
   scoring.ts     # evaluateGuess, validateGuess - pure, no I/O
   session.ts     # session doc + the guess transaction
   profile.ts     # applyResult, displayedStreak - pure
-  __tests__/     dateMap  scoring  profile  nytSource      # 59 tests
+  __tests__/     dateMap  scoring  profile  nytSource
 
 src/app/api/v1/clusters/
   daily/route.ts  guess/route.ts  archive/route.ts
