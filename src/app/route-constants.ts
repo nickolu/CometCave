@@ -17,6 +17,7 @@ export const ROUTE_CONSTANTS = {
   MICRO_LAND: '/micro-land',
   DICEBOUND: '/dicebound',
   BADGE_RUN: '/badge-run',
+  CLUSTERS: '/clusters',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
 }

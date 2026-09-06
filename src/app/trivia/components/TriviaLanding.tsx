@@ -18,7 +18,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { formatDisplayDate, getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
-import { NicknameDialog } from './NicknameDialog'
+import { NicknameDialog } from '@/components/nickname-dialog'
 import { ResetNoticeButton } from './ResetNoticeButton'
 import { ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'

@@ -25,6 +25,8 @@ export default defineConfig({
       'src/lib/dicebound/**/*.test.ts',
       'src/lib/voice-journey/**/*.test.ts',
       'src/app/badge-run/**/*.test.ts',
+      'src/lib/clusters/**/*.test.ts',
+      'src/app/clusters/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],
