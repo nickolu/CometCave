@@ -18,6 +18,7 @@ export const ROUTE_CONSTANTS = {
   DICEBOUND: '/dicebound',
   BADGE_RUN: '/badge-run',
   CLUSTERS: '/clusters',
+  HUM: '/hum',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
 }

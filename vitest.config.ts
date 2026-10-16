@@ -27,6 +27,7 @@ export default defineConfig({
       'src/app/badge-run/**/*.test.ts',
       'src/lib/clusters/**/*.test.ts',
       'src/app/clusters/**/*.test.ts',
+      'src/app/hum/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],
