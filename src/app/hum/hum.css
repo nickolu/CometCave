@@ -1,0 +1,644 @@
+/* Hum — an instrument panel: dark glass, brushed knobs, one glowing trace.
+   Juice lives inside the game (Principle 2). Every animation here is off
+   under prefers-reduced-motion; the static state still shows what changed. */
+
+.hum {
+  --hum-trace: #7dfce0;
+  --hum-bezel-1: #3a3d5c;
+  --hum-bezel-2: #151729;
+  --hum-bezel-3: #2a2d48;
+  --hum-glass-1: #0b2a2c;
+  --hum-glass-2: #061619;
+  --hum-glass-3: #03090c;
+  --hum-panel: #10131f;
+  --hum-panel-edge: #23263c;
+  --hum-tone: #7dfce0;
+  --hum-filter: #ffba20;
+  --hum-envelope: #ff6b9d;
+  --hum-wobble: #c084fc;
+  --hum-effects: #63b3ff;
+}
+
+.hum-g-tone {
+  --hum-accent: var(--hum-tone);
+}
+.hum-g-filter {
+  --hum-accent: var(--hum-filter);
+}
+.hum-g-envelope {
+  --hum-accent: var(--hum-envelope);
+}
+.hum-g-wobble {
+  --hum-accent: var(--hum-wobble);
+}
+.hum-g-effects {
+  --hum-accent: var(--hum-effects);
+}
+
+/* --- Layout ---------------------------------------------------------- */
+
+.hum-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.hum-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.hum-scope-wrap {
+  position: relative;
+  width: min(100%, 440px);
+  margin: 0 auto;
+  aspect-ratio: 1;
+}
+
+.hum-scope {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 4px #080916,
+    0 18px 40px rgba(0, 0, 0, 0.5);
+}
+
+.hum-scope-start {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: fit-content;
+  height: fit-content;
+  padding: 14px 24px;
+  border-radius: 999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: 700;
+}
+
+.hum-panel,
+.hum-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  background: var(--hum-panel);
+  border: 1px solid var(--hum-panel-edge);
+}
+
+.hum-card {
+  gap: 0;
+  background: linear-gradient(160deg, #142027, var(--hum-panel) 60%);
+}
+
+.hum-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--hum-trace);
+  margin-bottom: 4px;
+}
+
+/* --- Lesson goals ------------------------------------------------------- */
+
+.hum-goal {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
+}
+
+.hum-goal-mark {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--outline);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hum-goal-now {
+  color: var(--on-surface);
+}
+.hum-goal-now .hum-goal-mark {
+  border-color: var(--hum-trace);
+  color: var(--hum-trace);
+}
+.hum-goal-done {
+  color: var(--on-surface-variant);
+}
+.hum-goal-done .hum-goal-mark {
+  background: var(--hum-trace);
+  border-color: var(--hum-trace);
+  color: #002018;
+}
+.hum-goal-later {
+  opacity: 0.6;
+}
+
+.hum-takeaway {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border-left: 3px solid var(--hum-trace);
+  background: rgba(125, 252, 224, 0.06);
+}
+
+.hum-review summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.hum-link {
+  align-self: flex-start;
+  font-size: 13px;
+  color: var(--ds-secondary);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* --- Knobs --------------------------------------------------------------- */
+
+.hum-groups {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.hum-group {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 8px 10px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--hum-panel-edge);
+  border-top: 2px solid var(--hum-accent);
+}
+
+.hum-group-label {
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--hum-accent);
+}
+
+.hum-group-knobs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.hum-knob {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 76px;
+  text-align: center;
+}
+
+.hum-knob-dial {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.hum-knob-dial:focus-visible,
+.hum-choice-btn:focus-visible {
+  outline: 2px solid var(--hum-accent);
+  outline-offset: 2px;
+}
+
+.hum-knob-dial svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.hum-knob-cap {
+  fill: #1d2034;
+  stroke: #34385a;
+  stroke-width: 1.5;
+}
+.hum-knob-track {
+  fill: none;
+  stroke: #2a2d45;
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+.hum-knob-value {
+  fill: none;
+  stroke: var(--hum-accent);
+  stroke-width: 4;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 3px var(--hum-accent));
+}
+.hum-knob-pointer {
+  stroke: var(--on-surface);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.hum-knob-label {
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.hum-knob-readout {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+
+.hum-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.hum-choice-row {
+  display: flex;
+  gap: 4px;
+}
+
+.hum-choice-btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--hum-panel-edge);
+  background: #171a2b;
+  color: var(--on-surface-variant);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.hum-choice-btn[aria-checked='true'] {
+  border-color: var(--hum-accent);
+  color: var(--hum-accent);
+  background: color-mix(in srgb, var(--hum-accent) 12%, #171a2b);
+}
+
+/* A knob arriving for the first time gets a ring. Motion adds a pulse. */
+.hum-knob-new .hum-knob-dial,
+.hum-choice.hum-knob-new .hum-choice-row {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--hum-accent) 55%, transparent);
+  border-radius: 999px;
+}
+.hum-choice.hum-knob-new .hum-choice-row {
+  border-radius: 12px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hum-knob-new .hum-knob-dial,
+  .hum-choice.hum-knob-new .hum-choice-row {
+    animation: hum-arrive 1.4s ease-out 3;
+  }
+}
+
+@keyframes hum-arrive {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--hum-accent) 80%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+.hum-hint {
+  min-height: 2.6em;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--on-surface-variant);
+}
+
+.hum-pill {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--outline);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+.hum-pill:disabled {
+  opacity: 0.5;
+}
+.hum-pill:not(:disabled):hover {
+  border-color: var(--hum-trace);
+}
+
+.hum-saved {
+  display: flex;
+  align-items: stretch;
+  border-radius: 999px;
+  border: 1px solid var(--hum-panel-edge);
+  overflow: hidden;
+  font-size: 13px;
+}
+.hum-saved-load {
+  padding: 6px 12px;
+  color: var(--on-surface);
+}
+.hum-saved-act {
+  padding: 6px 10px;
+  border-left: 1px solid var(--hum-panel-edge);
+  color: var(--on-surface-variant);
+}
+
+/* --- Play key and switches ----------------------------------------------- */
+
+.hum-play {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 56px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--primary-container);
+  color: var(--on-primary-container);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  touch-action: none;
+  box-shadow: 0 4px 0 #009b76;
+}
+
+.hum-play-on {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 #009b76,
+    0 0 24px rgba(0, 255, 194, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hum-play-on {
+    transform: none;
+  }
+}
+
+.hum-seg,
+.hum-icon-btn {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--outline);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface-variant);
+}
+
+.hum-seg[aria-pressed='true'] {
+  border-color: var(--hum-trace);
+  color: var(--hum-trace);
+  background: rgba(125, 252, 224, 0.08);
+}
+
+.hum-icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  padding: 0;
+}
+.hum-icon-btn[aria-pressed='true'] {
+  color: var(--ds-error);
+  border-color: var(--ds-error);
+}
+
+.hum-range {
+  accent-color: var(--hum-trace);
+  width: 110px;
+}
+
+/* --- Beat grid --------------------------------------------------------------- */
+
+/* The grid scrolls sideways inside its own box on narrow screens, never
+   the page (docs/hum-design.md §7). */
+.hum-grid-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.hum-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 560px;
+}
+
+.hum-grid-row {
+  display: grid;
+  grid-template-columns: 112px repeat(16, minmax(24px, 1fr));
+  gap: 4px;
+  align-items: stretch;
+}
+
+.hum-row-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  padding-right: 6px;
+  min-width: 0;
+}
+
+.hum-row-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--on-surface);
+}
+
+.hum-mini {
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--hum-panel-edge);
+  font-size: 11px;
+  color: var(--on-surface-variant);
+}
+.hum-mini-on {
+  border-color: var(--hum-trace);
+  color: var(--hum-trace);
+}
+
+.hum-cell {
+  position: relative;
+  min-height: 38px;
+  border-radius: 6px;
+  background: #1a1d2e;
+  border: 1px solid transparent;
+  overflow: hidden;
+}
+
+/* The first step of each beat sits a shade lighter, so four groups of four
+   read at a glance. */
+.hum-cell-beat {
+  background: #22263b;
+}
+
+.hum-cell-on {
+  background: color-mix(in srgb, var(--hum-trace) 75%, #1a1d2e);
+}
+
+.hum-cell-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--hum-trace);
+}
+.hum-cell-on:has(.hum-cell-bar) {
+  background: color-mix(in srgb, var(--hum-trace) 22%, #1a1d2e);
+}
+
+.hum-cell-now {
+  border-color: var(--on-surface);
+}
+
+.hum-cell:focus-visible {
+  outline: 2px solid var(--ds-secondary);
+  outline-offset: 1px;
+}
+
+.hum-roll-row .hum-cell {
+  min-height: 26px;
+}
+.hum-roll-head {
+  align-items: flex-end;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+
+/* --- Three-column stage: knobs either side of the scope ------------------- */
+
+.hum-layout {
+  grid-template-areas: 'center' 'lesson' 'left' 'right';
+}
+.hum-area-center {
+  grid-area: center;
+}
+.hum-area-lesson {
+  grid-area: lesson;
+}
+.hum-area-left {
+  grid-area: left;
+}
+.hum-area-right {
+  grid-area: right;
+}
+
+@media (min-width: 1100px) {
+  .hum-layout {
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr) minmax(260px, 300px);
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      'lesson center right'
+      'left center right';
+    align-items: start;
+  }
+  .hum-area-center {
+    position: static;
+  }
+}
+
+.hum-knob-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 1099px) {
+  .hum-knob-column {
+    flex-flow: row wrap;
+  }
+  .hum-knob-column .hum-group {
+    flex: 1 1 260px;
+  }
+}
+
+.hum-group {
+  background: var(--hum-panel);
+}
+
+.hum-soundbar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  text-align: center;
+}
+.hum-soundbar .hum-hint {
+  min-height: 2.8em;
+}
+
+/* --- Beat section --------------------------------------------------------- */
+
+.hum-beat {
+  margin-top: 16px;
+}
+
+.hum-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hum-collapse-mark {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--hum-trace);
+}
+.hum-collapse[aria-expanded='true'] .hum-collapse-mark {
+  transform: rotate(90deg);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .hum-collapse-mark {
+    transition: transform 120ms ease-out;
+  }
+}
+
+.hum-row-rename {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  text-align: left;
+}
+.hum-row-rename .material-symbols-outlined {
+  color: var(--on-surface-variant);
+}
+.hum-row-rename:hover {
+  color: var(--hum-trace);
+}
+
+.hum-row-input {
+  width: 100%;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--hum-trace);
+  background: #171a2b;
+  color: var(--on-surface);
+  font-size: 13px;
+  font-weight: 600;
+}
