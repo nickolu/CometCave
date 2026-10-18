@@ -21,4 +21,5 @@ export const ROUTE_CONSTANTS = {
   HUM: '/hum',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
+  COIN_PUSHER: '/coin-pusher',
 }
