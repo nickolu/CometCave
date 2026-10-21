@@ -59,3 +59,54 @@ export type FallResult = 'chute' | 'gutter'
 export function classifyFall(x: number, chuteHalfWidth = CHUTE_HALF_WIDTH): FallResult {
   return Math.abs(x) <= chuteHalfWidth ? 'chute' : 'gutter'
 }
+
+/**
+ * A level of the table: a floor with a pusher on it, an edge at the front,
+ * and something hanging just above the pusher's top at the back that
+ * scrapes off whatever rides it (the back wall, or the front edge of the
+ * deck above). Most stages have one deck; The Cascade Engine stacks three,
+ * each spilling onto the pusher top of the one below.
+ */
+export type Deck = {
+  /** Height of the floor's top. */
+  floorY: number
+  /** The edge things fall off. */
+  frontZ: number
+  /** The face of what hangs above the pusher's top. */
+  backZ: number
+  pusher: {
+    /** Pusher center at mid-stroke, and how far it swings either way. */
+    midZ: number
+    ampZ: number
+    depth: number
+    /** Seconds this pusher's stroke runs behind the top deck's. */
+    lagS: number
+  }
+}
+
+/** Decks, bottom first. The bottom deck's front edge is the scoring edge. */
+export type Layout = readonly Deck[]
+
+export const CLASSIC_LAYOUT: Layout = [
+  {
+    floorY: 0,
+    frontZ: FIELD_FRONT_Z,
+    backZ: BACK_WALL_Z,
+    pusher: { midZ: PUSHER_MID_Z, ampZ: PUSHER_AMP_Z, depth: PUSHER_DEPTH, lagS: 0 },
+  },
+]
+
+export function deckPusherZ(deck: Deck, timeS: number, periodS = PUSHER_PERIOD_S): number {
+  const { midZ, ampZ, lagS } = deck.pusher
+  return midZ + ampZ * Math.sin((2 * Math.PI * (timeS - lagS)) / periodS)
+}
+
+/** The top deck: where coins are dropped. */
+export const topDeck = (layout: Layout): Deck => layout[layout.length - 1]
+
+/** The back of the table: behind every pusher's back end, with margin. */
+export function fieldBackZ(layout: Layout): number {
+  if (layout === CLASSIC_LAYOUT) return FIELD_BACK_Z
+  const ends = layout.map(d => d.pusher.midZ - d.pusher.ampZ - d.pusher.depth / 2)
+  return Math.min(...ends) - 0.4
+}

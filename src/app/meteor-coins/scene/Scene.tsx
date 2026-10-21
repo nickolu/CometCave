@@ -6,21 +6,23 @@ import * as THREE from 'three'
 
 import {
   BACK_WALL_GAP,
-  BACK_WALL_Z,
   DROP_Z,
-  FIELD_BACK_Z,
+  type Deck,
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
+  type Layout,
   PHYSICS_STEP_S,
   PUCK_THICKNESS,
-  PUSHER_DEPTH,
   PUSHER_HEIGHT,
   PUSHER_MID_Z,
   WALL_HEIGHT,
+  fieldBackZ,
+  topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
   ARM_LENGTH,
   ARM_PIVOT_Y,
+  type ArmConfig,
   RING_RADIUS,
   RING_TUBE,
   RING_Y,
@@ -30,7 +32,7 @@ import {
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part } from '@/app/meteor-coins/lib/objects'
-import { type Insets, fitCamera } from '@/app/meteor-coins/scene/framing'
+import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
 /** Never run more than this many physics steps in one frame (e.g. after a stall). */
@@ -53,7 +55,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     return [...bySpec].map(([spec, indices]) => ({ spec, indices }))
   }, [game])
   const groupMeshes = useRef<(THREE.InstancedMesh | null)[][]>([])
-  const pusher = useRef<THREE.Mesh>(null)
+  const pushers = useRef<(THREE.Mesh | null)[]>([])
   const riders = useRef<THREE.Group>(null)
   const arm = useRef<THREE.Group>(null)
   const heldCoin = useRef<THREE.Group>(null)
@@ -116,7 +118,10 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       if (cueClosed.current) cueClosed.current.visible = !open
     }
 
-    pusher.current?.position.set(0, PUSHER_HEIGHT / 2, game.engine.pusherZ)
+    const pusherZs = game.engine.pusherZs()
+    layout.forEach((deck, i) =>
+      pushers.current[i]?.position.set(0, deck.floorY + PUSHER_HEIGHT / 2, pusherZs[i])
+    )
     riders.current?.position.set(0, 0, game.engine.pusherZ - PUSHER_MID_Z)
     arm.current?.rotation.set(0, 0, armAngle(game.dropperTime, game.stage.arm.periodS))
     if (heldCoin.current) heldCoin.current.visible = game.canDrop
@@ -130,6 +135,8 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 
   const drop = game.stage.objects.drop
   const { arm: armConfig, table } = game.stage
+  const layout = game.engine.layout
+  const top = topDeck(layout)
   const obstacles = table.obstacles ?? []
   const pivotY = armConfig.pivotY ?? ARM_PIVOT_Y
   const dropZ = armConfig.dropZ ?? DROP_Z
@@ -137,15 +144,26 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   return (
     <>
       <Cabinet
+        layout={layout}
         chuteHalfWidth={game.engine.chuteHalfWidth}
         obstacles={obstacles.filter(o => !o.rides)}
         icy={(table.floorFriction ?? 1) < 0.2}
       />
 
-      <mesh ref={pusher} position={[0, PUSHER_HEIGHT / 2, game.engine.pusherZ]}>
-        <boxGeometry args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, PUSHER_DEPTH]} />
-        <meshStandardMaterial color={PALETTE.pusher} />
-      </mesh>
+      {layout.map((deck, i) => (
+        <mesh
+          key={i}
+          ref={mesh => {
+            pushers.current[i] = mesh
+          }}
+          position={[0, deck.floorY + PUSHER_HEIGHT / 2, game.engine.pusherZs()[i]]}
+        >
+          <boxGeometry
+            args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, deck.pusher.depth]}
+          />
+          <meshStandardMaterial color={PALETTE.pusher} />
+        </mesh>
+      ))}
       {/* Pieces mounted on the pusher, drawn where they stand at mid-stroke and moved with it. */}
       <group ref={riders}>
         {obstacles
@@ -191,7 +209,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       </group>
 
       {game.stage.cue === 'chevrons' && (
-        <ChevronCue groupRef={cue} openRef={cueOpen} closedRef={cueClosed} />
+        <ChevronCue groupRef={cue} openRef={cueOpen} closedRef={cueClosed} deck={top} />
       )}
       {(game.stage.cue === 'shadow' || game.stage.cue === 'dot') && (
         <ShadowCue
@@ -199,6 +217,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           openRef={cueOpen}
           closedRef={cueClosed}
           radius={drop.reach}
+          y={top.floorY + PUSHER_HEIGHT + 0.02}
           z={dropZ}
         />
       )}
@@ -278,10 +297,10 @@ const CHEVRON = (() => {
  * Bright and full when a drop now lands on bare shelf; a single faint
  * chevron when it doesn't — the change is in size and brightness, not hue.
  */
-function ChevronCue({ groupRef, openRef, closedRef }: CueRefs) {
+function ChevronCue({ groupRef, openRef, closedRef, deck }: CueRefs & { deck: Deck }) {
   const xs = [-2.4, -1.2, 0, 1.2, 2.4]
   return (
-    <group ref={groupRef} position={[0, PUSHER_HEIGHT + 0.55, BACK_WALL_Z + 0.01]}>
+    <group ref={groupRef} position={[0, deck.floorY + PUSHER_HEIGHT + 0.55, deck.backZ + 0.01]}>
       <group ref={openRef}>
         {xs.map(x => (
           <mesh key={x} geometry={CHEVRON} position={[x, 0, 0]}>
@@ -312,10 +331,11 @@ function ShadowCue({
   openRef,
   closedRef,
   radius,
+  y,
   z,
-}: CueRefs & { radius: number; z: number }) {
+}: CueRefs & { radius: number; y: number; z: number }) {
   return (
-    <group ref={groupRef} position={[0, PUSHER_HEIGHT + 0.02, z]} renderOrder={10}>
+    <group ref={groupRef} position={[0, y, z]} renderOrder={10}>
       <mesh ref={openRef} rotation={[-Math.PI / 2, 0, 0]} renderOrder={10}>
         <circleGeometry args={[radius, 32]} />
         <meshBasicMaterial color={PALETTE.cue} transparent opacity={0.75} depthTest={false} />
@@ -330,18 +350,23 @@ function ShadowCue({
 
 /** The fixed parts of the machine: floor, walls, back wall, chute markings, obstacles. */
 function Cabinet({
+  layout,
   chuteHalfWidth,
   obstacles,
   icy,
 }: {
+  layout: Layout
   chuteHalfWidth: number
   obstacles: readonly Obstacle[]
   icy: boolean
 }) {
-  const fieldDepth = FIELD_FRONT_Z - FIELD_BACK_Z
-  const fieldMidZ = (FIELD_BACK_Z + FIELD_FRONT_Z) / 2
-  const wallBottom = PUSHER_HEIGHT + BACK_WALL_GAP
-  const wallHeight = WALL_HEIGHT + 2 - wallBottom
+  const top = topDeck(layout)
+  const backZ = fieldBackZ(layout)
+  const fieldDepth = FIELD_FRONT_Z - backZ
+  const fieldMidZ = (backZ + FIELD_FRONT_Z) / 2
+  const wallTop = top.floorY + WALL_HEIGHT
+  const wallBottom = top.floorY + PUSHER_HEIGHT + BACK_WALL_GAP
+  const wallHeight = wallTop + 2 - wallBottom
   const gutterWidth = FIELD_HALF_WIDTH - chuteHalfWidth
 
   return (
@@ -355,12 +380,23 @@ function Cabinet({
         )}
       </mesh>
       {[-1, 1].map(side => (
-        <mesh key={side} position={[side * (FIELD_HALF_WIDTH + 0.25), WALL_HEIGHT / 2, fieldMidZ]}>
-          <boxGeometry args={[0.5, WALL_HEIGHT, fieldDepth]} />
+        <mesh key={side} position={[side * (FIELD_HALF_WIDTH + 0.25), wallTop / 2, fieldMidZ]}>
+          <boxGeometry args={[0.5, wallTop, fieldDepth]} />
           <meshStandardMaterial color={PALETTE.glassWall} transparent opacity={0.12} />
         </mesh>
       ))}
-      <mesh position={[0, wallBottom + wallHeight / 2, BACK_WALL_Z - 0.25]}>
+      {/* Upper decks: slabs hanging just above the pusher below, out to the back. */}
+      {layout.slice(1).map((deck, i) => {
+        const under = layout[i].floorY + PUSHER_HEIGHT + BACK_WALL_GAP
+        const depth = deck.frontZ - backZ
+        return (
+          <mesh key={i} position={[0, (under + deck.floorY) / 2, backZ + depth / 2]}>
+            <boxGeometry args={[FIELD_HALF_WIDTH * 2, deck.floorY - under, depth]} />
+            <meshStandardMaterial color={PALETTE.floor} />
+          </mesh>
+        )
+      })}
+      <mesh position={[0, wallBottom + wallHeight / 2, top.backZ - 0.25]}>
         <boxGeometry args={[FIELD_HALF_WIDTH * 2, wallHeight, 0.5]} />
         <meshStandardMaterial color={PALETTE.backWall} />
       </mesh>
@@ -440,13 +476,27 @@ function ObstacleMesh({ obstacle: o }: { obstacle: Obstacle }) {
 }
 
 /** Keeps the camera fitted to the cabinet as the screen changes size. */
-export function CabinetCamera({ insets }: { insets: Insets }) {
+export function CabinetCamera({
+  insets,
+  layout,
+  arm,
+}: {
+  insets: Insets
+  layout: Layout
+  arm: ArmConfig
+}) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
 
   useEffect(() => {
-    fitCamera(get().camera as THREE.PerspectiveCamera, size.width, size.height, insets)
-  }, [get, size, insets])
+    fitCamera(
+      get().camera as THREE.PerspectiveCamera,
+      size.width,
+      size.height,
+      insets,
+      keyPoints(layout, arm)
+    )
+  }, [get, size, insets, layout, arm])
 
   return null
 }

@@ -3,6 +3,7 @@ import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnigh
 import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
 import pennyFalls from '@/app/meteor-coins/lib/piles/penny-falls.json'
 import rubberDuckyRumble from '@/app/meteor-coins/lib/piles/rubber-ducky-rumble.json'
+import theCascadeEngine from '@/app/meteor-coins/lib/piles/the-cascade-engine.json'
 
 /**
  * A resting object: position [x, y, z], rotation quaternion [x, y, z, w], and
@@ -23,6 +24,7 @@ export const PILES = {
   'moonstone-porch': moonstonePorch as PuckPose[],
   'brambles-midnight-snack': bramblesMidnightSnack as PuckPose[],
   'rubber-ducky-rumble': rubberDuckyRumble as PuckPose[],
+  'the-cascade-engine': theCascadeEngine as PuckPose[],
 } satisfies Record<string, PuckPose[]>
 
 export type PileName = keyof typeof PILES
