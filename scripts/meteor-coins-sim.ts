@@ -75,7 +75,8 @@ function play(bot: Bot, seed: number) {
     }
     const t0 = performance.now()
     game.step()
-    if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = COIN_BUDGET - game.state.coinsLeft
+    if (firstPointAfter < 0 && game.state.score > 0)
+      firstPointAfter = COIN_BUDGET - game.state.coinsLeft
     stepMs.push(performance.now() - t0)
     if (game.engine.pucks.length && (game.engine.time * 60) % 30 < 1) {
       peakLive = Math.max(peakLive, game.engine.countActive().live)
