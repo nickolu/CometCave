@@ -315,10 +315,10 @@ const HOOP_LA_CANNON: StageDef = {
   rules: {
     coins: 40,
     // Hoops pour their own bonuses (above), not a streak. From the sim (8
-    // games each): firing at random averages 19; full shots timed to land
-    // on bare shelf average 25, half the time a star; also threading a
-    // hoop whenever the swing lines one up averages 56, two stars every
-    // time and three half the time.
+    // games each): firing at random averages 19, a star half the time;
+    // full shots timed to land on bare shelf average 25, always a star;
+    // also threading a hoop whenever the swing lines one up averages 56,
+    // two stars every time and three half the time.
     bonusForStreak: () => 0,
     goal: { type: 'score', stars: [20, 35, 55] },
   },
