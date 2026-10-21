@@ -93,8 +93,14 @@ export function seedPile(floorLayers: number, seed = 1): Vec3[] {
   const out: Vec3[] = []
   const cols = [-3, -2, -1, 0, 1, 2, 3].map(c => c * SPACING)
 
-  // Floor, in front of the pusher at its most extended (front face z = -0.5).
-  const floorRows = [0.2, 1.24, 2.28, 3.32]
+  // Floor. The front row hangs a quarter-puck over the edge (center still on the
+  // table, so it rests), and rows run back until one reaches into the
+  // pusher's sweep. Every push then nudges the whole pile and something near
+  // the edge goes over — without that contact, dropped coins must shove a
+  // dead block before anything scores (measured: ~38 drops to the first point).
+  const floorRows: number[] = []
+  const pusherReach = PUSHER_MID_Z + PUSHER_AMP_Z + PUSHER_DEPTH / 2
+  for (let z = FIELD_FRONT_Z - PUCK_RADIUS / 2; z + PUCK_RADIUS > pusherReach; z -= SPACING) floorRows.push(z)
   for (let layer = 0; layer < floorLayers; layer++) {
     const y = PUCK_THICKNESS / 2 + layer * (PUCK_THICKNESS + 0.02) + 0.01
     for (const z of floorRows) {

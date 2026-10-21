@@ -59,7 +59,8 @@ describe('seedPile', () => {
   it('places every puck inside the walls and on the field', () => {
     for (const [x, y, z] of seedPile(4)) {
       expect(Math.abs(x)).toBeLessThanOrEqual(AIM_LIMIT + 0.05)
-      expect(z).toBeLessThan(FIELD_FRONT_Z - PUCK_RADIUS)
+      // Front row overhangs on purpose, but every center rests on the table.
+      expect(z).toBeLessThan(FIELD_FRONT_Z)
       expect(z).toBeGreaterThan(BACK_WALL_Z)
       expect(y).toBeGreaterThan(0)
     }

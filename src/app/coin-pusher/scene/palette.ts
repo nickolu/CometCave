@@ -15,4 +15,7 @@ export const PALETTE = {
   puck: '#e8b84a',
   chute: '#ffd166',
   gutter: '#ff5d73',
+  arm: '#9aa3c7',
+  ring: '#5ee6ff',
+  ringHit: '#7dffb0',
 } as const
