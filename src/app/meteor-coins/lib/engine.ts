@@ -3,6 +3,7 @@ import RAPIER from '@dimforge/rapier3d-compat'
 import {
   BACK_WALL_GAP,
   BACK_WALL_Z,
+  CHUTE_HALF_WIDTH,
   FIELD_BACK_Z,
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
@@ -13,13 +14,14 @@ import {
   PUCK_THICKNESS,
   PUSHER_DEPTH,
   PUSHER_HEIGHT,
+  PUSHER_PERIOD_S,
   type PuckShape,
   SQUARE_SIDE,
   WALL_HEIGHT,
   classifyFall,
   pusherCenterZ,
 } from '@/app/meteor-coins/lib/cabinet'
-import type { PuckPose } from '@/app/meteor-coins/lib/startingPile'
+import type { PuckPose } from '@/app/meteor-coins/lib/piles'
 
 /**
  * The pusher machine as plain physics, with no rendering and no game rules.
@@ -65,12 +67,18 @@ export type EngineOptions = {
   shape?: PuckShape
   /** Coins on the table at the start, at rest. Defaults to an empty table. */
   pile?: PuckPose[]
+  /** Front edge within this half-width scores; outside it is gutter. */
+  chuteHalfWidth?: number
+  /** Seconds per full pusher stroke. */
+  pusherPeriodS?: number
 }
 
 export class PusherEngine {
   readonly world: RAPIER.World
   readonly pucks: Puck[] = []
   readonly shape: PuckShape
+  readonly chuteHalfWidth: number
+  readonly pusherPeriodS: number
   /** Seconds of simulated time. Advances only in step(). */
   time = 0
 
@@ -78,8 +86,15 @@ export class PusherEngine {
   private free: number[] = []
 
   /** Call initPhysics() first. */
-  constructor({ shape = 'round', pile = [] }: EngineOptions = {}) {
+  constructor({
+    shape = 'round',
+    pile = [],
+    chuteHalfWidth = CHUTE_HALF_WIDTH,
+    pusherPeriodS = PUSHER_PERIOD_S,
+  }: EngineOptions = {}) {
     this.shape = shape
+    this.chuteHalfWidth = chuteHalfWidth
+    this.pusherPeriodS = pusherPeriodS
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
     world.timestep = PHYSICS_STEP_S
     this.world = world
@@ -199,7 +214,7 @@ export class PusherEngine {
     this.pusher.setNextKinematicTranslation({
       x: 0,
       y: PUSHER_HEIGHT / 2,
-      z: pusherCenterZ(this.time),
+      z: pusherCenterZ(this.time, this.pusherPeriodS),
     })
     this.world.step()
 
@@ -209,7 +224,13 @@ export class PusherEngine {
       if (!puck.active) continue
       const p = puck.body.translation()
       if (p.y >= FALLEN_Y) continue
-      falls.push({ index: i, kind: puck.kind, x: p.x, z: p.z, result: classifyFall(p.x) })
+      falls.push({
+        index: i,
+        kind: puck.kind,
+        x: p.x,
+        z: p.z,
+        result: classifyFall(p.x, this.chuteHalfWidth),
+      })
       this.park(i)
     }
     return falls

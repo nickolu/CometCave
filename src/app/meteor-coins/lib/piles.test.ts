@@ -1,8 +1,8 @@
 import { FIELD_FRONT_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from './cabinet'
 import { POOL_SIZE, PusherEngine, initPhysics } from './engine'
-import { STARTING_PILE } from './startingPile'
+import { PILES } from './piles'
 
-describe('STARTING_PILE', () => {
+describe.each(Object.entries(PILES))('the %s pile', (_, STARTING_PILE) => {
   it('fits in the pool with room left for play', () => {
     expect(STARTING_PILE.length).toBeGreaterThan(100)
     expect(POOL_SIZE - STARTING_PILE.length).toBeGreaterThanOrEqual(75)
