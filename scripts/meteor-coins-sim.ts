@@ -13,7 +13,7 @@
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { FIELD_FRONT_Z } from '@/app/meteor-coins/lib/cabinet'
+import { deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -39,13 +39,20 @@ function fallTime(fromY: number) {
   return (-1 + Math.sqrt(1 + 40 * dy)) / 20
 }
 
-/** The x of the special object still on the table that's closest to the lip, if any. */
+/**
+ * The x of the special object closest to the edge of the deck the next drop
+ * lands on, if any is on it.
+ */
 function frontmostSpecial(game: DropGame): number | null {
-  let best: { x: number; z: number } | null = null
+  const deck = game.dropDeck
+  const dir = deckDir(deck)
+  const [lo, hi] = [Math.min(deck.frontZ, deck.backZ), Math.max(deck.frontZ, deck.backZ)]
+  let best: { x: number; ahead: number } | null = null
   for (const puck of game.engine.pucks) {
     if (!puck.active || puck.kind !== 'special') continue
     const p = puck.body.translation()
-    if (!best || p.z > best.z) best = { x: p.x, z: p.z }
+    if (p.z < lo || p.z > hi) continue
+    if (!best || dir * p.z > best.ahead) best = { x: p.x, ahead: dir * p.z }
   }
   return best?.x ?? null
 }
@@ -62,7 +69,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   const engineStep = game.engine.step.bind(game.engine)
   game.engine.step = () => {
     const falls = engineStep()
-    for (const f of falls) if (f.z < FIELD_FRONT_Z - 0.5) throughTable++
+    for (const f of falls) if (overEdge(game.engine.layout, f.z) < -0.5) throughTable++
     return falls
   }
   let firstPointAfter = -1

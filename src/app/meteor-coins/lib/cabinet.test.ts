@@ -8,9 +8,12 @@ import {
   PUSHER_DEPTH,
   PUSHER_MID_Z,
   classifyFall,
+  deckFaceZ,
   deckPusherZ,
   fieldBackZ,
+  overEdge,
   pusherCenterZ,
+  slotOf,
 } from './cabinet'
 import { type StageDef, playableStage } from './stages'
 
@@ -63,5 +66,29 @@ describe('deck layouts', () => {
         layout[i].frontZ
       )
     }
+  })
+
+  it("sets The Bedtime Book's pages face to face, pushing into the spine", () => {
+    const layout = (playableStage('the-bedtime-book') as StageDef).table.layout as Layout
+    const [back, front] = layout
+    expect(slotOf(layout)).toEqual([back.frontZ, front.frontZ])
+    for (const page of layout) {
+      // At full reach the face stops short of the spine, and each pusher's
+      // far end stays behind its wall all the way through the stroke.
+      const toward = Math.sign(page.frontZ - page.backZ)
+      expect(toward * (page.frontZ - deckFaceZ(page, 1))).toBeGreaterThan(2)
+      const farEnd = deckFaceZ(page, 1) - toward * page.pusher.depth
+      expect(toward * (page.backZ - farEnd)).toBeGreaterThanOrEqual(0)
+    }
+    // Half a stroke apart: while one page pushes, the other pulls back.
+    const zs = (t: number) => layout.map(page => deckPusherZ(page, t))
+    const [b0, f0] = zs(0)
+    const [b1, f1] = zs(0.4)
+    expect(b1 - b0).toBeGreaterThan(0)
+    expect(f1 - f0).toBeGreaterThan(0)
+    // The spine is the only way off the table.
+    expect(overEdge(layout, 0)).toBeGreaterThan(0)
+    expect(overEdge(layout, -3)).toBeLessThan(0)
+    expect(overEdge(layout, 3)).toBeLessThan(0)
   })
 })

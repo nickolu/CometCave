@@ -30,7 +30,10 @@ export function fallTimeToShelf(fromY: number, floorY = 0): number {
   return fallTime(fromY - (floorY + PUSHER_HEIGHT + PUCK_THICKNESS / 2))
 }
 
-/** Whether a puck landing on the drop line at `timeS` (physics time) finds bare shelf. */
-export function shelfOpenAt(timeS: number, pusherPeriodS: number): boolean {
-  return Math.sin((2 * Math.PI * timeS) / pusherPeriodS) >= SHELF_OPEN_SIN
+/**
+ * Whether a puck landing on the drop line at `timeS` (physics time) finds
+ * bare shelf. `lagS` is how far the deck's stroke runs behind the top deck's.
+ */
+export function shelfOpenAt(timeS: number, pusherPeriodS: number, lagS = 0): boolean {
+  return Math.sin((2 * Math.PI * (timeS - lagS)) / pusherPeriodS) >= SHELF_OPEN_SIN
 }

@@ -25,7 +25,8 @@ import {
   PHYSICS_STEP_S,
   PUCK_RADIUS,
   PUCK_THICKNESS,
-  topDeck,
+  deckDir,
+  overEdge,
 } from '@/app/meteor-coins/lib/cabinet'
 import { PusherEngine, initPhysics } from '@/app/meteor-coins/lib/engine'
 import { OBJECTS } from '@/app/meteor-coins/lib/objects'
@@ -85,7 +86,7 @@ async function main() {
   // Low drops, one every 3 steps, scattered across the floor and pusher top.
   const drops: [number, number, number][] = []
   const layout = engine.layout
-  if (typeof floorCoins === 'number') {
+  if (typeof floorCoins === 'number' && typeof topCoins === 'number') {
     for (let i = 0; i < floorCoins; i++) {
       drops.push([(rand() - 0.5) * 6.6, 0.6 + rand(), -0.6 + rand() * (FIELD_FRONT_Z - 0.3 + 0.6)])
     }
@@ -93,20 +94,27 @@ async function main() {
       drops.push([(rand() - 0.5) * 6.6, 1.2 + rand() * 0.5, -5 + rand() * 2.4])
   } else {
     // Several decks: each deck's coins over its shelf, from its pusher's
-    // face at full reach to its edge, top deck last so they land on a pile.
+    // face at full reach to its edge, then each one's pusher top, so those
+    // land on a pile. (Written out per direction, so a deck facing the
+    // usual way scatters exactly as it always has.)
+    const floors = typeof floorCoins === 'number' ? [floorCoins] : floorCoins
+    const tops = typeof topCoins === 'number' ? [topCoins] : topCoins
     layout.forEach((deck, i) => {
-      const faceMax = deck.pusher.midZ + deck.pusher.ampZ + deck.pusher.depth / 2
-      for (let n = 0; n < (floorCoins[i] ?? 0); n++) {
-        const z = faceMax - 0.6 + rand() * (deck.frontZ - 0.3 - faceMax + 0.6)
+      const dir = deckDir(deck)
+      const faceMax = deck.pusher.midZ + dir * deck.pusher.ampZ + (dir * deck.pusher.depth) / 2
+      for (let n = 0; n < (floors[i] ?? 0); n++) {
+        const z = faceMax - dir * 0.6 + rand() * (deck.frontZ - dir * 0.3 - faceMax + dir * 0.6)
         drops.push([(rand() - 0.5) * 6.6, deck.floorY + 0.6 + rand(), z])
       }
     })
-    const top = topDeck(layout)
-    const faceMin = top.pusher.midZ - top.pusher.ampZ + top.pusher.depth / 2
-    for (let i = 0; i < topCoins; i++) {
-      const z = top.backZ + 0.5 + rand() * (faceMin - 0.6 - top.backZ - 0.5)
-      drops.push([(rand() - 0.5) * 6.6, top.floorY + 1.2 + rand() * 0.5, z])
-    }
+    layout.forEach((deck, i) => {
+      const dir = deckDir(deck)
+      const faceMin = deck.pusher.midZ - dir * deck.pusher.ampZ + (dir * deck.pusher.depth) / 2
+      for (let n = 0; n < (tops[i] ?? 0); n++) {
+        const z = deck.backZ + dir * 0.5 + rand() * (faceMin - dir * 0.6 - deck.backZ - dir * 0.5)
+        drops.push([(rand() - 0.5) * 6.6, deck.floorY + 1.2 + rand() * 0.5, z])
+      }
+    })
   }
   for (const [x, y, z] of drops) {
     if (engine.spawn(x, y, z, 'seed', rand() * Math.PI * 2) === null) break
@@ -141,13 +149,13 @@ async function main() {
   }
   current.dispose()
 
-  const overhang = pile.filter(c => c.p[2] > FIELD_FRONT_Z - PUCK_RADIUS).length
+  const overhang = pile.filter(c => overEdge(layout, c.p[2]) > -PUCK_RADIUS).length
   const specials = pile.filter(c => c.o).map(c => `${c.o} z=${c.p[2].toFixed(1)}`)
   // Same bound as piles.test.ts: a coin propped further out than this may
   // fall before the first drop on some devices.
   const precarious = pile.filter(c => {
     const reach = (c.o ? OBJECTS[c.o] : stage.objects.drop).reach
-    return c.p[2] >= FIELD_FRONT_Z + reach / 2
+    return overEdge(layout, c.p[2]) >= reach / 2
   })
   if (precarious.length) {
     throw new Error(`${precarious.length} objects propped too far over the lip; try another seed`)

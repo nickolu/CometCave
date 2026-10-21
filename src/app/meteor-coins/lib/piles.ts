@@ -3,6 +3,7 @@ import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnigh
 import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
 import pennyFalls from '@/app/meteor-coins/lib/piles/penny-falls.json'
 import rubberDuckyRumble from '@/app/meteor-coins/lib/piles/rubber-ducky-rumble.json'
+import theBedtimeBook from '@/app/meteor-coins/lib/piles/the-bedtime-book.json'
 import theCascadeEngine from '@/app/meteor-coins/lib/piles/the-cascade-engine.json'
 
 /**
@@ -25,6 +26,7 @@ export const PILES = {
   'brambles-midnight-snack': bramblesMidnightSnack as PuckPose[],
   'rubber-ducky-rumble': rubberDuckyRumble as PuckPose[],
   'the-cascade-engine': theCascadeEngine as PuckPose[],
+  'the-bedtime-book': theBedtimeBook as PuckPose[],
 } satisfies Record<string, PuckPose[]>
 
 export type PileName = keyof typeof PILES

@@ -1,5 +1,10 @@
-import { PHYSICS_STEP_S, PUCK_THICKNESS, topDeck } from '@/app/meteor-coins/lib/cabinet'
-import { RING_Y, armTip, isHit } from '@/app/meteor-coins/lib/dropper'
+import {
+  type Deck,
+  PHYSICS_STEP_S,
+  PUCK_THICKNESS,
+  deckUnder,
+} from '@/app/meteor-coins/lib/cabinet'
+import { RING_Y, armTip, dropLines, isHit } from '@/app/meteor-coins/lib/dropper'
 import {
   type EngineOptions,
   type Obstacle,
@@ -69,6 +74,8 @@ export class DropGame {
   /** Arm and ring clock. Advances with physics time × speed. */
   dropperTime = 0
   speed = 1
+  /** The drop line the next coin goes to, where the stage's arms take turns. */
+  line = 0
 
   /** Player coins that haven't reached the ring's height yet. */
   private inFlight: { index: number; droppedAt: number }[] = []
@@ -98,7 +105,12 @@ export class DropGame {
 
   /** Where a puck released `ahead` seconds from now would start. */
   armTip(ahead = 0) {
-    return armTip(this.dropperTime + ahead * this.speed, this.stage.arm)
+    return armTip(this.dropperTime + ahead * this.speed, this.stage.arm, this.line)
+  }
+
+  /** The deck the next coin lands on. */
+  get dropDeck(): Deck {
+    return deckUnder(this.engine.layout, this.armTip().z)
   }
 
   get canDrop() {
@@ -107,9 +119,9 @@ export class DropGame {
 
   /** Whether a coin released now would land on bare shelf (see lib/timing). */
   get dropLandsClear() {
-    const landsAt =
-      this.engine.time + fallTimeToShelf(this.armTip().y, topDeck(this.engine.layout).floorY)
-    return shelfOpenAt(landsAt, this.engine.pusherPeriodS)
+    const deck = this.dropDeck
+    const landsAt = this.engine.time + fallTimeToShelf(this.armTip().y, deck.floorY)
+    return shelfOpenAt(landsAt, this.engine.pusherPeriodS, deck.pusher.lagS)
   }
 
   /** Whether the stage's cue is lit: a drop now would land where it should. */
@@ -156,6 +168,7 @@ export class DropGame {
     const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player')
     if (index === null) return false
     this.state = drop(this.state)
+    this.line = (this.line + 1) % dropLines(this.stage.arm).length
     if (this.stage.ring.enabled) this.inFlight.push({ index, droppedAt: this.engine.time })
     return true
   }
