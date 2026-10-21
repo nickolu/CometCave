@@ -8,6 +8,7 @@ import {
   PUSHER_DEPTH,
   PUSHER_MID_Z,
   PUSHER_PERIOD_S,
+  deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
 import { ARM_PERIOD_S, type ArmConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
@@ -18,6 +19,8 @@ import {
   MOONSTONE,
   type ObjectId,
   type ObjectSpec,
+  type Tone,
+  WORD,
 } from '@/app/meteor-coins/lib/objects'
 import { type PileName } from '@/app/meteor-coins/lib/piles'
 import { type RuleConfig } from '@/app/meteor-coins/lib/rules'
@@ -48,6 +51,9 @@ export type StageDef = {
     floorDrift?: number
     /** The table's decks; one unless the stage stacks them. */
     layout?: Layout
+    /** What the floor and pushers are made of, if not the cabinet's usual. */
+    floorTone?: Tone
+    pusherTone?: Tone
   }
   arm: ArmConfig
   ring: { enabled: boolean }
@@ -76,10 +82,10 @@ export type PileRecipe = {
   seed: number
   /**
    * Drop-object count scattered over the shelf, and on the pusher's top. On
-   * a table of several decks, `floor` is per deck, bottom first.
+   * a table of several decks, both are per deck, bottom first.
    */
   floor: number | readonly number[]
-  top: number
+  top: number | readonly number[]
   /** Special objects, placed first so the pile settles around them, spread across a zone. */
   specials?: { object: ObjectId; count: number; x: [number, number]; z: [number, number] }[]
 }
@@ -373,7 +379,7 @@ const THE_CASCADE_ENGINE: StageDef = {
   pile: 'the-cascade-engine',
   // Seeds swing this a lot (8 and 11 shed half their coins); 7 settles
   // with ~150 across the decks and the lip loaded, so early drops pay.
-  bake: { seed: 7, floor: [85, 70, 55], top: 14 },
+  bake: { seed: 7, floor: [85, 70, 55], top: [0, 0, 14] },
   rules: {
     coins: 40,
     // No ring: the pushers are the game. From the sim (10 games each): a
@@ -387,6 +393,89 @@ const THE_CASCADE_ENGINE: StageDef = {
     start: 'Top step pushes, middle step catches, bottom step pays.',
     clear: 'All the way down! The engine hums along.',
     miss: 'The engine needs a few more turns.',
+  },
+}
+
+/**
+ * One page of The Bedtime Book: the back one pushes toward the player, the
+ * front one (reversed) is its mirror and pushes away, and the slot between
+ * their edges is the book's spine. A page is shallower than the usual
+ * shelf (2.8 in front of the pusher, not 4.5), so the two together fit on
+ * a phone.
+ */
+const SPINE_HALF_WIDTH = 0.7
+const PAGE_SHELF = 2.8
+const bookPage = (reversed: boolean, lagS: number): Deck => {
+  const side = reversed ? 1 : -1
+  // 2 of pusher top shows in front of the wall when it's pulled back.
+  const faceMax = SPINE_HALF_WIDTH + PAGE_SHELF
+  return {
+    floorY: 0,
+    frontZ: side * SPINE_HALF_WIDTH,
+    backZ: side * (faceMax + 2 * PUSHER_AMP_Z + 2),
+    pusher: {
+      midZ: side * (faceMax + PUSHER_AMP_Z + 2),
+      ampZ: PUSHER_AMP_Z,
+      depth: 4,
+      lagS,
+      reversed,
+    },
+  }
+}
+/** Half a stroke apart: one page pushes while the other pulls back. */
+const BOOK: Layout = [bookPage(false, 0), bookPage(true, PUSHER_PERIOD_S / 2)]
+
+const THE_BEDTIME_BOOK: StageDef = {
+  number: 10,
+  slug: 'the-bedtime-book',
+  name: 'The Bedtime Book',
+  pitch:
+    'A huge open picture book. Both pages slide toward the crease, and anything that falls into the fold becomes part of the story.',
+  playable: true,
+  // No outer edges: everything that falls goes into the spine.
+  table: {
+    chuteHalfWidth: FIELD_HALF_WIDTH,
+    pusherPeriodS: PUSHER_PERIOD_S,
+    layout: BOOK,
+    floorTone: 'page',
+    pusherTone: 'pageEdge',
+  },
+  // An arm over each page, by its wall; they take turns.
+  arm: {
+    periodS: PUSHER_PERIOD_S,
+    pivotY: 11,
+    dropZ: BOOK.map(page => page.backZ + deckDir(page) * 0.6),
+  },
+  ring: { enabled: false },
+  objects: { drop: WORD },
+  cue: 'shadow',
+  pile: 'the-bedtime-book',
+  bake: {
+    seed: 10,
+    floor: [55, 55],
+    top: [10, 10],
+    specials: [
+      { object: 'dream', count: 6, x: [-2.8, 2.8], z: [-3.2, -2.2] },
+      { object: 'dream', count: 6, x: [-2.8, 2.8], z: [2.2, 3.2] },
+    ],
+  },
+  rules: {
+    coins: 40,
+    // No ring: the pages are the game. From the sim (12 games each): a word
+    // landing while its page is pulled back rides the pusher top and never
+    // reaches the wall, so timing matters more here than anywhere yet. A
+    // random tapper averages 19 (one star ~30% of the time); dropping on
+    // the shadow cue averages 74, making two stars every time and three
+    // about half the time.
+    bonusForStreak: () => 0,
+    goal: { type: 'score', stars: [25, 50, 75] },
+  },
+  measure: { label: 'Story', caption: 'points into the story' },
+  hint: 'The arms take turns: back page, then front page. A dream is worth 5.',
+  voice: {
+    start: 'Every story starts in the middle.',
+    clear: 'The book closes softly. What a story.',
+    miss: 'The pages are waiting for the rest.',
   },
 }
 
@@ -413,7 +502,7 @@ export const STAGES: readonly Stage[] = [
     'Eight coins and a wedged bar that only swings from one end.'
   ),
   soon(9, 'gravity-assist', 'Gravity Assist', 'A small moon bends every falling coin.'),
-  soon(10, 'the-bedtime-book', 'The Bedtime Book', 'Two pages push toward the fold in the middle.'),
+  THE_BEDTIME_BOOK,
   soon(11, 'redline', 'Redline', 'Ninety seconds. Stay on the beat.'),
   soon(12, 'comet-homecoming', 'Comet Homecoming', 'Help a sleepy giant comet back home.'),
 ]

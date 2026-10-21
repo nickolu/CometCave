@@ -203,6 +203,42 @@ export const MAMA_DUCK: ObjectSpec = {
   reach: 0.52 * MAMA,
 }
 
+/** The Bedtime Book's coin: an ink-blue word. Plays exactly like a coin. */
+export const WORD: ObjectSpec = {
+  ...COIN,
+  id: 'word',
+  name: 'word',
+  plural: 'words',
+  parts: [{ shape: 'cylinder', radius: PUCK_RADIUS, height: PUCK_THICKNESS, tone: 'word' }],
+}
+
+const DREAM_SIDE = 0.8
+
+/** A white square with a crescent moon on it, worth 5 words. */
+export const DREAM: ObjectSpec = {
+  id: 'dream',
+  name: 'dream',
+  plural: 'dreams',
+  parts: [
+    { shape: 'box', size: [DREAM_SIDE, 0.2, DREAM_SIDE], tone: 'dream' },
+    {
+      shape: 'arc',
+      radius: 0.2,
+      tube: 0.05,
+      arc: Math.PI * 1.2,
+      at: [0, 0.105, 0],
+      tone: 'dreamMark',
+      visualOnly: true,
+    },
+  ],
+  density: 1,
+  friction: 0.6,
+  restitution: 0.05,
+  points: 5,
+  refund: 0,
+  reach: (DREAM_SIDE / 2) * Math.SQRT2,
+}
+
 export const OBJECTS = {
   coin: COIN,
   moonstone: MOONSTONE,
@@ -210,6 +246,8 @@ export const OBJECTS = {
   truffle: TRUFFLE,
   duck: DUCK,
   'mama-duck': MAMA_DUCK,
+  word: WORD,
+  dream: DREAM,
 }
 
 export type ObjectId = keyof typeof OBJECTS

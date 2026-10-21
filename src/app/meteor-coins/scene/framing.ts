@@ -6,7 +6,8 @@ import {
   FIELD_HALF_WIDTH,
   type Layout,
   PUSHER_HEIGHT,
-  topDeck,
+  openDecks,
+  slotOf,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
   ARM_LENGTH,
@@ -15,7 +16,7 @@ import {
   ARM_PIVOT_Y,
   type ArmConfig,
   RING_Y,
-  armTip,
+  dropLines,
 } from '@/app/meteor-coins/lib/dropper'
 
 /**
@@ -45,20 +46,28 @@ export function keyPoints(
   const edgeTipY = pivotY - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
   const tipX = ARM_LENGTH * Math.sin(ARM_MAX_ANGLE)
   const centerTipY = pivotY - ARM_LENGTH
-  const dropZ = armTip(0, arm).z
-  const top = topDeck(layout)
   return [
     // Front edge and chute, slightly below the table top so the lip shows.
-    new THREE.Vector3(-w, -0.3, FIELD_FRONT_Z + 0.3),
-    new THREE.Vector3(w, -0.3, FIELD_FRONT_Z + 0.3),
-    // Back of the playfield where it meets the back wall, above the pusher.
-    new THREE.Vector3(-w, top.floorY + PUSHER_HEIGHT, top.backZ),
-    new THREE.Vector3(w, top.floorY + PUSHER_HEIGHT, top.backZ),
+    // (A table that drops into a slot in the middle has no front edge.)
+    ...(slotOf(layout)
+      ? []
+      : [
+          new THREE.Vector3(-w, -0.3, FIELD_FRONT_Z + 0.3),
+          new THREE.Vector3(w, -0.3, FIELD_FRONT_Z + 0.3),
+        ]),
+    // Each wall where it meets the playfield, above the pusher: the back
+    // wall, and the front one where a deck faces away.
+    ...openDecks(layout).flatMap(deck => [
+      new THREE.Vector3(-w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
+      new THREE.Vector3(w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
+    ]),
     // Arm tip with a coin's headroom, at both ends of the swing and the bottom of the arc.
-    new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
-    new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
-    new THREE.Vector3(0, centerTipY + 0.6, dropZ),
-    new THREE.Vector3(0, RING_Y, dropZ),
+    ...dropLines(arm).flatMap(dropZ => [
+      new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
+      new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
+      new THREE.Vector3(0, centerTipY + 0.6, dropZ),
+      new THREE.Vector3(0, RING_Y, dropZ),
+    ]),
   ]
 }
 

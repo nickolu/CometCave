@@ -24,6 +24,14 @@ export const PALETTE = {
   /** The Cairn: an icy floor and stone posts. */
   ice: '#3b5f73',
   stone: '#9a9384',
+  /** The Bedtime Book: paper pages, a dark spine, ink words and white dreams. */
+  page: '#e8dcc0',
+  pageEdge: '#bfae8a',
+  spine: '#1b1430',
+  ribbon: '#c2185b',
+  word: '#2f3f9e',
+  dream: '#f7f5ff',
+  dreamMark: '#e0a526',
   moonstone: '#efe6cf',
   moonstoneMark: '#6f7fae',
   chocolate: '#6b3a22',

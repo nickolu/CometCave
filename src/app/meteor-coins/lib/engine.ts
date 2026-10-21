@@ -14,9 +14,13 @@ import {
   PUSHER_PERIOD_S,
   WALL_HEIGHT,
   classifyFall,
+  deckDir,
   deckPusherZ,
   fieldBackZ,
+  fieldFrontZ,
+  openDecks,
   pusherCenterZ,
+  slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
 import { COIN, OBJECTS, type ObjectSpec, type Part } from '@/app/meteor-coins/lib/objects'
@@ -150,11 +154,11 @@ export class PusherEngine {
     world.timestep = PHYSICS_STEP_S
     this.world = world
 
-    const bottom = layout[0]
     const top = topDeck(layout)
     const backZ = fieldBackZ(layout)
-    const fieldDepth = bottom.frontZ - backZ
-    const fieldMidZ = (backZ + bottom.frontZ) / 2
+    const frontZ = fieldFrontZ(layout)
+    const fieldDepth = frontZ - backZ
+    const fieldMidZ = (backZ + frontZ) / 2
     const fixed = world.createRigidBody(RAPIER.RigidBodyDesc.fixed())
     const box = (
       hx: number,
@@ -170,10 +174,20 @@ export class PusherEngine {
         fixed
       )
 
-    const floor = box(FIELD_HALF_WIDTH, 0.25, fieldDepth / 2, 0, -0.25, fieldMidZ, 0.4)
-    if (floorFriction !== undefined) {
-      floor.setFriction(floorFriction)
-      floor.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
+    // One floor, or two either side of the slot when decks face each other.
+    const slot = slotOf(layout)
+    const floors = slot
+      ? [
+          [backZ, slot[0]],
+          [slot[1], frontZ],
+        ]
+      : [[backZ, frontZ]]
+    for (const [from, to] of floors) {
+      const floor = box(FIELD_HALF_WIDTH, 0.25, (to - from) / 2, 0, -0.25, (from + to) / 2, 0.4)
+      if (floorFriction !== undefined) {
+        floor.setFriction(floorFriction)
+        floor.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
+      }
     }
     const wallTop = top.floorY + WALL_HEIGHT
     for (const side of [-1, 1]) {
@@ -187,23 +201,27 @@ export class PusherEngine {
         0.2
       )
     }
-    // Back wall hangs just above the top pusher so riders get scraped off.
+    // Back wall hangs just above the top pusher so riders get scraped off; a
+    // reversed deck's wall does the same at the front.
     const wallBottom = top.floorY + PUSHER_HEIGHT + BACK_WALL_GAP
     const wallHeight = wallTop + 2 - wallBottom
-    box(
-      FIELD_HALF_WIDTH,
-      wallHeight / 2,
-      0.25,
-      0,
-      wallBottom + wallHeight / 2,
-      top.backZ - 0.25,
-      0.4
-    )
+    for (const deck of openDecks(layout)) {
+      box(
+        FIELD_HALF_WIDTH,
+        wallHeight / 2,
+        0.25,
+        0,
+        wallBottom + wallHeight / 2,
+        deck.backZ - deckDir(deck) * 0.25,
+        0.4
+      )
+    }
     // Each upper deck is a slab whose underside hangs just above the pusher
     // of the deck below, the way the back wall does, and runs to the back.
     for (let i = 1; i < layout.length; i++) {
       const under = layout[i - 1].floorY + PUSHER_HEIGHT + BACK_WALL_GAP
       const deck = layout[i]
+      if (deck.floorY <= layout[i - 1].floorY) continue
       const thick = deck.floorY - under
       const depth = deck.frontZ - backZ
       box(FIELD_HALF_WIDTH, thick / 2, depth / 2, 0, under + thick / 2, backZ + depth / 2, 0.4)
