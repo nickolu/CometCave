@@ -103,6 +103,9 @@ const PENNY_FALLS: StageDef = {
   objects: { drop: COIN },
   cue: 'chevrons',
   pile: 'penny-falls',
+  // The saved pile predates the object-spec engine; this recipe now bakes a
+  // slightly different one (158 coins, not 159) that plays the same in the
+  // sim but leaves a coin propped too far over the lip, so the original stays.
   bake: { seed: 1, floor: 150, top: 16 },
   rules: {
     coins: 40,
