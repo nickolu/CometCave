@@ -14,11 +14,20 @@
  * physics cost per step — the numbers to set a stage's stars against.
  */
 import { deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
+import {
+  type Hoop,
+  cannonYaw,
+  flightPath,
+  launchVelocity,
+  muzzleAt,
+  throughHoop,
+} from '@/app/meteor-coins/lib/cannon'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
 import { resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
+import { shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 type Bot = 'random' | 'cue' | 'skilled'
 
@@ -57,6 +66,88 @@ function frontmostSpecial(game: DropGame): number | null {
   return best?.x ?? null
 }
 
+/**
+ * The middle of the band of charges that thread a hoop from aim `yaw`, or
+ * null if none do.
+ */
+function hoopPower(game: DropGame, yaw: number, hoop: Hoop): number | null {
+  const c = game.cannon
+  if (!c) return null
+  const passing: number[] = []
+  for (let p = 0; p <= 1.0001; p += 0.01) {
+    const path = flightPath(muzzleAt(yaw, c), launchVelocity(yaw, p, c), q => q.z < hoop.z - 0.1)
+    for (let i = 1; i < path.length; i++) {
+      if (throughHoop(hoop, path[i - 1], path[i], 0.5, 0.09)) {
+        passing.push(p)
+        break
+      }
+    }
+  }
+  return passing.length ? passing[passing.length >> 1] : null
+}
+
+/**
+ * The cannon bots. Random presses at random moments and holds for a random
+ * time. Cue charges fully (a full shot drops off the backboard onto the
+ * pusher, like the arm's coin) and lets go when it would land on bare shelf.
+ * Skilled does the same, but whenever the swing is about to line up with a
+ * hoop it locks there and holds for that hoop's charge, best hoop first.
+ * Both are 0–100ms late, like people.
+ */
+function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let releaseAt: number | null = null
+  let holdingSince = 0
+  return () => {
+    const t = game.engine.time
+    const c = game.cannon
+    if (!c) return
+    if (pressAt !== null && t >= pressAt) {
+      game.press()
+      pressAt = null
+      holdingSince = t
+    }
+    if (releaseAt !== null && t >= releaseAt) {
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.6 + rand() * 1.2
+      return
+    }
+    if (game.charge !== null && releaseAt === null && pressAt === null) {
+      // Holding a full charge: let go when the coin would land on bare shelf.
+      const full = game.charge >= 1
+      const flight = game.previewPath().length / 60
+      if (
+        (full && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
+        t - holdingSince > 5
+      ) {
+        releaseAt = t + rand() * 0.1
+      }
+      return
+    }
+    if (game.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
+    if (bot === 'random') {
+      pressAt = t
+      releaseAt = t + rand() * 1.5
+      return
+    }
+    if (bot === 'skilled') {
+      const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
+      const best = [...c.hoops].sort((a, b) => b.bonus - a.bonus)
+      for (const hoop of best) {
+        const p = hoopPower(game, yaw, hoop)
+        if (p === null) continue
+        pressAt = t + rand() * 0.1
+        releaseAt = pressAt + p * c.chargeS + (rand() - 0.5) * 0.1
+        return
+      }
+    }
+    // Charge fully; the release waits for the shelf (above).
+    pressAt = t + rand() * 0.1
+  }
+}
+
 function play(stage: StageDef, bot: Bot, seed: number) {
   const game = new DropGame(stage)
   const rand = rng(seed)
@@ -77,16 +168,23 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
 
+  const cannon = stage.cannon ? cannonBot(game, bot, rand) : null
+
   while (game.state.phase !== 'over' && game.engine.time < 600) {
     const t = game.engine.time
-    if (pendingTapAt !== null && t >= pendingTapAt) {
+    if (cannon) {
+      const before = game.state.coinsLeft
+      cannon()
+      if (game.state.coinsLeft !== before) drops++
+      if (game.state.coinsLeft === 0 && before === 1) scoreAtLastDrop = game.state.score
+    } else if (pendingTapAt !== null && t >= pendingTapAt) {
       if (game.tapDrop()) drops++
       if (game.state.coinsLeft === 0) scoreAtLastDrop = game.state.score
       pendingTapAt = null
       nextTapAt = t + 0.6 + rand() * 1.2
       waitingSince = nextTapAt
     }
-    if (pendingTapAt === null && game.canDrop && t >= nextTapAt) {
+    if (!cannon && pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
       if (bot === 'cue') {
         tap = (game.cueLit && t - waitingSince > 1.5) || t - waitingSince > 6

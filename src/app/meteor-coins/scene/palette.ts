@@ -18,6 +18,10 @@ export const PALETTE = {
   arm: '#9aa3c7',
   ring: '#5ee6ff',
   ringHit: '#7dffb0',
+  /** Hoop-La Cannon: a brass cannon, red-and-white hoops, the dotted arc. */
+  brass: '#c9973a',
+  hoop: '#ff5d73',
+  hoopLabel: '#fff3c4',
   /** The on-table timing cue. */
   cue: '#fff3c4',
   obstacle: '#7f86ad',
