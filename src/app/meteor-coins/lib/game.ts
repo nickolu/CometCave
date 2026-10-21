@@ -1,6 +1,7 @@
 import { PHYSICS_STEP_S } from '@/app/meteor-coins/lib/cabinet'
 import { RING_Y, armTip, isHit } from '@/app/meteor-coins/lib/dropper'
 import { type EngineOptions, PusherEngine } from '@/app/meteor-coins/lib/engine'
+import type { ObjectSpec } from '@/app/meteor-coins/lib/objects'
 import { PILES } from '@/app/meteor-coins/lib/piles'
 import {
   type GameState,
@@ -13,6 +14,7 @@ import {
   tick,
 } from '@/app/meteor-coins/lib/rules'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
+import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 /**
  * A shot that hasn't passed the ring by now is a miss — it landed on a pile
@@ -27,7 +29,7 @@ const SHOWER_INTERVAL_STEPS = 6
 
 export type GameEvent =
   | { type: 'shot'; hit: boolean; bonus: number; streak: number }
-  | { type: 'fall'; result: 'chute' | 'gutter' }
+  | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
 
 /**
  * One stage in play: the engine, the swinging arm and the rules, stepped
@@ -51,9 +53,11 @@ export class DropGame {
     this.stage = stage
     this.state = initialState(stage.rules)
     this.engine = new PusherEngine({
+      poolObject: stage.objects.drop,
       pile: PILES[stage.pile],
       chuteHalfWidth: stage.table.chuteHalfWidth,
       pusherPeriodS: stage.table.pusherPeriodS,
+      obstacles: stage.table.obstacles,
       ...options,
     })
   }
@@ -65,6 +69,12 @@ export class DropGame {
 
   get canDrop() {
     return canDrop(this.state) && this.engine.freeCount > 0
+  }
+
+  /** Whether a coin released now would land on bare shelf (see lib/timing). */
+  get dropLandsClear() {
+    const landsAt = this.engine.time + fallTimeToShelf(this.armTip().y)
+    return shelfOpenAt(landsAt, this.engine.pusherPeriodS)
   }
 
   /** The player's tap. Returns false if there was nothing to drop. */
@@ -83,8 +93,8 @@ export class DropGame {
     this.dropperTime += PHYSICS_STEP_S * this.speed
 
     for (const f of this.engine.step()) {
-      this.state = fall(this.state, f.result, this.engine.time)
-      events.push({ type: 'fall', result: f.result })
+      this.state = fall(this.state, f.result, this.engine.time, f.spec, this.stage.rules)
+      events.push({ type: 'fall', result: f.result, object: f.spec })
     }
 
     // A shot resolves on the step the coin's center passes the ring's height.
@@ -93,7 +103,10 @@ export class DropGame {
       const y = puck.active ? puck.body.translation().y : -Infinity
       const timedOut = this.engine.time - shot.droppedAt > SHOT_TIMEOUT_S
       if (y > RING_Y && !timedOut) return true
-      const hit = !timedOut && puck.active && isHit(puck.body.translation().x, this.dropperTime)
+      const hit =
+        !timedOut &&
+        puck.active &&
+        isHit(puck.body.translation().x, this.dropperTime, puck.spec.reach)
       this.state = resolveShot(this.state, hit, this.stage.rules)
       events.push({
         type: 'shot',

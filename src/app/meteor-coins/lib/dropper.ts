@@ -34,7 +34,8 @@ export const RING_TUBE = 0.09
 /**
  * A hit means the puck fits through the ring without touching the rim — what
  * the player sees is what counts. (A looser rule let pucks visibly overlapping
- * the rim count, and a well-timed bot hit 49 of 50.)
+ * the rim count, and a well-timed bot hit 49 of 50.) Objects wider than a
+ * coin pass `reach`, their farthest point from center.
  */
 export const HIT_RADIUS = RING_RADIUS - PUCK_RADIUS
 
@@ -54,8 +55,8 @@ export function ringX(t: number): number {
   return RING_RANGE * Math.sin((2 * Math.PI * t) / RING_PERIOD_S + RING_PHASE)
 }
 
-export function isHit(puckX: number, t: number): boolean {
-  return Math.abs(puckX - ringX(t)) <= HIT_RADIUS
+export function isHit(puckX: number, t: number, reach = PUCK_RADIUS): boolean {
+  return Math.abs(puckX - ringX(t)) <= RING_RADIUS - reach
 }
 
 // Guard: the ring hangs on the drop line, which hugs the back wall.

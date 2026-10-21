@@ -19,11 +19,6 @@
 
 export const PUCK_RADIUS = 0.5
 export const PUCK_THICKNESS = 0.18
-/** Side of a square puck with roughly the same footprint as a round one. */
-export const SQUARE_SIDE = 0.9
-
-export type PuckShape = 'round' | 'square'
-
 export const FIELD_HALF_WIDTH = 4
 export const FIELD_BACK_Z = -7
 export const FIELD_FRONT_Z = 4

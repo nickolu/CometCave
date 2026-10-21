@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useMemo, useSyncExternalStore } from 'react'
 
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
+import { bestText } from '@/app/meteor-coins/lib/goalText'
 import {
   isUnlocked,
   parseProgress,
@@ -98,14 +99,15 @@ function StageCard({
         <span className="text-lg font-bold">{stage.name}</span>
         <span className="text-sm italic text-white/75">{stage.pitch}</span>
         <span className="mt-auto pt-1 text-xs text-white/60">
-          {best !== undefined ? `Best ${best} · Play` : 'Play'}
+          {best !== undefined ? `${bestText(stage, best)} · Play` : 'Play'}
         </span>
       </Link>
     )
   }
 
+  const previous = STAGES.filter(s => s.playable && s.number < stage.number).at(-1)
   const reason = stage.playable
-    ? `Earn a star on stage ${stage.number - 1} to open.`
+    ? `Earn a star on stage ${previous?.number ?? stage.number - 1} to open.`
     : 'Coming soon.'
   return (
     <div

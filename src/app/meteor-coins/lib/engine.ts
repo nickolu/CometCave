@@ -10,17 +10,14 @@ import {
   type FallResult,
   GRAVITY,
   PHYSICS_STEP_S,
-  PUCK_RADIUS,
-  PUCK_THICKNESS,
   PUSHER_DEPTH,
   PUSHER_HEIGHT,
   PUSHER_PERIOD_S,
-  type PuckShape,
-  SQUARE_SIDE,
   WALL_HEIGHT,
   classifyFall,
   pusherCenterZ,
 } from '@/app/meteor-coins/lib/cabinet'
+import { COIN, OBJECTS, type ObjectSpec, type Part } from '@/app/meteor-coins/lib/objects'
 import type { PuckPose } from '@/app/meteor-coins/lib/piles'
 
 /**
@@ -40,16 +37,32 @@ export function initPhysics(): Promise<void> {
   return ready
 }
 
-export type PuckKind = 'seed' | 'player' | 'bonus'
+/** Special objects are placed by the pile and never recycled; the rest come from the pool. */
+export type PuckKind = 'seed' | 'player' | 'bonus' | 'special'
 
 export type Puck = {
   body: RAPIER.RigidBody
   active: boolean
   kind: PuckKind
+  spec: ObjectSpec
 }
 
 /** z is where it fell; anything well behind the front edge went through the table. */
-export type FallEvent = { index: number; kind: PuckKind; x: number; z: number; result: FallResult }
+export type FallEvent = {
+  index: number
+  kind: PuckKind
+  spec: ObjectSpec
+  x: number
+  z: number
+  result: FallResult
+}
+
+/** Fixed pieces standing on the shelf, in front of the pusher's reach. */
+export type Obstacle =
+  /** An upright round post. */
+  | { type: 'post'; x: number; z: number; radius: number; height: number }
+  /** A fixed box on the shelf: a lane rail, a soap bar. */
+  | { type: 'block'; x: number; z: number; width: number; depth: number; height: number }
 
 /**
  * Pucks are pooled: created once, parked disabled below the table, and
@@ -64,19 +77,21 @@ const PARK_Y = -50
 const FALLEN_Y = -1
 
 export type EngineOptions = {
-  shape?: PuckShape
-  /** Coins on the table at the start, at rest. Defaults to an empty table. */
+  /** What the pool holds: the object the arm drops, and the pile is mostly made of. */
+  poolObject?: ObjectSpec
+  /** Objects on the table at the start, at rest. Defaults to an empty table. */
   pile?: PuckPose[]
   /** Front edge within this half-width scores; outside it is gutter. */
   chuteHalfWidth?: number
   /** Seconds per full pusher stroke. */
   pusherPeriodS?: number
+  obstacles?: readonly Obstacle[]
 }
 
 export class PusherEngine {
   readonly world: RAPIER.World
   readonly pucks: Puck[] = []
-  readonly shape: PuckShape
+  readonly poolObject: ObjectSpec
   readonly chuteHalfWidth: number
   readonly pusherPeriodS: number
   /** Seconds of simulated time. Advances only in step(). */
@@ -87,12 +102,13 @@ export class PusherEngine {
 
   /** Call initPhysics() first. */
   constructor({
-    shape = 'round',
+    poolObject = COIN,
     pile = [],
     chuteHalfWidth = CHUTE_HALF_WIDTH,
     pusherPeriodS = PUSHER_PERIOD_S,
+    obstacles = [],
   }: EngineOptions = {}) {
-    this.shape = shape
+    this.poolObject = poolObject
     this.chuteHalfWidth = chuteHalfWidth
     this.pusherPeriodS = pusherPeriodS
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
@@ -141,6 +157,19 @@ export class PusherEngine {
       0.4
     )
 
+    for (const o of obstacles) {
+      if (o.type === 'post') {
+        world.createCollider(
+          RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius)
+            .setTranslation(o.x, o.height / 2, o.z)
+            .setFriction(0.3),
+          fixed
+        )
+      } else {
+        box(o.width / 2, o.height / 2, o.depth / 2, o.x, o.height / 2, o.z, 0.2)
+      }
+    }
+
     // Scripted motion and infinite mass: nothing pushes back on the pusher.
     this.pusher = world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
@@ -158,29 +187,67 @@ export class PusherEngine {
       this.pusher
     )
 
-    if (pile.length > POOL_SIZE) throw new Error(`Starting pile of ${pile.length} exceeds the pool`)
+    // Pool objects first, at the low indices; special objects after the pool.
+    const pooled = pile.filter(pose => (pose.o ?? poolObject.id) === poolObject.id)
+    const specials = pile.filter(pose => (pose.o ?? poolObject.id) !== poolObject.id)
+    if (pooled.length > POOL_SIZE) {
+      throw new Error(`Starting pile of ${pooled.length} exceeds the pool`)
+    }
     for (let i = 0; i < POOL_SIZE; i++) {
-      const seeded = pile[i]
-      const [qx, qy, qz, qw] = seeded?.q ?? [0, 0, 0, 1]
-      const body = world.createRigidBody(
-        RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(...(seeded?.p ?? [i * 2, PARK_Y, 0]))
-          .setRotation({ x: qx, y: qy, z: qz, w: qw })
-          .setLinearDamping(0.1)
-          .setAngularDamping(0.4)
-          .setCcdEnabled(true)
-          .setEnabled(Boolean(seeded))
-      )
-      const collider =
-        shape === 'round'
-          ? RAPIER.ColliderDesc.cylinder(PUCK_THICKNESS / 2, PUCK_RADIUS)
-          : RAPIER.ColliderDesc.cuboid(SQUARE_SIDE / 2, PUCK_THICKNESS / 2, SQUARE_SIDE / 2)
-      world.createCollider(collider.setFriction(0.6).setRestitution(0.05), body)
-      this.pucks.push({ body, active: Boolean(seeded), kind: 'seed' })
+      const seeded = pooled[i]
+      this.pucks.push({
+        body: this.createBody(poolObject, seeded, i),
+        active: Boolean(seeded),
+        kind: 'seed',
+        spec: poolObject,
+      })
       if (!seeded) this.free.push(i)
+    }
+    for (const pose of specials) {
+      const spec = OBJECTS[pose.o as keyof typeof OBJECTS]
+      if (!spec) throw new Error(`Unknown object "${pose.o}" in the starting pile`)
+      this.addSpecial(spec, pose)
     }
     // Pop from the end, so hand out low indices first.
     this.free.reverse()
+  }
+
+  /** Puts a special object on the table. It isn't pooled: once it falls, it's gone. */
+  addSpecial(spec: ObjectSpec, pose: PuckPose): number {
+    const index = this.pucks.length
+    this.pucks.push({
+      body: this.createBody(spec, pose, index),
+      active: true,
+      kind: 'special',
+      spec,
+    })
+    return index
+  }
+
+  private createBody(spec: ObjectSpec, pose: PuckPose | undefined, index: number) {
+    const [qx, qy, qz, qw] = pose?.q ?? [0, 0, 0, 1]
+    const body = this.world.createRigidBody(
+      RAPIER.RigidBodyDesc.dynamic()
+        .setTranslation(...(pose?.p ?? [index * 2, PARK_Y, 0]))
+        .setRotation({ x: qx, y: qy, z: qz, w: qw })
+        .setLinearDamping(0.1)
+        .setAngularDamping(0.4)
+        .setCcdEnabled(true)
+        .setEnabled(Boolean(pose))
+    )
+    for (const part of spec.parts) {
+      if (part.visualOnly) continue
+      const [x, y, z] = part.at ?? [0, 0, 0]
+      this.world.createCollider(
+        colliderFor(part)
+          .setTranslation(x, y, z)
+          .setDensity(spec.density)
+          .setFriction(spec.friction)
+          .setRestitution(spec.restitution),
+        body
+      )
+    }
+    return body
   }
 
   get freeCount() {
@@ -227,6 +294,7 @@ export class PusherEngine {
       falls.push({
         index: i,
         kind: puck.kind,
+        spec: puck.spec,
         x: p.x,
         z: p.z,
         result: classifyFall(p.x, this.chuteHalfWidth),
@@ -258,6 +326,23 @@ export class PusherEngine {
     puck.body.setAngvel({ x: 0, y: 0, z: 0 }, false)
     puck.body.setTranslation({ x: index * 2, y: PARK_Y, z: 0 }, false)
     puck.active = false
-    this.free.push(index)
+    if (puck.kind !== 'special') this.free.push(index)
+  }
+}
+
+function colliderFor(part: Part): RAPIER.ColliderDesc {
+  switch (part.shape) {
+    case 'cylinder':
+      return RAPIER.ColliderDesc.cylinder(part.height / 2, part.radius)
+    case 'box': {
+      const [hx, hy, hz] = part.size.map(n => n / 2 - (part.rounding ?? 0))
+      return part.rounding
+        ? RAPIER.ColliderDesc.roundCuboid(hx, hy, hz, part.rounding)
+        : RAPIER.ColliderDesc.cuboid(hx, hy, hz)
+    }
+    case 'ball':
+      return RAPIER.ColliderDesc.ball(part.radius)
+    case 'arc':
+      throw new Error('Arcs are drawn only; mark them visualOnly')
   }
 }
