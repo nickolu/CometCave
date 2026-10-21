@@ -12,8 +12,10 @@ import {
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
   PHYSICS_STEP_S,
+  PUCK_THICKNESS,
   PUSHER_DEPTH,
   PUSHER_HEIGHT,
+  PUSHER_MID_Z,
   WALL_HEIGHT,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
@@ -52,6 +54,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   }, [game])
   const groupMeshes = useRef<(THREE.InstancedMesh | null)[][]>([])
   const pusher = useRef<THREE.Mesh>(null)
+  const riders = useRef<THREE.Group>(null)
   const arm = useRef<THREE.Group>(null)
   const heldCoin = useRef<THREE.Group>(null)
   const ring = useRef<THREE.Mesh>(null)
@@ -102,14 +105,19 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     })
 
     if (cue.current && game.stage.cue) {
-      const open = game.canDrop && game.dropLandsClear
+      const open = game.canDrop && game.cueLit
       if (game.stage.cue === 'shadow') cue.current.position.x = game.armTip().x
+      if (game.stage.cue === 'dot') {
+        const landing = game.landing()
+        cue.current.position.set(landing.x, landing.y + 0.02, landing.z)
+      }
       cue.current.visible = game.canDrop
       if (cueOpen.current) cueOpen.current.visible = open
       if (cueClosed.current) cueClosed.current.visible = !open
     }
 
     pusher.current?.position.set(0, PUSHER_HEIGHT / 2, game.engine.pusherZ)
+    riders.current?.position.set(0, 0, game.engine.pusherZ - PUSHER_MID_Z)
     arm.current?.rotation.set(0, 0, armAngle(game.dropperTime, game.stage.arm.periodS))
     if (heldCoin.current) heldCoin.current.visible = game.canDrop
     ring.current?.position.set(ringX(game.dropperTime), RING_Y, DROP_Z)
@@ -121,18 +129,31 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   })
 
   const drop = game.stage.objects.drop
+  const { arm: armConfig, table } = game.stage
+  const obstacles = table.obstacles ?? []
+  const pivotY = armConfig.pivotY ?? ARM_PIVOT_Y
+  const dropZ = armConfig.dropZ ?? DROP_Z
 
   return (
     <>
       <Cabinet
         chuteHalfWidth={game.engine.chuteHalfWidth}
-        obstacles={game.stage.table.obstacles ?? []}
+        obstacles={obstacles.filter(o => !o.rides)}
+        icy={(table.floorFriction ?? 1) < 0.2}
       />
 
       <mesh ref={pusher} position={[0, PUSHER_HEIGHT / 2, game.engine.pusherZ]}>
         <boxGeometry args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, PUSHER_DEPTH]} />
         <meshStandardMaterial color={PALETTE.pusher} />
       </mesh>
+      {/* Pieces mounted on the pusher, drawn where they stand at mid-stroke and moved with it. */}
+      <group ref={riders}>
+        {obstacles
+          .filter(o => o.rides)
+          .map((o, i) => (
+            <ObstacleMesh key={i} obstacle={o} />
+          ))}
+      </group>
 
       {groups.map(({ spec, indices }, g) =>
         spec.parts.map((part, p) => (
@@ -151,7 +172,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       )}
 
       {/* Swinging arm: pivots above the table, holds the next coin at its tip */}
-      <group ref={arm} position={[0, ARM_PIVOT_Y, DROP_Z]}>
+      <group ref={arm} position={[0, pivotY, dropZ]}>
         <mesh position={[0, -ARM_LENGTH / 2, 0]}>
           <boxGeometry args={[0.12, ARM_LENGTH, 0.12]} />
           <meshStandardMaterial color={PALETTE.arm} metalness={0.5} roughness={0.4} />
@@ -172,8 +193,14 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       {game.stage.cue === 'chevrons' && (
         <ChevronCue groupRef={cue} openRef={cueOpen} closedRef={cueClosed} />
       )}
-      {game.stage.cue === 'shadow' && (
-        <ShadowCue groupRef={cue} openRef={cueOpen} closedRef={cueClosed} radius={drop.reach} />
+      {(game.stage.cue === 'shadow' || game.stage.cue === 'dot') && (
+        <ShadowCue
+          groupRef={cue}
+          openRef={cueOpen}
+          closedRef={cueClosed}
+          radius={drop.reach}
+          z={dropZ}
+        />
       )}
 
       {/* Skill-shot ring: lies flat, slides left and right */}
@@ -274,13 +301,21 @@ function ChevronCue({ groupRef, openRef, closedRef }: CueRefs) {
 }
 
 /**
- * Moonstone Porch's cue: a landing shadow under the arm, on the drop line. A
- * solid disc when the spot below is bare, an open ring when it isn't. Drawn
- * over the pile so it never hides under coins.
+ * A landing shadow under the arm, on the drop line: a solid disc when the
+ * drop would land well, an open ring when it wouldn't. Moonstone Porch's sits
+ * on the shelf and is solid over bare shelf; The Cairn's sits on whatever the
+ * coin would land on and is solid over the middle of a post. Drawn over
+ * everything so it never hides under coins.
  */
-function ShadowCue({ groupRef, openRef, closedRef, radius }: CueRefs & { radius: number }) {
+function ShadowCue({
+  groupRef,
+  openRef,
+  closedRef,
+  radius,
+  z,
+}: CueRefs & { radius: number; z: number }) {
   return (
-    <group ref={groupRef} position={[0, PUSHER_HEIGHT + 0.02, DROP_Z]} renderOrder={10}>
+    <group ref={groupRef} position={[0, PUSHER_HEIGHT + 0.02, z]} renderOrder={10}>
       <mesh ref={openRef} rotation={[-Math.PI / 2, 0, 0]} renderOrder={10}>
         <circleGeometry args={[radius, 32]} />
         <meshBasicMaterial color={PALETTE.cue} transparent opacity={0.75} depthTest={false} />
@@ -297,9 +332,11 @@ function ShadowCue({ groupRef, openRef, closedRef, radius }: CueRefs & { radius:
 function Cabinet({
   chuteHalfWidth,
   obstacles,
+  icy,
 }: {
   chuteHalfWidth: number
   obstacles: readonly Obstacle[]
+  icy: boolean
 }) {
   const fieldDepth = FIELD_FRONT_Z - FIELD_BACK_Z
   const fieldMidZ = (FIELD_BACK_Z + FIELD_FRONT_Z) / 2
@@ -311,7 +348,11 @@ function Cabinet({
     <>
       <mesh position={[0, -0.25, fieldMidZ]}>
         <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.5, fieldDepth]} />
-        <meshStandardMaterial color={PALETTE.floor} />
+        {icy ? (
+          <meshStandardMaterial color={PALETTE.ice} metalness={0.1} roughness={0.15} />
+        ) : (
+          <meshStandardMaterial color={PALETTE.floor} />
+        )}
       </mesh>
       {[-1, 1].map(side => (
         <mesh key={side} position={[side * (FIELD_HALF_WIDTH + 0.25), WALL_HEIGHT / 2, fieldMidZ]}>
@@ -331,19 +372,9 @@ function Cabinet({
           emissiveIntensity={0.6}
         />
       </mesh>
-      {obstacles.map((o, i) =>
-        o.type === 'post' ? (
-          <mesh key={i} position={[o.x, o.height / 2, o.z]}>
-            <cylinderGeometry args={[o.radius, o.radius, o.height, 20]} />
-            <meshStandardMaterial color={PALETTE.obstacle} />
-          </mesh>
-        ) : (
-          <mesh key={i} position={[o.x, o.height / 2, o.z]}>
-            <boxGeometry args={[o.width, o.height, o.depth]} />
-            <meshStandardMaterial color={PALETTE.obstacle} />
-          </mesh>
-        )
-      )}
+      {obstacles.map((o, i) => (
+        <ObstacleMesh key={i} obstacle={o} />
+      ))}
       {gutterWidth > 0 &&
         [-1, 1].map(side => (
           <mesh
@@ -359,6 +390,52 @@ function Cabinet({
           </mesh>
         ))}
     </>
+  )
+}
+
+/** Coins of height between a tower post's notches. */
+const NOTCH_EVERY = 5
+const NOTCHES = 3
+
+/**
+ * One obstacle, where it stands with the pusher at mid-stroke. A tower post
+ * is stone, with a slim gauge behind it notched every five coins of height.
+ */
+function ObstacleMesh({ obstacle: o }: { obstacle: Obstacle }) {
+  if (o.type === 'block') {
+    return (
+      <mesh position={[o.x, o.height / 2, o.z]}>
+        <boxGeometry args={[o.width, o.height, o.depth]} />
+        <meshStandardMaterial color={PALETTE.obstacle} />
+      </mesh>
+    )
+  }
+  const tower = o.tower !== undefined
+  const gaugeTop = o.height + NOTCH_EVERY * NOTCHES * PUCK_THICKNESS
+  return (
+    <group position={[o.x, 0, o.z]}>
+      <mesh position={[0, o.height / 2, 0]}>
+        <cylinderGeometry args={[o.radius, o.radius, o.height, 24]} />
+        <meshStandardMaterial
+          color={tower ? PALETTE.stone : PALETTE.obstacle}
+          roughness={tower ? 0.9 : 0.7}
+        />
+      </mesh>
+      {tower && (
+        <group position={[0, 0, -o.radius - 0.12]}>
+          <mesh position={[0, gaugeTop / 2, 0]}>
+            <boxGeometry args={[0.05, gaugeTop, 0.05]} />
+            <meshStandardMaterial color={PALETTE.stone} />
+          </mesh>
+          {Array.from({ length: NOTCHES }, (_, k) => (
+            <mesh key={k} position={[0, o.height + (k + 1) * NOTCH_EVERY * PUCK_THICKNESS, 0]}>
+              <boxGeometry args={[0.3, 0.04, 0.06]} />
+              <meshBasicMaterial color={PALETTE.cue} />
+            </mesh>
+          ))}
+        </group>
+      )}
+    </group>
   )
 }
 

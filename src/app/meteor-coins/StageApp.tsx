@@ -9,7 +9,13 @@ import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import { SLOW_SPEED } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame, type GameEvent } from '@/app/meteor-coins/lib/game'
-import { headline, hudMeasure, hudStars, nextStarSentence } from '@/app/meteor-coins/lib/goalText'
+import {
+  headline,
+  hudMeasure,
+  hudStars,
+  nextStarSentence,
+  towerLines,
+} from '@/app/meteor-coins/lib/goalText'
 import {
   type Stars,
   nextPlayableAfter,
@@ -186,6 +192,7 @@ export default function StageApp({ slug }: { slug: string }) {
   const over = state?.phase === 'over'
   const measure = state ? hudMeasure(stage, state) : null
   const starsNow = state ? hudStars(stage, state) : null
+  const towers = state ? towerLines(stage, state) : []
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
@@ -218,6 +225,16 @@ export default function StageApp({ slug }: { slug: string }) {
           <div className="flex items-center gap-4 rounded-lg bg-black/60 px-4 py-2">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
             <Stat label={measure.label} value={measure.value} />
+            {towers.length > 0 && (
+              <ul
+                aria-label="Towers"
+                className="text-[11px] leading-tight tabular-nums text-white/80"
+              >
+                {towers.map(line => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
             <div className="text-center">
               <StarRow earned={starsNow.stars} size={16} label={starsNow.label} />
               <div className="text-[11px] tabular-nums text-white/70">{starsNow.note}</div>
@@ -279,6 +296,7 @@ export default function StageApp({ slug }: { slug: string }) {
               <p className="text-xs text-white/80 sm:text-sm">
                 Tap or press Space to drop.{' '}
                 {stage.ring.enabled && `Hit the ring for bonus ${stage.objects.drop.plural}. `}
+                {stage.hint && `${stage.hint} `}
                 <span className="italic">{stage.voice.start}</span>
               </p>
             </>

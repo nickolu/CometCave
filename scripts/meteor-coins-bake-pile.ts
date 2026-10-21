@@ -53,6 +53,7 @@ async function main() {
   const OUT = join(process.cwd(), `src/app/meteor-coins/lib/piles/${stage.slug}.json`)
   const STEPS_PER_CYCLE = Math.round(stage.table.pusherPeriodS / PHYSICS_STEP_S)
   const recipe = stage.bake
+  if (!recipe) throw new Error(`${stage.name} starts on a bare table; there's no pile to bake`)
   const seed = Number(process.argv[3] ?? recipe.seed)
   const floorCoins = Number(process.argv[4] ?? recipe.floor)
   const topCoins = recipe.top
@@ -122,6 +123,15 @@ async function main() {
 
   const overhang = pile.filter(c => c.p[2] > FIELD_FRONT_Z - PUCK_RADIUS).length
   const specials = pile.filter(c => c.o).map(c => `${c.o} z=${c.p[2].toFixed(1)}`)
+  // Same bound as piles.test.ts: a coin propped further out than this may
+  // fall before the first drop on some devices.
+  const precarious = pile.filter(c => {
+    const reach = (c.o ? OBJECTS[c.o] : stage.objects.drop).reach
+    return c.p[2] >= FIELD_FRONT_Z + reach / 2
+  })
+  if (precarious.length) {
+    throw new Error(`${precarious.length} objects propped too far over the lip; try another seed`)
+  }
   const placed = (recipe.specials ?? []).reduce((n, s) => n + s.count, 0)
   if (specials.length < placed) {
     throw new Error(`Only ${specials.length} of ${placed} special objects survived the bake`)

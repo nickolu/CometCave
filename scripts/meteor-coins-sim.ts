@@ -82,7 +82,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     if (pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
       if (bot === 'cue') {
-        tap = (game.dropLandsClear && t - waitingSince > 1.5) || t - waitingSince > 6
+        tap = (game.cueLit && t - waitingSince > 1.5) || t - waitingSince > 6
       }
       if (bot === 'skilled') {
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
@@ -96,9 +96,17 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         // nearest the lip, so the push lands on it.
         const target = frontmostSpecial(game)
         const aimed = target === null || Math.abs(tip.x - target) < 0.8
+        // On a stacking stage, wait for a drop square on a post's center,
+        // holding out a few seconds for the post that counts most.
+        const landing = game.landing(0.05)
+        const weights = stage.rules.goal.type === 'stack' ? stage.rules.goal.weights : []
+        const best = landing.post !== null && weights[landing.post] === Math.max(...weights)
+        const stacking =
+          stage.cue === 'dot' && landing.offset < 0.12 && (best || t - waitingSince > 4)
         tap =
           ringLineup ||
-          (game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
+          stacking ||
+          (stage.cue !== 'dot' && game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
           t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
@@ -118,6 +126,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     value: resultValue(s, stage.rules.goal) ?? -1,
     stars: starsFor(s, stage.rules.goal),
     score: s.score,
+    towers: s.towers.join('/'),
     specials: Object.entries(s.collected)
       .filter(([id]) => id !== stage.objects.drop.id)
       .reduce((n, [, c]) => n + c, 0),
@@ -147,7 +156,8 @@ async function main() {
   )
   for (const bot of ['random', 'cue', 'skilled'] as Bot[]) {
     const runs = Array.from({ length: games }, (_, i) => play(stage, bot, i + 1))
-    const avg = (k: keyof (typeof runs)[0]) =>
+    type Run = (typeof runs)[0]
+    const avg = (k: { [K in keyof Run]: Run[K] extends number ? K : never }[keyof Run]) =>
       (runs.reduce((a, r) => a + r[k], 0) / runs.length).toFixed(1)
     const atLeast = (n: number) =>
       `${Math.round((100 * runs.filter(r => r.stars >= n).length) / runs.length)}%`
@@ -160,6 +170,7 @@ async function main() {
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
+        (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         ` · ${avg('seconds')}s · peak ${avg('peakLive')} live · step p50 ${avg('p50')}ms p95 ${avg('p95')}ms`
     )
   }
