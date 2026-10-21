@@ -21,6 +21,9 @@ export const PALETTE = {
   /** The on-table timing cue. */
   cue: '#fff3c4',
   obstacle: '#7f86ad',
+  /** The Cairn: an icy floor and stone posts. */
+  ice: '#3b5f73',
+  stone: '#9a9384',
   moonstone: '#efe6cf',
   moonstoneMark: '#6f7fae',
   chocolate: '#6b3a22',

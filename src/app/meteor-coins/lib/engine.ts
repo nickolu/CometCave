@@ -12,6 +12,7 @@ import {
   PHYSICS_STEP_S,
   PUSHER_DEPTH,
   PUSHER_HEIGHT,
+  PUSHER_MID_Z,
   PUSHER_PERIOD_S,
   WALL_HEIGHT,
   classifyFall,
@@ -57,12 +58,22 @@ export type FallEvent = {
   result: FallResult
 }
 
-/** Fixed pieces standing on the shelf, in front of the pusher's reach. */
-export type Obstacle =
-  /** An upright round post. */
-  | { type: 'post'; x: number; z: number; radius: number; height: number }
-  /** A fixed box on the shelf: a lane rail, a soap bar. */
-  | { type: 'block'; x: number; z: number; width: number; depth: number; height: number }
+/**
+ * Pieces standing on the shelf. Most are fixed, in front of the pusher's
+ * reach; one that `rides` is mounted on the pusher and moves with it, and its
+ * `z` is where it stands with the pusher at the middle of its stroke.
+ */
+export type Obstacle = { x: number; z: number; height: number; rides?: boolean } &
+  /** An upright round post. A post with a `tower` name is one a stack goal counts. */
+  (| { type: 'post'; radius: number; tower?: string }
+    /** A box on the shelf: a lane rail, a soap bar, a post's mounting. */
+    | { type: 'block'; width: number; depth: number }
+  )
+
+/** Where an obstacle stands at a moment, given the pusher's stroke. */
+export function obstacleZ(o: Obstacle, timeS: number, pusherPeriodS: number): number {
+  return o.rides ? o.z + pusherCenterZ(timeS, pusherPeriodS) - PUSHER_MID_Z : o.z
+}
 
 /**
  * Pucks are pooled: created once, parked disabled below the table, and
@@ -86,7 +97,20 @@ export type EngineOptions = {
   /** Seconds per full pusher stroke. */
   pusherPeriodS?: number
   obstacles?: readonly Obstacle[]
+  /**
+   * Shelf friction. Low makes it ice: whatever is knocked onto it slides
+   * away. It overrides what's sliding on it rather than averaging with it.
+   */
+  floorFriction?: number
+  /**
+   * A forward pull, in units/s², on anything lying on the floor: the ice
+   * slopes gently to the front, so whatever lands on it slides off.
+   */
+  floorDrift?: number
 }
+
+/** Below this height an object is lying on the floor, for floorDrift. */
+const ON_FLOOR_Y = 0.3
 
 export class PusherEngine {
   readonly world: RAPIER.World
@@ -94,6 +118,7 @@ export class PusherEngine {
   readonly poolObject: ObjectSpec
   readonly chuteHalfWidth: number
   readonly pusherPeriodS: number
+  readonly floorDrift: number
   /** Seconds of simulated time. Advances only in step(). */
   time = 0
 
@@ -107,8 +132,11 @@ export class PusherEngine {
     chuteHalfWidth = CHUTE_HALF_WIDTH,
     pusherPeriodS = PUSHER_PERIOD_S,
     obstacles = [],
+    floorFriction,
+    floorDrift = 0,
   }: EngineOptions = {}) {
     this.poolObject = poolObject
+    this.floorDrift = floorDrift
     this.chuteHalfWidth = chuteHalfWidth
     this.pusherPeriodS = pusherPeriodS
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
@@ -132,7 +160,11 @@ export class PusherEngine {
         fixed
       )
 
-    box(FIELD_HALF_WIDTH, 0.25, fieldDepth / 2, 0, -0.25, fieldMidZ, 0.4)
+    const floor = box(FIELD_HALF_WIDTH, 0.25, fieldDepth / 2, 0, -0.25, fieldMidZ, 0.4)
+    if (floorFriction !== undefined) {
+      floor.setFriction(floorFriction)
+      floor.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
+    }
     for (const side of [-1, 1]) {
       box(
         0.25,
@@ -157,19 +189,6 @@ export class PusherEngine {
       0.4
     )
 
-    for (const o of obstacles) {
-      if (o.type === 'post') {
-        world.createCollider(
-          RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius)
-            .setTranslation(o.x, o.height / 2, o.z)
-            .setFriction(0.3),
-          fixed
-        )
-      } else {
-        box(o.width / 2, o.height / 2, o.depth / 2, o.x, o.height / 2, o.z, 0.2)
-      }
-    }
-
     // Scripted motion and infinite mass: nothing pushes back on the pusher.
     this.pusher = world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
@@ -186,6 +205,18 @@ export class PusherEngine {
       ).setFriction(0.5),
       this.pusher
     )
+
+    for (const o of obstacles) {
+      // A rider's collider is fixed to the pusher, offset from its centre.
+      const parent = o.rides ? this.pusher : fixed
+      const z = o.rides ? o.z - PUSHER_MID_Z : o.z
+      const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
+      const shape =
+        o.type === 'post'
+          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
+          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+      world.createCollider(shape.setTranslation(o.x, y, z), parent)
+    }
 
     // Pool objects first, at the low indices; special objects after the pool.
     const pooled = pile.filter(pose => (pose.o ?? poolObject.id) === poolObject.id)
@@ -283,6 +314,7 @@ export class PusherEngine {
       y: PUSHER_HEIGHT / 2,
       z: pusherCenterZ(this.time, this.pusherPeriodS),
     })
+    if (this.floorDrift) this.drift()
     this.world.step()
 
     const falls: FallEvent[] = []
@@ -302,6 +334,15 @@ export class PusherEngine {
       this.park(i)
     }
     return falls
+  }
+
+  private drift() {
+    const dv = this.floorDrift * PHYSICS_STEP_S
+    for (const puck of this.pucks) {
+      if (!puck.active || puck.body.translation().y > ON_FLOOR_Y) continue
+      const v = puck.body.linvel()
+      puck.body.setLinvel({ x: v.x, y: v.y, z: v.z + dv }, true)
+    }
   }
 
   countActive() {

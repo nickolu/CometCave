@@ -19,11 +19,15 @@ export const SHELF_OPEN_SIN = 0.6
 /** A released puck starts falling at this speed (see PusherEngine.spawn). */
 const RELEASE_SPEED = 1
 
+/** Seconds for a released puck to fall `dy`. */
+export function fallTime(dy: number): number {
+  const g = -GRAVITY
+  return (-RELEASE_SPEED + Math.sqrt(RELEASE_SPEED ** 2 + 2 * g * Math.max(0, dy))) / g
+}
+
 /** Seconds from release at `fromY` until a puck reaches the pusher's top. */
 export function fallTimeToShelf(fromY: number): number {
-  const dy = fromY - (PUSHER_HEIGHT + PUCK_THICKNESS / 2)
-  const g = -GRAVITY
-  return (-RELEASE_SPEED + Math.sqrt(RELEASE_SPEED ** 2 + 2 * g * dy)) / g
+  return fallTime(fromY - (PUSHER_HEIGHT + PUCK_THICKNESS / 2))
 }
 
 /** Whether a puck landing on the drop line at `timeS` (physics time) finds bare shelf. */

@@ -53,6 +53,7 @@ async function main() {
   const OUT = join(process.cwd(), `src/app/meteor-coins/lib/piles/${stage.slug}.json`)
   const STEPS_PER_CYCLE = Math.round(stage.table.pusherPeriodS / PHYSICS_STEP_S)
   const recipe = stage.bake
+  if (!recipe) throw new Error(`${stage.name} starts on a bare table; there's no pile to bake`)
   const seed = Number(process.argv[3] ?? recipe.seed)
   const floorCoins = Number(process.argv[4] ?? recipe.floor)
   const topCoins = recipe.top

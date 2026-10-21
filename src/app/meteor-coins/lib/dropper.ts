@@ -45,10 +45,20 @@ export function armAngle(t: number, periodS = ARM_PERIOD_S): number {
   return ARM_MAX_ANGLE * Math.sin((2 * Math.PI * t) / periodS)
 }
 
-/** Where a released puck starts: the arm tip, in front of the back wall. */
-export function armTip(t: number, periodS = ARM_PERIOD_S): { x: number; y: number; z: number } {
+/**
+ * A stage's arm. Most hang it from the usual pivot over the drop line by the
+ * back wall; a stage can lower it or move it forward, where its coins should
+ * land somewhere else (The Cairn drops onto posts, from just above them).
+ */
+export type ArmConfig = { periodS: number; pivotY?: number; dropZ?: number }
+
+/** Where a released puck starts: the arm tip. */
+export function armTip(
+  t: number,
+  { periodS, pivotY = ARM_PIVOT_Y, dropZ = DROP_Z }: ArmConfig = { periodS: ARM_PERIOD_S }
+): { x: number; y: number; z: number } {
   const a = armAngle(t, periodS)
-  return { x: ARM_LENGTH * Math.sin(a), y: ARM_PIVOT_Y - ARM_LENGTH * Math.cos(a), z: DROP_Z }
+  return { x: ARM_LENGTH * Math.sin(a), y: pivotY - ARM_LENGTH * Math.cos(a), z: dropZ }
 }
 
 export function ringX(t: number): number {
