@@ -5,18 +5,21 @@ import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
+import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import { SLOW_SPEED } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame, type GameEvent } from '@/app/meteor-coins/lib/game'
+import { headline, hudMeasure, hudStars, nextStarSentence } from '@/app/meteor-coins/lib/goalText'
 import {
   type Stars,
+  nextPlayableAfter,
   nextStageAfter,
   parseProgress,
   readProgressRaw,
   recordResult,
   saveProgress,
 } from '@/app/meteor-coins/lib/progress'
-import { type GameState, nextStar, starsFor } from '@/app/meteor-coins/lib/rules'
+import { type GameState, resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
@@ -52,7 +55,9 @@ function writeSlow(slow: boolean) {
   }
 }
 
-type Outcome = { stars: Stars; best: number; isNewBest: boolean; unlockedNext: boolean }
+type Outcome = { stars: Stars; best: number | null; isNewBest: boolean; unlockedNext: boolean }
+
+const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 export default function StageApp({ slug }: { slug: string }) {
   const stage = playableStage(slug) as StageDef
@@ -97,11 +102,25 @@ export default function StageApp({ slug }: { slug: string }) {
   const onStep = useCallback(
     (events: GameEvent[]) => {
       if (!game) return
+      const drops = stage.objects.drop.plural
       for (const e of events) {
         if (e.type === 'shot' && e.hit) {
-          const text = e.streak > 1 ? `+${e.bonus} coins · streak ${e.streak}` : `+${e.bonus} coins`
+          const text =
+            e.streak > 1 ? `+${e.bonus} ${drops} · streak ${e.streak}` : `+${e.bonus} ${drops}`
           setPopup({ id: performance.now(), text })
-          setAnnounce(`Ring hit. ${e.bonus} bonus coins.`)
+          setAnnounce(`Ring hit. ${e.bonus} bonus ${drops}.`)
+        }
+        // Special objects get their own call-out when they go in.
+        if (e.type === 'fall' && e.result === 'chute' && e.object !== stage.objects.drop) {
+          const extra = e.object.refund
+            ? ` +${e.object.refund} coins`
+            : e.object.points > 1
+              ? ` +${e.object.points}`
+              : ''
+          setPopup({ id: performance.now(), text: `${capitalize(e.object.name)}!${extra}` })
+          setAnnounce(
+            `${capitalize(e.object.name)} in.${e.object.refund ? ` ${e.object.refund} coins back.` : ''}`
+          )
         }
       }
       // Record the result once per run, here rather than inside a state
@@ -110,19 +129,22 @@ export default function StageApp({ slug }: { slug: string }) {
       const next = game.state
       if (next.phase === 'over' && recorded.current !== game) {
         recorded.current = game
-        const stars = starsFor(next.score, stage.rules.stars)
+        const stars = starsFor(next, stage.rules.goal)
+        const value = resultValue(next, stage.rules.goal)
         const before = parseProgress(readProgressRaw())
-        const previousBest = before.best[stage.slug] ?? 0
-        const following = nextStageAfter(stage)
-        saveProgress(recordResult(before, stage.slug, next.score, stars))
+        const previousBest = before.best[stage.slug]
+        const following = nextPlayableAfter(stage) ?? nextStageAfter(stage)
+        const after = recordResult(before, stage.slug, value, stars)
+        saveProgress(after)
         setOutcome({
           stars,
-          best: Math.max(previousBest, next.score),
-          isNewBest: next.score > previousBest,
+          best: after.best[stage.slug] ?? null,
+          isNewBest: value !== null && value > (previousBest ?? 0),
           unlockedNext:
             stars >= 1 && (before.stars[stage.slug] ?? 0) === 0 && following !== undefined,
         })
-        setAnnounce(`Stage over. Score ${next.score}, ${stars} of 3 stars.`)
+        const big = headline(stage, next)
+        setAnnounce(`Stage over. ${big.value} ${big.caption}, ${stars} of 3 stars.`)
       }
       setState(prev => (prev === next ? prev : next))
     },
@@ -162,8 +184,8 @@ export default function StageApp({ slug }: { slug: string }) {
   }
 
   const over = state?.phase === 'over'
-  const upcoming = state ? nextStar(state.score, stage.rules.stars) : null
-  const earnedSoFar = state ? starsFor(state.score, stage.rules.stars) : 0
+  const measure = state ? hudMeasure(stage, state) : null
+  const starsNow = state ? hudStars(stage, state) : null
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
@@ -191,24 +213,14 @@ export default function StageApp({ slug }: { slug: string }) {
         )}
       </div>
 
-      {state && (
+      {state && measure && starsNow && (
         <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex justify-center px-14">
           <div className="flex items-center gap-4 rounded-lg bg-black/60 px-4 py-2">
-            <Stat label="Coins" value={state.coinsLeft ?? '∞'} />
-            <Stat label="Score" value={state.score} />
+            <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
+            <Stat label={measure.label} value={measure.value} />
             <div className="text-center">
-              <StarRow
-                earned={earnedSoFar}
-                size={16}
-                label={
-                  upcoming
-                    ? `${earnedSoFar} of 3 stars. Next star at ${upcoming.at}.`
-                    : '3 of 3 stars.'
-                }
-              />
-              <div className="text-[11px] tabular-nums text-white/70">
-                {upcoming ? `next at ${upcoming.at}` : 'all stars'}
-              </div>
+              <StarRow earned={starsNow.stars} size={16} label={starsNow.label} />
+              <div className="text-[11px] tabular-nums text-white/70">{starsNow.note}</div>
             </div>
             {state.streak > 0 && (
               <div className="text-xs leading-tight text-white/80">
@@ -265,7 +277,8 @@ export default function StageApp({ slug }: { slug: string }) {
                 Stage {stage.number} · {stage.name}
               </p>
               <p className="text-xs text-white/80 sm:text-sm">
-                Tap or press Space to drop. {stage.ring.enabled && 'Hit the ring for bonus coins. '}
+                Tap or press Space to drop.{' '}
+                {stage.ring.enabled && `Hit the ring for bonus ${stage.objects.drop.plural}. `}
                 <span className="italic">{stage.voice.start}</span>
               </p>
             </>
@@ -338,13 +351,14 @@ function ResultPanel({
   onTryAgain: () => void
 }) {
   const [status, setStatus] = useState('')
-  const following = nextStageAfter(stage)
+  const following = nextPlayableAfter(stage) ?? nextStageAfter(stage)
   const canAdvance = outcome.stars >= 1 && following?.playable
-  const upcoming = nextStar(state.score, stage.rules.stars)
+  const big = headline(stage, state)
+  const hasGutters = stage.table.chuteHalfWidth < FIELD_HALF_WIDTH
 
   const share = async () => {
     const url = `${window.location.origin}/meteor-coins/${stage.slug}`
-    const text = `I scored ${state.score} on ${stage.name} (${outcome.stars} of 3 stars) in Meteor Coins.`
+    const text = `I got ${big.value} ${big.caption} on ${stage.name} (${outcome.stars} of 3 stars) in Meteor Coins.`
     try {
       if (navigator.share) {
         await navigator.share({ title: `Meteor Coins: ${stage.name}`, text, url })
@@ -380,8 +394,8 @@ function ResultPanel({
         <h2 id="result-heading" className="text-lg font-bold">
           {stage.name}
         </h2>
-        <p className="mt-2 text-6xl font-extrabold tabular-nums">{state.score}</p>
-        <p className="text-sm text-white/70">coins into the chute</p>
+        <p className="mt-2 text-6xl font-extrabold tabular-nums">{big.value}</p>
+        <p className="text-sm text-white/70">{big.caption}</p>
         <div className="mt-3 flex justify-center">
           <StarRow earned={outcome.stars} size={30} label={`${outcome.stars} of 3 stars`} />
         </div>
@@ -389,10 +403,10 @@ function ResultPanel({
           {outcome.stars >= 1 ? stage.voice.clear : stage.voice.miss}
         </p>
         <p className="mt-1 text-sm text-white/70">
-          {upcoming
-            ? `${upcoming.at} for ${upcoming.stars === 1 ? 'a star' : `${upcoming.stars} stars`}.`
-            : 'Every star on this stage.'}{' '}
-          {outcome.isNewBest ? 'New personal best!' : `Your best: ${outcome.best}.`}
+          {nextStarSentence(stage, state)}{' '}
+          {outcome.isNewBest
+            ? 'New personal best!'
+            : !!outcome.best && `Your best: ${outcome.best}.`}
         </p>
         {outcome.unlockedNext && following && (
           <p className="mt-2 text-sm font-semibold text-white">
@@ -416,10 +430,12 @@ function ResultPanel({
               <dd className="text-base font-semibold text-white">{state.bestStreak}</dd>
             </div>
           )}
-          <div>
-            <dt>Gutters</dt>
-            <dd className="text-base font-semibold text-white">{state.lost}</dd>
-          </div>
+          {hasGutters && (
+            <div>
+              <dt>Gutters</dt>
+              <dd className="text-base font-semibold text-white">{state.lost}</dd>
+            </div>
+          )}
         </dl>
         <div className="mt-6 flex flex-col gap-2">
           {canAdvance && following && (

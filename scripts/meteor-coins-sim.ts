@@ -3,21 +3,23 @@
  *
  *   npx tsx scripts/meteor-coins-sim.ts [stage=penny-falls] [games=6]
  *
- * Two bots: one taps at random moments; one plays the way a good player
- * would, leading the ring when a lineup is coming and otherwise timing its
- * drop to land while the pusher slides forward, with 0–100ms of human
- * lateness. Their gap is the skill in the stage. Reports score, how often
+ * Three bots: one taps at random moments; one only follows the timing rule
+ * the on-table cue shows (drop when the coin would land on bare shelf),
+ * ignoring the ring; one plays the way a good player would, leading the ring
+ * when a lineup is coming and otherwise following the cue. The two that time
+ * their drops are 0–100ms late, like people. The gaps are the skill in the
+ * stage. Reports score, how often
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { FIELD_FRONT_Z, PUSHER_AMP_Z, pusherCenterZ } from '@/app/meteor-coins/lib/cabinet'
+import { FIELD_FRONT_Z } from '@/app/meteor-coins/lib/cabinet'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
-import { starsFor } from '@/app/meteor-coins/lib/rules'
+import { resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 
-type Bot = 'random' | 'skilled'
+type Bot = 'random' | 'cue' | 'skilled'
 
 function rng(seed: number) {
   let a = seed >>> 0
@@ -67,6 +69,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     }
     if (pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
+      if (bot === 'cue') {
+        tap = (game.dropLandsClear && t - waitingSince > 1.5) || t - waitingSince > 6
+      }
       if (bot === 'skilled') {
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
         const tip = game.armTip()
@@ -74,13 +79,10 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         // Lead the ring: tap when the coin would arrive where the ring will be.
         const ringLineup =
           stage.ring.enabled && Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed)) < 0.25
-        // Otherwise land it while the pusher slides forward onto clear shelf.
-        const landAt = t + fall
-        const z = (dt: number) => pusherCenterZ(landAt + dt, stage.table.pusherPeriodS)
-        const pusherForward = z(0.01) > z(0) && z(0) < pusherCenterZ(0) + PUSHER_AMP_Z * 0.5
-        tap = ringLineup || (pusherForward && t - waitingSince > 1.5) || t - waitingSince > 6
+        // Otherwise drop when it would land on bare shelf.
+        tap = ringLineup || (game.dropLandsClear && t - waitingSince > 1.5) || t - waitingSince > 6
       }
-      if (tap) pendingTapAt = t + (bot === 'skilled' ? rand() * 0.1 : 0)
+      if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
     }
     const t0 = performance.now()
     game.step()
@@ -94,7 +96,12 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   const s = game.state
   game.dispose()
   return {
+    value: resultValue(s, stage.rules.goal) ?? -1,
+    stars: starsFor(s, stage.rules.goal),
     score: s.score,
+    specials: Object.entries(s.collected)
+      .filter(([id]) => id !== stage.objects.drop.id)
+      .reduce((n, [, c]) => n + c, 0),
     lost: s.lost,
     hits: s.hits,
     shots: s.shots,
@@ -114,17 +121,22 @@ async function main() {
   if (!stage) throw new Error(`No playable stage "${process.argv[2]}"`)
   const games = Number(process.argv[3] ?? 6)
   await initPhysics()
-  console.log(`Stage ${stage.number}: ${stage.name} · stars at ${stage.rules.stars.join(' / ')}`)
-  for (const bot of ['random', 'skilled'] as Bot[]) {
+  const { goal } = stage.rules
+  console.log(
+    `Stage ${stage.number}: ${stage.name} · ${goal.type} goal, stars at ${goal.stars.join(' / ')}` +
+      ` (${stage.measure.caption}; -1 = target missed)`
+  )
+  for (const bot of ['random', 'cue', 'skilled'] as Bot[]) {
     const runs = Array.from({ length: games }, (_, i) => play(stage, bot, i + 1))
     const avg = (k: keyof (typeof runs)[0]) =>
       (runs.reduce((a, r) => a + r[k], 0) / runs.length).toFixed(1)
     const atLeast = (n: number) =>
-      `${Math.round((100 * runs.filter(r => starsFor(r.score, stage.rules.stars) >= n).length) / runs.length)}%`
-    const sorted = runs.map(r => r.score).sort((a, b) => a - b)
+      `${Math.round((100 * runs.filter(r => r.stars >= n).length) / runs.length)}%`
+    const sorted = runs.map(r => r.value).sort((a, b) => a - b)
     const pct = (p: number) => sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))]
     console.log(
-      `${bot.padEnd(8)} score avg ${avg('score')} · p15 ${pct(0.15)} p50 ${pct(0.5)} p75 ${pct(0.75)}` +
+      `${bot.padEnd(8)} result avg ${avg('value')} · p15 ${pct(0.15)} p50 ${pct(0.5)} p75 ${pct(0.75)}` +
+        ` · score ${avg('score')} · specials ${avg('specials')}` +
         ` · ★ ${atLeast(1)} ★★ ${atLeast(2)} ★★★ ${atLeast(3)}` +
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +

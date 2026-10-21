@@ -1,7 +1,18 @@
+import type { ObjectId } from '@/app/meteor-coins/lib/objects'
+import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnight-snack.json'
+import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
 import pennyFalls from '@/app/meteor-coins/lib/piles/penny-falls.json'
+import rubberDuckyRumble from '@/app/meteor-coins/lib/piles/rubber-ducky-rumble.json'
 
-/** A resting coin: position [x, y, z] and rotation quaternion [x, y, z, w]. */
-export type PuckPose = { p: [number, number, number]; q: [number, number, number, number] }
+/**
+ * A resting object: position [x, y, z], rotation quaternion [x, y, z, w], and
+ * which object it is — omitted for the stage's pool object (usually a coin).
+ */
+export type PuckPose = {
+  p: [number, number, number]
+  q: [number, number, number, number]
+  o?: ObjectId
+}
 
 /**
  * Each stage's starting coins, at rest — the same for every player.
@@ -9,6 +20,9 @@ export type PuckPose = { p: [number, number, number]; q: [number, number, number
  */
 export const PILES = {
   'penny-falls': pennyFalls as PuckPose[],
+  'moonstone-porch': moonstonePorch as PuckPose[],
+  'brambles-midnight-snack': bramblesMidnightSnack as PuckPose[],
+  'rubber-ducky-rumble': rubberDuckyRumble as PuckPose[],
 } satisfies Record<string, PuckPose[]>
 
 export type PileName = keyof typeof PILES

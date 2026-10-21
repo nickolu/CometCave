@@ -18,4 +18,16 @@ export const PALETTE = {
   arm: '#9aa3c7',
   ring: '#5ee6ff',
   ringHit: '#7dffb0',
+  /** The on-table timing cue. */
+  cue: '#fff3c4',
+  obstacle: '#7f86ad',
+  moonstone: '#efe6cf',
+  moonstoneMark: '#6f7fae',
+  chocolate: '#6b3a22',
+  chocolateMark: '#3f1f10',
+  truffle: '#2e1810',
+  cherry: '#d7263d',
+  duck: '#ffd23f',
+  duckBeak: '#ff8c42',
+  bow: '#ff5fa2',
 } as const

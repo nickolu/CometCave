@@ -1,4 +1,5 @@
 import {
+  type GameState,
   type RuleConfig,
   SETTLE_MAX_S,
   SETTLE_QUIET_S,
@@ -10,18 +11,35 @@ import {
   nextStar,
   pourBonus,
   resolveShot,
+  resultValue,
   starsFor,
   tick,
   validateRules,
 } from './rules'
 
-const RULES: RuleConfig = { coins: 40, bonusForStreak: classicBonus, stars: [20, 32, 44] }
+const RULES: RuleConfig = {
+  coins: 40,
+  bonusForStreak: classicBonus,
+  goal: { type: 'score', stars: [20, 32, 44] },
+}
 const UNLIMITED: RuleConfig = {
   coins: null,
   timeLimitS: 60,
   bonusForStreak: classicBonus,
-  stars: [10, 20, 30],
+  goal: { type: 'score', stars: [10, 20, 30] },
 }
+const COLLECT: RuleConfig = {
+  coins: 30,
+  bonusForStreak: () => 2,
+  goal: { type: 'collect', object: 'moonstone', total: 9, stars: [0, 5, 9] },
+}
+const TARGET: RuleConfig = {
+  coins: 40,
+  bonusForStreak: () => 2,
+  goal: { type: 'target', count: 30, stars: [0, 5, 12] },
+}
+const MOONSTONE = { id: 'moonstone', points: 1, refund: 3 }
+const TRUFFLE = { id: 'truffle', points: 3, refund: 0 }
 
 describe('classicBonus', () => {
   it('grows by 5 per consecutive hit and tops out at 25', () => {
@@ -35,7 +53,26 @@ describe('validateRules', () => {
   })
 
   it('refuses star thresholds that do not rise', () => {
-    expect(() => validateRules({ ...RULES, stars: [20, 20, 44] })).toThrow(/rise/)
+    expect(() => validateRules({ ...RULES, goal: { type: 'score', stars: [20, 20, 44] } })).toThrow(
+      /rise/
+    )
+  })
+
+  it('allows a star for finishing only where the goal is not a score', () => {
+    expect(() => validateRules({ ...RULES, goal: { type: 'score', stars: [0, 5, 9] } })).toThrow(
+      /rise/
+    )
+    expect(() => validateRules(COLLECT)).not.toThrow()
+  })
+
+  it('refuses three stars that need more objects than the stage holds', () => {
+    const greedy: RuleConfig = { ...COLLECT, goal: { ...COLLECT.goal, stars: [0, 5, 10] } as const }
+    expect(() => validateRules(greedy)).toThrow(/holds/)
+  })
+
+  it('refuses a target goal whose spare-coin stars the budget cannot cover', () => {
+    expect(() => validateRules({ ...TARGET, coins: 10 })).toThrow(/budget/)
+    expect(() => validateRules({ ...TARGET, coins: null, timeLimitS: 60 })).toThrow(/budget/)
   })
 })
 
@@ -107,6 +144,69 @@ describe('falls', () => {
     const over = { ...initialState(RULES), phase: 'over' as const }
     expect(fall(over, 'chute', 1)).toBe(over)
   })
+
+  it("scores an object's points and counts it by kind", () => {
+    let s = fall(initialState(TARGET), 'chute', 1, TRUFFLE, TARGET)
+    s = fall(s, 'chute', 2, undefined, TARGET)
+    expect(s.score).toBe(4)
+    expect(s.collected).toEqual({ truffle: 1, coin: 1 })
+  })
+
+  it('counts nothing for an object in the gutter', () => {
+    const s = fall(initialState(COLLECT), 'gutter', 1, MOONSTONE, COLLECT)
+    expect(s.collected).toEqual({})
+    expect(s.coinsLeft).toBe(30)
+  })
+
+  it('refunds coins, and plays on if they come back after the last was spent', () => {
+    const settling = {
+      ...initialState(COLLECT),
+      phase: 'settling' as const,
+      coinsLeft: 0,
+      settleStartedAt: 5,
+    }
+    const s = fall(settling, 'chute', 6, MOONSTONE, COLLECT)
+    expect(s.coinsLeft).toBe(3)
+    expect(s.phase).toBe('playing')
+    expect(canDrop(s)).toBe(true)
+  })
+})
+
+describe('goals', () => {
+  it('ends a collect stage once every object is in', () => {
+    let s = drop(initialState(COLLECT))
+    for (let i = 0; i < 8; i++) s = fall(s, 'chute', i, MOONSTONE, COLLECT)
+    expect(s.phase).toBe('playing')
+    s = fall(s, 'chute', 9, MOONSTONE, COLLECT)
+    expect(s.phase).toBe('over')
+    expect(starsFor(s, COLLECT.goal)).toBe(3)
+  })
+
+  it('gives the finishing star only once a collect stage is over', () => {
+    const playing = drop(initialState(COLLECT))
+    expect(starsFor(playing, COLLECT.goal)).toBe(0)
+    expect(nextStar(playing, COLLECT.goal)).toEqual({ stars: 1, at: 0 })
+    expect(starsFor({ ...playing, phase: 'over' }, COLLECT.goal)).toBe(1)
+  })
+
+  it('ends a target stage when it is reached and keeps the coins to spare', () => {
+    let s: GameState = { ...drop(initialState(TARGET)), coinsLeft: 7 }
+    for (let i = 0; i < 29; i++) s = fall(s, 'chute', i, undefined, TARGET)
+    expect(s.phase).toBe('playing')
+    expect(starsFor(s, TARGET.goal)).toBe(0)
+    s = fall(s, 'chute', 30, undefined, TARGET)
+    expect(s.phase).toBe('over')
+    expect(s.spareAtGoal).toBe(7)
+    expect(starsFor(s, TARGET.goal)).toBe(2)
+    expect(nextStar(s, TARGET.goal)).toEqual({ stars: 3, at: 12 })
+    expect(resultValue(s, TARGET.goal)).toBe(7)
+  })
+
+  it('has no result to keep when a target is missed', () => {
+    const s = { ...initialState(TARGET), phase: 'over' as const, score: 22 }
+    expect(starsFor(s, TARGET.goal)).toBe(0)
+    expect(resultValue(s, TARGET.goal)).toBeNull()
+  })
 })
 
 describe('ending', () => {
@@ -138,15 +238,17 @@ describe('ending', () => {
 })
 
 describe('stars', () => {
+  const scored = (score: number) => ({ ...initialState(RULES), score })
+
   it('counts thresholds reached', () => {
-    expect([0, 19, 20, 31, 32, 43, 44, 90].map(score => starsFor(score, [20, 32, 44]))).toEqual([
-      0, 0, 1, 1, 2, 2, 3, 3,
-    ])
+    expect(
+      [0, 19, 20, 31, 32, 43, 44, 90].map(score => starsFor(scored(score), RULES.goal))
+    ).toEqual([0, 0, 1, 1, 2, 2, 3, 3])
   })
 
   it('names the next star to earn', () => {
-    expect(nextStar(0, [20, 32, 44])).toEqual({ stars: 1, at: 20 })
-    expect(nextStar(33, [20, 32, 44])).toEqual({ stars: 3, at: 44 })
-    expect(nextStar(44, [20, 32, 44])).toBeNull()
+    expect(nextStar(scored(0), RULES.goal)).toEqual({ stars: 1, at: 20 })
+    expect(nextStar(scored(33), RULES.goal)).toEqual({ stars: 3, at: 44 })
+    expect(nextStar(scored(44), RULES.goal)).toBeNull()
   })
 })

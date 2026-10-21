@@ -1,20 +1,32 @@
-import { FIELD_FRONT_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from './cabinet'
+import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from './cabinet'
 import { POOL_SIZE, PusherEngine, initPhysics } from './engine'
+import { OBJECTS } from './objects'
 import { PILES } from './piles'
+import { type StageDef, playableStage } from './stages'
 
-describe.each(Object.entries(PILES))('the %s pile', (_, STARTING_PILE) => {
+/** The table each pile was baked on: its stage's pusher timing, obstacles and pool object. */
+function table(name: string) {
+  const stage = playableStage(name) as StageDef
+  return { ...stage.table, poolObject: stage.objects.drop }
+}
+
+describe.each(Object.entries(PILES))('the %s pile', (name, STARTING_PILE) => {
   it('fits in the pool with room left for play', () => {
-    expect(STARTING_PILE.length).toBeGreaterThan(100)
-    expect(POOL_SIZE - STARTING_PILE.length).toBeGreaterThanOrEqual(75)
+    const pooled = STARTING_PILE.filter(pose => !pose.o)
+    // Bulky objects (ducks) fill the shelf with fewer.
+    expect(pooled.length).toBeGreaterThan(60)
+    expect(POOL_SIZE - pooled.length).toBeGreaterThanOrEqual(75)
   })
 
-  it('rests every coin on the table', () => {
-    for (const { p, q } of STARTING_PILE) {
+  it('rests everything on the table', () => {
+    const { drop } = (playableStage(name) as StageDef).objects
+    for (const { p, q, o } of STARTING_PILE) {
+      const reach = (o ? OBJECTS[o] : drop).reach
       expect(Math.abs(p[0])).toBeLessThan(FIELD_HALF_WIDTH)
       expect(p[1]).toBeGreaterThan(0)
       // Some hang over the front edge on purpose, propped on their neighbours;
       // the stillness test below is what proves they rest.
-      expect(p[2]).toBeLessThan(FIELD_FRONT_Z + PUCK_RADIUS / 2)
+      expect(p[2]).toBeLessThan(FIELD_FRONT_Z + reach / 2)
       expect(Math.hypot(...q)).toBeCloseTo(1, 3)
     }
   })
@@ -26,7 +38,7 @@ describe.each(Object.entries(PILES))('the %s pile', (_, STARTING_PILE) => {
 
   it('holds still until the player drops something — a fair start', async () => {
     await initPhysics()
-    const engine = new PusherEngine({ pile: STARTING_PILE })
+    const engine = new PusherEngine({ pile: STARTING_PILE, ...table(name) })
     let fell = 0
     for (let i = 0; i < 60 * 4; i++) fell += engine.step().length
     expect(fell).toBe(0)

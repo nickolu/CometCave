@@ -27,6 +27,11 @@ describe('recordResult', () => {
     p = recordResult(p, 'penny-falls', 95, 3)
     expect(p).toEqual({ stars: { 'penny-falls': 3 }, best: { 'penny-falls': 95 } })
   })
+
+  it('keeps the stars but no best when there is nothing to compare', () => {
+    const p = recordResult(emptyProgress(), 'brambles-midnight-snack', null, 0)
+    expect(p).toEqual({ stars: { 'brambles-midnight-snack': 0 }, best: {} })
+  })
 })
 
 describe('unlocking', () => {

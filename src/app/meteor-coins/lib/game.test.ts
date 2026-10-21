@@ -1,5 +1,6 @@
-import { initPhysics } from './engine'
-import { DropGame } from './game'
+import { POOL_SIZE, initPhysics } from './engine'
+import { DropGame, type GameEvent } from './game'
+import { CHOCOLATE, MOONSTONE } from './objects'
 import { type StageDef, playableStage } from './stages'
 
 const PENNY_FALLS = playableStage('penny-falls') as StageDef
@@ -70,6 +71,31 @@ describe('DropGame', () => {
     expect(game.state.shots).toBe(0)
     game.dispose()
   }, 60_000)
+
+  it('scores a special object by kind and refunds its coins', () => {
+    const porch = playableStage('moonstone-porch') as StageDef
+    // One moonstone already over the lip: it falls in on the first steps.
+    const game = new DropGame(porch, {
+      pile: [{ p: [0, 0.2, 4.4], q: [0, 0, 0, 1], o: 'moonstone' }],
+    })
+    const falls: GameEvent[] = []
+    for (let i = 0; i < 60; i++) falls.push(...game.step())
+    expect(falls).toEqual([{ type: 'fall', result: 'chute', object: MOONSTONE }])
+    expect(game.state.collected).toEqual({ moonstone: 1 })
+    expect(game.state.coinsLeft).toBe((porch.rules.coins as number) + MOONSTONE.refund)
+    // Specials aren't pooled: the pool is untouched, and the moonstone is gone.
+    expect(game.engine.freeCount).toBe(POOL_SIZE)
+    expect(game.engine.countActive().live).toBe(0)
+    game.dispose()
+  })
+
+  it("drops the stage's own object from the arm", () => {
+    const game = new DropGame(playableStage('brambles-midnight-snack') as StageDef, { pile: [] })
+    game.tapDrop()
+    const dropped = game.engine.pucks.find(p => p.active)
+    expect(dropped?.spec).toBe(CHOCOLATE)
+    game.dispose()
+  })
 
   it('refuses taps once the budget is spent', () => {
     const game = new DropGame(PENNY_FALLS)

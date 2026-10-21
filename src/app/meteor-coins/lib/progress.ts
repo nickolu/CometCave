@@ -51,22 +51,41 @@ export function parseProgress(raw: string | null): Progress {
   return out
 }
 
-/** Keeps the better of the stored and new result for a stage. */
-export function recordResult(p: Progress, slug: string, score: number, stars: Stars): Progress {
-  return {
-    stars: { ...p.stars, [slug]: Math.max(p.stars[slug] ?? 0, stars) as Stars },
-    best: { ...p.best, [slug]: Math.max(p.best[slug] ?? 0, score) },
-  }
+/**
+ * Keeps the better of the stored and new result for a stage. `value` is the
+ * run's headline number (higher is better), or null when there's nothing to
+ * compare — a target that wasn't reached.
+ */
+export function recordResult(
+  p: Progress,
+  slug: string,
+  value: number | null,
+  stars: Stars
+): Progress {
+  const best = { ...p.best }
+  if (value !== null) best[slug] = Math.max(p.best[slug] ?? 0, value)
+  return { stars: { ...p.stars, [slug]: Math.max(p.stars[slug] ?? 0, stars) as Stars }, best }
 }
 
+/**
+ * Stage 1 is always open; after that, a star on the previous built stage
+ * opens the next. Stages that aren't built yet are skipped, so the campaign
+ * never stalls on a gap. A stage already played stays open, even once a
+ * stage in front of it is built.
+ */
 export function isUnlocked(p: Progress, stage: Stage): boolean {
-  if (stage.number === 1) return true
-  const previous = STAGES.find(s => s.number === stage.number - 1)
+  if (stage.number === 1 || p.stars[stage.slug] !== undefined) return true
+  const previous = STAGES.filter(s => s.playable && s.number < stage.number).at(-1)
   return previous !== undefined && (p.stars[previous.slug] ?? 0) >= 1
 }
 
 export function nextStageAfter(stage: Stage): Stage | undefined {
   return STAGES.find(s => s.number === stage.number + 1)
+}
+
+/** The next stage that can be played, skipping any not built yet. */
+export function nextPlayableAfter(stage: Stage): Stage | undefined {
+  return STAGES.find(s => s.playable && s.number > stage.number)
 }
 
 export function readProgressRaw(): string | null {
