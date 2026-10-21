@@ -1,5 +1,6 @@
 import type { ObjectId } from '@/app/meteor-coins/lib/objects'
 import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnight-snack.json'
+import hoopLaCannon from '@/app/meteor-coins/lib/piles/hoop-la-cannon.json'
 import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
 import pennyFalls from '@/app/meteor-coins/lib/piles/penny-falls.json'
 import rubberDuckyRumble from '@/app/meteor-coins/lib/piles/rubber-ducky-rumble.json'
@@ -24,6 +25,7 @@ export const PILES = {
   'penny-falls': pennyFalls as PuckPose[],
   'moonstone-porch': moonstonePorch as PuckPose[],
   'brambles-midnight-snack': bramblesMidnightSnack as PuckPose[],
+  'hoop-la-cannon': hoopLaCannon as PuckPose[],
   'rubber-ducky-rumble': rubberDuckyRumble as PuckPose[],
   'the-cascade-engine': theCascadeEngine as PuckPose[],
   'the-bedtime-book': theBedtimeBook as PuckPose[],

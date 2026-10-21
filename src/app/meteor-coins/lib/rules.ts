@@ -149,6 +149,16 @@ export function resolveShot(s: GameState, hit: boolean, rules: RuleConfig): Game
   }
 }
 
+/** A fired coin went through a hoop: it pours that hoop's bonus. */
+export function hoopHit(s: GameState, bonus: number): GameState {
+  return { ...s, hits: s.hits + 1, showerLeft: s.showerLeft + bonus }
+}
+
+/** A fired coin has come down; hoops count as hits, the coin as a shot. */
+export function shotLanded(s: GameState): GameState {
+  return { ...s, shots: s.shots + 1 }
+}
+
 export function pourBonus(s: GameState): GameState {
   return s.showerLeft > 0 ? { ...s, showerLeft: s.showerLeft - 1 } : s
 }

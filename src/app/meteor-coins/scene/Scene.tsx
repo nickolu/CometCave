@@ -23,6 +23,7 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
+import type { CannonConfig } from '@/app/meteor-coins/lib/cannon'
 import {
   ARM_LENGTH,
   ARM_PIVOT_Y,
@@ -37,6 +38,7 @@ import {
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
+import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
@@ -210,52 +212,54 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       {/* Swinging arm: pivots above the table, holds the next coin at its tip.
           Where arms take turns there's one per drop line; the one whose turn
           it is holds the coin and wears a bookmark ribbon. */}
-      {lines.map((z, i) => (
-        <group
-          key={i}
-          ref={group => {
-            arms.current[i] = group
-          }}
-          position={[0, pivotY, z]}
-        >
-          {/* An arm at the player's end would hide the table behind its rod, so that rod is faint. */}
-          <mesh position={[0, -ARM_LENGTH / 2, 0]}>
-            <boxGeometry args={[0.12, ARM_LENGTH, 0.12]} />
-            <meshStandardMaterial
-              color={PALETTE.arm}
-              metalness={0.5}
-              roughness={0.4}
-              transparent={deckUnder(layout, z).pusher.reversed}
-              opacity={deckUnder(layout, z).pusher.reversed ? 0.15 : 1}
-            />
-          </mesh>
-          <mesh position={[0, -ARM_LENGTH + 0.2, 0]}>
-            <boxGeometry args={[1.2, 0.12, 0.3]} />
-            <meshStandardMaterial color={PALETTE.arm} metalness={0.5} roughness={0.4} />
-          </mesh>
+      {game.cannon && <CannonRig game={game} cannon={game.cannon} />}
+      {!game.cannon &&
+        lines.map((z, i) => (
           <group
+            key={i}
             ref={group => {
-              heldCoins.current[i] = group
+              arms.current[i] = group
             }}
-            position={[0, -ARM_LENGTH, 0]}
+            position={[0, pivotY, z]}
           >
-            {drop.parts.map((part, p) => (
-              <mesh key={p} geometry={partGeometry(part)}>
-                <PartMaterial part={part} />
-              </mesh>
-            ))}
-          </group>
-          {lines.length > 1 && (
+            {/* An arm at the player's end would hide the table behind its rod, so that rod is faint. */}
+            <mesh position={[0, -ARM_LENGTH / 2, 0]}>
+              <boxGeometry args={[0.12, ARM_LENGTH, 0.12]} />
+              <meshStandardMaterial
+                color={PALETTE.arm}
+                metalness={0.5}
+                roughness={0.4}
+                transparent={deckUnder(layout, z).pusher.reversed}
+                opacity={deckUnder(layout, z).pusher.reversed ? 0.15 : 1}
+              />
+            </mesh>
+            <mesh position={[0, -ARM_LENGTH + 0.2, 0]}>
+              <boxGeometry args={[1.2, 0.12, 0.3]} />
+              <meshStandardMaterial color={PALETTE.arm} metalness={0.5} roughness={0.4} />
+            </mesh>
             <group
               ref={group => {
-                ribbons.current[i] = group
+                heldCoins.current[i] = group
               }}
+              position={[0, -ARM_LENGTH, 0]}
             >
-              <Ribbon />
+              {drop.parts.map((part, p) => (
+                <mesh key={p} geometry={partGeometry(part)}>
+                  <PartMaterial part={part} />
+                </mesh>
+              ))}
             </group>
-          )}
-        </group>
-      ))}
+            {lines.length > 1 && (
+              <group
+                ref={group => {
+                  ribbons.current[i] = group
+                }}
+              >
+                <Ribbon />
+              </group>
+            )}
+          </group>
+        ))}
 
       {game.stage.cue === 'chevrons' && (
         <ChevronCue groupRef={cue} openRef={cueOpen} closedRef={cueClosed} deck={top} />
@@ -583,10 +587,12 @@ export function CabinetCamera({
   insets,
   layout,
   arm,
+  cannon,
 }: {
   insets: Insets
   layout: Layout
   arm: ArmConfig
+  cannon?: CannonConfig
 }) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
@@ -597,9 +603,9 @@ export function CabinetCamera({
       size.width,
       size.height,
       insets,
-      keyPoints(layout, arm)
+      keyPoints(layout, arm, cannon)
     )
-  }, [get, size, insets, layout, arm])
+  }, [get, size, insets, layout, arm, cannon])
 
   return null
 }

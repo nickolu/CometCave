@@ -10,6 +10,7 @@ import {
   PUSHER_PERIOD_S,
   deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
+import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
 import { ARM_PERIOD_S, type ArmConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import {
@@ -56,6 +57,8 @@ export type StageDef = {
     pusherTone?: Tone
   }
   arm: ArmConfig
+  /** A cannon at the front instead of the arm: coins are fired, not dropped. */
+  cannon?: CannonConfig
   ring: { enabled: boolean }
   /** What the arm drops and the pile is mostly made of. */
   objects: { drop: ObjectSpec }
@@ -268,6 +271,63 @@ const RUBBER_DUCKY_RUMBLE: StageDef = {
     start: 'Bonk them down the drain!',
     clear: 'Quack-tastic! Down the drain they go!',
     miss: 'The ducks want one more swim.',
+  },
+}
+
+/**
+ * Three hoops at near, middle and far depth, smaller and worth more the
+ * further back. Each hangs where a part-charged shot passes: about 40%,
+ * 75% and 85%. A full charge clears all three and drops off the backboard
+ * onto the pusher, like a coin from the arm.
+ */
+const HOOPS = [
+  { x: -0.8, y: 2.6, z: 1.5, radius: 0.95, bonus: 3 },
+  { x: 1.3, y: 3.0, z: -1, radius: 0.82, bonus: 6 },
+  { x: 0, y: 2.1, z: -3, radius: 0.72, bonus: 10 },
+]
+
+const HOOP_LA_CANNON: StageDef = {
+  number: 4,
+  slug: 'hoop-la-cannon',
+  name: 'Hoop-La Cannon',
+  pitch:
+    'A brass cannon at the front lobs coins back over the pile. Thread them through three hanging hoops.',
+  playable: true,
+  table: { chuteHalfWidth: CHUTE_HALF_WIDTH, pusherPeriodS: PUSHER_PERIOD_S },
+  arm: { periodS: ARM_PERIOD_S },
+  cannon: {
+    pivot: { x: 0, y: 0.9, z: 5.4 },
+    barrel: 0.8,
+    periodS: 3,
+    // Swings far enough that a full shot reaches just inside the walls.
+    maxYaw: 0.28,
+    elevation: (52 * Math.PI) / 180,
+    minSpeed: 7,
+    maxSpeed: 15,
+    chargeS: 1.2,
+    hoops: HOOPS,
+  },
+  ring: { enabled: false },
+  objects: { drop: COIN },
+  cue: null,
+  pile: 'hoop-la-cannon',
+  bake: { seed: 4, floor: 110, top: 12 },
+  rules: {
+    coins: 40,
+    // Hoops pour their own bonuses (above), not a streak. From the sim (8
+    // games each): firing at random averages 19, a star half the time;
+    // full shots timed to land on bare shelf average 25, always a star;
+    // also threading a hoop whenever the swing lines one up averages 56,
+    // two stars every time and three half the time.
+    bonusForStreak: () => 0,
+    goal: { type: 'score', stars: [20, 35, 55] },
+  },
+  measure: { label: 'Score', caption: 'coins into the chute' },
+  hint: 'Hoops pour +3, +6 and +10 coins.',
+  voice: {
+    start: 'Step right up! Thread the hoops.',
+    clear: 'Off the boards! Still counts on the shelf.',
+    miss: 'Step right up and try again!',
   },
 }
 
@@ -491,7 +551,7 @@ export const STAGES: readonly Stage[] = [
   PENNY_FALLS,
   MOONSTONE_PORCH,
   BRAMBLES_MIDNIGHT_SNACK,
-  soon(4, 'hoop-la-cannon', 'Hoop-La Cannon', 'Lob coins in an arc through three hanging hoops.'),
+  HOOP_LA_CANNON,
   THE_CAIRN,
   RUBBER_DUCKY_RUMBLE,
   THE_CASCADE_ENGINE,

@@ -49,6 +49,8 @@ export const DROP_Z = BACK_WALL_Z + 0.9
 /** Physics runs at a fixed rate regardless of display refresh. */
 export const PHYSICS_STEP_S = 1 / 60
 export const GRAVITY = -20
+/** Every body's linear damping: a slight drag, so nothing slides forever. */
+export const LINEAR_DAMPING = 0.1
 
 export function pusherCenterZ(timeS: number, periodS = PUSHER_PERIOD_S): number {
   return PUSHER_MID_Z + PUSHER_AMP_Z * Math.sin((2 * Math.PI * timeS) / periodS)

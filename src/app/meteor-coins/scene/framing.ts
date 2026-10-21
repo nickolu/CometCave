@@ -10,6 +10,12 @@ import {
   slotOf,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
+  type CannonConfig,
+  flightPath,
+  launchVelocity,
+  muzzleAt,
+} from '@/app/meteor-coins/lib/cannon'
+import {
   ARM_LENGTH,
   ARM_MAX_ANGLE,
   ARM_PERIOD_S,
@@ -39,7 +45,8 @@ const LANDSCAPE_ELEVATION = (40 * Math.PI) / 180
 /** What the player must always see: the whole table, the scoring edge, the arm's full swing and the ring. */
 export function keyPoints(
   layout: Layout = CLASSIC_LAYOUT,
-  arm: ArmConfig = { periodS: ARM_PERIOD_S }
+  arm: ArmConfig = { periodS: ARM_PERIOD_S },
+  cannon?: CannonConfig
 ): THREE.Vector3[] {
   const w = FIELD_HALF_WIDTH + 0.5
   const pivotY = arm.pivotY ?? ARM_PIVOT_Y
@@ -61,13 +68,28 @@ export function keyPoints(
       new THREE.Vector3(-w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
       new THREE.Vector3(w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
     ]),
+    // A cannon instead of an arm: the cannon, each hoop's tag, and the top
+    // of a full shot's arc.
+    ...(cannon ? cannonPoints(cannon) : []),
     // Arm tip with a coin's headroom, at both ends of the swing and the bottom of the arc.
-    ...dropLines(arm).flatMap(dropZ => [
+    ...(cannon ? [] : dropLines(arm)).flatMap(dropZ => [
       new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
       new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
       new THREE.Vector3(0, centerTipY + 0.6, dropZ),
       new THREE.Vector3(0, RING_Y, dropZ),
     ]),
+  ]
+}
+
+function cannonPoints(c: CannonConfig): THREE.Vector3[] {
+  const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
+  const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
+  return [
+    new THREE.Vector3(c.pivot.x - 1.2, 0, c.pivot.z + 0.6),
+    new THREE.Vector3(c.pivot.x + 1.2, 0, c.pivot.z + 0.6),
+    new THREE.Vector3(c.pivot.x, c.pivot.y + 0.8, c.pivot.z),
+    new THREE.Vector3(peak.x, peak.y + 0.3, peak.z),
+    ...c.hoops.map(h => new THREE.Vector3(h.x, h.y + h.radius + 0.8, h.z)),
   ]
 }
 

@@ -7,6 +7,7 @@ import {
   FIELD_HALF_WIDTH,
   type FallResult,
   GRAVITY,
+  LINEAR_DAMPING,
   type Layout,
   PHYSICS_STEP_S,
   PUSHER_HEIGHT,
@@ -306,7 +307,7 @@ export class PusherEngine {
       RAPIER.RigidBodyDesc.dynamic()
         .setTranslation(...(pose?.p ?? [index * 2, PARK_Y, 0]))
         .setRotation({ x: qx, y: qy, z: qz, w: qw })
-        .setLinearDamping(0.1)
+        .setLinearDamping(LINEAR_DAMPING)
         .setAngularDamping(0.4)
         .setCcdEnabled(true)
         .setEnabled(Boolean(pose))
@@ -340,15 +341,25 @@ export class PusherEngine {
     return this.pushers.map(p => p.translation().z)
   }
 
-  /** Wakes a pooled puck at a position. Returns its index, or null if the pool is empty. */
-  spawn(x: number, y: number, z: number, kind: PuckKind, yaw = 0): number | null {
+  /**
+   * Wakes a pooled puck at a position, falling or (fired from a cannon)
+   * flying. Returns its index, or null if the pool is empty.
+   */
+  spawn(
+    x: number,
+    y: number,
+    z: number,
+    kind: PuckKind,
+    yaw = 0,
+    velocity = { x: 0, y: -1, z: 0 }
+  ): number | null {
     const index = this.free.pop()
     if (index === undefined) return null
     const puck = this.pucks[index]
     const half = yaw / 2
     puck.body.setTranslation({ x, y, z }, false)
     puck.body.setRotation({ x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) }, false)
-    puck.body.setLinvel({ x: 0, y: -1, z: 0 }, false)
+    puck.body.setLinvel(velocity, false)
     puck.body.setAngvel({ x: 0, y: 0, z: 0 }, false)
     puck.body.setEnabled(true)
     puck.body.wakeUp()
