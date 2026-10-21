@@ -13,12 +13,21 @@
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { FIELD_FRONT_Z } from '@/app/meteor-coins/lib/cabinet'
+import { deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
+import {
+  type Hoop,
+  cannonYaw,
+  flightPath,
+  launchVelocity,
+  muzzleAt,
+  throughHoop,
+} from '@/app/meteor-coins/lib/cannon'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
 import { resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
+import { shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 type Bot = 'random' | 'cue' | 'skilled'
 
@@ -39,15 +48,104 @@ function fallTime(fromY: number) {
   return (-1 + Math.sqrt(1 + 40 * dy)) / 20
 }
 
-/** The x of the special object still on the table that's closest to the lip, if any. */
+/**
+ * The x of the special object closest to the edge of the deck the next drop
+ * lands on, if any is on it.
+ */
 function frontmostSpecial(game: DropGame): number | null {
-  let best: { x: number; z: number } | null = null
+  const deck = game.dropDeck
+  const dir = deckDir(deck)
+  const [lo, hi] = [Math.min(deck.frontZ, deck.backZ), Math.max(deck.frontZ, deck.backZ)]
+  let best: { x: number; ahead: number } | null = null
   for (const puck of game.engine.pucks) {
     if (!puck.active || puck.kind !== 'special') continue
     const p = puck.body.translation()
-    if (!best || p.z > best.z) best = { x: p.x, z: p.z }
+    if (p.z < lo || p.z > hi) continue
+    if (!best || dir * p.z > best.ahead) best = { x: p.x, ahead: dir * p.z }
   }
   return best?.x ?? null
+}
+
+/**
+ * The middle of the band of charges that thread a hoop from aim `yaw`, or
+ * null if none do.
+ */
+function hoopPower(game: DropGame, yaw: number, hoop: Hoop): number | null {
+  const c = game.cannon
+  if (!c) return null
+  const passing: number[] = []
+  for (let p = 0; p <= 1.0001; p += 0.01) {
+    const path = flightPath(muzzleAt(yaw, c), launchVelocity(yaw, p, c), q => q.z < hoop.z - 0.1)
+    for (let i = 1; i < path.length; i++) {
+      if (throughHoop(hoop, path[i - 1], path[i], 0.5, 0.09)) {
+        passing.push(p)
+        break
+      }
+    }
+  }
+  return passing.length ? passing[passing.length >> 1] : null
+}
+
+/**
+ * The cannon bots. Random presses at random moments and holds for a random
+ * time. Cue charges fully (a full shot drops off the backboard onto the
+ * pusher, like the arm's coin) and lets go when it would land on bare shelf.
+ * Skilled does the same, but whenever the swing is about to line up with a
+ * hoop it locks there and holds for that hoop's charge, best hoop first.
+ * Both are 0–100ms late, like people.
+ */
+function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let releaseAt: number | null = null
+  let holdingSince = 0
+  return () => {
+    const t = game.engine.time
+    const c = game.cannon
+    if (!c) return
+    if (pressAt !== null && t >= pressAt) {
+      game.press()
+      pressAt = null
+      holdingSince = t
+    }
+    if (releaseAt !== null && t >= releaseAt) {
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.6 + rand() * 1.2
+      return
+    }
+    if (game.charge !== null && releaseAt === null && pressAt === null) {
+      // Holding a full charge: let go when the coin would land on bare shelf.
+      const full = game.charge >= 1
+      const flight = game.previewPath().length / 60
+      if (
+        (full && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
+        t - holdingSince > 5
+      ) {
+        releaseAt = t + rand() * 0.1
+      }
+      return
+    }
+    if (game.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
+    if (bot === 'random') {
+      pressAt = t
+      releaseAt = t + rand() * 1.5
+      return
+    }
+    if (bot === 'skilled') {
+      const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
+      const best = [...c.hoops].sort((a, b) => b.bonus - a.bonus)
+      for (const hoop of best) {
+        const p = hoopPower(game, yaw, hoop)
+        if (p === null) continue
+        pressAt = t + rand() * 0.1
+        releaseAt = pressAt + p * c.chargeS + (rand() - 0.5) * 0.1
+        return
+      }
+    }
+    // Charge fully; the release waits for the shelf (above).
+    pressAt = t + rand() * 0.1
+  }
 }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
@@ -62,7 +160,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   const engineStep = game.engine.step.bind(game.engine)
   game.engine.step = () => {
     const falls = engineStep()
-    for (const f of falls) if (f.z < FIELD_FRONT_Z - 0.5) throughTable++
+    for (const f of falls) if (overEdge(game.engine.layout, f.z) < -0.5) throughTable++
     return falls
   }
   let firstPointAfter = -1
@@ -70,19 +168,26 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
 
+  const cannon = stage.cannon ? cannonBot(game, bot, rand) : null
+
   while (game.state.phase !== 'over' && game.engine.time < 600) {
     const t = game.engine.time
-    if (pendingTapAt !== null && t >= pendingTapAt) {
+    if (cannon) {
+      const before = game.state.coinsLeft
+      cannon()
+      if (game.state.coinsLeft !== before) drops++
+      if (game.state.coinsLeft === 0 && before === 1) scoreAtLastDrop = game.state.score
+    } else if (pendingTapAt !== null && t >= pendingTapAt) {
       if (game.tapDrop()) drops++
       if (game.state.coinsLeft === 0) scoreAtLastDrop = game.state.score
       pendingTapAt = null
       nextTapAt = t + 0.6 + rand() * 1.2
       waitingSince = nextTapAt
     }
-    if (pendingTapAt === null && game.canDrop && t >= nextTapAt) {
+    if (!cannon && pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
       if (bot === 'cue') {
-        tap = (game.dropLandsClear && t - waitingSince > 1.5) || t - waitingSince > 6
+        tap = (game.cueLit && t - waitingSince > 1.5) || t - waitingSince > 6
       }
       if (bot === 'skilled') {
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
@@ -96,9 +201,17 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         // nearest the lip, so the push lands on it.
         const target = frontmostSpecial(game)
         const aimed = target === null || Math.abs(tip.x - target) < 0.8
+        // On a stacking stage, wait for a drop square on a post's center,
+        // holding out a few seconds for the post that counts most.
+        const landing = game.landing(0.05)
+        const weights = stage.rules.goal.type === 'stack' ? stage.rules.goal.weights : []
+        const best = landing.post !== null && weights[landing.post] === Math.max(...weights)
+        const stacking =
+          stage.cue === 'dot' && landing.offset < 0.12 && (best || t - waitingSince > 4)
         tap =
           ringLineup ||
-          (game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
+          stacking ||
+          (stage.cue !== 'dot' && game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
           t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
@@ -118,6 +231,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     value: resultValue(s, stage.rules.goal) ?? -1,
     stars: starsFor(s, stage.rules.goal),
     score: s.score,
+    towers: s.towers.join('/'),
     specials: Object.entries(s.collected)
       .filter(([id]) => id !== stage.objects.drop.id)
       .reduce((n, [, c]) => n + c, 0),
@@ -147,7 +261,8 @@ async function main() {
   )
   for (const bot of ['random', 'cue', 'skilled'] as Bot[]) {
     const runs = Array.from({ length: games }, (_, i) => play(stage, bot, i + 1))
-    const avg = (k: keyof (typeof runs)[0]) =>
+    type Run = (typeof runs)[0]
+    const avg = (k: { [K in keyof Run]: Run[K] extends number ? K : never }[keyof Run]) =>
       (runs.reduce((a, r) => a + r[k], 0) / runs.length).toFixed(1)
     const atLeast = (n: number) =>
       `${Math.round((100 * runs.filter(r => r.stars >= n).length) / runs.length)}%`
@@ -160,6 +275,7 @@ async function main() {
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
+        (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         ` · ${avg('seconds')}s · peak ${avg('peakLive')} live · step p50 ${avg('p50')}ms p95 ${avg('p95')}ms`
     )
   }

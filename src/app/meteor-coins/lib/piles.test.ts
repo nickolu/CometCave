@@ -1,4 +1,4 @@
-import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from './cabinet'
+import { CLASSIC_LAYOUT, FIELD_HALF_WIDTH, overEdge } from './cabinet'
 import { POOL_SIZE, PusherEngine, initPhysics } from './engine'
 import { OBJECTS } from './objects'
 import { PILES } from './piles'
@@ -19,14 +19,15 @@ describe.each(Object.entries(PILES))('the %s pile', (name, STARTING_PILE) => {
   })
 
   it('rests everything on the table', () => {
-    const { drop } = (playableStage(name) as StageDef).objects
+    const stage = playableStage(name) as StageDef
+    const { drop } = stage.objects
     for (const { p, q, o } of STARTING_PILE) {
       const reach = (o ? OBJECTS[o] : drop).reach
       expect(Math.abs(p[0])).toBeLessThan(FIELD_HALF_WIDTH)
       expect(p[1]).toBeGreaterThan(0)
-      // Some hang over the front edge on purpose, propped on their neighbours;
+      // Some hang over the edge on purpose, propped on their neighbours;
       // the stillness test below is what proves they rest.
-      expect(p[2]).toBeLessThan(FIELD_FRONT_Z + reach / 2)
+      expect(overEdge(stage.table.layout ?? CLASSIC_LAYOUT, p[2])).toBeLessThan(reach / 2)
       expect(Math.hypot(...q)).toBeCloseTo(1, 3)
     }
   })

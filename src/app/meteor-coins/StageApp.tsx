@@ -9,7 +9,13 @@ import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import { SLOW_SPEED } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame, type GameEvent } from '@/app/meteor-coins/lib/game'
-import { headline, hudMeasure, hudStars, nextStarSentence } from '@/app/meteor-coins/lib/goalText'
+import {
+  headline,
+  hudMeasure,
+  hudStars,
+  nextStarSentence,
+  towerLines,
+} from '@/app/meteor-coins/lib/goalText'
 import {
   type Stars,
   nextPlayableAfter,
@@ -38,18 +44,20 @@ import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
 const HUD_INSETS = { top: 72, bottom: 40, side: 8 }
 
 const SLOW_KEY = 'meteor-coins:slow'
+/** Fire the cannon with two taps instead of press, hold and let go. */
+const TAP_TWICE_KEY = 'meteor-coins:tap-twice'
 
-function readSlow(): boolean {
+function readFlag(key: string): boolean {
   try {
-    return window.localStorage.getItem(SLOW_KEY) === '1'
+    return window.localStorage.getItem(key) === '1'
   } catch {
     return false
   }
 }
 
-function writeSlow(slow: boolean) {
+function writeFlag(key: string, on: boolean) {
   try {
-    window.localStorage.setItem(SLOW_KEY, slow ? '1' : '0')
+    window.localStorage.setItem(key, on ? '1' : '0')
   } catch {
     // Private mode or blocked storage: the game still works, it just won't remember.
   }
@@ -66,7 +74,10 @@ export default function StageApp({ slug }: { slug: string }) {
   const [state, setState] = useState<GameState | null>(null)
   // Saved values are read in initializers: they only appear once the physics
   // has loaded in the browser, so server and client markup never disagree.
-  const [slow, setSlow] = useState(() => typeof window !== 'undefined' && readSlow())
+  const [slow, setSlow] = useState(() => typeof window !== 'undefined' && readFlag(SLOW_KEY))
+  const [tapTwice, setTapTwice] = useState(
+    () => typeof window !== 'undefined' && readFlag(TAP_TWICE_KEY)
+  )
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
@@ -99,11 +110,19 @@ export default function StageApp({ slug }: { slug: string }) {
     game?.setSpeed(slow ? SLOW_SPEED : 1)
   }, [game, slow])
 
+  useEffect(() => {
+    game?.setCannonMode(tapTwice ? 'tap' : 'hold')
+  }, [game, tapTwice])
+
   const onStep = useCallback(
     (events: GameEvent[]) => {
       if (!game) return
       const drops = stage.objects.drop.plural
       for (const e of events) {
+        if (e.type === 'hoop') {
+          setPopup({ id: performance.now(), text: `Hoop! +${e.bonus} ${drops}` })
+          setAnnounce(`Through the ${e.bonus} hoop. ${e.bonus} bonus ${drops}.`)
+        }
         if (e.type === 'shot' && e.hit) {
           const text =
             e.streak > 1 ? `+${e.bonus} ${drops} · streak ${e.streak}` : `+${e.bonus} ${drops}`
@@ -161,8 +180,11 @@ export default function StageApp({ slug }: { slug: string }) {
     if (outcome) primaryAction.current?.focus()
   }, [outcome])
 
-  const tap = useCallback(() => {
-    game?.tapDrop()
+  const press = useCallback(() => {
+    game?.press()
+  }, [game])
+  const release = useCallback(() => {
+    game?.release()
   }, [game])
 
   useEffect(() => {
@@ -170,22 +192,35 @@ export default function StageApp({ slug }: { slug: string }) {
       if (e.key !== ' ' || e.repeat) return
       if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
       e.preventDefault()
-      tap()
+      if (e.type === 'keydown') press()
+      else release()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [tap])
+    window.addEventListener('keyup', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('keyup', onKey)
+    }
+  }, [press, release])
 
   const toggleSlow = () => {
     setSlow(s => {
-      writeSlow(!s)
+      writeFlag(SLOW_KEY, !s)
       return !s
+    })
+  }
+  const toggleTapTwice = () => {
+    setTapTwice(t => {
+      writeFlag(TAP_TWICE_KEY, !t)
+      return !t
     })
   }
 
   const over = state?.phase === 'over'
+  const slowLabel = stage.cannon ? 'Slower cannon' : 'Slower arm'
   const measure = state ? hudMeasure(stage, state) : null
   const starsNow = state ? hudStars(stage, state) : null
+  const towers = state ? towerLines(stage, state) : []
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
@@ -197,14 +232,24 @@ export default function StageApp({ slug }: { slug: string }) {
         ✕
       </Link>
 
-      <div className="absolute inset-0" onPointerDown={over ? undefined : tap}>
+      <div
+        className="absolute inset-0 touch-none"
+        onPointerDown={over ? undefined : press}
+        onPointerUp={over ? undefined : release}
+        onPointerCancel={over ? undefined : release}
+      >
         {game ? (
           <Canvas key={run} dpr={[1, 2]}>
             <color attach="background" args={[PALETTE.background]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[4, 12, 8]} intensity={1.6} />
             <directionalLight position={[-6, 4, -4]} intensity={0.4} />
-            <CabinetCamera insets={HUD_INSETS} />
+            <CabinetCamera
+              insets={HUD_INSETS}
+              layout={game.engine.layout}
+              arm={stage.arm}
+              cannon={stage.cannon}
+            />
             {debug && <FpsMeter fpsRef={fpsRef} />}
             <Scene game={game} onStep={onStep} />
           </Canvas>
@@ -218,6 +263,16 @@ export default function StageApp({ slug }: { slug: string }) {
           <div className="flex items-center gap-4 rounded-lg bg-black/60 px-4 py-2">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
             <Stat label={measure.label} value={measure.value} />
+            {towers.length > 0 && (
+              <ul
+                aria-label="Towers"
+                className="text-[11px] leading-tight tabular-nums text-white/80"
+              >
+                {towers.map(line => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            )}
             <div className="text-center">
               <StarRow earned={starsNow.stars} size={16} label={starsNow.label} />
               <div className="text-[11px] tabular-nums text-white/70">{starsNow.note}</div>
@@ -237,8 +292,8 @@ export default function StageApp({ slug }: { slug: string }) {
         <button
           type="button"
           aria-pressed={slow}
-          aria-label="Slower arm"
-          title="Slower arm"
+          aria-label={slowLabel}
+          title={slowLabel}
           onPointerDown={e => e.stopPropagation()}
           onClick={toggleSlow}
           className={`absolute right-2 top-2 z-50 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md border px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
@@ -250,7 +305,29 @@ export default function StageApp({ slug }: { slug: string }) {
           <span aria-hidden className="material-symbols-outlined text-[20px]">
             slow_motion_video
           </span>
-          <span className="hidden sm:inline">Slower arm</span>
+          <span className="hidden sm:inline">{slowLabel}</span>
+        </button>
+      )}
+
+      {state && !over && stage.cannon && (
+        <button
+          type="button"
+          aria-pressed={tapTwice}
+          aria-label="Tap twice to fire"
+          title="Tap twice to fire"
+          onPointerDown={e => e.stopPropagation()}
+          onPointerUp={e => e.stopPropagation()}
+          onClick={toggleTapTwice}
+          className={`absolute right-2 top-16 z-50 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md border px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+            tapTwice
+              ? 'border-white/60 bg-white/15 text-white'
+              : 'border-white/20 bg-black/40 text-white/70 hover:text-white'
+          }`}
+        >
+          <span aria-hidden className="material-symbols-outlined text-[20px]">
+            touch_app
+          </span>
+          <span className="hidden sm:inline">Tap twice</span>
         </button>
       )}
 
@@ -277,8 +354,13 @@ export default function StageApp({ slug }: { slug: string }) {
                 Stage {stage.number} · {stage.name}
               </p>
               <p className="text-xs text-white/80 sm:text-sm">
-                Tap or press Space to drop.{' '}
+                {stage.cannon
+                  ? tapTwice
+                    ? 'Tap or press Space to aim, and again to fire. '
+                    : 'Press and hold to aim; how long you hold sets the distance. Let go to fire. '
+                  : 'Tap or press Space to drop. '}
                 {stage.ring.enabled && `Hit the ring for bonus ${stage.objects.drop.plural}. `}
+                {stage.hint && `${stage.hint} `}
                 <span className="italic">{stage.voice.start}</span>
               </p>
             </>
@@ -416,6 +498,12 @@ function ResultPanel({
           </p>
         )}
         <dl className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+          {stage.cannon && (
+            <div>
+              <dt>Hoops</dt>
+              <dd className="text-base font-semibold text-white">{state.hits}</dd>
+            </div>
+          )}
           {stage.ring.enabled && (
             <div>
               <dt>Ring hits</dt>
