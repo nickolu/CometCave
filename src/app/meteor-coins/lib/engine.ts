@@ -189,6 +189,20 @@ export class PusherEngine {
       0.4
     )
 
+    // Fixed obstacles before the pusher, riders after: the order bodies are
+    // made in changes how a pile settles, and the baked piles depend on it.
+    const obstacle = (o: Obstacle, parent: RAPIER.RigidBody) => {
+      // A rider's collider is fixed to the pusher, offset from its centre.
+      const z = o.rides ? o.z - PUSHER_MID_Z : o.z
+      const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
+      const shape =
+        o.type === 'post'
+          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
+          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+      world.createCollider(shape.setTranslation(o.x, y, z), parent)
+    }
+    for (const o of obstacles) if (!o.rides) obstacle(o, fixed)
+
     // Scripted motion and infinite mass: nothing pushes back on the pusher.
     this.pusher = world.createRigidBody(
       RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
@@ -205,18 +219,7 @@ export class PusherEngine {
       ).setFriction(0.5),
       this.pusher
     )
-
-    for (const o of obstacles) {
-      // A rider's collider is fixed to the pusher, offset from its centre.
-      const parent = o.rides ? this.pusher : fixed
-      const z = o.rides ? o.z - PUSHER_MID_Z : o.z
-      const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
-      const shape =
-        o.type === 'post'
-          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
-          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
-      world.createCollider(shape.setTranslation(o.x, y, z), parent)
-    }
+    for (const o of obstacles) if (o.rides) obstacle(o, this.pusher)
 
     // Pool objects first, at the low indices; special objects after the pool.
     const pooled = pile.filter(pose => (pose.o ?? poolObject.id) === poolObject.id)
