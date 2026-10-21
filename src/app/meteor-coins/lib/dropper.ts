@@ -1,4 +1,4 @@
-import { DROP_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from '@/app/meteor-coins/lib/cabinet'
+import { BACK_WALL_Z, DROP_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from '@/app/meteor-coins/lib/cabinet'
 
 /**
  * The swinging arm and the moving skill-shot ring.
@@ -28,8 +28,9 @@ export const RING_RANGE = 2.4
 export const RING_PERIOD_S = 3.9
 /** Starts the ring away from the arm so the first lineup isn't at t = 0. */
 const RING_PHASE = 1.1
-/** Inner radius of the drawn ring. */
+/** Inner radius of the drawn ring, and the thickness of its rim. */
 export const RING_RADIUS = 0.8
+export const RING_TUBE = 0.09
 /**
  * A hit means the puck fits through the ring without touching the rim — what
  * the player sees is what counts. (A looser rule let pucks visibly overlapping
@@ -55,6 +56,11 @@ export function ringX(t: number): number {
 
 export function isHit(puckX: number, t: number): boolean {
   return Math.abs(puckX - ringX(t)) <= HIT_RADIUS
+}
+
+// Guard: the ring hangs on the drop line, which hugs the back wall.
+if (DROP_Z - RING_RADIUS - RING_TUBE <= BACK_WALL_Z) {
+  throw new Error('Skill-shot ring would clip the back wall')
 }
 
 // Guard: the arm must never drop a puck outside the walls.

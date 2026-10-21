@@ -43,10 +43,13 @@ export const BACK_WALL_GAP = 0.05
 /** Front edge within this half-width drops into the chute; outside is a gutter. */
 export const CHUTE_HALF_WIDTH = 2.6
 
-/** Where dropped pucks enter: above the pusher top, in front of the back wall. */
-export const DROP_Y = 3
-export const DROP_Z = -3.6
-export const AIM_LIMIT = FIELD_HALF_WIDTH - PUCK_RADIUS - 0.1
+/**
+ * The line coins drop along: hard against the back wall, as close as the
+ * skill-shot ring (centered on this line) allows without clipping the wall.
+ * As the pusher slides forward it opens a clean strip of shelf here, so a
+ * well-timed drop lands on clear space instead of on the heap.
+ */
+export const DROP_Z = BACK_WALL_Z + 0.9
 
 /** Physics runs at a fixed rate regardless of display refresh. */
 export const PHYSICS_STEP_S = 1 / 60
@@ -60,8 +63,4 @@ export type FallResult = 'chute' | 'gutter'
 
 export function classifyFall(x: number): FallResult {
   return Math.abs(x) <= CHUTE_HALF_WIDTH ? 'chute' : 'gutter'
-}
-
-export function clampAim(x: number): number {
-  return Math.max(-AIM_LIMIT, Math.min(AIM_LIMIT, x))
 }

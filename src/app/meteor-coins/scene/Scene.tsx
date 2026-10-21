@@ -24,6 +24,7 @@ import {
   ARM_LENGTH,
   ARM_PIVOT_Y,
   RING_RADIUS,
+  RING_TUBE,
   RING_Y,
   armAngle,
   ringX,
@@ -93,6 +94,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     arm.current?.rotation.set(0, 0, armAngle(game.dropperTime))
     if (heldCoin.current) heldCoin.current.visible = game.canDrop
     ring.current?.position.set(ringX(game.dropperTime), RING_Y, DROP_Z)
+    if (ring.current) ring.current.visible = game.ringActive
 
     flash.current = Math.max(0, flash.current - delta)
     ringMaterial.current?.color.copy(flash.current > 0 ? s.hit : s.base)
@@ -138,7 +140,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 
       {/* Skill-shot ring: lies flat, slides left and right */}
       <mesh ref={ring} position={[0, RING_Y, DROP_Z]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[RING_RADIUS, 0.09, 12, 40]} />
+        <torusGeometry args={[RING_RADIUS, RING_TUBE, 12, 40]} />
         <meshStandardMaterial
           ref={ringMaterial}
           color={PALETTE.ring}

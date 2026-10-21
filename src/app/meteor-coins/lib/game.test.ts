@@ -21,13 +21,17 @@ describe('DropGame', () => {
     }
     expect(game.state.phase).toBe('over')
     expect(game.state.coinsLeft).toBe(0)
-    expect(game.state.shots).toBe(COIN_BUDGET)
+    // Drops before the first point aren't shots — the ring wasn't out yet.
+    expect(game.state.shots).toBeGreaterThan(0)
+    expect(game.state.shots).toBeLessThan(COIN_BUDGET)
     expect(game.state.score).toBeGreaterThan(0)
     game.dispose()
   }, 60_000)
 
   it('pours a bonus out of the arm after a ring hit', () => {
     const game = new DropGame({ pile: [] })
+    // An empty table never scores, so open the ring by hand.
+    game.state = { ...game.state, score: 1 }
     // Keep dropping until one passes through the ring, stopping on that step.
     let hit = false
     for (let attempt = 0; attempt < COIN_BUDGET && !hit; attempt++) {
@@ -43,6 +47,40 @@ describe('DropGame', () => {
     for (let i = 0; i < 60; i++) game.step()
     expect(game.state.showerLeft).toBe(0)
     expect(game.engine.countActive().live).toBe(before + 4)
+    game.dispose()
+  }, 60_000)
+
+  it('keeps the ring hidden, and drops uncounted, until the first point', () => {
+    const game = new DropGame({ pile: [] })
+    expect(game.ringActive).toBe(false)
+    for (let i = 0; i < 5; i++) {
+      game.tapDrop()
+      for (let s = 0; s < 90; s++) {
+        expect(game.step().some(e => e.type === 'shot')).toBe(false)
+      }
+    }
+    expect(game.state.shots).toBe(0)
+    expect(game.state.streak).toBe(0)
+    game.dispose()
+  }, 60_000)
+
+  it('opens the ring exactly once, on the first point', () => {
+    const game = new DropGame()
+    let opened = 0
+    let scoreWhenOpened = -1
+    let steps = 0
+    while (game.state.phase !== 'over' && steps < 60 * 300) {
+      if (steps % 50 === 0) game.tapDrop()
+      for (const e of game.step()) {
+        if (e.type === 'ring-open') {
+          opened++
+          scoreWhenOpened = game.state.score
+        }
+      }
+      steps++
+    }
+    expect(opened).toBe(1)
+    expect(scoreWhenOpened).toBeGreaterThanOrEqual(1)
     game.dispose()
   }, 60_000)
 

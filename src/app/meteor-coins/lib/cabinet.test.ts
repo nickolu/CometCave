@@ -1,12 +1,10 @@
 import {
-  AIM_LIMIT,
   BACK_WALL_Z,
   CHUTE_HALF_WIDTH,
   FIELD_BACK_Z,
   PUSHER_AMP_Z,
   PUSHER_DEPTH,
   PUSHER_MID_Z,
-  clampAim,
   classifyFall,
   pusherCenterZ,
 } from './cabinet'
@@ -36,13 +34,5 @@ describe('classifyFall', () => {
     expect(classifyFall(CHUTE_HALF_WIDTH)).toBe('chute')
     expect(classifyFall(-CHUTE_HALF_WIDTH - 0.01)).toBe('gutter')
     expect(classifyFall(3.5)).toBe('gutter')
-  })
-})
-
-describe('clampAim', () => {
-  it('keeps drops inside the side walls', () => {
-    expect(clampAim(100)).toBe(AIM_LIMIT)
-    expect(clampAim(-100)).toBe(-AIM_LIMIT)
-    expect(clampAim(1.5)).toBe(1.5)
   })
 })

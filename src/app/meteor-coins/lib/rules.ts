@@ -4,8 +4,9 @@ import type { FallResult } from '@/app/meteor-coins/lib/cabinet'
  * Rules for the first game: Fifty Coins.
  *
  * You get 50 coins and a fixed starting pile, the same for everyone. Each
- * coin pushed into the chute is a point; gutters score nothing. Dropping a
- * coin through the moving ring starts or extends a streak, and each hit
+ * coin pushed into the chute is a point; gutters score nothing. After the
+ * first point the moving ring appears, and dropping a coin through it
+ * starts or extends a streak, and each hit
  * pours a bonus out of the arm: +5, +10, +15, +20, then +25 per hit. A miss
  * resets the streak. The bonus is earned, never random — with a 50-coin
  * budget a random payout would decide the score, and it's the slot-machine

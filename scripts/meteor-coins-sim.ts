@@ -12,6 +12,7 @@ import { FIELD_FRONT_Z, PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
 import { RING_Y, armTip, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
+import { COIN_BUDGET } from '@/app/meteor-coins/lib/rules'
 
 type Bot = 'random' | 'skilled'
 
@@ -67,13 +68,14 @@ function play(bot: Bot, seed: number) {
         const tip = armTip(game.dropperTime)
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
         const arrive = game.dropperTime + (0.05 + fallTime(tip.y)) * game.speed
-        tap = Math.abs(tip.x - ringX(arrive)) < 0.25 || t - waitingSince > 6
+        // No ring until the first point: nothing to aim for, so just drop.
+        tap = !game.ringActive || Math.abs(tip.x - ringX(arrive)) < 0.25 || t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'skilled' ? rand() * 0.1 : 0)
     }
     const t0 = performance.now()
     game.step()
-    if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = game.state.shots
+    if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = COIN_BUDGET - game.state.coinsLeft
     stepMs.push(performance.now() - t0)
     if (game.engine.pucks.length && (game.engine.time * 60) % 30 < 1) {
       peakLive = Math.max(peakLive, game.engine.countActive().live)
