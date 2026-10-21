@@ -115,7 +115,7 @@ const MOONSTONE_PORCH: StageDef = {
   // jarred. Everything is slower than Penny Falls.
   table: { chuteHalfWidth: FIELD_HALF_WIDTH, pusherPeriodS: 4 },
   arm: { periodS: 3.4 },
-  ring: { enabled: true },
+  ring: { enabled: false },
   objects: { drop: COIN },
   cue: 'shadow',
   pile: 'moonstone-porch',
@@ -130,9 +130,13 @@ const MOONSTONE_PORCH: StageDef = {
     ],
   },
   rules: {
-    // Each moonstone jarred refunds 3 coins, so a good run plays on.
-    coins: 40,
-    bonusForStreak: () => 2,
+    // Each moonstone jarred refunds 3 coins, so a good run plays on. No ring:
+    // the pusher is the game. From the sim (12 games each): a random tapper
+    // finishes for one star; following the drop cue makes two ~75% of the
+    // time; following it and aiming behind the moonstone nearest the lip
+    // makes three ~67% of the time.
+    coins: 55,
+    bonusForStreak: () => 0,
     // Can't fail: finishing is a star.
     goal: { type: 'collect', object: MOONSTONE.id, total: 9, stars: [0, 5, 9] },
   },
@@ -153,7 +157,7 @@ const BRAMBLES_MIDNIGHT_SNACK: StageDef = {
   playable: true,
   table: { chuteHalfWidth: 3, pusherPeriodS: PUSHER_PERIOD_S },
   arm: { periodS: ARM_PERIOD_S },
-  ring: { enabled: true },
+  ring: { enabled: false },
   objects: { drop: CHOCOLATE },
   cue: 'chevrons',
   pile: 'brambles-midnight-snack',
@@ -167,10 +171,13 @@ const BRAMBLES_MIDNIGHT_SNACK: StageDef = {
   },
   rules: {
     coins: 45,
-    // The sprinkle hoop: +2, +3, then +4 per hit in a streak.
-    bonusForStreak: streak => Math.min(streak + 1, 4),
-    // A cherry truffle feeds 3. Stars count chocolates left in the tin.
-    goal: { type: 'target', count: 30, stars: [0, 5, 12] },
+    // No ring: the pusher is the game.
+    bonusForStreak: () => 0,
+    // A cherry truffle feeds 3. Stars count chocolates left in the tin. From
+    // the sim (12 games each): a random tapper doesn't reach 30; following
+    // the drop cue reaches it ~92% of the time; also aiming for the truffles
+    // leaves a median of 19.
+    goal: { type: 'target', count: 30, stars: [0, 6, 16] },
   },
   measure: { label: 'Fed', caption: 'chocolates left in the tin' },
   voice: {

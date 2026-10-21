@@ -6,7 +6,8 @@
  * Three bots: one taps at random moments; one only follows the timing rule
  * the on-table cue shows (drop when the coin would land on bare shelf),
  * ignoring the ring; one plays the way a good player would, leading the ring
- * when a lineup is coming and otherwise following the cue. The two that time
+ * when a lineup is coming, otherwise following the cue and aiming its drop
+ * behind the special object nearest the lip. The two that time
  * their drops are 0–100ms late, like people. The gaps are the skill in the
  * stage. Reports score, how often
  * each bot earns each star, hit rate, stage length, peak live pucks and
@@ -36,6 +37,17 @@ function rng(seed: number) {
 function fallTime(fromY: number) {
   const dy = fromY - RING_Y
   return (-1 + Math.sqrt(1 + 40 * dy)) / 20
+}
+
+/** The x of the special object still on the table that's closest to the lip, if any. */
+function frontmostSpecial(game: DropGame): number | null {
+  let best: { x: number; z: number } | null = null
+  for (const puck of game.engine.pucks) {
+    if (!puck.active || puck.kind !== 'special') continue
+    const p = puck.body.translation()
+    if (!best || p.z > best.z) best = { x: p.x, z: p.z }
+  }
+  return best?.x ?? null
 }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
@@ -80,7 +92,14 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         const ringLineup =
           stage.ring.enabled && Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed)) < 0.25
         // Otherwise drop when it would land on bare shelf.
-        tap = ringLineup || (game.dropLandsClear && t - waitingSince > 1.5) || t - waitingSince > 6
+        // Without a ring lineup, aim: drop behind the special object
+        // nearest the lip, so the push lands on it.
+        const target = frontmostSpecial(game)
+        const aimed = target === null || Math.abs(tip.x - target) < 0.8
+        tap =
+          ringLineup ||
+          (game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
+          t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
     }

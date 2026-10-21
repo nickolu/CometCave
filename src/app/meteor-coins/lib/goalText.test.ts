@@ -26,7 +26,7 @@ describe('goal text', () => {
   })
 
   it('shows the stars a target run would earn if it ended now', () => {
-    const s = { ...drop(initialState(BRAMBLE.rules)), coinsLeft: 13, score: 20 }
+    const s = { ...drop(initialState(BRAMBLE.rules)), coinsLeft: 17, score: 20 }
     expect(hudMeasure(BRAMBLE, s)).toEqual({ label: 'Fed', value: '20/30' })
     expect(hudStars(BRAMBLE, s)).toMatchObject({ stars: 3, note: 'if done now' })
   })
@@ -38,7 +38,7 @@ describe('goal text', () => {
     const met = { ...missed, score: 30, spareAtGoal: 6 }
     expect(headline(BRAMBLE, met)).toEqual({ value: '6', caption: 'chocolates left in the tin' })
     expect(nextStarSentence(BRAMBLE, met)).toBe(
-      'Finish with 12 chocolates left in the tin for 3 stars.'
+      'Finish with 16 chocolates left in the tin for 3 stars.'
     )
   })
 })
