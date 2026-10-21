@@ -1,7 +1,7 @@
 /**
- * Bakes Meteor Coins's starting pile into src/app/meteor-coins/lib/starting-pile.json.
+ * Bakes a Meteor Coins stage's starting pile into src/app/meteor-coins/lib/piles/<name>.json.
  *
- *   npx tsx scripts/meteor-coins-bake-pile.ts [seed=1] [floorCoins=150]
+ *   npx tsx scripts/meteor-coins-bake-pile.ts <stage> [seed=1] [floorCoins=150]
  *
  * Drops coins at random onto an empty table, runs the pusher until a full
  * cycle passes with nothing falling, and saves every resting coin's pose.
@@ -10,8 +10,10 @@
  * same start. (Simulating it at load wouldn't be fair: this physics build
  * isn't guaranteed bit-identical across devices.)
  *
- * Re-run after changing puck size or table geometry, then check the result
- * with scripts/meteor-coins-sim.ts.
+ * The stage's own table settings (pusher timing) are used, and the pile is
+ * written to lib/piles/<stage>.json; a new stage also needs its pile added
+ * to lib/piles.ts. Re-run after changing puck size or table geometry, then
+ * check the result with scripts/meteor-coins-sim.ts.
  */
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -21,13 +23,11 @@ import {
   PHYSICS_STEP_S,
   PUCK_RADIUS,
   PUCK_THICKNESS,
-  PUSHER_PERIOD_S,
 } from '@/app/meteor-coins/lib/cabinet'
 import { PusherEngine, initPhysics } from '@/app/meteor-coins/lib/engine'
-import type { PuckPose } from '@/app/meteor-coins/lib/startingPile'
+import type { PuckPose } from '@/app/meteor-coins/lib/piles'
+import { findStage } from '@/app/meteor-coins/lib/stages'
 
-const OUT = join(process.cwd(), 'src/app/meteor-coins/lib/starting-pile.json')
-const STEPS_PER_CYCLE = Math.round(PUSHER_PERIOD_S / PHYSICS_STEP_S)
 const MAX_CYCLES = 15
 
 function rng(seed: number) {
@@ -44,12 +44,17 @@ function rng(seed: number) {
 const round = (n: number) => Math.round(n * 10000) / 10000
 
 async function main() {
-  const seed = Number(process.argv[2] ?? 1)
-  const floorCoins = Number(process.argv[3] ?? 150)
+  const stage = findStage(process.argv[2] ?? '')
+  if (!stage?.playable)
+    throw new Error('Usage: meteor-coins-bake-pile.ts <stage> [seed] [floorCoins]')
+  const OUT = join(process.cwd(), `src/app/meteor-coins/lib/piles/${stage.slug}.json`)
+  const STEPS_PER_CYCLE = Math.round(stage.table.pusherPeriodS / PHYSICS_STEP_S)
+  const seed = Number(process.argv[3] ?? 1)
+  const floorCoins = Number(process.argv[4] ?? 150)
   const topCoins = 16
   await initPhysics()
   const rand = rng(seed)
-  const engine = new PusherEngine({ pile: [] })
+  const engine = new PusherEngine({ pile: [], ...stage.table })
   let steps = 0
   const step = () => {
     steps++

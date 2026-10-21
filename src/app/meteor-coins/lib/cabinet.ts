@@ -55,12 +55,12 @@ export const DROP_Z = BACK_WALL_Z + 0.9
 export const PHYSICS_STEP_S = 1 / 60
 export const GRAVITY = -20
 
-export function pusherCenterZ(timeS: number): number {
-  return PUSHER_MID_Z + PUSHER_AMP_Z * Math.sin((2 * Math.PI * timeS) / PUSHER_PERIOD_S)
+export function pusherCenterZ(timeS: number, periodS = PUSHER_PERIOD_S): number {
+  return PUSHER_MID_Z + PUSHER_AMP_Z * Math.sin((2 * Math.PI * timeS) / periodS)
 }
 
 export type FallResult = 'chute' | 'gutter'
 
-export function classifyFall(x: number): FallResult {
-  return Math.abs(x) <= CHUTE_HALF_WIDTH ? 'chute' : 'gutter'
+export function classifyFall(x: number, chuteHalfWidth = CHUTE_HALF_WIDTH): FallResult {
+  return Math.abs(x) <= chuteHalfWidth ? 'chute' : 'gutter'
 }

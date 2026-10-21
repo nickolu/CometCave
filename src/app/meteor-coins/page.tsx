@@ -1,13 +1,13 @@
-import MeteorCoinsApp from './MeteorCoinsApp'
+import StageMap from './StageMap'
 
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Meteor Coins — CometCave',
   description:
-    'Time your drops from a swinging arm and push a heap of coins over the edge. Fifty coins, one score.',
+    'Twelve coin-pusher machines. Time your drops from a swinging arm and push coins over the edge, one stage at a time.',
 }
 
 export default function MeteorCoinsPage() {
-  return <MeteorCoinsApp />
+  return <StageMap />
 }

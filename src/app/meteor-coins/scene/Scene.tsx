@@ -7,7 +7,6 @@ import * as THREE from 'three'
 import {
   BACK_WALL_GAP,
   BACK_WALL_Z,
-  CHUTE_HALF_WIDTH,
   DROP_Z,
   FIELD_BACK_Z,
   FIELD_FRONT_Z,
@@ -91,9 +90,10 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     }
 
     pusher.current?.position.set(0, PUSHER_HEIGHT / 2, game.engine.pusherZ)
-    arm.current?.rotation.set(0, 0, armAngle(game.dropperTime))
+    arm.current?.rotation.set(0, 0, armAngle(game.dropperTime, game.stage.arm.periodS))
     if (heldCoin.current) heldCoin.current.visible = game.canDrop
     ring.current?.position.set(ringX(game.dropperTime), RING_Y, DROP_Z)
+    if (ring.current) ring.current.visible = game.stage.ring.enabled
 
     flash.current = Math.max(0, flash.current - delta)
     ringMaterial.current?.color.copy(flash.current > 0 ? s.hit : s.base)
@@ -109,7 +109,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 
   return (
     <>
-      <Cabinet />
+      <Cabinet chuteHalfWidth={game.engine.chuteHalfWidth} />
 
       <mesh ref={pusher} position={[0, PUSHER_HEIGHT / 2, game.engine.pusherZ]}>
         <boxGeometry args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, PUSHER_DEPTH]} />
@@ -152,12 +152,12 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 }
 
 /** The fixed parts of the machine: floor, walls, back wall, chute markings. */
-function Cabinet() {
+function Cabinet({ chuteHalfWidth }: { chuteHalfWidth: number }) {
   const fieldDepth = FIELD_FRONT_Z - FIELD_BACK_Z
   const fieldMidZ = (FIELD_BACK_Z + FIELD_FRONT_Z) / 2
   const wallBottom = PUSHER_HEIGHT + BACK_WALL_GAP
   const wallHeight = WALL_HEIGHT + 2 - wallBottom
-  const gutterWidth = FIELD_HALF_WIDTH - CHUTE_HALF_WIDTH
+  const gutterWidth = FIELD_HALF_WIDTH - chuteHalfWidth
 
   return (
     <>
@@ -176,7 +176,7 @@ function Cabinet() {
         <meshStandardMaterial color={PALETTE.backWall} />
       </mesh>
       <mesh position={[0, 0.005, FIELD_FRONT_Z - 0.06]}>
-        <boxGeometry args={[CHUTE_HALF_WIDTH * 2, 0.01, 0.12]} />
+        <boxGeometry args={[chuteHalfWidth * 2, 0.01, 0.12]} />
         <meshStandardMaterial
           color={PALETTE.chute}
           emissive={PALETTE.chute}
@@ -186,7 +186,7 @@ function Cabinet() {
       {[-1, 1].map(side => (
         <mesh
           key={side}
-          position={[side * (CHUTE_HALF_WIDTH + gutterWidth / 2), 0.005, FIELD_FRONT_Z - 0.06]}
+          position={[side * (chuteHalfWidth + gutterWidth / 2), 0.005, FIELD_FRONT_Z - 0.06]}
         >
           <boxGeometry args={[gutterWidth, 0.01, 0.12]} />
           <meshStandardMaterial

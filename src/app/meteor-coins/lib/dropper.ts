@@ -40,13 +40,13 @@ export const HIT_RADIUS = RING_RADIUS - PUCK_RADIUS
 
 export const SLOW_SPEED = 0.6
 
-export function armAngle(t: number): number {
-  return ARM_MAX_ANGLE * Math.sin((2 * Math.PI * t) / ARM_PERIOD_S)
+export function armAngle(t: number, periodS = ARM_PERIOD_S): number {
+  return ARM_MAX_ANGLE * Math.sin((2 * Math.PI * t) / periodS)
 }
 
 /** Where a released puck starts: the arm tip, in front of the back wall. */
-export function armTip(t: number): { x: number; y: number; z: number } {
-  const a = armAngle(t)
+export function armTip(t: number, periodS = ARM_PERIOD_S): { x: number; y: number; z: number } {
+  const a = armAngle(t, periodS)
   return { x: ARM_LENGTH * Math.sin(a), y: ARM_PIVOT_Y - ARM_LENGTH * Math.cos(a), z: DROP_Z }
 }
 
