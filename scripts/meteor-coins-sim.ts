@@ -1,16 +1,17 @@
 /**
  * Plays Fifty Coins headless and reports how the numbers come out.
  *
- *   npx tsx scripts/coin-pusher-sim.ts [games=6] [seedLayers=4]
+ *   npx tsx scripts/meteor-coins-sim.ts [games=6]
  *
  * Two bots: one taps at random moments, one leads the ring the way a good
  * player would. Their gap is the skill in the skill shot. Reports score,
  * hit rate, game length, peak live pucks and physics cost per step — the
  * numbers to tune the table against.
  */
-import { RING_Y, armTip, ringX } from '@/app/coin-pusher/lib/dropper'
-import { initPhysics } from '@/app/coin-pusher/lib/engine'
-import { DropGame } from '@/app/coin-pusher/lib/game'
+import { FIELD_FRONT_Z, PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
+import { RING_Y, armTip, ringX } from '@/app/meteor-coins/lib/dropper'
+import { initPhysics } from '@/app/meteor-coins/lib/engine'
+import { DropGame } from '@/app/meteor-coins/lib/game'
 
 type Bot = 'random' | 'skilled'
 
@@ -31,13 +32,21 @@ function fallTime(fromY: number) {
   return (-1 + Math.sqrt(1 + 40 * dy)) / 20
 }
 
-function play(bot: Bot, seed: number, seedLayers: number) {
-  const game = new DropGame({ seedLayers })
+function play(bot: Bot, seed: number) {
+  const game = new DropGame()
   const rand = rng(seed)
   let nextTapAt = 0.5 + rand() * 1.5
   let pendingTapAt: number | null = null
   let waitingSince = 0
   let peakLive = 0
+  let throughTable = 0
+  // Count pucks that leave the table anywhere but over the front edge.
+  const engineStep = game.engine.step.bind(game.engine)
+  game.engine.step = () => {
+    const falls = engineStep()
+    for (const f of falls) if (f.z < FIELD_FRONT_Z - 0.5) throughTable++
+    return falls
+  }
   let firstPointAfter = -1
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
@@ -79,6 +88,7 @@ function play(bot: Bot, seed: number, seedLayers: number) {
     hits: s.hits,
     shots: s.shots,
     bestStreak: s.bestStreak,
+    throughTable,
     firstPointAfter,
     scoreAtLastDrop,
     seconds: Math.round(game.engine.time),
@@ -90,15 +100,15 @@ function play(bot: Bot, seed: number, seedLayers: number) {
 
 async function main() {
   const games = Number(process.argv[2] ?? 6)
-  const seedLayers = Number(process.argv[3] ?? 4)
   await initPhysics()
   for (const bot of ['random', 'skilled'] as Bot[]) {
-    const runs = Array.from({ length: games }, (_, i) => play(bot, i + 1, seedLayers))
+    const runs = Array.from({ length: games }, (_, i) => play(bot, i + 1))
     const avg = (k: keyof (typeof runs)[0]) =>
       (runs.reduce((a, r) => a + r[k], 0) / runs.length).toFixed(1)
     console.log(
-      `${bot.padEnd(8)} seedLayers=${seedLayers} score avg ${avg('score')} [${runs.map(r => r.score).join(' ')}]` +
+      `${bot.padEnd(8)} thickness=${PUCK_THICKNESS} score avg ${avg('score')} [${runs.map(r => r.score).join(' ')}]` +
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
+        ` · through table ${avg('throughTable')}` +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         ` · ${avg('seconds')}s · peak ${avg('peakLive')} live · step p50 ${avg('p50')}ms p95 ${avg('p95')}ms`
     )

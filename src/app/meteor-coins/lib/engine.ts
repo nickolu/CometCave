@@ -18,8 +18,8 @@ import {
   WALL_HEIGHT,
   classifyFall,
   pusherCenterZ,
-  seedPile,
-} from '@/app/coin-pusher/lib/cabinet'
+} from '@/app/meteor-coins/lib/cabinet'
+import type { PuckPose } from '@/app/meteor-coins/lib/startingPile'
 
 /**
  * The pusher machine as plain physics, with no rendering and no game rules.
@@ -46,7 +46,8 @@ export type Puck = {
   kind: PuckKind
 }
 
-export type FallEvent = { index: number; kind: PuckKind; x: number; result: FallResult }
+/** z is where it fell; anything well behind the front edge went through the table. */
+export type FallEvent = { index: number; kind: PuckKind; x: number; z: number; result: FallResult }
 
 /**
  * Pucks are pooled: created once, parked disabled below the table, and
@@ -62,8 +63,8 @@ const FALLEN_Y = -1
 
 export type EngineOptions = {
   shape?: PuckShape
-  /** Floor layers in the starting pile; 0 for an empty table. */
-  seedLayers?: number
+  /** Coins on the table at the start, at rest. Defaults to an empty table. */
+  pile?: PuckPose[]
 }
 
 export class PusherEngine {
@@ -77,7 +78,7 @@ export class PusherEngine {
   private free: number[] = []
 
   /** Call initPhysics() first. */
-  constructor({ shape = 'round', seedLayers = 4 }: EngineOptions = {}) {
+  constructor({ shape = 'round', pile = [] }: EngineOptions = {}) {
     this.shape = shape
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
     world.timestep = PHYSICS_STEP_S
@@ -142,12 +143,14 @@ export class PusherEngine {
       this.pusher
     )
 
-    const pile = seedLayers > 0 ? seedPile(seedLayers) : []
+    if (pile.length > POOL_SIZE) throw new Error(`Starting pile of ${pile.length} exceeds the pool`)
     for (let i = 0; i < POOL_SIZE; i++) {
       const seeded = pile[i]
+      const [qx, qy, qz, qw] = seeded?.q ?? [0, 0, 0, 1]
       const body = world.createRigidBody(
         RAPIER.RigidBodyDesc.dynamic()
-          .setTranslation(...(seeded ?? [i * 2, PARK_Y, 0]))
+          .setTranslation(...(seeded?.p ?? [i * 2, PARK_Y, 0]))
+          .setRotation({ x: qx, y: qy, z: qz, w: qw })
           .setLinearDamping(0.1)
           .setAngularDamping(0.4)
           .setCcdEnabled(true)
@@ -206,7 +209,7 @@ export class PusherEngine {
       if (!puck.active) continue
       const p = puck.body.translation()
       if (p.y >= FALLEN_Y) continue
-      falls.push({ index: i, kind: puck.kind, x: p.x, result: classifyFall(p.x) })
+      falls.push({ index: i, kind: puck.kind, x: p.x, z: p.z, result: classifyFall(p.x) })
       this.park(i)
     }
     return falls

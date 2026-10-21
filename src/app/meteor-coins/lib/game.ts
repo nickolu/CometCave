@@ -1,6 +1,6 @@
-import { PHYSICS_STEP_S } from '@/app/coin-pusher/lib/cabinet'
-import { RING_Y, armTip, isHit } from '@/app/coin-pusher/lib/dropper'
-import { type EngineOptions, PusherEngine } from '@/app/coin-pusher/lib/engine'
+import { PHYSICS_STEP_S } from '@/app/meteor-coins/lib/cabinet'
+import { RING_Y, armTip, isHit } from '@/app/meteor-coins/lib/dropper'
+import { type EngineOptions, PusherEngine } from '@/app/meteor-coins/lib/engine'
 import {
   type GameState,
   bonusForStreak,
@@ -11,7 +11,8 @@ import {
   pourBonus,
   resolveShot,
   tick,
-} from '@/app/coin-pusher/lib/rules'
+} from '@/app/meteor-coins/lib/rules'
+import { STARTING_PILE } from '@/app/meteor-coins/lib/startingPile'
 
 /**
  * A shot that hasn't passed the ring by now is a miss — it landed on a pile
@@ -20,12 +21,6 @@ import {
  * reaches the ring in well under half a second.
  */
 const SHOT_TIMEOUT_S = 1.5
-
-/**
- * Two layers, reaching from the pusher to an overhanging front row: the
- * first point comes after ~9 drops for a random tapper (4 layers: ~38).
- */
-const STARTING_PILE_LAYERS = 2
 
 /** One bonus coin every this many physics steps — 25 coins pour out in 2.5s. */
 const SHOWER_INTERVAL_STEPS = 6
@@ -51,7 +46,7 @@ export class DropGame {
 
   /** Call initPhysics() first. */
   constructor(options: EngineOptions = {}) {
-    this.engine = new PusherEngine({ seedLayers: STARTING_PILE_LAYERS, ...options })
+    this.engine = new PusherEngine({ pile: STARTING_PILE, ...options })
   }
 
   get canDrop() {

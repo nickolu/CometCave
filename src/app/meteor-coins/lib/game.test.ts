@@ -27,7 +27,7 @@ describe('DropGame', () => {
   }, 60_000)
 
   it('pours a bonus out of the arm after a ring hit', () => {
-    const game = new DropGame({ seedLayers: 0 })
+    const game = new DropGame({ pile: [] })
     // Keep dropping until one passes through the ring, stopping on that step.
     let hit = false
     for (let attempt = 0; attempt < COIN_BUDGET && !hit; attempt++) {

@@ -1,4 +1,4 @@
-import type { FallResult } from '@/app/coin-pusher/lib/cabinet'
+import type { FallResult } from '@/app/meteor-coins/lib/cabinet'
 
 /**
  * Rules for the first game: Fifty Coins.

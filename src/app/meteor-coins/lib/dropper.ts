@@ -1,4 +1,4 @@
-import { DROP_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from '@/app/coin-pusher/lib/cabinet'
+import { DROP_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from '@/app/meteor-coins/lib/cabinet'
 
 /**
  * The swinging arm and the moving skill-shot ring.
@@ -13,17 +13,17 @@ import { DROP_Z, FIELD_HALF_WIDTH, PUCK_RADIUS } from '@/app/coin-pusher/lib/cab
  * factor, so the slower-arm option slows the timing without slowing gravity.
  */
 
-export const ARM_PIVOT_Y = 11.5
+export const ARM_PIVOT_Y = 12.5
 export const ARM_LENGTH = 7
 /** Tip reaches x = ±3.2, just inside the side walls. */
 export const ARM_MAX_ANGLE = Math.asin(3.2 / ARM_LENGTH)
 export const ARM_PERIOD_S = 2.6
 
 /**
- * Well above the pusher top (0.6): coins pile up there, and a ring at 2 got
- * buried in that pile mid-game.
+ * Well above the pusher top (0.6): coins pile up there, and lower rings (2,
+ * then 3.2) got covered by that pile mid-game.
  */
-export const RING_Y = 3.2
+export const RING_Y = 4
 export const RING_RANGE = 2.4
 export const RING_PERIOD_S = 3.9
 /** Starts the ring away from the arm so the first lineup isn't at t = 0. */

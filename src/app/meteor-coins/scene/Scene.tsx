@@ -19,7 +19,7 @@ import {
   PUSHER_HEIGHT,
   SQUARE_SIDE,
   WALL_HEIGHT,
-} from '@/app/coin-pusher/lib/cabinet'
+} from '@/app/meteor-coins/lib/cabinet'
 import {
   ARM_LENGTH,
   ARM_PIVOT_Y,
@@ -27,10 +27,11 @@ import {
   RING_Y,
   armAngle,
   ringX,
-} from '@/app/coin-pusher/lib/dropper'
-import { POOL_SIZE } from '@/app/coin-pusher/lib/engine'
-import type { DropGame, GameEvent } from '@/app/coin-pusher/lib/game'
-import { PALETTE } from '@/app/coin-pusher/scene/palette'
+} from '@/app/meteor-coins/lib/dropper'
+import { POOL_SIZE } from '@/app/meteor-coins/lib/engine'
+import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
+import { type Insets, fitCamera } from '@/app/meteor-coins/scene/framing'
+import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
 /** Never run more than this many physics steps in one frame (e.g. after a stall). */
 const MAX_STEPS_PER_FRAME = 4
@@ -116,7 +117,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 
       <instancedMesh ref={pucks} args={[undefined, undefined, POOL_SIZE]} frustumCulled={false}>
         {puckGeometry}
-        <meshStandardMaterial color={PALETTE.puck} metalness={0.35} roughness={0.35} />
+        <meshStandardMaterial color={PALETTE.puck} metalness={0.3} roughness={0.55} />
       </instancedMesh>
 
       {/* Swinging arm: pivots above the table, holds the next coin at its tip */}
@@ -131,7 +132,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
         </mesh>
         <mesh ref={heldCoin} position={[0, -ARM_LENGTH, 0]}>
           {puckGeometry}
-          <meshStandardMaterial color={PALETTE.puck} metalness={0.35} roughness={0.35} />
+          <meshStandardMaterial color={PALETTE.puck} metalness={0.3} roughness={0.55} />
         </mesh>
       </group>
 
@@ -198,27 +199,14 @@ function Cabinet() {
   )
 }
 
-/**
- * Points the camera from where a player would stand at the machine. On a
- * portrait screen the vertical field of view widens so the full cabinet width
- * still fits, and the camera looks down more steeply to use the spare height.
- * Framed to include the arm's pivot so the swing reads at a glance.
- */
-export function CabinetCamera() {
+/** Keeps the camera fitted to the cabinet as the screen changes size. */
+export function CabinetCamera({ insets }: { insets: Insets }) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
 
   useEffect(() => {
-    const camera = get().camera as THREE.PerspectiveCamera
-    const aspect = size.width / size.height
-    const minHorizontalFov = (56 * Math.PI) / 180
-    const fitWidth = (2 * Math.atan(Math.tan(minHorizontalFov / 2) / aspect) * 180) / Math.PI
-    camera.fov = Math.max(48, fitWidth)
-    if (aspect < 1) camera.position.set(0, 14, 8)
-    else camera.position.set(0, 10, 12)
-    camera.lookAt(0, 2, -1.2)
-    camera.updateProjectionMatrix()
-  }, [get, size])
+    fitCamera(get().camera as THREE.PerspectiveCamera, size.width, size.height, insets)
+  }, [get, size, insets])
 
   return null
 }

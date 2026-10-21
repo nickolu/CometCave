@@ -84,8 +84,8 @@ const eslintConfig = [
       // the model. Its React components are NOT exempt and use tokens.
       'src/app/micro-land/domain/**',
       'src/app/micro-land/rendering/**',
-      // Coin Pusher's 3D material colors are game-world look, same reasoning.
-      'src/app/coin-pusher/scene/palette.ts',
+      // Meteor Coins's 3D material colors are game-world look, same reasoning.
+      'src/app/meteor-coins/scene/palette.ts',
       'src/**/*.test.*',
       'src/**/*.spec.*',
       'src/**/*.stories.*',

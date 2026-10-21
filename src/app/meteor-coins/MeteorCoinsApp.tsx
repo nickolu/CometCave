@@ -4,15 +4,15 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { SLOW_SPEED } from '@/app/coin-pusher/lib/dropper'
-import { initPhysics } from '@/app/coin-pusher/lib/engine'
-import { DropGame, type GameEvent } from '@/app/coin-pusher/lib/game'
-import { COIN_BUDGET, type GameState, bonusForStreak } from '@/app/coin-pusher/lib/rules'
-import { PALETTE } from '@/app/coin-pusher/scene/palette'
-import { CabinetCamera, Scene } from '@/app/coin-pusher/scene/Scene'
+import { SLOW_SPEED } from '@/app/meteor-coins/lib/dropper'
+import { initPhysics } from '@/app/meteor-coins/lib/engine'
+import { DropGame, type GameEvent } from '@/app/meteor-coins/lib/game'
+import { COIN_BUDGET, type GameState, bonusForStreak } from '@/app/meteor-coins/lib/rules'
+import { PALETTE } from '@/app/meteor-coins/scene/palette'
+import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
 
 /**
- * Coin Pusher — Fifty Coins.
+ * Meteor Coins — Fifty Coins.
  *
  * Session shape: run-loop. Fifty coins, a fixed starting pile, a high score;
  * "Play again" is the next action. The arm swings on its own; a tap (or
@@ -22,8 +22,11 @@ import { CabinetCamera, Scene } from '@/app/coin-pusher/scene/Scene'
  * Takes over the viewport, so it carries its own cave exit (interaction model 2).
  */
 
-const BEST_KEY = 'coin-pusher:best'
-const SLOW_KEY = 'coin-pusher:slow'
+/** Screen space the HUD covers; the camera keeps the cabinet out of it. */
+const HUD_INSETS = { top: 72, bottom: 40, side: 8 }
+
+const BEST_KEY = 'meteor-coins:best'
+const SLOW_KEY = 'meteor-coins:slow'
 
 function readNumber(key: string): number {
   try {
@@ -41,7 +44,7 @@ function write(key: string, value: string) {
   }
 }
 
-export default function CoinPusherApp() {
+export default function MeteorCoinsApp() {
   const [game, setGame] = useState<DropGame | null>(null)
   const [run, setRun] = useState(0)
   const [state, setState] = useState<GameState | null>(null)
@@ -152,43 +155,62 @@ export default function CoinPusherApp() {
 
       <div className="absolute inset-0" onPointerDown={over ? undefined : tap}>
         {game ? (
-          <Canvas key={run} dpr={[1, 2]} camera={{ fov: 48, near: 0.1, far: 100 }}>
+          <Canvas key={run} dpr={[1, 2]}>
             <color attach="background" args={[PALETTE.background]} />
             <ambientLight intensity={0.6} />
             <directionalLight position={[4, 12, 8]} intensity={1.6} />
             <directionalLight position={[-6, 4, -4]} intensity={0.4} />
-            <CabinetCamera />
+            <CabinetCamera insets={HUD_INSETS} />
             {debug && <FpsMeter fpsRef={fpsRef} />}
             <Scene game={game} onStep={onStep} />
           </Canvas>
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-white/60">
-            Loading…
-          </div>
+          <Loading />
         )}
       </div>
 
       {state && (
         <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex justify-center px-14">
-          <div className="flex items-baseline gap-5 rounded-lg bg-black/50 px-4 py-2">
+          <div className="flex items-center gap-4 rounded-lg bg-black/60 px-4 py-2">
             <Stat label="Coins" value={state.coinsLeft} />
             <Stat label="Score" value={state.score} />
             {state.streak > 0 && (
               <div className="text-xs leading-tight text-white/80">
                 Streak {state.streak}
                 <br />
-                next hit +{bonusForStreak(state.streak + 1)}
+                next +{bonusForStreak(state.streak + 1)}
               </div>
             )}
           </div>
         </div>
       )}
 
+      {state && !over && (
+        <button
+          type="button"
+          aria-pressed={slow}
+          aria-label="Slower arm"
+          title="Slower arm"
+          onPointerDown={e => e.stopPropagation()}
+          onClick={toggleSlow}
+          className={`absolute right-2 top-2 z-50 flex min-h-11 min-w-11 items-center justify-center gap-1 rounded-md border px-2 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-white ${
+            slow
+              ? 'border-white/60 bg-white/15 text-white'
+              : 'border-white/20 bg-black/40 text-white/70 hover:text-white'
+          }`}
+        >
+          <span aria-hidden className="material-symbols-outlined text-[20px]">
+            slow_motion_video
+          </span>
+          <span className="hidden sm:inline">Slower arm</span>
+        </button>
+      )}
+
       {popup && (
         <div
           key={popup.id}
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-24 z-40 text-center text-2xl font-bold"
+          className="pointer-events-none absolute inset-x-0 top-20 z-40 text-center text-2xl font-bold"
           style={{ color: PALETTE.ringHit }}
         >
           {popup.text}
@@ -199,23 +221,12 @@ export default function CoinPusherApp() {
         {announce}
       </p>
 
-      {state && !over && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40 flex items-end justify-between gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <p className="text-sm text-white/70">
-            {state.phase === 'ready' &&
-              'Tap or press Space to drop a coin. Drop through the ring for bonus coins.'}
-            {state.phase === 'settling' && 'Last coins settling…'}
-          </p>
-          <button
-            type="button"
-            aria-pressed={slow}
-            onPointerDown={e => e.stopPropagation()}
-            onClick={toggleSlow}
-            className="pointer-events-auto min-h-11 shrink-0 rounded-md border border-white/20 bg-black/40 px-3 text-sm hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-          >
-            {slow ? 'Normal speed' : 'Slower arm'}
-          </button>
-        </div>
+      {state && (state.phase === 'ready' || state.phase === 'settling') && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs text-white/70 sm:text-sm">
+          {state.phase === 'ready'
+            ? 'Tap or press Space to drop. Hit the ring for bonus coins.'
+            : 'Last coins settling…'}
+        </p>
       )}
 
       {over && state && (
@@ -229,6 +240,26 @@ export default function CoinPusherApp() {
       )}
 
       {debug && game && <DebugReadout game={game} fpsRef={fpsRef} />}
+    </div>
+  )
+}
+
+function Loading() {
+  return (
+    <div
+      className="flex h-full flex-col items-center justify-center gap-3 text-sm text-white/70"
+      role="status"
+    >
+      <span
+        aria-hidden
+        className="h-10 w-10 animate-spin rounded-full border-4 motion-reduce:animate-none"
+        style={{
+          borderColor: PALETTE.puck,
+          borderTopColor: 'transparent',
+          animationDuration: '1.2s',
+        }}
+      />
+      Loading Meteor Coins…
     </div>
   )
 }
@@ -258,11 +289,11 @@ function ResultPanel({
   const [status, setStatus] = useState('')
 
   const share = async () => {
-    const url = `${window.location.origin}/coin-pusher`
-    const text = `I pushed ${state.score} coins into the chute from ${COIN_BUDGET} on Coin Pusher.`
+    const url = `${window.location.origin}/meteor-coins`
+    const text = `I pushed ${state.score} coins into the chute from ${COIN_BUDGET} on Meteor Coins.`
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'Coin Pusher', text, url })
+        await navigator.share({ title: 'Meteor Coins', text, url })
         return
       }
       await navigator.clipboard.writeText(`${text} ${url}`)
@@ -355,7 +386,9 @@ function DebugReadout({ game, fpsRef }: { game: DropGame; fpsRef: React.RefObjec
   useEffect(() => {
     const id = window.setInterval(() => {
       const { live, asleep } = game.engine.countActive()
-      setText(`${fpsRef.current} fps · ${live} live · ${asleep} asleep`)
+      setText(
+        `${fpsRef.current} fps · ${live} live · ${asleep} asleep · t=${game.engine.time.toFixed(1)}s`
+      )
     }, 250)
     return () => window.clearInterval(id)
   }, [game, fpsRef])
