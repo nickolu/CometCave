@@ -7,11 +7,13 @@ import {
   classicBonus,
   drop,
   fall,
+  goalCount,
   initialState,
   nextStar,
   pourBonus,
   resolveShot,
   resultValue,
+  setTowers,
   starsFor,
   tick,
   validateRules,
@@ -250,5 +252,29 @@ describe('stars', () => {
     expect(nextStar(scored(0), RULES.goal)).toEqual({ stars: 1, at: 20 })
     expect(nextStar(scored(33), RULES.goal)).toEqual({ stars: 3, at: 44 })
     expect(nextStar(scored(44), RULES.goal)).toBeNull()
+  })
+})
+
+describe('stack goal', () => {
+  const rules: RuleConfig = {
+    coins: 30,
+    bonusForStreak: () => 0,
+    goal: { type: 'stack', weights: [1, 2, 1], stars: [6, 18, 32] },
+  }
+
+  it('weights each tower and counts the total', () => {
+    const s = setTowers(drop(initialState(rules)), [4, 3, 5])
+    expect(goalCount(s, rules.goal)).toBe(15)
+    expect(starsFor(s, rules.goal)).toBe(1)
+  })
+
+  it('freezes the towers once the stage is over', () => {
+    const s = { ...setTowers(initialState(rules), [4, 3, 5]), phase: 'over' as const }
+    expect(setTowers(s, [0, 0, 0]).towers).toEqual([4, 3, 5])
+  })
+
+  it("keeps the same state when nothing changed, so the HUD needn't re-render", () => {
+    const s = setTowers(initialState(rules), [1, 0, 0])
+    expect(setTowers(s, [1, 0, 0])).toBe(s)
   })
 })

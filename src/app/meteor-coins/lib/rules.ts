@@ -37,9 +37,12 @@ export type StarThresholds = readonly [number, number, number]
  * - target: get `count` points (or `count` of one object) into the chute
  *   before the budget runs out — that ends the stage — and the stars count
  *   the coins still unspent.
+ * - stack: towers standing on the stage's posts when it ends, in coins high.
+ *   Each post's tower is multiplied by its weight (a harder post counts more).
  */
 export type Goal =
   | { type: 'score'; stars: StarThresholds }
+  | { type: 'stack'; weights: readonly number[]; stars: StarThresholds }
   | { type: 'collect'; object: string; total: number; stars: StarThresholds }
   | { type: 'target'; object?: string; count: number; stars: StarThresholds }
 
@@ -64,6 +67,8 @@ export type GameState = {
   collected: Record<string, number>
   /** Coins still unspent when a target goal was met; null until then. */
   spareAtGoal: number | null
+  /** Coins high on each post, for a stack goal; measured by the game as it plays. */
+  towers: readonly number[]
   lost: number
   streak: number
   bestStreak: number
@@ -86,7 +91,7 @@ export function validateRules(rules: RuleConfig): void {
   }
   const { goal } = rules
   const [one, two, three] = goal.stars
-  const lowest = goal.type === 'score' ? 1 : 0
+  const lowest = goal.type === 'score' || goal.type === 'stack' ? 1 : 0
   if (!(one >= lowest && one < two && two < three)) throw new Error('Star thresholds must rise')
   if (goal.type === 'collect' && three > goal.total) {
     throw new Error('Three stars asks for more than the stage holds')
@@ -105,6 +110,7 @@ export function initialState(rules: RuleConfig): GameState {
     score: 0,
     collected: {},
     spareAtGoal: null,
+    towers: rules.goal.type === 'stack' ? rules.goal.weights.map(() => 0) : [],
     lost: 0,
     streak: 0,
     bestStreak: 0,
@@ -143,6 +149,16 @@ export function resolveShot(s: GameState, hit: boolean, rules: RuleConfig): Game
   }
 }
 
+/** A fired coin went through a hoop: it pours that hoop's bonus. */
+export function hoopHit(s: GameState, bonus: number): GameState {
+  return { ...s, hits: s.hits + 1, showerLeft: s.showerLeft + bonus }
+}
+
+/** A fired coin has come down; hoops count as hits, the coin as a shot. */
+export function shotLanded(s: GameState): GameState {
+  return { ...s, shots: s.shots + 1 }
+}
+
 export function pourBonus(s: GameState): GameState {
   return s.showerLeft > 0 ? { ...s, showerLeft: s.showerLeft - 1 } : s
 }
@@ -178,9 +194,17 @@ export function fall(
   return next
 }
 
+/** The towers as they stand now. Frozen once the stage is over: that's the result. */
+export function setTowers(s: GameState, towers: readonly number[]): GameState {
+  if (s.phase === 'over') return s
+  if (towers.length === s.towers.length && towers.every((h, i) => h === s.towers[i])) return s
+  return { ...s, towers }
+}
+
 /** Progress toward the goal in its own measure (target goals count toward `count`). */
 export function goalCount(s: GameState, goal: Goal): number {
   if (goal.type === 'score') return s.score
+  if (goal.type === 'stack') return s.towers.reduce((n, h, i) => n + h * (goal.weights[i] ?? 0), 0)
   if (goal.type === 'collect') return s.collected[goal.object] ?? 0
   return goal.object ? (s.collected[goal.object] ?? 0) : s.score
 }

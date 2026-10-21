@@ -1,17 +1,28 @@
 import * as THREE from 'three'
 
 import {
-  BACK_WALL_Z,
+  CLASSIC_LAYOUT,
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
+  type Layout,
   PUSHER_HEIGHT,
+  openDecks,
+  slotOf,
 } from '@/app/meteor-coins/lib/cabinet'
+import {
+  type CannonConfig,
+  flightPath,
+  launchVelocity,
+  muzzleAt,
+} from '@/app/meteor-coins/lib/cannon'
 import {
   ARM_LENGTH,
   ARM_MAX_ANGLE,
+  ARM_PERIOD_S,
   ARM_PIVOT_Y,
+  type ArmConfig,
   RING_Y,
-  armTip,
+  dropLines,
 } from '@/app/meteor-coins/lib/dropper'
 
 /**
@@ -32,24 +43,53 @@ const PORTRAIT_ELEVATION = (54 * Math.PI) / 180
 const LANDSCAPE_ELEVATION = (40 * Math.PI) / 180
 
 /** What the player must always see: the whole table, the scoring edge, the arm's full swing and the ring. */
-export function keyPoints(): THREE.Vector3[] {
+export function keyPoints(
+  layout: Layout = CLASSIC_LAYOUT,
+  arm: ArmConfig = { periodS: ARM_PERIOD_S },
+  cannon?: CannonConfig
+): THREE.Vector3[] {
   const w = FIELD_HALF_WIDTH + 0.5
-  const edgeTipY = ARM_PIVOT_Y - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
+  const pivotY = arm.pivotY ?? ARM_PIVOT_Y
+  const edgeTipY = pivotY - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
   const tipX = ARM_LENGTH * Math.sin(ARM_MAX_ANGLE)
-  const centerTipY = ARM_PIVOT_Y - ARM_LENGTH
-  const dropZ = armTip(0).z
+  const centerTipY = pivotY - ARM_LENGTH
   return [
     // Front edge and chute, slightly below the table top so the lip shows.
-    new THREE.Vector3(-w, -0.3, FIELD_FRONT_Z + 0.3),
-    new THREE.Vector3(w, -0.3, FIELD_FRONT_Z + 0.3),
-    // Back of the playfield where it meets the back wall, above the pusher.
-    new THREE.Vector3(-w, PUSHER_HEIGHT, BACK_WALL_Z),
-    new THREE.Vector3(w, PUSHER_HEIGHT, BACK_WALL_Z),
+    // (A table that drops into a slot in the middle has no front edge.)
+    ...(slotOf(layout)
+      ? []
+      : [
+          new THREE.Vector3(-w, -0.3, FIELD_FRONT_Z + 0.3),
+          new THREE.Vector3(w, -0.3, FIELD_FRONT_Z + 0.3),
+        ]),
+    // Each wall where it meets the playfield, above the pusher: the back
+    // wall, and the front one where a deck faces away.
+    ...openDecks(layout).flatMap(deck => [
+      new THREE.Vector3(-w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
+      new THREE.Vector3(w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
+    ]),
+    // A cannon instead of an arm: the cannon, each hoop's tag, and the top
+    // of a full shot's arc.
+    ...(cannon ? cannonPoints(cannon) : []),
     // Arm tip with a coin's headroom, at both ends of the swing and the bottom of the arc.
-    new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
-    new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
-    new THREE.Vector3(0, centerTipY + 0.6, dropZ),
-    new THREE.Vector3(0, RING_Y, dropZ),
+    ...(cannon ? [] : dropLines(arm)).flatMap(dropZ => [
+      new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
+      new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
+      new THREE.Vector3(0, centerTipY + 0.6, dropZ),
+      new THREE.Vector3(0, RING_Y, dropZ),
+    ]),
+  ]
+}
+
+function cannonPoints(c: CannonConfig): THREE.Vector3[] {
+  const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
+  const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
+  return [
+    new THREE.Vector3(c.pivot.x - 1.2, 0, c.pivot.z + 0.6),
+    new THREE.Vector3(c.pivot.x + 1.2, 0, c.pivot.z + 0.6),
+    new THREE.Vector3(c.pivot.x, c.pivot.y + 0.8, c.pivot.z),
+    new THREE.Vector3(peak.x, peak.y + 0.3, peak.z),
+    ...c.hoops.map(h => new THREE.Vector3(h.x, h.y + h.radius + 0.8, h.z)),
   ]
 }
 
