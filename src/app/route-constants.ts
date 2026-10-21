@@ -19,6 +19,7 @@ export const ROUTE_CONSTANTS = {
   BADGE_RUN: '/badge-run',
   CLUSTERS: '/clusters',
   HUM: '/hum',
+  METEOR_COINS: '/meteor-coins',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
 }
