@@ -94,7 +94,6 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     arm.current?.rotation.set(0, 0, armAngle(game.dropperTime))
     if (heldCoin.current) heldCoin.current.visible = game.canDrop
     ring.current?.position.set(ringX(game.dropperTime), RING_Y, DROP_Z)
-    if (ring.current) ring.current.visible = game.ringActive
 
     flash.current = Math.max(0, flash.current - delta)
     ringMaterial.current?.color.copy(flash.current > 0 ? s.hit : s.base)

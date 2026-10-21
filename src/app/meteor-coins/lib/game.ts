@@ -28,7 +28,6 @@ const SHOWER_INTERVAL_STEPS = 6
 export type GameEvent =
   | { type: 'shot'; hit: boolean; bonus: number; streak: number }
   | { type: 'fall'; result: 'chute' | 'gutter' }
-  | { type: 'ring-open' }
 
 /**
  * Fifty Coins: the engine, the swinging arm and the rules, stepped together.
@@ -50,15 +49,6 @@ export class DropGame {
     this.engine = new PusherEngine({ pile: STARTING_PILE, ...options })
   }
 
-  /**
-   * The ring stays hidden until the first point, so a player learns the
-   * pusher before the skill shot. Coins dropped before then aren't shots:
-   * they can't hit or miss, and don't touch the streak.
-   */
-  get ringActive() {
-    return this.state.score > 0
-  }
-
   get canDrop() {
     return canDrop(this.state) && this.engine.freeCount > 0
   }
@@ -70,7 +60,7 @@ export class DropGame {
     const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player')
     if (index === null) return false
     this.state = drop(this.state)
-    if (this.ringActive) this.inFlight.push({ index, droppedAt: this.engine.time })
+    this.inFlight.push({ index, droppedAt: this.engine.time })
     return true
   }
 
@@ -78,12 +68,10 @@ export class DropGame {
     const events: GameEvent[] = []
     this.dropperTime += PHYSICS_STEP_S * this.speed
 
-    const ringWasActive = this.ringActive
     for (const f of this.engine.step()) {
       this.state = fall(this.state, f.result, this.engine.time)
       events.push({ type: 'fall', result: f.result })
     }
-    if (!ringWasActive && this.ringActive) events.push({ type: 'ring-open' })
 
     // A shot resolves on the step the coin's center passes the ring's height.
     this.inFlight = this.inFlight.filter(shot => {

@@ -53,7 +53,7 @@ export default function MeteorCoinsApp() {
   const [slow, setSlow] = useState(() => readNumber(SLOW_KEY) === 1)
   const [best, setBest] = useState(() => readNumber(BEST_KEY))
   const [isNewBest, setIsNewBest] = useState(false)
-  const [popup, setPopup] = useState<{ id: number; text: string; ms: number } | null>(null)
+  const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
   const [debug] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
@@ -88,16 +88,8 @@ export default function MeteorCoinsApp() {
       for (const e of events) {
         if (e.type === 'shot' && e.hit) {
           const text = e.streak > 1 ? `+${e.bonus} coins · streak ${e.streak}` : `+${e.bonus} coins`
-          setPopup({ id: performance.now(), text, ms: 1400 })
+          setPopup({ id: performance.now(), text })
           setAnnounce(`Ring hit. ${e.bonus} bonus coins.`)
-        }
-        if (e.type === 'ring-open') {
-          setPopup({
-            id: performance.now(),
-            text: 'Ring open! Drop through it for bonus coins',
-            ms: 2600,
-          })
-          setAnnounce('The ring is open. Drop a coin through it for bonus coins.')
         }
       }
       setState(prev => {
@@ -119,7 +111,7 @@ export default function MeteorCoinsApp() {
 
   useEffect(() => {
     if (!popup) return
-    const id = window.setTimeout(() => setPopup(null), popup.ms)
+    const id = window.setTimeout(() => setPopup(null), 1400)
     return () => window.clearTimeout(id)
   }, [popup])
 
@@ -218,7 +210,7 @@ export default function MeteorCoinsApp() {
         <div
           key={popup.id}
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-20 z-40 px-6 text-center text-xl font-bold sm:text-2xl"
+          className="pointer-events-none absolute inset-x-0 top-20 z-40 text-center text-2xl font-bold"
           style={{ color: PALETTE.ringHit }}
         >
           {popup.text}
@@ -231,7 +223,9 @@ export default function MeteorCoinsApp() {
 
       {state && (state.phase === 'ready' || state.phase === 'settling') && (
         <p className="pointer-events-none absolute inset-x-0 bottom-0 z-40 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] text-center text-xs text-white/70 sm:text-sm">
-          {state.phase === 'ready' ? 'Tap or press Space to drop a coin.' : 'Last coins settling…'}
+          {state.phase === 'ready'
+            ? 'Tap or press Space to drop. Hit the ring for bonus coins.'
+            : 'Last coins settling…'}
         </p>
       )}
 

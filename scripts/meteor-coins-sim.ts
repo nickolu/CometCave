@@ -68,8 +68,7 @@ function play(bot: Bot, seed: number) {
         const tip = armTip(game.dropperTime)
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
         const arrive = game.dropperTime + (0.05 + fallTime(tip.y)) * game.speed
-        // No ring until the first point: nothing to aim for, so just drop.
-        tap = !game.ringActive || Math.abs(tip.x - ringX(arrive)) < 0.25 || t - waitingSince > 6
+        tap = Math.abs(tip.x - ringX(arrive)) < 0.25 || t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'skilled' ? rand() * 0.1 : 0)
     }
