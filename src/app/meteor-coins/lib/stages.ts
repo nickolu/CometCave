@@ -1,6 +1,9 @@
 import {
   CHUTE_HALF_WIDTH,
+  type Deck,
+  FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
+  type Layout,
   PUSHER_AMP_Z,
   PUSHER_DEPTH,
   PUSHER_MID_Z,
@@ -43,6 +46,8 @@ export type StageDef = {
     obstacles?: readonly Obstacle[]
     floorFriction?: number
     floorDrift?: number
+    /** The table's decks; one unless the stage stacks them. */
+    layout?: Layout
   }
   arm: ArmConfig
   ring: { enabled: boolean }
@@ -69,8 +74,11 @@ export type StageDef = {
 
 export type PileRecipe = {
   seed: number
-  /** Drop-object count scattered over the shelf, and on the pusher's top. */
-  floor: number
+  /**
+   * Drop-object count scattered over the shelf, and on the pusher's top. On
+   * a table of several decks, `floor` is per deck, bottom first.
+   */
+  floor: number | readonly number[]
   top: number
   /** Special objects, placed first so the pile settles around them, spread across a zone. */
   specials?: { object: ObjectId; count: number; x: [number, number]; z: [number, number] }[]
@@ -325,6 +333,63 @@ const THE_CAIRN: StageDef = {
   },
 }
 
+/** Three decks stepping down toward the player, each the same shape. */
+const CASCADE_STEP = 4.2
+const cascadeDeck = (level: number, lagS: number): Deck => {
+  const frontZ = FIELD_FRONT_Z - level * CASCADE_STEP
+  // A shelf of 2 in front of the pusher at full reach, a stroke of 1.2, and
+  // 1 of pusher top showing behind its face when pulled back.
+  const faceMax = frontZ - 2
+  return {
+    floorY: level * 1.2,
+    frontZ,
+    backZ: faceMax - 2.2,
+    pusher: { midZ: faceMax - 0.6 - 1.5, ampZ: 0.6, depth: 3, lagS },
+  }
+}
+/**
+ * Each pusher runs a third of a stroke behind the one above, so a forward
+ * push rolls down the stairs: the top deck spills onto the middle pusher
+ * just as it starts forward, and so on down.
+ */
+const CASCADE: Layout = [
+  cascadeDeck(0, (PUSHER_PERIOD_S * 2) / 3),
+  cascadeDeck(1, PUSHER_PERIOD_S / 3),
+  cascadeDeck(2, 0),
+]
+
+const THE_CASCADE_ENGINE: StageDef = {
+  number: 7,
+  slug: 'the-cascade-engine',
+  name: 'The Cascade Engine',
+  pitch:
+    'Three stacked pushers, one per step, timed so each feeds the next. Time your drop at the top and watch it fall all the way down.',
+  playable: true,
+  table: { chuteHalfWidth: 3, pusherPeriodS: PUSHER_PERIOD_S, layout: CASCADE },
+  arm: { periodS: PUSHER_PERIOD_S, dropZ: CASCADE[2].backZ + 0.9 },
+  ring: { enabled: false },
+  objects: { drop: COIN },
+  cue: 'chevrons',
+  pile: 'the-cascade-engine',
+  // Seeds swing this a lot (8 and 11 shed half their coins); 7 settles
+  // with ~150 across the decks and the lip loaded, so early drops pay.
+  bake: { seed: 7, floor: [85, 70, 55], top: 14 },
+  rules: {
+    coins: 40,
+    // No ring: the pushers are the game. From the sim (10 games each): a
+    // random tapper makes one star ~80% of the time; dropping on the
+    // chevron cue makes two ~80% and three ~30%.
+    bonusForStreak: () => 0,
+    goal: { type: 'score', stars: [25, 40, 55] },
+  },
+  measure: { label: 'Score', caption: 'coins into the chute' },
+  voice: {
+    start: 'Top step pushes, middle step catches, bottom step pays.',
+    clear: 'All the way down! The engine hums along.',
+    miss: 'The engine needs a few more turns.',
+  },
+}
+
 const soon = (number: number, slug: string, name: string, pitch: string): ComingSoon => ({
   number,
   slug,
@@ -340,12 +405,7 @@ export const STAGES: readonly Stage[] = [
   soon(4, 'hoop-la-cannon', 'Hoop-La Cannon', 'Lob coins in an arc through three hanging hoops.'),
   THE_CAIRN,
   RUBBER_DUCKY_RUMBLE,
-  soon(
-    7,
-    'the-cascade-engine',
-    'The Cascade Engine',
-    'Three stacked pushers, each feeding the next.'
-  ),
+  THE_CASCADE_ENGINE,
   soon(
     8,
     'the-doorstop',

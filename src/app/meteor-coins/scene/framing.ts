@@ -1,15 +1,19 @@
 import * as THREE from 'three'
 
 import {
-  BACK_WALL_Z,
+  CLASSIC_LAYOUT,
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
+  type Layout,
   PUSHER_HEIGHT,
+  topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
   ARM_LENGTH,
   ARM_MAX_ANGLE,
+  ARM_PERIOD_S,
   ARM_PIVOT_Y,
+  type ArmConfig,
   RING_Y,
   armTip,
 } from '@/app/meteor-coins/lib/dropper'
@@ -32,19 +36,24 @@ const PORTRAIT_ELEVATION = (54 * Math.PI) / 180
 const LANDSCAPE_ELEVATION = (40 * Math.PI) / 180
 
 /** What the player must always see: the whole table, the scoring edge, the arm's full swing and the ring. */
-export function keyPoints(): THREE.Vector3[] {
+export function keyPoints(
+  layout: Layout = CLASSIC_LAYOUT,
+  arm: ArmConfig = { periodS: ARM_PERIOD_S }
+): THREE.Vector3[] {
   const w = FIELD_HALF_WIDTH + 0.5
-  const edgeTipY = ARM_PIVOT_Y - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
+  const pivotY = arm.pivotY ?? ARM_PIVOT_Y
+  const edgeTipY = pivotY - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
   const tipX = ARM_LENGTH * Math.sin(ARM_MAX_ANGLE)
-  const centerTipY = ARM_PIVOT_Y - ARM_LENGTH
-  const dropZ = armTip(0).z
+  const centerTipY = pivotY - ARM_LENGTH
+  const dropZ = armTip(0, arm).z
+  const top = topDeck(layout)
   return [
     // Front edge and chute, slightly below the table top so the lip shows.
     new THREE.Vector3(-w, -0.3, FIELD_FRONT_Z + 0.3),
     new THREE.Vector3(w, -0.3, FIELD_FRONT_Z + 0.3),
     // Back of the playfield where it meets the back wall, above the pusher.
-    new THREE.Vector3(-w, PUSHER_HEIGHT, BACK_WALL_Z),
-    new THREE.Vector3(w, PUSHER_HEIGHT, BACK_WALL_Z),
+    new THREE.Vector3(-w, top.floorY + PUSHER_HEIGHT, top.backZ),
+    new THREE.Vector3(w, top.floorY + PUSHER_HEIGHT, top.backZ),
     // Arm tip with a coin's headroom, at both ends of the swing and the bottom of the arc.
     new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
     new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),

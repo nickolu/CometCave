@@ -1,4 +1,4 @@
-import { PHYSICS_STEP_S, PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
+import { PHYSICS_STEP_S, PUCK_THICKNESS, topDeck } from '@/app/meteor-coins/lib/cabinet'
 import { RING_Y, armTip, isHit } from '@/app/meteor-coins/lib/dropper'
 import {
   type EngineOptions,
@@ -91,6 +91,7 @@ export class DropGame {
       obstacles: stage.table.obstacles,
       floorFriction: stage.table.floorFriction,
       floorDrift: stage.table.floorDrift,
+      layout: stage.table.layout,
       ...options,
     })
   }
@@ -106,7 +107,8 @@ export class DropGame {
 
   /** Whether a coin released now would land on bare shelf (see lib/timing). */
   get dropLandsClear() {
-    const landsAt = this.engine.time + fallTimeToShelf(this.armTip().y)
+    const landsAt =
+      this.engine.time + fallTimeToShelf(this.armTip().y, topDeck(this.engine.layout).floorY)
     return shelfOpenAt(landsAt, this.engine.pusherPeriodS)
   }
 

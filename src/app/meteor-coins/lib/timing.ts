@@ -25,9 +25,9 @@ export function fallTime(dy: number): number {
   return (-RELEASE_SPEED + Math.sqrt(RELEASE_SPEED ** 2 + 2 * g * Math.max(0, dy))) / g
 }
 
-/** Seconds from release at `fromY` until a puck reaches the pusher's top. */
-export function fallTimeToShelf(fromY: number): number {
-  return fallTime(fromY - (PUSHER_HEIGHT + PUCK_THICKNESS / 2))
+/** Seconds from release at `fromY` until a puck reaches the top of a pusher on a floor at `floorY`. */
+export function fallTimeToShelf(fromY: number, floorY = 0): number {
+  return fallTime(fromY - (floorY + PUSHER_HEIGHT + PUCK_THICKNESS / 2))
 }
 
 /** Whether a puck landing on the drop line at `timeS` (physics time) finds bare shelf. */

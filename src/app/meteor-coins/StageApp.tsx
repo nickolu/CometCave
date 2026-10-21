@@ -211,7 +211,7 @@ export default function StageApp({ slug }: { slug: string }) {
             <ambientLight intensity={0.6} />
             <directionalLight position={[4, 12, 8]} intensity={1.6} />
             <directionalLight position={[-6, 4, -4]} intensity={0.4} />
-            <CabinetCamera insets={HUD_INSETS} />
+            <CabinetCamera insets={HUD_INSETS} layout={game.engine.layout} arm={stage.arm} />
             {debug && <FpsMeter fpsRef={fpsRef} />}
             <Scene game={game} onStep={onStep} />
           </Canvas>

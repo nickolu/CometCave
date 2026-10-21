@@ -25,6 +25,7 @@ import {
   PHYSICS_STEP_S,
   PUCK_RADIUS,
   PUCK_THICKNESS,
+  topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
 import { PusherEngine, initPhysics } from '@/app/meteor-coins/lib/engine'
 import { OBJECTS } from '@/app/meteor-coins/lib/objects'
@@ -55,7 +56,7 @@ async function main() {
   const recipe = stage.bake
   if (!recipe) throw new Error(`${stage.name} starts on a bare table; there's no pile to bake`)
   const seed = Number(process.argv[3] ?? recipe.seed)
-  const floorCoins = Number(process.argv[4] ?? recipe.floor)
+  const floorCoins = process.argv[4] ? Number(process.argv[4]) : recipe.floor
   const topCoins = recipe.top
   await initPhysics()
   const rand = rng(seed)
@@ -83,11 +84,30 @@ async function main() {
 
   // Low drops, one every 3 steps, scattered across the floor and pusher top.
   const drops: [number, number, number][] = []
-  for (let i = 0; i < floorCoins; i++) {
-    drops.push([(rand() - 0.5) * 6.6, 0.6 + rand(), -0.6 + rand() * (FIELD_FRONT_Z - 0.3 + 0.6)])
+  const layout = engine.layout
+  if (typeof floorCoins === 'number') {
+    for (let i = 0; i < floorCoins; i++) {
+      drops.push([(rand() - 0.5) * 6.6, 0.6 + rand(), -0.6 + rand() * (FIELD_FRONT_Z - 0.3 + 0.6)])
+    }
+    for (let i = 0; i < topCoins; i++)
+      drops.push([(rand() - 0.5) * 6.6, 1.2 + rand() * 0.5, -5 + rand() * 2.4])
+  } else {
+    // Several decks: each deck's coins over its shelf, from its pusher's
+    // face at full reach to its edge, top deck last so they land on a pile.
+    layout.forEach((deck, i) => {
+      const faceMax = deck.pusher.midZ + deck.pusher.ampZ + deck.pusher.depth / 2
+      for (let n = 0; n < (floorCoins[i] ?? 0); n++) {
+        const z = faceMax - 0.6 + rand() * (deck.frontZ - 0.3 - faceMax + 0.6)
+        drops.push([(rand() - 0.5) * 6.6, deck.floorY + 0.6 + rand(), z])
+      }
+    })
+    const top = topDeck(layout)
+    const faceMin = top.pusher.midZ - top.pusher.ampZ + top.pusher.depth / 2
+    for (let i = 0; i < topCoins; i++) {
+      const z = top.backZ + 0.5 + rand() * (faceMin - 0.6 - top.backZ - 0.5)
+      drops.push([(rand() - 0.5) * 6.6, top.floorY + 1.2 + rand() * 0.5, z])
+    }
   }
-  for (let i = 0; i < topCoins; i++)
-    drops.push([(rand() - 0.5) * 6.6, 1.2 + rand() * 0.5, -5 + rand() * 2.4])
   for (const [x, y, z] of drops) {
     if (engine.spawn(x, y, z, 'seed', rand() * Math.PI * 2) === null) break
     for (let s = 0; s < 3; s++) step()
