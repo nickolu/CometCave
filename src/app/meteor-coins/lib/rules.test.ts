@@ -3,6 +3,7 @@ import {
   type RuleConfig,
   SETTLE_MAX_S,
   SETTLE_QUIET_S,
+  beatDrop,
   canDrop,
   classicBonus,
   drop,
@@ -13,8 +14,10 @@ import {
   pourBonus,
   resolveShot,
   resultValue,
+  ringBonus,
   setTowers,
   starsFor,
+  tempoIdle,
   tick,
   validateRules,
 } from './rules'
@@ -276,5 +279,53 @@ describe('stack goal', () => {
   it("keeps the same state when nothing changed, so the HUD needn't re-render", () => {
     const s = setTowers(initialState(rules), [1, 0, 0])
     expect(setTowers(s, [1, 0, 0])).toBe(s)
+  })
+})
+
+describe('tempo', () => {
+  const TEMPO: RuleConfig = {
+    coins: 40,
+    timeLimitS: 90,
+    tempo: { max: 6, idleS: 3 },
+    bonusForStreak: () => 3,
+    goal: { type: 'score', stars: [15, 30, 45] },
+  }
+
+  it('climbs a step per drop on the beat, up to the top, and falls to 1 off it', () => {
+    let s = initialState(TEMPO)
+    expect(s.tempo).toBe(1)
+    for (let i = 0; i < 8; i++) s = beatDrop(s, true, i, TEMPO)
+    expect(s.tempo).toBe(6)
+    s = beatDrop(s, false, 9, TEMPO)
+    expect(s.tempo).toBe(1)
+    expect(s.bestTempo).toBe(6)
+  })
+
+  it('loses a step for every pause of idleS', () => {
+    let s = initialState(TEMPO)
+    for (let i = 0; i < 4; i++) s = beatDrop(s, true, i, TEMPO)
+    expect(s.tempo).toBe(5)
+    expect(tempoIdle(s, 5.9, TEMPO).tempo).toBe(5)
+    s = tempoIdle(s, 6, TEMPO)
+    expect(s.tempo).toBe(4)
+    s = tempoIdle(s, 9, TEMPO)
+    expect(s.tempo).toBe(3)
+  })
+
+  it('multiplies the ring bonus by the tempo the drop was made at', () => {
+    expect(ringBonus(1, 4, TEMPO)).toBe(12)
+    expect(resolveShot(initialState(TEMPO), true, TEMPO, 5).showerLeft).toBe(15)
+    // A stage without a tempo ignores it.
+    expect(ringBonus(1, 4, RULES)).toBe(classicBonus(1))
+    expect(beatDrop(initialState(RULES), true, 0, RULES).tempo).toBe(1)
+  })
+
+  it('stops drops when the clock runs out, coins or not', () => {
+    const s = drop(initialState(TEMPO))
+    expect(canDrop(tick(s, 200, 0, TEMPO, 89.9))).toBe(true)
+    const up = tick(s, 200, 0, TEMPO, 90)
+    expect(up.timeUp).toBe(true)
+    expect(up.coinsLeft).toBe(39)
+    expect(canDrop(up)).toBe(false)
   })
 })

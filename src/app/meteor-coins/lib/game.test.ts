@@ -4,6 +4,7 @@ import { CHOCOLATE, MOONSTONE } from './objects'
 import { type StageDef, playableStage } from './stages'
 
 const PENNY_FALLS = playableStage('penny-falls') as StageDef
+const REDLINE = playableStage('redline') as StageDef
 const BUDGET = PENNY_FALLS.rules.coins as number
 
 /**
@@ -147,6 +148,25 @@ describe('DropGame', () => {
     for (let i = 0; i < 60; i++) game.step()
     expect(game.state.score).toBe(1)
     expect(game.state.lost).toBe(0)
+    game.dispose()
+  })
+
+  it("runs Redline's clock on arm time from the first drop, and keeps the tempo", () => {
+    const game = new DropGame(REDLINE, { pile: [] })
+    game.setSpeed(0.5)
+    for (let i = 0; i < 60; i++) game.step()
+    // No clock before the first drop.
+    expect(game.timeLeftS).toBe(90)
+    while (!game.dropLandsClear) game.step()
+    expect(game.tapDrop()).toBe(true)
+    expect(game.state.tempo).toBe(2)
+    while (game.dropLandsClear) game.step()
+    expect(game.tapDrop()).toBe(true)
+    expect(game.state.tempo).toBe(1)
+    // A minute of table time at half speed is 30s on the clock.
+    for (let i = 0; i < 60 * 60; i++) game.step()
+    expect(game.timeLeftS).toBeCloseTo(60, 0)
+    expect(game.slowed).toBe(true)
     game.dispose()
   })
 })

@@ -22,8 +22,8 @@ type PartBase = {
 }
 
 export type Part = PartBase &
-  (
-    | { shape: 'cylinder'; radius: number; height: number }
+  /** `notches` cuts V notches around the rim, drawn only: the collider stays round. */
+  (| { shape: 'cylinder'; radius: number; height: number; notches?: number }
     /** `rounding` softens the edges, so a pile of squares doesn't lock solid. */
     | { shape: 'box'; size: Vec3; rounding?: number }
     | { shape: 'ball'; radius: number }
@@ -210,6 +210,24 @@ export const WORD: ObjectSpec = {
   name: 'word',
   plural: 'words',
   parts: [{ shape: 'cylinder', radius: PUCK_RADIUS, height: PUCK_THICKNESS, tone: 'word' }],
+}
+
+/** Redline's coin: amber. Plays exactly like a coin. */
+export const AMBER: ObjectSpec = {
+  ...COIN,
+  parts: [{ shape: 'cylinder', radius: PUCK_RADIUS, height: PUCK_THICKNESS, tone: 'amber' }],
+}
+
+/**
+ * How Redline's bonus coins look: notched around the rim, so a bonus coin
+ * is told apart by its shape, not only its color. Only ever drawn — it
+ * plays as an AMBER coin.
+ */
+export const AMBER_BONUS: ObjectSpec = {
+  ...AMBER,
+  parts: [
+    { shape: 'cylinder', radius: PUCK_RADIUS, height: PUCK_THICKNESS, notches: 8, tone: 'bonus' },
+  ],
 }
 
 const DREAM_SIDE = 0.8
