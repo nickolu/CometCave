@@ -1,5 +1,6 @@
 import type { ObjectId } from '@/app/meteor-coins/lib/objects'
 import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnight-snack.json'
+import cometHomecoming from '@/app/meteor-coins/lib/piles/comet-homecoming.json'
 import gravityAssist from '@/app/meteor-coins/lib/piles/gravity-assist.json'
 import hoopLaCannon from '@/app/meteor-coins/lib/piles/hoop-la-cannon.json'
 import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
@@ -33,6 +34,7 @@ export const PILES = {
   'the-bedtime-book': theBedtimeBook as PuckPose[],
   redline: redline as PuckPose[],
   'gravity-assist': gravityAssist as PuckPose[],
+  'comet-homecoming': cometHomecoming as PuckPose[],
 } satisfies Record<string, PuckPose[]>
 
 export type PileName = keyof typeof PILES

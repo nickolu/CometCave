@@ -44,12 +44,15 @@ export type StarThresholds = readonly [number, number, number]
  *   the coins still unspent.
  * - stack: towers standing on the stage's posts when it ends, in coins high.
  *   Each post's tower is multiplied by its weight (a harder post counts more).
+ * - homecoming: points, but the first star is for finishing, and the second
+ *   and third also need one `object` (the comet core) home.
  */
 export type Goal =
   | { type: 'score'; stars: StarThresholds }
   | { type: 'stack'; weights: readonly number[]; stars: StarThresholds }
   | { type: 'collect'; object: string; total: number; stars: StarThresholds }
   | { type: 'target'; object?: string; count: number; stars: StarThresholds }
+  | { type: 'homecoming'; object: string; stars: StarThresholds }
 
 /** A stage's tempo: its top step, and how long a pause costs one step. */
 export type TempoConfig = { max: number; idleS: number }
@@ -108,6 +111,9 @@ export function validateRules(rules: RuleConfig): void {
   const { goal } = rules
   const [one, two, three] = goal.stars
   const lowest = goal.type === 'score' || goal.type === 'stack' ? 1 : 0
+  if (goal.type === 'homecoming' && one !== 0) {
+    throw new Error("A homecoming goal's first star is for finishing")
+  }
   if (!(one >= lowest && one < two && two < three)) throw new Error('Star thresholds must rise')
   if (goal.type === 'collect' && three > goal.total) {
     throw new Error('Three stars asks for more than the stage holds')
@@ -246,7 +252,7 @@ export function setTowers(s: GameState, towers: readonly number[]): GameState {
 
 /** Progress toward the goal in its own measure (target goals count toward `count`). */
 export function goalCount(s: GameState, goal: Goal): number {
-  if (goal.type === 'score') return s.score
+  if (goal.type === 'score' || goal.type === 'homecoming') return s.score
   if (goal.type === 'stack') return s.towers.reduce((n, h, i) => n + h * (goal.weights[i] ?? 0), 0)
   if (goal.type === 'collect') return s.collected[goal.object] ?? 0
   return goal.object ? (s.collected[goal.object] ?? 0) : s.score
@@ -305,9 +311,15 @@ export function starsFor(s: GameState, goal: Goal): 0 | 1 | 2 | 3 {
   if (goal.type === 'target') {
     return s.spareAtGoal === null ? 0 : starsAt(s.spareAtGoal, goal.stars)
   }
-  const stars = starsAt(goalCount(s, goal), goal.stars)
+  let stars = starsAt(goalCount(s, goal), goal.stars)
+  if (goal.type === 'homecoming' && !homeAt(s, goal)) stars = Math.min(stars, 1) as 0 | 1
   if (stars === 1 && goal.stars[0] === 0 && s.phase !== 'over') return 0
   return stars
+}
+
+/** Whether a homecoming goal's object has come home. */
+export function homeAt(s: GameState, goal: Extract<Goal, { type: 'homecoming' }>): boolean {
+  return (s.collected[goal.object] ?? 0) > 0
 }
 
 /**
@@ -317,6 +329,10 @@ export function starsFor(s: GameState, goal: Goal): 0 | 1 | 2 | 3 {
 export function nextStar(s: GameState, goal: Goal): { stars: 1 | 2 | 3; at: number } | null {
   const earned = starsFor(s, goal)
   if (earned === 3) return null
+  // Before the end, a homecoming goal's next star past finishing is the second.
+  if (goal.type === 'homecoming' && earned === 0 && s.phase !== 'over') {
+    return { stars: 2, at: goal.stars[1] }
+  }
   return { stars: (earned + 1) as 1 | 2 | 3, at: goal.stars[earned] }
 }
 

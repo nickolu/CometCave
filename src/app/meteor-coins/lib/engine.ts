@@ -17,6 +17,7 @@ import {
   classifyFall,
   deckDir,
   deckPusherZ,
+  deckStroke,
   fieldBackZ,
   fieldFrontZ,
   openDecks,
@@ -69,7 +70,20 @@ export type FallEvent = {
  * reach; one that `rides` is mounted on the pusher and moves with it, and its
  * `z` is where it stands with the pusher at the middle of its stroke.
  */
-export type Obstacle = { x: number; z: number; height: number; rides?: boolean } &
+export type Obstacle = {
+  x: number
+  z: number
+  height: number
+  rides?: boolean
+  /**
+   * The phases it stands in, on a stage with phases (Comet Homecoming). It
+   * rises out of the floor when its phase starts and sinks when it ends:
+   * moved, never switched, so nothing resting on it gets launched.
+   */
+  phases?: readonly number[]
+  /** Sweeps side to side across the shelf, by `ampX`, every `periodS`. */
+  sweep?: { ampX: number; periodS: number }
+} &
   /** An upright round post. A post with a `tower` name is one a stack goal counts. */
   (| { type: 'post'; radius: number; tower?: string }
     /** A box on the shelf: a lane rail, a soap bar, a post's mounting. */
@@ -117,6 +131,14 @@ export type EngineOptions = {
   layout?: Layout
 }
 
+/** Seconds for a phased obstacle to rise out of the floor or sink into it. */
+const RISE_S = 0.8
+/** How long the Last Push takes to reach full reach, and to ease off again. */
+const PUSH_EASE_S = 0.6
+
+/** An obstacle with motion of its own: it rises and sinks with the phases, or sweeps. */
+type Mover = { o: Obstacle; body: RAPIER.RigidBody; raised: number; up: boolean }
+
 /** Below this height an object is lying on the floor, for floorDrift. */
 const ON_FLOOR_Y = 0.3
 
@@ -134,6 +156,9 @@ export class PusherEngine {
   /** One per deck, bottom first. */
   private readonly pushers: RAPIER.RigidBody[]
   private free: number[] = []
+  private readonly movers: Mover[] = []
+  /** The Last Push: from when, until when, the pushers reach twice as far forward. */
+  private push: { from: number; until: number } | null = null
 
   /** Call initPhysics() first. */
   constructor({
@@ -230,17 +255,18 @@ export class PusherEngine {
 
     // Fixed obstacles before the pusher, riders after: the order bodies are
     // made in changes how a pile settles, and the baked piles depend on it.
+    const shapeOf = (o: Obstacle) =>
+      o.type === 'post'
+        ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
+        : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
     const obstacle = (o: Obstacle, parent: RAPIER.RigidBody) => {
       // A rider's collider is fixed to the pusher, offset from its centre.
       const z = o.rides ? o.z - PUSHER_MID_Z : o.z
       const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
-      const shape =
-        o.type === 'post'
-          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
-          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
-      world.createCollider(shape.setTranslation(o.x, y, z), parent)
+      world.createCollider(shapeOf(o).setTranslation(o.x, y, z), parent)
     }
-    for (const o of obstacles) if (!o.rides) obstacle(o, fixed)
+    const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+    for (const o of obstacles) if (!o.rides && !moves(o)) obstacle(o, fixed)
 
     // Scripted motion and infinite mass: nothing pushes back on a pusher.
     this.pushers = layout.map(deck => {
@@ -263,6 +289,20 @@ export class PusherEngine {
     })
     // Riders mount on the bottom pusher.
     for (const o of obstacles) if (o.rides) obstacle(o, this.pushers[0])
+    // Movers are bodies of their own, after everything else. They start in
+    // phase 0: up if they stand in it, sunk below the floor if not.
+    for (const o of obstacles.filter(moves)) {
+      const up = o.phases?.includes(0) ?? true
+      const body = world.createRigidBody(
+        RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
+          o.x,
+          moverY(o, up ? 1 : 0),
+          o.z
+        )
+      )
+      world.createCollider(shapeOf(o), body)
+      this.movers.push({ o, body, raised: up ? 1 : 0, up })
+    }
 
     // Pool objects first, at the low indices; special objects after the pool.
     const pooled = pile.filter(pose => (pose.o ?? poolObject.id) === poolObject.id)
@@ -400,15 +440,65 @@ export class PusherEngine {
   }
 
   /** Advances one fixed step and returns the pucks that fell off during it. */
+  /** Puts the cabinet in phase `phase`: obstacles rise or sink to match. */
+  setPhase(phase: number) {
+    for (const m of this.movers) m.up = m.o.phases?.includes(phase) ?? true
+  }
+
+  /** Gravity as a share of the usual (Comet Homecoming's low-gravity phase). */
+  setGravityScale(scale: number) {
+    this.world.gravity = { x: 0, y: GRAVITY * scale, z: 0 }
+  }
+
+  /** Doubles the pushers' forward reach for `seconds`, easing in and out. */
+  lastPush(seconds: number) {
+    this.push = { from: this.time, until: this.time + seconds }
+  }
+
+  /** Whether the Last Push is still running. */
+  get pushing(): boolean {
+    return this.push !== null && this.time < this.push.until
+  }
+
+  /** How much of the extra reach is in use now, 0 to 1. */
+  private pushShare(): number {
+    if (!this.push) return 0
+    const t = this.time
+    const ease = (x: number) => Math.min(1, Math.max(0, x / PUSH_EASE_S))
+    const share = Math.min(ease(t - this.push.from), ease(this.push.until - t))
+    // Smoothstep, so the pusher never jerks.
+    return share * share * (3 - 2 * share)
+  }
+
+  /** Each phased or sweeping obstacle, where it is now (y is its center). */
+  moverPositions(): { x: number; y: number; z: number }[] {
+    return this.movers.map(m => m.body.translation())
+  }
+
   step(): FallEvent[] {
     this.time += PHYSICS_STEP_S
-    this.layout.forEach((deck, i) =>
+    const share = this.pushShare()
+    this.layout.forEach((deck, i) => {
+      // The Last Push adds reach on the way forward only, so the back of the
+      // pusher pulls no further back than usual.
+      const stroke = deckStroke(deck, this.time, this.pusherPeriodS)
+      const extra = (share * deck.pusher.ampZ * (1 + stroke)) / 2
       this.pushers[i].setNextKinematicTranslation({
         x: 0,
         y: deck.floorY + PUSHER_HEIGHT / 2,
-        z: deckPusherZ(deck, this.time, this.pusherPeriodS),
+        z: deckPusherZ(deck, this.time, this.pusherPeriodS) + deckDir(deck) * extra,
       })
-    )
+    })
+    for (const m of this.movers) {
+      const toward = m.up ? 1 : 0
+      const stepBy = PHYSICS_STEP_S / RISE_S
+      m.raised += Math.max(-stepBy, Math.min(stepBy, toward - m.raised))
+      const sweep = m.o.sweep
+      const x = sweep
+        ? m.o.x + sweep.ampX * Math.sin((2 * Math.PI * this.time) / sweep.periodS)
+        : m.o.x
+      m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z: m.o.z })
+    }
     if (this.floorDrift) this.drift()
     this.world.step()
 
@@ -464,6 +554,11 @@ export class PusherEngine {
     puck.active = false
     if (puck.kind !== 'special') this.free.push(index)
   }
+}
+
+/** A mover's center height, from sunk just below the floor (0) to standing on it (1). */
+function moverY(o: Obstacle, raised: number): number {
+  return o.height / 2 - (1 - raised) * (o.height + 0.05)
 }
 
 function colliderFor(part: Part): RAPIER.ColliderDesc {

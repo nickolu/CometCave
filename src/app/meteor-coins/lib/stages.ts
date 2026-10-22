@@ -1,4 +1,5 @@
 import {
+  BACK_WALL_Z,
   CHUTE_HALF_WIDTH,
   DROP_Z,
   type Deck,
@@ -20,6 +21,7 @@ import {
   AMBER_BONUS,
   CHOCOLATE,
   COIN,
+  CORE,
   DUCK,
   METEORITE,
   MOONSTONE,
@@ -69,6 +71,13 @@ export type StageDef = {
   moon?: MoonConfig
   /** Special objects that drop in on a timetable, each counted down where it will land. */
   meteors?: MeteorShower
+  /**
+   * Phases, in order, each lasting its share of the coins (they add up to
+   * the budget). Obstacles with `phases` stand only in theirs.
+   */
+  phases?: readonly StagePhase[]
+  /** When this object reaches the chute, the pushers reach twice as far for `seconds`. */
+  lastPush?: { object: string; seconds: number }
   ring: { enabled: boolean } & RingConfig
   /**
    * What the arm drops and the pile is mostly made of, and how bonus coins
@@ -104,6 +113,23 @@ export type MeteorShower = {
   y: number
   warnS: number
   schedule: readonly { afterDrop: number; x: number; z: number }[]
+}
+
+export type StagePhase = {
+  name: string
+  coins: number
+  /** Whether the ring is out in this phase (where the stage has one). */
+  ring: boolean
+  /** Gravity as a share of the usual. */
+  gravityScale?: number
+  /**
+   * A gentle pull toward the chute on the stage's last-push object (the
+   * comet core) while it lies on the shelf: too weak to move it alone, but
+   * enough that the pile's pushes carry it.
+   */
+  homing?: number
+  /** Said as the phase starts, in the stage's voice. */
+  line: string
 }
 
 export type PileRecipe = {
@@ -694,6 +720,109 @@ const REDLINE: StageDef = {
   },
 }
 
+/**
+ * Comet Homecoming's table: the usual deck with a deeper pusher, so the
+ * Last Push (twice the reach, forward) never pulls its back out from under
+ * the back wall.
+ */
+const HOMECOMING_DECK: Deck = {
+  floorY: 0,
+  frontZ: FIELD_FRONT_Z,
+  backZ: BACK_WALL_Z,
+  pusher: { midZ: PUSHER_MID_Z, ampZ: PUSHER_AMP_Z, depth: 6.5, lagS: 0 },
+}
+
+/** Where the core starts: in front of the pusher, behind the pegs. */
+const CORE_START_Z = 2.6
+
+const HOMECOMING_OBSTACLES: Obstacle[] = [
+  // Two pegs closer together than the core is wide: coins get through, the
+  // core doesn't. They sink when Homecoming starts.
+  ...[-0.7, 0.7].map(
+    (x): Obstacle => ({ type: 'post', x, z: 3.75, radius: 0.25, height: 0.9, phases: [0, 1] })
+  ),
+  // The moon bumper: rises for Orbit and sweeps the shelf between the
+  // pusher and the core, stirring the pile. Kept near the middle: a wide
+  // sweep shoved the low-gravity pour into the gutters (31 coins lost in
+  // Orbit, against 21 at this width and 12 with no bumper).
+  {
+    type: 'post',
+    x: 0,
+    z: 0.9,
+    radius: 0.3,
+    height: 0.5,
+    phases: [1],
+    sweep: { ampX: 1.2, periodS: 9 },
+  },
+]
+
+const COMET_HOMECOMING: StageDef = {
+  number: 12,
+  slug: 'comet-homecoming',
+  name: 'Comet Homecoming',
+  pitch:
+    'A sleepy giant comet has landed on your shelf. Wake it, carry it through low gravity, then push it home.',
+  playable: true,
+  table: {
+    chuteHalfWidth: CHUTE_HALF_WIDTH,
+    pusherPeriodS: PUSHER_PERIOD_S,
+    layout: [HOMECOMING_DECK],
+    obstacles: HOMECOMING_OBSTACLES,
+  },
+  arm: { periodS: ARM_PERIOD_S },
+  ring: { enabled: true },
+  objects: { drop: COIN },
+  cue: 'chevrons',
+  pile: 'comet-homecoming',
+  bake: {
+    seed: 26,
+    floor: 150,
+    top: 14,
+    specials: [
+      { object: 'core', count: 1, x: [-0.05, 0.05], z: [CORE_START_Z, CORE_START_Z + 0.05] },
+    ],
+  },
+  // 20 coins a phase, not the doc's 25 / 20 / 15: the core needs the
+  // Homecoming phase's extra coins to get home.
+  phases: [
+    { name: 'Wake', coins: 20, ring: true, line: 'Build the shelf up behind the pegs.' },
+    {
+      name: 'Orbit',
+      coins: 20,
+      ring: true,
+      gravityScale: 0.45,
+      line: 'Low gravity! The moon bumper is sweeping the shelf.',
+    },
+    {
+      name: 'Homecoming',
+      coins: 20,
+      ring: false,
+      // A wide disc on the floor soaks up the pile's push: with no help it
+      // moved under a unit in a whole phase and never got home.
+      homing: 8,
+      line: "The pegs are down. Push me home, I'll light the way!",
+    },
+  ],
+  lastPush: { object: CORE.id, seconds: 6 },
+  rules: {
+    coins: 60,
+    bonusForStreak: () => 2,
+    // Finishing is a star; the core home is needed for two and three. The
+    // doc's 90 / 140 were guesses: the best runs score about 100. From the
+    // sim (12 games each): a random tapper averages 72 and gets the core
+    // home 10 of 12 times (★★ 58%); on the beat, 92, core home every time
+    // (★★ 100%, ★★★ 8%); also aiming behind the core, 94 (★★★ 50%).
+    goal: { type: 'homecoming', object: CORE.id, stars: [0, 80, 95] },
+  },
+  measure: { label: 'Score', caption: 'points into the chute' },
+  hint: 'Three phases. The comet core is worth 40, and getting it home starts the Last Push.',
+  voice: {
+    start: 'A sleepy comet has landed on your shelf.',
+    clear: 'Home at last. Thank you for the push.',
+    miss: 'The comet will wait for you.',
+  },
+}
+
 const soon = (number: number, slug: string, name: string, pitch: string): ComingSoon => ({
   number,
   slug,
@@ -719,7 +848,7 @@ export const STAGES: readonly Stage[] = [
   GRAVITY_ASSIST,
   THE_BEDTIME_BOOK,
   REDLINE,
-  soon(12, 'comet-homecoming', 'Comet Homecoming', 'Help a sleepy giant comet back home.'),
+  COMET_HOMECOMING,
 ]
 
 /** Looks a stage up by its slug or its number ("1"). */
