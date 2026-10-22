@@ -187,7 +187,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     if (!cannon && pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
       if (bot === 'cue') {
-        tap = (game.cueLit && t - waitingSince > 1.5) || t - waitingSince > 6
+        // A tempo stage rewards every beat, so don't sit one out.
+        const wait = stage.rules.tempo ? 0 : 1.5
+        tap = (game.cueLit && t - waitingSince > wait) || t - waitingSince > 6
       }
       if (bot === 'skilled') {
         // Aims for a tap 50ms from now; human timing lands it 0–100ms late.
@@ -195,7 +197,12 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         const fall = 0.05 + fallTime(tip.y)
         // Lead the ring: tap when the coin would arrive where the ring will be.
         const ringLineup =
-          stage.ring.enabled && Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed)) < 0.25
+          stage.ring.enabled &&
+          Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed, stage.ring)) < 0.25
+        // Where a stage keeps a tempo, an off-beat lineup costs it: only
+        // worth taking while the tempo is low anyway.
+        const keepsTempo = stage.rules.tempo !== undefined
+        const worthIt = !keepsTempo || game.dropLandsClear || game.state.tempo <= 2
         // Otherwise drop when it would land on bare shelf.
         // Without a ring lineup, aim: drop behind the special object
         // nearest the lip, so the push lands on it.
@@ -209,9 +216,12 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         const stacking =
           stage.cue === 'dot' && landing.offset < 0.12 && (best || t - waitingSince > 4)
         tap =
-          ringLineup ||
+          (ringLineup && worthIt) ||
           stacking ||
-          (stage.cue !== 'dot' && game.dropLandsClear && aimed && t - waitingSince > 1.5) ||
+          (stage.cue !== 'dot' &&
+            game.dropLandsClear &&
+            aimed &&
+            (keepsTempo || t - waitingSince > 1.5)) ||
           t - waitingSince > 6
       }
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
@@ -239,6 +249,10 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     hits: s.hits,
     shots: s.shots,
     bestStreak: s.bestStreak,
+    bestTempo: s.bestTempo,
+    redline: stage.rules.tempo && s.bestTempo >= stage.rules.tempo.max ? 1 : 0,
+    timeUp: s.timeUp ? 1 : 0,
+    clock: Math.round(game.clockS),
     throughTable,
     firstPointAfter,
     scoreAtLastDrop,
@@ -276,6 +290,9 @@ async function main() {
         ` · through table ${avg('throughTable')}` +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
+        (stage.rules.tempo
+          ? ` · best tempo ${avg('bestTempo')} · redline ${avg('redline')} · time up ${avg('timeUp')} · clock ${avg('clock')}s`
+          : '') +
         ` · ${avg('seconds')}s · peak ${avg('peakLive')} live · step p50 ${avg('p50')}ms p95 ${avg('p95')}ms`
     )
   }

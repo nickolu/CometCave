@@ -27,7 +27,7 @@ describe('arm', () => {
 
 describe('ring', () => {
   it('slides across its range', () => {
-    const xs = samples(RING_PERIOD_S).map(ringX)
+    const xs = samples(RING_PERIOD_S).map(t => ringX(t))
     expect(Math.max(...xs)).toBeCloseTo(RING_RANGE, 1)
     expect(Math.min(...xs)).toBeCloseTo(-RING_RANGE, 1)
   })

@@ -26,6 +26,7 @@ import type { ObjectSpec } from '@/app/meteor-coins/lib/objects'
 import { PILES } from '@/app/meteor-coins/lib/piles'
 import {
   type GameState,
+  beatDrop,
   canDrop,
   drop,
   fall,
@@ -35,6 +36,7 @@ import {
   resolveShot,
   setTowers,
   shotLanded,
+  tempoIdle,
   tick,
 } from '@/app/meteor-coins/lib/rules'
 import {
@@ -98,8 +100,12 @@ export class DropGame {
   /** The drop line the next coin goes to, where the stage's arms take turns. */
   line = 0
 
-  /** Player coins that haven't reached the ring's height yet. */
-  private inFlight: { index: number; droppedAt: number }[] = []
+  /** Player coins that haven't reached the ring's height yet, and the tempo each was dropped at. */
+  private inFlight: { index: number; droppedAt: number; tempo: number }[] = []
+  /** Arm time of the first drop: a timed stage's clock starts there. */
+  private clockFrom: number | null = null
+  /** Whether the slower arm was on at any point of a timed run. */
+  slowed = false
   /** Coins fired from the cannon still in the air, and where each was last step. */
   private fired: { index: number; firedAt: number; last: Vec; hoops: Set<number> }[] = []
   /** How the cannon is fired: hold and let go, or tap twice. */
@@ -187,6 +193,17 @@ export class DropGame {
     return { x: tip.x, y: 0, z: tip.z, post: null, offset: Infinity }
   }
 
+  /** Seconds on the stage's clock: arm time since the first drop. */
+  get clockS(): number {
+    return this.clockFrom === null ? 0 : this.dropperTime - this.clockFrom
+  }
+
+  /** Seconds left on a timed stage, or null when it has no clock. */
+  get timeLeftS(): number | null {
+    const limit = this.stage.rules.timeLimitS
+    return limit === undefined ? null : Math.max(0, limit - this.clockS)
+  }
+
   get cannon(): CannonConfig | undefined {
     return this.stage.cannon
   }
@@ -257,11 +274,17 @@ export class DropGame {
     // A tower that has grown up to the arm: release just above it instead.
     const { post } = this.landing()
     if (post !== null) tip.y = Math.max(tip.y, this.towerTop(post) + SPAWN_CLEARANCE)
+    // Judged before the coin exists, as the cue showed it.
+    const onBeat = this.dropLandsClear
     const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player')
     if (index === null) return false
+    this.clockFrom ??= this.dropperTime
     this.state = drop(this.state)
+    this.state = beatDrop(this.state, onBeat, this.dropperTime, this.stage.rules)
     this.line = (this.line + 1) % dropLines(this.stage.arm).length
-    if (this.stage.ring.enabled) this.inFlight.push({ index, droppedAt: this.engine.time })
+    if (this.stage.ring.enabled) {
+      this.inFlight.push({ index, droppedAt: this.engine.time, tempo: this.state.tempo })
+    }
     return true
   }
 
@@ -283,13 +306,14 @@ export class DropGame {
       const hit =
         !timedOut &&
         puck.active &&
-        isHit(puck.body.translation().x, this.dropperTime, puck.spec.reach)
-      this.state = resolveShot(this.state, hit, this.stage.rules)
+        isHit(puck.body.translation().x, this.dropperTime, puck.spec.reach, this.stage.ring)
+      const before = this.state.showerLeft
+      this.state = resolveShot(this.state, hit, this.stage.rules, shot.tempo)
       events.push({
         type: 'shot',
         hit,
         streak: this.state.streak,
-        bonus: hit ? this.stage.rules.bonusForStreak(this.state.streak) : 0,
+        bonus: this.state.showerLeft - before,
       })
       return false
     })
@@ -309,8 +333,11 @@ export class DropGame {
       this.state = setTowers(this.state, this.measureTowers())
     }
 
+    if (this.canDrop) this.state = tempoIdle(this.state, this.dropperTime, this.stage.rules)
+    if (this.speed < 1 && this.state.phase === 'playing') this.slowed = true
+
     const flying = this.inFlight.length + this.fired.length + (this.charging ? 1 : 0)
-    this.state = tick(this.state, this.engine.time, flying, this.stage.rules)
+    this.state = tick(this.state, this.engine.time, flying, this.stage.rules, this.clockS)
     return events
   }
 

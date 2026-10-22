@@ -11,9 +11,11 @@ import {
   deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
 import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
-import { ARM_PERIOD_S, type ArmConfig } from '@/app/meteor-coins/lib/dropper'
+import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import {
+  AMBER,
+  AMBER_BONUS,
   CHOCOLATE,
   COIN,
   DUCK,
@@ -59,9 +61,12 @@ export type StageDef = {
   arm: ArmConfig
   /** A cannon at the front instead of the arm: coins are fired, not dropped. */
   cannon?: CannonConfig
-  ring: { enabled: boolean }
-  /** What the arm drops and the pile is mostly made of. */
-  objects: { drop: ObjectSpec }
+  ring: { enabled: boolean } & RingConfig
+  /**
+   * What the arm drops and the pile is mostly made of, and how bonus coins
+   * look where they're marked apart (they play as the drop object).
+   */
+  objects: { drop: ObjectSpec; bonus?: ObjectSpec }
   /**
    * The on-table timing cue, if any. Chevrons and the shadow light when a drop
    * now would land on bare shelf; the dot sits where a drop now would land and
@@ -539,6 +544,63 @@ const THE_BEDTIME_BOOK: StageDef = {
   },
 }
 
+/** Redline's pegs: two posts near the lip that split the flow off the front. */
+const REDLINE_PEGS: Obstacle[] = [-1.4, 1.4].map(x => ({
+  type: 'post',
+  x,
+  z: 2.6,
+  radius: 0.28,
+  height: 0.9,
+}))
+
+const REDLINE: StageDef = {
+  number: 11,
+  slug: 'redline',
+  name: 'Redline',
+  pitch:
+    'Forty coins, ninety seconds, one tempo. Stay on the beat and the table pays more the longer you hold it.',
+  playable: true,
+  table: {
+    chuteHalfWidth: CHUTE_HALF_WIDTH,
+    pusherPeriodS: 2.4,
+    obstacles: REDLINE_PEGS,
+  },
+  arm: { periodS: ARM_PERIOD_S },
+  // Faster and narrower than the usual ring (3.9s, 0.8). The pusher runs
+  // faster too (2.4s, not 3.2): at the usual pace, ring bonuses were still
+  // on the shelf when the clock ran out.
+  ring: { enabled: true, periodS: 2.9, radius: 0.7 },
+  objects: { drop: AMBER, bonus: AMBER_BONUS },
+  // The beat lane: the chevrons on the back wall light on the beat.
+  cue: 'chevrons',
+  pile: 'redline',
+  bake: { seed: 12, floor: 150, top: 14 },
+  rules: {
+    coins: 40,
+    // Ninety seconds of arm time, so the slower arm stretches it (and its
+    // results say so).
+    timeLimitS: 90,
+    // A drop on the beat raises the tempo a step, up to 6; off the beat it
+    // falls back to 1, and every 3s without a drop costs a step. A ring hit
+    // pours 3 coins times the tempo the drop was made at.
+    tempo: { max: 6, idleS: 3 },
+    bonusForStreak: () => 3,
+    // The doc's guesses (45 / 120 / 200) are out of reach: a pusher only
+    // moves so many coins in 90s. From the sim (12 games each): a random
+    // tapper averages 12 (a star 17% of the time); dropping on the beat
+    // averages 28 and reaches Redline every game (★ 92%, ★★ 42%); on the
+    // beat plus ring lineups averages 40 (★★ every game, ★★★ 42%).
+    goal: { type: 'score', stars: [15, 30, 45] },
+  },
+  measure: { label: 'Score', caption: 'coins into the chute' },
+  hint: 'Drop when the chevrons light to build tempo. Ring hits pay 2 coins times your tempo.',
+  voice: {
+    start: 'Ninety seconds. Find the beat.',
+    clear: 'Tempo held. The table paid out.',
+    miss: 'Lost the beat. Run it back.',
+  },
+}
+
 const soon = (number: number, slug: string, name: string, pitch: string): ComingSoon => ({
   number,
   slug,
@@ -563,7 +625,7 @@ export const STAGES: readonly Stage[] = [
   ),
   soon(9, 'gravity-assist', 'Gravity Assist', 'A small moon bends every falling coin.'),
   THE_BEDTIME_BOOK,
-  soon(11, 'redline', 'Redline', 'Ninety seconds. Stay on the beat.'),
+  REDLINE,
   soon(12, 'comet-homecoming', 'Comet Homecoming', 'Help a sleepy giant comet back home.'),
 ]
 
