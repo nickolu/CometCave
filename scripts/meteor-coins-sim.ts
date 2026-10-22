@@ -67,6 +67,19 @@ function frontmostSpecial(game: DropGame): number | null {
 }
 
 /**
+ * Where the moon bends coins, whether one dropped 50ms from now would pass
+ * through the ring: read off the game's own (exact) preview.
+ */
+function bentLineup(game: DropGame, stage: StageDef): boolean {
+  const path = game.dropPath(0.05)
+  const k = path.findIndex(p => p.y < RING_Y)
+  if (k < 0) return false
+  const t = game.dropperTime + (0.05 + k / 60) * game.speed
+  const p = path[k]
+  return Math.abs(p.x - ringX(t, stage.ring)) < 0.2
+}
+
+/**
  * The middle of the band of charges that thread a hoop from aim `yaw`, or
  * null if none do.
  */
@@ -198,7 +211,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         // Lead the ring: tap when the coin would arrive where the ring will be.
         const ringLineup =
           stage.ring.enabled &&
-          Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed, stage.ring)) < 0.25
+          (stage.moon
+            ? bentLineup(game, stage)
+            : Math.abs(tip.x - ringX(game.dropperTime + fall * game.speed, stage.ring)) < 0.25)
         // Where a stage keeps a tempo, an off-beat lineup costs it: only
         // worth taking while the tempo is low anyway.
         const keepsTempo = stage.rules.tempo !== undefined
@@ -207,7 +222,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         // Without a ring lineup, aim: drop behind the special object
         // nearest the lip, so the push lands on it.
         const target = frontmostSpecial(game)
-        const aimed = target === null || Math.abs(tip.x - target) < 0.8
+        // Under the moon, aim by where the coin will land, not where it starts.
+        const landX = stage.moon ? game.dropLanding(0.05).x : tip.x
+        const aimed = target === null || Math.abs(landX - target) < 0.8
         // On a stacking stage, wait for a drop square on a post's center,
         // holding out a few seconds for the post that counts most.
         const landing = game.landing(0.05)

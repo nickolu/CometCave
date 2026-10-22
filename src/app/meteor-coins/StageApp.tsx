@@ -138,6 +138,10 @@ export default function StageApp({ slug }: { slug: string }) {
       if (!game) return
       const drops = stage.objects.drop.plural
       for (const e of events) {
+        if (e.type === 'meteor') {
+          setPopup({ id: performance.now(), text: 'Meteorite incoming!' })
+          setAnnounce('Meteorite incoming. It lands where the countdown ring is.')
+        }
         if (e.type === 'hoop') {
           setPopup({ id: performance.now(), text: `Hoop! +${e.bonus} ${drops}` })
           setAnnounce(`Through the ${e.bonus} hoop. ${e.bonus} bonus ${drops}.`)

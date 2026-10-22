@@ -40,6 +40,7 @@ import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
+import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
 /** Never run more than this many physics steps in one frame (e.g. after a stall). */
@@ -239,6 +240,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           Where arms take turns there's one per drop line; the one whose turn
           it is holds the coin and wears a bookmark ribbon. */}
       {game.cannon && <CannonRig game={game} cannon={game.cannon} />}
+      {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
       {!game.cannon &&
         lines.map((z, i) => (
           <group

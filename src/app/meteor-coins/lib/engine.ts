@@ -355,6 +355,39 @@ export class PusherEngine {
   ): number | null {
     const index = this.free.pop()
     if (index === undefined) return null
+    this.pucks[index].kind = kind
+    this.wake(index, x, y, z, yaw, velocity)
+    return index
+  }
+
+  /**
+   * Readies a special object off the table, to drop in later with place().
+   * Made up front, so the renderer sees every object from the start.
+   */
+  addParked(spec: ObjectSpec): number {
+    const index = this.pucks.length
+    this.pucks.push({
+      body: this.createBody(spec, undefined, index),
+      active: false,
+      kind: 'special',
+      spec,
+    })
+    return index
+  }
+
+  /** Drops a parked special object in at a position, falling like a released coin. */
+  place(index: number, x: number, y: number, z: number) {
+    this.wake(index, x, y, z, 0, { x: 0, y: -1, z: 0 })
+  }
+
+  private wake(
+    index: number,
+    x: number,
+    y: number,
+    z: number,
+    yaw: number,
+    velocity: { x: number; y: number; z: number }
+  ) {
     const puck = this.pucks[index]
     const half = yaw / 2
     puck.body.setTranslation({ x, y, z }, false)
@@ -364,8 +397,6 @@ export class PusherEngine {
     puck.body.setEnabled(true)
     puck.body.wakeUp()
     puck.active = true
-    puck.kind = kind
-    return index
   }
 
   /** Advances one fixed step and returns the pucks that fell off during it. */
