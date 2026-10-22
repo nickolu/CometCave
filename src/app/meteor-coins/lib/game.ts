@@ -1,6 +1,7 @@
 import {
   DROP_Z,
   type Deck,
+  GRAVITY,
   PHYSICS_STEP_S,
   PUCK_THICKNESS,
   PUSHER_HEIGHT,
@@ -95,6 +96,10 @@ export type GameEvent =
   | { type: 'hoop'; bonus: number }
   /** A meteorite has been announced: it drops in after its countdown. */
   | { type: 'meteor' }
+  /** A new phase has started (its index). */
+  | { type: 'phase'; index: number }
+  /** The Last Push has started. */
+  | { type: 'lastPush' }
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
 
 /**
@@ -127,8 +132,12 @@ export class DropGame {
   /** The last shot's charge: the arc shown while aiming. A first shot previews full. */
   private lastPower = 1
   private showerCooldown = 0
-  /** Coins dropped so far: meteorites are timed by it. */
+  /** Coins dropped so far: meteorites and phases are timed by it. */
   private drops = 0
+  /** The phase the cabinet is in, on a stage with phases. */
+  phase = 0
+  /** Events raised between steps (by a tap), handed out with the next step's. */
+  private pending: GameEvent[] = []
   /** The stage's meteorites: parked until their drop, then announced, then dropped in. */
   private meteors: {
     index: number
@@ -175,6 +184,36 @@ export class DropGame {
     }
   }
 
+  /** Whether the ring is out: the stage has one, and the phase uses it. */
+  get ringOn(): boolean {
+    return this.stage.ring.enabled && (this.stage.phases?.[this.phase]?.ring ?? true)
+  }
+
+  /** Gravity now, as a share of the usual. */
+  get gravityScale(): number {
+    return this.stage.phases?.[this.phase]?.gravityScale ?? 1
+  }
+
+  /** Moves to the phase the drops so far have reached, reconfiguring the cabinet. */
+  private advancePhase() {
+    const phases = this.stage.phases
+    if (!phases) return
+    let spent = 0
+    let next = phases.length - 1
+    for (let i = 0; i < phases.length; i++) {
+      spent += phases[i].coins
+      if (this.drops < spent) {
+        next = i
+        break
+      }
+    }
+    if (next === this.phase) return
+    this.phase = next
+    this.engine.setPhase(next)
+    this.engine.setGravityScale(this.gravityScale)
+    this.pending.push({ type: 'phase', index: next })
+  }
+
   /** Where the moon is now, on a stage that has one. */
   get moon(): Vec | null {
     return this.stage.moon ? moonAt(this.dropperTime, this.stage.moon) : null
@@ -193,7 +232,7 @@ export class DropGame {
     const m = this.stage.moon
     const dt = PHYSICS_STEP_S * this.speed
     const pull = m ? (p: Vec, k: number) => moonPull(p, moonAt(t0 + (k + 1) * dt, m), m) : undefined
-    return flightPath(start, { x: 0, y: -1, z: 0 }, stop, 120, pull)
+    return flightPath(start, { x: 0, y: -1, z: 0 }, stop, 240, pull, GRAVITY * this.gravityScale)
   }
 
   /** The path a coin released `ahead` seconds from now would fall. */
@@ -236,10 +275,12 @@ export class DropGame {
   /** Whether a coin released now would land on bare shelf (see lib/timing). */
   get dropLandsClear() {
     const deck = this.dropDeck
-    // Under the moon a coin falls a curve, and takes its own time to land.
-    const fallS = this.stage.moon
-      ? this.dropLanding().fallS
-      : fallTimeToShelf(this.armTip().y, deck.floorY)
+    // Under the moon a coin falls a curve, and in low gravity it falls
+    // slower; either way it takes its own time to land.
+    const fallS =
+      this.stage.moon || this.gravityScale !== 1
+        ? this.dropLanding().fallS
+        : fallTimeToShelf(this.armTip().y, deck.floorY)
     return shelfOpenAt(this.engine.time + fallS, this.engine.pusherPeriodS, deck.pusher.lagS)
   }
 
@@ -379,23 +420,26 @@ export class DropGame {
     if (index === null) return false
     this.clockFrom ??= this.dropperTime
     this.drops++
+    this.advancePhase()
     for (const m of this.meteors) {
       if (m.afterDrop === this.drops) m.at = this.dropperTime + (this.stage.meteors?.warnS ?? 0)
     }
     this.state = drop(this.state)
     this.state = beatDrop(this.state, onBeat, this.dropperTime, this.stage.rules)
     this.line = (this.line + 1) % dropLines(this.stage.arm).length
-    if (this.stage.ring.enabled) {
+    if (this.ringOn) {
       this.inFlight.push({ index, droppedAt: this.engine.time, tempo: this.state.tempo })
     }
     return true
   }
 
   step(): GameEvent[] {
-    const events: GameEvent[] = []
+    const events: GameEvent[] = this.pending
+    this.pending = []
     this.dropperTime += PHYSICS_STEP_S * this.speed
     this.dropMeteors()
     this.pullTowardMoon()
+    this.pullHome()
     for (const m of this.meteors) {
       if (m.at === null || m.called) continue
       m.called = true
@@ -405,6 +449,11 @@ export class DropGame {
     for (const f of this.engine.step()) {
       this.state = fall(this.state, f.result, this.engine.time, f.spec, this.stage.rules)
       events.push({ type: 'fall', result: f.result, object: f.spec })
+      const push = this.stage.lastPush
+      if (push && f.result === 'chute' && f.spec.id === push.object) {
+        this.engine.lastPush(push.seconds)
+        events.push({ type: 'lastPush' })
+      }
     }
 
     // A shot resolves on the step the coin's center passes the ring's height.
@@ -451,7 +500,12 @@ export class DropGame {
         (m.at !== null && m.placedAt === null) ||
         (m.placedAt !== null && this.engine.time - m.placedAt < METEOR_FALL_S)
     ).length
-    const flying = this.inFlight.length + this.fired.length + (this.charging ? 1 : 0) + meteorsDue
+    const flying =
+      this.inFlight.length +
+      this.fired.length +
+      (this.charging ? 1 : 0) +
+      meteorsDue +
+      (this.engine.pushing ? 1 : 0)
     this.state = tick(this.state, this.engine.time, flying, this.stage.rules, this.clockS)
     return events
   }
@@ -483,6 +537,18 @@ export class DropGame {
       const v = puck.body.linvel()
       const dt = PHYSICS_STEP_S
       puck.body.setLinvel({ x: v.x + a.x * dt, y: v.y + a.y * dt, z: v.z + a.z * dt }, true)
+    }
+  }
+
+  /** In a phase with homing, eases the last-push object toward the chute. */
+  private pullHome() {
+    const homing = this.stage.phases?.[this.phase]?.homing
+    const id = this.stage.lastPush?.object
+    if (!homing || !id) return
+    for (const puck of this.engine.pucks) {
+      if (!puck.active || puck.spec.id !== id) continue
+      const v = puck.body.linvel()
+      puck.body.setLinvel({ x: v.x, y: v.y, z: v.z + homing * PHYSICS_STEP_S }, true)
     }
   }
 

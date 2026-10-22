@@ -1,6 +1,7 @@
 import {
   type GameState,
   goalCount,
+  homeAt,
   nextStar,
   starsAt,
   starsFor,
@@ -52,6 +53,13 @@ export function hudStars(
   if (next.at === 0) {
     return { stars, note: 'finish for ★', label: `${stars} of 3 stars. Finishing earns a star.` }
   }
+  if (goal.type === 'homecoming' && !homeAt(s, goal)) {
+    return {
+      stars,
+      note: `core + ${next.at}`,
+      label: `${stars} of 3 stars. Bring the core home and reach ${next.at} for the next star.`,
+    }
+  }
   return {
     stars,
     note: `next at ${next.at}`,
@@ -82,6 +90,9 @@ export function nextStarSentence(stage: StageDef, s: GameState): string {
   const next = nextStar(s, goal)
   if (!next) return 'Every star on this stage.'
   if (goal.type === 'stack') return `A height of ${next.at} for ${starWord(next.stars)}.`
+  if (goal.type === 'homecoming' && !homeAt(s, goal)) {
+    return `Bring the core home and reach ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
+  }
   if (goal.type === 'target') {
     return `Finish with ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
   }

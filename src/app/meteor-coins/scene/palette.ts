@@ -45,6 +45,9 @@ export const PALETTE = {
   meteoriteMark: '#ff9a5c',
   moon: '#e6e9f5',
   moonMark: '#a7aec7',
+  /** Comet Homecoming: the pale-blue core with a gold star cap. */
+  core: '#9fd8ff',
+  coreMark: '#ffd166',
   moonstone: '#efe6cf',
   moonstoneMark: '#6f7fae',
   chocolate: '#6b3a22',

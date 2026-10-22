@@ -267,6 +267,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     shots: s.shots,
     bestStreak: s.bestStreak,
     bestTempo: s.bestTempo,
+    home: stage.lastPush ? (s.collected[stage.lastPush.object] ?? 0) > 0 : false,
     redline: stage.rules.tempo && s.bestTempo >= stage.rules.tempo.max ? 1 : 0,
     timeUp: s.timeUp ? 1 : 0,
     clock: Math.round(game.clockS),
@@ -305,6 +306,7 @@ async function main() {
         ` · ★ ${atLeast(1)} ★★ ${atLeast(2)} ★★★ ${atLeast(3)}` +
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
+        (stage.lastPush ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         (stage.rules.tempo

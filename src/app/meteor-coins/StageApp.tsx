@@ -25,7 +25,13 @@ import {
   recordResult,
   saveProgress,
 } from '@/app/meteor-coins/lib/progress'
-import { type GameState, resultValue, ringBonus, starsFor } from '@/app/meteor-coins/lib/rules'
+import {
+  type GameState,
+  homeAt,
+  resultValue,
+  ringBonus,
+  starsFor,
+} from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
@@ -138,6 +144,17 @@ export default function StageApp({ slug }: { slug: string }) {
       if (!game) return
       const drops = stage.objects.drop.plural
       for (const e of events) {
+        if (e.type === 'phase') {
+          const phase = stage.phases?.[e.index]
+          if (phase) {
+            setPopup({ id: performance.now(), text: `Phase ${e.index + 1}: ${phase.name}` })
+            setAnnounce(`Phase ${e.index + 1}, ${phase.name}. ${phase.line}`)
+          }
+        }
+        if (e.type === 'lastPush') {
+          setPopup({ id: performance.now(), text: 'Core home! Last Push!' })
+          setAnnounce('The comet core is home. Last Push: the pusher reaches twice as far.')
+        }
         if (e.type === 'meteor') {
           setPopup({ id: performance.now(), text: 'Meteorite incoming!' })
           setAnnounce('Meteorite incoming. It lands where the countdown ring is.')
@@ -300,6 +317,16 @@ export default function StageApp({ slug }: { slug: string }) {
           <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-lg bg-black/60 px-3 py-2 sm:gap-x-4 sm:px-4">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
             {timeLeft !== null && <Stat label="Time" value={clockText(timeLeft)} />}
+            {stage.phases && game && (
+              <div className="text-center">
+                <div className="text-[11px] uppercase tracking-wide text-white/60">
+                  Phase {game.phase + 1}/{stage.phases.length}
+                </div>
+                <div className="text-sm font-bold leading-tight sm:text-base">
+                  {stage.phases[game.phase].name}
+                </div>
+              </div>
+            )}
             {stage.rules.tempo && <TempoMeter tempo={state.tempo} max={stage.rules.tempo.max} />}
             <Stat label={measure.label} value={measure.value} />
             {towers.length > 0 && (
@@ -424,6 +451,16 @@ export default function StageApp({ slug }: { slug: string }) {
       {debug && game && <DebugReadout game={game} fpsRef={fpsRef} />}
     </div>
   )
+}
+
+/**
+ * Whether the result earns the stage's "clear" line. On Comet Homecoming
+ * finishing is a star, but the clear line is about the core getting home.
+ */
+function cleared(stage: StageDef, state: GameState, stars: number): boolean {
+  const { goal } = stage.rules
+  if (goal.type === 'homecoming') return homeAt(state, goal)
+  return stars >= 1
 }
 
 function Loading({ name }: { name: string }) {
@@ -558,7 +595,7 @@ function ResultPanel({
         )}
         {outcome.slowed && <p className="mt-1 text-xs text-white/70">Played with Slower arm.</p>}
         <p className="mt-2 text-sm italic text-white/90">
-          {outcome.stars >= 1 ? stage.voice.clear : stage.voice.miss}
+          {cleared(stage, state, outcome.stars) ? stage.voice.clear : stage.voice.miss}
         </p>
         <p className="mt-1 text-sm text-white/70">
           {nextStarSentence(stage, state)}{' '}

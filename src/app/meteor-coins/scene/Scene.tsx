@@ -72,6 +72,16 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   const bonusMeshes = useRef<(THREE.InstancedMesh | null)[][]>([])
   const pushers = useRef<(THREE.Mesh | null)[]>([])
   const riders = useRef<THREE.Group>(null)
+  const movers = useRef<(THREE.Group | null)[]>([])
+  const beacon = useRef<THREE.Sprite>(null)
+  const beaconIndex = useMemo(() => {
+    const id = game.stage.lastPush?.object
+    return id ? game.engine.pucks.findIndex(p => p.spec.id === id) : -1
+  }, [game])
+  const beaconLabel = useMemo(
+    () => (beaconIndex >= 0 ? beaconTexture('CORE') : null),
+    [beaconIndex]
+  )
   const arms = useRef<(THREE.Group | null)[]>([])
   const heldCoins = useRef<(THREE.Group | null)[]>([])
   const ribbons = useRef<(THREE.Object3D | null)[]>([])
@@ -147,6 +157,20 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       pushers.current[i]?.position.set(0, deck.floorY + PUSHER_HEIGHT / 2, pusherZs[i])
     )
     riders.current?.position.set(0, 0, game.engine.pusherZ - PUSHER_MID_Z)
+    // The beacon hangs over the core wherever the pile has buried it.
+    if (beacon.current && beaconIndex >= 0) {
+      const core = game.engine.pucks[beaconIndex]
+      beacon.current.visible = core.active
+      if (core.active) {
+        const t = core.body.translation()
+        beacon.current.position.set(t.x, t.y + 1.3, t.z)
+      }
+    }
+    // Movers draw from their base, the engine reports their centers.
+    const moving = obstacles.filter(moves)
+    game.engine.moverPositions().forEach((p, i) => {
+      movers.current[i]?.position.set(p.x, p.y - moving[i].height / 2, p.z)
+    })
     const angle = armAngle(game.dropperTime, game.stage.arm.periodS)
     arms.current.forEach((arm, i) => {
       arm?.rotation.set(0, 0, angle)
@@ -157,7 +181,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       if (ribbon) ribbon.visible = game.line === i
     })
     ring.current?.position.set(ringX(game.dropperTime, game.stage.ring), RING_Y, DROP_Z)
-    if (ring.current) ring.current.visible = game.stage.ring.enabled
+    if (ring.current) ring.current.visible = game.ringOn
 
     flash.current = Math.max(0, flash.current - delta)
     ringMaterial.current?.color.copy(flash.current > 0 ? s.hit : s.base)
@@ -177,7 +201,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       <Cabinet
         layout={layout}
         chuteHalfWidth={game.engine.chuteHalfWidth}
-        obstacles={obstacles.filter(o => !o.rides)}
+        obstacles={obstacles.filter(o => !o.rides && !moves(o))}
         icy={(table.floorFriction ?? 1) < 0.2}
         floorTone={table.floorTone ?? 'floor'}
       />
@@ -196,6 +220,22 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           <meshStandardMaterial color={PALETTE[table.pusherTone ?? 'pusher']} />
         </mesh>
       ))}
+      {/* Pegs that rise and sink with the phases, and the sweeping bumper. */}
+      {obstacles.filter(moves).map((o, i) => (
+        <group
+          key={i}
+          ref={group => {
+            movers.current[i] = group
+          }}
+        >
+          <ObstacleMesh obstacle={{ ...o, x: 0, z: 0 }} tone={o.sweep ? 'moon' : undefined} />
+        </group>
+      ))}
+      {beaconLabel && (
+        <sprite ref={beacon} scale={[1.5, 0.75, 1]} renderOrder={12}>
+          <spriteMaterial map={beaconLabel} transparent depthTest={false} />
+        </sprite>
+      )}
       {/* Pieces mounted on the pusher, drawn where they stand at mid-stroke and moved with it. */}
       <group ref={riders}>
         {obstacles
@@ -595,7 +635,38 @@ const NOTCHES = 3
  * One obstacle, where it stands with the pusher at mid-stroke. A tower post
  * is stone, with a slim gauge behind it notched every five coins of height.
  */
-function ObstacleMesh({ obstacle: o }: { obstacle: Obstacle }) {
+/** A star-capped tag over the comet core, drawn on a canvas: no font files to load. */
+function beaconTexture(text: string): THREE.Texture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 256
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    ctx.fillStyle = PALETTE.core
+    ctx.beginPath()
+    ctx.roundRect(8, 24, 240, 80, 40)
+    ctx.fill()
+    // A pointer down at the core.
+    ctx.beginPath()
+    ctx.moveTo(112, 104)
+    ctx.lineTo(128, 124)
+    ctx.lineTo(144, 104)
+    ctx.fill()
+    ctx.fillStyle = PALETTE.spine
+    ctx.font = 'bold 52px system-ui, sans-serif'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`★ ${text}`, 128, 66)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  return texture
+}
+
+/** Whether an obstacle moves on its own (rises and sinks with phases, or sweeps). */
+const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+
+function ObstacleMesh({ obstacle: o, tone }: { obstacle: Obstacle; tone?: Tone }) {
   if (o.type === 'block') {
     return (
       <mesh position={[o.x, o.height / 2, o.z]}>
@@ -608,10 +679,23 @@ function ObstacleMesh({ obstacle: o }: { obstacle: Obstacle }) {
   const gaugeTop = o.height + NOTCH_EVERY * NOTCHES * PUCK_THICKNESS
   return (
     <group position={[o.x, 0, o.z]}>
+      {/* A sweeping bumper wears a small moon, drawn only, so it shows above the pile. */}
+      {o.sweep && (
+        <mesh position={[0, o.height + 0.35, 0]}>
+          <sphereGeometry args={[0.35, 20, 14]} />
+          <meshStandardMaterial
+            color={PALETTE.moon}
+            emissive={PALETTE.moon}
+            emissiveIntensity={0.35}
+          />
+        </mesh>
+      )}
       <mesh position={[0, o.height / 2, 0]}>
         <cylinderGeometry args={[o.radius, o.radius, o.height, 24]} />
         <meshStandardMaterial
-          color={tower ? PALETTE.stone : PALETTE.obstacle}
+          color={tone ? PALETTE[tone] : tower ? PALETTE.stone : PALETTE.obstacle}
+          emissive={tone ? PALETTE[tone] : PALETTE.background}
+          emissiveIntensity={tone ? 0.3 : 0}
           roughness={tower ? 0.9 : 0.7}
         />
       </mesh>
