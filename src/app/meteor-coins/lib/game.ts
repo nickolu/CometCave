@@ -3,6 +3,7 @@ import {
   type Deck,
   PHYSICS_STEP_S,
   PUCK_THICKNESS,
+  PUSHER_HEIGHT,
   deckUnder,
 } from '@/app/meteor-coins/lib/cabinet'
 import {
@@ -22,6 +23,7 @@ import {
   PusherEngine,
   obstacleZ,
 } from '@/app/meteor-coins/lib/engine'
+import { moonAt, moonPull } from '@/app/meteor-coins/lib/moon'
 import type { ObjectSpec } from '@/app/meteor-coins/lib/objects'
 import { PILES } from '@/app/meteor-coins/lib/piles'
 import {
@@ -77,12 +79,22 @@ export type Landing = { x: number; y: number; z: number; post: number | null; of
 const CANNON_SHOT_TIMEOUT_S = 3
 /** Where hoop bonuses pour: across the back of the shelf, from the backboard. */
 const BONUS_POUR = { y: 2.5, z: DROP_Z, halfWidth: 2.6 }
+/** A dropped coin's preview ends here, around the top of the pile. */
+const PREVIEW_FLOOR_Y = 1
+/** A meteorite counts as still falling (the stage can't end) for this long after it drops in. */
+const METEOR_FALL_S = 2
+
+/** A meteorite announced on the table: where it'll land, and seconds until it drops. */
+export type MeteorWarning = { x: number; z: number; secondsLeft: number }
+
 /** A fired coin flies flat, so half its thickness is what has to clear a hoop's rim above and below. */
 const FLAT_COIN_HALF_HEIGHT = PUCK_THICKNESS / 2
 
 export type GameEvent =
   | { type: 'shot'; hit: boolean; bonus: number; streak: number }
   | { type: 'hoop'; bonus: number }
+  /** A meteorite has been announced: it drops in after its countdown. */
+  | { type: 'meteor' }
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
 
 /**
@@ -115,6 +127,21 @@ export class DropGame {
   /** The last shot's charge: the arc shown while aiming. A first shot previews full. */
   private lastPower = 1
   private showerCooldown = 0
+  /** Coins dropped so far: meteorites are timed by it. */
+  private drops = 0
+  /** The stage's meteorites: parked until their drop, then announced, then dropped in. */
+  private meteors: {
+    index: number
+    afterDrop: number
+    x: number
+    z: number
+    /** Arm time it drops in at, once announced. */
+    at: number | null
+    /** Physics time it dropped in at. */
+    placedAt: number | null
+    /** Whether its announcement has gone out as an event. */
+    called: boolean
+  }[] = []
   /** The posts a stack goal counts, in the goal's order. */
   readonly towerPosts: TowerPostDef[]
 
@@ -136,6 +163,60 @@ export class DropGame {
       layout: stage.table.layout,
       ...options,
     })
+    const shower = stage.meteors
+    if (shower) {
+      this.meteors = shower.schedule.map(m => ({
+        ...m,
+        index: this.engine.addParked(shower.object),
+        at: null,
+        placedAt: null,
+        called: false,
+      }))
+    }
+  }
+
+  /** Where the moon is now, on a stage that has one. */
+  get moon(): Vec | null {
+    return this.stage.moon ? moonAt(this.dropperTime, this.stage.moon) : null
+  }
+
+  /**
+   * The path something falling from `start` would take, released at arm
+   * time `t0`, bent by the moon if there is one. Exact, until it meets
+   * the pile.
+   */
+  private fallPath(
+    start: Vec,
+    t0: number,
+    stop: (p: Vec) => boolean = p => p.y < PREVIEW_FLOOR_Y
+  ): Vec[] {
+    const m = this.stage.moon
+    const dt = PHYSICS_STEP_S * this.speed
+    const pull = m ? (p: Vec, k: number) => moonPull(p, moonAt(t0 + (k + 1) * dt, m), m) : undefined
+    return flightPath(start, { x: 0, y: -1, z: 0 }, stop, 120, pull)
+  }
+
+  /** The path a coin released `ahead` seconds from now would fall. */
+  dropPath(ahead = 0): Vec[] {
+    return this.fallPath(this.armTip(ahead), this.dropperTime + ahead * this.speed)
+  }
+
+  /** Meteorites announced and about to drop in: where each will land, and when. */
+  meteorWarnings(): MeteorWarning[] {
+    const shower = this.stage.meteors
+    if (!shower) return []
+    return this.meteors
+      .filter(m => m.at !== null && m.placedAt === null)
+      .map(m => {
+        const at = m.at as number
+        // It drops in on the first step at or after `at`, and feels the moon from that step.
+        const path = this.fallPath(
+          { x: m.x, y: shower.y, z: m.z },
+          at - PHYSICS_STEP_S * this.speed
+        )
+        const end = path[path.length - 1]
+        return { x: end.x, z: end.z, secondsLeft: (at - this.dropperTime) / this.speed }
+      })
   }
 
   /** Where a puck released `ahead` seconds from now would start. */
@@ -155,8 +236,26 @@ export class DropGame {
   /** Whether a coin released now would land on bare shelf (see lib/timing). */
   get dropLandsClear() {
     const deck = this.dropDeck
-    const landsAt = this.engine.time + fallTimeToShelf(this.armTip().y, deck.floorY)
-    return shelfOpenAt(landsAt, this.engine.pusherPeriodS, deck.pusher.lagS)
+    // Under the moon a coin falls a curve, and takes its own time to land.
+    const fallS = this.stage.moon
+      ? this.dropLanding().fallS
+      : fallTimeToShelf(this.armTip().y, deck.floorY)
+    return shelfOpenAt(this.engine.time + fallS, this.engine.pusherPeriodS, deck.pusher.lagS)
+  }
+
+  /**
+   * Where a coin released `ahead` seconds from now reaches the top of the
+   * pusher, and how long it falls to get there (from its release).
+   */
+  dropLanding(ahead = 0): { x: number; z: number; fallS: number } {
+    const shelfY = this.dropDeck.floorY + PUSHER_HEIGHT + PUCK_THICKNESS / 2
+    const path = this.fallPath(
+      this.armTip(ahead),
+      this.dropperTime + ahead * this.speed,
+      p => p.y < shelfY
+    )
+    const end = path[path.length - 1]
+    return { x: end.x, z: end.z, fallS: (path.length - 1) * PHYSICS_STEP_S }
   }
 
   /** Whether the stage's cue is lit: a drop now would land where it should. */
@@ -279,6 +378,10 @@ export class DropGame {
     const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player')
     if (index === null) return false
     this.clockFrom ??= this.dropperTime
+    this.drops++
+    for (const m of this.meteors) {
+      if (m.afterDrop === this.drops) m.at = this.dropperTime + (this.stage.meteors?.warnS ?? 0)
+    }
     this.state = drop(this.state)
     this.state = beatDrop(this.state, onBeat, this.dropperTime, this.stage.rules)
     this.line = (this.line + 1) % dropLines(this.stage.arm).length
@@ -291,6 +394,13 @@ export class DropGame {
   step(): GameEvent[] {
     const events: GameEvent[] = []
     this.dropperTime += PHYSICS_STEP_S * this.speed
+    this.dropMeteors()
+    this.pullTowardMoon()
+    for (const m of this.meteors) {
+      if (m.at === null || m.called) continue
+      m.called = true
+      events.push({ type: 'meteor' })
+    }
 
     for (const f of this.engine.step()) {
       this.state = fall(this.state, f.result, this.engine.time, f.spec, this.stage.rules)
@@ -336,9 +446,44 @@ export class DropGame {
     if (this.canDrop) this.state = tempoIdle(this.state, this.dropperTime, this.stage.rules)
     if (this.speed < 1 && this.state.phase === 'playing') this.slowed = true
 
-    const flying = this.inFlight.length + this.fired.length + (this.charging ? 1 : 0)
+    const meteorsDue = this.meteors.filter(
+      m =>
+        (m.at !== null && m.placedAt === null) ||
+        (m.placedAt !== null && this.engine.time - m.placedAt < METEOR_FALL_S)
+    ).length
+    const flying = this.inFlight.length + this.fired.length + (this.charging ? 1 : 0) + meteorsDue
     this.state = tick(this.state, this.engine.time, flying, this.stage.rules, this.clockS)
     return events
+  }
+
+  /** Drops in each announced meteorite whose countdown has run out. */
+  private dropMeteors() {
+    const shower = this.stage.meteors
+    if (!shower) return
+    for (const m of this.meteors) {
+      if (m.at === null || m.placedAt !== null || this.dropperTime < m.at) continue
+      this.engine.place(m.index, m.x, shower.y, m.z)
+      m.placedAt = this.engine.time
+    }
+  }
+
+  /**
+   * The moon pulls on everything in the air, as a change of velocity just
+   * before the physics steps — the same rule fallPath predicts with.
+   */
+  private pullTowardMoon() {
+    const m = this.stage.moon
+    if (!m) return
+    const moon = moonAt(this.dropperTime, m)
+    for (const puck of this.engine.pucks) {
+      if (!puck.active) continue
+      const p = puck.body.translation()
+      if (p.y < m.minY) continue
+      const a = moonPull(p, moon, m)
+      const v = puck.body.linvel()
+      const dt = PHYSICS_STEP_S
+      puck.body.setLinvel({ x: v.x + a.x * dt, y: v.y + a.y * dt, z: v.z + a.z * dt }, true)
+    }
   }
 
   /** Checks fired coins against the hoops, and settles the ones that have come down. */
