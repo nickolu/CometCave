@@ -1,3 +1,4 @@
+import { inCup } from '@/app/meteor-coins/lib/board'
 import {
   DROP_Z,
   type Deck,
@@ -80,6 +81,12 @@ export type Landing = { x: number; y: number; z: number; post: number | null; of
 const CANNON_SHOT_TIMEOUT_S = 3
 /** Where hoop bonuses pour: across the back of the shelf, from the backboard. */
 const BONUS_POUR = { y: 2.5, z: DROP_Z, halfWidth: 2.6 }
+/** A coin on a pachinko board moving slower than this has come to rest, and gets nudged by this. */
+const STILL_SPEED = 0.05
+const NUDGE = 0.6
+/** How far below a pachinko board its skirt hangs, hiding coins being laid flat. */
+const SKIRT = 0.7
+
 /** A dropped coin's preview ends here, around the top of the pile. */
 const PREVIEW_FLOOR_Y = 1
 /** A meteorite counts as still falling (the stage can't end) for this long after it drops in. */
@@ -94,6 +101,8 @@ const FLAT_COIN_HALF_HEIGHT = PUCK_THICKNESS / 2
 export type GameEvent =
   | { type: 'shot'; hit: boolean; bonus: number; streak: number }
   | { type: 'hoop'; bonus: number }
+  /** A coin was caught in a pachinko cup: it pours `bonus`. */
+  | { type: 'cup'; bonus: number }
   /** A meteorite has been announced: it drops in after its countdown. */
   | { type: 'meteor' }
   /** A new phase has started (its index). */
@@ -170,6 +179,7 @@ export class DropGame {
       floorFriction: stage.table.floorFriction,
       floorDrift: stage.table.floorDrift,
       layout: stage.table.layout,
+      board: stage.table.board,
       ...options,
     })
     const shower = stage.meteors
@@ -269,7 +279,24 @@ export class DropGame {
   }
 
   get canDrop() {
-    return canDrop(this.state) && this.engine.freeCount > 0
+    return canDrop(this.state) && this.engine.freeCount > 0 && !this.boardBusy
+  }
+
+  /**
+   * Whether a dropped coin is still on its way down a pachinko board. One at
+   * a time, as with a pachinko ball: coins dropped into the slot back to
+   * back locked into arches and jammed it.
+   */
+  get boardBusy(): boolean {
+    const board = this.stage.table.board
+    if (!board) return false
+    // Coins waiting in the bins for the gate don't count: they're down.
+    const pinsFrom = board.gated ? board.dividerTop : board.bottomY
+    return this.engine.pucks.some(p => {
+      if (!p.active || p.kind !== 'player') return false
+      const t = p.body.translation()
+      return t.y > pinsFrom && Math.abs(t.z - board.z) < board.slot
+    })
   }
 
   /** Whether a coin released now would land on bare shelf (see lib/timing). */
@@ -416,7 +443,7 @@ export class DropGame {
     if (post !== null) tip.y = Math.max(tip.y, this.towerTop(post) + SPAWN_CLEARANCE)
     // Judged before the coin exists, as the cue showed it.
     const onBeat = this.dropLandsClear
-    const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player')
+    const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player', 0, undefined, this.upright)
     if (index === null) return false
     this.clockFrom ??= this.dropperTime
     this.drops++
@@ -478,9 +505,10 @@ export class DropGame {
     })
 
     this.trackFired(events)
+    this.catchInCups(events)
 
     if (this.state.showerLeft > 0 && --this.showerCooldown <= 0) {
-      const tip = this.cannon ? this.bonusPour() : this.armTip()
+      const tip = this.cannon || this.upright ? this.bonusPour() : this.armTip()
       // A full pool waits rather than dropping the bonus; falls free slots up.
       if (this.engine.spawn(tip.x, tip.y, tip.z, 'bonus', this.engine.time * 3) !== null) {
         this.state = pourBonus(this.state)
@@ -505,7 +533,8 @@ export class DropGame {
       this.fired.length +
       (this.charging ? 1 : 0) +
       meteorsDue +
-      (this.engine.pushing ? 1 : 0)
+      (this.engine.pushing ? 1 : 0) +
+      (this.boardBusy ? 1 : 0)
     this.state = tick(this.state, this.engine.time, flying, this.stage.rules, this.clockS)
     return events
   }
@@ -538,6 +567,50 @@ export class DropGame {
       const dt = PHYSICS_STEP_S
       puck.body.setLinvel({ x: v.x + a.x * dt, y: v.y + a.y * dt, z: v.z + a.z * dt }, true)
     }
+  }
+
+  /** Coins drop on edge where they fall through a pachinko board. */
+  private get upright(): boolean {
+    return this.stage.table.board !== undefined
+  }
+
+  /**
+   * Takes coins that have landed in a pachinko cup off the board, and pours
+   * each cup's bonus. A coin that has come to rest anywhere else on the
+   * board (dead center on a pin, say) gets a nudge sideways: a pachinko
+   * ball never balances, and one coin stuck would hold up every drop.
+   */
+  private catchInCups(events: GameEvent[]) {
+    const board = this.stage.table.board
+    if (!board) return
+    this.engine.pucks.forEach((puck, index) => {
+      if (!puck.active) return
+      const p = puck.body.translation()
+      if (Math.abs(p.z - board.z) > board.slot) return
+      if (p.y < board.bottomY) {
+        // Just out of the board (behind its skirt): laid flat, so it lands
+        // like any other drop. On edge, coins wedged upright in the pile by
+        // the back wall and the shelf stopped paying (5 points against 24).
+        const r = puck.body.rotation()
+        const upY = 1 - 2 * (r.x * r.x + r.z * r.z)
+        if (p.y > board.bottomY - SKIRT && Math.abs(upY) < 0.9) {
+          const half = (index * 2.4) / 2
+          puck.body.setRotation({ x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) }, true)
+          puck.body.setAngvel({ x: 0, y: 0, z: 0 }, true)
+        }
+        return
+      }
+      const v = puck.body.linvel()
+      if (Math.hypot(v.x, v.y) < STILL_SPEED) {
+        // Toward the middle, away from the ends where it could only push into a wall.
+        puck.body.setLinvel({ x: v.x + (p.x > 0 ? -NUDGE : NUDGE), y: v.y, z: v.z }, true)
+      }
+      const cup = board.cups.find(c => inCup(c, p.x, p.y))
+      if (!cup) return
+      this.engine.remove(index)
+      this.state = hoopHit(this.state, cup.bonus)
+      events.push({ type: 'cup', bonus: cup.bonus })
+    })
   }
 
   /** In a phase with homing, eases the last-push object toward the chute. */
@@ -586,6 +659,11 @@ export class DropGame {
   /** Where the next hoop bonus coin pours from: stepping across the back of the shelf. */
   private bonusPour(): Vec {
     const x = BONUS_POUR.halfWidth * Math.sin(this.pours++ * 2.4)
+    // Under a pachinko board, straight onto the drop strip below it, skipping
+    // the pins. (Poured in front of the glass, they landed mid-pile and
+    // barely pushed: 20 cup catches were worth 5 points.)
+    const board = this.stage.table.board
+    if (board) return { x, y: board.bottomY - SKIRT / 2, z: board.z }
     return { x, y: BONUS_POUR.y, z: BONUS_POUR.z }
   }
 

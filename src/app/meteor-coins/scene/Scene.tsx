@@ -38,6 +38,7 @@ import {
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
+import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
 import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
@@ -281,6 +282,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           it is holds the coin and wears a bookmark ribbon. */}
       {game.cannon && <CannonRig game={game} cannon={game.cannon} />}
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
+      {table.board && <BoardMesh board={table.board} engine={game.engine} />}
       {!game.cannon &&
         lines.map((z, i) => (
           <group
@@ -305,11 +307,13 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
               <boxGeometry args={[1.2, 0.12, 0.3]} />
               <meshStandardMaterial color={PALETTE.arm} metalness={0.5} roughness={0.4} />
             </mesh>
+            {/* Over a pachinko board the coin hangs on edge, as it drops. */}
             <group
               ref={group => {
                 heldCoins.current[i] = group
               }}
               position={[0, -ARM_LENGTH, 0]}
+              rotation={[table.board ? Math.PI / 2 : 0, 0, 0]}
             >
               {drop.parts.map((part, p) => (
                 <mesh key={p} geometry={partGeometry(part)}>

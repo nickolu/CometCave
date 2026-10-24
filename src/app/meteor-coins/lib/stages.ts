@@ -1,3 +1,4 @@
+import { type Board, staggeredPins } from '@/app/meteor-coins/lib/board'
 import {
   BACK_WALL_Z,
   CHUTE_HALF_WIDTH,
@@ -60,6 +61,8 @@ export type StageDef = {
     floorDrift?: number
     /** The table's decks; one unless the stage stacks them. */
     layout?: Layout
+    /** A pachinko board over the drop line: coins drop through it on edge. */
+    board?: Board
     /** What the floor and pushers are made of, if not the cabinet's usual. */
     floorTone?: Tone
     pusherTone?: Tone
@@ -590,6 +593,76 @@ const THE_BEDTIME_BOOK: StageDef = {
   },
 }
 
+/**
+ * Starfall Pachinko's board: seven staggered rows of pins over the drop
+ * line, filling its width, and one narrow cup in the middle of the bottom
+ * row with a star sweeping across its mouth. Measured one coin at a time:
+ * about 1 drop in 10 lands in it, and no spot more than about half the
+ * time. (Cups out at the sides caught every drop near the walls, straight
+ * down the empty outer lanes; a fixed board had a spot over the cup that
+ * caught every drop.)
+ */
+// Raised clear of the heap the pusher carries under it, which grows to
+// about 1.5 by the back wall and jammed a lower board's exit.
+const PACHINKO_BOARD: Board = {
+  // Seven rows, so a coin's path is a long chain of bounces. Pins 2.4 apart,
+  // over twice a coin's width, so each pin sends a coin one way or the
+  // other: at 2 apart a coin rattled down a zig-zag channel between them
+  // and a drop over the cup landed in it every time (52 of 52).
+  pins: staggeredPins(7, 2.5, 1, 2.4, 2.5).filter(p => !(p.x === 0 && p.y === 2.5)),
+  pinRadius: 0.1,
+  z: DROP_Z,
+  slot: 0.3,
+  bottomY: 1.8,
+  topY: 9.4,
+  cups: [{ x: 0, y: 2.45, width: 1.04, bonus: 3 }],
+  // Under the bottom row's pins, so each bin sits between two of them.
+  dividers: [-2, 0, 2],
+  dividerTop: 2.4,
+  gated: true,
+  // A star sweeping across the cup's mouth, a row up.
+  sweepers: [{ y: 3.5, ampX: 1, periodS: 2.3 }],
+}
+
+const STARFALL_PACHINKO: StageDef = {
+  number: 8,
+  slug: 'starfall-pachinko',
+  name: 'Starfall Pachinko',
+  pitch:
+    'Coins tumble down a board of star pins before they land. Drop where the pins will carry you.',
+  playable: true,
+  // A wider chute, as at Penny Falls: the outer bins drop coins near the walls.
+  table: {
+    chuteHalfWidth: 3,
+    pusherPeriodS: PUSHER_PERIOD_S,
+    board: PACHINKO_BOARD,
+  },
+  // Raised to clear the board's top row of pins.
+  arm: { periodS: ARM_PERIOD_S, pivotY: 16.3 },
+  // The board takes the ring's place.
+  ring: { enabled: false },
+  objects: { drop: COIN },
+  cue: null,
+  pile: 'starfall-pachinko',
+  bake: { seed: 28, floor: 150, top: 14 },
+  rules: {
+    coins: 40,
+    bonusForStreak: () => 0,
+    // From the sim (10 games each): a random tapper averages 40 (★★ about
+    // half the time); dropping on the beat, 41; aiming over the cup, 46,
+    // catching about a third of its drops (★★★ 60%). Luck counts for a lot
+    // here, as on any pachinko board; aim gives an edge.
+    goal: { type: 'score', stars: [30, 42, 52] },
+  },
+  measure: { label: 'Score', caption: 'coins into the chute' },
+  hint: 'Coins bounce down the pins before they land. One caught in the middle cup pours 3 more.',
+  voice: {
+    start: 'Pick your spot. The stars do the rest.',
+    clear: 'Starfall! The board was kind tonight.',
+    miss: 'The pins will shuffle you a better night.',
+  },
+}
+
 /** Gravity Assist's posts: one at each front corner, narrowing the way into the gutters. */
 const GRAVITY_POSTS: Obstacle[] = [-3.2, 3.2].map(x => ({
   type: 'post',
@@ -823,14 +896,6 @@ const COMET_HOMECOMING: StageDef = {
   },
 }
 
-const soon = (number: number, slug: string, name: string, pitch: string): ComingSoon => ({
-  number,
-  slug,
-  name,
-  pitch,
-  playable: false,
-})
-
 export const STAGES: readonly Stage[] = [
   PENNY_FALLS,
   MOONSTONE_PORCH,
@@ -839,12 +904,7 @@ export const STAGES: readonly Stage[] = [
   THE_CAIRN,
   RUBBER_DUCKY_RUMBLE,
   THE_CASCADE_ENGINE,
-  soon(
-    8,
-    'the-doorstop',
-    'The Doorstop',
-    'Eight coins and a wedged bar that only swings from one end.'
-  ),
+  STARFALL_PACHINKO,
   GRAVITY_ASSIST,
   THE_BEDTIME_BOOK,
   REDLINE,

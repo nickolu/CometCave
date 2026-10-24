@@ -232,7 +232,11 @@ function play(stage: StageDef, bot: Bot, seed: number) {
         const best = landing.post !== null && weights[landing.post] === Math.max(...weights)
         const stacking =
           stage.cue === 'dot' && landing.offset < 0.12 && (best || t - waitingSince > 4)
+        // On a pachinko board, aim for the cup: drop over it.
+        const board = stage.table.board
+        const overCup = board?.cups.some(c => Math.abs(tip.x - c.x) < 0.4) ?? false
         tap =
+          overCup ||
           (ringLineup && worthIt) ||
           stacking ||
           (stage.cue !== 'dot' &&
@@ -252,6 +256,14 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     }
   }
   stepMs.sort((a, b) => a - b)
+  const board = stage.table.board
+  const inBoard = board
+    ? game.engine.pucks.filter(p => {
+        if (!p.active) return false
+        const t = p.body.translation()
+        return t.y > board.bottomY && Math.abs(t.z - board.z) < board.slot
+      }).length
+    : 0
   const s = game.state
   game.dispose()
   return {
@@ -267,6 +279,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     shots: s.shots,
     bestStreak: s.bestStreak,
     bestTempo: s.bestTempo,
+    inBoard,
     home: stage.lastPush ? (s.collected[stage.lastPush.object] ?? 0) > 0 : false,
     redline: stage.rules.tempo && s.bestTempo >= stage.rules.tempo.max ? 1 : 0,
     timeUp: s.timeUp ? 1 : 0,
@@ -287,6 +300,7 @@ async function main() {
   const games = Number(process.argv[3] ?? 6)
   await initPhysics()
   const { goal } = stage.rules
+  const board = stage.table.board
   console.log(
     `Stage ${stage.number}: ${stage.name} · ${goal.type} goal, stars at ${goal.stars.join(' / ')}` +
       ` (${stage.measure.caption}; -1 = target missed)`
@@ -307,6 +321,7 @@ async function main() {
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
         (stage.lastPush ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` : '') +
+        (board ? ` · stuck in board ${avg('inBoard')}` : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         (stage.rules.tempo
