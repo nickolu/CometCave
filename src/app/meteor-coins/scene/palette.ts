@@ -121,4 +121,11 @@ export const PALETTE = {
   slideRail: '#ffd2c9',
   splash: '#d9f4ff',
   drain: '#0b2333',
+  /** The Cascade Engine: glass tubes (the lit route warm), gold and red plates, the bar's stripes. */
+  tube: '#9fc4ff',
+  tubeLit: '#fff3c4',
+  plateGold: '#ffc93c',
+  plateRed: '#ff4d6a',
+  plateMark: '#2a1a08',
+  barStripe: '#fff3c4',
 } as const

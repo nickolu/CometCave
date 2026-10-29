@@ -32,6 +32,11 @@ import {
   type SpiderConfig,
   SpiderDelivery,
 } from '@/app/meteor-coins/lib/deliveries/spider'
+import {
+  type SwitchesConfig,
+  SwitchesDelivery,
+  switchesPoints,
+} from '@/app/meteor-coins/lib/deliveries/switches'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -50,6 +55,7 @@ export type {
 export type DeliveryConfig =
   | { kind: 'arm' }
   | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'switches' } & SwitchesConfig)
   | ({ kind: 'owls' } & OwlsConfig)
   | ({ kind: 'plunger' } & PlungerConfig)
   | ({ kind: 'crane' } & CraneConfig)
@@ -73,6 +79,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'switches':
+      return new SwitchesDelivery(host, config)
     case 'owls':
       return new OwlsDelivery(host, config)
     case 'plunger':
@@ -100,6 +108,8 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'belt':
     case 'slide':
       return 0
+    case 'switches':
+      return config.junctions[0].at.y
     case 'owls':
       return config.aimY
     // The pointer is read over the top of the pile, where the coin will land.
@@ -121,6 +131,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'switches':
+      return switchesPoints(config)
     case 'owls':
       return owlsPoints(config)
     case 'plunger':
@@ -143,6 +155,7 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
 export function deliveryHolds(config: DeliveryConfig): boolean {
   switch (config.kind) {
     case 'arm':
+    case 'switches':
     case 'belt':
     case 'slide':
       return false
@@ -164,6 +177,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'switches':
+      return 'tubes'
     case 'owls':
       return 'owls'
     case 'plunger':
@@ -207,6 +222,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
         : 'Hold to pull the plunger back (longer shoots harder), and let go to launch.'
     case 'owls':
       return 'Point or use the arrow keys to aim. Tap or press Space to shoot a pea.'
+    case 'switches':
+      return 'Tap a switch to flip it (or arrow keys: up and down pick one, left and right set it). Tap anywhere else or press Space to send a coin down the lit tube.'
   }
 }
 
