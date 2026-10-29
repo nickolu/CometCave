@@ -23,6 +23,12 @@ import {
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  PLATE_RESET_S,
+  type SwitchesDelivery,
+  type Track,
+  type Way,
+} from '@/app/meteor-coins/lib/deliveries/switches'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -161,6 +167,100 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * The track-switch bots (The Cascade Engine). All three send a coin every
+ * 0.6–1.8s, like the arm bots tap; they differ only in the route. Random
+ * flips each junction at random first. Cue routes once, into the top-deck
+ * lane over the middle step's gold, and never touches the switches again:
+ * a player who found the gold and stopped watching it move. Skilled
+ * re-routes every coin: to the middle step's gold, unless its spill would
+ * land on a bottom-step red that's half full; while the middle plates are
+ * moving, or to dodge that red, it goes for the bottom step's gold the most
+ * direct way. (Weighing lanes by how loaded the top deck's lip already was
+ * scored worse than this.) All flips and sends go through game.input, as taps.
+ */
+function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
+  const d = game.delivery as SwitchesDelivery
+  const c = d.config
+  let nextAt = 0.5 + rand() * 1.5
+  let routed = false
+  const tap = (x: number, z: number) => {
+    game.input({ type: 'point', x, z })
+    game.input({ type: 'press' })
+    game.input({ type: 'release' })
+  }
+  /** Sets the junctions to come out at `exit`, a tap per junction that needs flipping. */
+  const routeTo = (exit: number) => {
+    for (let k = 0; k < c.junctions.length; k++) {
+      const route = d.route()
+      if (route.exit === exit) return
+      // Flip the first junction on the way that points the wrong way.
+      for (const j of route.junctions) {
+        const flipped = [...d.ways]
+        flipped[j] = flipped[j] === 'left' ? 'right' : 'left'
+        if (reaches(flipped, j, exit)) {
+          tap(c.junctions[j].at.x, c.junctions[j].at.z)
+          break
+        }
+      }
+    }
+  }
+  const reaches = (ways: Way[], j: number, exit: number) => {
+    // Whether, with these ways, the route from junction j leads to exit (any setting beyond).
+    const visit = (track: Track): boolean =>
+      'exit' in track.to ? track.to.exit === exit : visitJ(track.to.junction)
+    const visitJ = (k: number): boolean =>
+      k === j
+        ? visit(c.junctions[k][ways[k]])
+        : visit(c.junctions[k].left) || visit(c.junctions[k].right)
+    return visitJ(j)
+  }
+  const plateIndex = (deck: number) => c.plates.decks.findIndex(p => p.deck === deck)
+  /** Whether a plate deck can trip now: not moving lanes, and its lip not barred. */
+  const live = (i: number) => {
+    const p = d.plates[i]
+    const moving = p.tripped !== null && game.engine.time - p.tripped.at < PLATE_RESET_S
+    return !moving
+  }
+  const topExit = (lane: number) => c.exits.findIndex(e => e.deck === 2 && e.lane === lane)
+  const directExit = (lane: number) => c.exits.findIndex(e => e.deck === 1 && e.lane === lane)
+  /** How near a plate deck's red is to tripping, 0 to 1. */
+  const redNear = (i: number) => d.plates[i].red / c.plates.redCoins
+  /**
+   * Skilled: the middle step's gold while it's live, unless its spill would
+   * land on a bottom-step red that's nearly full; then the bottom step's
+   * gold, by the most direct way, keeping clear of the middle step's red.
+   */
+  const skilledExit = () => {
+    const middle = plateIndex(1)
+    const bottom = plateIndex(0)
+    const mid = d.plateLanes(middle)
+    const low = d.plateLanes(bottom)
+    const risky = mid.gold === low.red && redNear(bottom) > 0.5
+    if (live(middle) && !risky) return topExit(mid.gold)
+    const direct = directExit(low.gold)
+    if (direct >= 0) return direct
+    if (low.gold !== mid.red) return topExit(low.gold)
+    // The bottom gold is under the middle red: go round by the neutral lane.
+    return topExit(3 - mid.gold - mid.red)
+  }
+  return () => {
+    const t = game.engine.time
+    if (t < nextAt || !d.ready) return
+    if (bot === 'random') {
+      for (const j of c.junctions) if (rand() < 0.5) tap(j.at.x, j.at.z)
+    } else if (bot === 'cue') {
+      if (!routed) routeTo(topExit(d.plateLanes(plateIndex(1)).gold))
+      routed = true
+    } else {
+      routeTo(skilledExit())
+    }
+    // Send: a tap well away from every junction.
+    tap(0, 0)
+    nextAt = t + 0.6 + rand() * 1.2
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -168,6 +268,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    switches: switchesBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
@@ -189,6 +290,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let drops = 0
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
+  const plates = { gold: 0, red: 0 }
 
   const deliveryBot = DELIVERY_BOTS[game.delivery.kind]?.(game, bot, rand) ?? null
 
@@ -257,7 +359,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
     }
     const t0 = performance.now()
-    game.step()
+    for (const e of game.step()) if (e.type === 'plate') plates[e.plate]++
     if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = drops
     stepMs.push(performance.now() - t0)
     if (game.engine.pucks.length && (game.engine.time * 60) % 30 < 1) {
@@ -284,6 +386,8 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       .filter(([id]) => id !== stage.objects.drop.id)
       .reduce((n, [, c]) => n + c, 0),
     lost: s.lost,
+    gold: plates.gold,
+    red: plates.red,
     hits: s.hits,
     shots: s.shots,
     bestStreak: s.bestStreak,
@@ -331,6 +435,7 @@ async function main() {
         ` · through table ${avg('throughTable')}` +
         (stage.lastPush ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` : '') +
         (board ? ` · stuck in board ${avg('inBoard')}` : '') +
+        (stage.delivery?.kind === 'switches' ? ` · gold ${avg('gold')} red ${avg('red')}` : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         (stage.rules.tempo

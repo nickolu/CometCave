@@ -7,6 +7,11 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  type SwitchesConfig,
+  SwitchesDelivery,
+  switchesPoints,
+} from '@/app/meteor-coins/lib/deliveries/switches'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +27,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'switches' } & SwitchesConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +48,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'switches':
+      return new SwitchesDelivery(host, config)
   }
 }
 
@@ -52,6 +62,8 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'arm':
     case 'cannon':
       return 0
+    case 'switches':
+      return config.junctions[0].at.y
   }
 }
 
@@ -65,6 +77,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'switches':
+      return switchesPoints(config)
   }
 }
 
@@ -75,6 +89,7 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
 export function deliveryHolds(config: DeliveryConfig): boolean {
   switch (config.kind) {
     case 'arm':
+    case 'switches':
       return false
     case 'cannon':
       return true
@@ -88,6 +103,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'switches':
+      return 'tubes'
   }
 }
 
@@ -103,6 +120,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'switches':
+      return 'Tap a switch to flip it (or arrow keys: up and down pick one, left and right set it). Tap anywhere else or press Space to send a coin down the lit tube.'
   }
 }
 

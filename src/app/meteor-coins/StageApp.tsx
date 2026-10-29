@@ -171,6 +171,15 @@ export default function StageApp({ slug }: { slug: string }) {
           setPopup({ id: performance.now(), text: 'Meteorite incoming!' })
           setAnnounce('Meteorite incoming. It lands where the countdown ring is.')
         }
+        if (e.type === 'plate') {
+          if (e.plate === 'gold') {
+            setPopup({ id: performance.now(), text: `${e.line} +${e.bonus} ${drops}` })
+            setAnnounce(`Gold plate on the ${e.deck}. ${e.bonus} bonus ${drops}.`)
+          } else {
+            setPopup({ id: performance.now(), text: e.line })
+            setAnnounce(`Red plate on the ${e.deck}. Its edge is blocked for ${e.seconds} seconds.`)
+          }
+        }
         if (e.type === 'hoop') {
           setPopup({ id: performance.now(), text: `Hoop! +${e.bonus} ${drops}` })
           setAnnounce(`Through the ${e.bonus} hoop. ${e.bonus} bonus ${drops}.`)

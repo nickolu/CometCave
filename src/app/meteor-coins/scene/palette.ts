@@ -57,4 +57,11 @@ export const PALETTE = {
   duck: '#ffd23f',
   duckBeak: '#ff8c42',
   bow: '#ff5fa2',
+  /** The Cascade Engine: glass tubes (the lit route warm), gold and red plates, the bar's stripes. */
+  tube: '#9fc4ff',
+  tubeLit: '#fff3c4',
+  plateGold: '#ffc93c',
+  plateRed: '#ff4d6a',
+  plateMark: '#2a1a08',
+  barStripe: '#fff3c4',
 } as const

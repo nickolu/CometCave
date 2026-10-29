@@ -101,6 +101,18 @@ export type GameEvent =
   | { type: 'phase'; index: number }
   /** The Last Push has started. */
   | { type: 'lastPush' }
+  /**
+   * A chain-reaction plate tripped (The Cascade Engine): gold pours `bonus`,
+   * red blocks `deck`'s lip for `seconds`. `line` is said in the stage's voice.
+   */
+  | {
+      type: 'plate'
+      plate: 'gold' | 'red'
+      deck: string
+      bonus: number
+      seconds: number
+      line: string
+    }
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
 
 /**

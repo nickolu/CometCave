@@ -485,31 +485,144 @@ const CASCADE: Layout = [
   cascadeDeck(2, 0),
 ]
 
+/**
+ * The Cascade Engine's track switches: a hopper over the back of the top
+ * deck feeds three junctions. The first sends coins left or right; the left
+ * one picks the top deck's left or middle lane, the right one its right lane
+ * or a long tube that runs over the top deck and drops straight onto the
+ * middle step. All three junctions sit at one height, the plane taps are
+ * read on.
+ *
+ * The top deck's spouts drop just in front of its pusher at full reach.
+ * Measured: a lane fed there spills ~90% of the middle step's landings
+ * into that lane (at the back wall ~75%), so the route decides the plate.
+ */
+const SWITCH_Y = 5.8
+const SPOUT_Y = 4.5
+const SPOUT_Z = CASCADE[2].backZ + 0.7
+const CASCADE_SWITCHES: DeliveryConfig = {
+  kind: 'switches',
+  hopper: { x: 0, y: SWITCH_Y + 1, z: SPOUT_Z },
+  first: { to: { junction: 0 } },
+  junctions: [
+    {
+      at: { x: 0, y: SWITCH_Y, z: SPOUT_Z },
+      left: { to: { junction: 1 } },
+      right: { to: { junction: 2 } },
+      start: 'left',
+    },
+    {
+      at: { x: -1.7, y: SWITCH_Y, z: SPOUT_Z },
+      left: { to: { exit: 0 } },
+      right: { to: { exit: 1 } },
+      start: 'right',
+    },
+    {
+      at: { x: 1.7, y: SWITCH_Y, z: SPOUT_Z },
+      left: {
+        via: [
+          { x: 1.3, y: 5.3, z: SPOUT_Z + 1.2 },
+          { x: 0.9, y: 4.3, z: CASCADE[1].frontZ - 2.4 },
+        ],
+        to: { exit: 3 },
+      },
+      right: { to: { exit: 2 } },
+      start: 'right',
+    },
+  ],
+  exits: [
+    { at: { x: -2.7, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 0, name: 'top step, left' },
+    { at: { x: -0.4, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 1, name: 'top step, middle' },
+    { at: { x: 2.7, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 2, name: 'top step, right' },
+    {
+      at: { x: 0.9, y: CASCADE[1].floorY + 2.2, z: CASCADE[1].frontZ - 1.7 },
+      deck: 1,
+      lane: 1,
+      name: 'middle step',
+    },
+  ],
+  speed: 7,
+  // Poured at the top's back, bonus coins mostly ended in the pile, not the
+  // chute (a gold was worth ~2 points); over the middle step's front they
+  // tumble down the last two steps and about three in four reach the chute.
+  // Low, so the hopper hangs in front of the middle step's plates, not over them.
+  bonusPour: { y: CASCADE[1].floorY + 1.3, z: CASCADE[1].frontZ - 0.7, halfWidth: 2.6 },
+  plates: {
+    // Gold and red, by lane (0 is the player's left), in the order they
+    // move to. Each deck starts with them set against each other: the lane
+    // that pays on the middle step spills onto red on the bottom one.
+    decks: [
+      {
+        deck: 0,
+        name: 'bottom step',
+        arrangements: [
+          [1, 0],
+          [2, 1],
+          [0, 2],
+          [1, 2],
+          [0, 1],
+          [2, 0],
+        ],
+      },
+      {
+        deck: 1,
+        name: 'middle step',
+        arrangements: [
+          [0, 2],
+          [2, 1],
+          [1, 0],
+          [2, 0],
+          [0, 1],
+          [1, 2],
+        ],
+      },
+    ],
+    // Measured: with no drain, every lane's plates filled from the pile's
+    // trickle, and a random switcher tripped as much gold as a careful one.
+    // Three coins with a 4s drain only trips under a routed lane's spill.
+    goldCoins: 3,
+    redCoins: 3,
+    leakS: 4,
+    bonus: 14,
+    // A bar across the whole lip only delays coins (no cost in the sim);
+    // across the chute alone, the pushers squeeze some round its ends into
+    // the gutters. Still small: red's real cost is the gold progress it
+    // wipes and the plates it moves.
+    barS: 8,
+    barHalfWidth: 3,
+    voice: { gold: 'The gate swings open!', red: 'Clunk! The lip is jammed.' },
+  },
+}
+
 const THE_CASCADE_ENGINE: StageDef = {
   number: 7,
   slug: 'the-cascade-engine',
   name: 'The Cascade Engine',
   pitch:
-    'Three stacked pushers, one per step, timed so each feeds the next. Time your drop at the top and watch it fall all the way down.',
+    'Three stacked pushers and a tangle of glass tubes. Route your coins onto the gold plates and the whole machine pays out.',
   playable: true,
   table: { chuteHalfWidth: 3, pusherPeriodS: PUSHER_PERIOD_S, layout: CASCADE },
   arm: { periodS: PUSHER_PERIOD_S, dropZ: CASCADE[2].backZ + 0.9 },
+  delivery: CASCADE_SWITCHES,
   ring: { enabled: false },
   objects: { drop: COIN },
-  cue: 'chevrons',
+  cue: null,
   pile: 'the-cascade-engine',
   // Seeds swing this a lot (8 and 11 shed half their coins); 7 settles
   // with ~150 across the decks and the lip loaded, so early drops pay.
   bake: { seed: 7, floor: [85, 70, 55], top: [0, 0, 14] },
   rules: {
     coins: 40,
-    // No ring: the pushers are the game. From the sim (10 games each): a
-    // random tapper makes one star ~80% of the time; dropping on the
-    // chevron cue makes two ~80% and three ~30%.
+    // No ring: the plates are the bonus. From the sim (10 games each): a
+    // random switcher averages 66 (one star 90%, two 40%, never three);
+    // routing once to the first gold and leaving it is no better, 59 (two
+    // stars 10%); re-routing every coin as the plates move averages 92
+    // (two stars 80%, three 60%), with twice the gold plates (5.1 to 2.4).
     bonusForStreak: () => 0,
-    goal: { type: 'score', stars: [25, 40, 55] },
+    goal: { type: 'score', stars: [40, 70, 95] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },
+  hint: 'Spill coins onto a gold plate (star) for bonus coins; a red one (cross) blocks that step for a while. Plates move each time one goes off.',
   voice: {
     start: 'Top step pushes, middle step catches, bottom step pays.',
     clear: 'All the way down! The engine hums along.',
