@@ -1,3 +1,4 @@
+import { type SpiderDelivery, spiderCueLit } from './deliveries/spider'
 import { POOL_SIZE, initPhysics } from './engine'
 import { DropGame, type GameEvent } from './game'
 import { CHOCOLATE, MOONSTONE } from './objects'
@@ -108,27 +109,36 @@ describe('DropGame', () => {
     game.dispose()
   }, 60_000)
 
-  it('moves the middle Cairn post with the pusher and counts a coin landed on it', () => {
+  it('slides the middle Cairn post on its own and counts a coin the spider lands on it', () => {
     const cairn = playableStage('the-cairn') as StageDef
     const game = new DropGame(cairn)
+    const spider = game.delivery as SpiderDelivery
     expect(game.state.towers).toEqual([0, 0, 0])
-    // Wait for a drop that lands square on the middle post, then drop it.
+    // The spider starts over the middle. Wait for a drop that lands square
+    // and soft on the middle post, then let go.
     let steps = 0
-    while (!(game.landing().post === 1 && game.landing().offset < 0.1) && steps < 60 * 60) {
+    const lit = () => {
+      const tip = spider.tipAt()
+      const landing = game.landing(0, tip)
+      return spiderCueLit(landing, tip) && landing.post === 1 && landing.offset < 0.1
+    }
+    while (!lit() && steps < 60 * 60) {
       game.step()
       steps++
     }
-    expect(game.tapDrop()).toBe(true)
-    const zAtDrop = game.engine.pusherZ
+    game.press()
+    expect(game.release()).toBe(true)
+    const zAtDrop = game.engine.moverPositions()[0].z
     for (let i = 0; i < 90; i++) game.step()
-    expect(game.engine.pusherZ).not.toBeCloseTo(zAtDrop, 1)
+    // It has moved on, carrying the coin, and the coin still counts.
+    expect(game.engine.moverPositions()[0].z).not.toBeCloseTo(zAtDrop, 1)
     expect(game.state.towers).toEqual([0, 1, 0])
     game.dispose()
   })
 
   it('slides whatever misses the posts off the ice', () => {
     const cairn = playableStage('the-cairn') as StageDef
-    const game = new DropGame(cairn, { pile: [{ p: [1.1, 0.09, 0.6], q: [0, 0, 0, 1] }] })
+    const game = new DropGame(cairn, { pile: [{ p: [1.1, 0.09, 2.2], q: [0, 0, 0, 1] }] })
     let fell = 0
     for (let i = 0; i < 60 * 5; i++) fell += game.step().filter(e => e.type === 'fall').length
     expect(fell).toBe(1)
