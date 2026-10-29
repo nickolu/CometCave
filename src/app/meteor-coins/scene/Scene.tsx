@@ -202,6 +202,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       <Cabinet
         layout={layout}
         chuteHalfWidth={game.engine.chuteHalfWidth}
+        roamingChute={game.engine.chuteSweep !== null}
         obstacles={obstacles.filter(o => !o.rides && !moves(o))}
         icy={(table.floorFriction ?? 1) < 0.2}
         floorTone={table.floorTone ?? 'floor'}
@@ -500,12 +501,15 @@ function ShadowCue({
 function Cabinet({
   layout,
   chuteHalfWidth,
+  roamingChute,
   obstacles,
   icy,
   floorTone,
 }: {
   layout: Layout
   chuteHalfWidth: number
+  /** The chute moves (Bramble's mouth): its rig draws the edge markings, so the cabinet doesn't. */
+  roamingChute: boolean
   obstacles: readonly Obstacle[]
   icy: boolean
   floorTone: Tone
@@ -518,7 +522,7 @@ function Cabinet({
   const wallTop = top.floorY + WALL_HEIGHT
   const wallBottom = top.floorY + PUSHER_HEIGHT + BACK_WALL_GAP
   const wallHeight = wallTop + 2 - wallBottom
-  const gutterWidth = FIELD_HALF_WIDTH - chuteHalfWidth
+  const gutterWidth = roamingChute ? 0 : FIELD_HALF_WIDTH - chuteHalfWidth
   // Decks facing each other drop into a slot between them, lit along both edges.
   const slot = slotOf(layout)
   const floors = slot
@@ -527,7 +531,7 @@ function Cabinet({
         [slot[1], frontZ],
       ]
     : [[backZ, frontZ]]
-  const edges = slot ? [slot[0], slot[1] + 0.12] : [frontZ]
+  const edges = roamingChute ? [] : slot ? [slot[0], slot[1] + 0.12] : [frontZ]
 
   return (
     <>

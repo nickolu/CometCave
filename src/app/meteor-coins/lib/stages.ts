@@ -56,6 +56,8 @@ export type StageDef = {
   playable: true
   table: {
     chuteHalfWidth: number
+    /** The chute roams along the front edge (see EngineOptions.chuteSweep). */
+    chuteSweep?: { ampX: number; periodS: number }
     pusherPeriodS: number
     obstacles?: readonly Obstacle[]
     floorFriction?: number
@@ -249,18 +251,55 @@ const MOONSTONE_PORCH: StageDef = {
   },
 }
 
+/**
+ * Bramble waits under the front edge with its mouth open across part of
+ * the lip; only chocolates that fall in count, and the rest land on the
+ * floor. The mouth roams slowly side to side, so you build the pile where
+ * it's heading.
+ *
+ * A third of the lip wide, reaching each side wall. Measured (3 games per
+ * bot): roaming every 24s, cue 18 fed against skilled 26; every 36s, 16
+ * against 28, so leading the mouth pays more; every 50s the mouth sat on
+ * one side for most of a tin and the cue bot fed only 10.
+ */
+const BRAMBLE_MOUTH_HALF_WIDTH = 1.3
+const BRAMBLE_MOUTH_SWEEP = { ampX: 2.6, periodS: 36 }
+
+/**
+ * Chocolates ride from the oven on the left, high over the back of the
+ * shelf, one passing any spot every 1.1s: about the arm's pace. The drop
+ * line is the arm's, hard against the back wall, so timing the pusher
+ * still lands a chocolate on bare shelf.
+ */
+const BAKERY_BELT: DeliveryConfig = {
+  kind: 'belt',
+  y: 4,
+  z: DROP_Z,
+  fromX: -4.8,
+  toX: 4.8,
+  spacing: 2.2,
+  speed: 2,
+  dropHalfWidth: 3.4,
+}
+
 const BRAMBLES_MIDNIGHT_SNACK: StageDef = {
   number: 3,
   slug: 'brambles-midnight-snack',
   name: "Bramble's Midnight Snack",
   pitch:
-    'A big, polite monster lives under the bakery counter. Push 30 chocolates into its mouth before your tin runs out.',
+    'A big, polite monster lives under the bakery counter. Push 20 chocolates into its mouth before your tin runs out.',
   playable: true,
-  table: { chuteHalfWidth: 3, pusherPeriodS: PUSHER_PERIOD_S },
+  table: {
+    chuteHalfWidth: BRAMBLE_MOUTH_HALF_WIDTH,
+    chuteSweep: BRAMBLE_MOUTH_SWEEP,
+    pusherPeriodS: PUSHER_PERIOD_S,
+  },
   arm: { periodS: ARM_PERIOD_S },
+  delivery: BAKERY_BELT,
   ring: { enabled: false },
   objects: { drop: CHOCOLATE },
-  cue: 'chevrons',
+  // The belt's rig draws its own marker under the chocolate a press drops.
+  cue: null,
   pile: 'brambles-midnight-snack',
   bake: {
     seed: 3,
@@ -272,17 +311,20 @@ const BRAMBLES_MIDNIGHT_SNACK: StageDef = {
   },
   rules: {
     coins: 45,
-    // No ring: the pusher is the game.
+    // No ring: the pusher and the mouth are the game.
     bonusForStreak: () => 0,
     // A cherry truffle feeds 3. Stars count chocolates left in the tin. From
-    // the sim (12 games each): a random tapper doesn't reach 30; following
-    // the drop cue reaches it ~92% of the time; also aiming for the truffles
-    // leaves a median of 19.
-    goal: { type: 'target', count: 30, stars: [0, 6, 16] },
+    // the sim (10 games each): a random presser feeds ~9 and never reaches
+    // 20; dropping on bare shelf wherever the chocolate is feeds ~18, one
+    // star 40% of the time; also leading the mouth (dropping where it will
+    // be ~6s on) reaches 20 every time with a median of 13 to spare: two
+    // stars 90%, three 30%. (How far ahead to lead barely mattered, 3–9s.)
+    goal: { type: 'target', count: 20, stars: [0, 6, 16] },
   },
   measure: { label: 'Fed', caption: 'chocolates left in the tin' },
+  hint: "Only chocolates that fall into Bramble's mouth count, and its mouth moves: drop where it's heading.",
   voice: {
-    start: "Bramble's hungry. Thirty chocolates, please.",
+    start: "Bramble's hungry. Twenty chocolates, please.",
     clear: 'Bramble pats its tummy. "Thank you kindly."',
     miss: 'Bramble is still a little peckish.',
   },

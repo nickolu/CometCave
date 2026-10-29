@@ -90,9 +90,10 @@ describe('DropGame', () => {
     game.dispose()
   })
 
-  it("drops the stage's own object from the arm", () => {
+  it("drops the stage's own object", () => {
     const game = new DropGame(playableStage('brambles-midnight-snack') as StageDef, { pile: [] })
-    game.tapDrop()
+    // Off the bakery belt, once a chocolate rides out over the shelf.
+    for (let i = 0; i < 600 && !game.press(); i++) game.step()
     const dropped = game.engine.pucks.find(p => p.active)
     expect(dropped?.spec).toBe(CHOCOLATE)
     game.dispose()

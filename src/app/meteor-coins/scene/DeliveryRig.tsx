@@ -1,7 +1,9 @@
 'use client'
 
+import { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
+import { BeltRig } from '@/app/meteor-coins/scene/BeltRig'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 
 /**
@@ -12,5 +14,6 @@ import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 export function DeliveryRig({ game }: { game: DropGame }) {
   const delivery = game.delivery
   if (delivery instanceof CannonDelivery) return <CannonRig game={game} cannon={delivery} />
+  if (delivery instanceof BeltDelivery) return <BeltRig game={game} belt={delivery} />
   return null
 }
