@@ -28,6 +28,13 @@ export const PALETTE = {
   /** The Cairn: an icy floor and stone posts. */
   ice: '#3b5f73',
   stone: '#9a9384',
+  /** The Cairn's spider: a plum body, big friendly eyes, a silver thread on a wooden rail. */
+  spider: '#5b3a78',
+  spiderBelly: '#8a63ad',
+  spiderEye: '#fbf7ff',
+  spiderPupil: '#1a1026',
+  thread: '#dfe6f2',
+  rail: '#6b5a44',
   /** The Bedtime Book: paper pages, a dark spine, ink words and white dreams. */
   page: '#e8dcc0',
   pageEdge: '#bfae8a',

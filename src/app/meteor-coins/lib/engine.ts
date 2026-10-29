@@ -91,6 +91,11 @@ export type Obstacle = {
   phases?: readonly number[]
   /** Sweeps side to side across the shelf, by `ampX`, every `periodS`. */
   sweep?: { ampX: number; periodS: number }
+  /**
+   * Slides forward and back, by `ampZ` either side of `z`, every `periodS`
+   * (The Cairn's middle post). Whatever rests on it rides along.
+   */
+  slide?: { ampZ: number; periodS: number }
 } &
   /** An upright round post. A post with a `tower` name is one a stack goal counts. */
   (| { type: 'post'; radius: number; tower?: string }
@@ -100,6 +105,7 @@ export type Obstacle = {
 
 /** Where an obstacle stands at a moment, given the pusher's stroke. */
 export function obstacleZ(o: Obstacle, timeS: number, pusherPeriodS: number): number {
+  if (o.slide) return o.z + o.slide.ampZ * Math.sin((2 * Math.PI * timeS) / o.slide.periodS)
   return o.rides ? o.z + pusherCenterZ(timeS, pusherPeriodS) - PUSHER_MID_Z : o.z
 }
 
@@ -148,7 +154,7 @@ const RISE_S = 0.8
 /** How long the Last Push takes to reach full reach, and to ease off again. */
 const PUSH_EASE_S = 0.6
 
-/** An obstacle with motion of its own: it rises and sinks with the phases, or sweeps. */
+/** An obstacle with motion of its own: it rises and sinks with the phases, sweeps or slides. */
 type Mover = { o: Obstacle; body: RAPIER.RigidBody; raised: number; up: boolean }
 
 /** Below this height an object is lying on the floor, for floorDrift. */
@@ -284,7 +290,8 @@ export class PusherEngine {
       const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
       world.createCollider(shapeOf(o).setTranslation(o.x, y, z), parent)
     }
-    const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+    const moves = (o: Obstacle) =>
+      o.phases !== undefined || o.sweep !== undefined || o.slide !== undefined
     for (const o of obstacles) if (!o.rides && !moves(o)) obstacle(o, fixed)
 
     // Scripted motion and infinite mass: nothing pushes back on a pusher.
@@ -577,7 +584,8 @@ export class PusherEngine {
       const x = sweep
         ? m.o.x + sweep.ampX * Math.sin((2 * Math.PI * this.time) / sweep.periodS)
         : m.o.x
-      m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z: m.o.z })
+      const z = obstacleZ(m.o, this.time, this.pusherPeriodS)
+      m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z })
     }
     if (this.floorDrift) this.drift()
     this.world.step()

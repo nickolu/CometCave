@@ -7,6 +7,11 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  SPIDER_RAIL_ABOVE,
+  type SpiderConfig,
+  SpiderDelivery,
+} from '@/app/meteor-coins/lib/deliveries/spider'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +27,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'spider' } & SpiderConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +48,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'spider':
+      return new SpiderDelivery(host, config)
   }
 }
 
@@ -52,6 +62,9 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'arm':
     case 'cannon':
       return 0
+    case 'spider':
+      // About where tower tops are, so pointing at a post puts the spider over it.
+      return SPIDER_AIM_Y
   }
 }
 
@@ -65,6 +78,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'spider':
+      return spiderPoints(config)
   }
 }
 
@@ -78,6 +93,8 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
       return false
     case 'cannon':
       return true
+    case 'spider':
+      return false
   }
 }
 
@@ -88,6 +105,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'spider':
+      return 'spider'
   }
 }
 
@@ -103,6 +122,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'spider':
+      return 'Touch or point where the spider should go, or use the arrow keys. Tap or press Space to drop the coin.'
   }
 }
 
@@ -116,5 +137,17 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
     ...c.hoops.map(h => ({ x: h.x, y: h.y + h.radius + 0.8, z: h.z })),
+  ]
+}
+
+const SPIDER_AIM_Y = 1.5
+
+/** Both ends of the spider's rail, and the bottom of its bob. */
+function spiderPoints(c: SpiderConfig): Vec[] {
+  const railY = c.highY + SPIDER_RAIL_ABOVE + 0.2
+  return [
+    { x: -c.halfWidth - 0.8, y: railY, z: c.z },
+    { x: c.halfWidth + 0.8, y: railY, z: c.z },
+    { x: 0, y: c.lowY - 0.3, z: c.z },
   ]
 }
