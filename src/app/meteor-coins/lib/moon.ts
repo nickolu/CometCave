@@ -4,10 +4,12 @@ import type { Vec } from '@/app/meteor-coins/lib/cannon'
  * Gravity Assist's moon: a small moon circling above the table that pulls on
  * everything in the air, so falling coins visibly bend toward it.
  *
- * It pulls across and up or down, never toward the front: the drop line hugs
- * the back wall because that's where the pusher clears the shelf, and a
- * coin pulled forward lands on top of the pile and rides it. (Measured: with
- * a full 3D pull, timed drops scored no better than random ones.)
+ * Under the arm it pulled across and up or down, never toward the front: the
+ * drop line hugs the back wall because that's where the pusher clears the
+ * shelf, and a coin pulled forward landed on top of the pile and rode it.
+ * (Measured: with a full 3D pull, timed drops scored no better than random
+ * ones.) A stage can set `pullZ` for a delivery that flies coins front to
+ * back, where how hard you launch makes up for the pull (see Gravity Assist).
  *
  * The pull is applied the same way every step — added to an airborne body's
  * velocity just before the physics steps — so lib/cannon's flightPath, given
@@ -26,6 +28,8 @@ export type MoonConfig = {
   softening: number
   /** Only things higher than this feel the pull. */
   minY: number
+  /** Whether it pulls front to back too, not only across and up or down. */
+  pullZ?: boolean
 }
 
 /** Where the moon is at arm time `t`. */
@@ -46,5 +50,5 @@ export function moonPull(p: Vec, moon: Vec, m: MoonConfig): Vec {
   const d = Math.hypot(dx, dy, moon.z - p.z)
   if (d === 0) return { x: 0, y: 0, z: 0 }
   const a = m.strength / (d * d + m.softening * m.softening) / d
-  return { x: dx * a, y: dy * a, z: 0 }
+  return { x: dx * a, y: dy * a, z: m.pullZ ? (moon.z - p.z) * a : 0 }
 }

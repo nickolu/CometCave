@@ -888,45 +888,66 @@ const GRAVITY_ASSIST: StageDef = {
   slug: 'gravity-assist',
   name: 'Gravity Assist',
   pitch:
-    'A small moon orbits above the table and bends every falling coin, visibly. Meteorites land on a fixed timetable.',
+    'A small moon orbits above the table. Shoot a glass ball past it and watch it swing round.',
   playable: true,
   table: {
     chuteHalfWidth: CHUTE_HALF_WIDTH,
     pusherPeriodS: PUSHER_PERIOD_S,
     obstacles: GRAVITY_POSTS,
   },
-  // Hung higher than usual, so coins fall long enough for the bend to show.
-  arm: { periodS: ARM_PERIOD_S, pivotY: 14.5 },
-  // In front of the drop line, out over the shelf: falling coins pass by it
-  // and bend toward its side (see lib/moon for why never forward).
-  moon: {
-    center: { x: 0, y: 5.5, z: DROP_Z + 2 },
-    radiusX: 2.6,
-    radiusZ: 0.4,
-    periodS: 7,
-    strength: 30,
-    softening: 0.6,
-    minY: 1.6,
+  arm: { periodS: ARM_PERIOD_S },
+  // A pinball plunger at the front right, angled up, back and a little in.
+  // With no moon a full pull lands just in front of the back wall and a
+  // light one on the front of the pile; the moon swings that line across
+  // the whole table.
+  delivery: {
+    kind: 'plunger',
+    at: { x: 3.4, y: 1.2, z: 3.8 },
+    elevation: (62 * Math.PI) / 180,
+    yaw: (-19 * Math.PI) / 180,
+    minSpeed: 9,
+    maxSpeed: 15,
+    chargeS: 1.2,
   },
-  // Worth a single coin: the pusher is the game. The moon moves where a
-  // coin crosses it, so the dotted line is how you line it up.
-  ring: { enabled: true },
+  // Over the middle of the table, under the top of the ball's flight, so
+  // every shot passes close by it. Twice the arm-era strength (30): within
+  // about 1.6 of it, it pulls harder than gravity. It pulls front to back as
+  // well (pullZ), unlike under the arm: there the forward pull dragged coins
+  // off the back strip and timing stopped mattering, but here the pull on
+  // the spring makes up the distance and the dotted line shows it. Measured
+  // (6 games each): with it, random 20 against 40 on the landing cue; across
+  // and up or down only, random 34 against 40, so skill barely paid.
+  // Strength 40 and 85 both narrowed the gap (to 17 and 11 points).
+  moon: {
+    center: { x: 0, y: 4.5, z: -1.5 },
+    radiusX: 3,
+    radiusZ: 1.2,
+    periodS: 7,
+    strength: 60,
+    softening: 0.7,
+    minY: 1.6,
+    pullZ: true,
+  },
+  ring: { enabled: false },
   objects: { drop: SILVER },
-  cue: 'chevrons',
+  cue: null,
   pile: 'gravity-assist',
   bake: { seed: 9, floor: 150, top: 14 },
   meteors: {
     object: METEORITE,
-    y: 6,
+    // Dropped from low down, so the moon (which pulls front to back now)
+    // only nudges them: from 6 up it dragged them 0.5–1.8 back from the lip.
+    y: 3.5,
     warnS: 3,
-    // Near the lip, inside the chute, so a few well-timed pushes bring each one home.
+    // Near the lip, inside the chute, so a few well-timed pushes bring each
+    // one home. Each lands about 0.3 behind where it starts.
     schedule: [
-      { afterDrop: 4, x: -1.2, z: 2.4 },
-      { afterDrop: 10, x: 1.1, z: 2.0 },
-      { afterDrop: 16, x: 0, z: 2.6 },
-      { afterDrop: 22, x: -0.7, z: 1.8 },
-      { afterDrop: 28, x: 1.5, z: 2.4 },
-      { afterDrop: 34, x: 0.4, z: 2.1 },
+      { afterDrop: 4, x: -1.2, z: 2.7 },
+      { afterDrop: 10, x: 1.1, z: 2.3 },
+      { afterDrop: 16, x: 0, z: 2.9 },
+      { afterDrop: 22, x: -0.7, z: 2.1 },
+      { afterDrop: 28, x: 1.5, z: 2.7 },
+      { afterDrop: 34, x: 0.4, z: 2.4 },
     ],
   },
   rules: {
@@ -936,13 +957,19 @@ const GRAVITY_ASSIST: StageDef = {
     // quarter of the time). Dropping on the beat, judged where the bent coin
     // lands, averages 50 (★★ 58%, ★★★ 25%); also aiming behind meteorites
     // and taking ring lineups off the dotted line averages 58 (★★★ 50%).
-    goal: { type: 'score', stars: [25, 45, 60] },
+    // From the sim (10 games each): pulling random amounts at random
+    // moments averages 24 (★ 20%). Letting go when the landing marker fills
+    // (down on the back strip, pusher forward) averages 54 (★★ 80%, ★★★
+    // 30%); also waiting for the path to end behind the meteorite nearest
+    // the lip averages 50 (★★ 100%, ★★★ 20%). That aim gains nothing
+    // measurable over the marker alone: the moon and the beat are the skill.
+    goal: { type: 'score', stars: [30, 42, 58] },
   },
   measure: { label: 'Score', caption: 'points into the chute' },
-  hint: 'The moon bends every falling coin; the dotted line shows where. A meteorite is worth 5.',
+  hint: 'The moon bends the ball; the dots show where it lands. Aim behind a meteorite (worth 5).',
   voice: {
-    start: 'Watch the moon. It pulls on everything that falls.',
-    clear: 'Gravity assist! Your coins borrowed a little speed from the moon.',
+    start: 'Pull back, wait for the moon, let go.',
+    clear: 'Gravity assist! The moon threw every one of them home.',
     miss: 'The moon will come round again.',
   },
 }

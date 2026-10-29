@@ -15,6 +15,11 @@ import {
   CraneDelivery,
 } from '@/app/meteor-coins/lib/deliveries/crane'
 import {
+  type PlungerConfig,
+  PlungerDelivery,
+  plungerVelocity,
+} from '@/app/meteor-coins/lib/deliveries/plunger'
+import {
   type SlideConfig,
   SlideDelivery,
   onSlide,
@@ -43,6 +48,7 @@ export type {
 export type DeliveryConfig =
   | { kind: 'arm' }
   | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'plunger' } & PlungerConfig)
   | ({ kind: 'crane' } & CraneConfig)
   | ({ kind: 'belt' } & BeltConfig)
   | ({ kind: 'spider' } & SpiderConfig)
@@ -64,6 +70,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'plunger':
+      return new PlungerDelivery(host, config)
     case 'crane':
       return new CraneDelivery(host, config)
     case 'belt':
@@ -83,6 +91,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
   switch (config.kind) {
     case 'arm':
     case 'cannon':
+    case 'plunger':
     case 'belt':
     case 'slide':
       return 0
@@ -105,6 +114,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'plunger':
+      return plungerPoints(config)
     case 'crane':
       return cranePoints(config)
     case 'belt':
@@ -127,6 +138,7 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
     case 'slide':
       return false
     case 'cannon':
+    case 'plunger':
       return true
     case 'crane':
     case 'spider':
@@ -141,6 +153,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'plunger':
+      return 'moon'
     case 'crane':
       return 'crane'
     case 'belt':
@@ -174,6 +188,10 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return 'Touch or point where the spider should go, or use the arrow keys. Tap or press Space to drop the coin.'
     case 'slide':
       return 'Tap or press Space to send a duck down the slide. It goes where the slide points.'
+    case 'plunger':
+      return tapTwice
+        ? 'Tap or press Space to pull the plunger back, and again to launch.'
+        : 'Hold to pull the plunger back (longer shoots harder), and let go to launch.'
   }
 }
 
@@ -245,5 +263,28 @@ function spiderPoints(c: SpiderConfig): Vec[] {
     { x: -c.halfWidth - 0.8, y: railY, z: c.z },
     { x: c.halfWidth + 0.8, y: railY, z: c.z },
     { x: 0, y: c.lowY - 0.3, z: c.z },
+  ]
+}
+
+/**
+ * The ball in the plunger's mouth, the knob pulled all the way back down
+ * the lane, and the top of a full pull's flight with no moon to bend it,
+ * across the table (the moon's orbit sits below that).
+ */
+function plungerPoints(c: PlungerConfig): Vec[] {
+  const v = plungerVelocity(1, c)
+  const speed = Math.hypot(v.x, v.y, v.z)
+  const back = (d: number) => ({
+    x: c.at.x - (v.x / speed) * d,
+    y: c.at.y - (v.y / speed) * d,
+    z: c.at.z - (v.z / speed) * d,
+  })
+  const full = flightPath(c.at, v, p => p.y < c.at.y)
+  const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
+  return [
+    { x: c.at.x + 0.7, y: c.at.y + 0.7, z: c.at.z },
+    back(2.6),
+    { x: -peak.x, y: peak.y + 0.4, z: peak.z },
+    { x: peak.x, y: peak.y + 0.4, z: peak.z },
   ]
 }
