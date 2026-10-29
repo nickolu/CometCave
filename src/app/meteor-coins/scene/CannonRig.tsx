@@ -4,7 +4,8 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
-import type { CannonConfig, Hoop } from '@/app/meteor-coins/lib/cannon'
+import type { Hoop } from '@/app/meteor-coins/lib/cannon'
+import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
@@ -21,7 +22,8 @@ const STRING_TOP = 6.5
  * fly, and the three numbered hoops. Reads the game every frame; owns no
  * state of its own.
  */
-export function CannonRig({ game, cannon }: { game: DropGame; cannon: CannonConfig }) {
+export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: CannonDelivery }) {
+  const cannon = delivery.config
   const barrel = useRef<THREE.Group>(null)
   const loaded = useRef<THREE.Mesh>(null)
   const gauge = useRef<THREE.Mesh>(null)
@@ -32,9 +34,9 @@ export function CannonRig({ game, cannon }: { game: DropGame; cannon: CannonConf
   )
 
   useFrame(() => {
-    barrel.current?.rotation.set(cannon.elevation, -game.cannonYaw, 0, 'YXZ')
+    barrel.current?.rotation.set(cannon.elevation, -delivery.yaw, 0, 'YXZ')
     if (loaded.current) loaded.current.visible = game.canDrop
-    const charge = game.charge
+    const charge = delivery.charge
     if (gauge.current) {
       gauge.current.visible = charge !== null
       // Scaled about its middle, so moved up by half as much to fill from the bottom.
@@ -44,7 +46,7 @@ export function CannonRig({ game, cannon }: { game: DropGame; cannon: CannonConf
     }
     const mesh = dots.current
     if (!mesh) return
-    const path = game.canDrop ? game.previewPath() : []
+    const path = game.canDrop ? delivery.previewPath() : []
     for (let i = 0; i < MAX_DOTS; i++) {
       const p = path[(i + 1) * DOT_EVERY]
       if (p) mesh.setMatrixAt(i, scratch.m.makeTranslation(p.x, p.y, p.z))

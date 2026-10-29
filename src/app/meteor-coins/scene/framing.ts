@@ -9,12 +9,7 @@ import {
   openDecks,
   slotOf,
 } from '@/app/meteor-coins/lib/cabinet'
-import {
-  type CannonConfig,
-  flightPath,
-  launchVelocity,
-  muzzleAt,
-} from '@/app/meteor-coins/lib/cannon'
+import { type DeliveryConfig, deliveryKeyPoints } from '@/app/meteor-coins/lib/deliveries'
 import {
   ARM_LENGTH,
   ARM_MAX_ANGLE,
@@ -46,8 +41,9 @@ const LANDSCAPE_ELEVATION = (40 * Math.PI) / 180
 export function keyPoints(
   layout: Layout = CLASSIC_LAYOUT,
   arm: ArmConfig = { periodS: ARM_PERIOD_S },
-  cannon?: CannonConfig
+  delivery: DeliveryConfig = { kind: 'arm' }
 ): THREE.Vector3[] {
+  const own = deliveryKeyPoints(delivery)
   const w = FIELD_HALF_WIDTH + 0.5
   const pivotY = arm.pivotY ?? ARM_PIVOT_Y
   const edgeTipY = pivotY - ARM_LENGTH * Math.cos(ARM_MAX_ANGLE)
@@ -68,28 +64,15 @@ export function keyPoints(
       new THREE.Vector3(-w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
       new THREE.Vector3(w, deck.floorY + PUSHER_HEIGHT, deck.backZ),
     ]),
-    // A cannon instead of an arm: the cannon, each hoop's tag, and the top
-    // of a full shot's arc.
-    ...(cannon ? cannonPoints(cannon) : []),
+    // Another delivery instead of the arm: whatever it says it needs.
+    ...(own ?? []).map(p => new THREE.Vector3(p.x, p.y, p.z)),
     // Arm tip with a coin's headroom, at both ends of the swing and the bottom of the arc.
-    ...(cannon ? [] : dropLines(arm)).flatMap(dropZ => [
+    ...(own ? [] : dropLines(arm)).flatMap(dropZ => [
       new THREE.Vector3(-tipX, edgeTipY + 0.6, dropZ),
       new THREE.Vector3(tipX, edgeTipY + 0.6, dropZ),
       new THREE.Vector3(0, centerTipY + 0.6, dropZ),
       new THREE.Vector3(0, RING_Y, dropZ),
     ]),
-  ]
-}
-
-function cannonPoints(c: CannonConfig): THREE.Vector3[] {
-  const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
-  const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
-  return [
-    new THREE.Vector3(c.pivot.x - 1.2, 0, c.pivot.z + 0.6),
-    new THREE.Vector3(c.pivot.x + 1.2, 0, c.pivot.z + 0.6),
-    new THREE.Vector3(c.pivot.x, c.pivot.y + 0.8, c.pivot.z),
-    new THREE.Vector3(peak.x, peak.y + 0.3, peak.z),
-    ...c.hoops.map(h => new THREE.Vector3(h.x, h.y + h.radius + 0.8, h.z)),
   ]
 }
 

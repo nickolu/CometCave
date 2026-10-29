@@ -22,6 +22,7 @@ import {
   muzzleAt,
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
+import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -83,9 +84,7 @@ function bentLineup(game: DropGame, stage: StageDef): boolean {
  * The middle of the band of charges that thread a hoop from aim `yaw`, or
  * null if none do.
  */
-function hoopPower(game: DropGame, yaw: number, hoop: Hoop): number | null {
-  const c = game.cannon
-  if (!c) return null
+function hoopPower(c: CannonDelivery['config'], yaw: number, hoop: Hoop): number | null {
   const passing: number[] = []
   for (let p = 0; p <= 1.0001; p += 0.01) {
     const path = flightPath(muzzleAt(yaw, c), launchVelocity(yaw, p, c), q => q.z < hoop.z - 0.1)
@@ -108,14 +107,14 @@ function hoopPower(game: DropGame, yaw: number, hoop: Hoop): number | null {
  * Both are 0–100ms late, like people.
  */
 function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
+  const cannon = game.delivery as CannonDelivery
+  const c = cannon.config
   let nextAt = 0.5 + rand() * 1.5
   let pressAt: number | null = null
   let releaseAt: number | null = null
   let holdingSince = 0
   return () => {
     const t = game.engine.time
-    const c = game.cannon
-    if (!c) return
     if (pressAt !== null && t >= pressAt) {
       game.press()
       pressAt = null
@@ -127,10 +126,10 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
       nextAt = t + 0.6 + rand() * 1.2
       return
     }
-    if (game.charge !== null && releaseAt === null && pressAt === null) {
+    if (cannon.charge !== null && releaseAt === null && pressAt === null) {
       // Holding a full charge: let go when the coin would land on bare shelf.
-      const full = game.charge >= 1
-      const flight = game.previewPath().length / 60
+      const full = cannon.charge >= 1
+      const flight = cannon.previewPath().length / 60
       if (
         (full && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
         t - holdingSince > 5
@@ -139,7 +138,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
       }
       return
     }
-    if (game.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
+    if (cannon.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
     if (bot === 'random') {
       pressAt = t
       releaseAt = t + rand() * 1.5
@@ -149,7 +148,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
       const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
       const best = [...c.hoops].sort((a, b) => b.bonus - a.bonus)
       for (const hoop of best) {
-        const p = hoopPower(game, yaw, hoop)
+        const p = hoopPower(c, yaw, hoop)
         if (p === null) continue
         pressAt = t + rand() * 0.1
         releaseAt = pressAt + p * c.chargeS + (rand() - 0.5) * 0.1
@@ -160,6 +159,16 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
     pressAt = t + rand() * 0.1
   }
 }
+
+/**
+ * Bots for every delivery but the arm, by kind. Each is made once per game
+ * and returns a function run before every step; it plays the delivery
+ * through game.input as random, cue and skilled players would.
+ */
+const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
+  {
+    cannon: cannonBot,
+  }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
   const game = new DropGame(stage)
@@ -181,13 +190,13 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
 
-  const cannon = stage.cannon ? cannonBot(game, bot, rand) : null
+  const deliveryBot = DELIVERY_BOTS[game.delivery.kind]?.(game, bot, rand) ?? null
 
   while (game.state.phase !== 'over' && game.engine.time < 600) {
     const t = game.engine.time
-    if (cannon) {
+    if (deliveryBot) {
       const before = game.state.coinsLeft
-      cannon()
+      deliveryBot()
       if (game.state.coinsLeft !== before) drops++
       if (game.state.coinsLeft === 0 && before === 1) scoreAtLastDrop = game.state.score
     } else if (pendingTapAt !== null && t >= pendingTapAt) {
@@ -197,7 +206,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       nextTapAt = t + 0.6 + rand() * 1.2
       waitingSince = nextTapAt
     }
-    if (!cannon && pendingTapAt === null && game.canDrop && t >= nextTapAt) {
+    if (!deliveryBot && pendingTapAt === null && game.canDrop && t >= nextTapAt) {
       let tap = bot === 'random'
       if (bot === 'cue') {
         // A tempo stage rewards every beat, so don't sit one out.

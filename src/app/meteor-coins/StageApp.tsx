@@ -2,10 +2,17 @@
 
 import { Canvas, useFrame } from '@react-three/fiber'
 import Link from 'next/link'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
 import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
+import {
+  deliveryAimY,
+  deliveryHolds,
+  deliveryHowTo,
+  deliveryName,
+  deliveryOf,
+} from '@/app/meteor-coins/lib/deliveries'
 import { SLOW_SPEED } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame, type GameEvent } from '@/app/meteor-coins/lib/game'
@@ -34,7 +41,12 @@ import {
 } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
-import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
+import {
+  CabinetCamera,
+  Scene,
+  type TableProjection,
+  TableProjector,
+} from '@/app/meteor-coins/scene/Scene'
 
 /**
  * One Meteor Coins stage in play.
@@ -127,7 +139,7 @@ export default function StageApp({ slug }: { slug: string }) {
   }, [game, slow])
 
   useEffect(() => {
-    game?.setCannonMode(tapTwice ? 'tap' : 'hold')
+    game?.delivery.setMode?.(tapTwice ? 'tap' : 'hold')
   }, [game, tapTwice])
 
   // The clock moves between game events, so a timed stage redraws it on its own.
@@ -234,10 +246,58 @@ export default function StageApp({ slug }: { slug: string }) {
   }, [outcome])
 
   const press = useCallback(() => {
-    game?.press()
+    game?.input({ type: 'press' })
   }, [game])
   const release = useCallback(() => {
-    game?.release()
+    game?.input({ type: 'release' })
+  }, [game])
+
+  const delivery = useMemo(() => deliveryOf(stage), [stage])
+  // Where the pointer is over the table, for deliveries that aim by it.
+  const project = useRef<TableProjection | null>(null)
+  const point = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (!game || !project.current) return
+      const box = e.currentTarget.getBoundingClientRect()
+      const ndcX = ((e.clientX - box.left) / box.width) * 2 - 1
+      const ndcY = -((e.clientY - box.top) / box.height) * 2 + 1
+      const at = project.current(ndcX, ndcY, deliveryAimY(delivery))
+      if (at) game.input({ type: 'point', x: at.x, z: at.z })
+    },
+    [game, delivery]
+  )
+  const pointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      point(e)
+      press()
+    },
+    [point, press]
+  )
+
+  // Arrow keys steer deliveries that move; the game hears the held direction.
+  useEffect(() => {
+    if (!game) return
+    const held = new Set<string>()
+    const axis = (minus: string, plus: string) =>
+      (held.has(plus) ? 1 : 0) - (held.has(minus) ? 1 : 0)
+    function onArrow(e: KeyboardEvent) {
+      if (!e.key.startsWith('Arrow')) return
+      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      e.preventDefault()
+      if (e.type === 'keydown') held.add(e.key)
+      else held.delete(e.key)
+      game?.input({
+        type: 'steer',
+        x: axis('ArrowLeft', 'ArrowRight'),
+        z: axis('ArrowUp', 'ArrowDown'),
+      })
+    }
+    window.addEventListener('keydown', onArrow)
+    window.addEventListener('keyup', onArrow)
+    return () => {
+      window.removeEventListener('keydown', onArrow)
+      window.removeEventListener('keyup', onArrow)
+    }
   }, [game])
 
   useEffect(() => {
@@ -270,7 +330,7 @@ export default function StageApp({ slug }: { slug: string }) {
   }
 
   const over = state?.phase === 'over'
-  const slowLabel = stage.cannon ? 'Slower cannon' : 'Slower arm'
+  const slowLabel = `Slower ${deliveryName(delivery)}`
   const measure = state ? hudMeasure(stage, state) : null
   const starsNow = state ? hudStars(stage, state) : null
   const towers = state ? towerLines(stage, state) : []
@@ -288,7 +348,8 @@ export default function StageApp({ slug }: { slug: string }) {
 
       <div
         className="absolute inset-0 touch-none"
-        onPointerDown={over ? undefined : press}
+        onPointerDown={over ? undefined : pointerDown}
+        onPointerMove={over ? undefined : point}
         onPointerUp={over ? undefined : release}
         onPointerCancel={over ? undefined : release}
       >
@@ -302,8 +363,9 @@ export default function StageApp({ slug }: { slug: string }) {
               insets={HUD_INSETS}
               layout={game.engine.layout}
               arm={stage.arm}
-              cannon={stage.cannon}
+              delivery={delivery}
             />
+            <TableProjector projectRef={project} />
             {debug && <FpsMeter fpsRef={fpsRef} />}
             <Scene game={game} onStep={onStep} />
           </Canvas>
@@ -375,7 +437,7 @@ export default function StageApp({ slug }: { slug: string }) {
         </button>
       )}
 
-      {state && !over && stage.cannon && (
+      {state && !over && deliveryHolds(delivery) && (
         <button
           type="button"
           aria-pressed={tapTwice}
@@ -420,11 +482,7 @@ export default function StageApp({ slug }: { slug: string }) {
                 Stage {stage.number} · {stage.name}
               </p>
               <p className="text-xs text-white/80 sm:text-sm">
-                {stage.cannon
-                  ? tapTwice
-                    ? 'Tap or press Space to aim, and again to fire. '
-                    : 'Press and hold to aim; how long you hold sets the distance. Let go to fire. '
-                  : 'Tap or press Space to drop. '}
+                {`${deliveryHowTo(delivery, tapTwice)} `}
                 {stage.ring.enabled &&
                   !stage.rules.tempo &&
                   `Hit the ring for bonus ${stage.objects.drop.plural}. `}
@@ -593,7 +651,11 @@ function ResultPanel({
             Redline reached
           </p>
         )}
-        {outcome.slowed && <p className="mt-1 text-xs text-white/70">Played with Slower arm.</p>}
+        {outcome.slowed && (
+          <p className="mt-1 text-xs text-white/70">
+            Played with Slower {deliveryName(deliveryOf(stage))}.
+          </p>
+        )}
         <p className="mt-2 text-sm italic text-white/90">
           {cleared(stage, state, outcome.stars) ? stage.voice.clear : stage.voice.miss}
         </p>
