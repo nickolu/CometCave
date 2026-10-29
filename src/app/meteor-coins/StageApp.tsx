@@ -52,8 +52,9 @@ import {
  * One Meteor Coins stage in play.
  *
  * Session shape: run-loop. Each stage has its own budget, table and stars;
- * "Next stage" (after a star) or "Try again" is the next action. The arm
- * swings on its own; a tap (or Space) drops a coin from its tip.
+ * "Next stage" (after a star) or "Try again" is the next action. Each stage
+ * has its own way of getting coins onto the table (lib/deliveries): a tap
+ * (or Space) drops, fires or lets go; the pointer and arrow keys aim.
  *
  * Takes over the viewport, so it carries its own cave exit (interaction model 2).
  */
@@ -62,7 +63,7 @@ import {
 const HUD_INSETS = { top: 72, bottom: 40, side: 8 }
 
 const SLOW_KEY = 'meteor-coins:slow'
-/** Fire the cannon with two taps instead of press, hold and let go. */
+/** Play held deliveries (the cannon, the plunger) with taps instead of press, hold and let go. */
 const TAP_TWICE_KEY = 'meteor-coins:tap-twice'
 
 function readFlag(key: string): boolean {
@@ -316,13 +317,21 @@ export default function StageApp({ slug }: { slug: string }) {
     }
   }, [press, release])
 
-  const toggleSlow = () => {
+  // A toggle clicked with the pointer gives focus back to the game, so Space
+  // drops again rather than flipping the toggle. (From the keyboard, focus
+  // stays where the player put it.)
+  const giveBackFocus = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.detail > 0) e.currentTarget.blur()
+  }
+  const toggleSlow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    giveBackFocus(e)
     setSlow(s => {
       writeFlag(SLOW_KEY, !s)
       return !s
     })
   }
-  const toggleTapTwice = () => {
+  const toggleTapTwice = (e: React.MouseEvent<HTMLButtonElement>) => {
+    giveBackFocus(e)
     setTapTwice(t => {
       writeFlag(TAP_TWICE_KEY, !t)
       return !t
@@ -441,8 +450,8 @@ export default function StageApp({ slug }: { slug: string }) {
         <button
           type="button"
           aria-pressed={tapTwice}
-          aria-label="Tap twice to fire"
-          title="Tap twice to fire"
+          aria-label="Tap instead of holding"
+          title="Tap instead of holding"
           onPointerDown={e => e.stopPropagation()}
           onPointerUp={e => e.stopPropagation()}
           onClick={toggleTapTwice}
@@ -455,7 +464,7 @@ export default function StageApp({ slug }: { slug: string }) {
           <span aria-hidden className="material-symbols-outlined text-[20px]">
             touch_app
           </span>
-          <span className="hidden sm:inline">Tap twice</span>
+          <span className="hidden sm:inline">Tap, don&apos;t hold</span>
         </button>
       )}
 
