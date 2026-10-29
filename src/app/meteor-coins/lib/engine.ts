@@ -122,6 +122,12 @@ export type EngineOptions = {
   pile?: PuckPose[]
   /** Front edge within this half-width scores; outside it is gutter. */
   chuteHalfWidth?: number
+  /**
+   * The scoring stretch of the front edge roams: its centre sweeps side to
+   * side by `ampX` every `periodS` (Bramble's mouth). Within chuteHalfWidth
+   * of the centre scores. Without it the chute stays in the middle.
+   */
+  chuteSweep?: { ampX: number; periodS: number }
   /** Seconds per full pusher stroke. */
   pusherPeriodS?: number
   obstacles?: readonly Obstacle[]
@@ -159,6 +165,7 @@ export class PusherEngine {
   readonly pucks: Puck[] = []
   readonly poolObject: ObjectSpec
   readonly chuteHalfWidth: number
+  readonly chuteSweep: { ampX: number; periodS: number } | null
   readonly pusherPeriodS: number
   readonly floorDrift: number
   /** Seconds of simulated time. Advances only in step(). */
@@ -183,6 +190,7 @@ export class PusherEngine {
     poolObject = COIN,
     pile = [],
     chuteHalfWidth = CHUTE_HALF_WIDTH,
+    chuteSweep,
     pusherPeriodS = PUSHER_PERIOD_S,
     obstacles = [],
     board,
@@ -194,6 +202,7 @@ export class PusherEngine {
     this.poolObject = poolObject
     this.floorDrift = floorDrift
     this.chuteHalfWidth = chuteHalfWidth
+    this.chuteSweep = chuteSweep ?? null
     this.pusherPeriodS = pusherPeriodS
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
     world.timestep = PHYSICS_STEP_S
@@ -420,6 +429,11 @@ export class PusherEngine {
     return body
   }
 
+  /** Where the middle of the scoring stretch of the front edge is at `timeS`. */
+  chuteX(timeS = this.time): number {
+    return this.chuteSweep ? sweeperX(this.chuteSweep, timeS) : 0
+  }
+
   get freeCount() {
     return this.free.length
   }
@@ -594,7 +608,7 @@ export class PusherEngine {
         spec: puck.spec,
         x: p.x,
         z: p.z,
-        result: classifyFall(p.x, this.chuteHalfWidth),
+        result: classifyFall(p.x - this.chuteX(), this.chuteHalfWidth),
       })
       this.park(i)
     }
