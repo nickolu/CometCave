@@ -1,6 +1,5 @@
 import { inCup } from '@/app/meteor-coins/lib/board'
 import {
-  DROP_Z,
   type Deck,
   GRAVITY,
   PHYSICS_STEP_S,
@@ -8,16 +7,15 @@ import {
   PUSHER_HEIGHT,
   deckUnder,
 } from '@/app/meteor-coins/lib/cabinet'
+import { type Vec, flightPath } from '@/app/meteor-coins/lib/cannon'
 import {
-  type CannonConfig,
-  type Vec,
-  cannonYaw,
-  chargeAfter,
-  flightPath,
-  launchVelocity,
-  muzzleAt,
-  throughHoop,
-} from '@/app/meteor-coins/lib/cannon'
+  type Delivery,
+  type DeliveryHost,
+  type DeliveryInput,
+  type Spawn,
+  createDelivery,
+  deliveryOf,
+} from '@/app/meteor-coins/lib/deliveries'
 import { RING_Y, armTip, dropLines, isHit } from '@/app/meteor-coins/lib/dropper'
 import {
   type EngineOptions,
@@ -39,7 +37,6 @@ import {
   pourBonus,
   resolveShot,
   setTowers,
-  shotLanded,
   tempoIdle,
   tick,
 } from '@/app/meteor-coins/lib/rules'
@@ -77,10 +74,8 @@ export type TowerPostDef = Extract<Obstacle, { type: 'post' }> & { tower: string
  */
 export type Landing = { x: number; y: number; z: number; post: number | null; offset: number }
 
-/** A fired coin is done once it's below the hoops and falling, or after this long. */
-const CANNON_SHOT_TIMEOUT_S = 3
-/** Where hoop bonuses pour: across the back of the shelf, from the backboard. */
-const BONUS_POUR = { y: 2.5, z: DROP_Z, halfWidth: 2.6 }
+/** Where cup bonuses pour under a pachinko board: stepping across the drop strip. */
+const BONUS_POUR_HALF_WIDTH = 2.6
 /** A coin on a pachinko board moving slower than this has come to rest, and gets nudged by this. */
 const STILL_SPEED = 0.05
 const NUDGE = 0.6
@@ -94,9 +89,6 @@ const METEOR_FALL_S = 2
 
 /** A meteorite announced on the table: where it'll land, and seconds until it drops. */
 export type MeteorWarning = { x: number; z: number; secondsLeft: number }
-
-/** A fired coin flies flat, so half its thickness is what has to clear a hoop's rim above and below. */
-const FLAT_COIN_HALF_HEIGHT = PUCK_THICKNESS / 2
 
 export type GameEvent =
   | { type: 'shot'; hit: boolean; bonus: number; streak: number }
@@ -112,11 +104,11 @@ export type GameEvent =
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
 
 /**
- * One stage in play: the engine, the swinging arm and the rules, stepped
+ * One stage in play: the engine, the delivery and the rules, stepped
  * together and configured by the stage. Runs identically on screen and
  * headless; the renderer only reads from it.
  */
-export class DropGame {
+export class DropGame implements DeliveryHost {
   readonly stage: StageDef
   readonly engine: PusherEngine
   state: GameState
@@ -132,14 +124,8 @@ export class DropGame {
   private clockFrom: number | null = null
   /** Whether the slower arm was on at any point of a timed run. */
   slowed = false
-  /** Coins fired from the cannon still in the air, and where each was last step. */
-  private fired: { index: number; firedAt: number; last: Vec; hoops: Set<number> }[] = []
-  /** How the cannon is fired: hold and let go, or tap twice. */
-  cannonMode: 'hold' | 'tap' = 'hold'
-  /** While charging: the aim locked by the press, and when it was pressed. */
-  private charging: { yaw: number; from: number } | null = null
-  /** The last shot's charge: the arc shown while aiming. A first shot previews full. */
-  private lastPower = 1
+  /** How the player's coins get onto the table (lib/deliveries). */
+  readonly delivery: Delivery
   private showerCooldown = 0
   /** Coins dropped so far: meteorites and phases are timed by it. */
   private drops = 0
@@ -182,6 +168,7 @@ export class DropGame {
       board: stage.table.board,
       ...options,
     })
+    this.delivery = createDelivery(this, deliveryOf(stage), () => this.tapDrop())
     const shower = stage.meteors
     if (shower) {
       this.meteors = shower.schedule.map(m => ({
@@ -371,67 +358,46 @@ export class DropGame {
     return limit === undefined ? null : Math.max(0, limit - this.clockS)
   }
 
-  get cannon(): CannonConfig | undefined {
-    return this.stage.cannon
+  /** The player's input (see lib/deliveries): press, release, pointer and arrow keys. */
+  input(e: DeliveryInput): boolean {
+    return this.delivery.input(e)
   }
 
-  /** Where the cannon points: locked while charging, swinging otherwise. */
-  get cannonYaw(): number {
-    const c = this.cannon
-    if (!c) return 0
-    return this.charging ? this.charging.yaw : cannonYaw(this.dropperTime, c)
+  /** Pointer down or Space down. */
+  press(): boolean {
+    return this.input({ type: 'press' })
   }
 
-  /** The charge so far, 0 to 1, or null when not charging. */
-  get charge(): number | null {
-    const c = this.cannon
-    if (!c || !this.charging) return null
-    return chargeAfter(this.dropperTime - this.charging.from, c)
+  /** Pointer up or Space up. */
+  release(): boolean {
+    return this.input({ type: 'release' })
   }
 
-  /** The arc a shot would fly: at the current charge, or the last shot's while aiming. */
-  previewPath(): Vec[] {
-    const c = this.cannon
-    if (!c) return []
-    const yaw = this.cannonYaw
-    const v = launchVelocity(yaw, this.charge ?? this.lastPower, c)
-    return flightPath(muzzleAt(yaw, c), v, p => p.y < 0.7 || p.z < DROP_Z - 0.4)
+  emit(e: GameEvent) {
+    this.pending.push(e)
   }
 
   /**
-   * Press (pointer down, Space down). Drops a coin from the arm; on a cannon
-   * stage, locks the aim and starts the charge, or in tap mode fires a
-   * charge already started.
+   * Puts the player's next coin on the table and counts it as a drop (see
+   * DeliveryHost). `onBeat` is judged by the caller, before the coin exists.
    */
-  press(): boolean {
-    if (!this.cannon) return this.tapDrop()
-    if (!this.canDrop) return false
-    if (!this.charging) {
-      this.charging = { yaw: this.cannonYaw, from: this.dropperTime }
-      return true
+  launch(spawn: Spawn, { onBeat = false }: { onBeat?: boolean } = {}): number | null {
+    if (!this.canDrop) return null
+    const { x, y, z, velocity, upright } = spawn
+    const index = this.engine.spawn(x, y, z, 'player', 0, velocity, upright)
+    if (index === null) return null
+    this.clockFrom ??= this.dropperTime
+    this.drops++
+    this.advancePhase()
+    for (const m of this.meteors) {
+      if (m.afterDrop === this.drops) m.at = this.dropperTime + (this.stage.meteors?.warnS ?? 0)
     }
-    return this.cannonMode === 'tap' ? this.fire() : false
-  }
-
-  /** Release (pointer up, Space up): fires, when holding is how the cannon fires. */
-  release(): boolean {
-    return this.cannonMode === 'hold' && this.charging !== null && this.fire()
-  }
-
-  private fire(): boolean {
-    const c = this.cannon
-    if (!c || !this.charging || !this.canDrop) return false
-    const power = this.charge ?? 0
-    const { yaw } = this.charging
-    const start = muzzleAt(yaw, c)
-    const v = launchVelocity(yaw, power, c)
-    const index = this.engine.spawn(start.x, start.y, start.z, 'player', 0, v)
-    if (index === null) return false
-    this.charging = null
-    this.lastPower = power
     this.state = drop(this.state)
-    this.fired.push({ index, firedAt: this.engine.time, last: start, hoops: new Set() })
-    return true
+    this.state = beatDrop(this.state, onBeat, this.dropperTime, this.stage.rules)
+    if (this.ringOn) {
+      this.inFlight.push({ index, droppedAt: this.engine.time, tempo: this.state.tempo })
+    }
+    return index
   }
 
   /** The player's tap. Returns false if there was nothing to drop. */
@@ -443,20 +409,8 @@ export class DropGame {
     if (post !== null) tip.y = Math.max(tip.y, this.towerTop(post) + SPAWN_CLEARANCE)
     // Judged before the coin exists, as the cue showed it.
     const onBeat = this.dropLandsClear
-    const index = this.engine.spawn(tip.x, tip.y, tip.z, 'player', 0, undefined, this.upright)
-    if (index === null) return false
-    this.clockFrom ??= this.dropperTime
-    this.drops++
-    this.advancePhase()
-    for (const m of this.meteors) {
-      if (m.afterDrop === this.drops) m.at = this.dropperTime + (this.stage.meteors?.warnS ?? 0)
-    }
-    this.state = drop(this.state)
-    this.state = beatDrop(this.state, onBeat, this.dropperTime, this.stage.rules)
+    if (this.launch({ ...tip, upright: this.upright }, { onBeat }) === null) return false
     this.line = (this.line + 1) % dropLines(this.stage.arm).length
-    if (this.ringOn) {
-      this.inFlight.push({ index, droppedAt: this.engine.time, tempo: this.state.tempo })
-    }
     return true
   }
 
@@ -465,6 +419,7 @@ export class DropGame {
     this.pending = []
     this.dropperTime += PHYSICS_STEP_S * this.speed
     this.dropMeteors()
+    this.delivery.beforeStep?.(events)
     this.pullTowardMoon()
     this.pullHome()
     for (const m of this.meteors) {
@@ -504,11 +459,11 @@ export class DropGame {
       return false
     })
 
-    this.trackFired(events)
+    this.delivery.step(events)
     this.catchInCups(events)
 
     if (this.state.showerLeft > 0 && --this.showerCooldown <= 0) {
-      const tip = this.cannon || this.upright ? this.bonusPour() : this.armTip()
+      const tip = this.delivery.bonusAt?.() ?? (this.upright ? this.bonusPour() : this.armTip())
       // A full pool waits rather than dropping the bonus; falls free slots up.
       if (this.engine.spawn(tip.x, tip.y, tip.z, 'bonus', this.engine.time * 3) !== null) {
         this.state = pourBonus(this.state)
@@ -530,8 +485,7 @@ export class DropGame {
     ).length
     const flying =
       this.inFlight.length +
-      this.fired.length +
-      (this.charging ? 1 : 0) +
+      this.delivery.busy +
       meteorsDue +
       (this.engine.pushing ? 1 : 0) +
       (this.boardBusy ? 1 : 0)
@@ -625,46 +579,19 @@ export class DropGame {
     }
   }
 
-  /** Checks fired coins against the hoops, and settles the ones that have come down. */
-  private trackFired(events: GameEvent[]) {
-    const hoops = this.cannon?.hoops ?? []
-    const lowest = Math.min(...hoops.map(h => h.y - h.radius))
-    this.fired = this.fired.filter(shot => {
-      const puck = this.engine.pucks[shot.index]
-      if (!puck.active) {
-        this.state = shotLanded(this.state)
-        return false
-      }
-      const t = puck.body.translation()
-      const now = { x: t.x, y: t.y, z: t.z }
-      hoops.forEach((hoop, i) => {
-        if (shot.hoops.has(i)) return
-        if (!throughHoop(hoop, shot.last, now, puck.spec.reach, FLAT_COIN_HALF_HEIGHT)) return
-        shot.hoops.add(i)
-        this.state = hoopHit(this.state, hoop.bonus)
-        events.push({ type: 'hoop', bonus: hoop.bonus })
-      })
-      shot.last = now
-      const down = now.y < lowest && puck.body.linvel().y <= 0
-      if (down || this.engine.time - shot.firedAt > CANNON_SHOT_TIMEOUT_S) {
-        this.state = shotLanded(this.state)
-        return false
-      }
-      return true
-    })
-  }
-
   private pours = 0
 
-  /** Where the next hoop bonus coin pours from: stepping across the back of the shelf. */
+  /**
+   * Where the next cup bonus coin pours from under a pachinko board: straight
+   * onto the drop strip below it, skipping the pins, stepping across. (Poured
+   * in front of the glass, they landed mid-pile and barely pushed: 20 cup
+   * catches were worth 5 points.)
+   */
   private bonusPour(): Vec {
-    const x = BONUS_POUR.halfWidth * Math.sin(this.pours++ * 2.4)
-    // Under a pachinko board, straight onto the drop strip below it, skipping
-    // the pins. (Poured in front of the glass, they landed mid-pile and
-    // barely pushed: 20 cup catches were worth 5 points.)
+    const x = BONUS_POUR_HALF_WIDTH * Math.sin(this.pours++ * 2.4)
     const board = this.stage.table.board
     if (board) return { x, y: board.bottomY - SKIRT / 2, z: board.z }
-    return { x, y: BONUS_POUR.y, z: BONUS_POUR.z }
+    return this.armTip()
   }
 
   private towerClock = 0
@@ -678,10 +605,6 @@ export class DropGame {
       coins.push({ x: p.x, y: p.y, z: p.z, vy: puck.body.linvel().y })
     }
     return this.towerPosts.map(post => measureTower(this.postAt(post, this.engine.time), coins))
-  }
-
-  setCannonMode(mode: 'hold' | 'tap') {
-    this.cannonMode = mode
   }
 
   /** 1 is normal; lower slows the arm and ring without slowing gravity. */
