@@ -135,14 +135,11 @@ describe('DropGame', () => {
     game.dispose()
   })
 
-  it("takes turns between The Bedtime Book's pages, and scores what falls into the spine", () => {
+  it("scores what falls into The Bedtime Book's spine", () => {
     const book = playableStage('the-bedtime-book') as StageDef
     const game = new DropGame(book, { pile: [] })
-    const back = game.armTip().z
-    expect(game.dropDeck.pusher.reversed).toBeFalsy()
-    expect(game.tapDrop()).toBe(true)
-    expect(game.dropDeck.pusher.reversed).toBe(true)
-    expect(game.armTip().z).toBeCloseTo(-back, 6)
+    // Words come from the owls (lib/deliveries/owls.test.ts).
+    expect(game.delivery.kind).toBe('owls')
     // A word dropped straight into the spine falls through and scores.
     game.engine.spawn(0, 1, 0, 'player')
     for (let i = 0; i < 60; i++) game.step()

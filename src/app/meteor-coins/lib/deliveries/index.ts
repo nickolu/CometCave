@@ -1,3 +1,4 @@
+import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   type CannonConfig,
   type Vec,
@@ -7,6 +8,7 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import { type OwlsConfig, OwlsDelivery } from '@/app/meteor-coins/lib/deliveries/owls'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +24,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'owls' } & OwlsConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +45,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'owls':
+      return new OwlsDelivery(host, config)
   }
 }
 
@@ -52,6 +59,8 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'arm':
     case 'cannon':
       return 0
+    case 'owls':
+      return config.aimY
   }
 }
 
@@ -65,6 +74,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'owls':
+      return owlsPoints(config)
   }
 }
 
@@ -78,6 +89,8 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
       return false
     case 'cannon':
       return true
+    case 'owls':
+      return false
   }
 }
 
@@ -88,6 +101,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'owls':
+      return 'owls'
   }
 }
 
@@ -103,6 +118,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'owls':
+      return 'Point or use the arrow keys to aim. Tap or press Space to shoot a pea.'
   }
 }
 
@@ -116,5 +133,20 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
     ...c.hoops.map(h => ({ x: h.x, y: h.y + h.radius + 0.8, z: h.z })),
+  ]
+}
+
+/** The pea-shooter, and the top corners of the owls' sky over both pages. */
+function owlsPoints(c: OwlsConfig): Vec[] {
+  const z = c.pages.flat()
+  const top = c.height[1] + 0.6
+  return [
+    { x: c.shooter.x - 0.8, y: 0, z: c.shooter.z + 0.4 },
+    { x: c.shooter.x + 0.8, y: 0, z: c.shooter.z + 0.4 },
+    { x: c.shooter.x, y: c.shooter.y + 0.5, z: c.shooter.z },
+    ...[Math.min(...z), Math.max(...z)].flatMap(zz => [
+      { x: -FIELD_HALF_WIDTH, y: top, z: zz },
+      { x: FIELD_HALF_WIDTH, y: top, z: zz },
+    ]),
   ]
 }
