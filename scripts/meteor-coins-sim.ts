@@ -23,6 +23,7 @@ import {
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import type { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -161,6 +162,51 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * The plunger bots, all reading the live dotted path as a player would.
+ * Random presses at random moments and lets go after a random time. Cue
+ * holds until the landing marker fills (the ball would come down on the
+ * strip by the back wall while the pusher is forward) inside the chute's
+ * width. Skilled waits for the same, and also for the path to end right
+ * behind the special object nearest the lip. Both judge a release 50ms
+ * ahead and let go 0–100ms late, like people, and give up waiting after 6s.
+ */
+function plungerBot(game: DropGame, bot: Bot, rand: () => number) {
+  const plunger = game.delivery as PlungerDelivery
+  const { chargeS } = plunger.config
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let pressedAt = 0
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.4 + rand() * 0.8
+      return
+    }
+    if (plunger.charge !== null) {
+      const ahead = 0.05
+      const power = Math.min(1, plunger.charge + (ahead * game.speed) / chargeS)
+      const land = plunger.landing(power, ahead)
+      const waited = t - pressedAt
+      // Skilled holds out for the special for a few seconds, then settles for the beat.
+      const target = bot === 'skilled' && waited < 4 ? frontmostSpecial(game) : null
+      const good =
+        plunger.landsClear(power, ahead) &&
+        Math.abs(land.x) < game.stage.table.chuteHalfWidth - 0.4 &&
+        (target === null || Math.abs(land.x - target) < 0.45)
+      if (good || waited > 6) releaseAt = t + rand() * 0.1
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    game.press()
+    pressedAt = t
+    if (bot === 'random') releaseAt = t + rand() * 1.6
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -168,6 +214,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    plunger: plungerBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
