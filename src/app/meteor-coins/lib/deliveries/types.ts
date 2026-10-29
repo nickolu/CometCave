@@ -39,6 +39,11 @@ export interface Delivery {
   readonly busy: number
   /** Where bonus coins pour from, if not the arm's tip. */
   bonusAt?(): Vec
+  /**
+   * For a delivery that's held (deliveryHolds): 'tap' is the "Tap twice"
+   * setting, where a second tap stands in for letting go.
+   */
+  setMode?(mode: 'hold' | 'tap'): void
 }
 
 /**

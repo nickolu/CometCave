@@ -68,6 +68,44 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
   }
 }
 
+/**
+ * Whether the delivery is played by pressing and holding, so the "Tap
+ * twice" setting applies (a tap to start and a tap to finish instead).
+ */
+export function deliveryHolds(config: DeliveryConfig): boolean {
+  switch (config.kind) {
+    case 'arm':
+      return false
+    case 'cannon':
+      return true
+  }
+}
+
+/** What the slow-mode toggle slows, in plain words: "Slower arm". */
+export function deliveryName(config: DeliveryConfig): string {
+  switch (config.kind) {
+    case 'arm':
+      return 'arm'
+    case 'cannon':
+      return 'cannon'
+  }
+}
+
+/**
+ * How to play the delivery, in plain words, shown before the first coin.
+ * `tapTwice` is the accessibility setting for deliveries that are held.
+ */
+export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string {
+  switch (config.kind) {
+    case 'arm':
+      return 'Tap or press Space to drop.'
+    case 'cannon':
+      return tapTwice
+        ? 'Tap or press Space to aim, and again to fire.'
+        : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+  }
+}
+
 /** The cannon, each hoop's tag, and the top of a full shot's arc. */
 function cannonPoints(c: CannonConfig): Vec[] {
   const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
