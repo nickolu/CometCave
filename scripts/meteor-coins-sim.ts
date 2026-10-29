@@ -16,6 +16,7 @@
 import { FIELD_FRONT_Z, PHYSICS_STEP_S, deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
 import {
   type Hoop,
+  type Vec,
   cannonYaw,
   dropsThroughHoop,
   flightPath,
@@ -26,6 +27,15 @@ import {
 import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
+import {
+  OVER_BOOK_X,
+  type Owl,
+  type OwlsDelivery,
+  landsWell,
+  peaAt,
+  peaHits,
+  peaShot,
+} from '@/app/meteor-coins/lib/deliveries/owls'
 import type { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
 import { type SlideDelivery, rideTime, slideFlight } from '@/app/meteor-coins/lib/deliveries/slide'
 import { type SpiderDelivery, spiderCueLit } from '@/app/meteor-coins/lib/deliveries/spider'
@@ -547,6 +557,91 @@ function slideBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * An aim that hits `owl` with a pea fired `delay` seconds from now, if
+ * there is one: leads it by the pea's flight, then checks the shot step by
+ * step against where the owl will be, nudging the aim nearer or further
+ * until one connects.
+ */
+function leadAim(owls: OwlsDelivery, owl: Owl, delay: number): { aim: Vec; reach: number } | null {
+  const c = owls.config
+  let reach = 1
+  for (let i = 0; i < 4; i++) {
+    const p = owls.owlAhead(owl, delay + reach)
+    reach = peaShot(c.shooter, { ...p, y: c.aimY }).reach
+  }
+  const ahead = owls.owlAhead(owl, delay + reach)
+  for (const dz of [0, -0.3, 0.3, -0.6, 0.6, -0.9, 0.9]) {
+    const aim = { x: ahead.x, y: c.aimY, z: ahead.z + dz }
+    const shot = peaShot(c.shooter, aim)
+    let last = c.shooter
+    for (let t = PHYSICS_STEP_S; t < shot.reach + 0.45; t += PHYSICS_STEP_S) {
+      const at = peaAt(c.shooter, shot.velocity, t)
+      const o = owls.owlAhead(owl, delay + t)
+      if (Math.abs(o.x) <= OVER_BOOK_X && peaHits(last, at, o)) return { aim, reach: t }
+      last = at
+    }
+  }
+  return null
+}
+
+/**
+ * The pea-shooter bots. Random fires at random spots over the pages at
+ * random moments. Cue leads the nearest owl carrying a word as soon as it
+ * can: good aim, no choosing. Skilled leads too, but picks its owl: one
+ * whose word would land on bare page in front of a pulled-back pusher
+ * (landsWell, what the aim mark shows), nearest first, holding out up to
+ * 10s for one. Both aim ±0.25 off and fire 0–100ms late, like people.
+ */
+function owlsBot(game: DropGame, bot: Bot, rand: () => number) {
+  const owls = game.delivery as OwlsDelivery
+  const c = owls.config
+  let nextAt = 0.5 + rand()
+  let waitingSince = 0
+  let pending: { at: number; aim: Vec } | null = null
+  const fire = (aim: Vec, t: number) => {
+    pending = { at: t + (bot === 'random' ? 0 : rand() * 0.1), aim }
+  }
+  return () => {
+    const t = game.engine.time
+    if (pending && t >= pending.at) {
+      const { aim } = pending
+      game.input({ type: 'point', x: aim.x, z: aim.z })
+      if (game.press()) waitingSince = t
+      game.release()
+      pending = null
+      nextAt = t + (bot === 'random' ? 0.3 + rand() * 1.2 : 0.4)
+      return
+    }
+    if (pending || !owls.ready || t < nextAt) return
+    if (bot === 'random') {
+      const page = c.pages[Math.floor(rand() * c.pages.length)]
+      const z = page[0] + rand() * (page[1] - page[0])
+      fire({ x: (rand() * 2 - 1) * OVER_BOOK_X, y: c.aimY, z }, t)
+      return
+    }
+    let shots = owls.owls
+      .filter(o => o.backAt === null && o.carrying)
+      .flatMap(o => {
+        const lead = leadAim(owls, o, 0.05)
+        return lead ? [{ o, ...lead }] : []
+      })
+    if (bot === 'skilled') {
+      const { layout, pusherPeriodS } = game.engine
+      const good = shots.filter(({ o, reach }) => {
+        const land = owls.landing(o, 0.05 + reach)
+        return landsWell(layout, land.z, t + land.afterS, pusherPeriodS)
+      })
+      if (good.length || t - waitingSince > 10) shots = good.length ? good : shots
+      else return
+    }
+    if (!shots.length) return
+    const { aim } = shots.reduce((a, b) => (b.reach < a.reach ? b : a))
+    const jitter = () => (rand() - 0.5) * 0.5
+    fire({ x: aim.x + jitter(), y: aim.y, z: aim.z + jitter() }, t)
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -554,6 +649,7 @@ function slideBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    owls: owlsBot,
     plunger: plungerBot,
     crane: craneBot,
     belt: beltBot,

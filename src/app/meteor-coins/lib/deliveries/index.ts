@@ -1,3 +1,4 @@
+import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   type CannonConfig,
   HOOP_BOARD_TOP,
@@ -14,6 +15,7 @@ import {
   type CraneConfig,
   CraneDelivery,
 } from '@/app/meteor-coins/lib/deliveries/crane'
+import { type OwlsConfig, OwlsDelivery } from '@/app/meteor-coins/lib/deliveries/owls'
 import {
   type PlungerConfig,
   PlungerDelivery,
@@ -48,6 +50,7 @@ export type {
 export type DeliveryConfig =
   | { kind: 'arm' }
   | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'owls' } & OwlsConfig)
   | ({ kind: 'plunger' } & PlungerConfig)
   | ({ kind: 'crane' } & CraneConfig)
   | ({ kind: 'belt' } & BeltConfig)
@@ -70,6 +73,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'owls':
+      return new OwlsDelivery(host, config)
     case 'plunger':
       return new PlungerDelivery(host, config)
     case 'crane':
@@ -95,6 +100,8 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'belt':
     case 'slide':
       return 0
+    case 'owls':
+      return config.aimY
     // The pointer is read over the top of the pile, where the coin will land.
     case 'crane':
       return CRANE_AIM_Y
@@ -114,6 +121,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'owls':
+      return owlsPoints(config)
     case 'plunger':
       return plungerPoints(config)
     case 'crane':
@@ -140,6 +149,8 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
     case 'cannon':
     case 'plunger':
       return true
+    case 'owls':
+      return false
     case 'crane':
     case 'spider':
       return false
@@ -153,6 +164,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'owls':
+      return 'owls'
     case 'plunger':
       return 'moon'
     case 'crane':
@@ -192,6 +205,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to pull the plunger back, and again to launch.'
         : 'Hold to pull the plunger back (longer shoots harder), and let go to launch.'
+    case 'owls':
+      return 'Point or use the arrow keys to aim. Tap or press Space to shoot a pea.'
   }
 }
 
@@ -286,5 +301,19 @@ function plungerPoints(c: PlungerConfig): Vec[] {
     back(2.6),
     { x: -peak.x, y: peak.y + 0.4, z: peak.z },
     { x: peak.x, y: peak.y + 0.4, z: peak.z },
+  ]
+}
+/** The pea-shooter, and the top corners of the owls' sky over both pages. */
+function owlsPoints(c: OwlsConfig): Vec[] {
+  const z = c.pages.flat()
+  const top = c.height[1] + 0.6
+  return [
+    { x: c.shooter.x - 0.8, y: 0, z: c.shooter.z + 0.4 },
+    { x: c.shooter.x + 0.8, y: 0, z: c.shooter.z + 0.4 },
+    { x: c.shooter.x, y: c.shooter.y + 0.5, z: c.shooter.z },
+    ...[Math.min(...z), Math.max(...z)].flatMap(zz => [
+      { x: -FIELD_HALF_WIDTH, y: top, z: zz },
+      { x: FIELD_HALF_WIDTH, y: top, z: zz },
+    ]),
   ]
 }

@@ -12,10 +12,10 @@ import {
   PUSHER_MID_Z,
   PUSHER_PERIOD_S,
   WALL_HEIGHT,
-  deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
 import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
 import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
+import type { OwlsConfig } from '@/app/meteor-coins/lib/deliveries/owls'
 import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Drain, Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
@@ -74,6 +74,12 @@ export type StageDef = {
     /** What the floor and pushers are made of, if not the cabinet's usual. */
     floorTone?: Tone
     pusherTone?: Tone
+    /**
+     * A stage that dresses its own table: the scene skips the plain
+     * cabinet's floors, walls, edge strips and pusher blocks and draws
+     * this set instead (the physics is unchanged).
+     */
+    dressing?: 'book'
   }
   arm: ArmConfig
   /** A cannon at the front instead of the arm: coins are fired, not dropped. */
@@ -750,6 +756,25 @@ const bookPage = (reversed: boolean, lagS: number): Deck => {
 /** Half a stroke apart: one page pushes while the other pulls back. */
 const BOOK: Layout = [bookPage(false, 0), bookPage(true, PUSHER_PERIOD_S / 2)]
 
+/**
+ * The Bedtime Book's owls and pea-shooter (lib/deliveries/owls). Owls fly
+ * lanes over each page's shelf, never over the spine, in a band of heights
+ * the aim's plane sits in the middle of. The shooter stands on the near
+ * edge of the book, behind the front page's pusher.
+ */
+const BOOK_OWLS: OwlsConfig = {
+  shooter: { x: 0, y: 1.3, z: 9.9 },
+  aimY: 4.4,
+  pages: [
+    [-6, -1.3],
+    [1.3, 5.8],
+  ],
+  height: [3.8, 5],
+  speed: [1, 1.9],
+  owls: 4,
+  seed: 10,
+}
+
 const THE_BEDTIME_BOOK: StageDef = {
   number: 10,
   slug: 'the-bedtime-book',
@@ -764,16 +789,15 @@ const THE_BEDTIME_BOOK: StageDef = {
     layout: BOOK,
     floorTone: 'page',
     pusherTone: 'pageEdge',
+    dressing: 'book',
   },
-  // An arm over each page, by its wall; they take turns.
-  arm: {
-    periodS: PUSHER_PERIOD_S,
-    pivotY: 11,
-    dropZ: BOOK.map(page => page.backZ + deckDir(page) * 0.6),
-  },
+  // No arm: words come from the owls (the arm config is required, and unused).
+  arm: { periodS: PUSHER_PERIOD_S },
+  delivery: { kind: 'owls', ...BOOK_OWLS },
   ring: { enabled: false },
   objects: { drop: WORD },
-  cue: 'shadow',
+  // The shooter draws its own aim: the dotted arc and a mark on the page.
+  cue: null,
   pile: 'the-bedtime-book',
   bake: {
     seed: 10,
@@ -786,17 +810,20 @@ const THE_BEDTIME_BOOK: StageDef = {
   },
   rules: {
     coins: 40,
-    // No ring: the pages are the game. From the sim (12 games each): a word
-    // landing while its page is pulled back rides the pusher top and never
-    // reaches the wall, so timing matters more here than anywhere yet. A
-    // random tapper averages 19 (one star ~30% of the time); dropping on
-    // the shadow cue averages 74, making two stars every time and three
-    // about half the time.
+    // No ring: the pages are the game. From the sim (10 games each): a
+    // random shooter averages 53 (one star every time, two about a third
+    // of the time, never three). Leading whichever owl is nearest, as fast
+    // as the shooter reloads, averages only 35 (one star 70%): words
+    // rained down anywhere, on alternate pages, are more than a page's
+    // pusher can carry. The skilled player leads owls too but waits for
+    // one whose word would land on bare page in front of a pulled-back
+    // pusher (the filled aim circle), and averages 86: two stars every
+    // time, three half the time. Where and when matter more than how often.
     bonusForStreak: () => 0,
-    goal: { type: 'score', stars: [25, 50, 75] },
+    goal: { type: 'score', stars: [30, 60, 85] },
   },
   measure: { label: 'Story', caption: 'points into the story' },
-  hint: 'The arms take turns: back page, then front page. A dream is worth 5.',
+  hint: 'Hit an owl with a pea to drop its word. The circle on the page fills in when a word landing there will get a good push. A dream is worth 5.',
   voice: {
     start: 'Every story starts in the middle.',
     clear: 'The book closes softly. What a story.',

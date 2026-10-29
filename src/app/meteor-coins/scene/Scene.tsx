@@ -39,6 +39,7 @@ import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
+import { BookMesh } from '@/app/meteor-coins/scene/BookMesh'
 import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
 import { DrainMesh } from '@/app/meteor-coins/scene/DrainMesh'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
@@ -208,22 +209,26 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
         obstacles={obstacles.filter(o => !o.rides && !moves(o))}
         icy={(table.floorFriction ?? 1) < 0.2 && !table.floorTone}
         floorTone={table.floorTone ?? 'floor'}
+        dressed={table.dressing !== undefined}
       />
+      {table.dressing === 'book' && <BookMesh game={game} />}
 
-      {layout.map((deck, i) => (
-        <mesh
-          key={i}
-          ref={mesh => {
-            pushers.current[i] = mesh
-          }}
-          position={[0, deck.floorY + PUSHER_HEIGHT / 2, game.engine.pusherZs()[i]]}
-        >
-          <boxGeometry
-            args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, deck.pusher.depth]}
-          />
-          <meshStandardMaterial color={PALETTE[table.pusherTone ?? 'pusher']} />
-        </mesh>
-      ))}
+      {/* A dressed table draws its own pushers. */}
+      {!table.dressing &&
+        layout.map((deck, i) => (
+          <mesh
+            key={i}
+            ref={mesh => {
+              pushers.current[i] = mesh
+            }}
+            position={[0, deck.floorY + PUSHER_HEIGHT / 2, game.engine.pusherZs()[i]]}
+          >
+            <boxGeometry
+              args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, deck.pusher.depth]}
+            />
+            <meshStandardMaterial color={PALETTE[table.pusherTone ?? 'pusher']} />
+          </mesh>
+        ))}
       {/* Pegs that rise and sink with the phases, and the sweeping bumper. */}
       {obstacles.filter(moves).map((o, i) => (
         <group
@@ -510,6 +515,7 @@ function Cabinet({
   obstacles,
   icy,
   floorTone,
+  dressed,
 }: {
   layout: Layout
   chuteHalfWidth: number
@@ -518,6 +524,8 @@ function Cabinet({
   obstacles: readonly Obstacle[]
   icy: boolean
   floorTone: Tone
+  /** The stage draws its own floors, walls, slot and edges (StageDef table.dressing). */
+  dressed: boolean
 }) {
   const top = topDeck(layout)
   const backZ = fieldBackZ(layout)
@@ -536,27 +544,28 @@ function Cabinet({
         [slot[1], frontZ],
       ]
     : [[backZ, frontZ]]
-  const edges = roamingChute ? [] : slot ? [slot[0], slot[1] + 0.12] : [frontZ]
+  const edges = roamingChute || dressed ? [] : slot ? [slot[0], slot[1] + 0.12] : [frontZ]
 
   return (
     <>
-      {floors.map(([from, to]) => (
-        <mesh key={from} position={[0, -0.25, (from + to) / 2]}>
-          <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.5, to - from]} />
-          {icy ? (
-            <meshStandardMaterial color={PALETTE.ice} metalness={0.1} roughness={0.15} />
-          ) : (
-            <meshStandardMaterial color={PALETTE[floorTone]} />
-          )}
-        </mesh>
-      ))}
-      {slot && (
+      {!dressed &&
+        floors.map(([from, to]) => (
+          <mesh key={from} position={[0, -0.25, (from + to) / 2]}>
+            <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.5, to - from]} />
+            {icy ? (
+              <meshStandardMaterial color={PALETTE.ice} metalness={0.1} roughness={0.15} />
+            ) : (
+              <meshStandardMaterial color={PALETTE[floorTone]} />
+            )}
+          </mesh>
+        ))}
+      {slot && !dressed && (
         <mesh position={[0, -1, (slot[0] + slot[1]) / 2]}>
           <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.1, slot[1] - slot[0]]} />
           <meshStandardMaterial color={PALETTE.spine} />
         </mesh>
       )}
-      {[-1, 1].map(side => (
+      {(dressed ? [] : [-1, 1]).map(side => (
         <mesh key={side} position={[side * (FIELD_HALF_WIDTH + 0.25), wallTop / 2, fieldMidZ]}>
           <boxGeometry args={[0.5, wallTop, fieldDepth]} />
           <meshStandardMaterial color={PALETTE.glassWall} transparent opacity={0.12} />
@@ -575,7 +584,7 @@ function Cabinet({
         )
       })}
       {/* The back wall; a wall at the player's end is glass, so the table shows through. */}
-      {openDecks(layout).map(deck => (
+      {(dressed ? [] : openDecks(layout)).map(deck => (
         <mesh
           key={deck.backZ}
           position={[0, wallBottom + wallHeight / 2, deck.backZ - deckDir(deck) * 0.25]}
