@@ -7,6 +7,11 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  CRANE_AIM_Y,
+  type CraneConfig,
+  CraneDelivery,
+} from '@/app/meteor-coins/lib/deliveries/crane'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +27,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'crane' } & CraneConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +48,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'crane':
+      return new CraneDelivery(host, config)
   }
 }
 
@@ -52,6 +62,9 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'arm':
     case 'cannon':
       return 0
+    // The pointer is read over the top of the pile, where the coin will land.
+    case 'crane':
+      return CRANE_AIM_Y
   }
 }
 
@@ -65,6 +78,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'crane':
+      return cranePoints(config)
   }
 }
 
@@ -78,6 +93,8 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
       return false
     case 'cannon':
       return true
+    case 'crane':
+      return false
   }
 }
 
@@ -88,6 +105,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'crane':
+      return 'crane'
   }
 }
 
@@ -103,6 +122,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'crane':
+      return 'Move the claw with the pointer or the arrow keys. Tap or press Space to drop.'
   }
 }
 
@@ -116,5 +137,23 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
     ...c.hoops.map(h => ({ x: h.x, y: h.y + h.radius + 0.8, z: h.z })),
+  ]
+}
+
+/**
+ * The claw at the far corners of its reach, the gantry over the back of
+ * the table, and the bottom of the jar under the lip (scene/JarMesh) on a
+ * crane's stage.
+ */
+function cranePoints(c: CraneConfig): Vec[] {
+  const [x0, x1] = c.x
+  const [z0, z1] = c.z
+  const gantryY = c.y + c.cable
+  return [
+    { x: x0 - 0.6, y: c.y + 0.4, z: z1 },
+    { x: x1 + 0.6, y: c.y + 0.4, z: z1 },
+    { x: x0 - 1, y: gantryY, z: z0 },
+    { x: x1 + 1, y: gantryY, z: z0 },
+    { x: 0, y: -1.6, z: 5.3 },
   ]
 }

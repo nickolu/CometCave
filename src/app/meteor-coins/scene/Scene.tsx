@@ -41,6 +41,7 @@ import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
 import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
+import { JarMesh } from '@/app/meteor-coins/scene/JarMesh'
 import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
@@ -283,6 +284,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       <DeliveryRig game={game} />
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
       {table.board && <BoardMesh board={table.board} engine={game.engine} />}
+      {table.jar && <JarMesh game={game} />}
       {game.delivery.kind === 'arm' &&
         lines.map((z, i) => (
           <group
@@ -418,6 +420,7 @@ function PartMaterial({ part }: { part: Part }) {
       color={PALETTE[part.tone]}
       metalness={metal ? 0.3 : 0.05}
       roughness={metal ? 0.55 : 0.7}
+      {...(part.glow ? { emissive: PALETTE[part.tone], emissiveIntensity: part.glow } : {})}
     />
   )
 }

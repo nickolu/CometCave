@@ -19,6 +19,8 @@ type PartBase = {
   tone: Tone
   /** Visual-only parts are drawn but have no collider: markings, decorations. */
   visualOnly?: boolean
+  /** Lit from within, this strongly (0–1): drawn only, so a special reads in a dim pile. */
+  glow?: number
 }
 
 export type Part = PartBase &
@@ -65,20 +67,34 @@ export const COIN: ObjectSpec = {
   reach: PUCK_RADIUS,
 }
 
-/** A wide cream disc with an engraved crescent. Each one jarred refunds 3 coins. */
+/**
+ * A big, thick, softly glowing pale-blue disc with a raised crescent and a
+ * bright rim: bigger than a coin, a different colour, and lit from within,
+ * so it reads at a glance on top of the pile. Each one jarred refunds 3 coins.
+ */
 export const MOONSTONE: ObjectSpec = {
   id: 'moonstone',
   name: 'moonstone',
   plural: 'moonstones',
   parts: [
-    { shape: 'cylinder', radius: 0.72, height: 0.22, tone: 'moonstone' },
+    { shape: 'cylinder', radius: 0.85, height: 0.3, tone: 'moonstone', glow: 0.3 },
     {
       shape: 'arc',
-      radius: 0.36,
-      tube: 0.07,
+      radius: 0.42,
+      tube: 0.08,
       arc: Math.PI * 1.2,
-      at: [0, 0.115, 0],
+      at: [0, 0.155, 0],
       tone: 'moonstoneMark',
+      visualOnly: true,
+    },
+    {
+      shape: 'arc',
+      radius: 0.82,
+      tube: 0.05,
+      arc: Math.PI * 2,
+      at: [0, 0.15, 0],
+      tone: 'moonstoneRim',
+      glow: 1,
       visualOnly: true,
     },
   ],
@@ -87,7 +103,7 @@ export const MOONSTONE: ObjectSpec = {
   restitution: 0.05,
   points: 1,
   refund: 3,
-  reach: 0.72,
+  reach: 0.85,
 }
 
 const CHOCOLATE_SIDE = 0.8
