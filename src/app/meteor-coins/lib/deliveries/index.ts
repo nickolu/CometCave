@@ -6,6 +6,7 @@ import {
   muzzleAt,
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
+import { type BeltConfig, BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import {
   CRANE_AIM_Y,
@@ -31,6 +32,7 @@ export type DeliveryConfig =
   | { kind: 'arm' }
   | ({ kind: 'cannon' } & CannonConfig)
   | ({ kind: 'crane' } & CraneConfig)
+  | ({ kind: 'belt' } & BeltConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -50,6 +52,8 @@ export function createDelivery(
       return new CannonDelivery(host, config)
     case 'crane':
       return new CraneDelivery(host, config)
+    case 'belt':
+      return new BeltDelivery(host, config)
   }
 }
 
@@ -61,6 +65,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
   switch (config.kind) {
     case 'arm':
     case 'cannon':
+    case 'belt':
       return 0
     // The pointer is read over the top of the pile, where the coin will land.
     case 'crane':
@@ -80,6 +85,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return cannonPoints(config)
     case 'crane':
       return cranePoints(config)
+    case 'belt':
+      return beltPoints(config)
   }
 }
 
@@ -90,6 +97,7 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
 export function deliveryHolds(config: DeliveryConfig): boolean {
   switch (config.kind) {
     case 'arm':
+    case 'belt':
       return false
     case 'cannon':
       return true
@@ -107,6 +115,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'cannon'
     case 'crane':
       return 'crane'
+    case 'belt':
+      return 'belt'
   }
 }
 
@@ -124,6 +134,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
     case 'crane':
       return 'Move the claw with the pointer or the arrow keys. Tap or press Space to drop.'
+    case 'belt':
+      return 'Tap or press Space to drop the marked chocolate off the belt, right where it is.'
   }
 }
 
@@ -155,5 +167,19 @@ function cranePoints(c: CraneConfig): Vec[] {
     { x: x0 - 1, y: gantryY, z: z0 },
     { x: x1 + 1, y: gantryY, z: z0 },
     { x: 0, y: -1.6, z: 5.3 },
+  ]
+}
+
+/**
+ * The oven, both ends of the belt with a chocolate's headroom, and the
+ * front edge from below: Bramble's stage has the belt, and Bramble waits
+ * under the lip with its mouth open, so its head must stay in view too.
+ */
+function beltPoints(c: BeltConfig): Vec[] {
+  return [
+    { x: c.fromX - 1, y: c.y + 0.9, z: c.z },
+    { x: c.toX + 0.6, y: c.y + 0.6, z: c.z },
+    { x: -4.3, y: -2.3, z: 5.4 },
+    { x: 4.3, y: -2.3, z: 5.4 },
   ]
 }

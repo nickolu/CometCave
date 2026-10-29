@@ -160,6 +160,7 @@ export class DropGame implements DeliveryHost {
       poolObject: stage.objects.drop,
       pile: stage.pile ? PILES[stage.pile] : [],
       chuteHalfWidth: stage.table.chuteHalfWidth,
+      chuteSweep: stage.table.chuteSweep,
       pusherPeriodS: stage.table.pusherPeriodS,
       obstacles: stage.table.obstacles,
       floorFriction: stage.table.floorFriction,

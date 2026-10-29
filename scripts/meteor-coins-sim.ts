@@ -22,6 +22,7 @@ import {
   muzzleAt,
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
+import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
@@ -29,7 +30,7 @@ import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
 import { resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
-import { shelfOpenAt } from '@/app/meteor-coins/lib/timing'
+import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 type Bot = 'random' | 'cue' | 'skilled'
 
@@ -244,6 +245,56 @@ const CRANE_GAP_Z = -1
 const CRANE_PULLED_BACK = -0.5
 
 /**
+ * How far ahead the belt's skilled bot leads the mouth: roughly how long a
+ * drop takes to tip the lip. Measured: anything from 3s to 9s did about as well.
+ */
+const BELT_LEAD_S = 6
+
+/**
+ * The belt bots (Bramble's Midnight Snack). Random presses at random
+ * moments, whatever is over the shelf. Cue presses when the marked
+ * chocolate would land on bare shelf, wherever it is. Skilled also waits
+ * until the marked chocolate is over where the mouth will be once that
+ * drop has pushed through to the lip, giving up on aim after a few seconds.
+ * Both are 0–100ms late, like people.
+ */
+function beltBot(game: DropGame, bot: Bot, rand: () => number) {
+  const belt = game.delivery as BeltDelivery
+  const c = belt.config
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let waitingSince = 0
+  return () => {
+    const t = game.engine.time
+    if (pressAt !== null && t >= pressAt) {
+      game.press()
+      pressAt = null
+      nextAt = t + 0.6 + rand() * (bot === 'random' ? 1.2 : 0.4)
+      waitingSince = nextAt
+      return
+    }
+    if (pressAt !== null || !game.canDrop || t < nextAt) return
+    const next = belt.next()
+    if (!next) return
+    if (bot === 'random') {
+      pressAt = t
+      return
+    }
+    // Judged for a press 50ms from now.
+    const ahead = 0.05
+    const clear = shelfOpenAt(t + ahead + fallTimeToShelf(c.y), game.engine.pusherPeriodS)
+    if (!clear) return
+    if (bot === 'skilled') {
+      const target = game.engine.chuteX(t + BELT_LEAD_S)
+      const x = next.x + c.speed * game.speed * ahead
+      const aim = Math.max(-c.dropHalfWidth + 0.3, Math.min(c.dropHalfWidth - 0.3, target))
+      if (Math.abs(x - aim) > 0.5 && t - waitingSince < 5) return
+    }
+    pressAt = t + rand() * 0.1
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -252,6 +303,7 @@ const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => numbe
   {
     cannon: cannonBot,
     crane: craneBot,
+    belt: beltBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
