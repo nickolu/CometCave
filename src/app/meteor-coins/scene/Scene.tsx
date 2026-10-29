@@ -40,6 +40,7 @@ import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
 import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
+import { DrainMesh } from '@/app/meteor-coins/scene/DrainMesh'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
 import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
@@ -203,7 +204,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
         layout={layout}
         chuteHalfWidth={game.engine.chuteHalfWidth}
         obstacles={obstacles.filter(o => !o.rides && !moves(o))}
-        icy={(table.floorFriction ?? 1) < 0.2}
+        icy={(table.floorFriction ?? 1) < 0.2 && !table.floorTone}
         floorTone={table.floorTone ?? 'floor'}
       />
 
@@ -283,6 +284,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       <DeliveryRig game={game} />
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
       {table.board && <BoardMesh board={table.board} engine={game.engine} />}
+      {table.drain && <DrainMesh drain={table.drain} />}
       {game.delivery.kind === 'arm' &&
         lines.map((z, i) => (
           <group
@@ -675,7 +677,11 @@ function ObstacleMesh({ obstacle: o, tone }: { obstacle: Obstacle; tone?: Tone }
     return (
       <mesh position={[o.x, o.height / 2, o.z]}>
         <boxGeometry args={[o.width, o.height, o.depth]} />
-        <meshStandardMaterial color={PALETTE.obstacle} />
+        {o.glass ? (
+          <meshStandardMaterial color={PALETTE.glassWall} transparent opacity={0.12} />
+        ) : (
+          <meshStandardMaterial color={PALETTE[o.tone ?? 'obstacle']} />
+        )}
       </mesh>
     )
   }

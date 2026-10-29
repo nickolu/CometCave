@@ -32,7 +32,13 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
-import { COIN, OBJECTS, type ObjectSpec, type Part } from '@/app/meteor-coins/lib/objects'
+import {
+  COIN,
+  OBJECTS,
+  type ObjectSpec,
+  type Part,
+  type Tone,
+} from '@/app/meteor-coins/lib/objects'
 import type { PuckPose } from '@/app/meteor-coins/lib/piles'
 import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
@@ -91,12 +97,36 @@ export type Obstacle = {
   phases?: readonly number[]
   /** Sweeps side to side across the shelf, by `ampX`, every `periodS`. */
   sweep?: { ampX: number; periodS: number }
+  /** How bouncy it is, where it isn't dead (a tub's rubber rim). */
+  restitution?: number
+  /** What it's drawn in, if not the usual obstacle grey. */
+  tone?: Tone
+  /** Drawn as glass, like the side walls, so the table shows through it. */
+  glass?: boolean
 } &
   /** An upright round post. A post with a `tower` name is one a stack goal counts. */
   (| { type: 'post'; radius: number; tower?: string }
     /** A box on the shelf: a lane rail, a soap bar, a post's mounting. */
     | { type: 'block'; width: number; depth: number }
   )
+
+/**
+ * A drain in the floor: a square hole things fall through, with a
+ * whirlpool around it. On a table with a drain, the drain is what scores;
+ * anything that leaves any other way is lost.
+ */
+export type Drain = {
+  x: number
+  z: number
+  /** The hole's side. */
+  size: number
+  /**
+   * Within `radius` of the hole, things lying on the floor are pulled in
+   * and swept around it, in units/s², strongest at the hole and fading to
+   * nothing at the edge. Positive spin turns anticlockwise, seen from above.
+   */
+  swirl: { radius: number; pull: number; spin: number }
+}
 
 /** Where an obstacle stands at a moment, given the pusher's stroke. */
 export function obstacleZ(o: Obstacle, timeS: number, pusherPeriodS: number): number {
@@ -139,6 +169,8 @@ export type EngineOptions = {
   floorDrift?: number
   /** The table's decks; one, unless a stage stacks them. */
   layout?: Layout
+  /** A drain in the floor, which then does the scoring (Rubber Ducky Rumble). */
+  drain?: Drain
 }
 
 /** Seconds for a pachinko board's gate to slide open or shut. */
@@ -153,6 +185,15 @@ type Mover = { o: Obstacle; body: RAPIER.RigidBody; raised: number; up: boolean 
 
 /** Below this height an object is lying on the floor, for floorDrift. */
 const ON_FLOOR_Y = 0.3
+/**
+ * Below this height a drain's whirlpool takes hold. Higher than floorDrift's,
+ * since a big object rests with its center higher, but below anything
+ * lying on top of another.
+ */
+const IN_WATER_Y = 0.45
+/** A drain sucks down (units/s²) on anything over its hole lower than this. */
+const DRAIN_SUCK = 40
+const DRAIN_REACH_Y = 1.2
 
 export class PusherEngine {
   readonly world: RAPIER.World
@@ -161,6 +202,7 @@ export class PusherEngine {
   readonly chuteHalfWidth: number
   readonly pusherPeriodS: number
   readonly floorDrift: number
+  readonly drain: Drain | null
   /** Seconds of simulated time. Advances only in step(). */
   time = 0
 
@@ -189,8 +231,10 @@ export class PusherEngine {
     floorFriction,
     floorDrift = 0,
     layout = CLASSIC_LAYOUT,
+    drain,
   }: EngineOptions = {}) {
     this.layout = layout
+    this.drain = drain ?? null
     this.poolObject = poolObject
     this.floorDrift = floorDrift
     this.chuteHalfWidth = chuteHalfWidth
@@ -227,12 +271,32 @@ export class PusherEngine {
           [slot[1], frontZ],
         ]
       : [[backZ, frontZ]]
-    for (const [from, to] of floors) {
-      const floor = box(FIELD_HALF_WIDTH, 0.25, (to - from) / 2, 0, -0.25, (from + to) / 2, 0.4)
+    const floorBox = (x0: number, x1: number, z0: number, z1: number) => {
+      const floor = box(
+        (x1 - x0) / 2,
+        0.25,
+        (z1 - z0) / 2,
+        (x0 + x1) / 2,
+        -0.25,
+        (z0 + z1) / 2,
+        0.4
+      )
       if (floorFriction !== undefined) {
         floor.setFriction(floorFriction)
         floor.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
       }
+    }
+    for (const [from, to] of floors) {
+      if (!drain) {
+        floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, from, to)
+        continue
+      }
+      // A drain cuts a square hole: the floor in four pieces around it.
+      const h = drain.size / 2
+      floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, from, drain.z - h)
+      floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, drain.z + h, to)
+      floorBox(-FIELD_HALF_WIDTH, drain.x - h, drain.z - h, drain.z + h)
+      floorBox(drain.x + h, FIELD_HALF_WIDTH, drain.z - h, drain.z + h)
     }
     const wallTop = top.floorY + WALL_HEIGHT
     for (const side of [-1, 1]) {
@@ -274,10 +338,13 @@ export class PusherEngine {
 
     // Fixed obstacles before the pusher, riders after: the order bodies are
     // made in changes how a pile settles, and the baked piles depend on it.
-    const shapeOf = (o: Obstacle) =>
-      o.type === 'post'
-        ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
-        : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+    const shapeOf = (o: Obstacle) => {
+      const desc =
+        o.type === 'post'
+          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
+          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+      return o.restitution === undefined ? desc : desc.setRestitution(o.restitution)
+    }
     const obstacle = (o: Obstacle, parent: RAPIER.RigidBody) => {
       // A rider's collider is fixed to the pusher, offset from its centre.
       const z = o.rides ? o.z - PUSHER_MID_Z : o.z
@@ -580,6 +647,7 @@ export class PusherEngine {
       m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z: m.o.z })
     }
     if (this.floorDrift) this.drift()
+    if (this.drain) this.swirl(this.drain)
     this.world.step()
 
     const falls: FallEvent[] = []
@@ -594,7 +662,11 @@ export class PusherEngine {
         spec: puck.spec,
         x: p.x,
         z: p.z,
-        result: classifyFall(p.x, this.chuteHalfWidth),
+        result: this.drain
+          ? inDrain(this.drain, p.x, p.z)
+            ? 'chute'
+            : 'gutter'
+          : classifyFall(p.x, this.chuteHalfWidth),
       })
       this.park(i)
     }
@@ -607,6 +679,35 @@ export class PusherEngine {
       if (!puck.active || puck.body.translation().y > ON_FLOOR_Y) continue
       const v = puck.body.linvel()
       puck.body.setLinvel({ x: v.x, y: v.y, z: v.z + dv }, true)
+    }
+  }
+
+  /** The whirlpool: pulls whatever is in the water near the drain in, and around. */
+  private swirl({ x, z, size, swirl }: Drain) {
+    for (const puck of this.pucks) {
+      if (!puck.active) continue
+      const p = puck.body.translation()
+      const dx = x - p.x
+      const dz = z - p.z
+      // Over the hole, the drain sucks down. Without it, two ducks could
+      // wedge across the hole tipped on their sides and plug it for good
+      // (sim: two games of ten in single figures).
+      const over = Math.abs(dx) < size / 2 && Math.abs(dz) < size / 2
+      if (over && p.y < DRAIN_REACH_Y) {
+        const v = puck.body.linvel()
+        puck.body.setLinvel({ x: v.x, y: v.y - DRAIN_SUCK * PHYSICS_STEP_S, z: v.z }, true)
+      }
+      if (p.y > IN_WATER_Y) continue
+      const d = Math.hypot(dx, dz)
+      if (d >= swirl.radius || d < 1e-6) continue
+      const k = (1 - d / swirl.radius) * PHYSICS_STEP_S
+      const ux = dx / d
+      const uz = dz / d
+      // In toward the hole, plus a quarter turn of that for the spin.
+      const ax = swirl.pull * ux - swirl.spin * uz
+      const az = swirl.pull * uz + swirl.spin * ux
+      const v = puck.body.linvel()
+      puck.body.setLinvel({ x: v.x + ax * k, y: v.y, z: v.z + az * k }, true)
     }
   }
 
@@ -696,6 +797,12 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
     for (const side of [-1, 1])
       box(0.04, CUP_WALL / 2, cup.x + (side * cup.width) / 2, cup.y + CUP_WALL / 2)
   }
+}
+
+/** Whether a point is over a drain's hole (with a little give: things fall in tipped). */
+export function inDrain(drain: Drain, x: number, z: number): boolean {
+  const reach = drain.size / 2 + 0.3
+  return Math.abs(x - drain.x) < reach && Math.abs(z - drain.z) < reach
 }
 
 /** A mover's center height, from sunk just below the floor (0) to standing on it (1). */

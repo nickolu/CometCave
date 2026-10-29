@@ -11,12 +11,13 @@ import {
   PUSHER_DEPTH,
   PUSHER_MID_Z,
   PUSHER_PERIOD_S,
+  WALL_HEIGHT,
   deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
 import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
 import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
 import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coins/lib/dropper'
-import type { Obstacle } from '@/app/meteor-coins/lib/engine'
+import type { Drain, Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import {
   AMBER,
@@ -64,6 +65,8 @@ export type StageDef = {
     layout?: Layout
     /** A pachinko board over the drop line: coins drop through it on edge. */
     board?: Board
+    /** A drain in the floor, which does the scoring instead of the front edge. */
+    drain?: Drain
     /** What the floor and pushers are made of, if not the cabinet's usual. */
     floorTone?: Tone
     pusherTone?: Tone
@@ -288,46 +291,133 @@ const BRAMBLES_MIDNIGHT_SNACK: StageDef = {
   },
 }
 
-/** Three low soap bars across the tub floor for ducks to bonk over. */
-const SOAP_BARS: Obstacle[] = [-2.3, 0, 2.3].map(x => ({
-  type: 'block',
-  x,
-  z: 1.6,
-  width: 0.9,
-  depth: 0.4,
-  height: 0.16,
-}))
+/**
+ * Rubber Ducky Rumble's tub. The front edge is walled off with a rubber rim,
+ * so nothing scores off it: the only way out is the drain in the floor, with
+ * a whirlpool around it that drags in whatever drifts close. The rims and
+ * the soap bars are as bouncy as the ducks.
+ */
+const TUB_RIM = { height: 0.9, restitution: 0.8, tone: 'tub' } as const
+// The drain sits a little right of center, just past where slide ducks land
+// (0.6 beyond the landing arc), so a duck pointed at it lands short and
+// slides in, plowing in whatever lies in the way. A gentle whirlpool takes
+// in ducks that end up beside it.
+const DUCK_DRAIN: Drain = {
+  x: 1.1,
+  z: 1.4,
+  size: 1.3,
+  swirl: { radius: 1.1, pull: 1.5, spin: 1.5 },
+}
+const TUB: Obstacle[] = [
+  // Glass above the front rim: bouncing ducks popped clean over the rim alone.
+  {
+    type: 'block',
+    x: 0,
+    z: FIELD_FRONT_Z - 0.1,
+    width: FIELD_HALF_WIDTH * 2,
+    depth: 0.2,
+    height: WALL_HEIGHT,
+    glass: true,
+  },
+  {
+    type: 'block',
+    x: 0,
+    z: FIELD_FRONT_Z - 0.25,
+    width: FIELD_HALF_WIDTH * 2,
+    depth: 0.5,
+    ...TUB_RIM,
+  },
+  ...[-1, 1].map(
+    (side): Obstacle => ({
+      type: 'block',
+      x: side * (FIELD_HALF_WIDTH - 0.125),
+      z: 1.55,
+      width: 0.25,
+      depth: 3.9,
+      ...TUB_RIM,
+    })
+  ),
+  // Two soap bars to bonk off, either side of the drain.
+  ...[
+    { x: -2.2, z: 1.3 },
+    { x: 2.9, z: 2.6 },
+  ].map(
+    ({ x, z }): Obstacle => ({
+      type: 'block',
+      x,
+      z,
+      width: 0.9,
+      depth: 0.45,
+      height: 0.18,
+      restitution: 0.8,
+      tone: 'soap',
+    })
+  ),
+]
+
+/**
+ * The waterslide hangs from the back wall, over the pusher, and shoots its
+ * duck off the lip at ~4.3 units/s, landing on an arc just past the
+ * pusher's reach. The lip sits high (1.8) so a
+ * duck leaving it clears ducks stacked on the pusher.
+ */
+const WATERSLIDE: DeliveryConfig = {
+  kind: 'slide',
+  pivot: { x: 0, y: 3.6, z: BACK_WALL_Z + 0.6 },
+  bend: { forward: 2, y: 1.8 },
+  lip: { forward: 4.1, y: 1.8 },
+  periodS: 3.6,
+  maxYaw: 0.5,
+  pull: 0.2,
+  startSpeed: 2,
+}
 
 const RUBBER_DUCKY_RUMBLE: StageDef = {
   number: 6,
   slug: 'rubber-ducky-rumble',
   name: 'Rubber Ducky Rumble',
   pitch:
-    '"WHAT IF THE COINS WERE RUBBER DUCKS?!" They wobble, bonk and tip, and you push them down the drain.',
+    '"WHAT IF THE COINS WERE RUBBER DUCKS?!" They whizz down the waterslide, bonk and boing, and swirl down the drain.',
   playable: true,
-  table: { chuteHalfWidth: CHUTE_HALF_WIDTH, pusherPeriodS: PUSHER_PERIOD_S, obstacles: SOAP_BARS },
+  // Slippery water: about half the usual floor's grip. Measured: slicker
+  // than this (0.08–0.18) and the whole tub drifts into the drain whatever
+  // you do, so a random sender scored as well as an aimed one.
+  table: {
+    chuteHalfWidth: CHUTE_HALF_WIDTH,
+    pusherPeriodS: PUSHER_PERIOD_S,
+    obstacles: TUB,
+    floorFriction: 0.25,
+    floorTone: 'water',
+    drain: DUCK_DRAIN,
+  },
   arm: { periodS: ARM_PERIOD_S },
-  ring: { enabled: true },
+  delivery: WATERSLIDE,
+  ring: { enabled: false },
   objects: { drop: DUCK },
   cue: null,
   pile: 'rubber-ducky-rumble',
+  // Ducks afloat in one layer, not a heap: in a packed tub every send
+  // stirred the whole pile and aim stopped mattering. Peak ~60 live bodies.
   bake: {
-    seed: 6,
-    floor: 150,
-    top: 10,
-    specials: [{ object: 'mama-duck', count: 3, x: [-2.4, 2.4], z: [-0.2, 1.2] }],
+    seed: 8,
+    floor: 30,
+    top: 6,
+    specials: [{ object: 'mama-duck', count: 3, x: [-3, 3], z: [-0.2, 0.6] }],
   },
   rules: {
     coins: 40,
-    // The splash ring: +2, +3, +4, then +5 a hit.
-    bonusForStreak: streak => Math.min(streak + 1, 5),
-    // A Mama Duck is worth 5. From the sim (10 games each): a random tapper
-    // makes one star 80% of the time; timing the drop barely matters with
-    // bouncy ducks, so two and three stars are for the splash ring — the
-    // near-perfect ring bot scores 61–72.
-    goal: { type: 'score', stars: [15, 32, 60] },
+    // No ring, so no bonus.
+    bonusForStreak: () => 0,
+    // A Mama Duck is worth 5. From the sim (10 games each): sending ducks at
+    // random averages 21 (one star 80% of the time, two 10%); pointing the
+    // slide at the drain averages 37 (two stars every time); also aiming at
+    // ducks lying just short of the drain and landing on the pusher's beat
+    // averages 38, three stars 30%. Most points are ducks sent straight down
+    // the drain; three stars needs a few knocked in from the tub on top.
+    goal: { type: 'score', stars: [15, 30, 40] },
   },
   measure: { label: 'Score', caption: 'points down the drain' },
+  hint: 'Ducks that go down the drain score. A Mama Duck is worth 5.',
   voice: {
     start: 'Bonk them down the drain!',
     clear: 'Quack-tastic! Down the drain they go!',

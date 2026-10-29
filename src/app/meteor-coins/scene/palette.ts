@@ -57,4 +57,12 @@ export const PALETTE = {
   duck: '#ffd23f',
   duckBeak: '#ff8c42',
   bow: '#ff5fa2',
+  /** Rubber Ducky Rumble: bath water, the tub's rim, soap, the waterslide and its drain. */
+  water: '#2f7fa8',
+  tub: '#f2f4f8',
+  soap: '#f7b6d2',
+  slide: '#ff6f59',
+  slideRail: '#ffd2c9',
+  splash: '#d9f4ff',
+  drain: '#0b2333',
 } as const

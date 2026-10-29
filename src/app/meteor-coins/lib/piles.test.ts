@@ -13,8 +13,10 @@ function table(name: string) {
 describe.each(Object.entries(PILES))('the %s pile', (name, STARTING_PILE) => {
   it('fits in the pool with room left for play', () => {
     const pooled = STARTING_PILE.filter(pose => !pose.o)
-    // Bulky objects (ducks) fill the shelf with fewer.
-    expect(pooled.length).toBeGreaterThan(60)
+    // Bulky objects (ducks) fill the shelf with fewer, and a tub with a
+    // drain keeps its ducks afloat in a single layer, with room to bonk.
+    const tub = playableStage(name)?.table.drain !== undefined
+    expect(pooled.length).toBeGreaterThan(tub ? 20 : 60)
     expect(POOL_SIZE - pooled.length).toBeGreaterThanOrEqual(75)
   })
 
@@ -34,7 +36,9 @@ describe.each(Object.entries(PILES))('the %s pile', (name, STARTING_PILE) => {
 
   it('is uneven, not a grid', () => {
     const heights = new Set(STARTING_PILE.map(c => c.p[1].toFixed(2)))
-    expect(heights.size).toBeGreaterThan(10)
+    // Ducks floating in a tub mostly sit at one height.
+    const tub = playableStage(name)?.table.drain !== undefined
+    expect(heights.size).toBeGreaterThan(tub ? 3 : 10)
   })
 
   it('holds still until the player drops something — a fair start', async () => {

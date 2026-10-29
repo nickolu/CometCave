@@ -7,6 +7,12 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  type SlideConfig,
+  SlideDelivery,
+  onSlide,
+  slideCurve,
+} from '@/app/meteor-coins/lib/deliveries/slide'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +28,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'slide' } & SlideConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +49,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'slide':
+      return new SlideDelivery(host, config)
   }
 }
 
@@ -51,6 +62,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
   switch (config.kind) {
     case 'arm':
     case 'cannon':
+    case 'slide':
       return 0
   }
 }
@@ -65,6 +77,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'slide':
+      return slidePoints(config)
   }
 }
 
@@ -75,6 +89,7 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
 export function deliveryHolds(config: DeliveryConfig): boolean {
   switch (config.kind) {
     case 'arm':
+    case 'slide':
       return false
     case 'cannon':
       return true
@@ -88,6 +103,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'slide':
+      return 'slide'
   }
 }
 
@@ -103,7 +120,20 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'slide':
+      return 'Tap or press Space to send a duck down the slide. It goes where the slide points.'
   }
+}
+
+/** The slide's top, and its lip at both ends of its sway. */
+function slidePoints(c: SlideConfig): Vec[] {
+  const { points } = slideCurve(c)
+  const lip = points[points.length - 1]
+  return [
+    { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
+    onSlide(lip, -c.maxYaw, c),
+    onSlide(lip, c.maxYaw, c),
+  ]
 }
 
 /** The cannon, each hoop's tag, and the top of a full shot's arc. */
