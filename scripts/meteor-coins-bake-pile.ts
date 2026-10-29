@@ -34,6 +34,8 @@ import type { PuckPose } from '@/app/meteor-coins/lib/piles'
 import { findStage } from '@/app/meteor-coins/lib/stages'
 
 const MAX_CYCLES = 15
+/** Specials laid on top of the heap drop from here, just above the tallest of it. */
+const ON_TOP_Y = 2.2
 
 function rng(seed: number) {
   let a = seed >>> 0
@@ -64,18 +66,23 @@ async function main() {
   const engine = new PusherEngine({ pile: [], ...stage.table, poolObject: stage.objects.drop })
 
   // Specials first, spread evenly across their zone (jittered) so they don't
-  // land on each other; the pile then settles around them.
-  for (const { object, count, x, z } of recipe.specials ?? []) {
-    for (let i = 0; i < count; i++) {
-      const px = x[0] + ((x[1] - x[0]) * (i + 0.2 + rand() * 0.6)) / count
-      const pz = z[0] + (z[1] - z[0]) * rand()
-      const yaw = rand() * Math.PI * 2
-      engine.addSpecial(OBJECTS[object], {
-        p: [px, 0.4, pz],
-        q: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
-      })
+  // land on each other; the pile then settles around them. Ones marked
+  // `onTop` wait until the coins are down, then are laid on the heap.
+  const placeSpecials = (onTop: boolean) => {
+    for (const { object, count, x, z, onTop: late = false } of recipe.specials ?? []) {
+      if (late !== onTop) continue
+      for (let i = 0; i < count; i++) {
+        const px = x[0] + ((x[1] - x[0]) * (i + 0.2 + rand() * 0.6)) / count
+        const pz = z[0] + (z[1] - z[0]) * rand()
+        const yaw = rand() * Math.PI * 2
+        engine.addSpecial(OBJECTS[object], {
+          p: [px, onTop ? ON_TOP_Y : 0.4, pz],
+          q: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
+        })
+      }
     }
   }
+  placeSpecials(false)
   for (let s = 0; s < 30; s++) engine.step()
   let steps = 0
   const step = () => {
@@ -125,7 +132,13 @@ async function main() {
   // with nothing falling. Ending on a cycle boundary means the pusher is
   // exactly where a new game starts it.
   while (steps % STEPS_PER_CYCLE !== 0) step()
-  const cycles = settle(engine, STEPS_PER_CYCLE)
+  let cycles = settle(engine, STEPS_PER_CYCLE)
+  // Specials laid on top go on the settled heap, so it doesn't carry them
+  // off the lip while it finds its shape; then it settles again.
+  if (recipe.specials?.some(s => s.onTop)) {
+    placeSpecials(true)
+    cycles += settle(engine, STEPS_PER_CYCLE)
+  }
 
   // The game loads a pile with its bodies in a different order (pool first,
   // specials after), and a coin balanced on the lip can tip under the new

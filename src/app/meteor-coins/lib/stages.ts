@@ -64,6 +64,8 @@ export type StageDef = {
     layout?: Layout
     /** A pachinko board over the drop line: coins drop through it on edge. */
     board?: Board
+    /** A glass jar under the lip, drawn only: where the stage's specials are collected. */
+    jar?: boolean
     /** What the floor and pushers are made of, if not the cabinet's usual. */
     floorTone?: Tone
     pusherTone?: Tone
@@ -150,8 +152,18 @@ export type PileRecipe = {
    */
   floor: number | readonly number[]
   top: number | readonly number[]
-  /** Special objects, placed first so the pile settles around them, spread across a zone. */
-  specials?: { object: ObjectId; count: number; x: [number, number]; z: [number, number] }[]
+  /**
+   * Special objects, spread across a zone: placed first so the pile settles
+   * around them, or with `onTop`, laid on the heap once the coins are down,
+   * so they sit on the surface where they can be seen.
+   */
+  specials?: {
+    object: ObjectId
+    count: number
+    x: [number, number]
+    z: [number, number]
+    onTop?: boolean
+  }[]
 }
 
 export type ComingSoon = {
@@ -205,6 +217,24 @@ const PENNY_FALLS: StageDef = {
   },
 }
 
+/**
+ * Moonstone Porch's claw crane (lib/deliveries/crane). It hangs low, so a
+ * coin lands where its marker says, and reaches from the back wall to
+ * part-way up the shelf: far enough to set a coin behind any moonstone,
+ * not so far that coins can be dropped straight over the lip.
+ */
+const PORCH_CRANE = {
+  y: 3.2,
+  x: [-3.4, 3.4],
+  z: [BACK_WALL_Z + 0.6, 2],
+  speed: 3.5,
+  accel: 7,
+  cable: 1.4,
+  damping: 0.3,
+  reloadS: 0.9,
+  start: { x: 0, z: -2 },
+} as const
+
 const MOONSTONE_PORCH: StageDef = {
   number: 2,
   slug: 'moonstone-porch',
@@ -214,32 +244,44 @@ const MOONSTONE_PORCH: StageDef = {
   playable: true,
   // No gutters: low rails along both sides, so everything off the front is
   // jarred. Everything is slower than Penny Falls.
-  table: { chuteHalfWidth: FIELD_HALF_WIDTH, pusherPeriodS: 4 },
+  table: { chuteHalfWidth: FIELD_HALF_WIDTH, pusherPeriodS: 4, jar: true },
+  // Unused: a crane sets every coin down by hand.
   arm: { periodS: 3.4 },
+  delivery: { kind: 'crane', ...PORCH_CRANE },
   ring: { enabled: false },
   objects: { drop: COIN },
-  cue: 'shadow',
+  // The crane draws its own landing marker.
+  cue: null,
   pile: 'moonstone-porch',
   bake: {
-    seed: 2,
-    floor: 175,
+    // A thinner heap than before (110 objects, not ~150). On a deeper one
+    // with the moonstones on top, even careful play jarred only ~6.5 of 9
+    // in 55 coins, so three stars were out of reach. Seed picked from a
+    // sweep of five that baked cleanly.
+    seed: 3,
+    floor: 120,
     top: 14,
-    // Three near the lip so the first refunds come early; six further back.
+    // Laid on top of the heap, so every moonstone can be seen: three near
+    // the lip so the first refunds come early, six further back.
     specials: [
-      { object: 'moonstone', count: 3, x: [-2.4, 2.4], z: [2, 2.6] },
-      { object: 'moonstone', count: 6, x: [-2.8, 2.8], z: [-0.3, 1.6] },
+      { object: 'moonstone', count: 3, x: [-2.4, 2.4], z: [1.4, 2], onTop: true },
+      { object: 'moonstone', count: 6, x: [-2.8, 2.8], z: [-0.4, 1], onTop: true },
     ],
   },
   rules: {
     // Each moonstone jarred refunds 3 coins, so a good run plays on. No ring:
-    // the pusher is the game. From the sim (12 games each): a random tapper
-    // finishes for one star; following the drop cue makes two ~75% of the
-    // time; following it and aiming behind the moonstone nearest the lip
-    // makes three ~67% of the time.
-    coins: 55,
+    // the pusher is the game. From the sim (10 games each): dropping
+    // anywhere jars ~3 (the three near the lip) for one star; letting the
+    // claw settle and setting coins in front of the pusher jars ~5.5;
+    // doing that in line with the moonstone nearest the lip, while the
+    // pusher is pulled back, jars ~8. 40 coins, not 55: with 55 the
+    // careful and the skilled bot both cleared all nine.
+    coins: 40,
     bonusForStreak: () => 0,
-    // Can't fail: finishing is a star.
-    goal: { type: 'collect', object: MOONSTONE.id, total: 9, stars: [0, 5, 9] },
+    // Can't fail: finishing is a star. Two stars: random 0%, careful 80%,
+    // skilled 100%; three (8, a little short of all nine, as an early
+    // stage): careful 20%, skilled 60%.
+    goal: { type: 'collect', object: MOONSTONE.id, total: 9, stars: [0, 5, 8] },
   },
   measure: { label: 'Moonstones', caption: 'moonstones in the jar' },
   voice: {
@@ -247,6 +289,7 @@ const MOONSTONE_PORCH: StageDef = {
     clear: 'Into the jar, glowing softly.',
     miss: 'The moonstones will wait for you.',
   },
+  hint: 'Set coins down just in front of the pusher, in line with a moonstone, and the pusher nudges it toward the jar.',
 }
 
 const BRAMBLES_MIDNIGHT_SNACK: StageDef = {

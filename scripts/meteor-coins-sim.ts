@@ -13,7 +13,7 @@
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
+import { FIELD_FRONT_Z, deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
 import {
   type Hoop,
   cannonYaw,
@@ -23,6 +23,7 @@ import {
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -160,6 +161,88 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
   }
 }
 
+/** The special object nearest the lip on a crane's shelf, if any. */
+function frontmostSpecialAt(game: DropGame): { x: number; z: number } | null {
+  let best: { x: number; z: number } | null = null
+  for (const puck of game.engine.pucks) {
+    if (!puck.active || puck.kind !== 'special') continue
+    const p = puck.body.translation()
+    if (p.z > FIELD_FRONT_Z || p.y < -0.2) continue
+    if (!best || p.z > best.z) best = { x: p.x, z: p.z }
+  }
+  return best
+}
+
+/**
+ * The crane bots, all played by pointing (where the claw should go) and
+ * pressing, as the UI sends them. Random points anywhere the claw reaches
+ * and drops as soon as it gets there, swinging or not. Cue trusts the
+ * marker: it lets the swing settle and sets each coin down in front of
+ * the pusher (where the hint says), anywhere across, whenever it's ready.
+ * Skilled sets each coin in line with the moonstone nearest the lip, and
+ * waits for the pusher to be pulled back, so the coin lands in the gap in
+ * front of it and the next push carries it into the pile. Both are
+ * 0-100ms late, like people.
+ */
+function craneBot(game: DropGame, bot: Bot, rand: () => number) {
+  const crane = game.delivery as CraneDelivery
+  const { x: xs, z: zs } = crane.config
+  const period = game.engine.pusherPeriodS
+  let nextAt = 0.5 + rand() * 1.5
+  let aim: { x: number; z: number } | null = null
+  let aimedAt = 0
+  let pressAt: number | null = null
+  return () => {
+    const t = game.engine.time
+    if (pressAt !== null && t >= pressAt) {
+      // As the UI does: where the pointer is, then the press.
+      if (aim) game.input({ type: 'point', ...aim })
+      game.press()
+      pressAt = null
+      aim = null
+      nextAt = t + 0.4 + rand() * (bot === 'random' ? 1.4 : 0.6)
+      return
+    }
+    if (pressAt !== null || !game.canDrop || !crane.loaded || t < nextAt) return
+    if (!aim) {
+      const stone = bot === 'skilled' ? frontmostSpecialAt(game) : null
+      aim =
+        bot === 'random'
+          ? { x: xs[0] + rand() * (xs[1] - xs[0]), z: zs[0] + rand() * (zs[1] - zs[0]) }
+          : { x: stone?.x ?? (rand() - 0.5) * 6, z: CRANE_GAP_Z }
+      // Only as far as the claw reaches.
+      aim.x = Math.min(xs[1], Math.max(xs[0], aim.x))
+      aim.z = Math.min(zs[1], Math.max(zs[0], aim.z))
+      aimedAt = t
+      game.input({ type: 'point', ...aim })
+      return
+    }
+    // Wait for the claw to get there (a few seconds at most).
+    const there = Math.hypot(crane.trolley.x - aim.x, crane.trolley.z - aim.z) < 0.15
+    const late = t - aimedAt > 6
+    if (!there && !late) return
+    if (bot === 'random') {
+      pressAt = t
+      return
+    }
+    // Then for it to stop swinging, and (skilled) for the pusher to be
+    // pulled back when the coin lands, so it lands in front of the pusher
+    // rather than on its top.
+    if (crane.swing > 0.08 && !late) return
+    const land = t + 0.05 + crane.fallPath().length / 60
+    const pulledBack = Math.sin((2 * Math.PI * land) / period) < CRANE_PULLED_BACK
+    if (bot === 'cue' || pulledBack || late) pressAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * Where the crane bots that aim set coins down: just in front of the
+ * pusher's face when it's pulled all the way back (at z -2); and how far
+ * back in its stroke (sin of its phase) it must be when the coin lands.
+ */
+const CRANE_GAP_Z = -1
+const CRANE_PULLED_BACK = -0.5
+
 /**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
@@ -168,6 +251,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    crane: craneBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {

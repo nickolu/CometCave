@@ -48,8 +48,14 @@ export const PALETTE = {
   /** Comet Homecoming: the pale-blue core with a gold star cap. */
   core: '#9fd8ff',
   coreMark: '#ffd166',
-  moonstone: '#efe6cf',
-  moonstoneMark: '#6f7fae',
+  /** Moonstone Porch: glowing pale-blue moonstones, a glass jar, the crane. */
+  moonstone: '#a9cbff',
+  moonstoneMark: '#4b5fa8',
+  moonstoneRim: '#f2f8ff',
+  jar: '#bfe4ff',
+  jarLid: '#c9973a',
+  crane: '#d96b4a',
+  craneRail: '#5a6080',
   chocolate: '#6b3a22',
   chocolateMark: '#3f1f10',
   truffle: '#2e1810',
