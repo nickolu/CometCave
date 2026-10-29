@@ -15,16 +15,16 @@ import {
   CraneDelivery,
 } from '@/app/meteor-coins/lib/deliveries/crane'
 import {
-  SPIDER_RAIL_ABOVE,
-  type SpiderConfig,
-  SpiderDelivery,
-} from '@/app/meteor-coins/lib/deliveries/spider'
-import {
   type SlideConfig,
   SlideDelivery,
   onSlide,
   slideCurve,
 } from '@/app/meteor-coins/lib/deliveries/slide'
+import {
+  SPIDER_RAIL_ABOVE,
+  type SpiderConfig,
+  SpiderDelivery,
+} from '@/app/meteor-coins/lib/deliveries/spider'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 

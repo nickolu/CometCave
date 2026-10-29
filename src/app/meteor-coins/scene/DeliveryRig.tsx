@@ -3,14 +3,14 @@
 import { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
-import { SpiderDelivery } from '@/app/meteor-coins/lib/deliveries/spider'
 import { SlideDelivery } from '@/app/meteor-coins/lib/deliveries/slide'
+import { SpiderDelivery } from '@/app/meteor-coins/lib/deliveries/spider'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import { BeltRig } from '@/app/meteor-coins/scene/BeltRig'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 import { CraneRig } from '@/app/meteor-coins/scene/CraneRig'
-import { SpiderRig } from '@/app/meteor-coins/scene/SpiderRig'
 import { SlideRig } from '@/app/meteor-coins/scene/SlideRig'
+import { SpiderRig } from '@/app/meteor-coins/scene/SpiderRig'
 
 /**
  * Draws the stage's delivery. The arm is drawn by Scene itself, with the
