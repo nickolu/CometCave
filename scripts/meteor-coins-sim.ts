@@ -13,14 +13,15 @@
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { FIELD_FRONT_Z, deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
+import { FIELD_FRONT_Z, PHYSICS_STEP_S, deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
 import {
   type Hoop,
   cannonYaw,
+  dropsThroughHoop,
   flightPath,
+  hoopX,
   launchVelocity,
   muzzleAt,
-  throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
@@ -83,16 +84,26 @@ function bentLineup(game: DropGame, stage: StageDef): boolean {
 }
 
 /**
- * The middle of the band of charges that thread a hoop from aim `yaw`, or
- * null if none do.
+ * The shot from aim `yaw` that drops down through a flat hoop centered at
+ * `atX` (where a sliding hoop will be): the middle of the band of charges
+ * that do it, and how long that coin flies to the rim. Null if none do.
  */
-function hoopPower(c: CannonDelivery['config'], yaw: number, hoop: Hoop): number | null {
-  const passing: number[] = []
+function hoopShot(
+  c: CannonDelivery['config'],
+  yaw: number,
+  hoop: Hoop,
+  atX: number
+): { power: number; flightS: number } | null {
+  const passing: { power: number; flightS: number }[] = []
   for (let p = 0; p <= 1.0001; p += 0.01) {
-    const path = flightPath(muzzleAt(yaw, c), launchVelocity(yaw, p, c), q => q.z < hoop.z - 0.1)
+    const path = flightPath(
+      muzzleAt(yaw, c),
+      launchVelocity(yaw, p, c),
+      q => q.y < 0.7 || q.z < hoop.z - 2
+    )
     for (let i = 1; i < path.length; i++) {
-      if (throughHoop(hoop, path[i - 1], path[i], 0.5, 0.09)) {
-        passing.push(p)
+      if (dropsThroughHoop(hoop, atX, path[i - 1], path[i], 0.5)) {
+        passing.push({ power: p, flightS: i * PHYSICS_STEP_S })
         break
       }
     }
@@ -100,65 +111,133 @@ function hoopPower(c: CannonDelivery['config'], yaw: number, hoop: Hoop): number
   return passing.length ? passing[passing.length >> 1] : null
 }
 
+/** Where along x the flat aim line from `yaw` passes a hoop's depth. */
+function lineXAt(c: CannonDelivery['config'], yaw: number, z: number): number {
+  const m = muzzleAt(yaw, c)
+  return m.x + (m.z - z) * Math.tan(yaw)
+}
+
 /**
- * The cannon bots. Random presses at random moments and holds for a random
- * time. Cue charges fully (a full shot drops off the backboard onto the
- * pusher, like the arm's coin) and lets go when it would land on bare shelf.
- * Skilled does the same, but whenever the swing is about to line up with a
- * hoop it locks there and holds for that hoop's charge, best hoop first.
- * Both are 0–100ms late, like people.
+ * The hoop a shot from `yaw` can drop through, best first among `hoops`,
+ * and where its center has to be: a fixed hoop where it stands, a sliding
+ * one where the aim line crosses its track.
+ */
+function hoopPlan(c: CannonDelivery['config'], yaw: number, hoops: readonly Hoop[]) {
+  for (const hoop of [...hoops].sort((a, b) => b.bonus - a.bonus)) {
+    const atX = hoop.sweep ? lineXAt(c, yaw, hoop.z) : hoop.x
+    if (hoop.sweep && Math.abs(atX - hoop.x) > hoop.sweep.ampX * 0.95) continue
+    const shot = hoopShot(c, yaw, hoop, atX)
+    if (shot) return { hoop, atX, ...shot }
+  }
+  return null
+}
+
+/**
+ * The cannon bots, played in its two steps: lock the direction, then hold
+ * for distance. Random locks at a random moment, waits a random while and
+ * holds a random time. Cue locks wherever it points, charges fully (a full
+ * shot drops against the back wall onto the pusher, like the arm's coin)
+ * and lets go when it would land on bare shelf. Skilled waits for the
+ * swing to line up with a hoop — the +10 first, any after a moment, a
+ * full shot like cue's after a whole swing — locks there and holds for
+ * that hoop's charge; for the sliding +10 it starts the charge so the
+ * coin arrives as the hoop does. Both time everything 0–100ms late, like
+ * people: aiming for 50ms from now, so each press and release is ±50ms.
  */
 function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
   const cannon = game.delivery as CannonDelivery
   const c = cannon.config
   let nextAt = 0.5 + rand() * 1.5
-  let pressAt: number | null = null
-  let releaseAt: number | null = null
-  let holdingSince = 0
+  let pending: { at: number; act: 'press' | 'release' } | null = null
+  // Random's wait before charging and how long it holds.
+  let chargeAt = 0
+  let holdS = 0
+  // Skilled's target, once it has one.
+  let plan: ReturnType<typeof hoopPlan> = null
+  let chargingSince = 0
+  // When a planned hold lets go, queued once the charge has started.
+  let nextRelease: number | null = null
+  const late = () => rand() * 0.1
   return () => {
     const t = game.engine.time
-    if (pressAt !== null && t >= pressAt) {
-      game.press()
-      pressAt = null
-      holdingSince = t
-    }
-    if (releaseAt !== null && t >= releaseAt) {
-      game.release()
-      releaseAt = null
-      nextAt = t + 0.6 + rand() * 1.2
-      return
-    }
-    if (cannon.charge !== null && releaseAt === null && pressAt === null) {
-      // Holding a full charge: let go when the coin would land on bare shelf.
-      const full = cannon.charge >= 1
-      const flight = cannon.previewPath().length / 60
-      if (
-        (full && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
-        t - holdingSince > 5
-      ) {
-        releaseAt = t + rand() * 0.1
+    if (pending && t >= pending.at) {
+      const { act } = pending
+      pending = null
+      if (act === 'press') {
+        const wasLocked = cannon.isLocked
+        game.press()
+        if (cannon.charge !== null) chargingSince = t
+        // A person sees where it locked: re-aim the distance from there.
+        if (!wasLocked && cannon.isLocked && plan) {
+          const hoop = plan.hoop
+          const atX = hoop.sweep ? lineXAt(c, cannon.yaw, hoop.z) : hoop.x
+          const shot = hoopShot(c, cannon.yaw, hoop, atX)
+          if (shot) plan = { hoop, atX, ...shot }
+        }
+      } else {
+        game.release()
+        plan = null
+        nextAt = t + 0.6 + rand() * 1.2
       }
       return
     }
-    if (cannon.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
+    if (pending) return
+    const charge = cannon.charge
+    if (charge !== null && nextRelease !== null) {
+      pending = { at: nextRelease, act: 'release' }
+      nextRelease = null
+      return
+    }
+    if (charge !== null) {
+      // Holding for a full shot: let go when the coin would land on bare shelf.
+      const flight = cannon.previewPath().length * PHYSICS_STEP_S
+      if (
+        (charge >= 1 && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
+        t - chargingSince > 5
+      ) {
+        pending = { at: t + late(), act: 'release' }
+      }
+      return
+    }
+    if (cannon.isLocked) {
+      // Second step: start the charge.
+      if (bot === 'random') {
+        if (t < chargeAt) return
+        // The release is queued once the press lands.
+        pending = { at: t, act: 'press' }
+        nextRelease = t + holdS
+        return
+      }
+      if (bot === 'skilled' && plan) {
+        const holdFor = plan.power * c.chargeS
+        if (plan.hoop.sweep) {
+          // Lead the slide: go when the hoop would reach the line as the coin does.
+          const arrive = game.dropperTime + (0.05 + holdFor + plan.flightS) * game.speed
+          if (Math.abs(hoopX(plan.hoop, arrive) - plan.atX) > 0.05) return
+        }
+        const at = t + late()
+        pending = { at, act: 'press' }
+        nextRelease = at + holdFor + (rand() - 0.5) * 0.1
+        return
+      }
+      pending = { at: t + late(), act: 'press' }
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    // First step: lock the direction.
     if (bot === 'random') {
-      pressAt = t
-      releaseAt = t + rand() * 1.5
+      pending = { at: t, act: 'press' }
+      chargeAt = t + rand() * 1.5
+      holdS = rand() * 1.5
       return
     }
     if (bot === 'skilled') {
-      const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
-      const best = [...c.hoops].sort((a, b) => b.bonus - a.bonus)
-      for (const hoop of best) {
-        const p = hoopPower(c, yaw, hoop)
-        if (p === null) continue
-        pressAt = t + rand() * 0.1
-        releaseAt = pressAt + p * c.chargeS + (rand() - 0.5) * 0.1
-        return
-      }
+      const waited = t - nextAt
+      const hoops = waited < 1.5 ? c.hoops.filter(h => h.bonus >= 10) : waited < 3 ? c.hoops : []
+      plan = hoopPlan(c, cannonYaw(game.dropperTime + 0.05 * game.speed, c), hoops)
+      if (!plan && waited < 3) return
     }
-    // Charge fully; the release waits for the shelf (above).
-    pressAt = t + rand() * 0.1
+    pending = { at: t + late(), act: 'press' }
   }
 }
 

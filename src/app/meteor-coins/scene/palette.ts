@@ -22,6 +22,7 @@ export const PALETTE = {
   brass: '#c9973a',
   hoop: '#ff5d73',
   hoopLabel: '#fff3c4',
+  hoopBoard: '#f4efe4',
   /** The on-table timing cue. */
   cue: '#fff3c4',
   obstacle: '#7f86ad',

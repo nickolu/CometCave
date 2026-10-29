@@ -1,13 +1,16 @@
+import { sweeperX } from '@/app/meteor-coins/lib/board'
 import { GRAVITY, LINEAR_DAMPING, PHYSICS_STEP_S } from '@/app/meteor-coins/lib/cabinet'
 
 /**
  * Hoop-La Cannon's launcher: a cannon at the front of the cabinet that lobs
- * coins back over the pile, through hoops hanging above it.
+ * coins back over the pile, down through hoops that lie flat above it like
+ * basketball hoops.
  *
- * The cannon swings left and right on its own. A press locks the aim and
- * starts the charge; how long it's held sets the distance (the charge fills
- * in `chargeS` and stops); letting go fires. Players who'd rather not hold
- * can tap once to lock and again to fire.
+ * Aiming takes two steps. The cannon swings left and right on its own; a
+ * first press locks the direction. Then a second press starts the charge:
+ * how long it's held sets the distance (the charge fills in `chargeS` and
+ * stops), and letting go fires. Players who'd rather not hold can tap a
+ * third time to fire instead.
  *
  * The arc is exact: it's worked out the way the physics steps a body, so
  * the dotted preview is the path the coin flies until it touches something.
@@ -23,8 +26,22 @@ const SUBSTEP_GRAVITY = 10 / 16
 
 export type Vec = { x: number; y: number; z: number }
 
-/** A hoop hanging upright, facing the player. Coins through it pour `bonus` more. */
-export type Hoop = { x: number; y: number; z: number; radius: number; bonus: number }
+/** How far each hoop's backboard (and the bonus written on it) stands above its rim. */
+export const HOOP_BOARD_TOP = 0.8
+
+/**
+ * A hoop lying flat, like a basketball hoop: a coin that drops down through
+ * it pours `bonus` more. `radius` is the inside of the rim. One with a
+ * `sweep` slides left and right along its track (see hoopX).
+ */
+export type Hoop = {
+  x: number
+  y: number
+  z: number
+  radius: number
+  bonus: number
+  sweep?: { ampX: number; periodS: number }
+}
 
 export type CannonConfig = {
   /** The point the barrel turns about, and its length to the muzzle. */
@@ -110,9 +127,37 @@ export function flightPath(
   return points
 }
 
+/** Where a hoop's center is across the table at stage time `t`: it may slide. */
+export function hoopX(hoop: Hoop, t: number): number {
+  return hoop.sweep ? hoop.x + sweeperX(hoop.sweep, t) : hoop.x
+}
+
 /**
- * Whether a coin moving from `from` to `to` (one step) went through a hoop:
- * it crossed the hoop's plane with the whole coin inside the rim. A flying
+ * Whether a coin moving from `from` to `to` (one step) dropped down through
+ * a flat hoop centered at `x`: it crossed the rim's height going down, with
+ * the whole coin inside the rim. A flying coin lies flat, so it fits when
+ * its center is within the rim's radius less its own.
+ */
+export function dropsThroughHoop(
+  hoop: Hoop,
+  x: number,
+  from: Vec,
+  to: Vec,
+  coinRadius: number
+): boolean {
+  if (!(from.y > hoop.y && to.y <= hoop.y)) return false
+  const k = (from.y - hoop.y) / (from.y - to.y)
+  const dx = from.x + (to.x - from.x) * k - x
+  const dz = from.z + (to.z - from.z) * k - hoop.z
+  const room = hoop.radius - coinRadius
+  return room > 0 && dx * dx + dz * dz <= room * room
+}
+
+/**
+ * Whether a coin moving from `from` to `to` (one step) went through an
+ * upright hoop facing the player (how the hoops first hung; kept for any
+ * stage that wants one): it crossed the hoop's plane with the whole coin
+ * inside the rim. A flying
  * coin lies flat, so what has to fit is a strip as wide as the coin and as
  * tall as it is thick.
  */
