@@ -45,6 +45,10 @@ export const PALETTE = {
   meteoriteMark: '#ff9a5c',
   moon: '#e6e9f5',
   moonMark: '#a7aec7',
+  /** Gravity Assist's plunger: a steel spring and a glass ball, and the moon's pull around it. */
+  plungerSpring: '#b8c2d9',
+  glass: '#cfeaff',
+  moonField: '#9fb4ff',
   /** Comet Homecoming: the pale-blue core with a gold star cap. */
   core: '#9fd8ff',
   coreMark: '#ffd166',

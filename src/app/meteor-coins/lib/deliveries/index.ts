@@ -7,6 +7,11 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import {
+  type PlungerConfig,
+  PlungerDelivery,
+  plungerVelocity,
+} from '@/app/meteor-coins/lib/deliveries/plunger'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -22,7 +27,10 @@ export type {
  * config to this union, a case to each switch below, a rig to
  * scene/DeliveryRig and a bot to scripts/meteor-coins-sim.ts.
  */
-export type DeliveryConfig = { kind: 'arm' } | ({ kind: 'cannon' } & CannonConfig)
+export type DeliveryConfig =
+  | { kind: 'arm' }
+  | ({ kind: 'cannon' } & CannonConfig)
+  | ({ kind: 'plunger' } & PlungerConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -40,6 +48,8 @@ export function createDelivery(
       return new ArmDelivery(tapDrop)
     case 'cannon':
       return new CannonDelivery(host, config)
+    case 'plunger':
+      return new PlungerDelivery(host, config)
   }
 }
 
@@ -51,6 +61,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
   switch (config.kind) {
     case 'arm':
     case 'cannon':
+    case 'plunger':
       return 0
   }
 }
@@ -65,6 +76,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return null
     case 'cannon':
       return cannonPoints(config)
+    case 'plunger':
+      return plungerPoints(config)
   }
 }
 
@@ -77,6 +90,7 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
     case 'arm':
       return false
     case 'cannon':
+    case 'plunger':
       return true
   }
 }
@@ -88,6 +102,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'arm'
     case 'cannon':
       return 'cannon'
+    case 'plunger':
+      return 'moon'
   }
 }
 
@@ -103,6 +119,10 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return tapTwice
         ? 'Tap or press Space to aim, and again to fire.'
         : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+    case 'plunger':
+      return tapTwice
+        ? 'Tap or press Space to pull the plunger back, and again to launch.'
+        : 'Hold to pull the plunger back (longer shoots harder), and let go to launch.'
   }
 }
 
@@ -116,5 +136,28 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
     ...c.hoops.map(h => ({ x: h.x, y: h.y + h.radius + 0.8, z: h.z })),
+  ]
+}
+
+/**
+ * The ball in the plunger's mouth, the knob pulled all the way back down
+ * the lane, and the top of a full pull's flight with no moon to bend it,
+ * across the table (the moon's orbit sits below that).
+ */
+function plungerPoints(c: PlungerConfig): Vec[] {
+  const v = plungerVelocity(1, c)
+  const speed = Math.hypot(v.x, v.y, v.z)
+  const back = (d: number) => ({
+    x: c.at.x - (v.x / speed) * d,
+    y: c.at.y - (v.y / speed) * d,
+    z: c.at.z - (v.z / speed) * d,
+  })
+  const full = flightPath(c.at, v, p => p.y < c.at.y)
+  const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
+  return [
+    { x: c.at.x + 0.7, y: c.at.y + 0.7, z: c.at.z },
+    back(2.6),
+    { x: -peak.x, y: peak.y + 0.4, z: peak.z },
+    { x: peak.x, y: peak.y + 0.4, z: peak.z },
   ]
 }

@@ -1,9 +1,10 @@
 'use client'
 
 import { useFrame } from '@react-three/fiber'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
+import { GRAVITY } from '@/app/meteor-coins/lib/cabinet'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
@@ -17,15 +18,45 @@ const MAX_WARNINGS = 2
 /** Countdown rings sit just above the shelf, drawn over the pile. */
 const WARNING_Y = 0.65
 const WARNING_RADIUS = 0.75
+/**
+ * The moon's field is drawn as rings at the distances where its pull is
+ * twice gravity, gravity, and half of it: inside the middle ring the moon
+ * pulls harder than the table does. They drift slowly inward, toward the
+ * moon, unless the player has asked for less motion.
+ */
+const FIELD_PULLS = [2, 1, 0.5]
+const FIELD_DRIFT_S = 2.4
 
 /**
  * Gravity Assist's sky: the moon on its orbit (drawn as a faint ellipse),
- * the dotted path a coin dropped now would fall, and a countdown ring on
- * the spot each announced meteorite will land. Reads the game every frame;
- * owns no state of its own.
+ * the rings of its pull around it, the dotted path a coin dropped now would
+ * fall (under the arm; other deliveries draw their own), and a countdown
+ * ring on the spot each announced meteorite will land. Reads the game every
+ * frame; owns no state of its own.
  */
 export function MoonRig({ game, moon }: { game: DropGame; moon: MoonConfig }) {
   const body = useRef<THREE.Group>(null)
+  const field = useRef<THREE.Group>(null)
+  const fieldRings = useRef<(THREE.Mesh | null)[]>([])
+  const reduced = useRef(false)
+  useEffect(() => {
+    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const update = () => {
+      reduced.current = query.matches
+    }
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  // Where the pull is each share of gravity: strength / (r² + softening²) = share × g.
+  const fieldRadii = useMemo(
+    () =>
+      FIELD_PULLS.map(share =>
+        Math.sqrt(Math.max(0.01, moon.strength / (share * -GRAVITY) - moon.softening ** 2))
+      ),
+    [moon]
+  )
+  const glow = useMemo(() => glowTexture(), [])
   const dots = useRef<THREE.InstancedMesh>(null)
   const warnings = useRef<(THREE.Group | null)[]>([])
   const labels = useRef<(THREE.SpriteMaterial | null)[]>([])
@@ -44,15 +75,27 @@ export function MoonRig({ game, moon }: { game: DropGame; moon: MoonConfig }) {
     return new THREE.BufferGeometry().setFromPoints(points)
   }, [moon])
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const at = game.moon
     if (at && body.current) {
       body.current.position.set(at.x, at.y, at.z)
       body.current.rotation.y = game.dropperTime * 0.4
     }
+    // The field faces the camera, so its rings read as the moon's reach in every direction.
+    if (at && field.current) {
+      field.current.position.set(at.x, at.y, at.z)
+      field.current.quaternion.copy(camera.quaternion)
+      const drift = reduced.current ? 0 : (game.dropperTime / FIELD_DRIFT_S) % 1
+      fieldRings.current.forEach((ring, i) => {
+        if (!ring) return
+        // Each ring shrinks a little toward the moon and springs back: the pull, flowing in.
+        const phase = (drift + i / FIELD_PULLS.length) % 1
+        ring.scale.setScalar(1 - 0.12 * phase)
+      })
+    }
     const mesh = dots.current
     if (mesh) {
-      const path = game.canDrop ? game.dropPath() : []
+      const path = game.canDrop && game.delivery.kind === 'arm' ? game.dropPath() : []
       for (let i = 0; i < MAX_DOTS; i++) {
         const p = path[(i + 1) * DOT_EVERY]
         mesh.setMatrixAt(i, p ? m.makeTranslation(p.x, p.y, p.z) : hidden)
@@ -84,6 +127,34 @@ export function MoonRig({ game, moon }: { game: DropGame; moon: MoonConfig }) {
       <lineLoop geometry={orbit}>
         <lineBasicMaterial color={PALETTE.moonMark} transparent opacity={0.35} />
       </lineLoop>
+      <group ref={field}>
+        <sprite scale={[fieldRadii[1] * 2.4, fieldRadii[1] * 2.4, 1]}>
+          <spriteMaterial
+            map={glow}
+            color={PALETTE.moonField}
+            transparent
+            opacity={0.35}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+          />
+        </sprite>
+        {fieldRadii.map((r, i) => (
+          <mesh
+            key={i}
+            ref={mesh => {
+              fieldRings.current[i] = mesh
+            }}
+          >
+            <ringGeometry args={[r - 0.04, r, 64]} />
+            <meshBasicMaterial
+              color={PALETTE.moonField}
+              transparent
+              opacity={0.55 - 0.15 * i}
+              depthWrite={false}
+            />
+          </mesh>
+        ))}
+      </group>
       <group ref={body}>
         <mesh>
           <sphereGeometry args={[MOON_RADIUS, 24, 16]} />
@@ -161,6 +232,25 @@ function digitTexture(text: string): THREE.Texture {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(text, 64, 70)
+  }
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.colorSpace = THREE.SRGBColorSpace
+  return texture
+}
+
+/** A soft round glow, bright in the middle and gone at the edge: the moon's field. */
+function glowTexture(): THREE.Texture {
+  const canvas = document.createElement('canvas')
+  canvas.width = 128
+  canvas.height = 128
+  const ctx = canvas.getContext('2d')
+  if (ctx) {
+    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64)
+    g.addColorStop(0, 'rgba(255,255,255,0.9)')
+    g.addColorStop(0.35, 'rgba(255,255,255,0.35)')
+    g.addColorStop(1, 'rgba(255,255,255,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, 128, 128)
   }
   const texture = new THREE.CanvasTexture(canvas)
   texture.colorSpace = THREE.SRGBColorSpace

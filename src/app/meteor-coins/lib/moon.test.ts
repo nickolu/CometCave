@@ -19,18 +19,33 @@ describe('the moon', () => {
     expect(moonAt(MOON.periodS / 4, MOON).x).toBeCloseTo(MOON.center.x + MOON.radiusX)
   })
 
-  it('pulls across and up or down, never forward, and leaves the pile alone', () => {
+  it('pulls toward itself, weaker further off, and leaves the pile alone', () => {
     const moon = { x: 2, y: 5, z: 0 }
     const a = moonPull({ x: 0, y: 5, z: -4 }, moon, MOON)
     expect(a.x).toBeGreaterThan(0)
-    expect(a.z).toBe(0)
+    // Gravity Assist's plunger flies front to back, so its moon pulls that way too.
+    expect(a.z).toBeGreaterThan(0)
     const far = moonPull({ x: -3, y: 5, z: -4 }, moon, MOON)
     expect(Math.abs(far.x)).toBeLessThan(a.x)
     expect(moonPull({ x: 0, y: MOON.minY - 0.01, z: -4 }, moon, MOON)).toEqual({ x: 0, y: 0, z: 0 })
   })
 
+  it('pulls across and up or down only, unless the stage asks for front to back', () => {
+    const flat = { ...MOON, pullZ: false }
+    const a = moonPull({ x: 0, y: 5, z: -4 }, { x: 2, y: 5, z: 0 }, flat)
+    expect(a.x).toBeGreaterThan(0)
+    expect(a.z).toBe(0)
+  })
+
   it('previews exactly the curve a dropped coin falls', () => {
-    const game = new DropGame(GRAVITY_ASSIST, { pile: [] })
+    // Under an arm hung high, as Gravity Assist had before its plunger: the
+    // same prediction now places its meteorites.
+    const underArm: StageDef = {
+      ...GRAVITY_ASSIST,
+      delivery: undefined,
+      arm: { ...GRAVITY_ASSIST.arm, pivotY: 14.5 },
+    }
+    const game = new DropGame(underArm, { pile: [] })
     for (const wait of [0, 37, 90]) {
       for (let i = 0; i < wait; i++) game.step()
       const path = game.dropPath()
