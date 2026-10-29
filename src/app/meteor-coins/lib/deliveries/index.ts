@@ -19,6 +19,12 @@ import {
   type SpiderConfig,
   SpiderDelivery,
 } from '@/app/meteor-coins/lib/deliveries/spider'
+import {
+  type SlideConfig,
+  SlideDelivery,
+  onSlide,
+  slideCurve,
+} from '@/app/meteor-coins/lib/deliveries/slide'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -40,6 +46,7 @@ export type DeliveryConfig =
   | ({ kind: 'crane' } & CraneConfig)
   | ({ kind: 'belt' } & BeltConfig)
   | ({ kind: 'spider' } & SpiderConfig)
+  | ({ kind: 'slide' } & SlideConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -63,6 +70,8 @@ export function createDelivery(
       return new BeltDelivery(host, config)
     case 'spider':
       return new SpiderDelivery(host, config)
+    case 'slide':
+      return new SlideDelivery(host, config)
   }
 }
 
@@ -75,6 +84,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'arm':
     case 'cannon':
     case 'belt':
+    case 'slide':
       return 0
     // The pointer is read over the top of the pile, where the coin will land.
     case 'crane':
@@ -101,6 +111,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return beltPoints(config)
     case 'spider':
       return spiderPoints(config)
+    case 'slide':
+      return slidePoints(config)
   }
 }
 
@@ -112,6 +124,7 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
   switch (config.kind) {
     case 'arm':
     case 'belt':
+    case 'slide':
       return false
     case 'cannon':
       return true
@@ -134,6 +147,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'belt'
     case 'spider':
       return 'spider'
+    case 'slide':
+      return 'slide'
   }
 }
 
@@ -157,7 +172,20 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return 'Tap or press Space to drop the marked chocolate off the belt, right where it is.'
     case 'spider':
       return 'Touch or point where the spider should go, or use the arrow keys. Tap or press Space to drop the coin.'
+    case 'slide':
+      return 'Tap or press Space to send a duck down the slide. It goes where the slide points.'
   }
+}
+
+/** The slide's top, and its lip at both ends of its sway. */
+function slidePoints(c: SlideConfig): Vec[] {
+  const { points } = slideCurve(c)
+  const lip = points[points.length - 1]
+  return [
+    { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
+    onSlide(lip, -c.maxYaw, c),
+    onSlide(lip, c.maxYaw, c),
+  ]
 }
 
 /** The cannon, each hoop's backboard (at both ends of a slide), and the top of a full shot's arc. */

@@ -167,6 +167,7 @@ export class DropGame implements DeliveryHost {
       floorDrift: stage.table.floorDrift,
       layout: stage.table.layout,
       board: stage.table.board,
+      drain: stage.table.drain,
       ...options,
     })
     this.delivery = createDelivery(this, deliveryOf(stage), () => this.tapDrop())

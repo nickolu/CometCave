@@ -182,6 +182,13 @@ function duck(scale: number, extra: Part[] = []): Part[] {
   ]
 }
 
+/**
+ * Ducks are rubber: they boing off each other, the soap and the tub's rims.
+ * Restitution averages between the two things touching, so against the
+ * dead floor a duck keeps only half of this and the pile still settles.
+ */
+const DUCK_BOUNCE = 0.85
+
 export const DUCK: ObjectSpec = {
   id: 'duck',
   name: 'duck',
@@ -189,7 +196,7 @@ export const DUCK: ObjectSpec = {
   parts: duck(1),
   density: 0.8,
   friction: 0.5,
-  restitution: 0.3,
+  restitution: DUCK_BOUNCE,
   points: 1,
   refund: 0,
   reach: 0.52,
@@ -213,7 +220,7 @@ export const MAMA_DUCK: ObjectSpec = {
   ]),
   density: 0.8,
   friction: 0.5,
-  restitution: 0.3,
+  restitution: DUCK_BOUNCE,
   points: 5,
   refund: 0,
   reach: 0.52 * MAMA,
