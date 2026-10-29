@@ -1,5 +1,6 @@
 import {
   type CannonConfig,
+  HOOP_BOARD_TOP,
   type Vec,
   flightPath,
   launchVelocity,
@@ -100,13 +101,15 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
     case 'arm':
       return 'Tap or press Space to drop.'
     case 'cannon':
+      // Two steps: direction, then distance. Tap twice makes the distance
+      // a tap to start the charge and a tap to fire, so three taps a shot.
       return tapTwice
-        ? 'Tap or press Space to aim, and again to fire.'
-        : 'Press and hold to aim; how long you hold sets the distance. Let go to fire.'
+        ? 'Tap or press Space to pick the direction. Tap again to start the power, and once more to fire.'
+        : 'Tap or press Space to pick the direction. Then press and hold for distance, and let go to fire.'
   }
 }
 
-/** The cannon, each hoop's tag, and the top of a full shot's arc. */
+/** The cannon, each hoop's backboard (at both ends of a slide), and the top of a full shot's arc. */
 function cannonPoints(c: CannonConfig): Vec[] {
   const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
   const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
@@ -115,6 +118,9 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x + 1.2, y: 0, z: c.pivot.z + 0.6 },
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
-    ...c.hoops.map(h => ({ x: h.x, y: h.y + h.radius + 0.8, z: h.z })),
+    ...c.hoops.flatMap(h => {
+      const reach = h.radius + (h.sweep?.ampX ?? 0)
+      return [-reach, reach].map(dx => ({ x: h.x + dx, y: h.y + HOOP_BOARD_TOP, z: h.z }))
+    }),
   ]
 }
