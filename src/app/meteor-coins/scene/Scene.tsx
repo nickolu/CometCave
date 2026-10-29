@@ -674,8 +674,9 @@ function beaconTexture(text: string): THREE.Texture {
   return texture
 }
 
-/** Whether an obstacle moves on its own (rises and sinks with phases, or sweeps). */
-const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+/** Whether an obstacle moves on its own (rises and sinks with phases, sweeps or slides). */
+const moves = (o: Obstacle) =>
+  o.phases !== undefined || o.sweep !== undefined || o.slide !== undefined
 
 function ObstacleMesh({ obstacle: o, tone }: { obstacle: Obstacle; tone?: Tone }) {
   if (o.type === 'block') {

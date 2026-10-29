@@ -14,6 +14,11 @@ import {
   type CraneConfig,
   CraneDelivery,
 } from '@/app/meteor-coins/lib/deliveries/crane'
+import {
+  SPIDER_RAIL_ABOVE,
+  type SpiderConfig,
+  SpiderDelivery,
+} from '@/app/meteor-coins/lib/deliveries/spider'
 import type { Delivery, DeliveryHost } from '@/app/meteor-coins/lib/deliveries/types'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -34,6 +39,7 @@ export type DeliveryConfig =
   | ({ kind: 'cannon' } & CannonConfig)
   | ({ kind: 'crane' } & CraneConfig)
   | ({ kind: 'belt' } & BeltConfig)
+  | ({ kind: 'spider' } & SpiderConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -55,6 +61,8 @@ export function createDelivery(
       return new CraneDelivery(host, config)
     case 'belt':
       return new BeltDelivery(host, config)
+    case 'spider':
+      return new SpiderDelivery(host, config)
   }
 }
 
@@ -71,6 +79,9 @@ export function deliveryAimY(config: DeliveryConfig): number {
     // The pointer is read over the top of the pile, where the coin will land.
     case 'crane':
       return CRANE_AIM_Y
+    case 'spider':
+      // About where tower tops are, so pointing at a post puts the spider over it.
+      return SPIDER_AIM_Y
   }
 }
 
@@ -88,6 +99,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return cranePoints(config)
     case 'belt':
       return beltPoints(config)
+    case 'spider':
+      return spiderPoints(config)
   }
 }
 
@@ -103,6 +116,7 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
     case 'cannon':
       return true
     case 'crane':
+    case 'spider':
       return false
   }
 }
@@ -118,6 +132,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'crane'
     case 'belt':
       return 'belt'
+    case 'spider':
+      return 'spider'
   }
 }
 
@@ -139,6 +155,8 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
       return 'Move the claw with the pointer or the arrow keys. Tap or press Space to drop.'
     case 'belt':
       return 'Tap or press Space to drop the marked chocolate off the belt, right where it is.'
+    case 'spider':
+      return 'Touch or point where the spider should go, or use the arrow keys. Tap or press Space to drop the coin.'
   }
 }
 
@@ -187,5 +205,17 @@ function beltPoints(c: BeltConfig): Vec[] {
     { x: c.toX + 0.6, y: c.y + 0.6, z: c.z },
     { x: -4.3, y: -2.3, z: 5.4 },
     { x: 4.3, y: -2.3, z: 5.4 },
+  ]
+}
+
+const SPIDER_AIM_Y = 1.5
+
+/** Both ends of the spider's rail, and the bottom of its bob. */
+function spiderPoints(c: SpiderConfig): Vec[] {
+  const railY = c.highY + SPIDER_RAIL_ABOVE + 0.2
+  return [
+    { x: -c.halfWidth - 0.8, y: railY, z: c.z },
+    { x: c.halfWidth + 0.8, y: railY, z: c.z },
+    { x: 0, y: c.lowY - 0.3, z: c.z },
   ]
 }
