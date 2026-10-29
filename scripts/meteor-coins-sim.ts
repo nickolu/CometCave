@@ -23,6 +23,7 @@ import {
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import { type SlideDelivery, rideTime, slideFlight } from '@/app/meteor-coins/lib/deliveries/slide'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -161,6 +162,64 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * The waterslide bots. The slide only picks a direction: a duck flies out
+ * along it, away from the slide's top. Random sends one at random moments.
+ * Cue sends one when the slide points at the drain. Skilled first looks
+ * for a duck in the water between the slide and the drain, Mama Ducks
+ * first, and points at it so the hit knocks it in; and it waits for the
+ * duck to land while the pusher is on its way forward, so the push helps.
+ * Both are 0–100ms late, like people.
+ */
+function slideBot(game: DropGame, bot: Bot, rand: () => number) {
+  const slide = game.delivery as SlideDelivery
+  const c = slide.config
+  const drain = game.stage.table.drain
+  const ride = rideTime(c)
+  const bearing = (p: { x: number; z: number }) => Math.atan2(p.x - c.pivot.x, p.z - c.pivot.z)
+  const range = (p: { x: number; z: number }) => Math.hypot(p.x - c.pivot.x, p.z - c.pivot.z)
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let waitingSince = 0
+  return () => {
+    const t = game.engine.time
+    if (pressAt !== null && t >= pressAt) {
+      if (game.press()) nextAt = t + 0.6 + rand() * 1.2
+      pressAt = null
+      waitingSince = nextAt
+      return
+    }
+    if (pressAt !== null || !slide.ready || t < nextAt) return
+    if (bot === 'random' || !drain) {
+      pressAt = t
+      return
+    }
+    // Judged for a press 50ms from now.
+    const yaw = slide.yawAfter(0.05)
+    let aimAt = bearing(drain)
+    let onBeat = true
+    if (bot === 'skilled') {
+      let best: { at: number; value: number; range: number } | null = null
+      for (const puck of game.engine.pucks) {
+        if (!puck.active || puck.kind === 'player') continue
+        const p = puck.body.translation()
+        if (p.y > 0.6) continue
+        const off = Math.abs(bearing(p) - bearing(drain))
+        const short = range(drain) - range(p)
+        if (off > 0.15 || short < 0.3 || short > 1.2) continue
+        const value = puck.spec.points
+        if (!best || value > best.value || (value === best.value && range(p) > best.range))
+          best = { at: bearing(p), value, range: range(p) }
+      }
+      if (best) aimAt = best.at
+      const flight = slideFlight(yaw, c).length / 60
+      onBeat = shelfOpenAt(t + 0.05 + ride + flight, game.engine.pusherPeriodS)
+    }
+    const aimed = Math.abs(yaw - aimAt) < 0.05
+    if ((aimed && onBeat) || t - waitingSince > 6) pressAt = t + rand() * 0.1
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -168,6 +227,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    slide: slideBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {
