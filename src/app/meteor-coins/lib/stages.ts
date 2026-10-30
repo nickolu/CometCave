@@ -20,8 +20,6 @@ import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coin
 import type { Drain, Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import {
-  AMBER,
-  AMBER_BONUS,
   CHOCOLATE,
   COIN,
   CORE,
@@ -1191,60 +1189,84 @@ const GRAVITY_ASSIST: StageDef = {
   },
 }
 
-/** Redline's pegs: two posts near the lip that split the flow off the front. */
-const REDLINE_PEGS: Obstacle[] = [-1.4, 1.4].map(x => ({
-  type: 'post',
-  x,
-  z: 2.6,
-  radius: 0.28,
-  height: 0.9,
-}))
+/**
+ * Moonlight Lanes' alley (lib/deliveries/bowling): a lane floating over the
+ * middle of the table, its pin deck over the pusher's top and its pit
+ * opening onto the strip in front of the back wall, so every pin knocked
+ * down lands where the arm's coins land on other stages and the pusher
+ * carries it to the chute. Measured, each a lesson:
+ * - Height 2: the lane's underside (1.8) clears the baked heap (tallest
+ *   coin top 1.5) and the coins the pusher carries under the deck.
+ * - The pit (deck end -3.8 to the back wall) is 1.7 deep. At 1.3 it
+ *   clogged: coins heaped up past the deck, and the sweep bar pushing into
+ *   the heap threw coins out of the cabinet (two or three a game).
+ * - Pins 1.3 apart, three coins each, on a slick deck (0.25). At 1.15
+ *   apart a full-strength ball shoved the rack as one block and knocked
+ *   one pin; at friction 0.35 hardly any fell; at 0.1 every roll struck.
+ *   With four coins a pin (24 a strike) good runs came within twenty
+ *   coins of the 250 the pool holds.
+ * - Speed 2 to 11 (sweep of aims 0 to ±0.2 at strengths 0.3 to 1, empty
+ *   table): a gentle roll takes 2–3 pins, a middling one 4–5, a hard one
+ *   within about 0.1 of the head pin mostly strikes. Aims past about 0.25
+ *   find the gutter.
+ */
+const MOONLIGHT_ALLEY: DeliveryConfig = {
+  kind: 'bowling',
+  y: 2.0,
+  halfWidth: 1.85,
+  frontZ: 3.7,
+  ballZ: 3.1,
+  headZ: -1.0,
+  endZ: -3.8,
+  pinCoins: 3,
+  pinSpacing: 1.3,
+  minSpeed: 2,
+  maxSpeed: 11,
+  maxAim: 0.4,
+  chargeS: 1.1,
+  friction: 0.25,
+  strikeBonus: 5,
+  spareBonus: 2,
+}
 
-const REDLINE: StageDef = {
+const MOONLIGHT_LANES: StageDef = {
   number: 11,
-  slug: 'redline',
-  name: 'Redline',
+  slug: 'moonlight-lanes',
+  name: 'Moonlight Lanes',
   pitch:
-    'Forty coins, ninety seconds, one tempo. Stay on the beat and the table pays more the longer you hold it.',
+    'A bowling alley under the moon. Every pin you knock down is a stack of coins, and it lands on the pusher.',
   playable: true,
-  table: {
-    chuteHalfWidth: CHUTE_HALF_WIDTH,
-    pusherPeriodS: 2.4,
-    obstacles: REDLINE_PEGS,
-  },
+  table: { chuteHalfWidth: CHUTE_HALF_WIDTH, pusherPeriodS: PUSHER_PERIOD_S },
+  // Unused: the ball is bowled, not dropped.
   arm: { periodS: ARM_PERIOD_S },
-  // Faster and narrower than the usual ring (3.9s, 0.8). The pusher runs
-  // faster too (2.4s, not 3.2): at the usual pace, ring bonuses were still
-  // on the shelf when the clock ran out.
-  ring: { enabled: true, periodS: 2.9, radius: 0.7 },
-  objects: { drop: AMBER, bonus: AMBER_BONUS },
-  // The beat lane: the chevrons on the back wall light on the beat.
-  cue: 'chevrons',
-  pile: 'redline',
-  bake: { seed: 12, floor: 150, top: 14 },
+  delivery: MOONLIGHT_ALLEY,
+  ring: { enabled: false },
+  objects: { drop: COIN },
+  // The lane draws its own aim line.
+  cue: null,
+  pile: 'moonlight-lanes',
+  // A thinner heap than most stages (88 coins): knocked pins pile up on the
+  // pusher's top, and with 101 coins and twelve balls a run of strikes
+  // reached 248 live coins of the pool's 250.
+  bake: { seed: 11, floor: 85, top: 10 },
   rules: {
-    coins: 40,
-    // Ninety seconds of arm time, so the slower arm stretches it (and its
-    // results say so).
-    timeLimitS: 90,
-    // A drop on the beat raises the tempo a step, up to 6; off the beat it
-    // falls back to 1, and every 3s without a drop costs a step. A ring hit
-    // pours 3 coins times the tempo the drop was made at.
-    tempo: { max: 6, idleS: 3 },
-    bonusForStreak: () => 3,
-    // The doc's guesses (45 / 120 / 200) are out of reach: a pusher only
-    // moves so many coins in 90s. From the sim (12 games each): a random
-    // tapper averages 12 (a star 17% of the time); dropping on the beat
-    // averages 28 and reaches Redline every game (★ 92%, ★★ 42%); on the
-    // beat plus ring lineups averages 40 (★★ every game, ★★★ 42%).
-    goal: { type: 'score', stars: [15, 30, 45] },
+    // Ten balls (coins), so ten frames at most.
+    coins: 10,
+    bonusForStreak: () => 0,
+    // From the sim (10 games each), every throw a swipe: rolling any way at
+    // any strength averages 15 (★ 70%, ★★ 10%), and knocks down about 2
+    // pins a ball. Straight at the head pin, middling hard, averages 31 (★
+    // every game, ★★ 50%): 3 pins a ball, mostly spares. Hard, just right of
+    // the head pin, then at what's left, averages 73 (★★★ 90%): 5 strikes
+    // in 10 balls. One star stays in easy reach, so stage 12 opens.
+    goal: { type: 'score', stars: [10, 30, 60] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },
-  hint: 'Drop when the chevrons light to build tempo. Ring hits pay 2 coins times your tempo.',
+  hint: 'Each coin buys a ball. Pins you knock down drop onto the pusher. Strike: +5 coins. Spare: +2.',
   voice: {
-    start: 'Ninety seconds. Find the beat.',
-    clear: 'Tempo held. The table paid out.',
-    miss: 'Lost the beat. Run it back.',
+    start: 'Lanes are open. Roll it hard, right at the front pin.',
+    clear: 'Strike up the band! The pins came home as coins.',
+    miss: 'The pins are waiting. Bowl again.',
   },
 }
 
@@ -1428,7 +1450,7 @@ export const STAGES: readonly Stage[] = [
   STARFALL_PACHINKO,
   GRAVITY_ASSIST,
   THE_BEDTIME_BOOK,
-  REDLINE,
+  MOONLIGHT_LANES,
   COMET_HOMECOMING,
 ]
 

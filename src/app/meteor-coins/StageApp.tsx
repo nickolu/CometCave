@@ -196,6 +196,10 @@ export default function StageApp({ slug }: { slug: string }) {
             setAnnounce(`Red plate on the ${e.deck}. Its edge is blocked for ${e.seconds} seconds.`)
           }
         }
+        if (e.type === 'callout') {
+          setPopup({ id: performance.now(), text: e.text })
+          setAnnounce(e.announce)
+        }
         if (e.type === 'hoop') {
           setPopup({ id: performance.now(), text: `Hoop! +${e.bonus} ${drops}` })
           setAnnounce(`Through the ${e.bonus} hoop. ${e.bonus} bonus ${drops}.`)

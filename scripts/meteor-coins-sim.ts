@@ -27,6 +27,11 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import type { Delivery } from '@/app/meteor-coins/lib/deliveries'
 import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
+import {
+  type BowlingDelivery,
+  FULL_SWIPE,
+  MIN_SWIPE,
+} from '@/app/meteor-coins/lib/deliveries/bowling'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
 import {
@@ -760,6 +765,71 @@ function lobBot(game: DropGame, bot: Bot, rand: () => number, delivery: Delivery
 }
 
 /**
+ * Where the skilled bowler rolls the first ball: just right of the head pin,
+ * into the pocket between it and the pin behind it on the right. From a
+ * sweep of aims and strengths on an empty table: at full strength most aims
+ * within about 0.1 of the head pin strike, and 0.06 sits in that band with
+ * room for a wobble either way. Strength matters more than the exact aim.
+ */
+const POCKET_AIM = 0.06
+
+/**
+ * The bowling bots, each throw played as a swipe up the lane (a point, a
+ * press, the pointer moving up the lane, and a release, a fifth of a second
+ * apart). Random rolls any direction at any strength, after a random
+ * pause. Cue rolls straight at the head pin, middling hard, every ball.
+ * Skilled rolls the first ball into the pocket, hard; for the second it
+ * reads what's left standing and rolls at the middle of it. Both wobble
+ * like people swiping: ±0.04 radians (about 2°) of aim and ±0.1 of strength.
+ */
+function bowlingBot(game: DropGame, bot: Bot, rand: () => number) {
+  const lanes = game.delivery as BowlingDelivery
+  const c = lanes.config
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let to = { x: 0, z: 0 }
+  const wobble = (n: number) => (rand() * 2 - 1) * n
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.input({ type: 'point', ...to })
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.5 + rand() * 1.0
+      return
+    }
+    if (!lanes.ready || t < nextAt) return
+    let aim: number
+    let power: number
+    if (bot === 'random') {
+      aim = wobble(c.maxAim)
+      power = rand()
+    } else if (bot === 'cue') {
+      aim = wobble(0.04)
+      power = 0.5 + wobble(0.1)
+    } else {
+      aim = POCKET_AIM
+      if (lanes.ballInFrame === 2) {
+        // Aim at the middle of the pins left standing.
+        const left = lanes.spots.filter((_, i) => lanes.standing[i])
+        const x = left.reduce((n, p) => n + p.x, 0) / (left.length || 1)
+        const z = left.reduce((n, p) => n + p.z, 0) / (left.length || 1)
+        aim = Math.atan2(x, c.ballZ - z)
+      }
+      aim += wobble(0.04)
+      power = 0.9 + wobble(0.1)
+    }
+    const length = MIN_SWIPE + Math.min(1, power) * (FULL_SWIPE - MIN_SWIPE) + 0.01
+    const from = { x: 0, z: c.ballZ }
+    to = { x: from.x + Math.sin(aim) * length, z: from.z - Math.cos(aim) * length }
+    game.input({ type: 'point', ...from })
+    game.press()
+    releaseAt = t + 0.2
+  }
+}
+
+/**
  * Comet Homecoming's finale tour: a bot for each phase's delivery, each
  * playing only in its own phase.
  */
@@ -788,6 +858,7 @@ const DELIVERY_BOTS: Record<
   belt: beltBot,
   spider: spiderBot,
   slide: slideBot,
+  bowling: bowlingBot,
   phased: phasedBot,
 }
 
@@ -904,6 +975,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       }).length
     : 0
   const s = game.state
+  const bowling = game.delivery.kind === 'bowling' ? (game.delivery as BowlingDelivery) : null
   game.dispose()
   return {
     value: resultValue(s, stage.rules.goal) ?? -1,
@@ -930,6 +1002,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     throughTable,
     firstPointAfter,
     scoreAtLastDrop,
+    strikes: bowling?.strikes ?? 0,
+    spares: bowling?.spares ?? 0,
+    pins: bowling?.pinsDown ?? 0,
     seconds: Math.round(game.engine.time),
     peakLive,
     p50: stepMs[stepMs.length >> 1],
@@ -969,6 +1044,9 @@ async function main() {
           : '') +
         (board ? ` · stuck in board ${avg('inBoard')}` : '') +
         (stage.delivery?.kind === 'switches' ? ` · gold ${avg('gold')} red ${avg('red')}` : '') +
+        (stage.delivery?.kind === 'bowling'
+          ? ` · strikes ${avg('strikes')} spares ${avg('spares')} pins ${avg('pins')}`
+          : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         (stage.rules.tempo

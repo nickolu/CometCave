@@ -5,7 +5,15 @@ import { CHOCOLATE, MOONSTONE } from './objects'
 import { type StageDef, playableStage } from './stages'
 
 const PENNY_FALLS = playableStage('penny-falls') as StageDef
-const REDLINE = playableStage('redline') as StageDef
+/**
+ * A timed stage that keeps a tempo. No stage in the campaign does any more
+ * (Redline, which did, became Moonlight Lanes), but the rules still support
+ * both, so they're kept working on a copy of Penny Falls.
+ */
+const TEMPO_STAGE: StageDef = {
+  ...PENNY_FALLS,
+  rules: { ...PENNY_FALLS.rules, timeLimitS: 90, tempo: { max: 6, idleS: 3 } },
+}
 const BUDGET = PENNY_FALLS.rules.coins as number
 
 /**
@@ -159,8 +167,8 @@ describe('DropGame', () => {
     game.dispose()
   })
 
-  it("runs Redline's clock on arm time from the first drop, and keeps the tempo", () => {
-    const game = new DropGame(REDLINE, { pile: [] })
+  it("runs a timed stage's clock on arm time from the first drop, and keeps the tempo", () => {
+    const game = new DropGame(TEMPO_STAGE, { pile: [] })
     game.setSpeed(0.5)
     for (let i = 0; i < 60; i++) game.step()
     // No clock before the first drop.

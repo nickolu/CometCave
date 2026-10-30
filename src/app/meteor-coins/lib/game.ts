@@ -124,6 +124,8 @@ export type GameEvent =
       line: string
     }
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
+  /** A delivery's own moment worth calling out (a strike): shown, and read to screen readers. */
+  | { type: 'callout'; text: string; announce: string }
 
 /**
  * One stage in play: the engine, the delivery and the rules, stepped
