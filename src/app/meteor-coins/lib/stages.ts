@@ -1126,9 +1126,9 @@ const GRAVITY_ASSIST: StageDef = {
  * carries it to the chute. Measured, each a lesson:
  * - Height 2: the lane's underside (1.8) clears the baked heap (tallest
  *   coin top 1.5) and the coins the pusher carries under the deck.
- * - The pit (deck end -3.8 to the back wall) is 1.7 deep. At 1.3, coins
- *   bridged across it on edge, the pit heaped up past the deck, and the
- *   sweep bar threw coins out of the cabinet (two or three a game).
+ * - The pit (deck end -3.8 to the back wall) is 1.7 deep. At 1.3 it
+ *   clogged: coins heaped up past the deck, and the sweep bar pushing into
+ *   the heap threw coins out of the cabinet (two or three a game).
  * - Pins 1.3 apart, three coins each, on a slick deck (0.25). At 1.15
  *   apart a full-strength ball shoved the rack as one block and knocked
  *   one pin; at friction 0.35 hardly any fell; at 0.1 every roll struck.
