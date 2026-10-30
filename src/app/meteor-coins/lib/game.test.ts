@@ -115,8 +115,8 @@ describe('DropGame', () => {
     const game = new DropGame(cairn)
     const spider = game.delivery as SpiderDelivery
     expect(game.state.towers).toEqual([0, 0, 0])
-    // The spider starts over the middle. Wait for a drop that lands square
-    // and soft on the middle post, then let go.
+    // The spider walks the rail on its own. Wait for a drop that lands
+    // square and soft on the middle post, then let go.
     let steps = 0
     const lit = () => {
       const tip = spider.tipAt()
@@ -127,8 +127,8 @@ describe('DropGame', () => {
       game.step()
       steps++
     }
-    game.press()
-    expect(game.release()).toBe(true)
+    expect(lit()).toBe(true)
+    expect(game.press()).toBe(true)
     const zAtDrop = game.engine.moverPositions()[0].z
     for (let i = 0; i < 90; i++) game.step()
     // It has moved on, carrying the coin, and the coin still counts.

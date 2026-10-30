@@ -116,7 +116,7 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'crane':
       return CRANE_AIM_Y
     case 'spider':
-      // About where tower tops are, so pointing at a post puts the spider over it.
+      // Unused: the spider walks on its own. About where tower tops are.
       return SPIDER_AIM_Y
   }
 }
@@ -213,7 +213,7 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
     case 'belt':
       return 'Tap or press Space to drop the marked chocolate off the belt, right where it is.'
     case 'spider':
-      return 'Touch or point where the spider should go, or use the arrow keys. Tap or press Space to drop the coin.'
+      return 'The spider walks and bobs on its own. Tap or press Space to let go of the coin.'
     case 'slide':
       return 'Tap or press Space to send a duck down the slide. It goes where the slide points.'
     case 'plunger':

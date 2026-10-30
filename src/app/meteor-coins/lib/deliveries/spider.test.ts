@@ -2,10 +2,10 @@ import { PHYSICS_STEP_S } from '@/app/meteor-coins/lib/cabinet'
 import { deliveryOf } from '@/app/meteor-coins/lib/deliveries'
 import {
   SOFT_FALL,
-  SPIDER_REACH,
   type SpiderConfig,
   SpiderDelivery,
   spiderCueLit,
+  spiderX,
   spiderY,
 } from '@/app/meteor-coins/lib/deliveries/spider'
 import type { DeliveryHost, Spawn } from '@/app/meteor-coins/lib/deliveries/types'
@@ -30,15 +30,9 @@ function fakeHost(towers = [0, 0, 0]) {
   } as unknown as DeliveryHost & { dropperTime: number }
   const spider = new SpiderDelivery(host, CONFIG)
   const run = (seconds: number) => {
-    for (let i = 0; i < Math.round(seconds / PHYSICS_STEP_S); i++) {
-      host.dropperTime += PHYSICS_STEP_S
-      spider.beforeStep()
-    }
+    host.dropperTime += seconds
   }
-  const tap = () => {
-    spider.input({ type: 'press' })
-    return spider.input({ type: 'release' })
-  }
+  const tap = () => spider.input({ type: 'press' })
   return { host, spider, launched, run, tap }
 }
 
@@ -56,28 +50,54 @@ describe('SpiderDelivery', () => {
     expect(CONFIG.highY - post.height).toBeGreaterThan(SOFT_FALL)
   })
 
-  it('walks toward the pointer at a limited speed', () => {
-    const { spider, run } = fakeHost()
-    spider.input({ type: 'point', x: 2.2, z: 0 })
-    run(0.25)
-    expect(spider.x).toBeCloseTo(CONFIG.speed * 0.25, 1)
-    run(2)
-    expect(spider.x).toBeCloseTo(2.2, 6)
-    // Never off the end of the rail.
-    spider.input({ type: 'point', x: -20, z: 0 })
-    run(5)
-    expect(spider.x).toBeCloseTo(-CONFIG.halfWidth, 6)
+  it('walks the rail on its own, end to end and back, never past the ends', () => {
+    const posts = [-2.2, 0, 2.2]
+    const at = (t: number) => spiderX(t, CONFIG, posts)
+    expect(at(0)).toBeCloseTo(0, 6)
+    // Walking right from the middle, then back, a full lap in two crossings.
+    expect(at(CONFIG.crossS / 4)).toBeGreaterThan(0)
+    expect(at(CONFIG.crossS / 2)).toBeCloseTo(CONFIG.halfWidth, 6)
+    expect(at((CONFIG.crossS * 3) / 2)).toBeCloseTo(-CONFIG.halfWidth, 6)
+    expect(at(2 * CONFIG.crossS)).toBeCloseTo(0, 6)
+    let lo = Infinity
+    let hi = -Infinity
+    let fastest = 0
+    for (let t = 0; t < 4 * CONFIG.crossS; t += PHYSICS_STEP_S) {
+      lo = Math.min(lo, at(t))
+      hi = Math.max(hi, at(t))
+      fastest = Math.max(fastest, Math.abs(at(t + PHYSICS_STEP_S) - at(t)) / PHYSICS_STEP_S)
+    }
+    expect(lo).toBeGreaterThanOrEqual(-CONFIG.halfWidth - 1e-9)
+    expect(hi).toBeLessThanOrEqual(CONFIG.halfWidth + 1e-9)
+    // No jumps: it walks.
+    expect(fastest).toBeLessThan(10)
   })
 
-  it('walks while an arrow key is held, and stops when it is let go', () => {
-    const { spider, run } = fakeHost()
-    spider.input({ type: 'steer', x: 1, z: 0 })
-    run(0.5)
-    const moved = spider.x
-    expect(moved).toBeCloseTo(CONFIG.speed * 0.5, 1)
-    spider.input({ type: 'steer', x: 0, z: 0 })
-    run(0.5)
-    expect(spider.x).toBe(moved)
+  it('stands over each post for a moment on its way past', () => {
+    const posts = [-2.2, 0, 2.2]
+    // At t = 0 it is halfway through its pause over the middle post.
+    expect(spiderX(CONFIG.postPauseS * 0.45, CONFIG, posts)).toBe(0)
+    expect(spiderX(-CONFIG.postPauseS * 0.45, CONFIG, posts)).toBe(0)
+    let still = 0
+    for (let t = 0; t < 2 * CONFIG.crossS; t += PHYSICS_STEP_S) {
+      if (posts.includes(spiderX(t, CONFIG, posts))) still += PHYSICS_STEP_S
+    }
+    // Three posts, passed twice a lap.
+    expect(still).toBeCloseTo(6 * CONFIG.postPauseS, 1)
+  })
+
+  it('ignores the pointer, the arrow keys and letting go: only a press drops', () => {
+    const { spider, launched, run } = fakeHost()
+    run(0.4)
+    const x = spider.x
+    expect(spider.input({ type: 'point', x: 2.2, z: 0 })).toBe(false)
+    expect(spider.input({ type: 'steer', x: 1, z: 0 })).toBe(false)
+    expect(spider.input({ type: 'release' })).toBe(false)
+    expect(spider.x).toBe(x)
+    expect(launched).toHaveLength(0)
+    expect(spider.input({ type: 'press' })).toBe(true)
+    expect(launched).toHaveLength(1)
+    expect(launched[0].x).toBeCloseTo(x, 6)
   })
 
   it('lets go of its coin from where it is, then fetches the next', () => {
@@ -85,7 +105,7 @@ describe('SpiderDelivery', () => {
     run(CONFIG.bobPeriodS / 2)
     expect(tap()).toBe(true)
     expect(launched).toHaveLength(1)
-    expect(launched[0].x).toBe(0)
+    expect(launched[0].x).toBeCloseTo(spider.x, 6)
     expect(launched[0].y).toBeCloseTo(CONFIG.lowY, 2)
     expect(launched[0].z).toBe(CONFIG.z)
     // Nothing to let go of while it fetches the next coin.
@@ -96,24 +116,12 @@ describe('SpiderDelivery', () => {
     expect(launched).toHaveLength(2)
   })
 
-  it('takes a tap far from it as an aim, so a phone taps twice: walk there, then drop', () => {
-    const { spider, launched, run, tap } = fakeHost()
-    spider.input({ type: 'point', x: -2.2, z: 0 })
-    expect(Math.abs(-2.2 - spider.x)).toBeGreaterThan(SPIDER_REACH)
-    expect(tap()).toBe(true)
-    expect(launched).toHaveLength(0)
-    run(1)
-    spider.input({ type: 'point', x: -2.2, z: 0 })
-    expect(tap()).toBe(true)
-    expect(launched[0].x).toBeCloseTo(-2.2, 6)
-  })
-
   it('never lets go inside a tower that has grown up to it', () => {
-    const { launched, run, tap, spider } = fakeHost([0, 20, 0])
-    run(CONFIG.bobPeriodS / 2)
+    // Taller than the top of the bob, with the spider standing over it.
+    const { launched, tap, spider } = fakeHost([0, 40, 0])
     expect(spider.x).toBe(0)
     tap()
-    expect(launched[0].y).toBeGreaterThan(0.8 + 20 * 0.18)
+    expect(launched[0].y).toBeGreaterThan(0.8 + 40 * 0.18)
   })
 
   it('lights the dot only for a drop square on a post and soft', () => {

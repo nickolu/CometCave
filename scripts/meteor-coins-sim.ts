@@ -438,12 +438,14 @@ function beltBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
- * The Cairn's spider bots. Random walks to a random spot and lets go at a
- * random moment. Cue walks to a post picked at random and lets go when the
- * landing dot fills (square on the post and low enough to land soft).
- * Skilled waits over the middle post for the dot, which means the bob's low
- * point as the post crosses, and falls back on a side post after a few
- * seconds. Both are 0–100ms late, like people.
+ * The Cairn's spider bots. Nothing steers the spider, so all a bot picks is
+ * the moment to let go. Random lets go at random moments. Cue lets go when
+ * the landing dot fills (on a post and low enough to land soft), 0–100ms
+ * after it does, like a person reacting to it. Skilled looks ahead to the
+ * post it wants (shortest tower first, but the middle, which counts twice,
+ * runs a few coins taller), and lets go when the drop would land near that
+ * post's center and soft, 0–100ms either side; if the middle hasn't lined
+ * up in a few seconds it takes any post square.
  */
 function spiderBot(game: DropGame, bot: Bot, rand: () => number) {
   const MIDDLE_LEAD = 3
@@ -451,56 +453,40 @@ function spiderBot(game: DropGame, bot: Bot, rand: () => number) {
   const posts = game.towerPosts
   const weights = game.stage.rules.goal.type === 'stack' ? game.stage.rules.goal.weights : []
   const middle = weights.indexOf(Math.max(...weights))
-  let goalX = 0
   let nextAt = 0.5 + rand() * 1.5
   let releaseAt: number | null = null
-  let since = 0
-  let fallback = false
-  const aim = (t: number) => {
-    since = t
-    fallback = false
-    if (bot === 'random') goalX = (rand() * 2 - 1) * spider.config.halfWidth
-    else if (bot === 'cue') goalX = posts[Math.floor(rand() * posts.length)].x
-    else {
-      // Spread the coins, shortest tower first, but let the middle run a
-      // few coins taller: it counts twice, and a tower past a dozen coins
-      // tends to come down.
-      const towers = game.state.towers
-      const need = (i: number) => towers[i] - (i === middle ? MIDDLE_LEAD : 0)
-      const next = posts.map((_, i) => i).sort((a, b) => need(a) - need(b))[0]
-      goalX = posts[next].x
-    }
-    game.input({ type: 'point', x: goalX, z: spider.config.z })
+  let since = nextAt
+  const wanted = () => {
+    const towers = game.state.towers
+    const need = (i: number) => towers[i] - (i === middle ? MIDDLE_LEAD : 0)
+    return posts.map((_, i) => i).sort((a, b) => need(a) - need(b))[0]
   }
-  aim(0)
   return () => {
     const t = game.engine.time
     if (releaseAt !== null) {
       if (t < releaseAt) return
       game.press()
-      game.release()
       releaseAt = null
       nextAt = t + 0.2 + rand() * 0.6
-      aim(nextAt)
+      since = nextAt
       return
     }
-    if (!spider.holding || t < nextAt || Math.abs(spider.x - goalX) > 0.05) return
+    if (!spider.holding || t < nextAt) return
     if (bot === 'random') {
-      releaseAt = t + rand() * 2
+      releaseAt = t + rand() * 3
       return
     }
-    if (bot === 'skilled' && !fallback && t - since > 6) {
-      // The middle isn't lining up: take whichever side post is nearer.
-      fallback = true
-      const sides = posts.filter((_, i) => i !== middle)
-      goalX = sides[Math.floor(rand() * sides.length)].x
-      game.input({ type: 'point', x: goalX, z: spider.config.z })
+    if (bot === 'cue') {
+      const tip = spider.tipAt()
+      if (spiderCueLit(game.landing(0, tip), tip)) releaseAt = t + rand() * 0.1
       return
     }
-    const tip = spider.tipAt(0.05)
-    const landing = game.landing(0.05, tip)
-    const square = bot === 'skilled' ? landing.offset < 0.15 : true
-    if ((spiderCueLit(landing, tip) && square) || t - since > 12) releaseAt = t + rand() * 0.1
+    const ahead = 0.05
+    const tip = spider.tipAt(ahead)
+    const landing = game.landing(ahead, tip)
+    if (!spiderCueLit(landing, tip) || landing.offset > 0.15) return
+    const waited = t - since
+    if (landing.post === wanted() || waited > 6) releaseAt = t + rand() * 0.1
   }
 }
 

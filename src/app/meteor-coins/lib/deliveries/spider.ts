@@ -1,35 +1,38 @@
-import { PHYSICS_STEP_S, PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
+import { PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
 import type { Vec } from '@/app/meteor-coins/lib/cannon'
 import type { Delivery, DeliveryHost, DeliveryInput } from '@/app/meteor-coins/lib/deliveries/types'
 import type { Landing } from '@/app/meteor-coins/lib/game'
 
 /**
  * The Cairn's spider: it hangs on a thread from a rail over the posts,
- * holding the next coin, and bobs up and down on its own. The player walks
- * it sideways along the rail and lets go of the coin.
+ * holding the next coin, and walks the rail and bobs up and down on its own.
+ * The player only picks the moment to let go. (In round 1 the player walked
+ * it, and could park it over a post and wait for the bob: too easy, in
+ * Nick's playtest.)
  */
 export type SpiderConfig = {
   /** Where the rail runs: the drop line, over the posts. */
   z: number
-  /** How far either side of the middle the spider can walk. */
+  /** How far either side of the middle the spider walks. */
   halfWidth: number
   /** The held coin's lowest and highest point on the bob. */
   lowY: number
   highY: number
   /** Seconds for one bob, down and back up. */
   bobPeriodS: number
-  /** Top walking speed along the rail, in units/s. */
-  speed: number
+  /** Seconds to walk the rail from one end to the other. It walks there and back. */
+  crossS: number
+  /**
+   * How much it slows over each post, 0 to 1: its speed there is
+   * (1 - postEase) of its average, so it lingers a little where a drop counts.
+   */
+  postEase: number
+  /** Seconds it stands still over each post (part of `crossS`). */
+  postPauseS: number
   /** Seconds it takes to fetch the next coin after letting go of one. */
   reloadS: number
 }
 
-/**
- * A pointer this far from the spider is somewhere it's still walking to:
- * letting go there aims rather than drops, so a tap on a phone walks it
- * over and a second tap drops.
- */
-export const SPIDER_REACH = 0.35
 /** The spider's rail runs this far above the held coin's highest point. */
 export const SPIDER_RAIL_ABOVE = 1.5
 /** A coin never lets go closer than this above a tower's top. */
@@ -56,31 +59,79 @@ export function spiderY(t: number, c: SpiderConfig): number {
 }
 
 /**
- * Press, then let go, to drop the coin from where the spider is right now;
- * the pointer (`point`) or the arrow keys (`steer`) walk it along the rail.
- * It walks at a limited speed, so getting over a post takes a moment.
+ * Where the spider is along the rail at stage time `t`. It walks from end to
+ * end and back, starting in the middle and walking right. Each stretch
+ * between two stops (the rail's ends, and the posts at `posts`) takes time
+ * in proportion to its length, eased with a Hermite curve: to a standstill
+ * at the ends, where it turns, and to (1 - postEase) of its average speed
+ * over a post, so it never stops there, only slows.
+ */
+export function spiderX(t: number, c: SpiderConfig, posts: number[]): number {
+  const w = c.halfWidth
+  const stops = [-w, ...posts.filter(x => x > -w && x < w).sort((a, b) => a - b), w]
+  const pauses = (stops.length - 2) * c.postPauseS
+  const walkS = c.crossS - pauses
+  // Seconds into one end-to-end walk, left to right; the walk back mirrors it.
+  // At t = 0 it is in the middle of the walk, going right.
+  const lap = (((t + c.crossS / 2) % (2 * c.crossS)) + 2 * c.crossS) % (2 * c.crossS)
+  const back = lap > c.crossS
+  let left = back ? 2 * c.crossS - lap : lap
+  let x = w
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i]
+    const b = stops[i + 1]
+    const legS = (walkS * (b - a)) / (2 * w)
+    if (left <= legS) {
+      const s = left / legS
+      const m0 = i === 0 ? 0 : 1 - c.postEase
+      const m1 = i === stops.length - 2 ? 0 : 1 - c.postEase
+      const s2 = s * s
+      const s3 = s2 * s
+      x = a + (b - a) * ((s3 - 2 * s2 + s) * m0 + (3 * s2 - 2 * s3) + (s3 - s2) * m1)
+      break
+    }
+    left -= legS
+    if (i < stops.length - 2) {
+      if (left <= c.postPauseS) {
+        x = b
+        break
+      }
+      left -= c.postPauseS
+    }
+  }
+  return x
+}
+
+/**
+ * Press (a tap or Space) to drop the coin from where the spider is right
+ * now. Nothing steers it: it patrols and bobs on its own, and the skill is
+ * letting go when it is over a post and low in its bob, and, for the middle
+ * post, when that post is sliding across the drop line too.
  */
 export class SpiderDelivery implements Delivery {
   readonly kind = 'spider'
   readonly busy = 0
-  /** Where the spider is along the rail. */
-  x = 0
-  /** Where the pointer last asked it to go, or null while the keys steer it. */
-  private target: number | null = null
-  private steerX = 0
-  private pressed = false
   /** Stage time it has the next coin back, after a drop. */
   private reloadUntil = -Infinity
+  /** Where it slows on its walk: over each tower post. */
+  private readonly posts: number[]
 
   constructor(
     private readonly host: DeliveryHost,
     readonly config: SpiderConfig
-  ) {}
+  ) {
+    this.posts = this.towerPosts().map(p => p.x)
+  }
+
+  /** Where it is along the rail right now. */
+  get x(): number {
+    return this.tipAt().x
+  }
 
   /** Where the coin it holds would start falling from, `ahead` seconds from now. */
   tipAt(ahead = 0): Vec {
     const t = this.host.dropperTime + ahead * this.host.speed
-    return { x: this.x, y: spiderY(t, this.config), z: this.config.z }
+    return { x: spiderX(t, this.config, this.posts), y: spiderY(t, this.config), z: this.config.z }
   }
 
   /** Whether it's holding a coin it could let go of now. */
@@ -94,31 +145,9 @@ export class SpiderDelivery implements Delivery {
     return left <= 0 ? 1 : 1 - left / this.config.reloadS
   }
 
+  /** Only a press does anything: it lets go on the moment of the tap. */
   input(e: DeliveryInput): boolean {
-    switch (e.type) {
-      case 'point':
-        this.target = this.clamp(e.x)
-        return true
-      case 'steer':
-        this.steerX = e.x
-        if (e.x !== 0) this.target = null
-        return true
-      case 'press':
-        this.pressed = true
-        return this.holding
-      case 'release': {
-        if (!this.pressed) return false
-        this.pressed = false
-        // Still walking to the pointer: that was an aim, not a drop.
-        if (this.target !== null && Math.abs(this.target - this.x) > SPIDER_REACH) return true
-        return this.letGo()
-      }
-    }
-  }
-
-  private clamp(x: number): number {
-    const w = this.config.halfWidth
-    return Math.max(-w, Math.min(w, x))
+    return e.type === 'press' && this.letGo()
   }
 
   private letGo(): boolean {
@@ -139,13 +168,6 @@ export class SpiderDelivery implements Delivery {
     return (this.host.stage.table.obstacles ?? []).filter(
       o => o.type === 'post' && o.tower !== undefined
     ) as { x: number; height: number; radius: number }[]
-  }
-
-  /** Walks toward the pointer, or the way the keys hold, at its top speed. */
-  beforeStep() {
-    const most = this.config.speed * PHYSICS_STEP_S
-    const want = this.target ?? this.x + this.steerX * most
-    this.x = this.clamp(this.x + Math.max(-most, Math.min(most, want - this.x)))
   }
 
   step() {}

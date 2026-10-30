@@ -621,7 +621,7 @@ const THE_CAIRN: StageDef = {
   slug: 'the-cairn',
   name: 'The Cairn',
   pitch:
-    'Build towers that hold on three stone posts. A spider lets the coins down. The middle post slides back and forth, so catch it as it passes.',
+    'Build towers on three stone posts. A spider walks over them, bobbing on its thread, and you choose when it lets go. The middle post slides back and forth, so catch it as it passes.',
   playable: true,
   // An icy floor, sloping gently to the front: whatever misses a post, or
   // falls off one, slides away.
@@ -638,6 +638,15 @@ const THE_CAIRN: StageDef = {
   // moments give a soft drop. A coin dropped from high hits a tower hard
   // enough to knock it down: in the headless prototype, falls of ~4 kept a
   // third as many coins up as falls of ~2.5.
+  //
+  // It walks the rail on its own too (round 2: a player who steered it
+  // parked it over a post and waited, too easy in Nick's playtest), slowing
+  // over each post and standing there 0.3s, so a post is a beat you can see
+  // coming. Three clocks that never sync: the walk there and back (7.8s),
+  // the bob (2.8s) and the middle post's slide (lined up every 2.3s).
+  // Measured on bare posts: a side post lines up (dot filled) about every
+  // 8s for ~0.35s, the middle about every 17s for ~0.25s; taller towers
+  // line up more often, since a shorter fall is soft from higher up.
   delivery: {
     kind: 'spider',
     z: CAIRN_DROP_Z,
@@ -645,7 +654,9 @@ const THE_CAIRN: StageDef = {
     lowY: 3.4,
     highY: 6.4,
     bobPeriodS: 2.8,
-    speed: 3.5,
+    crossS: 3.9,
+    postEase: 0.8,
+    postPauseS: 0.3,
     reloadS: 0.6,
   },
   ring: { enabled: false },
@@ -656,19 +667,20 @@ const THE_CAIRN: StageDef = {
   rules: {
     coins: 30,
     bonusForStreak: () => 0,
-    // From the sim (10 games each): letting go at random averages 4.6 (one
-    // star 30% of the time: drops from high in the bob knock towers down);
-    // letting go on any post when the dot fills averages 28.5, two stars
-    // 90% and three 10%, but its middle tower stays short (a perfect middle
-    // drop waits ~2.8s for the post and the bob to line up, a side one
-    // ~0.7s); spreading the coins and letting the middle run a few taller,
-    // waiting for the dot square on its center, averages 35.6 (p50 41),
-    // three stars 60%. Towers past a dozen coins tend to come down, still
-    // or sliding, so no tower needs more than 13 coins for three stars.
-    goal: { type: 'stack', weights: [1, 2, 1], stars: [6, 22, 38] },
+    // From the sim (30 games each): letting go at random averages 9.4 (one
+    // star 27% of the time: the pauses over posts catch some, drops from
+    // high in the bob knock towers down). Letting go when the dot fills,
+    // 0–100ms after, averages 17.9, two stars 17% (it was 90% when the
+    // spider could be parked): reacting to the dot lets go near a post's
+    // rim, and off-center coins tip, and its middle tower stays at ~2.
+    // Looking ahead to the post it wants and letting go near its center,
+    // the middle running a few coins taller, averages 32.2 (p50 34), two
+    // stars 97% and three 53%, at ~6s a coin. Towers past a dozen coins
+    // tend to come down, still or sliding.
+    goal: { type: 'stack', weights: [1, 2, 1], stars: [12, 22, 34] },
   },
   measure: { label: 'Height', caption: 'coins high, middle counted twice' },
-  hint: 'Land coins on the posts to build towers. The dot fills in when a drop would land square and soft: let go when the spider is low. The middle post counts twice.',
+  hint: 'Let go when the spider is over a post and low: the dot fills in when a drop would land square and soft. Coins near the edge of a post can tip off. The middle post counts twice, but only lines up as it slides past.',
   voice: {
     start: 'Stack it true. The ice only takes what falls.',
     clear: 'The cairn stands. Someone will find their way by it.',
