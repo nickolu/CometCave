@@ -83,9 +83,14 @@ export const PALETTE = {
   plungerSpring: '#b8c2d9',
   glass: '#cfeaff',
   moonField: '#9fb4ff',
-  /** Comet Homecoming: the pale-blue core with a gold star cap. */
+  /** Comet Homecoming: the pale-blue comet, its face and tail, and the way home. */
   core: '#9fd8ff',
   coreMark: '#ffd166',
+  cometFace: '#1b2340',
+  cometEye: '#ffffff',
+  cometCheek: '#ff9fb8',
+  cometTail: '#bfe6ff',
+  cometHome: '#7dffb0',
   /** Moonstone Porch: glowing pale-blue moonstones, a glass jar, the crane. */
   moonstone: '#a9cbff',
   moonstoneMark: '#4b5fa8',

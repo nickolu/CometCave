@@ -23,6 +23,7 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
+import type { Vec } from '@/app/meteor-coins/lib/cannon'
 import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
 import {
   ARM_LENGTH,
@@ -37,9 +38,11 @@ import {
 } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
+import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
 import { BookMesh } from '@/app/meteor-coins/scene/BookMesh'
+import { CometRig } from '@/app/meteor-coins/scene/CometRig'
 import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
 import { DrainMesh } from '@/app/meteor-coins/scene/DrainMesh'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
@@ -77,15 +80,6 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   const pushers = useRef<(THREE.Mesh | null)[]>([])
   const riders = useRef<THREE.Group>(null)
   const movers = useRef<(THREE.Group | null)[]>([])
-  const beacon = useRef<THREE.Sprite>(null)
-  const beaconIndex = useMemo(() => {
-    const id = game.stage.lastPush?.object
-    return id ? game.engine.pucks.findIndex(p => p.spec.id === id) : -1
-  }, [game])
-  const beaconLabel = useMemo(
-    () => (beaconIndex >= 0 ? beaconTexture('CORE') : null),
-    [beaconIndex]
-  )
   const arms = useRef<(THREE.Group | null)[]>([])
   const heldCoins = useRef<(THREE.Group | null)[]>([])
   const ribbons = useRef<(THREE.Object3D | null)[]>([])
@@ -161,15 +155,6 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       pushers.current[i]?.position.set(0, deck.floorY + PUSHER_HEIGHT / 2, pusherZs[i])
     )
     riders.current?.position.set(0, 0, game.engine.pusherZ - PUSHER_MID_Z)
-    // The beacon hangs over the core wherever the pile has buried it.
-    if (beacon.current && beaconIndex >= 0) {
-      const core = game.engine.pucks[beaconIndex]
-      beacon.current.visible = core.active
-      if (core.active) {
-        const t = core.body.translation()
-        beacon.current.position.set(t.x, t.y + 1.3, t.z)
-      }
-    }
     // Movers draw from their base, the engine reports their centers.
     const moving = obstacles.filter(moves)
     game.engine.moverPositions().forEach((p, i) => {
@@ -240,11 +225,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           <ObstacleMesh obstacle={{ ...o, x: 0, z: 0 }} tone={o.sweep ? 'moon' : undefined} />
         </group>
       ))}
-      {beaconLabel && (
-        <sprite ref={beacon} scale={[1.5, 0.75, 1]} renderOrder={12}>
-          <spriteMaterial map={beaconLabel} transparent depthTest={false} />
-        </sprite>
-      )}
+      {game.stage.lastPush && <CometRig game={game} />}
       {/* Pieces mounted on the pusher, drawn where they stand at mid-stroke and moved with it. */}
       <group ref={riders}>
         {obstacles
@@ -290,6 +271,12 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           it is holds the coin and wears a bookmark ribbon. */}
       <DeliveryRig game={game} />
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
+      {game.stage.phases?.map(
+        (phase, i) =>
+          phase.moon && (
+            <PhaseMoon key={i} game={game} moon={phase.moon} gravityScale={phase.gravityScale} />
+          )
+      )}
       {table.board && <BoardMesh board={table.board} engine={game.engine} />}
       {table.jar && <JarMesh game={game} />}
       {table.drain && <DrainMesh drain={table.drain} />}
@@ -657,32 +644,25 @@ const NOTCHES = 3
  * One obstacle, where it stands with the pusher at mid-stroke. A tower post
  * is stone, with a slim gauge behind it notched every five coins of height.
  */
-/** A star-capped tag over the comet core, drawn on a canvas: no font files to load. */
-function beaconTexture(text: string): THREE.Texture {
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 128
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    ctx.fillStyle = PALETTE.core
-    ctx.beginPath()
-    ctx.roundRect(8, 24, 240, 80, 40)
-    ctx.fill()
-    // A pointer down at the core.
-    ctx.beginPath()
-    ctx.moveTo(112, 104)
-    ctx.lineTo(128, 124)
-    ctx.lineTo(144, 104)
-    ctx.fill()
-    ctx.fillStyle = PALETTE.spine
-    ctx.font = 'bold 52px system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(`★ ${text}`, 128, 66)
-  }
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  return texture
+/** A moon that's out in one phase only: drawn while that phase's moon is the one pulling. */
+function PhaseMoon({
+  game,
+  moon,
+  gravityScale,
+}: {
+  game: DropGame
+  moon: MoonConfig
+  gravityScale?: number
+}) {
+  const group = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (group.current) group.current.visible = game.moonConfig === moon
+  })
+  return (
+    <group ref={group} visible={false}>
+      <MoonRig game={game} moon={moon} gravityScale={gravityScale} />
+    </group>
+  )
 }
 
 /** Whether an obstacle moves on its own (rises and sinks with phases, sweeps or slides). */
@@ -750,11 +730,14 @@ export function CabinetCamera({
   layout,
   arm,
   delivery,
+  extra,
 }: {
   insets: Insets
   layout: Layout
   arm: ArmConfig
   delivery: DeliveryConfig
+  /** More to keep in view, beyond the delivery's own (a phase's moon). */
+  extra?: readonly Vec[]
 }) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
@@ -765,9 +748,11 @@ export function CabinetCamera({
       size.width,
       size.height,
       insets,
-      keyPoints(layout, arm, delivery)
+      extra
+        ? [...keyPoints(layout, arm, delivery), ...extra.map(p => new THREE.Vector3(p.x, p.y, p.z))]
+        : keyPoints(layout, arm, delivery)
     )
-  }, [get, size, insets, layout, arm, delivery])
+  }, [get, size, insets, layout, arm, delivery, extra])
 
   return null
 }

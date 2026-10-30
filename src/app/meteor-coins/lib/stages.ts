@@ -151,8 +151,21 @@ export type StagePhase = {
    * enough that the pile's pushes carry it.
    */
   homing?: number
-  /** Said as the phase starts, in the stage's voice. */
+  /**
+   * The stage's last-push object (the comet) is asleep in this phase: held
+   * where it lies, so the pile builds up behind it rather than moving it.
+   */
+  holdsLastPush?: boolean
+  /** What to do, in one plain line: shown on the phase's banner as it starts. */
   line: string
+  /**
+   * The phase's own delivery, where the stage changes delivery between
+   * phases (lib/deliveries/phased). `tool` names it on the banner.
+   */
+  delivery?: DeliveryConfig
+  tool?: string
+  /** A moon that's out in this phase only (see `moon` on the stage). */
+  moon?: MoonConfig
 }
 
 export type PileRecipe = {
@@ -174,6 +187,8 @@ export type PileRecipe = {
     x: [number, number]
     z: [number, number]
     onTop?: boolean
+    /** Held still across the table while the pile settles, as a held last-push object is in play. */
+    held?: boolean
   }[]
 }
 
@@ -1245,93 +1260,159 @@ const HOMECOMING_DECK: Deck = {
   pusher: { midZ: PUSHER_MID_Z, ampZ: PUSHER_AMP_Z, depth: 6.5, lagS: 0 },
 }
 
-/** Where the core starts: in front of the pusher, behind the pegs. */
-const CORE_START_Z = 2.6
+/** Where the comet starts: in the middle of the shelf, clear of the pusher's reach. */
+export const COMET_START_Z = 2.3
 
-const HOMECOMING_OBSTACLES: Obstacle[] = [
-  // Two pegs closer together than the core is wide: coins get through, the
-  // core doesn't. They sink when Homecoming starts.
-  ...[-0.7, 0.7].map(
-    (x): Obstacle => ({ type: 'post', x, z: 3.75, radius: 0.25, height: 0.9, phases: [0, 1] })
-  ),
-  // The moon bumper: rises for Orbit and sweeps the shelf between the
-  // pusher and the core, stirring the pile. Kept near the middle: a wide
-  // sweep shoved the low-gravity pour into the gutters (31 coins lost in
-  // Orbit, against 21 at this width and 12 with no bumper).
-  {
-    type: 'post',
-    x: 0,
-    z: 0.9,
-    radius: 0.3,
-    height: 0.5,
-    phases: [1],
-    sweep: { ampX: 1.2, periodS: 9 },
-  },
-]
+/** Orbit's gravity, as a share of the usual. */
+const ORBIT_GRAVITY = 0.45
+/**
+ * Everything in Orbit is Gravity Assist's plunger and moon, rescaled for
+ * the lower gravity so a ball flies the same shapes (speeds by √g, the
+ * moon's pull by g, its orbit by 1/√g): the moon is as strong against
+ * gravity as it was in stage 9, and the plunger lands the same spread.
+ */
+const ORBIT_TIME = 1 / Math.sqrt(ORBIT_GRAVITY)
 
+/**
+ * The finale: a tour of the campaign. Each phase brings back a delivery
+ * from an earlier stage, and each is a way to get coins onto the shelf in
+ * line with the comet, so the pusher drives the pile into it:
+ * - Wake: Moonstone Porch's crane, to set coins down exactly. The comet
+ *   is asleep and doesn't budge, so the pile builds up behind it.
+ * - Orbit: Gravity Assist's plunger, its glass ball slung by the moon, in
+ *   low gravity. The comet wakes, and the pile built in Wake shoves it.
+ * - Homecoming: Hoop-La Cannon's cannon (with no hoops) firing coins over
+ *   the comet onto the back of the table. The comet heads for home.
+ * No arm, no ring and no beat cue (Redline, the stage before, is all three).
+ *
+ * The comet is a big friendly character with a face: asleep through Wake,
+ * awake after, and beaming once it's nearly home. A dotted line runs from
+ * it to a HOME sign at the lip, and the HUD shows how far it has come.
+ * Getting it home scores 40 and starts the Last Push. (Round 1's pegs and
+ * moon bumper are gone: Nick couldn't tell what they did.)
+ */
 const COMET_HOMECOMING: StageDef = {
   number: 12,
   slug: 'comet-homecoming',
   name: 'Comet Homecoming',
   pitch:
-    'A sleepy giant comet has landed on your shelf. Wake it, carry it through low gravity, then push it home.',
+    'A sleepy comet has landed on your shelf. Bring it home with the crane, the plunger and the cannon, one after another.',
   playable: true,
   table: {
     chuteHalfWidth: CHUTE_HALF_WIDTH,
     pusherPeriodS: PUSHER_PERIOD_S,
     layout: [HOMECOMING_DECK],
-    obstacles: HOMECOMING_OBSTACLES,
   },
+  // Unused: every phase brings its own delivery.
   arm: { periodS: ARM_PERIOD_S },
-  ring: { enabled: true },
+  ring: { enabled: false },
   objects: { drop: COIN },
-  cue: 'chevrons',
+  // Each delivery draws its own aim.
+  cue: null,
   pile: 'comet-homecoming',
   bake: {
-    seed: 26,
+    // Seed picked from five that baked cleanly. Nothing is dropped onto the
+    // comet, so it's in view from the start (about 110 objects in all).
+    seed: 5,
     floor: 150,
     top: 14,
     specials: [
-      { object: 'core', count: 1, x: [-0.05, 0.05], z: [CORE_START_Z, CORE_START_Z + 0.05] },
+      {
+        object: 'core',
+        count: 1,
+        x: [-0.05, 0.05],
+        z: [COMET_START_Z, COMET_START_Z + 0.05],
+        held: true,
+      },
     ],
   },
-  // 20 coins a phase, not the doc's 25 / 20 / 15: the core needs the
-  // Homecoming phase's extra coins to get home.
   phases: [
-    { name: 'Wake', coins: 20, ring: true, line: 'Build the shelf up behind the pegs.' },
+    {
+      name: 'Wake',
+      coins: 20,
+      ring: false,
+      // The comet sleeps through Wake and can't be moved. Measured: awake, a
+      // skilled crane (coins in line with it, in front of the pusher) got
+      // it home in 9–14 coins, and the other two phases had nothing to do.
+      // Held, the pile banks up behind it and lets go as it wakes.
+      holdsLastPush: true,
+      tool: 'The crane, from Moonstone Porch',
+      line: "The comet is fast asleep and won't budge. Set coins down behind it to pile up the shelf.",
+      delivery: { kind: 'crane', ...PORCH_CRANE, z: [BACK_WALL_Z + 0.6, 3] },
+    },
     {
       name: 'Orbit',
       coins: 20,
-      ring: true,
-      gravityScale: 0.45,
-      line: 'Low gravity! The moon bumper is sweeping the shelf.',
+      ring: false,
+      gravityScale: ORBIT_GRAVITY,
+      tool: 'The plunger, from Gravity Assist',
+      line: 'The comet is awake! Low gravity, and the moon bends the ball. Land coins by the back wall, in line with the comet.',
+      delivery: {
+        kind: 'plunger',
+        at: { x: 3.4, y: 1.2, z: 3.8 },
+        elevation: (62 * Math.PI) / 180,
+        yaw: (-19 * Math.PI) / 180,
+        minSpeed: 9 / ORBIT_TIME,
+        maxSpeed: 15 / ORBIT_TIME,
+        chargeS: 1.2,
+      },
+      moon: {
+        center: { x: 0, y: 4.5, z: -1.5 },
+        radiusX: 3,
+        radiusZ: 1.2,
+        periodS: 7 * ORBIT_TIME,
+        strength: 60 * ORBIT_GRAVITY,
+        softening: 0.7,
+        minY: 1.6,
+        pullZ: true,
+      },
     },
     {
       name: 'Homecoming',
       coins: 20,
       ring: false,
-      // A wide disc on the floor soaks up the pile's push: with no help it
-      // moved under a unit in a whole phase and never got home.
-      homing: 8,
-      line: "The pegs are down. Push me home, I'll light the way!",
+      tool: 'The cannon, from Hoop-La Cannon',
+      line: 'The comet is heading home. Fire coins over it onto the back of the table, in line with it, to push it off the edge.',
+      delivery: {
+        kind: 'cannon',
+        pivot: { x: 0, y: 0.9, z: 5.4 },
+        barrel: 0.8,
+        periodS: 3,
+        maxYaw: 0.28,
+        elevation: (62 * Math.PI) / 180,
+        // Short shots land just behind the comet's start, full ones by the back wall.
+        minSpeed: 6,
+        maxSpeed: 15.5,
+        chargeS: 1,
+        hoops: [],
+      },
+      // The comet heads for home: a gentle pull toward the lip, drawn as its
+      // tail streaming out longer. Too weak to move it alone, but the
+      // pile's pushes carry it. Measured (4 games a bot): with none, the
+      // comet got home 1 game in 4 even for the skilled bot; at 8 and 12,
+      // the random bot got it home 3 and 4 times in 4, so it stopped
+      // mattering how you played; at 5, random 1 in 4, cue and skilled 4.
+      homing: 5,
     },
   ],
   lastPush: { object: CORE.id, seconds: 6 },
   rules: {
     coins: 60,
-    bonusForStreak: () => 2,
-    // Finishing is a star; the core home is needed for two and three. The
-    // doc's 90 / 140 were guesses: the best runs score about 100. From the
-    // sim (12 games each): a random tapper averages 72 and gets the core
-    // home 10 of 12 times (★★ 58%); on the beat, 92, core home every time
-    // (★★ 100%, ★★★ 8%); also aiming behind the core, 94 (★★★ 50%).
-    goal: { type: 'homecoming', object: CORE.id, stars: [0, 80, 95] },
+    bonusForStreak: () => 0,
+    // Finishing is a star; the comet home is needed for two and three. From
+    // the sim (10 games each): a random player averages 31 and gets the
+    // comet home 2 games in 10 (★★ 20%, ★★★ 10%); following each
+    // delivery's own cue (the crane's settled marker, the plunger's filled
+    // marker, the cannon's full shot onto bare shelf) averages 52, home 6
+    // in 10 (★★ 60%); also lining every coin up with the comet averages
+    // 76, home every game (★★ 100%, ★★★ 30%).
+    goal: { type: 'homecoming', object: CORE.id, stars: [0, 60, 78] },
   },
   measure: { label: 'Score', caption: 'points into the chute' },
-  hint: 'Three phases. The comet core is worth 40, and getting it home starts the Last Push.',
+  hint: 'Push the comet off the front edge to bring it home: it scores 40 and starts the Last Push. Each phase brings back a way to play from earlier stages.',
   voice: {
-    start: 'A sleepy comet has landed on your shelf.',
-    clear: 'Home at last. Thank you for the push.',
+    start: 'Shh. A comet has landed on your shelf, fast asleep.',
+    clear: 'Home at last. Thank you for the push!',
     miss: 'The comet will wait for you.',
   },
 }

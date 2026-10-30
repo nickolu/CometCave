@@ -1,13 +1,18 @@
 'use client'
 
+import { useFrame } from '@react-three/fiber'
+import { useState } from 'react'
+
 import { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
 import { OwlsDelivery } from '@/app/meteor-coins/lib/deliveries/owls'
+import { PhasedDelivery } from '@/app/meteor-coins/lib/deliveries/phased'
 import { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
 import { SlideDelivery } from '@/app/meteor-coins/lib/deliveries/slide'
 import { SpiderDelivery } from '@/app/meteor-coins/lib/deliveries/spider'
 import { SwitchesDelivery } from '@/app/meteor-coins/lib/deliveries/switches'
+import type { Delivery } from '@/app/meteor-coins/lib/deliveries/types'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import { BeltRig } from '@/app/meteor-coins/scene/BeltRig'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
@@ -24,7 +29,10 @@ import { SwitchesRig } from '@/app/meteor-coins/scene/SwitchesRig'
  * A rig reads its delivery every frame and owns no game state.
  */
 export function DeliveryRig({ game }: { game: DropGame }) {
-  const delivery = game.delivery
+  return <RigFor game={game} delivery={game.delivery} />
+}
+
+function RigFor({ game, delivery }: { game: DropGame; delivery: Delivery }) {
   if (delivery instanceof CannonDelivery) return <CannonRig game={game} cannon={delivery} />
   if (delivery instanceof SwitchesDelivery) return <SwitchesRig game={game} switches={delivery} />
   if (delivery instanceof OwlsDelivery) return <OwlRig game={game} owls={delivery} />
@@ -33,5 +41,15 @@ export function DeliveryRig({ game }: { game: DropGame }) {
   if (delivery instanceof BeltDelivery) return <BeltRig game={game} belt={delivery} />
   if (delivery instanceof SpiderDelivery) return <SpiderRig game={game} spider={delivery} />
   if (delivery instanceof SlideDelivery) return <SlideRig game={game} slide={delivery} />
+  if (delivery instanceof PhasedDelivery) return <PhasedRig game={game} phased={delivery} />
   return null
+}
+
+/** A delivery that changes with the phase: only the one in use is drawn. */
+function PhasedRig({ game, phased }: { game: DropGame; phased: PhasedDelivery }) {
+  const [active, setActive] = useState(() => phased.active)
+  useFrame(() => {
+    if (phased.active !== active) setActive(phased.active)
+  })
+  return <RigFor key={phased.phases.indexOf(active)} game={game} delivery={active} />
 }

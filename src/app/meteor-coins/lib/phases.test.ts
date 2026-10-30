@@ -1,4 +1,5 @@
 import { deckPusherZ } from './cabinet'
+import { PhasedDelivery } from './deliveries/phased'
 import { PusherEngine, initPhysics } from './engine'
 import { DropGame, type GameEvent } from './game'
 import { CORE } from './objects'
@@ -19,39 +20,55 @@ describe('stages with phases', () => {
     }
   })
 
-  it('reconfigures the cabinet as each phase starts', () => {
-    const game = new DropGame(HOMECOMING, { pile: [] })
-    const phases = HOMECOMING.phases!
+  it('tours a delivery a phase, with gravity, the moon and the sleeping comet to match', () => {
+    const game = new DropGame(HOMECOMING)
+    const phased = game.delivery as PhasedDelivery
     const events: GameEvent[] = []
-    const dropPhase = () => {
-      for (let n = 0; n < phases[game.phase].coins; n++) {
-        expect(game.tapDrop()).toBe(true)
-        for (let i = 0; i < 4; i++) events.push(...game.step())
-      }
-      // Give the obstacles time to rise and sink.
-      for (let i = 0; i < 60; i++) events.push(...game.step())
+    const run = (steps: number) => {
+      for (let i = 0; i < steps; i++) events.push(...game.step())
     }
-    const heights = () => game.engine.moverPositions().map(p => p.y)
-    // Wake: pegs up, bumper down, the ring out, normal gravity.
-    const [pegL, pegR, bumper] = heights()
-    expect(pegL).toBeGreaterThan(0)
-    expect(pegR).toBeGreaterThan(0)
-    expect(bumper).toBeLessThan(0)
-    expect(game.ringOn).toBe(true)
-    dropPhase()
-    // Orbit: low gravity, and the bumper is up and sweeping.
+    const comet = game.engine.pucks.find(p => p.spec.id === CORE.id)!
+    const at = () => comet.body.translation()
+
+    // Wake: the crane, normal gravity, no moon, and the comet asleep: the
+    // pusher works the pile against it for a while and it doesn't move.
+    expect(phased.active.kind).toBe('crane')
+    expect(game.moonConfig).toBeUndefined()
+    const before = at()
+    run(400)
+    expect(at().x).toBeCloseTo(before.x, 5)
+    expect(at().z).toBeCloseTo(before.z, 5)
+    for (let n = 0; n < 20; n++) {
+      expect(game.press()).toBe(true)
+      run(60)
+    }
+
+    // Orbit: the plunger, low gravity, the moon out, the comet awake.
     expect(game.phase).toBe(1)
-    expect(game.engine.world.gravity.y).toBeCloseTo(-20 * (phases[1].gravityScale ?? 1))
-    expect(heights()[2]).toBeGreaterThan(0)
-    const x0 = game.engine.moverPositions()[2].x
-    for (let i = 0; i < 60; i++) game.step()
-    expect(game.engine.moverPositions()[2].x).not.toBeCloseTo(x0)
-    dropPhase()
-    // Homecoming: pegs and bumper sunk, the ring away, gravity back.
+    expect(phased.active.kind).toBe('plunger')
+    expect(game.engine.world.gravity.y).toBeCloseTo(-20 * HOMECOMING.phases![1].gravityScale!)
+    expect(game.moonConfig).toBe(HOMECOMING.phases![1].moon)
+    for (let n = 0; n < 20; n++) {
+      expect(game.press()).toBe(true)
+      run(20)
+      expect(game.release()).toBe(true)
+      // The last ball flies on under the moon: the phase waits for it, and
+      // nothing more can go meanwhile.
+      if (n === 19) {
+        expect(game.phase).toBe(1)
+        expect(game.canDrop).toBe(false)
+        expect(game.press()).toBe(false)
+      }
+      while (phased.busy > 0) run(1)
+      run(5)
+    }
+
+    // Homecoming: the cannon, gravity back, the moon gone.
     expect(game.phase).toBe(2)
-    expect(heights().every(y => y < 0)).toBe(true)
-    expect(game.ringOn).toBe(false)
+    expect(phased.active.kind).toBe('cannon')
+    expect(game.canDrop).toBe(true)
     expect(game.engine.world.gravity.y).toBeCloseTo(-20)
+    expect(game.moonConfig).toBeUndefined()
     expect(events.filter(e => e.type === 'phase').map(e => (e as { index: number }).index)).toEqual(
       [1, 2]
     )
@@ -60,7 +77,7 @@ describe('stages with phases', () => {
 
   it('starts the Last Push when the core goes home, reaching further forward only', () => {
     const game = new DropGame(HOMECOMING, { pile: [] })
-    // Clear of the pegs, inside the chute, about to go over the lip.
+    // Inside the chute, about to go over the lip.
     game.engine.addSpecial(CORE, { p: [-1.8, 0.3, 3.7], q: [0, 0, 0, 1] })
     const core = game.engine.pucks[game.engine.pucks.length - 1]
     core.body.setLinvel({ x: 0, y: 0, z: 3 }, true)

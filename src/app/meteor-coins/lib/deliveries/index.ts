@@ -17,6 +17,7 @@ import {
   CraneDelivery,
 } from '@/app/meteor-coins/lib/deliveries/crane'
 import { type OwlsConfig, OwlsDelivery } from '@/app/meteor-coins/lib/deliveries/owls'
+import { PhasedDelivery } from '@/app/meteor-coins/lib/deliveries/phased'
 import {
   type PlungerConfig,
   PlungerDelivery,
@@ -64,10 +65,32 @@ export type DeliveryConfig =
   | ({ kind: 'spider' } & SpiderConfig)
   | ({ kind: 'slide' } & SlideConfig)
 
-/** The stage's delivery: its own, else the cannon where it has one, else the arm. */
-export function deliveryOf(stage: StageDef): DeliveryConfig {
+/**
+ * The stage's delivery: its phase's (where a phase brings its own), else
+ * its own, else the cannon where it has one, else the arm.
+ */
+export function deliveryOf(stage: StageDef, phase = 0): DeliveryConfig {
+  const own = stage.phases?.[phase]?.delivery
+  if (own) return own
   if (stage.delivery) return stage.delivery
   return stage.cannon ? { kind: 'cannon', ...stage.cannon } : { kind: 'arm' }
+}
+
+/**
+ * Makes the stage's delivery. A stage whose phases bring their own gets
+ * one of each, behind a PhasedDelivery that switches with the phase.
+ */
+export function createStageDelivery(
+  host: DeliveryHost,
+  stage: StageDef,
+  tapDrop: () => boolean
+): Delivery {
+  const phases = stage.phases
+  if (!phases?.some(p => p.delivery)) return createDelivery(host, deliveryOf(stage), tapDrop)
+  return new PhasedDelivery(
+    host,
+    phases.map((_, i) => createDelivery(host, deliveryOf(stage, i), tapDrop))
+  )
 }
 
 export function createDelivery(

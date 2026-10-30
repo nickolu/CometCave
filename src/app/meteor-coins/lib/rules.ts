@@ -45,7 +45,7 @@ export type StarThresholds = readonly [number, number, number]
  * - stack: towers standing on the stage's posts when it ends, in coins high.
  *   Each post's tower is multiplied by its weight (a harder post counts more).
  * - homecoming: points, but the first star is for finishing, and the second
- *   and third also need one `object` (the comet core) home.
+ *   and third also need one `object` (the comet) home.
  */
 export type Goal =
   | { type: 'score'; stars: StarThresholds }

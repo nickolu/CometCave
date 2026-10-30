@@ -297,29 +297,31 @@ export const METEORITE: ObjectSpec = {
   reach: 0.58,
 }
 
+/** The comet's round body, on its base: drawn with its face by scene/CometRig. */
+export const COMET_BODY_RADIUS = 0.62
+export const COMET_BODY_Y = 0.42
+
 /**
- * Comet Homecoming's comet core: a wide, heavy pale-blue disc with a raised
- * star-shaped cap (a cap and five points), worth 40.
+ * Comet Homecoming's comet: a big, round, softly glowing pale-blue body on
+ * a wide flat base, worth 40. The round body is part of the collider, so
+ * coins slide off it rather than burying it, and its face (scene/CometRig)
+ * stays in view. Lighter than its size suggests, so the pile can move it.
  */
 export const CORE: ObjectSpec = {
   id: 'core',
-  name: 'comet core',
-  plural: 'comet cores',
+  name: 'comet',
+  plural: 'comets',
   parts: [
-    { shape: 'cylinder', radius: 0.95, height: 0.42, tone: 'core' },
-    { shape: 'cylinder', radius: 0.3, height: 0.12, at: [0, 0.27, 0], tone: 'coreMark' },
-    ...Array.from(
-      { length: 5 },
-      (_, i): Part => ({
-        shape: 'box',
-        size: [0.16, 0.08, 0.34],
-        at: [0.42 * Math.sin((i * 2 * Math.PI) / 5), 0.25, 0.42 * Math.cos((i * 2 * Math.PI) / 5)],
-        tone: 'coreMark',
-        visualOnly: true,
-      })
-    ),
+    { shape: 'cylinder', radius: 0.95, height: 0.42, tone: 'core', glow: 0.15 },
+    {
+      shape: 'ball',
+      radius: COMET_BODY_RADIUS,
+      at: [0, COMET_BODY_Y, 0],
+      tone: 'core',
+      glow: 0.3,
+    },
   ],
-  density: 0.9,
+  density: 0.6,
   friction: 0.15,
   restitution: 0.02,
   points: 40,

@@ -1,6 +1,7 @@
 import {
   BACK_WALL_Z,
   FIELD_HALF_WIDTH,
+  GRAVITY,
   PHYSICS_STEP_S,
   PUCK_RADIUS,
   PUCK_THICKNESS,
@@ -138,12 +139,14 @@ export class PlungerDelivery implements Delivery {
    */
   flight(power = this.shownPower, aheadS = 0, stop?: (p: Vec) => boolean): Vec[] {
     const host = this.host
-    const m = host.stage.moon
+    const m = host.moonConfig
     const dt = PHYSICS_STEP_S * host.speed
     const t0 = host.dropperTime + aheadS * host.speed
     const pull = m ? (p: Vec, k: number) => moonPull(p, moonAt(t0 + (k + 1) * dt, m), m) : undefined
     const end = stop ?? ((p: Vec) => p.y < 0 || atGlass(p))
-    return flightPath(this.config.at, plungerVelocity(power, this.config), end, 300, pull)
+    const v = plungerVelocity(power, this.config)
+    // In low gravity (Comet Homecoming's Orbit) the ball floats further.
+    return flightPath(this.config.at, v, end, 300, pull, GRAVITY * host.gravityScale)
   }
 
   /** The dotted preview: the flight until it lands on the pusher's height or meets the glass. */

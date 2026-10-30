@@ -13,8 +13,7 @@ import {
   type DeliveryHost,
   type DeliveryInput,
   type Spawn,
-  createDelivery,
-  deliveryOf,
+  createStageDelivery,
 } from '@/app/meteor-coins/lib/deliveries'
 import { RING_Y, armTip, dropLines, isHit } from '@/app/meteor-coins/lib/dropper'
 import {
@@ -23,7 +22,7 @@ import {
   PusherEngine,
   obstacleZ,
 } from '@/app/meteor-coins/lib/engine'
-import { moonAt, moonPull } from '@/app/meteor-coins/lib/moon'
+import { type MoonConfig, moonAt, moonPull } from '@/app/meteor-coins/lib/moon'
 import type { ObjectSpec } from '@/app/meteor-coins/lib/objects'
 import { PILES } from '@/app/meteor-coins/lib/piles'
 import {
@@ -154,6 +153,12 @@ export class DropGame implements DeliveryHost {
   private drops = 0
   /** The phase the cabinet is in, on a stage with phases. */
   phase = 0
+  /**
+   * A phase the drops have reached but the cabinet hasn't moved to yet: on
+   * a stage that changes delivery between phases, it waits for the last
+   * coin of the outgoing one to come down. No coin goes meanwhile.
+   */
+  private phaseDue: number | null = null
   /** Events raised between steps (by a tap), handed out with the next step's. */
   private pending: GameEvent[] = []
   /** The stage's meteorites: parked until their drop, then announced, then dropped in. */
@@ -193,7 +198,8 @@ export class DropGame implements DeliveryHost {
       drain: stage.table.drain,
       ...options,
     })
-    this.delivery = createDelivery(this, deliveryOf(stage), () => this.tapDrop())
+    this.delivery = createStageDelivery(this, stage, () => this.tapDrop())
+    this.holdLastPush()
     const shower = stage.meteors
     if (shower) {
       this.meteors = shower.schedule.map(m => ({
@@ -216,6 +222,11 @@ export class DropGame implements DeliveryHost {
     return this.stage.phases?.[this.phase]?.gravityScale ?? 1
   }
 
+  /** The moon pulling on things now: the phase's, else the stage's. */
+  get moonConfig(): MoonConfig | undefined {
+    return this.stage.phases?.[this.phase]?.moon ?? this.stage.moon
+  }
+
   /** Moves to the phase the drops so far have reached, reconfiguring the cabinet. */
   private advancePhase() {
     const phases = this.stage.phases
@@ -230,15 +241,45 @@ export class DropGame implements DeliveryHost {
       }
     }
     if (next === this.phase) return
+    this.phaseDue = next
+    this.applyPhase()
+  }
+
+  /** Reconfigures the cabinet for the phase that's due, once it can change. */
+  private applyPhase() {
+    const next = this.phaseDue
+    if (next === null) return
+    // A change of delivery waits until the outgoing one has nothing in the
+    // air: its coin flies the gravity, and the moon, it was launched under.
+    if (this.stage.phases?.some(p => p.delivery) && this.delivery.busy > 0) return
+    this.phaseDue = null
     this.phase = next
+    this.holdLastPush()
     this.engine.setPhase(next)
     this.engine.setGravityScale(this.gravityScale)
     this.pending.push({ type: 'phase', index: next })
   }
 
+  /**
+   * In a phase that holds it (Comet Homecoming's Wake, while the comet is
+   * asleep), the last-push object can't be pushed across the table: it can
+   * still settle down, but the pile builds up behind it instead.
+   */
+  private holdLastPush() {
+    const id = this.stage.lastPush?.object
+    if (!id || !this.stage.phases) return
+    const free = !this.stage.phases[this.phase]?.holdsLastPush
+    for (const puck of this.engine.pucks) {
+      if (puck.spec.id !== id) continue
+      puck.body.setEnabledTranslations(free, true, free, true)
+      puck.body.setEnabledRotations(free, free, free, true)
+    }
+  }
+
   /** Where the moon is now, on a stage that has one. */
   get moon(): Vec | null {
-    return this.stage.moon ? moonAt(this.dropperTime, this.stage.moon) : null
+    const m = this.moonConfig
+    return m ? moonAt(this.dropperTime, m) : null
   }
 
   /**
@@ -251,7 +292,7 @@ export class DropGame implements DeliveryHost {
     t0: number,
     stop: (p: Vec) => boolean = p => p.y < PREVIEW_FLOOR_Y
   ): Vec[] {
-    const m = this.stage.moon
+    const m = this.moonConfig
     const dt = PHYSICS_STEP_S * this.speed
     const pull = m ? (p: Vec, k: number) => moonPull(p, moonAt(t0 + (k + 1) * dt, m), m) : undefined
     return flightPath(start, { x: 0, y: -1, z: 0 }, stop, 240, pull, GRAVITY * this.gravityScale)
@@ -291,7 +332,9 @@ export class DropGame implements DeliveryHost {
   }
 
   get canDrop() {
-    return canDrop(this.state) && this.engine.freeCount > 0 && !this.boardBusy
+    return (
+      canDrop(this.state) && this.engine.freeCount > 0 && !this.boardBusy && this.phaseDue === null
+    )
   }
 
   /**
@@ -317,7 +360,7 @@ export class DropGame implements DeliveryHost {
     // Under the moon a coin falls a curve, and in low gravity it falls
     // slower; either way it takes its own time to land.
     const fallS =
-      this.stage.moon || this.gravityScale !== 1
+      this.moonConfig || this.gravityScale !== 1
         ? this.dropLanding().fallS
         : fallTimeToShelf(this.armTip().y, deck.floorY)
     return shelfOpenAt(this.engine.time + fallS, this.engine.pusherPeriodS, deck.pusher.lagS)
@@ -487,6 +530,7 @@ export class DropGame implements DeliveryHost {
     })
 
     this.delivery.step(events)
+    this.applyPhase()
     this.catchInCups(events)
 
     if (this.state.showerLeft > 0 && --this.showerCooldown <= 0) {
@@ -536,7 +580,7 @@ export class DropGame implements DeliveryHost {
    * before the physics steps — the same rule fallPath predicts with.
    */
   private pullTowardMoon() {
-    const m = this.stage.moon
+    const m = this.moonConfig
     if (!m) return
     const moon = moonAt(this.dropperTime, m)
     for (const puck of this.engine.pucks) {
