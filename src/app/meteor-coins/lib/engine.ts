@@ -5,6 +5,7 @@ import {
   CUP_FLOOR,
   CUP_WALL,
   GATE_TRAVEL,
+  sweeperKnock,
   sweeperX,
 } from '@/app/meteor-coins/lib/board'
 import {
@@ -17,6 +18,7 @@ import {
   LINEAR_DAMPING,
   type Layout,
   PHYSICS_STEP_S,
+  PUCK_RADIUS,
   PUSHER_HEIGHT,
   PUSHER_MID_Z,
   PUSHER_PERIOD_S,
@@ -229,7 +231,11 @@ export class PusherEngine {
   private board: Board | null = null
   /** How open the gate is, 0 to 1. */
   private gateOpen = 0
-  private readonly sweepers: { s: Board['sweepers'][number]; body: RAPIER.RigidBody }[] = []
+  /** A pachinko board's bottom, and the coins dropping through the board to it. */
+  private boardBottomY: number | null = null
+  private readonly throughBoard = new Set<number>()
+  /** A pachinko board's sweeping pins: no bodies, see sweeperKnock. */
+  private readonly sweepers: { s: Board['sweepers'][number]; board: Board }[] = []
   /** The Last Push: from when, until when, the pushers reach twice as far forward. */
   private push: { from: number; until: number } | null = null
 
@@ -418,26 +424,15 @@ export class PusherEngine {
           )
         )
         world.createCollider(
-          RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, 0.05, board.slot / 2 + 0.05).setFriction(
-            0.3
-          ),
+          RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, 0.05, board.slot / 2 + 0.05)
+            .setFriction(0.3)
+            .setCollisionGroups(BOARD_GROUPS),
           this.gate
         )
         this.board = board
       }
-      for (const s of board.sweepers) {
-        const body = world.createRigidBody(
-          RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, s.y, board.z)
-        )
-        world.createCollider(
-          RAPIER.ColliderDesc.cylinder(board.slot / 2, board.pinRadius * 1.5)
-            .setRotation({ x: Math.SQRT1_2, y: 0, z: 0, w: Math.SQRT1_2 })
-            .setFriction(0.2)
-            .setRestitution(0.3),
-          body
-        )
-        this.sweepers.push({ s, body })
-      }
+      for (const s of board.sweepers) this.sweepers.push({ s, board })
+      this.boardBottomY = board.bottomY
     }
 
     // Pool objects first, at the low indices; special objects after the pool.
@@ -638,13 +633,6 @@ export class PusherEngine {
         z: deckPusherZ(deck, this.time, this.pusherPeriodS) + deckDir(deck) * extra,
       })
     })
-    for (const { s, body } of this.sweepers) {
-      body.setNextKinematicTranslation({
-        x: sweeperX(s, this.time),
-        y: s.y,
-        z: body.translation().z,
-      })
-    }
     if (this.gate && this.board) {
       // Open while a coin falling from the gate now would land on bare shelf.
       const fallS = fallTimeToShelf(this.board.bottomY)
@@ -670,7 +658,9 @@ export class PusherEngine {
     }
     if (this.floorDrift) this.drift()
     if (this.drain) this.swirl(this.drain)
+    if (this.sweepers.length) this.knockSweepers()
     this.world.step()
+    if (this.throughBoard.size) this.landThroughBoard()
 
     const falls: FallEvent[] = []
     for (let i = 0; i < this.pucks.length; i++) {
@@ -753,7 +743,50 @@ export class PusherEngine {
     this.park(index)
   }
 
+  /** Each coin a sweeping pin touches gets knocked away from it. */
+  private knockSweepers() {
+    for (const { s, board } of this.sweepers) {
+      for (const puck of this.pucks) {
+        if (!puck.active) continue
+        const p = puck.body.translation()
+        if (Math.abs(p.z - board.z) > board.slot) continue
+        const v = puck.body.linvel()
+        const knocked = sweeperKnock(s, board.pinRadius, this.time, p, v)
+        if (knocked) puck.body.setLinvel({ x: knocked.x, y: knocked.y, z: v.z }, true)
+      }
+    }
+  }
+
+  /**
+   * Lets a coin stuck on a pachinko board fall straight through its pins,
+   * cups, glass and gate and out of the bottom, where it collides as usual
+   * again. The last resort for a coin nothing else frees (see DropGame).
+   */
+  dropThroughBoard(index: number) {
+    if (this.boardBottomY === null || !this.pucks[index].active) return
+    this.setThroughBoard(index, true)
+  }
+
+  private setThroughBoard(index: number, through: boolean) {
+    const body = this.pucks[index].body
+    const groups = through ? THROUGH_BOARD_GROUPS : ALL_GROUPS
+    for (let i = 0; i < body.numColliders(); i++) body.collider(i).setCollisionGroups(groups)
+    if (through) this.throughBoard.add(index)
+    else this.throughBoard.delete(index)
+    body.wakeUp()
+  }
+
+  /** Each coin dropping through the board that is clear of its bottom collides again. */
+  private landThroughBoard() {
+    for (const index of this.throughBoard) {
+      const puck = this.pucks[index]
+      const clear = puck.body.translation().y + PUCK_RADIUS < this.boardBottomY! - 0.15
+      if (!puck.active || clear) this.setThroughBoard(index, false)
+    }
+  }
+
   private park(index: number) {
+    if (this.throughBoard.has(index)) this.setThroughBoard(index, false)
     const puck = this.pucks[index]
     puck.body.setEnabled(false)
     puck.body.setLinvel({ x: 0, y: 0, z: 0 }, false)
@@ -763,6 +796,14 @@ export class PusherEngine {
     if (puck.kind !== 'special') this.free.push(index)
   }
 }
+
+/**
+ * Collision groups (membership << 16 | filter). A pachinko board's parts
+ * are in their own group, so a coin can be let fall through them.
+ */
+const ALL_GROUPS = 0xffffffff
+const BOARD_GROUPS = 0x0002ffff
+const THROUGH_BOARD_GROUPS = 0xfffffffd
 
 /** The board's pins, glass and cups, fixed to the cabinet. */
 function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) {
@@ -775,7 +816,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
         .setTranslation(pin.x, pin.y, midZ)
         .setRotation(along)
         .setFriction(0.2)
-        .setRestitution(0.3),
+        .setRestitution(0.3)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -784,7 +826,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
     world.createCollider(
       RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, glassHeight / 2, 0.05)
         .setTranslation(0, board.bottomY + glassHeight / 2, midZ + side * (depth / 2 + 0.05))
-        .setFriction(0.05),
+        .setFriction(0.05)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -803,7 +846,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
       RAPIER.ColliderDesc.cuboid(0.04, dividerHeight / 2, depth / 2)
         .setTranslation(x, board.bottomY + dividerHeight / 2, midZ)
         .setFriction(0.3)
-        .setRestitution(0.1),
+        .setRestitution(0.1)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -812,7 +856,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
       world.createCollider(
         RAPIER.ColliderDesc.cuboid(hx, hy, depth / 2)
           .setTranslation(x, y, midZ)
-          .setFriction(0.5),
+          .setFriction(0.5)
+          .setCollisionGroups(BOARD_GROUPS),
         fixed
       )
     box(cup.width / 2, CUP_FLOOR / 2, cup.x, cup.y + CUP_FLOOR / 2)

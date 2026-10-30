@@ -977,7 +977,10 @@ const PACHINKO_BOARD: Board = {
   dividers: [-2, 0, 2],
   dividerTop: 2.4,
   gated: true,
-  // A star sweeping across the cup's mouth, a row up.
+  // A star sweeping across the cup's mouth, a row up. It bounces coins that
+  // fall onto it, and passes over the rest: as a solid it wedged coins
+  // against the pins beside it and the cup's walls, into the glass (21 of
+  // 2,000 drops stuck for good, each one holding up every drop after it).
   sweepers: [{ y: 3.5, ampX: 1, periodS: 2.3 }],
 }
 
@@ -1005,10 +1008,13 @@ const STARFALL_PACHINKO: StageDef = {
   rules: {
     coins: 40,
     bonusForStreak: () => 0,
-    // From the sim (10 games each): a random tapper averages 40 (★★ about
-    // half the time); dropping on the beat, 41; aiming over the cup, 46,
-    // catching about a third of its drops (★★★ 60%). Luck counts for a lot
-    // here, as on any pachinko board; aim gives an edge.
+    // From the sim (20 games each): a random tapper averages 40 (★★ 45%,
+    // ★★★ 15%); dropping on the beat, 42 (★★ 55%, ★★★ 20%); aiming over the
+    // cup, 58, catching 24 of its 40 drops (★★ every time, ★★★ 65%). Luck
+    // counts for a lot here, as on any pachinko board; aim gives an edge.
+    // Since the star stopped bulldozing coins off the cup's mouth (it used
+    // to wedge them against the pins and cup), aiming catches more (it was
+    // 14 of 40, averaging 52) and nothing else moved, so the stars stayed.
     goal: { type: 'score', stars: [30, 42, 52] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },

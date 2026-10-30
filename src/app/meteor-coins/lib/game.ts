@@ -79,6 +79,17 @@ const BONUS_POUR_HALF_WIDTH = 2.6
 /** A coin on a pachinko board moving slower than this has come to rest, and gets nudged by this. */
 const STILL_SPEED = 0.05
 const NUDGE = 0.6
+/**
+ * A coin on a pachinko board that has moved less than this in this long is
+ * stuck, and is let fall through the board. Longer than a pusher stroke, so
+ * a coin waiting in a bin always sees the gate open first; trips through the
+ * pins take at most about 5 seconds, but a moving coin never counts. Nothing
+ * should need it now the star can't crush coins, but two coins could still
+ * wedge side by side between the panes in a bin (about 1 drop in 400) or
+ * balance on a cup wall, and one stuck coin holds up every drop.
+ */
+const STUCK_MOVE = 0.15
+const STUCK_S = 4
 /** How far below a pachinko board its skirt hangs, hiding coins being laid flat. */
 const SKIRT = 0.7
 
@@ -544,19 +555,24 @@ export class DropGame implements DeliveryHost {
     return this.stage.table.board !== undefined
   }
 
+  /** Where each coin on a pachinko board last moved, and since when it hasn't. */
+  private readonly stillOnBoard = new Map<number, { x: number; y: number; since: number }>()
+
   /**
    * Takes coins that have landed in a pachinko cup off the board, and pours
    * each cup's bonus. A coin that has come to rest anywhere else on the
    * board (dead center on a pin, say) gets a nudge sideways: a pachinko
-   * ball never balances, and one coin stuck would hold up every drop.
+   * ball never balances, and one coin stuck would hold up every drop. One
+   * that still hasn't moved after STUCK_S drops straight through the board.
    */
   private catchInCups(events: GameEvent[]) {
     const board = this.stage.table.board
     if (!board) return
     this.engine.pucks.forEach((puck, index) => {
-      if (!puck.active) return
       const p = puck.body.translation()
-      if (Math.abs(p.z - board.z) > board.slot) return
+      const onBoard = puck.active && Math.abs(p.z - board.z) <= board.slot
+      if (!onBoard || p.y < board.bottomY) this.stillOnBoard.delete(index)
+      if (!onBoard) return
       if (p.y < board.bottomY) {
         // Just out of the board (behind its skirt): laid flat, so it lands
         // like any other drop. On edge, coins wedged upright in the pile by
@@ -569,6 +585,13 @@ export class DropGame implements DeliveryHost {
           puck.body.setAngvel({ x: 0, y: 0, z: 0 }, true)
         }
         return
+      }
+      const still = this.stillOnBoard.get(index)
+      if (!still || Math.hypot(p.x - still.x, p.y - still.y) > STUCK_MOVE) {
+        this.stillOnBoard.set(index, { x: p.x, y: p.y, since: this.engine.time })
+      } else if (this.engine.time - still.since > STUCK_S) {
+        this.engine.dropThroughBoard(index)
+        this.stillOnBoard.delete(index)
       }
       const v = puck.body.linvel()
       if (Math.hypot(v.x, v.y) < STILL_SPEED) {
