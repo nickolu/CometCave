@@ -1,6 +1,7 @@
 'use client'
 
 import { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
+import { BowlingDelivery } from '@/app/meteor-coins/lib/deliveries/bowling'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
 import { OwlsDelivery } from '@/app/meteor-coins/lib/deliveries/owls'
@@ -10,6 +11,7 @@ import { SpiderDelivery } from '@/app/meteor-coins/lib/deliveries/spider'
 import { SwitchesDelivery } from '@/app/meteor-coins/lib/deliveries/switches'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import { BeltRig } from '@/app/meteor-coins/scene/BeltRig'
+import { BowlingRig } from '@/app/meteor-coins/scene/BowlingRig'
 import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
 import { CraneRig } from '@/app/meteor-coins/scene/CraneRig'
 import { OwlRig } from '@/app/meteor-coins/scene/OwlRig'
@@ -33,5 +35,6 @@ export function DeliveryRig({ game }: { game: DropGame }) {
   if (delivery instanceof BeltDelivery) return <BeltRig game={game} belt={delivery} />
   if (delivery instanceof SpiderDelivery) return <SpiderRig game={game} spider={delivery} />
   if (delivery instanceof SlideDelivery) return <SlideRig game={game} slide={delivery} />
+  if (delivery instanceof BowlingDelivery) return <BowlingRig game={game} lanes={delivery} />
   return null
 }

@@ -128,4 +128,23 @@ export const PALETTE = {
   plateRed: '#ff4d6a',
   plateMark: '#2a1a08',
   barStripe: '#fff3c4',
+  /**
+   * Moonlight Lanes: a midnight-blue lane polished to a shine, flecked with
+   * stars, gold aiming arrows, pale gutters and pin spots, a moon for a
+   * ball, and the pinsetter's hood and scoreboard sign.
+   */
+  lane: '#22306b',
+  laneBoard: '#2c3c80',
+  laneStar: '#fff3c4',
+  laneArrow: '#ffc93c',
+  foulLine: '#f2f4f8',
+  laneGutter: '#141a3a',
+  kickback: '#3a2b5c',
+  pinSpot: '#8fa3ff',
+  moonBall: '#dfe3f5',
+  fingerHole: '#1d2033',
+  pinsetter: '#2a2148',
+  sweepBar: '#c9973a',
+  sign: '#120d26',
+  signText: '#fff3c4',
 } as const

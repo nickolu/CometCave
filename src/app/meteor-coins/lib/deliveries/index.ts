@@ -9,6 +9,13 @@ import {
 } from '@/app/meteor-coins/lib/cannon'
 import { ArmDelivery } from '@/app/meteor-coins/lib/deliveries/arm'
 import { type BeltConfig, BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
+import {
+  BALL_RADIUS,
+  type BowlingConfig,
+  BowlingDelivery,
+  KICKBACK_HEIGHT,
+  SIGN_TOP,
+} from '@/app/meteor-coins/lib/deliveries/bowling'
 import { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import {
   CRANE_AIM_Y,
@@ -62,6 +69,7 @@ export type DeliveryConfig =
   | ({ kind: 'belt' } & BeltConfig)
   | ({ kind: 'spider' } & SpiderConfig)
   | ({ kind: 'slide' } & SlideConfig)
+  | ({ kind: 'bowling' } & BowlingConfig)
 
 /** The stage's delivery: its own, else the cannon where it has one, else the arm. */
 export function deliveryOf(stage: StageDef): DeliveryConfig {
@@ -93,6 +101,8 @@ export function createDelivery(
       return new SpiderDelivery(host, config)
     case 'slide':
       return new SlideDelivery(host, config)
+    case 'bowling':
+      return new BowlingDelivery(host, config)
   }
 }
 
@@ -118,6 +128,9 @@ export function deliveryAimY(config: DeliveryConfig): number {
     case 'spider':
       // About where tower tops are, so pointing at a post puts the spider over it.
       return SPIDER_AIM_Y
+    // The lane's top: a swipe is read along the lane itself.
+    case 'bowling':
+      return config.y
   }
 }
 
@@ -145,6 +158,8 @@ export function deliveryKeyPoints(config: DeliveryConfig): Vec[] | null {
       return spiderPoints(config)
     case 'slide':
       return slidePoints(config)
+    case 'bowling':
+      return bowlingPoints(config)
   }
 }
 
@@ -161,6 +176,7 @@ export function deliveryHolds(config: DeliveryConfig): boolean {
       return false
     case 'cannon':
     case 'plunger':
+    case 'bowling':
       return true
     case 'owls':
       return false
@@ -191,6 +207,8 @@ export function deliveryName(config: DeliveryConfig): string {
       return 'spider'
     case 'slide':
       return 'slide'
+    case 'bowling':
+      return 'power meter'
   }
 }
 
@@ -222,9 +240,30 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
         : 'Hold to pull the plunger back (longer shoots harder), and let go to launch.'
     case 'owls':
       return 'Point or use the arrow keys to aim. Tap or press Space to shoot a pea.'
+    case 'bowling':
+      // One swipe is aim and strength together; the keyboard does them apart.
+      return tapTwice
+        ? 'Point where to roll and tap to start the power, then tap again to bowl. Keys: arrows aim, Space taps.'
+        : 'Swipe up the lane to bowl: its direction aims, a longer swipe rolls harder. Keys: arrows aim, hold Space for power.'
     case 'switches':
       return 'Tap a switch to flip it (or arrow keys: up and down pick one, left and right set it). Tap anywhere else or press Space to send a coin down the lit tube.'
   }
+}
+
+/**
+ * The lane from the ball's end to the pin deck, gutters included, and the
+ * scoreboard sign over the deck (scene/BowlingRig).
+ */
+function bowlingPoints(c: BowlingConfig): Vec[] {
+  const w = c.halfWidth + 0.5
+  return [
+    { x: -w, y: c.y, z: c.frontZ },
+    { x: w, y: c.y, z: c.frontZ },
+    { x: 0, y: c.y + BALL_RADIUS * 2, z: c.ballZ },
+    { x: -w, y: c.y + KICKBACK_HEIGHT, z: c.endZ },
+    { x: w, y: c.y + KICKBACK_HEIGHT, z: c.endZ },
+    { x: 0, y: c.y + SIGN_TOP, z: c.endZ - 0.6 },
+  ]
 }
 
 /** The slide's top, and its lip at both ends of its sway. */
