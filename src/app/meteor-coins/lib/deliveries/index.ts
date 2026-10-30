@@ -223,7 +223,7 @@ export function deliveryHowTo(config: DeliveryConfig, tapTwice: boolean): string
     case 'owls':
       return 'Point or use the arrow keys to aim. Tap or press Space to shoot a pea.'
     case 'switches':
-      return 'Tap a switch to flip it (or arrow keys: up and down pick one, left and right set it). Tap anywhere else or press Space to send a coin down the lit tube.'
+      return 'Tap a switch to turn it: the lit tube shows where the next coin goes. Tap anywhere else or press Space to send it. Arrow keys: left and right set each switch down the lit tube, up goes back.'
   }
 }
 

@@ -702,111 +702,126 @@ const CASCADE: Layout = [
 ]
 
 /**
- * The Cascade Engine's track switches: a hopper over the back of the top
- * deck feeds three junctions. The first sends coins left or right; the left
- * one picks the top deck's left or middle lane, the right one its right lane
- * or a long tube that runs over the top deck and drops straight onto the
- * middle step. All three junctions sit at one height, the plane taps are
- * read on.
+ * The Cascade Engine's track switches: a network of glass tubes that steps
+ * down the stairs, four junctions deep, with a spout over every lane of
+ * every step. From the hopper, the first two rows pick a lane (left, middle
+ * or right; the middle can be reached from either side). Then each lane's
+ * tube has two junctions on its way down: over the top step, left drops
+ * the coin there and right carries it on; over the middle step's plates,
+ * left drops it onto them and right carries it on to the bottom step's.
  *
- * The top deck's spouts drop just in front of its pusher at full reach.
+ * Each row sits lower and nearer than the one before, so on a phone the
+ * rows stand apart on screen (a flat rack, seen from the front, squashed
+ * them into one strip); taps are matched along the pointer's ray.
+ *
+ * The top step's spouts drop just in front of its pusher at full reach.
  * Measured: a lane fed there spills ~90% of the middle step's landings
- * into that lane (at the back wall ~75%), so the route decides the plate.
+ * into that lane. The lower spouts drop on the pusher top, just in front
+ * of the lip above, where the plates are.
  */
-const SWITCH_Y = 5.8
-const SPOUT_Y = 4.5
-const SPOUT_Z = CASCADE[2].backZ + 0.7
+const cascadeLaneX = (lane: 0 | 1 | 2) => ((lane - 1) * 2 * FIELD_HALF_WIDTH) / 3
+const cascadeLanes = [0, 1, 2] as const
+const cascadeTop = (deck: Deck) => deck.floorY + 0.6
+/** The rows of junctions: by the hopper, the lane picks, then each lane's over the top and middle steps. */
+const ROW = {
+  first: { y: 6.9, z: CASCADE[2].backZ + 0.5 },
+  pick: { y: 6.2, z: CASCADE[2].backZ + 1.1 },
+  top: { y: 5.3, z: CASCADE[2].backZ + 1.8 },
+  middle: { y: 4.6, z: CASCADE[2].frontZ + 0.1 },
+}
+/** Over the plates, a spout drops this far above the pusher top, this far in front of the lip above. */
+const PLATE_SPOUT = { above: 1.3, ahead: 0.65 }
 const CASCADE_SWITCHES: DeliveryConfig = {
   kind: 'switches',
-  hopper: { x: 0, y: SWITCH_Y + 1, z: SPOUT_Z },
+  hopper: { x: 0, y: ROW.first.y + 0.7, z: ROW.first.z - 0.2 },
   first: { to: { junction: 0 } },
   junctions: [
+    // 0: the left half or the right.
     {
-      at: { x: 0, y: SWITCH_Y, z: SPOUT_Z },
+      at: { x: 0, ...ROW.first },
       left: { to: { junction: 1 } },
       right: { to: { junction: 2 } },
       start: 'left',
     },
+    // 1, 2: the left lane or the middle; the middle or the right.
     {
-      at: { x: -1.7, y: SWITCH_Y, z: SPOUT_Z },
-      left: { to: { exit: 0 } },
-      right: { to: { exit: 1 } },
+      at: { x: -1.4, ...ROW.pick },
+      left: { to: { junction: 3 } },
+      right: { to: { junction: 4 } },
       start: 'right',
     },
     {
-      at: { x: 1.7, y: SWITCH_Y, z: SPOUT_Z },
-      left: {
-        via: [
-          { x: 1.3, y: 5.3, z: SPOUT_Z + 1.2 },
-          { x: 0.9, y: 4.3, z: CASCADE[1].frontZ - 2.4 },
-        ],
-        to: { exit: 3 },
+      at: { x: 1.4, ...ROW.pick },
+      left: { to: { junction: 4 } },
+      right: { to: { junction: 5 } },
+      start: 'right',
+    },
+    // 3–5: each lane, over the top step: drop here (left), or on down (right).
+    ...cascadeLanes.map(lane => ({
+      at: { x: cascadeLaneX(lane) + 0.2, ...ROW.top },
+      left: { to: { exit: lane } },
+      right: { to: { junction: 6 + lane } },
+      start: 'left' as const,
+    })),
+    // 6–8: each lane, over the middle step: onto its plates (left), or on to the bottom's (right).
+    ...cascadeLanes.map(lane => ({
+      at: { x: cascadeLaneX(lane) + 0.5, ...ROW.middle },
+      left: { to: { exit: 3 + lane } },
+      right: {
+        via: [{ x: cascadeLaneX(lane) + 0.8, y: 2.9, z: CASCADE[1].frontZ - 2.2 }],
+        to: { exit: 6 + lane },
       },
-      right: { to: { exit: 2 } },
-      start: 'right',
-    },
+      start: 'left' as const,
+    })),
   ],
   exits: [
-    { at: { x: -2.7, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 0, name: 'top step, left' },
-    { at: { x: -0.4, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 1, name: 'top step, middle' },
-    { at: { x: 2.7, y: SPOUT_Y, z: SPOUT_Z + 1.5 }, deck: 2, lane: 2, name: 'top step, right' },
-    {
-      at: { x: 0.9, y: CASCADE[1].floorY + 2.2, z: CASCADE[1].frontZ - 1.7 },
-      deck: 1,
-      lane: 1,
-      name: 'middle step',
-    },
+    ...cascadeLanes.map(lane => ({
+      at: { x: cascadeLaneX(lane) - 0.3, y: 4.3, z: CASCADE[2].backZ + 2.2 },
+      deck: 2,
+      lane,
+      name: 'top step',
+    })),
+    ...([1, 0] as const).flatMap(deck =>
+      cascadeLanes.map(lane => ({
+        at: {
+          x: cascadeLaneX(lane) + (deck === 1 ? 0.1 : 0.8),
+          y: cascadeTop(CASCADE[deck]) + PLATE_SPOUT.above,
+          z: CASCADE[deck].backZ + PLATE_SPOUT.ahead,
+        },
+        deck,
+        lane,
+        name: deck === 1 ? 'middle step' : 'bottom step',
+      }))
+    ),
   ],
-  speed: 7,
-  // Poured at the top's back, bonus coins mostly ended in the pile, not the
-  // chute (a gold was worth ~2 points); over the middle step's front they
-  // tumble down the last two steps and about three in four reach the chute.
-  // Low, so the hopper hangs in front of the middle step's plates, not over them.
-  bonusPour: { y: CASCADE[1].floorY + 1.3, z: CASCADE[1].frontZ - 0.7, halfWidth: 2.6 },
+  speed: 8,
   plates: {
-    // Gold and red, by lane (0 is the player's left), in the order they
-    // move to. Each deck starts with them set against each other: the lane
-    // that pays on the middle step spills onto red on the bottom one.
+    // Gold and red by lane (0 is the player's left); the third lane is
+    // empty, and a plate that goes off moves into it.
     decks: [
-      {
-        deck: 0,
-        name: 'bottom step',
-        arrangements: [
-          [1, 0],
-          [2, 1],
-          [0, 2],
-          [1, 2],
-          [0, 1],
-          [2, 0],
-        ],
-      },
-      {
-        deck: 1,
-        name: 'middle step',
-        arrangements: [
-          [0, 2],
-          [2, 1],
-          [1, 0],
-          [2, 0],
-          [0, 1],
-          [1, 2],
-        ],
-      },
+      { deck: 0, name: 'bottom step', start: [2, 0] },
+      { deck: 1, name: 'middle step', start: [0, 2] },
     ],
-    // Measured: with no drain, every lane's plates filled from the pile's
-    // trickle, and a random switcher tripped as much gold as a careful one.
-    // Three coins with a 4s drain only trips under a routed lane's spill.
-    goldCoins: 3,
-    redCoins: 3,
-    leakS: 4,
-    bonus: 14,
-    // A bar across the whole lip only delays coins (no cost in the sim);
-    // across the chute alone, the pushers squeeze some round its ends into
-    // the gutters. Still small: red's real cost is the gold progress it
-    // wipes and the plates it moves.
+    // Measured: with tubes dropping straight onto the plates, 3 coins and a
+    // 4s drain let a random switcher trip as much gold as a router (spills
+    // off the step above fill plates too). Five, draining in 3s, take a
+    // routed run of coins: random 2 golds a game, routing 5.4. Red at 3
+    // went off from the pile's own spills (the bottom step's ~18s into a
+    // game nobody touched; random tripped ~5 a game), a cost no route could
+    // dodge. At 5, an untouched game trips nothing in 30s, and one number
+    // for both plates is one less rule.
+    goldCoins: 5,
+    redCoins: 5,
+    leakS: 3,
+    bonus: 16,
+    // A bar across the whole lip: on the bottom step it's the chute, and
+    // the pusher squeezes some coins round its ends into the gutters.
     barS: 8,
     barHalfWidth: 3,
-    voice: { gold: 'The gate swings open!', red: 'Clunk! The lip is jammed.' },
+    voice: {
+      gold: 'Gold plate! Its hopper pours',
+      red: "Red plate! That step's edge is blocked for 8 seconds.",
+    },
   },
 }
 
@@ -815,7 +830,7 @@ const THE_CASCADE_ENGINE: StageDef = {
   slug: 'the-cascade-engine',
   name: 'The Cascade Engine',
   pitch:
-    'Three stacked pushers and a tangle of glass tubes. Route your coins onto the gold plates and the whole machine pays out.',
+    'Three stacked pushers under a glass marble run, four switches deep. Steer coins onto the gold plates to tip their hoppers, and keep them off the red.',
   playable: true,
   table: { chuteHalfWidth: 3, pusherPeriodS: PUSHER_PERIOD_S, layout: CASCADE },
   arm: { periodS: PUSHER_PERIOD_S, dropZ: CASCADE[2].backZ + 0.9 },
@@ -829,16 +844,18 @@ const THE_CASCADE_ENGINE: StageDef = {
   bake: { seed: 7, floor: [85, 70, 55], top: [0, 0, 14] },
   rules: {
     coins: 40,
-    // No ring: the plates are the bonus. From the sim (10 games each): a
-    // random switcher averages 66 (one star 90%, two 40%, never three);
-    // routing once to the first gold and leaving it is no better, 59 (two
-    // stars 10%); re-routing every coin as the plates move averages 92
-    // (two stars 80%, three 60%), with twice the gold plates (5.1 to 2.4).
+    // No ring: the plates are the bonus. From the sim (10 games each, a
+    // coin every 0.6–1.8s): a random switcher averages 66 (one star
+    // always, two 10%, never three), tripping 2 golds and 2 reds; routing
+    // once onto the middle step's gold and leaving it is worse, 54 (never
+    // two stars); routing every coin onto the fullest gold averages 113
+    // (two stars always, three 40%) with 5.4 golds. A player who sends
+    // faster than the bot fills plates faster still.
     bonusForStreak: () => 0,
-    goal: { type: 'score', stars: [40, 70, 95] },
+    goal: { type: 'score', stars: [45, 85, 110] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },
-  hint: 'Spill coins onto a gold plate (star) for bonus coins; a red one (cross) blocks that step for a while. Plates move each time one goes off.',
+  hint: "Land 5 coins quickly on a plate to set it off. Gold (star) tips its hopper: 16 more coins. Red (cross) raises a bar across that step's edge for 8 seconds. A plate that goes off moves to its step's empty lane.",
   voice: {
     start: 'Top step pushes, middle step catches, bottom step pays.',
     clear: 'All the way down! The engine hums along.',

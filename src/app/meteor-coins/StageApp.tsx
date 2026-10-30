@@ -271,8 +271,11 @@ export default function StageApp({ slug }: { slug: string }) {
       const box = e.currentTarget.getBoundingClientRect()
       const ndcX = ((e.clientX - box.left) / box.width) * 2 - 1
       const ndcY = -((e.clientY - box.top) / box.height) * 2 + 1
-      const at = project.current(ndcX, ndcY, deliveryAimY(delivery))
-      if (at) game.input({ type: 'point', x: at.x, z: at.z })
+      const aimY = deliveryAimY(delivery)
+      const at = project.current(ndcX, ndcY, aimY)
+      const up = project.current(ndcX, ndcY, aimY + 1)
+      const rise = up && at ? { x: up.x - at.x, z: up.z - at.z } : undefined
+      if (at) game.input({ type: 'point', x: at.x, z: at.z, rise })
     },
     [game, delivery]
   )

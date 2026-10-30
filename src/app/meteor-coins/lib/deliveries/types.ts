@@ -57,7 +57,18 @@ export interface Delivery {
 export type DeliveryInput =
   | { type: 'press' }
   | { type: 'release' }
-  | { type: 'point'; x: number; z: number }
+  | {
+      type: 'point'
+      x: number
+      z: number
+      /**
+       * How the point moves along the pointer's ray per unit of height, for
+       * a delivery with things to tap at more than one height (the track
+       * switches). The UI sends it; a delivery that aims on the plane can
+       * ignore it.
+       */
+      rise?: { x: number; z: number }
+    }
   | { type: 'steer'; x: number; z: number }
 
 /** A coin to put on the table: where, how fast, and whether on edge. */
