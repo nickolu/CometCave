@@ -4,7 +4,9 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { PlaceLine } from '@/app/meteor-coins/components/PlaceLine'
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
+import { useScores } from '@/app/meteor-coins/hooks/useScores'
 import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   deliveryAimY,
@@ -39,6 +41,7 @@ import {
   ringBonus,
   starsFor,
 } from '@/app/meteor-coins/lib/rules'
+import type { Placement } from '@/app/meteor-coins/lib/scoreboard'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 import {
@@ -47,6 +50,7 @@ import {
   type TableProjection,
   TableProjector,
 } from '@/app/meteor-coins/scene/Scene'
+import { NicknameDialog } from '@/components/nickname-dialog'
 
 /**
  * One Meteor Coins stage in play.
@@ -91,6 +95,9 @@ type Outcome = {
   slowed: boolean
 }
 
+/** Whether the run's score has reached the server's boards yet. */
+type Saving = 'idle' | 'saving' | 'failed'
+
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 export default function StageApp({ slug }: { slug: string }) {
@@ -105,6 +112,14 @@ export default function StageApp({ slug }: { slug: string }) {
     () => typeof window !== 'undefined' && readFlag(TAP_TWICE_KEY)
   )
   const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const scoring = useScores()
+  const [saving, setSaving] = useState<Saving>('idle')
+  const [naming, setNaming] = useState(false)
+  /** The save call, read through a ref so a sign-in mid-run can't rebuild the handler. */
+  const sendScore = useRef(scoring.send)
+  useEffect(() => {
+    sendScore.current = scoring.send
+  }, [scoring.send])
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
   /**
@@ -248,6 +263,14 @@ export default function StageApp({ slug }: { slug: string }) {
         const following = nextPlayableAfter(stage) ?? nextStageAfter(stage)
         const after = recordResult(before, stage.slug, value, stars)
         saveProgress(after)
+        // The board gets this browser's best, which the run may have raised.
+        const best = after.best[stage.slug]
+        if (best !== undefined) {
+          setSaving('saving')
+          sendScore
+            .current([{ stage: stage.slug, value: best, stars: after.stars[stage.slug] ?? stars }])
+            .then(saved => setSaving(saved ? 'idle' : 'failed'))
+        }
         setOutcome({
           stars,
           best: after.best[stage.slug] ?? null,
@@ -333,7 +356,12 @@ export default function StageApp({ slug }: { slug: string }) {
       (held.has(plus) ? 1 : 0) - (held.has(minus) ? 1 : 0)
     function onArrow(e: KeyboardEvent) {
       if (!e.key.startsWith('Arrow')) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') held.add(e.key)
       else held.delete(e.key)
@@ -354,7 +382,12 @@ export default function StageApp({ slug }: { slug: string }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== ' ' || e.repeat) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') press()
       else release()
@@ -578,8 +611,21 @@ export default function StageApp({ slug }: { slug: string }) {
           stage={stage}
           state={state}
           outcome={outcome}
+          placement={scoring.status === 'off' ? null : (scoring.scores?.stages[stage.slug] ?? null)}
+          saving={scoring.status === 'failed' ? 'failed' : saving}
+          signedUp={scoring.signedUp}
+          onPickNickname={() => setNaming(true)}
           primaryRef={primaryAction}
           onTryAgain={() => setRun(r => r + 1)}
+        />
+      )}
+
+      {naming && (
+        <NicknameDialog
+          initialValue=""
+          subtitle="Shown on the Meteor Coins scores."
+          onClose={() => setNaming(false)}
+          onSave={scoring.setNickname}
         />
       )}
 
@@ -739,12 +785,21 @@ function ResultPanel({
   stage,
   state,
   outcome,
+  placement,
+  saving,
+  signedUp,
+  onPickNickname,
   primaryRef,
   onTryAgain,
 }: {
   stage: StageDef
   state: GameState
   outcome: Outcome
+  /** The player's standing on this stage's board; null while unknown or with no boards. */
+  placement: Placement | null
+  saving: Saving
+  signedUp: boolean
+  onPickNickname: () => void
   primaryRef: React.RefObject<HTMLAnchorElement | HTMLButtonElement | null>
   onTryAgain: () => void
 }) {
@@ -819,6 +874,20 @@ function ResultPanel({
             ? 'New personal best!'
             : !!outcome.best && `Your best: ${outcome.best}.`}
         </p>
+        <div className="mt-2 min-h-5 text-sm text-white/80" aria-live="polite">
+          {saving === 'saving' && <p className="text-white/60">Saving your score…</p>}
+          {saving === 'failed' && (
+            <p className="text-white/60">Couldn&apos;t save your score to the board.</p>
+          )}
+          {saving === 'idle' && placement && (
+            <PlaceLine
+              stage={stage}
+              placement={placement}
+              signedUp={signedUp}
+              onPickNickname={onPickNickname}
+            />
+          )}
+        </div>
         {outcome.unlockedNext && following && (
           <p className="mt-2 text-sm font-semibold text-white">
             {following.playable
@@ -874,12 +943,20 @@ function ResultPanel({
           <button type="button" onClick={share} className={secondaryClass}>
             Share score
           </button>
-          <Link
-            href="/meteor-coins"
-            className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
-          >
-            Stage map
-          </Link>
+          <div className="flex justify-center gap-6">
+            <Link
+              href="/meteor-coins"
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Stage map
+            </Link>
+            <Link
+              href={`/meteor-coins/${stage.slug}/scores`}
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Scores
+            </Link>
+          </div>
         </div>
         <p className="mt-2 h-4 text-xs text-white/70" role="status">
           {status}

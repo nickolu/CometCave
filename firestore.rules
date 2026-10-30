@@ -76,6 +76,11 @@ service cloud.firestore {
     match /trivia-users/{uid}    { allow read, write: if false; }
     match /trivia-scores/{docId} { allow read, write: if false; }
 
+    // Meteor Coins per-stage scores and boards — server-only, read and
+    // written through /api/v1/meteor-coins/scores.
+    match /meteor-coins-scores/{docId} { allow read, write: if false; }
+    match /meteor-coins-boards/{stage} { allow read, write: if false; }
+
     // Tap-tap-adventure leaderboard — server-side writes via admin SDK,
     // server-side reads via /api/v1/tap-tap-adventure/leaderboard route.
     // Client does not read directly.
