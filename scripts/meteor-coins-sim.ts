@@ -41,7 +41,6 @@ import type { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
 import { type SlideDelivery, rideTime, slideFlight } from '@/app/meteor-coins/lib/deliveries/slide'
 import { type SpiderDelivery, spiderCueLit } from '@/app/meteor-coins/lib/deliveries/spider'
 import {
-  PLATE_RESET_S,
   type SwitchesDelivery,
   type Track,
   type Way,
@@ -631,14 +630,13 @@ function owlsBot(game: DropGame, bot: Bot, rand: () => number) {
 /**
  * The track-switch bots (The Cascade Engine). All three send a coin every
  * 0.6–1.8s, like the arm bots tap; they differ only in the route. Random
- * flips each junction at random first. Cue routes once, into the top-deck
- * lane over the middle step's gold, and never touches the switches again:
- * a player who found the gold and stopped watching it move. Skilled
- * re-routes every coin: to the middle step's gold, unless its spill would
- * land on a bottom-step red that's half full; while the middle plates are
- * moving, or to dodge that red, it goes for the bottom step's gold the most
- * direct way. (Weighing lanes by how loaded the top deck's lip already was
- * scored worse than this.) All flips and sends go through game.input, as taps.
+ * flips each junction at random first. Cue routes once, onto the middle
+ * step's gold plate, and never touches the switches again: a player who
+ * found the gold and stopped watching it move. Skilled re-routes every
+ * coin: straight onto whichever gold plate is fullest (the bottom step's
+ * on a tie, nearer the chute), and while both steps' plates are moving,
+ * onto the top step's middle lane. All flips and sends go through
+ * game.input, as taps.
  */
 function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
   const d = game.delivery as SwitchesDelivery
@@ -655,11 +653,12 @@ function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
     for (let k = 0; k < c.junctions.length; k++) {
       const route = d.route()
       if (route.exit === exit) return
-      // Flip the first junction on the way that points the wrong way.
+      // Flip the first junction on the way that points the wrong way (where
+      // tubes merge, both ways may lead there: leave those be).
       for (const j of route.junctions) {
         const flipped = [...d.ways]
         flipped[j] = flipped[j] === 'left' ? 'right' : 'left'
-        if (reaches(flipped, j, exit)) {
+        if (!reaches(d.ways, j, exit) && reaches(flipped, j, exit)) {
           tap(c.junctions[j].at.x, c.junctions[j].at.z)
           break
         }
@@ -676,34 +675,15 @@ function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
         : visit(c.junctions[k].left) || visit(c.junctions[k].right)
     return visitJ(j)
   }
-  const plateIndex = (deck: number) => c.plates.decks.findIndex(p => p.deck === deck)
-  /** Whether a plate deck can trip now: not moving lanes, and its lip not barred. */
-  const live = (i: number) => {
-    const p = d.plates[i]
-    const moving = p.tripped !== null && game.engine.time - p.tripped.at < PLATE_RESET_S
-    return !moving
-  }
-  const topExit = (lane: number) => c.exits.findIndex(e => e.deck === 2 && e.lane === lane)
-  const directExit = (lane: number) => c.exits.findIndex(e => e.deck === 1 && e.lane === lane)
-  /** How near a plate deck's red is to tripping, 0 to 1. */
-  const redNear = (i: number) => d.plates[i].red / c.plates.redCoins
-  /**
-   * Skilled: the middle step's gold while it's live, unless its spill would
-   * land on a bottom-step red that's nearly full; then the bottom step's
-   * gold, by the most direct way, keeping clear of the middle step's red.
-   */
+  const exitOver = (deck: number, lane: number) =>
+    c.exits.findIndex(e => e.deck === deck && e.lane === lane)
+  const goldExit = (i: number) => exitOver(c.plates.decks[i].deck, d.plateLanes(i).gold)
   const skilledExit = () => {
-    const middle = plateIndex(1)
-    const bottom = plateIndex(0)
-    const mid = d.plateLanes(middle)
-    const low = d.plateLanes(bottom)
-    const risky = mid.gold === low.red && redNear(bottom) > 0.5
-    if (live(middle) && !risky) return topExit(mid.gold)
-    const direct = directExit(low.gold)
-    if (direct >= 0) return direct
-    if (low.gold !== mid.red) return topExit(low.gold)
-    // The bottom gold is under the middle red: go round by the neutral lane.
-    return topExit(3 - mid.gold - mid.red)
+    const live = c.plates.decks
+      .map((pd, i) => ({ i, deck: pd.deck, fill: d.plates[i].gold }))
+      .filter(p => !d.resetting(p.i))
+      .sort((a, b) => b.fill - a.fill || a.deck - b.deck)
+    return live.length ? goldExit(live[0].i) : exitOver(2, 1)
   }
   return () => {
     const t = game.engine.time
@@ -711,7 +691,7 @@ function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
     if (bot === 'random') {
       for (const j of c.junctions) if (rand() < 0.5) tap(j.at.x, j.at.z)
     } else if (bot === 'cue') {
-      if (!routed) routeTo(topExit(d.plateLanes(plateIndex(1)).gold))
+      if (!routed) routeTo(goldExit(c.plates.decks.findIndex(p => p.deck === 1)))
       routed = true
     } else {
       routeTo(skilledExit())
