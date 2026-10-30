@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
-import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
+import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   deliveryAimY,
   deliveryHolds,
@@ -107,6 +107,13 @@ export default function StageApp({ slug }: { slug: string }) {
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
+  /**
+   * The phase the cabinet is in, where phases change the delivery (so the
+   * controls, framing and how-to follow it), and the banner announcing it:
+   * which phase, and the coins left as it started.
+   */
+  const [phaseIndex, setPhaseIndex] = useState(0)
+  const [banner, setBanner] = useState<{ index: number; coinsAt: number | null } | null>(null)
   const [debug] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
   )
@@ -125,6 +132,8 @@ export default function StageApp({ slug }: { slug: string }) {
       created = new DropGame(stage)
       setGame(created)
       setState(created.state)
+      setPhaseIndex(0)
+      setBanner(stage.phases?.[0]?.tool ? { index: 0, coinsAt: created.state.coinsLeft } : null)
       calledTempo.current = 1
       setOutcome(null)
     })
@@ -160,13 +169,19 @@ export default function StageApp({ slug }: { slug: string }) {
         if (e.type === 'phase') {
           const phase = stage.phases?.[e.index]
           if (phase) {
-            setPopup({ id: performance.now(), text: `Phase ${e.index + 1}: ${phase.name}` })
-            setAnnounce(`Phase ${e.index + 1}, ${phase.name}. ${phase.line}`)
+            setPhaseIndex(e.index)
+            // A phase with its own delivery gets a banner; others a pop-up.
+            if (phase.tool) setBanner({ index: e.index, coinsAt: game.state.coinsLeft })
+            else setPopup({ id: performance.now(), text: `Phase ${e.index + 1}: ${phase.name}` })
+            const how = phase.delivery ? ` ${deliveryHowTo(phase.delivery, tapTwice)}` : ''
+            setAnnounce(`Phase ${e.index + 1}, ${phase.name}. ${phase.line}${how}`)
           }
         }
         if (e.type === 'lastPush') {
-          setPopup({ id: performance.now(), text: 'Core home! Last Push!' })
-          setAnnounce('The comet core is home. Last Push: the pusher reaches twice as far.')
+          setPopup({ id: performance.now(), text: 'The comet is home! Last Push!' })
+          setAnnounce(
+            'The comet is home. Last Push: the pusher reaches twice as far for a few seconds.'
+          )
         }
         if (e.type === 'meteor') {
           setPopup({ id: performance.now(), text: 'Meteorite incoming!' })
@@ -242,8 +257,15 @@ export default function StageApp({ slug }: { slug: string }) {
       }
       setState(prev => (prev === next ? prev : next))
     },
-    [game, stage]
+    [game, stage, tapTwice]
   )
+
+  // A phase's banner stays up for a while, and longer before the first coin.
+  useEffect(() => {
+    if (!banner || banner.index === 0) return
+    const id = window.setTimeout(() => setBanner(null), 9000)
+    return () => window.clearTimeout(id)
+  }, [banner])
 
   useEffect(() => {
     if (!popup) return
@@ -262,7 +284,19 @@ export default function StageApp({ slug }: { slug: string }) {
     game?.input({ type: 'release' })
   }, [game])
 
-  const delivery = useMemo(() => deliveryOf(stage), [stage])
+  const delivery = useMemo(() => deliveryOf(stage, phaseIndex), [stage, phaseIndex])
+  // A phase's own moon: its whole orbit stays in view, with the moon's size to spare.
+  const framingExtra = useMemo(() => {
+    const m = stage.phases?.[phaseIndex]?.moon
+    if (!m) return undefined
+    const { x, y, z } = m.center
+    return [
+      { x: x - m.radiusX - 0.6, y: y + 0.6, z },
+      { x: x + m.radiusX + 0.6, y: y + 0.6, z },
+      { x, y: y + 0.6, z: z - m.radiusZ - 0.6 },
+      { x, y: y + 0.6, z: z + m.radiusZ + 0.6 },
+    ]
+  }, [stage, phaseIndex])
   // Where the pointer is over the table, for deliveries that aim by it.
   const project = useRef<TableProjection | null>(null)
   const point = useCallback(
@@ -353,6 +387,11 @@ export default function StageApp({ slug }: { slug: string }) {
   const starsNow = state ? hudStars(stage, state) : null
   const towers = state ? towerLines(stage, state) : []
   const timeLeft = state && game ? game.timeLeftS : null
+  // The banner goes once the phase's second coin is away.
+  const bannerPhase =
+    banner && state && !over && (banner.coinsAt ?? 0) - (state.coinsLeft ?? 0) < 2
+      ? stage.phases?.[banner.index]
+      : undefined
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
@@ -382,6 +421,7 @@ export default function StageApp({ slug }: { slug: string }) {
               layout={game.engine.layout}
               arm={stage.arm}
               delivery={delivery}
+              extra={framingExtra}
             />
             <TableProjector projectRef={project} />
             {debug && <FpsMeter fpsRef={fpsRef} />}
@@ -393,7 +433,7 @@ export default function StageApp({ slug }: { slug: string }) {
       </div>
 
       {state && measure && starsNow && (
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex justify-center px-14">
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex flex-col items-center gap-2 px-14">
           <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-lg bg-black/60 px-3 py-2 sm:gap-x-4 sm:px-4">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
             {timeLeft !== null && <Stat label="Time" value={clockText(timeLeft)} />}
@@ -408,6 +448,7 @@ export default function StageApp({ slug }: { slug: string }) {
               </div>
             )}
             {stage.rules.tempo && <TempoMeter tempo={state.tempo} max={stage.rules.tempo.max} />}
+            {stage.lastPush && game && <HomeMeter game={game} />}
             <Stat label={measure.label} value={measure.value} />
             {towers.length > 0 && (
               <ul
@@ -431,6 +472,17 @@ export default function StageApp({ slug }: { slug: string }) {
               </div>
             )}
           </div>
+          {bannerPhase && stage.phases && banner && (
+            <PhaseBanner
+              key={banner.index}
+              number={banner.index + 1}
+              of={stage.phases.length}
+              name={bannerPhase.name}
+              tool={bannerPhase.tool}
+              line={bannerPhase.line}
+              howTo={deliveryHowTo(deliveryOf(stage, banner.index), tapTwice)}
+            />
+          )}
         </div>
       )}
 
@@ -500,7 +552,7 @@ export default function StageApp({ slug }: { slug: string }) {
                 Stage {stage.number} · {stage.name}
               </p>
               <p className="text-xs text-white/80 sm:text-sm">
-                {`${deliveryHowTo(delivery, tapTwice)} `}
+                {!stage.phases?.[0]?.tool && `${deliveryHowTo(delivery, tapTwice)} `}
                 {stage.ring.enabled &&
                   !stage.rules.tempo &&
                   `Hit the ring for bonus ${stage.objects.drop.plural}. `}
@@ -531,7 +583,7 @@ export default function StageApp({ slug }: { slug: string }) {
 
 /**
  * Whether the result earns the stage's "clear" line. On Comet Homecoming
- * finishing is a star, but the clear line is about the core getting home.
+ * finishing is a star, but the clear line is about the comet getting home.
  */
 function cleared(stage: StageDef, state: GameState, stars: number): boolean {
   const { goal } = stage.rules
@@ -580,6 +632,83 @@ function TempoMeter({ tempo, max }: { tempo: number; max: number }) {
             className={`h-1.5 w-1.5 rounded-full ${i < tempo ? 'bg-white' : 'border border-white/40'}`}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * A phase's opening banner, under the HUD: which phase, what it plays
+ * with, and what to do, in plain words.
+ */
+function PhaseBanner({
+  number,
+  of,
+  name,
+  tool,
+  line,
+  howTo,
+}: {
+  number: number
+  of: number
+  name: string
+  tool?: string
+  line: string
+  howTo: string
+}) {
+  return (
+    <div className="w-full max-w-md rounded-lg border border-white/20 bg-black/75 px-4 py-2.5 text-center">
+      <p className="text-[11px] uppercase tracking-wide text-white/60">
+        Phase {number} of {of}
+      </p>
+      <p className="text-lg font-bold leading-tight">{name}</p>
+      {tool && <p className="text-xs text-white/70">{tool}</p>}
+      <p className="mt-1 text-sm leading-snug">{line}</p>
+      <p className="mt-0.5 text-xs leading-snug text-white/70">{howTo}</p>
+    </div>
+  )
+}
+
+/**
+ * How far the stage's last-push object (the comet) has to go: a track
+ * from where it started to the front edge, filling as it gets nearer, and
+ * "Home!" once it's there. Reads the game a few times a second.
+ */
+function HomeMeter({ game }: { game: DropGame }) {
+  const id = game.stage.lastPush?.object
+  const puck = useMemo(() => game.engine.pucks.find(p => p.spec.id === id), [game, id])
+  const startZ = useMemo(() => (puck?.active ? puck.body.translation().z : 0), [puck])
+  const read = useCallback(() => {
+    if (!puck?.active) return 1
+    const z = puck.body.translation().z
+    return Math.min(1, Math.max(0, (z - startZ) / (FIELD_FRONT_Z - startZ)))
+  }, [puck, startZ])
+  const [share, setShare] = useState(read)
+  useEffect(() => {
+    const tick = window.setInterval(() => setShare(read()), 250)
+    return () => window.clearInterval(tick)
+  }, [read])
+  const home = !puck?.active
+  const percent = Math.round(share * 100)
+  return (
+    <div
+      className="text-center"
+      role="meter"
+      aria-label="The comet's way home"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-valuetext={home ? 'Home' : `${percent}% of the way home`}
+    >
+      <div className="text-[11px] uppercase tracking-wide text-white/60">Comet</div>
+      <div className="text-sm font-bold leading-tight sm:text-base">
+        {home ? 'Home!' : `${percent}%`}
+      </div>
+      <div
+        aria-hidden
+        className="mt-0.5 h-1.5 w-14 overflow-hidden rounded-full border border-white/40"
+      >
+        <div className="h-full bg-white" style={{ width: `${percent}%` }} />
       </div>
     </div>
   )

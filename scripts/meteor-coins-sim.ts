@@ -24,6 +24,7 @@ import {
   launchVelocity,
   muzzleAt,
 } from '@/app/meteor-coins/lib/cannon'
+import type { Delivery } from '@/app/meteor-coins/lib/deliveries'
 import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
@@ -36,6 +37,7 @@ import {
   peaHits,
   peaShot,
 } from '@/app/meteor-coins/lib/deliveries/owls'
+import type { PhasedDelivery } from '@/app/meteor-coins/lib/deliveries/phased'
 import type { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
 import { type SlideDelivery, rideTime, slideFlight } from '@/app/meteor-coins/lib/deliveries/slide'
 import { type SpiderDelivery, spiderCueLit } from '@/app/meteor-coins/lib/deliveries/spider'
@@ -130,6 +132,13 @@ function hoopShot(
   return passing.length ? passing[passing.length >> 1] : null
 }
 
+/** How far forward the stage's last-push object is, or "home" once it's gone. */
+function lastPushZ(game: DropGame): string {
+  const id = game.stage.lastPush?.object
+  const puck = game.engine.pucks.find(p => p.spec.id === id)
+  return puck?.active ? puck.body.translation().z.toFixed(1) : 'home'
+}
+
 /** Where along x the flat aim line from `yaw` passes a hoop's depth. */
 function lineXAt(c: CannonDelivery['config'], yaw: number, z: number): number {
   const m = muzzleAt(yaw, c)
@@ -160,8 +169,8 @@ function hoopPlan(c: CannonDelivery['config'], yaw: number, hoops: readonly Hoop
  * behind the special object nearest the lip. Both judge a release 50ms
  * ahead and let go 0–100ms late, like people, and give up waiting after 6s.
  */
-function plungerBot(game: DropGame, bot: Bot, rand: () => number) {
-  const plunger = game.delivery as PlungerDelivery
+function plungerBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const plunger = delivery as PlungerDelivery
   const { chargeS } = plunger.config
   let nextAt = 0.5 + rand() * 1.5
   let releaseAt: number | null = null
@@ -208,8 +217,8 @@ function plungerBot(game: DropGame, bot: Bot, rand: () => number) {
  * coin arrives as the hoop does. Both time everything 0–100ms late, like
  * people: aiming for 50ms from now, so each press and release is ±50ms.
  */
-function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
-  const cannon = game.delivery as CannonDelivery
+function cannonBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const cannon = delivery as CannonDelivery
   const c = cannon.config
   let nextAt = 0.5 + rand() * 1.5
   let pending: { at: number; act: 'press' | 'release' } | null = null
@@ -328,8 +337,8 @@ function frontmostSpecialAt(game: DropGame): { x: number; z: number } | null {
  * front of it and the next push carries it into the pile. Both are
  * 0-100ms late, like people.
  */
-function craneBot(game: DropGame, bot: Bot, rand: () => number) {
-  const crane = game.delivery as CraneDelivery
+function craneBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const crane = delivery as CraneDelivery
   const { x: xs, z: zs } = crane.config
   const period = game.engine.pusherPeriodS
   let nextAt = 0.5 + rand() * 1.5
@@ -742,21 +751,78 @@ function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * Comet Homecoming's cannon, skilled: plays the cue bot's shot (a full
+ * charge, let go when it would land on bare shelf, where the pusher picks
+ * it up), but first waits for the swing to point in line with the comet,
+ * so the push goes into it. Lobbing coins to land just behind the comet
+ * was tried: they land on the pile, out of the pusher's reach, and barely
+ * move it (59 points, home 2 games in 3, against the cue bot's 70 and 3
+ * in 3). Once the comet is home, or after a whole swing with no line-up,
+ * it locks wherever it points. Everything 0–100ms late, like people.
+ * Random and cue are the cannon's own bots.
+ */
+function lobBot(game: DropGame, bot: Bot, rand: () => number, delivery: Delivery) {
+  if (bot !== 'skilled') return cannonBot(game, bot, rand, delivery)
+  const shoot = cannonBot(game, 'cue', rand, delivery)
+  const cannon = delivery as CannonDelivery
+  const c = cannon.config
+  let nextAt = 0
+  let waitingSince: number | null = null
+  let lockAt: number | null = null
+  return () => {
+    const t = game.engine.time
+    if (lockAt !== null) {
+      if (t < lockAt) return
+      game.press()
+      lockAt = null
+      waitingSince = null
+      return
+    }
+    if (cannon.isLocked || cannon.charge !== null) {
+      shoot()
+      if (cannon.charge === null && !cannon.isLocked) nextAt = t + 0.6 + rand() * 0.6
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    waitingSince ??= t
+    const comet = frontmostSpecialAt(game)
+    const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
+    const lined = comet !== null && Math.abs(lineXAt(c, yaw, comet.z) - comet.x) < 0.3
+    if (lined || !comet || t - waitingSince > c.periodS) lockAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * Comet Homecoming's finale tour: a bot for each phase's delivery, each
+ * playing only in its own phase.
+ */
+function phasedBot(game: DropGame, bot: Bot, rand: () => number) {
+  const phased = game.delivery as PhasedDelivery
+  const bots = phased.phases.map(d =>
+    d.kind === 'cannon' ? lobBot(game, bot, rand, d) : DELIVERY_BOTS[d.kind](game, bot, rand, d)
+  )
+  return () => bots[Math.min(game.phase, bots.length - 1)]()
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
  */
-const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
-  {
-    cannon: cannonBot,
-    switches: switchesBot,
-    owls: owlsBot,
-    plunger: plungerBot,
-    crane: craneBot,
-    belt: beltBot,
-    spider: spiderBot,
-    slide: slideBot,
-  }
+const DELIVERY_BOTS: Record<
+  string,
+  (game: DropGame, bot: Bot, rand: () => number, delivery?: Delivery) => () => void
+> = {
+  cannon: cannonBot,
+  switches: switchesBot,
+  owls: owlsBot,
+  plunger: plungerBot,
+  crane: craneBot,
+  belt: beltBot,
+  spider: spiderBot,
+  slide: slideBot,
+  phased: phasedBot,
+}
 
 function play(stage: StageDef, bot: Bot, seed: number) {
   const game = new DropGame(stage)
@@ -778,6 +844,8 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
   const plates = { gold: 0, red: 0 }
+  const phaseZ: string[] = []
+  let homeAfter = -1
 
   const deliveryBot = DELIVERY_BOTS[game.delivery.kind]?.(game, bot, rand) ?? null
 
@@ -846,7 +914,13 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
     }
     const t0 = performance.now()
-    for (const e of game.step()) if (e.type === 'plate') plates[e.plate]++
+    for (const e of game.step()) {
+      if (e.type === 'plate') plates[e.plate]++
+      // Where the last-push object (the comet) is as each phase starts, and
+      // the drop it went home on.
+      if (e.type === 'phase') phaseZ.push(lastPushZ(game))
+      if (e.type === 'lastPush') homeAfter = drops
+    }
     if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = drops
     stepMs.push(performance.now() - t0)
     if (game.engine.pucks.length && (game.engine.time * 60) % 30 < 1) {
@@ -881,6 +955,8 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     bestTempo: s.bestTempo,
     inBoard,
     home: stage.lastPush ? (s.collected[stage.lastPush.object] ?? 0) > 0 : false,
+    homeAfter,
+    phaseZ: phaseZ.join('/'),
     redline: stage.rules.tempo && s.bestTempo >= stage.rules.tempo.max ? 1 : 0,
     timeUp: s.timeUp ? 1 : 0,
     clock: Math.round(game.clockS),
@@ -920,7 +996,10 @@ async function main() {
         ` · ★ ${atLeast(1)} ★★ ${atLeast(2)} ★★★ ${atLeast(3)}` +
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
-        (stage.lastPush ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` : '') +
+        (stage.lastPush
+          ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` +
+            ` (after drop ${runs.map(r => r.homeAfter).join(' ')}; z as phases start ${runs.map(r => r.phaseZ).join(' ')})`
+          : '') +
         (board ? ` · stuck in board ${avg('inBoard')}` : '') +
         (stage.delivery?.kind === 'switches' ? ` · gold ${avg('gold')} red ${avg('red')}` : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +

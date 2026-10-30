@@ -34,7 +34,16 @@ const FIELD_DRIFT_S = 2.4
  * ring on the spot each announced meteorite will land. Reads the game every
  * frame; owns no state of its own.
  */
-export function MoonRig({ game, moon }: { game: DropGame; moon: MoonConfig }) {
+export function MoonRig({
+  game,
+  moon,
+  gravityScale = 1,
+}: {
+  game: DropGame
+  moon: MoonConfig
+  /** The gravity it's drawn against, as a share of the usual (a low-gravity phase's). */
+  gravityScale?: number
+}) {
   const body = useRef<THREE.Group>(null)
   const field = useRef<THREE.Group>(null)
   const fieldRings = useRef<(THREE.Mesh | null)[]>([])
@@ -52,9 +61,11 @@ export function MoonRig({ game, moon }: { game: DropGame; moon: MoonConfig }) {
   const fieldRadii = useMemo(
     () =>
       FIELD_PULLS.map(share =>
-        Math.sqrt(Math.max(0.01, moon.strength / (share * -GRAVITY) - moon.softening ** 2))
+        Math.sqrt(
+          Math.max(0.01, moon.strength / (share * -GRAVITY * gravityScale) - moon.softening ** 2)
+        )
       ),
-    [moon]
+    [moon, gravityScale]
   )
   const glow = useMemo(() => glowTexture(), [])
   const dots = useRef<THREE.InstancedMesh>(null)

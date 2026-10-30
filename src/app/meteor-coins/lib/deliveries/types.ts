@@ -1,6 +1,7 @@
 import type { Vec } from '@/app/meteor-coins/lib/cannon'
 import type { PusherEngine } from '@/app/meteor-coins/lib/engine'
 import type { GameEvent } from '@/app/meteor-coins/lib/game'
+import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import type { GameState } from '@/app/meteor-coins/lib/rules'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -74,6 +75,12 @@ export interface DeliveryHost {
    */
   readonly dropperTime: number
   readonly speed: number
+  /** The phase the cabinet is in (0 on a stage without phases). */
+  readonly phase: number
+  /** Gravity now, as a share of the usual (a phase can lower it). */
+  readonly gravityScale: number
+  /** The moon pulling on things in the air now, if any: the stage's, or its phase's. */
+  readonly moonConfig: MoonConfig | undefined
   /** Whether a coin may go now: coins left, a free slot in the pool, the board clear. */
   readonly canDrop: boolean
   /** The rules state; change it only through the functions in lib/rules. */

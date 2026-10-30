@@ -56,8 +56,8 @@ export function hudStars(
   if (goal.type === 'homecoming' && !homeAt(s, goal)) {
     return {
       stars,
-      note: `core + ${next.at}`,
-      label: `${stars} of 3 stars. Bring the core home and reach ${next.at} for the next star.`,
+      note: `comet + ${next.at}`,
+      label: `${stars} of 3 stars. Bring the comet home and reach ${next.at} for the next star.`,
     }
   }
   return {
@@ -91,7 +91,7 @@ export function nextStarSentence(stage: StageDef, s: GameState): string {
   if (!next) return 'Every star on this stage.'
   if (goal.type === 'stack') return `A height of ${next.at} for ${starWord(next.stars)}.`
   if (goal.type === 'homecoming' && !homeAt(s, goal)) {
-    return `Bring the core home and reach ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
+    return `Bring the comet home and reach ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
   }
   if (goal.type === 'target') {
     return `Finish with ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`

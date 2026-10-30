@@ -68,17 +68,24 @@ async function main() {
   // Specials first, spread evenly across their zone (jittered) so they don't
   // land on each other; the pile then settles around them. Ones marked
   // `onTop` wait until the coins are down, then are laid on the heap.
+  // Held specials (the sleeping comet) are kept clear: no coin is dropped
+  // onto one, so it can be seen at the start.
+  const heldAt: { x: number; z: number; reach: number }[] = []
   const placeSpecials = (onTop: boolean) => {
-    for (const { object, count, x, z, onTop: late = false } of recipe.specials ?? []) {
+    for (const { object, count, x, z, onTop: late = false, held } of recipe.specials ?? []) {
       if (late !== onTop) continue
       for (let i = 0; i < count; i++) {
         const px = x[0] + ((x[1] - x[0]) * (i + 0.2 + rand() * 0.6)) / count
         const pz = z[0] + (z[1] - z[0]) * rand()
         const yaw = rand() * Math.PI * 2
-        engine.addSpecial(OBJECTS[object], {
+        const index = engine.addSpecial(OBJECTS[object], {
           p: [px, onTop ? ON_TOP_Y : 0.4, pz],
           q: [0, Math.sin(yaw / 2), 0, Math.cos(yaw / 2)],
         })
+        if (held) {
+          hold(engine, index)
+          heldAt.push({ x: px, z: pz, reach: OBJECTS[object].reach })
+        }
       }
     }
   }
@@ -124,6 +131,7 @@ async function main() {
     })
   }
   for (const [x, y, z] of drops) {
+    if (heldAt.some(h => Math.hypot(x - h.x, z - h.z) < h.reach + 0.4)) continue
     if (engine.spawn(x, y, z, 'seed', rand() * Math.PI * 2) === null) break
     for (let s = 0; s < 3; s++) step()
   }
@@ -148,6 +156,10 @@ async function main() {
   let pile = exportPile(current)
   for (let attempt = 0; ; attempt++) {
     const loaded = new PusherEngine({ ...stage.table, poolObject: stage.objects.drop, pile })
+    const heldIds = (recipe.specials ?? []).filter(s => s.held).map(s => s.object as string)
+    loaded.pucks.forEach((p, i) => {
+      if (heldIds.includes(p.spec.id)) hold(loaded, i)
+    })
     let fell = 0
     for (let s = 0; s < STEPS_PER_CYCLE * 2; s++) fell += loaded.step().length
     if (fell === 0) {
@@ -183,6 +195,16 @@ async function main() {
       `settled after ${cycles} pusher cycles → ${OUT}` +
       (specials.length ? `\n  specials: ${specials.join(', ')}` : '')
   )
+}
+
+/**
+ * Holds a special still across the table as the game will at the start
+ * (a phase with holdsLastPush): it can settle down but not be pushed.
+ */
+function hold(engine: PusherEngine, index: number) {
+  const body = engine.pucks[index].body
+  body.setEnabledTranslations(false, true, false, true)
+  body.setEnabledRotations(false, false, false, true)
 }
 
 /** Runs whole pusher cycles until one passes with nothing falling. Returns the count. */
