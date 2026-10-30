@@ -1,4 +1,4 @@
-import { CUP_FLOOR, inCup } from './board'
+import { CUP_FLOOR, SWEEPER_SCALE, inCup, sweeperKnock, sweeperVX, sweeperX } from './board'
 import { FIELD_HALF_WIDTH, PUCK_RADIUS } from './cabinet'
 import { initPhysics } from './engine'
 import { DropGame, type GameEvent } from './game'
@@ -36,6 +36,51 @@ describe('the pachinko board', () => {
     expect(inCup(cup, cup.x, standing)).toBe(true)
     expect(inCup(cup, cup.x + cup.width, standing)).toBe(false)
     expect(inCup(cup, cup.x, cup.y + 2)).toBe(false)
+  })
+
+  it('knocks a coin away from the sweeping star, and never pulls one in', () => {
+    const [s] = BOARD.sweepers
+    const reach = PUCK_RADIUS + BOARD.pinRadius * SWEEPER_SCALE
+    // A quarter period in, the star stands at the end of its sweep, still.
+    const t = s.periodS / 4
+    const x = sweeperX(s, t)
+    expect(Math.abs(sweeperVX(s, t))).toBeLessThan(1e-9)
+    // A coin falling onto it from above is bounced back up.
+    const down = sweeperKnock(s, BOARD.pinRadius, t, { x, y: s.y + reach - 0.05 }, { x: 0, y: -3 })
+    expect(down!.y).toBeGreaterThan(0)
+    // Moving away already, or out of reach: left alone.
+    expect(sweeperKnock(s, BOARD.pinRadius, t, { x, y: s.y + 0.5 }, { x: 0, y: 1 })).toBeNull()
+    expect(
+      sweeperKnock(s, BOARD.pinRadius, t, { x, y: s.y + reach + 0.01 }, { x: 0, y: -3 })
+    ).toBeNull()
+    // The star never pushes a coin that isn't coming down onto it: sweeping
+    // into one at rest, or one rolling at it level with it, it passes over.
+    const vx = sweeperVX(s, 0)
+    const level = { x: Math.sign(vx) * 0.5, y: s.y - 0.05 }
+    expect(sweeperKnock(s, BOARD.pinRadius, 0, level, { x: 0, y: 0 })).toBeNull()
+    expect(sweeperKnock(s, BOARD.pinRadius, 0, level, { x: -Math.sign(vx), y: 0 })).toBeNull()
+    // A coin falling onto it while it sweeps is knocked up and along with it.
+    const onto = { x: Math.sign(vx) * 0.3, y: s.y + 0.4 }
+    const knocked = sweeperKnock(s, BOARD.pinRadius, 0, onto, { x: 0, y: -3 })
+    expect(knocked!.y).toBeGreaterThan(0)
+    expect(knocked!.x * Math.sign(vx)).toBeGreaterThan(0)
+  })
+
+  it('lets a stuck coin fall straight through the board, then collide again', () => {
+    const game = new DropGame(PACHINKO, { pile: [] })
+    const [cup] = BOARD.cups
+    // Standing on the cup's floor, as a coin wedged on the board would be held.
+    const index = game.engine.spawn(cup.x, cup.y + 1, BOARD.z, 'player', 0, undefined, true)!
+    game.engine.dropThroughBoard(index)
+    let lowest = Infinity
+    for (let i = 0; i < 90; i++) {
+      game.engine.step()
+      lowest = Math.min(lowest, game.engine.pucks[index].body.translation().y)
+    }
+    // Through the cup, the bins and the gate, onto the shelf below.
+    expect(lowest).toBeLessThan(BOARD.bottomY - PUCK_RADIUS)
+    expect(game.engine.pucks[index].body.collider(0).collisionGroups()).toBe(0xffffffff)
+    game.dispose()
   })
 
   it('takes one coin at a time, catches it in the cup, and lays coins flat as they leave', () => {
