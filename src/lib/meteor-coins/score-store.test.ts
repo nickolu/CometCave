@@ -80,6 +80,12 @@ describe('recordResults', () => {
     profile('ada', 'Ada')
     const hers = await recordResults(ada, [{ stage: 'penny-falls', value: 30, stars: 1 }])
     expect(hers.stages['penny-falls']).toMatchObject({ rank: 1, players: 2, listed: true })
+    // The save hands back the board, with her on it, for the result panel.
+    expect(hers.boards['penny-falls']).toMatchObject({
+      players: 2,
+      entries: [{ uid: 'ada', name: 'Ada', value: 30, rank: 1 }],
+      me: { rank: 1, listed: true },
+    })
 
     const board = await loadBoard('penny-falls', ada)
     expect(board.entries).toEqual([{ uid: 'ada', name: 'Ada', value: 30, stars: 1, rank: 1 }])
@@ -123,6 +129,7 @@ describe('name refresh', () => {
 
     const refreshed = await recordResults(upgraded, [])
     expect(refreshed.stages['penny-falls']).toMatchObject({ best: 40, listed: true, rank: 1 })
+    expect(refreshed.boards).toEqual({})
     expect(docs.get('meteor-coins-scores/penny-falls_anon-1')).toMatchObject({ plays: 1 })
 
     const after = await loadMyScores(upgraded)

@@ -52,6 +52,8 @@ export type MyScores = {
   /** A board still shows this player under an old name or as unnamed. */
   nameStale: boolean
   stages: Record<string, Placement>
+  /** After a save: the boards of the stages just saved, for the result panel. */
+  boards: Record<string, BoardView>
 }
 
 /** A stage's board as the browser sees it: listed players only. */

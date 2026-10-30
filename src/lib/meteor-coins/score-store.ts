@@ -75,7 +75,7 @@ async function recordOne(
   stage: string,
   incoming: ScoreResult | undefined,
   now: number
-): Promise<Placement | null> {
+): Promise<{ placement: Placement; board: Board } | null> {
   const db = getFirestoreDb()
   const scoreRef = db.collection(SCORES).doc(scoreId(stage, player.uid))
   const boardRef = db.collection(BOARDS).doc(stage)
@@ -111,7 +111,7 @@ async function recordOne(
     })
     tx.set(boardRef, { stage, players: board.players, entries: board.entries })
 
-    return placementOn(board, player.uid, value, stars)
+    return { placement: placementOn(board, player.uid, value, stars), board }
   })
 }
 
@@ -124,11 +124,14 @@ export async function recordResults(claims: AuthClaims, results: ScoreResult[]):
   const incoming = new Map(results.map(r => [r.stage, r]))
   const now = Date.now()
   const stages: MyScores['stages'] = {}
+  const boards: MyScores['boards'] = {}
   for (const stage of PLAYABLE) {
-    const placement = await recordOne(player, stage, incoming.get(stage), now)
-    if (placement) stages[stage] = placement
+    const saved = await recordOne(player, stage, incoming.get(stage), now)
+    if (!saved) continue
+    stages[stage] = saved.placement
+    if (incoming.has(stage)) boards[stage] = boardView(saved.board, saved.placement)
   }
-  return { signedUp: !claims.isAnonymous, nickname: player.name, nameStale: false, stages }
+  return { signedUp: !claims.isAnonymous, nickname: player.name, nameStale: false, stages, boards }
 }
 
 /** The caller's standing on every stage they've played. Reads only. */
@@ -151,7 +154,7 @@ export async function loadMyScores(claims: AuthClaims): Promise<MyScores> {
     const entry = board.entries.find(e => e.uid === player.uid)
     if (entry && (entry.named !== player.named || entry.name !== player.name)) nameStale = true
   })
-  return { signedUp: !claims.isAnonymous, nickname: player.name, nameStale, stages }
+  return { signedUp: !claims.isAnonymous, nickname: player.name, nameStale, stages, boards: {} }
 }
 
 /** A stage's board for anyone, with the caller's own standing when known. */

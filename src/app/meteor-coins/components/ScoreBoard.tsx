@@ -5,16 +5,20 @@ import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
 /**
  * A stage's listed players, best first. The caller's own row is marked in
- * the shape (a border and a "you" tag), not only in color.
+ * the shape (a border and a "you" tag), not only in color. With `limit`,
+ * only the top rows show, plus the caller's own row after a gap if it
+ * sits lower down.
  */
 export function ScoreBoard({
   stage,
   view,
   uid,
+  limit,
 }: {
   stage: StageDef
   view: BoardView
   uid: string | null
+  limit?: number
 }) {
   if (view.entries.length === 0) {
     return (
@@ -23,16 +27,21 @@ export function ScoreBoard({
       </p>
     )
   }
+  const top = limit === undefined ? view.entries : view.entries.slice(0, limit)
+  const own = view.entries.find(e => uid !== null && e.uid === uid)
+  const below = own !== undefined && !top.includes(own) ? own : null
+  const rows = below ? [...top, below] : top
+  const padding = limit === undefined ? 'px-3 py-2' : 'px-3 py-1'
   return (
     <ol className="flex flex-col gap-1" aria-label={`${stage.name} scores`}>
-      {view.entries.map(entry => {
+      {rows.map(entry => {
         const mine = uid !== null && entry.uid === uid
         return (
           <li
             key={entry.uid}
-            className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${
+            className={`flex items-center gap-3 rounded-lg border ${padding} ${
               mine ? 'bg-white/10' : 'border-white/10 bg-white/5'
-            }`}
+            } ${entry === below ? 'mt-2' : ''}`}
             style={mine ? { borderColor: PALETTE.puck } : undefined}
           >
             <span

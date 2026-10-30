@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { PlaceLine } from '@/app/meteor-coins/components/PlaceLine'
+import { ScoreBoard } from '@/app/meteor-coins/components/ScoreBoard'
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
 import { useScores } from '@/app/meteor-coins/hooks/useScores'
 import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
@@ -41,9 +42,10 @@ import {
   ringBonus,
   starsFor,
 } from '@/app/meteor-coins/lib/rules'
-import type { Placement } from '@/app/meteor-coins/lib/scoreboard'
+import type { BoardView, Placement } from '@/app/meteor-coins/lib/scoreboard'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
+import { usePrefersReducedMotion } from '@/app/meteor-coins/scene/reducedMotion'
 import {
   CabinetCamera,
   Scene,
@@ -114,6 +116,8 @@ export default function StageApp({ slug }: { slug: string }) {
   const [outcome, setOutcome] = useState<Outcome | null>(null)
   const scoring = useScores()
   const [saving, setSaving] = useState<Saving>('idle')
+  /** This stage's board as the save left it, for the result panel. */
+  const [board, setBoard] = useState<BoardView | null>(null)
   const [naming, setNaming] = useState(false)
   /** The save call, read through a ref so a sign-in mid-run can't rebuild the handler. */
   const sendScore = useRef(scoring.send)
@@ -151,6 +155,7 @@ export default function StageApp({ slug }: { slug: string }) {
       setBanner(stage.phases?.[0]?.tool ? { index: 0, coinsAt: created.state.coinsLeft } : null)
       calledTempo.current = 1
       setOutcome(null)
+      setBoard(null)
     })
     return () => {
       cancelled = true
@@ -269,7 +274,10 @@ export default function StageApp({ slug }: { slug: string }) {
           setSaving('saving')
           sendScore
             .current([{ stage: stage.slug, value: best, stars: after.stars[stage.slug] ?? stars }])
-            .then(saved => setSaving(saved ? 'idle' : 'failed'))
+            .then(saved => {
+              setSaving(saved ? 'idle' : 'failed')
+              setBoard(saved?.boards[stage.slug] ?? null)
+            })
         }
         setOutcome({
           stars,
@@ -612,6 +620,8 @@ export default function StageApp({ slug }: { slug: string }) {
           state={state}
           outcome={outcome}
           placement={scoring.status === 'off' ? null : (scoring.scores?.stages[stage.slug] ?? null)}
+          board={board}
+          uid={scoring.user?.uid ?? null}
           saving={scoring.status === 'failed' ? 'failed' : saving}
           signedUp={scoring.signedUp}
           onPickNickname={() => setNaming(true)}
@@ -786,6 +796,8 @@ function ResultPanel({
   state,
   outcome,
   placement,
+  board,
+  uid,
   saving,
   signedUp,
   onPickNickname,
@@ -797,6 +809,9 @@ function ResultPanel({
   outcome: Outcome
   /** The player's standing on this stage's board; null while unknown or with no boards. */
   placement: Placement | null
+  /** The board after this run's save, or null until it lands. */
+  board: BoardView | null
+  uid: string | null
   saving: Saving
   signedUp: boolean
   onPickNickname: () => void
@@ -808,6 +823,10 @@ function ResultPanel({
   const canAdvance = outcome.stars >= 1 && following?.playable
   const big = headline(stage, state)
   const hasGutters = stage.table.chuteHalfWidth < FIELD_HALF_WIDTH
+  // The run just took first place from someone: a new best that tops the
+  // board, with at least one other player to top. Repeating a #1 isn't one.
+  const topScore =
+    saving === 'idle' && outcome.isNewBest && placement?.rank === 1 && placement.players >= 2
 
   const share = async () => {
     const url = `${window.location.origin}/meteor-coins/${stage.slug}`
@@ -852,6 +871,7 @@ function ResultPanel({
         <div className="mt-3 flex justify-center">
           <StarRow earned={outcome.stars} size={30} label={`${outcome.stars} of 3 stars`} />
         </div>
+        {topScore && <TopScore />}
         {stage.rules.tempo && state.bestTempo >= stage.rules.tempo.max && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/40 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
             <span aria-hidden className="material-symbols-outlined text-[16px]">
@@ -888,6 +908,12 @@ function ResultPanel({
             />
           )}
         </div>
+        {saving === 'idle' && board && board.entries.length > 0 && (
+          <div className="mt-3 text-left">
+            <p className="mb-1 text-xs uppercase tracking-wide text-white/60">Top scores</p>
+            <ScoreBoard stage={stage} view={board} uid={uid} limit={5} />
+          </div>
+        )}
         {outcome.unlockedNext && following && (
           <p className="mt-2 text-sm font-semibold text-white">
             {following.playable
@@ -962,6 +988,56 @@ function ResultPanel({
           {status}
         </p>
       </section>
+    </div>
+  )
+}
+
+/**
+ * The one flourish in the result panel: a gold badge and a single burst of
+ * coin dots from it (interaction model 3). Under reduced motion the badge
+ * stands still, and the dots don't appear.
+ */
+function TopScore() {
+  const still = usePrefersReducedMotion()
+  const dots = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2
+    const distance = 70 + (i % 3) * 18
+    return {
+      tx: `${Math.round(Math.cos(angle) * distance)}px`,
+      ty: `${Math.round(Math.sin(angle) * distance)}px`,
+      size: 6 + (i % 3) * 2,
+    }
+  })
+  return (
+    <div className="relative mt-3 flex justify-center" role="status">
+      {!still && (
+        <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2">
+          {dots.map((d, i) => (
+            <span
+              key={i}
+              className="absolute animate-particle-burst rounded-full"
+              style={{
+                width: d.size,
+                height: d.size,
+                marginLeft: -d.size / 2,
+                marginTop: -d.size / 2,
+                background: PALETTE.puck,
+                ['--tx' as string]: d.tx,
+                ['--ty' as string]: d.ty,
+              }}
+            />
+          ))}
+        </span>
+      )}
+      <p
+        className="relative inline-flex items-center gap-1 rounded-full px-4 py-1 text-sm font-extrabold uppercase tracking-wider text-black"
+        style={{ background: PALETTE.puck }}
+      >
+        <span aria-hidden className="material-symbols-outlined text-[18px]">
+          workspace_premium
+        </span>
+        Top score on this stage
+      </p>
     </div>
   )
 }
