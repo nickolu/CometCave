@@ -17,11 +17,12 @@ import { FIELD_FRONT_Z, PHYSICS_STEP_S, deckDir, overEdge } from '@/app/meteor-c
 import {
   type Hoop,
   type Vec,
-  cannonYaw,
   dropsThroughHoop,
   flightPath,
+  hoopReady,
   hoopX,
   launchVelocity,
+  linesUp,
   muzzleAt,
 } from '@/app/meteor-coins/lib/cannon'
 import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
@@ -130,21 +131,17 @@ function hoopShot(
   return passing.length ? passing[passing.length >> 1] : null
 }
 
-/** Where along x the flat aim line from `yaw` passes a hoop's depth. */
-function lineXAt(c: CannonDelivery['config'], yaw: number, z: number): number {
-  const m = muzzleAt(yaw, c)
-  return m.x + (m.z - z) * Math.tan(yaw)
-}
-
 /**
- * The hoop a shot from `yaw` can drop through, best first among `hoops`,
- * and where its center has to be: a fixed hoop where it stands, a sliding
- * one where the aim line crosses its track.
+ * The hoop a shot from `yaw` can drop through at stage time `t`, best
+ * first among `hoops`, and where its center is: one the line lights (it
+ * lines up, and the hoop is standing still), as a player sees it.
  */
-function hoopPlan(c: CannonDelivery['config'], yaw: number, hoops: readonly Hoop[]) {
+function hoopPlan(c: CannonDelivery['config'], yaw: number, hoops: readonly Hoop[], t: number) {
   for (const hoop of [...hoops].sort((a, b) => b.bonus - a.bonus)) {
-    const atX = hoop.sweep ? lineXAt(c, yaw, hoop.z) : hoop.x
-    if (hoop.sweep && Math.abs(atX - hoop.x) > hoop.sweep.ampX * 0.95) continue
+    const atX = hoopX(hoop, t)
+    // Well inside the lit stretch, as a person taps once a hoop has lit.
+    if (!hoopReady(hoop, t, c) || !linesUp(yaw, hoop, atX, c, 0.5 + (hoop.radius - 0.5) / 2))
+      continue
     const shot = hoopShot(c, yaw, hoop, atX)
     if (shot) return { hoop, atX, ...shot }
   }
@@ -202,11 +199,11 @@ function plungerBot(game: DropGame, bot: Bot, rand: () => number) {
  * holds a random time. Cue locks wherever it points, charges fully (a full
  * shot drops against the back wall onto the pusher, like the arm's coin)
  * and lets go when it would land on bare shelf. Skilled waits for the
- * swing to line up with a hoop — the +10 first, any after a moment, a
- * full shot like cue's after a whole swing — locks there and holds for
- * that hoop's charge; for the sliding +10 it starts the charge so the
- * coin arrives as the hoop does. Both time everything 0–100ms late, like
- * people: aiming for 50ms from now, so each press and release is ±50ms.
+ * swing to light a hoop — the +10 first, any after a swing, a full shot
+ * like cue's after two — taps once it's well lit, and holds for that
+ * hoop's charge. (A gliding hoop only lights while it'll still be there
+ * when the coin arrives.) Both time everything 0–100ms late, like people:
+ * aiming for 50ms from now, so each press and release is ±50ms.
  */
 function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
   const cannon = game.delivery as CannonDelivery
@@ -233,10 +230,8 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
         if (cannon.charge !== null) chargingSince = t
         // A person sees where it locked: re-aim the distance from there.
         if (!wasLocked && cannon.isLocked && plan) {
-          const hoop = plan.hoop
-          const atX = hoop.sweep ? lineXAt(c, cannon.yaw, hoop.z) : hoop.x
-          const shot = hoopShot(c, cannon.yaw, hoop, atX)
-          if (shot) plan = { hoop, atX, ...shot }
+          const shot = hoopShot(c, cannon.yaw, plan.hoop, plan.atX)
+          plan = shot ? { ...plan, ...shot } : null
         }
       } else {
         game.release()
@@ -274,11 +269,6 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
       }
       if (bot === 'skilled' && plan) {
         const holdFor = plan.power * c.chargeS
-        if (plan.hoop.sweep) {
-          // Lead the slide: go when the hoop would reach the line as the coin does.
-          const arrive = game.dropperTime + (0.05 + holdFor + plan.flightS) * game.speed
-          if (Math.abs(hoopX(plan.hoop, arrive) - plan.atX) > 0.05) return
-        }
         const at = t + late()
         pending = { at, act: 'press' }
         nextRelease = at + holdFor + (rand() - 0.5) * 0.1
@@ -296,10 +286,15 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
       return
     }
     if (bot === 'skilled') {
+      // Patient: about a whole swing (4.4s, lingering over hoops) for the
+      // +10, then any hoop for another.
       const waited = t - nextAt
-      const hoops = waited < 1.5 ? c.hoops.filter(h => h.bonus >= 10) : waited < 3 ? c.hoops : []
-      plan = hoopPlan(c, cannonYaw(game.dropperTime + 0.05 * game.speed, c), hoops)
-      if (!plan && waited < 3) return
+      const swing = 4.5
+      const hoops =
+        waited < swing ? c.hoops.filter(h => h.bonus >= 10) : waited < 2 * swing ? c.hoops : []
+      const ahead = game.dropperTime + 0.05 * game.speed
+      plan = hoopPlan(c, cannon.yawAhead(0.05 * game.speed), hoops, ahead)
+      if (!plan && waited < 2 * swing) return
     }
     pending = { at: t + late(), act: 'press' }
   }

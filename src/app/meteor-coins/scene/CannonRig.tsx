@@ -4,7 +4,8 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
-import { HOOP_BOARD_TOP, type Hoop, hoopX } from '@/app/meteor-coins/lib/cannon'
+import { PUCK_RADIUS } from '@/app/meteor-coins/lib/cabinet'
+import { HOOP_BOARD_TOP, type Hoop, hoopTravel, hoopX } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
 import type { DropGame } from '@/app/meteor-coins/lib/game'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
@@ -12,9 +13,11 @@ import { PALETTE } from '@/app/meteor-coins/scene/palette'
 /** Dots along the arc preview, one every this many physics steps of flight. */
 const DOT_EVERY = 3
 const MAX_DOTS = 60
-/** Dashes along the flat aim line. */
+/** Dashes along the aim line: thick enough to read on a phone. */
 const MAX_DASHES = 40
 const HOOP_TUBE = 0.06
+/** A lined-up hoop's rim: this much thicker, so it doesn't rely on its colour. */
+const LIT_TUBE = 0.14
 /** The backboard: this wide, standing from the rim's height up to HOOP_BOARD_TOP. */
 const BOARD_WIDTH = 1.9
 const BOARD_THICK = 0.08
@@ -29,10 +32,13 @@ const TRACK_ABOVE = 0.45
  * their backboards (the +10 sliding along a track).
  *
  * The aim shows in two steps, the way it's played. While the cannon
- * swings, a flat dashed line runs along the table where it points, with a
- * faint ring on that line's level under each hoop to line up against.
- * Once the direction is locked the line goes and the dotted arc shows the
- * distance instead, growing as the charge fills. Reads the game every
+ * swings, a dashed line runs out where it points, climbing to each hoop's
+ * rim, with a coin-sized ring where it passes each hoop. A hoop it lines
+ * up with (the coin fits through and the hoop will still be standing
+ * there when it arrives) lights: its rim turns bright and thick, and the
+ * ring fills. A hoop that's moving, or about to, fades and shows no ring. Once the direction
+ * is locked the line goes, the lit rim stays, and the dotted arc shows
+ * the distance instead, growing as the charge fills. Reads the game every
  * frame; owns no state of its own.
  */
 export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: CannonDelivery }) {
@@ -44,7 +50,10 @@ export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: 
   const dots = useRef<THREE.InstancedMesh>(null)
   const dashes = useRef<THREE.InstancedMesh>(null)
   const hoops = useRef<(THREE.Group | null)[]>([])
-  const marks = useRef<(THREE.Mesh | null)[]>([])
+  const marks = useRef<(THREE.Group | null)[]>([])
+  const fills = useRef<(THREE.Mesh | null)[]>([])
+  const lit = useRef<(THREE.Mesh | null)[]>([])
+  const rims = useRef<(THREE.MeshStandardMaterial | null)[]>([])
   const scratch = useMemo(
     () => ({
       m: new THREE.Matrix4(),
@@ -69,17 +78,28 @@ export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: 
       fill.current.scale.set(1, f, 1)
       fill.current.position.y = 0.6 * f
     }
+    const aim = game.canDrop ? delivery.aimMarks() : []
     cannon.hoops.forEach((hoop, i) => {
       const x = hoopX(hoop, game.dropperTime)
       hoops.current[i]?.position.set(x, 0, hoop.z)
+      const at = aim[i]
+      const on = at?.linedUp ?? false
+      const rim = lit.current[i]
+      if (rim) rim.visible = on
+      // A hoop about to move off, or moving, fades and loses its ring: not one to aim at now.
+      const ready = at?.ready ?? true
+      const plain = rims.current[i]
+      if (plain) plain.opacity = ready ? 1 : 0.35
       const mark = marks.current[i]
       if (mark) {
-        mark.position.x = x
-        mark.visible = game.canDrop && !delivery.isLocked
+        mark.visible = at !== undefined && ready && !delivery.isLocked
+        if (at) mark.position.set(at.x, at.y, at.z)
       }
+      const fill = fills.current[i]
+      if (fill) fill.visible = on
     })
 
-    // Step one: the flat line along the table.
+    // Step one: the line out to the hoops.
     const line = game.canDrop ? delivery.aimLine() : []
     const dash = dashes.current
     if (dash) {
@@ -136,25 +156,41 @@ export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: 
         </mesh>
       </group>
       <instancedMesh ref={dashes} args={[undefined, undefined, MAX_DASHES]} frustumCulled={false}>
-        <boxGeometry args={[0.07, 0.025, 0.22]} />
-        <meshBasicMaterial color={PALETTE.cue} transparent opacity={0.85} />
+        <boxGeometry args={[0.13, 0.05, 0.17]} />
+        <meshBasicMaterial color={PALETTE.cue} />
       </instancedMesh>
       <instancedMesh ref={dots} args={[undefined, undefined, MAX_DOTS]} frustumCulled={false}>
         <sphereGeometry args={[0.06, 8, 6]} />
         <meshBasicMaterial color={PALETTE.cue} transparent opacity={0.8} />
       </instancedMesh>
+      {/* Where the line passes each hoop: a coin-sized ring, filled when it lines up. */}
       {cannon.hoops.map((hoop, i) => (
-        <mesh
+        <group
           key={`mark-${i}`}
-          ref={m => {
-            marks.current[i] = m
+          ref={g => {
+            marks.current[i] = g
           }}
           position={[hoop.x, lineY, hoop.z]}
           rotation={[-Math.PI / 2, 0, 0]}
         >
-          <ringGeometry args={[hoop.radius - 0.05, hoop.radius, 40]} />
-          <meshBasicMaterial color={PALETTE.hoop} transparent opacity={0.35} depthWrite={false} />
-        </mesh>
+          <mesh>
+            <ringGeometry args={[PUCK_RADIUS - 0.07, PUCK_RADIUS, 40]} />
+            <meshBasicMaterial color={PALETTE.cue} transparent opacity={0.9} depthWrite={false} />
+          </mesh>
+          <mesh
+            ref={m => {
+              fills.current[i] = m
+            }}
+          >
+            <circleGeometry args={[PUCK_RADIUS - 0.07, 40]} />
+            <meshBasicMaterial
+              color={PALETTE.hoopLit}
+              transparent
+              opacity={0.55}
+              depthWrite={false}
+            />
+          </mesh>
+        </group>
       ))}
       {cannon.hoops.map((hoop, i) => (
         <group
@@ -164,10 +200,29 @@ export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: 
           }}
           position={[hoop.x, 0, hoop.z]}
         >
-          <HoopMesh hoop={hoop} />
+          <HoopMesh
+            hoop={hoop}
+            rimRef={m => {
+              rims.current[i] = m
+            }}
+          />
+          {/* Lit when lined up: a thick bright rim over the plain one. */}
+          <mesh
+            ref={m => {
+              lit.current[i] = m
+            }}
+            position={[0, hoop.y, 0]}
+            rotation={[Math.PI / 2, 0, 0]}
+            visible={false}
+          >
+            <torusGeometry args={[hoop.radius + LIT_TUBE, LIT_TUBE, 12, 48]} />
+            <meshBasicMaterial color={PALETTE.hoopLit} />
+          </mesh>
         </group>
       ))}
-      {cannon.hoops.map((hoop, i) => hoop.sweep && <HoopTrack key={`track-${i}`} hoop={hoop} />)}
+      {cannon.hoops.map(
+        (hoop, i) => (hoop.sweep || hoop.glide) && <HoopTrack key={`track-${i}`} hoop={hoop} />
+      )}
     </>
   )
 }
@@ -177,7 +232,13 @@ export function CannonRig({ game, cannon: delivery }: { game: DropGame; cannon: 
  * backboard with the bonus written on it, and what holds the board up —
  * strings for a fixed hoop, a carriage on the track for a sliding one.
  */
-function HoopMesh({ hoop }: { hoop: Hoop }) {
+function HoopMesh({
+  hoop,
+  rimRef,
+}: {
+  hoop: Hoop
+  rimRef: (m: THREE.MeshStandardMaterial | null) => void
+}) {
   const label = useMemo(() => labelTexture(`+${hoop.bonus}`), [hoop.bonus])
   const boardZ = -hoop.radius - HOOP_TUBE - 0.25
   const boardH = HOOP_BOARD_TOP + 0.25
@@ -188,9 +249,11 @@ function HoopMesh({ hoop }: { hoop: Hoop }) {
       <mesh position={[0, hoop.y, 0]} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[hoop.radius + HOOP_TUBE, HOOP_TUBE, 12, 48]} />
         <meshStandardMaterial
+          ref={rimRef}
           color={PALETTE.hoop}
           emissive={PALETTE.hoop}
           emissiveIntensity={0.3}
+          transparent
         />
       </mesh>
       {/* Bracket from the back of the rim to the board. */}
@@ -206,7 +269,7 @@ function HoopMesh({ hoop }: { hoop: Hoop }) {
         <planeGeometry args={[0.9, 0.6]} />
         <meshBasicMaterial map={label} transparent />
       </mesh>
-      {hoop.sweep ? (
+      {hoop.sweep || hoop.glide ? (
         // The carriage up to the track.
         <mesh position={[0, top + TRACK_ABOVE / 2, boardZ]}>
           <boxGeometry args={[0.3, TRACK_ABOVE, 0.12]} />
@@ -224,18 +287,30 @@ function HoopMesh({ hoop }: { hoop: Hoop }) {
   )
 }
 
-/** The track a sliding hoop runs along, hung on strings at its ends. */
+/**
+ * The track a sliding hoop runs along, hung on strings at its ends. A
+ * gliding hoop's track has a stop block at each place it rests, so where
+ * it'll stand next is on the table.
+ */
 function HoopTrack({ hoop }: { hoop: Hoop }) {
-  const amp = hoop.sweep?.ampX ?? 0
-  const half = amp + 0.6
+  const [left, right] = hoopTravel(hoop)
+  const mid = (left + right) / 2
+  const half = (right - left) / 2 + 0.6
   const y = hoop.y + HOOP_BOARD_TOP + TRACK_ABOVE
   const z = hoop.z - hoop.radius - HOOP_TUBE - 0.25
+  const stops = [...new Set(hoop.glide?.stops ?? [])]
   return (
-    <group position={[hoop.x, 0, z]}>
+    <group position={[hoop.x + mid, 0, z]}>
       <mesh position={[0, y, 0]}>
         <boxGeometry args={[half * 2, 0.08, 0.12]} />
         <meshStandardMaterial color={PALETTE.brass} metalness={0.6} roughness={0.4} />
       </mesh>
+      {stops.map(s => (
+        <mesh key={s} position={[s - mid, y + 0.1, 0.02]}>
+          <boxGeometry args={[0.1, 0.22, 0.18]} />
+          <meshStandardMaterial color={PALETTE.hoopLabel} />
+        </mesh>
+      ))}
       {[-1, 1].map(side => (
         <mesh key={side} position={[side * half, (y + STRING_TOP) / 2, 0]}>
           <boxGeometry args={[0.02, STRING_TOP - y, 0.02]} />

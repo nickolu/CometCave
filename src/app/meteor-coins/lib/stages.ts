@@ -526,19 +526,32 @@ const RUBBER_DUCKY_RUMBLE: StageDef = {
  * Three hoops lying flat like basketball hoops, at near, middle and far
  * depth, tighter and worth more the further back. A coin only counts
  * dropping down through a rim, so a shot has to come down on it from
- * above: the right direction and the right distance. The +10 slides left
- * and right on its track over the pusher, so it has to be led. A full
- * charge clears all three and drops against the back wall onto the
- * pusher, like a coin from the arm.
+ * above: the right direction and the right distance. A full charge
+ * clears all three and drops against the back wall onto the pusher, like
+ * a coin from the arm.
  *
- * The rims are tight: a coin is 1 across, so the +10's leaves it 0.16 to
- * spare each side. Hoops are only drawn, not physical, so the table (and
- * its pile) is unchanged.
+ * The +10 glides along its track over the pusher between three stops,
+ * resting 5s at each. It used to slide without stopping and had to be
+ * led, which Nick found far too hard. It lights (and can be aimed at)
+ * only for the first 2.6s of a rest, while a shot would still find it
+ * there; after that it fades until it has moved on.
+ *
+ * The rims are tight: a coin is 1 across, so the +10's leaves it 0.2 to
+ * spare each side (0.16 had a skilled bot sinking about one +10 try in
+ * five, 0.22 two in five). Hoops are only drawn, not physical, so the
+ * table (and its pile) is unchanged.
  */
 const HOOPS = [
   { x: -1, y: 2.4, z: 1.4, radius: 0.75, bonus: 3 },
   { x: 1.2, y: 2.8, z: -1, radius: 0.7, bonus: 6 },
-  { x: 0, y: 2.6, z: -3.2, radius: 0.66, bonus: 10, sweep: { ampX: 1.5, periodS: 2.6 } },
+  {
+    x: 0,
+    y: 2.6,
+    z: -3.2,
+    radius: 0.7,
+    bonus: 10,
+    glide: { stops: [-1.5, 0, 1.5, 0], dwellS: 5, moveS: 1.2 },
+  },
 ]
 
 const HOOP_LA_CANNON: StageDef = {
@@ -554,6 +567,11 @@ const HOOP_LA_CANNON: StageDef = {
     pivot: { x: 0, y: 0.9, z: 5.4 },
     barrel: 0.8,
     periodS: 3,
+    // The swing slows over a hoop it lines up with, so its line crosses at
+    // 1 unit a second at most. Measured, typical time lit: +3 about 1s, +6
+    // and +10 0.4s; at a steady swing the +6 lit for 0.15s and the +10 for
+    // 0.08s, too short to see before tapping. A whole swing takes about 4.4s.
+    linger: 1,
     // Swings far enough that a full shot reaches just inside the walls.
     maxYaw: 0.28,
     // Steep, so shots come down onto the flat hoops rather than skimming them.
@@ -571,18 +589,21 @@ const HOOP_LA_CANNON: StageDef = {
   rules: {
     coins: 40,
     // Hoops pour their own bonuses (above), not a streak. From the sim (10
-    // games each, aiming in two steps): firing at random averages 17 and
-    // sinks a hoop once in five games, a star 30% of the time; full shots
-    // timed to land on bare shelf average 26, always a star, never a hoop;
-    // also locking on a hoop and charging for it (leading the sliding
-    // +10), 0–100ms late, sinks about 11 of 40 and averages 70: two stars
-    // 90% of the time, three half the time. The tight rims and a 0.8s charge keep that to about a
-    // shot in four: with a 0.9s charge and wider rims it sank half.
+    // games each, aiming in two steps): firing at random averages 19, a
+    // star 30% of the time, almost never a hoop; full shots timed to land
+    // on bare shelf average 27, a star 90%, never a hoop; also waiting for
+    // a hoop to light (the +10 first), tapping well inside it and holding
+    // for its charge, 0–100ms late, sinks about 15 of 40 and averages 72:
+    // two stars every time, three 20%. Aiming is now the easy part: the
+    // hold for distance decides it. The +10 sinks about one try in three
+    // (38 of 109 over 4 games), the +6 one in three, the +3 two in three.
+    // Round 1, with the +10 sliding and the bot leading it perfectly,
+    // averaged 70 the same way; a person found it far harder.
     bonusForStreak: () => 0,
-    goal: { type: 'score', stars: [20, 40, 75] },
+    goal: { type: 'score', stars: [22, 40, 75] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },
-  hint: 'Hoops pour +3, +6 and +10 coins. The +10 slides.',
+  hint: 'Hoops pour +3, +6 and +10 coins. Tap when a hoop lights up.',
   voice: {
     start: 'Step right up! Drop one through a hoop.',
     clear: 'Off the boards! Still counts on the shelf.',

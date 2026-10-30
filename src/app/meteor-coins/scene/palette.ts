@@ -23,6 +23,8 @@ export const PALETTE = {
   hoop: '#ff5d73',
   hoopLabel: '#fff3c4',
   hoopBoard: '#f4efe4',
+  /** A hoop the aim lines up with: a thick bright rim. */
+  hoopLit: '#7dffb0',
   /** The on-table timing cue. */
   cue: '#fff3c4',
   obstacle: '#7f86ad',

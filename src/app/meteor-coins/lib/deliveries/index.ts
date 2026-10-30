@@ -4,6 +4,7 @@ import {
   HOOP_BOARD_TOP,
   type Vec,
   flightPath,
+  hoopTravel,
   launchVelocity,
   muzzleAt,
 } from '@/app/meteor-coins/lib/cannon'
@@ -238,7 +239,7 @@ function slidePoints(c: SlideConfig): Vec[] {
   ]
 }
 
-/** The cannon, each hoop's backboard (at both ends of a slide), and the top of a full shot's arc. */
+/** The cannon, each hoop's backboard (at both ends of its track), and the top of a full shot's arc. */
 function cannonPoints(c: CannonConfig): Vec[] {
   const full = flightPath(muzzleAt(0, c), launchVelocity(0, 1, c), p => p.y < 0.7)
   const peak = full.reduce((a, b) => (b.y > a.y ? b : a))
@@ -248,8 +249,12 @@ function cannonPoints(c: CannonConfig): Vec[] {
     { x: c.pivot.x, y: c.pivot.y + 0.8, z: c.pivot.z },
     { x: peak.x, y: peak.y + 0.3, z: peak.z },
     ...c.hoops.flatMap(h => {
-      const reach = h.radius + (h.sweep?.ampX ?? 0)
-      return [-reach, reach].map(dx => ({ x: h.x + dx, y: h.y + HOOP_BOARD_TOP, z: h.z }))
+      const [left, right] = hoopTravel(h)
+      return [left - h.radius, right + h.radius].map(dx => ({
+        x: h.x + dx,
+        y: h.y + HOOP_BOARD_TOP,
+        z: h.z,
+      }))
     }),
   ]
 }
