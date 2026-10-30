@@ -29,6 +29,7 @@ export default defineConfig({
       'src/app/clusters/**/*.test.ts',
       'src/app/hum/**/*.test.ts',
       'src/app/meteor-coins/**/*.test.ts',
+      'src/lib/meteor-coins/**/*.test.ts',
     ],
     coverage: {
       reporter: ['text', 'json', 'html'],

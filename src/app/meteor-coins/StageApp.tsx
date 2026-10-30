@@ -4,7 +4,10 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { PlaceLine } from '@/app/meteor-coins/components/PlaceLine'
+import { ScoreBoard } from '@/app/meteor-coins/components/ScoreBoard'
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
+import { useScores } from '@/app/meteor-coins/hooks/useScores'
 import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   deliveryAimY,
@@ -39,14 +42,17 @@ import {
   ringBonus,
   starsFor,
 } from '@/app/meteor-coins/lib/rules'
+import type { BoardView, Placement } from '@/app/meteor-coins/lib/scoreboard'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
+import { usePrefersReducedMotion } from '@/app/meteor-coins/scene/reducedMotion'
 import {
   CabinetCamera,
   Scene,
   type TableProjection,
   TableProjector,
 } from '@/app/meteor-coins/scene/Scene'
+import { NicknameDialog } from '@/components/nickname-dialog'
 
 /**
  * One Meteor Coins stage in play.
@@ -91,6 +97,9 @@ type Outcome = {
   slowed: boolean
 }
 
+/** Whether the run's score has reached the server's boards yet. */
+type Saving = 'idle' | 'saving' | 'failed'
+
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 export default function StageApp({ slug }: { slug: string }) {
@@ -105,6 +114,16 @@ export default function StageApp({ slug }: { slug: string }) {
     () => typeof window !== 'undefined' && readFlag(TAP_TWICE_KEY)
   )
   const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const scoring = useScores()
+  const [saving, setSaving] = useState<Saving>('idle')
+  /** This stage's board as the save left it, for the result panel. */
+  const [board, setBoard] = useState<BoardView | null>(null)
+  const [naming, setNaming] = useState(false)
+  /** The save call, read through a ref so a sign-in mid-run can't rebuild the handler. */
+  const sendScore = useRef(scoring.send)
+  useEffect(() => {
+    sendScore.current = scoring.send
+  }, [scoring.send])
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
   /**
@@ -136,6 +155,7 @@ export default function StageApp({ slug }: { slug: string }) {
       setBanner(stage.phases?.[0]?.tool ? { index: 0, coinsAt: created.state.coinsLeft } : null)
       calledTempo.current = 1
       setOutcome(null)
+      setBoard(null)
     })
     return () => {
       cancelled = true
@@ -248,6 +268,17 @@ export default function StageApp({ slug }: { slug: string }) {
         const following = nextPlayableAfter(stage) ?? nextStageAfter(stage)
         const after = recordResult(before, stage.slug, value, stars)
         saveProgress(after)
+        // The board gets this browser's best, which the run may have raised.
+        const best = after.best[stage.slug]
+        if (best !== undefined) {
+          setSaving('saving')
+          sendScore
+            .current([{ stage: stage.slug, value: best, stars: after.stars[stage.slug] ?? stars }])
+            .then(saved => {
+              setSaving(saved ? 'idle' : 'failed')
+              setBoard(saved?.boards[stage.slug] ?? null)
+            })
+        }
         setOutcome({
           stars,
           best: after.best[stage.slug] ?? null,
@@ -333,7 +364,12 @@ export default function StageApp({ slug }: { slug: string }) {
       (held.has(plus) ? 1 : 0) - (held.has(minus) ? 1 : 0)
     function onArrow(e: KeyboardEvent) {
       if (!e.key.startsWith('Arrow')) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') held.add(e.key)
       else held.delete(e.key)
@@ -354,7 +390,12 @@ export default function StageApp({ slug }: { slug: string }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== ' ' || e.repeat) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') press()
       else release()
@@ -578,8 +619,23 @@ export default function StageApp({ slug }: { slug: string }) {
           stage={stage}
           state={state}
           outcome={outcome}
+          placement={scoring.status === 'off' ? null : (scoring.scores?.stages[stage.slug] ?? null)}
+          board={board}
+          uid={scoring.user?.uid ?? null}
+          saving={scoring.status === 'failed' ? 'failed' : saving}
+          signedUp={scoring.signedUp}
+          onPickNickname={() => setNaming(true)}
           primaryRef={primaryAction}
           onTryAgain={() => setRun(r => r + 1)}
+        />
+      )}
+
+      {naming && (
+        <NicknameDialog
+          initialValue=""
+          subtitle="Shown on the Meteor Coins scores."
+          onClose={() => setNaming(false)}
+          onSave={scoring.setNickname}
         />
       )}
 
@@ -739,12 +795,26 @@ function ResultPanel({
   stage,
   state,
   outcome,
+  placement,
+  board,
+  uid,
+  saving,
+  signedUp,
+  onPickNickname,
   primaryRef,
   onTryAgain,
 }: {
   stage: StageDef
   state: GameState
   outcome: Outcome
+  /** The player's standing on this stage's board; null while unknown or with no boards. */
+  placement: Placement | null
+  /** The board after this run's save, or null until it lands. */
+  board: BoardView | null
+  uid: string | null
+  saving: Saving
+  signedUp: boolean
+  onPickNickname: () => void
   primaryRef: React.RefObject<HTMLAnchorElement | HTMLButtonElement | null>
   onTryAgain: () => void
 }) {
@@ -753,6 +823,10 @@ function ResultPanel({
   const canAdvance = outcome.stars >= 1 && following?.playable
   const big = headline(stage, state)
   const hasGutters = stage.table.chuteHalfWidth < FIELD_HALF_WIDTH
+  // The run just took first place from someone: a new best that tops the
+  // board, with at least one other player to top. Repeating a #1 isn't one.
+  const topScore =
+    saving === 'idle' && outcome.isNewBest && placement?.rank === 1 && placement.players >= 2
 
   const share = async () => {
     const url = `${window.location.origin}/meteor-coins/${stage.slug}`
@@ -797,6 +871,7 @@ function ResultPanel({
         <div className="mt-3 flex justify-center">
           <StarRow earned={outcome.stars} size={30} label={`${outcome.stars} of 3 stars`} />
         </div>
+        {topScore && <TopScore />}
         {stage.rules.tempo && state.bestTempo >= stage.rules.tempo.max && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/40 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
             <span aria-hidden className="material-symbols-outlined text-[16px]">
@@ -819,6 +894,26 @@ function ResultPanel({
             ? 'New personal best!'
             : !!outcome.best && `Your best: ${outcome.best}.`}
         </p>
+        <div className="mt-2 min-h-5 text-sm text-white/80" aria-live="polite">
+          {saving === 'saving' && <p className="text-white/60">Saving your score…</p>}
+          {saving === 'failed' && (
+            <p className="text-white/60">Couldn&apos;t save your score to the board.</p>
+          )}
+          {saving === 'idle' && placement && (
+            <PlaceLine
+              stage={stage}
+              placement={placement}
+              signedUp={signedUp}
+              onPickNickname={onPickNickname}
+            />
+          )}
+        </div>
+        {saving === 'idle' && board && board.entries.length > 0 && (
+          <div className="mt-3 text-left">
+            <p className="mb-1 text-xs uppercase tracking-wide text-white/60">Top scores</p>
+            <ScoreBoard stage={stage} view={board} uid={uid} limit={5} />
+          </div>
+        )}
         {outcome.unlockedNext && following && (
           <p className="mt-2 text-sm font-semibold text-white">
             {following.playable
@@ -874,17 +969,75 @@ function ResultPanel({
           <button type="button" onClick={share} className={secondaryClass}>
             Share score
           </button>
-          <Link
-            href="/meteor-coins"
-            className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
-          >
-            Stage map
-          </Link>
+          <div className="flex justify-center gap-6">
+            <Link
+              href="/meteor-coins"
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Stage map
+            </Link>
+            <Link
+              href={`/meteor-coins/${stage.slug}/scores`}
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Scores
+            </Link>
+          </div>
         </div>
         <p className="mt-2 h-4 text-xs text-white/70" role="status">
           {status}
         </p>
       </section>
+    </div>
+  )
+}
+
+/**
+ * The one flourish in the result panel: a gold badge and a single burst of
+ * coin dots from it (interaction model 3). Under reduced motion the badge
+ * stands still, and the dots don't appear.
+ */
+function TopScore() {
+  const still = usePrefersReducedMotion()
+  const dots = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2
+    const distance = 70 + (i % 3) * 18
+    return {
+      tx: `${Math.round(Math.cos(angle) * distance)}px`,
+      ty: `${Math.round(Math.sin(angle) * distance)}px`,
+      size: 6 + (i % 3) * 2,
+    }
+  })
+  return (
+    <div className="relative mt-3 flex justify-center" role="status">
+      {!still && (
+        <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2">
+          {dots.map((d, i) => (
+            <span
+              key={i}
+              className="absolute animate-particle-burst rounded-full"
+              style={{
+                width: d.size,
+                height: d.size,
+                marginLeft: -d.size / 2,
+                marginTop: -d.size / 2,
+                background: PALETTE.puck,
+                ['--tx' as string]: d.tx,
+                ['--ty' as string]: d.ty,
+              }}
+            />
+          ))}
+        </span>
+      )}
+      <p
+        className="relative inline-flex items-center gap-1 rounded-full px-4 py-1 text-sm font-extrabold uppercase tracking-wider text-black"
+        style={{ background: PALETTE.puck }}
+      >
+        <span aria-hidden className="material-symbols-outlined text-[18px]">
+          workspace_premium
+        </span>
+        Top score on this stage
+      </p>
     </div>
   )
 }
