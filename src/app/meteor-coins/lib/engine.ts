@@ -5,6 +5,7 @@ import {
   CUP_FLOOR,
   CUP_WALL,
   GATE_TRAVEL,
+  sweeperKnock,
   sweeperX,
 } from '@/app/meteor-coins/lib/board'
 import {
@@ -17,6 +18,7 @@ import {
   LINEAR_DAMPING,
   type Layout,
   PHYSICS_STEP_S,
+  PUCK_RADIUS,
   PUSHER_HEIGHT,
   PUSHER_MID_Z,
   PUSHER_PERIOD_S,
@@ -32,7 +34,13 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
-import { COIN, OBJECTS, type ObjectSpec, type Part } from '@/app/meteor-coins/lib/objects'
+import {
+  COIN,
+  OBJECTS,
+  type ObjectSpec,
+  type Part,
+  type Tone,
+} from '@/app/meteor-coins/lib/objects'
 import type { PuckPose } from '@/app/meteor-coins/lib/piles'
 import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
@@ -91,6 +99,17 @@ export type Obstacle = {
   phases?: readonly number[]
   /** Sweeps side to side across the shelf, by `ampX`, every `periodS`. */
   sweep?: { ampX: number; periodS: number }
+  /**
+   * Slides forward and back, by `ampZ` either side of `z`, every `periodS`
+   * (The Cairn's middle post). Whatever rests on it rides along.
+   */
+  slide?: { ampZ: number; periodS: number }
+  /** How bouncy it is, where it isn't dead (a tub's rubber rim). */
+  restitution?: number
+  /** What it's drawn in, if not the usual obstacle grey. */
+  tone?: Tone
+  /** Drawn as glass, like the side walls, so the table shows through it. */
+  glass?: boolean
 } &
   /** An upright round post. A post with a `tower` name is one a stack goal counts. */
   (| { type: 'post'; radius: number; tower?: string }
@@ -98,8 +117,27 @@ export type Obstacle = {
     | { type: 'block'; width: number; depth: number }
   )
 
+/**
+ * A drain in the floor: a square hole things fall through, with a
+ * whirlpool around it. On a table with a drain, the drain is what scores;
+ * anything that leaves any other way is lost.
+ */
+export type Drain = {
+  x: number
+  z: number
+  /** The hole's side. */
+  size: number
+  /**
+   * Within `radius` of the hole, things lying on the floor are pulled in
+   * and swept around it, in units/s², strongest at the hole and fading to
+   * nothing at the edge. Positive spin turns anticlockwise, seen from above.
+   */
+  swirl: { radius: number; pull: number; spin: number }
+}
+
 /** Where an obstacle stands at a moment, given the pusher's stroke. */
 export function obstacleZ(o: Obstacle, timeS: number, pusherPeriodS: number): number {
+  if (o.slide) return o.z + o.slide.ampZ * Math.sin((2 * Math.PI * timeS) / o.slide.periodS)
   return o.rides ? o.z + pusherCenterZ(timeS, pusherPeriodS) - PUSHER_MID_Z : o.z
 }
 
@@ -122,6 +160,12 @@ export type EngineOptions = {
   pile?: PuckPose[]
   /** Front edge within this half-width scores; outside it is gutter. */
   chuteHalfWidth?: number
+  /**
+   * The scoring stretch of the front edge roams: its centre sweeps side to
+   * side by `ampX` every `periodS` (Bramble's mouth). Within chuteHalfWidth
+   * of the centre scores. Without it the chute stays in the middle.
+   */
+  chuteSweep?: { ampX: number; periodS: number }
   /** Seconds per full pusher stroke. */
   pusherPeriodS?: number
   obstacles?: readonly Obstacle[]
@@ -139,6 +183,8 @@ export type EngineOptions = {
   floorDrift?: number
   /** The table's decks; one, unless a stage stacks them. */
   layout?: Layout
+  /** A drain in the floor, which then does the scoring (Rubber Ducky Rumble). */
+  drain?: Drain
 }
 
 /** Seconds for a pachinko board's gate to slide open or shut. */
@@ -148,19 +194,30 @@ const RISE_S = 0.8
 /** How long the Last Push takes to reach full reach, and to ease off again. */
 const PUSH_EASE_S = 0.6
 
-/** An obstacle with motion of its own: it rises and sinks with the phases, or sweeps. */
+/** An obstacle with motion of its own: it rises and sinks with the phases, sweeps or slides. */
 type Mover = { o: Obstacle; body: RAPIER.RigidBody; raised: number; up: boolean }
 
 /** Below this height an object is lying on the floor, for floorDrift. */
 const ON_FLOOR_Y = 0.3
+/**
+ * Below this height a drain's whirlpool takes hold. Higher than floorDrift's,
+ * since a big object rests with its center higher, but below anything
+ * lying on top of another.
+ */
+const IN_WATER_Y = 0.45
+/** A drain sucks down (units/s²) on anything over its hole lower than this. */
+const DRAIN_SUCK = 40
+const DRAIN_REACH_Y = 1.2
 
 export class PusherEngine {
   readonly world: RAPIER.World
   readonly pucks: Puck[] = []
   readonly poolObject: ObjectSpec
   readonly chuteHalfWidth: number
+  readonly chuteSweep: { ampX: number; periodS: number } | null
   readonly pusherPeriodS: number
   readonly floorDrift: number
+  readonly drain: Drain | null
   /** Seconds of simulated time. Advances only in step(). */
   time = 0
 
@@ -174,7 +231,11 @@ export class PusherEngine {
   private board: Board | null = null
   /** How open the gate is, 0 to 1. */
   private gateOpen = 0
-  private readonly sweepers: { s: Board['sweepers'][number]; body: RAPIER.RigidBody }[] = []
+  /** A pachinko board's bottom, and the coins dropping through the board to it. */
+  private boardBottomY: number | null = null
+  private readonly throughBoard = new Set<number>()
+  /** A pachinko board's sweeping pins: no bodies, see sweeperKnock. */
+  private readonly sweepers: { s: Board['sweepers'][number]; board: Board }[] = []
   /** The Last Push: from when, until when, the pushers reach twice as far forward. */
   private push: { from: number; until: number } | null = null
 
@@ -183,17 +244,21 @@ export class PusherEngine {
     poolObject = COIN,
     pile = [],
     chuteHalfWidth = CHUTE_HALF_WIDTH,
+    chuteSweep,
     pusherPeriodS = PUSHER_PERIOD_S,
     obstacles = [],
     board,
     floorFriction,
     floorDrift = 0,
     layout = CLASSIC_LAYOUT,
+    drain,
   }: EngineOptions = {}) {
     this.layout = layout
+    this.drain = drain ?? null
     this.poolObject = poolObject
     this.floorDrift = floorDrift
     this.chuteHalfWidth = chuteHalfWidth
+    this.chuteSweep = chuteSweep ?? null
     this.pusherPeriodS = pusherPeriodS
     const world = new RAPIER.World({ x: 0, y: GRAVITY, z: 0 })
     world.timestep = PHYSICS_STEP_S
@@ -227,12 +292,32 @@ export class PusherEngine {
           [slot[1], frontZ],
         ]
       : [[backZ, frontZ]]
-    for (const [from, to] of floors) {
-      const floor = box(FIELD_HALF_WIDTH, 0.25, (to - from) / 2, 0, -0.25, (from + to) / 2, 0.4)
+    const floorBox = (x0: number, x1: number, z0: number, z1: number) => {
+      const floor = box(
+        (x1 - x0) / 2,
+        0.25,
+        (z1 - z0) / 2,
+        (x0 + x1) / 2,
+        -0.25,
+        (z0 + z1) / 2,
+        0.4
+      )
       if (floorFriction !== undefined) {
         floor.setFriction(floorFriction)
         floor.setFrictionCombineRule(RAPIER.CoefficientCombineRule.Min)
       }
+    }
+    for (const [from, to] of floors) {
+      if (!drain) {
+        floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, from, to)
+        continue
+      }
+      // A drain cuts a square hole: the floor in four pieces around it.
+      const h = drain.size / 2
+      floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, from, drain.z - h)
+      floorBox(-FIELD_HALF_WIDTH, FIELD_HALF_WIDTH, drain.z + h, to)
+      floorBox(-FIELD_HALF_WIDTH, drain.x - h, drain.z - h, drain.z + h)
+      floorBox(drain.x + h, FIELD_HALF_WIDTH, drain.z - h, drain.z + h)
     }
     const wallTop = top.floorY + WALL_HEIGHT
     for (const side of [-1, 1]) {
@@ -274,17 +359,21 @@ export class PusherEngine {
 
     // Fixed obstacles before the pusher, riders after: the order bodies are
     // made in changes how a pile settles, and the baked piles depend on it.
-    const shapeOf = (o: Obstacle) =>
-      o.type === 'post'
-        ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
-        : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+    const shapeOf = (o: Obstacle) => {
+      const desc =
+        o.type === 'post'
+          ? RAPIER.ColliderDesc.cylinder(o.height / 2, o.radius).setFriction(0.6)
+          : RAPIER.ColliderDesc.cuboid(o.width / 2, o.height / 2, o.depth / 2).setFriction(0.2)
+      return o.restitution === undefined ? desc : desc.setRestitution(o.restitution)
+    }
     const obstacle = (o: Obstacle, parent: RAPIER.RigidBody) => {
       // A rider's collider is fixed to the pusher, offset from its centre.
       const z = o.rides ? o.z - PUSHER_MID_Z : o.z
       const y = o.height / 2 - (o.rides ? PUSHER_HEIGHT / 2 : 0)
       world.createCollider(shapeOf(o).setTranslation(o.x, y, z), parent)
     }
-    const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+    const moves = (o: Obstacle) =>
+      o.phases !== undefined || o.sweep !== undefined || o.slide !== undefined
     for (const o of obstacles) if (!o.rides && !moves(o)) obstacle(o, fixed)
 
     // Scripted motion and infinite mass: nothing pushes back on a pusher.
@@ -335,26 +424,15 @@ export class PusherEngine {
           )
         )
         world.createCollider(
-          RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, 0.05, board.slot / 2 + 0.05).setFriction(
-            0.3
-          ),
+          RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, 0.05, board.slot / 2 + 0.05)
+            .setFriction(0.3)
+            .setCollisionGroups(BOARD_GROUPS),
           this.gate
         )
         this.board = board
       }
-      for (const s of board.sweepers) {
-        const body = world.createRigidBody(
-          RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, s.y, board.z)
-        )
-        world.createCollider(
-          RAPIER.ColliderDesc.cylinder(board.slot / 2, board.pinRadius * 1.5)
-            .setRotation({ x: Math.SQRT1_2, y: 0, z: 0, w: Math.SQRT1_2 })
-            .setFriction(0.2)
-            .setRestitution(0.3),
-          body
-        )
-        this.sweepers.push({ s, body })
-      }
+      for (const s of board.sweepers) this.sweepers.push({ s, board })
+      this.boardBottomY = board.bottomY
     }
 
     // Pool objects first, at the low indices; special objects after the pool.
@@ -418,6 +496,11 @@ export class PusherEngine {
       )
     }
     return body
+  }
+
+  /** Where the middle of the scoring stretch of the front edge is at `timeS`. */
+  chuteX(timeS = this.time): number {
+    return this.chuteSweep ? sweeperX(this.chuteSweep, timeS) : 0
   }
 
   get freeCount() {
@@ -550,13 +633,6 @@ export class PusherEngine {
         z: deckPusherZ(deck, this.time, this.pusherPeriodS) + deckDir(deck) * extra,
       })
     })
-    for (const { s, body } of this.sweepers) {
-      body.setNextKinematicTranslation({
-        x: sweeperX(s, this.time),
-        y: s.y,
-        z: body.translation().z,
-      })
-    }
     if (this.gate && this.board) {
       // Open while a coin falling from the gate now would land on bare shelf.
       const fallS = fallTimeToShelf(this.board.bottomY)
@@ -577,10 +653,14 @@ export class PusherEngine {
       const x = sweep
         ? m.o.x + sweep.ampX * Math.sin((2 * Math.PI * this.time) / sweep.periodS)
         : m.o.x
-      m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z: m.o.z })
+      const z = obstacleZ(m.o, this.time, this.pusherPeriodS)
+      m.body.setNextKinematicTranslation({ x, y: moverY(m.o, m.raised), z })
     }
     if (this.floorDrift) this.drift()
+    if (this.drain) this.swirl(this.drain)
+    if (this.sweepers.length) this.knockSweepers()
     this.world.step()
+    if (this.throughBoard.size) this.landThroughBoard()
 
     const falls: FallEvent[] = []
     for (let i = 0; i < this.pucks.length; i++) {
@@ -594,7 +674,11 @@ export class PusherEngine {
         spec: puck.spec,
         x: p.x,
         z: p.z,
-        result: classifyFall(p.x, this.chuteHalfWidth),
+        result: this.drain
+          ? inDrain(this.drain, p.x, p.z)
+            ? 'chute'
+            : 'gutter'
+          : classifyFall(p.x - this.chuteX(), this.chuteHalfWidth),
       })
       this.park(i)
     }
@@ -607,6 +691,35 @@ export class PusherEngine {
       if (!puck.active || puck.body.translation().y > ON_FLOOR_Y) continue
       const v = puck.body.linvel()
       puck.body.setLinvel({ x: v.x, y: v.y, z: v.z + dv }, true)
+    }
+  }
+
+  /** The whirlpool: pulls whatever is in the water near the drain in, and around. */
+  private swirl({ x, z, size, swirl }: Drain) {
+    for (const puck of this.pucks) {
+      if (!puck.active) continue
+      const p = puck.body.translation()
+      const dx = x - p.x
+      const dz = z - p.z
+      // Over the hole, the drain sucks down. Without it, two ducks could
+      // wedge across the hole tipped on their sides and plug it for good
+      // (sim: two games of ten in single figures).
+      const over = Math.abs(dx) < size / 2 && Math.abs(dz) < size / 2
+      if (over && p.y < DRAIN_REACH_Y) {
+        const v = puck.body.linvel()
+        puck.body.setLinvel({ x: v.x, y: v.y - DRAIN_SUCK * PHYSICS_STEP_S, z: v.z }, true)
+      }
+      if (p.y > IN_WATER_Y) continue
+      const d = Math.hypot(dx, dz)
+      if (d >= swirl.radius || d < 1e-6) continue
+      const k = (1 - d / swirl.radius) * PHYSICS_STEP_S
+      const ux = dx / d
+      const uz = dz / d
+      // In toward the hole, plus a quarter turn of that for the spin.
+      const ax = swirl.pull * ux - swirl.spin * uz
+      const az = swirl.pull * uz + swirl.spin * ux
+      const v = puck.body.linvel()
+      puck.body.setLinvel({ x: v.x + ax * k, y: v.y, z: v.z + az * k }, true)
     }
   }
 
@@ -630,7 +743,50 @@ export class PusherEngine {
     this.park(index)
   }
 
+  /** Each coin a sweeping pin touches gets knocked away from it. */
+  private knockSweepers() {
+    for (const { s, board } of this.sweepers) {
+      for (const puck of this.pucks) {
+        if (!puck.active) continue
+        const p = puck.body.translation()
+        if (Math.abs(p.z - board.z) > board.slot) continue
+        const v = puck.body.linvel()
+        const knocked = sweeperKnock(s, board.pinRadius, this.time, p, v)
+        if (knocked) puck.body.setLinvel({ x: knocked.x, y: knocked.y, z: v.z }, true)
+      }
+    }
+  }
+
+  /**
+   * Lets a coin stuck on a pachinko board fall straight through its pins,
+   * cups, glass and gate and out of the bottom, where it collides as usual
+   * again. The last resort for a coin nothing else frees (see DropGame).
+   */
+  dropThroughBoard(index: number) {
+    if (this.boardBottomY === null || !this.pucks[index].active) return
+    this.setThroughBoard(index, true)
+  }
+
+  private setThroughBoard(index: number, through: boolean) {
+    const body = this.pucks[index].body
+    const groups = through ? THROUGH_BOARD_GROUPS : ALL_GROUPS
+    for (let i = 0; i < body.numColliders(); i++) body.collider(i).setCollisionGroups(groups)
+    if (through) this.throughBoard.add(index)
+    else this.throughBoard.delete(index)
+    body.wakeUp()
+  }
+
+  /** Each coin dropping through the board that is clear of its bottom collides again. */
+  private landThroughBoard() {
+    for (const index of this.throughBoard) {
+      const puck = this.pucks[index]
+      const clear = puck.body.translation().y + PUCK_RADIUS < this.boardBottomY! - 0.15
+      if (!puck.active || clear) this.setThroughBoard(index, false)
+    }
+  }
+
   private park(index: number) {
+    if (this.throughBoard.has(index)) this.setThroughBoard(index, false)
     const puck = this.pucks[index]
     puck.body.setEnabled(false)
     puck.body.setLinvel({ x: 0, y: 0, z: 0 }, false)
@@ -640,6 +796,14 @@ export class PusherEngine {
     if (puck.kind !== 'special') this.free.push(index)
   }
 }
+
+/**
+ * Collision groups (membership << 16 | filter). A pachinko board's parts
+ * are in their own group, so a coin can be let fall through them.
+ */
+const ALL_GROUPS = 0xffffffff
+const BOARD_GROUPS = 0x0002ffff
+const THROUGH_BOARD_GROUPS = 0xfffffffd
 
 /** The board's pins, glass and cups, fixed to the cabinet. */
 function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) {
@@ -652,7 +816,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
         .setTranslation(pin.x, pin.y, midZ)
         .setRotation(along)
         .setFriction(0.2)
-        .setRestitution(0.3),
+        .setRestitution(0.3)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -661,7 +826,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
     world.createCollider(
       RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, glassHeight / 2, 0.05)
         .setTranslation(0, board.bottomY + glassHeight / 2, midZ + side * (depth / 2 + 0.05))
-        .setFriction(0.05),
+        .setFriction(0.05)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -680,7 +846,8 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
       RAPIER.ColliderDesc.cuboid(0.04, dividerHeight / 2, depth / 2)
         .setTranslation(x, board.bottomY + dividerHeight / 2, midZ)
         .setFriction(0.3)
-        .setRestitution(0.1),
+        .setRestitution(0.1)
+        .setCollisionGroups(BOARD_GROUPS),
       fixed
     )
   }
@@ -689,13 +856,20 @@ function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) 
       world.createCollider(
         RAPIER.ColliderDesc.cuboid(hx, hy, depth / 2)
           .setTranslation(x, y, midZ)
-          .setFriction(0.5),
+          .setFriction(0.5)
+          .setCollisionGroups(BOARD_GROUPS),
         fixed
       )
     box(cup.width / 2, CUP_FLOOR / 2, cup.x, cup.y + CUP_FLOOR / 2)
     for (const side of [-1, 1])
       box(0.04, CUP_WALL / 2, cup.x + (side * cup.width) / 2, cup.y + CUP_WALL / 2)
   }
+}
+
+/** Whether a point is over a drain's hole (with a little give: things fall in tipped). */
+export function inDrain(drain: Drain, x: number, z: number): boolean {
+  const reach = drain.size / 2 + 0.3
+  return Math.abs(x - drain.x) < reach && Math.abs(z - drain.z) < reach
 }
 
 /** A mover's center height, from sunk just below the floor (0) to standing on it (1). */

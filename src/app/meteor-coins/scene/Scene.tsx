@@ -23,6 +23,7 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
+import type { Vec } from '@/app/meteor-coins/lib/cannon'
 import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
 import {
   ARM_LENGTH,
@@ -37,10 +38,15 @@ import {
 } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
+import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
+import { BookMesh } from '@/app/meteor-coins/scene/BookMesh'
+import { CometRig } from '@/app/meteor-coins/scene/CometRig'
 import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
+import { DrainMesh } from '@/app/meteor-coins/scene/DrainMesh'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
+import { JarMesh } from '@/app/meteor-coins/scene/JarMesh'
 import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 
@@ -74,15 +80,6 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
   const pushers = useRef<(THREE.Mesh | null)[]>([])
   const riders = useRef<THREE.Group>(null)
   const movers = useRef<(THREE.Group | null)[]>([])
-  const beacon = useRef<THREE.Sprite>(null)
-  const beaconIndex = useMemo(() => {
-    const id = game.stage.lastPush?.object
-    return id ? game.engine.pucks.findIndex(p => p.spec.id === id) : -1
-  }, [game])
-  const beaconLabel = useMemo(
-    () => (beaconIndex >= 0 ? beaconTexture('CORE') : null),
-    [beaconIndex]
-  )
   const arms = useRef<(THREE.Group | null)[]>([])
   const heldCoins = useRef<(THREE.Group | null)[]>([])
   const ribbons = useRef<(THREE.Object3D | null)[]>([])
@@ -158,15 +155,6 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       pushers.current[i]?.position.set(0, deck.floorY + PUSHER_HEIGHT / 2, pusherZs[i])
     )
     riders.current?.position.set(0, 0, game.engine.pusherZ - PUSHER_MID_Z)
-    // The beacon hangs over the core wherever the pile has buried it.
-    if (beacon.current && beaconIndex >= 0) {
-      const core = game.engine.pucks[beaconIndex]
-      beacon.current.visible = core.active
-      if (core.active) {
-        const t = core.body.translation()
-        beacon.current.position.set(t.x, t.y + 1.3, t.z)
-      }
-    }
     // Movers draw from their base, the engine reports their centers.
     const moving = obstacles.filter(moves)
     game.engine.moverPositions().forEach((p, i) => {
@@ -202,25 +190,30 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       <Cabinet
         layout={layout}
         chuteHalfWidth={game.engine.chuteHalfWidth}
+        roamingChute={game.engine.chuteSweep !== null}
         obstacles={obstacles.filter(o => !o.rides && !moves(o))}
-        icy={(table.floorFriction ?? 1) < 0.2}
+        icy={(table.floorFriction ?? 1) < 0.2 && !table.floorTone}
         floorTone={table.floorTone ?? 'floor'}
+        dressed={table.dressing !== undefined}
       />
+      {table.dressing === 'book' && <BookMesh game={game} />}
 
-      {layout.map((deck, i) => (
-        <mesh
-          key={i}
-          ref={mesh => {
-            pushers.current[i] = mesh
-          }}
-          position={[0, deck.floorY + PUSHER_HEIGHT / 2, game.engine.pusherZs()[i]]}
-        >
-          <boxGeometry
-            args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, deck.pusher.depth]}
-          />
-          <meshStandardMaterial color={PALETTE[table.pusherTone ?? 'pusher']} />
-        </mesh>
-      ))}
+      {/* A dressed table draws its own pushers. */}
+      {!table.dressing &&
+        layout.map((deck, i) => (
+          <mesh
+            key={i}
+            ref={mesh => {
+              pushers.current[i] = mesh
+            }}
+            position={[0, deck.floorY + PUSHER_HEIGHT / 2, game.engine.pusherZs()[i]]}
+          >
+            <boxGeometry
+              args={[FIELD_HALF_WIDTH * 2 - 0.04, PUSHER_HEIGHT - 0.01, deck.pusher.depth]}
+            />
+            <meshStandardMaterial color={PALETTE[table.pusherTone ?? 'pusher']} />
+          </mesh>
+        ))}
       {/* Pegs that rise and sink with the phases, and the sweeping bumper. */}
       {obstacles.filter(moves).map((o, i) => (
         <group
@@ -232,11 +225,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           <ObstacleMesh obstacle={{ ...o, x: 0, z: 0 }} tone={o.sweep ? 'moon' : undefined} />
         </group>
       ))}
-      {beaconLabel && (
-        <sprite ref={beacon} scale={[1.5, 0.75, 1]} renderOrder={12}>
-          <spriteMaterial map={beaconLabel} transparent depthTest={false} />
-        </sprite>
-      )}
+      {game.stage.lastPush && <CometRig game={game} />}
       {/* Pieces mounted on the pusher, drawn where they stand at mid-stroke and moved with it. */}
       <group ref={riders}>
         {obstacles
@@ -282,7 +271,15 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
           it is holds the coin and wears a bookmark ribbon. */}
       <DeliveryRig game={game} />
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
+      {game.stage.phases?.map(
+        (phase, i) =>
+          phase.moon && (
+            <PhaseMoon key={i} game={game} moon={phase.moon} gravityScale={phase.gravityScale} />
+          )
+      )}
       {table.board && <BoardMesh board={table.board} engine={game.engine} />}
+      {table.jar && <JarMesh game={game} />}
+      {table.drain && <DrainMesh drain={table.drain} />}
       {game.delivery.kind === 'arm' &&
         lines.map((z, i) => (
           <group
@@ -418,6 +415,7 @@ function PartMaterial({ part }: { part: Part }) {
       color={PALETTE[part.tone]}
       metalness={metal ? 0.3 : 0.05}
       roughness={metal ? 0.55 : 0.7}
+      {...(part.glow ? { emissive: PALETTE[part.tone], emissiveIntensity: part.glow } : {})}
     />
   )
 }
@@ -500,15 +498,21 @@ function ShadowCue({
 function Cabinet({
   layout,
   chuteHalfWidth,
+  roamingChute,
   obstacles,
   icy,
   floorTone,
+  dressed,
 }: {
   layout: Layout
   chuteHalfWidth: number
+  /** The chute moves (Bramble's mouth): its rig draws the edge markings, so the cabinet doesn't. */
+  roamingChute: boolean
   obstacles: readonly Obstacle[]
   icy: boolean
   floorTone: Tone
+  /** The stage draws its own floors, walls, slot and edges (StageDef table.dressing). */
+  dressed: boolean
 }) {
   const top = topDeck(layout)
   const backZ = fieldBackZ(layout)
@@ -518,7 +522,7 @@ function Cabinet({
   const wallTop = top.floorY + WALL_HEIGHT
   const wallBottom = top.floorY + PUSHER_HEIGHT + BACK_WALL_GAP
   const wallHeight = wallTop + 2 - wallBottom
-  const gutterWidth = FIELD_HALF_WIDTH - chuteHalfWidth
+  const gutterWidth = roamingChute ? 0 : FIELD_HALF_WIDTH - chuteHalfWidth
   // Decks facing each other drop into a slot between them, lit along both edges.
   const slot = slotOf(layout)
   const floors = slot
@@ -527,27 +531,28 @@ function Cabinet({
         [slot[1], frontZ],
       ]
     : [[backZ, frontZ]]
-  const edges = slot ? [slot[0], slot[1] + 0.12] : [frontZ]
+  const edges = roamingChute || dressed ? [] : slot ? [slot[0], slot[1] + 0.12] : [frontZ]
 
   return (
     <>
-      {floors.map(([from, to]) => (
-        <mesh key={from} position={[0, -0.25, (from + to) / 2]}>
-          <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.5, to - from]} />
-          {icy ? (
-            <meshStandardMaterial color={PALETTE.ice} metalness={0.1} roughness={0.15} />
-          ) : (
-            <meshStandardMaterial color={PALETTE[floorTone]} />
-          )}
-        </mesh>
-      ))}
-      {slot && (
+      {!dressed &&
+        floors.map(([from, to]) => (
+          <mesh key={from} position={[0, -0.25, (from + to) / 2]}>
+            <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.5, to - from]} />
+            {icy ? (
+              <meshStandardMaterial color={PALETTE.ice} metalness={0.1} roughness={0.15} />
+            ) : (
+              <meshStandardMaterial color={PALETTE[floorTone]} />
+            )}
+          </mesh>
+        ))}
+      {slot && !dressed && (
         <mesh position={[0, -1, (slot[0] + slot[1]) / 2]}>
           <boxGeometry args={[FIELD_HALF_WIDTH * 2, 0.1, slot[1] - slot[0]]} />
           <meshStandardMaterial color={PALETTE.spine} />
         </mesh>
       )}
-      {[-1, 1].map(side => (
+      {(dressed ? [] : [-1, 1]).map(side => (
         <mesh key={side} position={[side * (FIELD_HALF_WIDTH + 0.25), wallTop / 2, fieldMidZ]}>
           <boxGeometry args={[0.5, wallTop, fieldDepth]} />
           <meshStandardMaterial color={PALETTE.glassWall} transparent opacity={0.12} />
@@ -566,7 +571,7 @@ function Cabinet({
         )
       })}
       {/* The back wall; a wall at the player's end is glass, so the table shows through. */}
-      {openDecks(layout).map(deck => (
+      {(dressed ? [] : openDecks(layout)).map(deck => (
         <mesh
           key={deck.backZ}
           position={[0, wallBottom + wallHeight / 2, deck.backZ - deckDir(deck) * 0.25]}
@@ -639,43 +644,41 @@ const NOTCHES = 3
  * One obstacle, where it stands with the pusher at mid-stroke. A tower post
  * is stone, with a slim gauge behind it notched every five coins of height.
  */
-/** A star-capped tag over the comet core, drawn on a canvas: no font files to load. */
-function beaconTexture(text: string): THREE.Texture {
-  const canvas = document.createElement('canvas')
-  canvas.width = 256
-  canvas.height = 128
-  const ctx = canvas.getContext('2d')
-  if (ctx) {
-    ctx.fillStyle = PALETTE.core
-    ctx.beginPath()
-    ctx.roundRect(8, 24, 240, 80, 40)
-    ctx.fill()
-    // A pointer down at the core.
-    ctx.beginPath()
-    ctx.moveTo(112, 104)
-    ctx.lineTo(128, 124)
-    ctx.lineTo(144, 104)
-    ctx.fill()
-    ctx.fillStyle = PALETTE.spine
-    ctx.font = 'bold 52px system-ui, sans-serif'
-    ctx.textAlign = 'center'
-    ctx.textBaseline = 'middle'
-    ctx.fillText(`★ ${text}`, 128, 66)
-  }
-  const texture = new THREE.CanvasTexture(canvas)
-  texture.colorSpace = THREE.SRGBColorSpace
-  return texture
+/** A moon that's out in one phase only: drawn while that phase's moon is the one pulling. */
+function PhaseMoon({
+  game,
+  moon,
+  gravityScale,
+}: {
+  game: DropGame
+  moon: MoonConfig
+  gravityScale?: number
+}) {
+  const group = useRef<THREE.Group>(null)
+  useFrame(() => {
+    if (group.current) group.current.visible = game.moonConfig === moon
+  })
+  return (
+    <group ref={group} visible={false}>
+      <MoonRig game={game} moon={moon} gravityScale={gravityScale} />
+    </group>
+  )
 }
 
-/** Whether an obstacle moves on its own (rises and sinks with phases, or sweeps). */
-const moves = (o: Obstacle) => o.phases !== undefined || o.sweep !== undefined
+/** Whether an obstacle moves on its own (rises and sinks with phases, sweeps or slides). */
+const moves = (o: Obstacle) =>
+  o.phases !== undefined || o.sweep !== undefined || o.slide !== undefined
 
 function ObstacleMesh({ obstacle: o, tone }: { obstacle: Obstacle; tone?: Tone }) {
   if (o.type === 'block') {
     return (
       <mesh position={[o.x, o.height / 2, o.z]}>
         <boxGeometry args={[o.width, o.height, o.depth]} />
-        <meshStandardMaterial color={PALETTE.obstacle} />
+        {o.glass ? (
+          <meshStandardMaterial color={PALETTE.glassWall} transparent opacity={0.12} />
+        ) : (
+          <meshStandardMaterial color={PALETTE[o.tone ?? 'obstacle']} />
+        )}
       </mesh>
     )
   }
@@ -727,11 +730,14 @@ export function CabinetCamera({
   layout,
   arm,
   delivery,
+  extra,
 }: {
   insets: Insets
   layout: Layout
   arm: ArmConfig
   delivery: DeliveryConfig
+  /** More to keep in view, beyond the delivery's own (a phase's moon). */
+  extra?: readonly Vec[]
 }) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
@@ -742,9 +748,11 @@ export function CabinetCamera({
       size.width,
       size.height,
       insets,
-      keyPoints(layout, arm, delivery)
+      extra
+        ? [...keyPoints(layout, arm, delivery), ...extra.map(p => new THREE.Vector3(p.x, p.y, p.z))]
+        : keyPoints(layout, arm, delivery)
     )
-  }, [get, size, insets, layout, arm, delivery])
+  }, [get, size, insets, layout, arm, delivery, extra])
 
   return null
 }

@@ -3,9 +3,9 @@ import bramblesMidnightSnack from '@/app/meteor-coins/lib/piles/brambles-midnigh
 import cometHomecoming from '@/app/meteor-coins/lib/piles/comet-homecoming.json'
 import gravityAssist from '@/app/meteor-coins/lib/piles/gravity-assist.json'
 import hoopLaCannon from '@/app/meteor-coins/lib/piles/hoop-la-cannon.json'
+import moonlightLanes from '@/app/meteor-coins/lib/piles/moonlight-lanes.json'
 import moonstonePorch from '@/app/meteor-coins/lib/piles/moonstone-porch.json'
 import pennyFalls from '@/app/meteor-coins/lib/piles/penny-falls.json'
-import redline from '@/app/meteor-coins/lib/piles/redline.json'
 import rubberDuckyRumble from '@/app/meteor-coins/lib/piles/rubber-ducky-rumble.json'
 import starfallPachinko from '@/app/meteor-coins/lib/piles/starfall-pachinko.json'
 import theBedtimeBook from '@/app/meteor-coins/lib/piles/the-bedtime-book.json'
@@ -33,7 +33,7 @@ export const PILES = {
   'rubber-ducky-rumble': rubberDuckyRumble as PuckPose[],
   'the-cascade-engine': theCascadeEngine as PuckPose[],
   'the-bedtime-book': theBedtimeBook as PuckPose[],
-  redline: redline as PuckPose[],
+  'moonlight-lanes': moonlightLanes as PuckPose[],
   'gravity-assist': gravityAssist as PuckPose[],
   'comet-homecoming': cometHomecoming as PuckPose[],
   'starfall-pachinko': starfallPachinko as PuckPose[],

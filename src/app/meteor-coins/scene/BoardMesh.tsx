@@ -4,7 +4,13 @@ import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 
-import { type Board, CUP_FLOOR, CUP_WALL, sweeperX } from '@/app/meteor-coins/lib/board'
+import {
+  type Board,
+  CUP_FLOOR,
+  CUP_WALL,
+  SWEEPER_SCALE,
+  sweeperX,
+} from '@/app/meteor-coins/lib/board'
 import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import type { PusherEngine } from '@/app/meteor-coins/lib/engine'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
@@ -78,7 +84,12 @@ export function BoardMesh({ board, engine }: { board: Board; engine: PusherEngin
         >
           <mesh rotation={[Math.PI / 2, 0, 0]}>
             <cylinderGeometry
-              args={[board.pinRadius * 1.5, board.pinRadius * 1.5, board.slot, 12]}
+              args={[
+                board.pinRadius * SWEEPER_SCALE,
+                board.pinRadius * SWEEPER_SCALE,
+                board.slot,
+                12,
+              ]}
             />
             <meshStandardMaterial color={PALETTE.brass} metalness={0.7} roughness={0.35} />
           </mesh>

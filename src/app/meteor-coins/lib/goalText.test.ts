@@ -26,16 +26,16 @@ describe('goal text', () => {
   })
 
   it('shows the stars a target run would earn if it ended now', () => {
-    const s = { ...drop(initialState(BRAMBLE.rules)), coinsLeft: 17, score: 20 }
-    expect(hudMeasure(BRAMBLE, s)).toEqual({ label: 'Fed', value: '20/30' })
+    const s = { ...drop(initialState(BRAMBLE.rules)), coinsLeft: 17, score: 15 }
+    expect(hudMeasure(BRAMBLE, s)).toEqual({ label: 'Fed', value: '15/20' })
     expect(hudStars(BRAMBLE, s)).toMatchObject({ stars: 3, note: 'if done now' })
   })
 
   it('reads a missed target as progress, and a met one as coins to spare', () => {
-    const missed = { ...initialState(BRAMBLE.rules), phase: 'over' as const, score: 22 }
-    expect(headline(BRAMBLE, missed)).toEqual({ value: '22/30', caption: 'fed' })
-    expect(nextStarSentence(BRAMBLE, missed)).toBe('Reach 30 to earn a star.')
-    const met = { ...missed, score: 30, spareAtGoal: 6 }
+    const missed = { ...initialState(BRAMBLE.rules), phase: 'over' as const, score: 12 }
+    expect(headline(BRAMBLE, missed)).toEqual({ value: '12/20', caption: 'fed' })
+    expect(nextStarSentence(BRAMBLE, missed)).toBe('Reach 20 to earn a star.')
+    const met = { ...missed, score: 20, spareAtGoal: 6 }
     expect(headline(BRAMBLE, met)).toEqual({ value: '6', caption: 'chocolates left in the tin' })
     expect(nextStarSentence(BRAMBLE, met)).toBe(
       'Finish with 16 chocolates left in the tin for 3 stars.'

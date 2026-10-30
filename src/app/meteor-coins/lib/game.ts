@@ -13,8 +13,7 @@ import {
   type DeliveryHost,
   type DeliveryInput,
   type Spawn,
-  createDelivery,
-  deliveryOf,
+  createStageDelivery,
 } from '@/app/meteor-coins/lib/deliveries'
 import { RING_Y, armTip, dropLines, isHit } from '@/app/meteor-coins/lib/dropper'
 import {
@@ -23,7 +22,7 @@ import {
   PusherEngine,
   obstacleZ,
 } from '@/app/meteor-coins/lib/engine'
-import { moonAt, moonPull } from '@/app/meteor-coins/lib/moon'
+import { type MoonConfig, moonAt, moonPull } from '@/app/meteor-coins/lib/moon'
 import type { ObjectSpec } from '@/app/meteor-coins/lib/objects'
 import { PILES } from '@/app/meteor-coins/lib/piles'
 import {
@@ -79,6 +78,17 @@ const BONUS_POUR_HALF_WIDTH = 2.6
 /** A coin on a pachinko board moving slower than this has come to rest, and gets nudged by this. */
 const STILL_SPEED = 0.05
 const NUDGE = 0.6
+/**
+ * A coin on a pachinko board that has moved less than this in this long is
+ * stuck, and is let fall through the board. Longer than a pusher stroke, so
+ * a coin waiting in a bin always sees the gate open first; trips through the
+ * pins take at most about 5 seconds, but a moving coin never counts. Nothing
+ * should need it now the star can't crush coins, but two coins could still
+ * wedge side by side between the panes in a bin (about 1 drop in 400) or
+ * balance on a cup wall, and one stuck coin holds up every drop.
+ */
+const STUCK_MOVE = 0.15
+const STUCK_S = 4
 /** How far below a pachinko board its skirt hangs, hiding coins being laid flat. */
 const SKIRT = 0.7
 
@@ -101,7 +111,21 @@ export type GameEvent =
   | { type: 'phase'; index: number }
   /** The Last Push has started. */
   | { type: 'lastPush' }
+  /**
+   * A chain-reaction plate tripped (The Cascade Engine): gold pours `bonus`,
+   * red blocks `deck`'s lip for `seconds`. `line` is said in the stage's voice.
+   */
+  | {
+      type: 'plate'
+      plate: 'gold' | 'red'
+      deck: string
+      bonus: number
+      seconds: number
+      line: string
+    }
   | { type: 'fall'; result: 'chute' | 'gutter'; object: ObjectSpec }
+  /** A delivery's own moment worth calling out (a strike): shown, and read to screen readers. */
+  | { type: 'callout'; text: string; announce: string }
 
 /**
  * One stage in play: the engine, the delivery and the rules, stepped
@@ -131,6 +155,12 @@ export class DropGame implements DeliveryHost {
   private drops = 0
   /** The phase the cabinet is in, on a stage with phases. */
   phase = 0
+  /**
+   * A phase the drops have reached but the cabinet hasn't moved to yet: on
+   * a stage that changes delivery between phases, it waits for the last
+   * coin of the outgoing one to come down. No coin goes meanwhile.
+   */
+  private phaseDue: number | null = null
   /** Events raised between steps (by a tap), handed out with the next step's. */
   private pending: GameEvent[] = []
   /** The stage's meteorites: parked until their drop, then announced, then dropped in. */
@@ -160,15 +190,18 @@ export class DropGame implements DeliveryHost {
       poolObject: stage.objects.drop,
       pile: stage.pile ? PILES[stage.pile] : [],
       chuteHalfWidth: stage.table.chuteHalfWidth,
+      chuteSweep: stage.table.chuteSweep,
       pusherPeriodS: stage.table.pusherPeriodS,
       obstacles: stage.table.obstacles,
       floorFriction: stage.table.floorFriction,
       floorDrift: stage.table.floorDrift,
       layout: stage.table.layout,
       board: stage.table.board,
+      drain: stage.table.drain,
       ...options,
     })
-    this.delivery = createDelivery(this, deliveryOf(stage), () => this.tapDrop())
+    this.delivery = createStageDelivery(this, stage, () => this.tapDrop())
+    this.holdLastPush()
     const shower = stage.meteors
     if (shower) {
       this.meteors = shower.schedule.map(m => ({
@@ -191,6 +224,11 @@ export class DropGame implements DeliveryHost {
     return this.stage.phases?.[this.phase]?.gravityScale ?? 1
   }
 
+  /** The moon pulling on things now: the phase's, else the stage's. */
+  get moonConfig(): MoonConfig | undefined {
+    return this.stage.phases?.[this.phase]?.moon ?? this.stage.moon
+  }
+
   /** Moves to the phase the drops so far have reached, reconfiguring the cabinet. */
   private advancePhase() {
     const phases = this.stage.phases
@@ -205,15 +243,45 @@ export class DropGame implements DeliveryHost {
       }
     }
     if (next === this.phase) return
+    this.phaseDue = next
+    this.applyPhase()
+  }
+
+  /** Reconfigures the cabinet for the phase that's due, once it can change. */
+  private applyPhase() {
+    const next = this.phaseDue
+    if (next === null) return
+    // A change of delivery waits until the outgoing one has nothing in the
+    // air: its coin flies the gravity, and the moon, it was launched under.
+    if (this.stage.phases?.some(p => p.delivery) && this.delivery.busy > 0) return
+    this.phaseDue = null
     this.phase = next
+    this.holdLastPush()
     this.engine.setPhase(next)
     this.engine.setGravityScale(this.gravityScale)
     this.pending.push({ type: 'phase', index: next })
   }
 
+  /**
+   * In a phase that holds it (Comet Homecoming's Wake, while the comet is
+   * asleep), the last-push object can't be pushed across the table: it can
+   * still settle down, but the pile builds up behind it instead.
+   */
+  private holdLastPush() {
+    const id = this.stage.lastPush?.object
+    if (!id || !this.stage.phases) return
+    const free = !this.stage.phases[this.phase]?.holdsLastPush
+    for (const puck of this.engine.pucks) {
+      if (puck.spec.id !== id) continue
+      puck.body.setEnabledTranslations(free, true, free, true)
+      puck.body.setEnabledRotations(free, free, free, true)
+    }
+  }
+
   /** Where the moon is now, on a stage that has one. */
   get moon(): Vec | null {
-    return this.stage.moon ? moonAt(this.dropperTime, this.stage.moon) : null
+    const m = this.moonConfig
+    return m ? moonAt(this.dropperTime, m) : null
   }
 
   /**
@@ -226,7 +294,7 @@ export class DropGame implements DeliveryHost {
     t0: number,
     stop: (p: Vec) => boolean = p => p.y < PREVIEW_FLOOR_Y
   ): Vec[] {
-    const m = this.stage.moon
+    const m = this.moonConfig
     const dt = PHYSICS_STEP_S * this.speed
     const pull = m ? (p: Vec, k: number) => moonPull(p, moonAt(t0 + (k + 1) * dt, m), m) : undefined
     return flightPath(start, { x: 0, y: -1, z: 0 }, stop, 240, pull, GRAVITY * this.gravityScale)
@@ -266,7 +334,9 @@ export class DropGame implements DeliveryHost {
   }
 
   get canDrop() {
-    return canDrop(this.state) && this.engine.freeCount > 0 && !this.boardBusy
+    return (
+      canDrop(this.state) && this.engine.freeCount > 0 && !this.boardBusy && this.phaseDue === null
+    )
   }
 
   /**
@@ -292,7 +362,7 @@ export class DropGame implements DeliveryHost {
     // Under the moon a coin falls a curve, and in low gravity it falls
     // slower; either way it takes its own time to land.
     const fallS =
-      this.stage.moon || this.gravityScale !== 1
+      this.moonConfig || this.gravityScale !== 1
         ? this.dropLanding().fallS
         : fallTimeToShelf(this.armTip().y, deck.floorY)
     return shelfOpenAt(this.engine.time + fallS, this.engine.pusherPeriodS, deck.pusher.lagS)
@@ -330,10 +400,12 @@ export class DropGame implements DeliveryHost {
 
   /**
    * Where a coin released `ahead` seconds from now would land, judged against
-   * where each post will be when it gets there (the middle one moves).
+   * where each post will be when it gets there (the middle one moves). It
+   * falls from the arm's tip, or from `from` for a delivery that drops from
+   * somewhere else (The Cairn's spider).
    */
-  landing(ahead = 0): Landing {
-    const tip = this.armTip(ahead)
+  landing(ahead = 0, from?: Vec): Landing {
+    const tip = from ? { ...from } : this.armTip(ahead)
     const releaseAt = this.engine.time + ahead
     for (let i = 0; i < this.towerPosts.length; i++) {
       const top = this.towerTop(i)
@@ -460,6 +532,7 @@ export class DropGame implements DeliveryHost {
     })
 
     this.delivery.step(events)
+    this.applyPhase()
     this.catchInCups(events)
 
     if (this.state.showerLeft > 0 && --this.showerCooldown <= 0) {
@@ -509,7 +582,7 @@ export class DropGame implements DeliveryHost {
    * before the physics steps — the same rule fallPath predicts with.
    */
   private pullTowardMoon() {
-    const m = this.stage.moon
+    const m = this.moonConfig
     if (!m) return
     const moon = moonAt(this.dropperTime, m)
     for (const puck of this.engine.pucks) {
@@ -528,19 +601,24 @@ export class DropGame implements DeliveryHost {
     return this.stage.table.board !== undefined
   }
 
+  /** Where each coin on a pachinko board last moved, and since when it hasn't. */
+  private readonly stillOnBoard = new Map<number, { x: number; y: number; since: number }>()
+
   /**
    * Takes coins that have landed in a pachinko cup off the board, and pours
    * each cup's bonus. A coin that has come to rest anywhere else on the
    * board (dead center on a pin, say) gets a nudge sideways: a pachinko
-   * ball never balances, and one coin stuck would hold up every drop.
+   * ball never balances, and one coin stuck would hold up every drop. One
+   * that still hasn't moved after STUCK_S drops straight through the board.
    */
   private catchInCups(events: GameEvent[]) {
     const board = this.stage.table.board
     if (!board) return
     this.engine.pucks.forEach((puck, index) => {
-      if (!puck.active) return
       const p = puck.body.translation()
-      if (Math.abs(p.z - board.z) > board.slot) return
+      const onBoard = puck.active && Math.abs(p.z - board.z) <= board.slot
+      if (!onBoard || p.y < board.bottomY) this.stillOnBoard.delete(index)
+      if (!onBoard) return
       if (p.y < board.bottomY) {
         // Just out of the board (behind its skirt): laid flat, so it lands
         // like any other drop. On edge, coins wedged upright in the pile by
@@ -553,6 +631,13 @@ export class DropGame implements DeliveryHost {
           puck.body.setAngvel({ x: 0, y: 0, z: 0 }, true)
         }
         return
+      }
+      const still = this.stillOnBoard.get(index)
+      if (!still || Math.hypot(p.x - still.x, p.y - still.y) > STUCK_MOVE) {
+        this.stillOnBoard.set(index, { x: p.x, y: p.y, since: this.engine.time })
+      } else if (this.engine.time - still.since > STUCK_S) {
+        this.engine.dropThroughBoard(index)
+        this.stillOnBoard.delete(index)
       }
       const v = puck.body.linvel()
       if (Math.hypot(v.x, v.y) < STILL_SPEED) {
