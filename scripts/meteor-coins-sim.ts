@@ -13,22 +13,51 @@
  * each bot earns each star, hit rate, stage length, peak live pucks and
  * physics cost per step — the numbers to set a stage's stars against.
  */
-import { deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
+import { FIELD_FRONT_Z, PHYSICS_STEP_S, deckDir, overEdge } from '@/app/meteor-coins/lib/cabinet'
 import {
   type Hoop,
-  cannonYaw,
+  type Vec,
+  dropsThroughHoop,
   flightPath,
+  hoopReady,
+  hoopX,
   launchVelocity,
+  linesUp,
   muzzleAt,
-  throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
+import type { Delivery } from '@/app/meteor-coins/lib/deliveries'
+import type { BeltDelivery } from '@/app/meteor-coins/lib/deliveries/belt'
+import {
+  type BowlingDelivery,
+  FULL_SWIPE,
+  MIN_SWIPE,
+} from '@/app/meteor-coins/lib/deliveries/bowling'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import type { CraneDelivery } from '@/app/meteor-coins/lib/deliveries/crane'
+import {
+  OVER_BOOK_X,
+  type Owl,
+  type OwlsDelivery,
+  landsWell,
+  peaAt,
+  peaHits,
+  peaShot,
+} from '@/app/meteor-coins/lib/deliveries/owls'
+import type { PhasedDelivery } from '@/app/meteor-coins/lib/deliveries/phased'
+import type { PlungerDelivery } from '@/app/meteor-coins/lib/deliveries/plunger'
+import { type SlideDelivery, rideTime, slideFlight } from '@/app/meteor-coins/lib/deliveries/slide'
+import { type SpiderDelivery, spiderCueLit } from '@/app/meteor-coins/lib/deliveries/spider'
+import {
+  type SwitchesDelivery,
+  type Track,
+  type Way,
+} from '@/app/meteor-coins/lib/deliveries/switches'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
 import { resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
-import { shelfOpenAt } from '@/app/meteor-coins/lib/timing'
+import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 type Bot = 'random' | 'cue' | 'skilled'
 
@@ -81,16 +110,26 @@ function bentLineup(game: DropGame, stage: StageDef): boolean {
 }
 
 /**
- * The middle of the band of charges that thread a hoop from aim `yaw`, or
- * null if none do.
+ * The shot from aim `yaw` that drops down through a flat hoop centered at
+ * `atX` (where a sliding hoop will be): the middle of the band of charges
+ * that do it, and how long that coin flies to the rim. Null if none do.
  */
-function hoopPower(c: CannonDelivery['config'], yaw: number, hoop: Hoop): number | null {
-  const passing: number[] = []
+function hoopShot(
+  c: CannonDelivery['config'],
+  yaw: number,
+  hoop: Hoop,
+  atX: number
+): { power: number; flightS: number } | null {
+  const passing: { power: number; flightS: number }[] = []
   for (let p = 0; p <= 1.0001; p += 0.01) {
-    const path = flightPath(muzzleAt(yaw, c), launchVelocity(yaw, p, c), q => q.z < hoop.z - 0.1)
+    const path = flightPath(
+      muzzleAt(yaw, c),
+      launchVelocity(yaw, p, c),
+      q => q.y < 0.7 || q.z < hoop.z - 2
+    )
     for (let i = 1; i < path.length; i++) {
-      if (throughHoop(hoop, path[i - 1], path[i], 0.5, 0.09)) {
-        passing.push(p)
+      if (dropsThroughHoop(hoop, atX, path[i - 1], path[i], 0.5)) {
+        passing.push({ power: p, flightS: i * PHYSICS_STEP_S })
         break
       }
     }
@@ -98,66 +137,708 @@ function hoopPower(c: CannonDelivery['config'], yaw: number, hoop: Hoop): number
   return passing.length ? passing[passing.length >> 1] : null
 }
 
+/** How far forward the stage's last-push object is, or "home" once it's gone. */
+function lastPushZ(game: DropGame): string {
+  const id = game.stage.lastPush?.object
+  const puck = game.engine.pucks.find(p => p.spec.id === id)
+  return puck?.active ? puck.body.translation().z.toFixed(1) : 'home'
+}
+
+/** Where along x the flat aim line from `yaw` passes a hoop's depth. */
+function lineXAt(c: CannonDelivery['config'], yaw: number, z: number): number {
+  const m = muzzleAt(yaw, c)
+  return m.x + (m.z - z) * Math.tan(yaw)
+}
+
 /**
- * The cannon bots. Random presses at random moments and holds for a random
- * time. Cue charges fully (a full shot drops off the backboard onto the
- * pusher, like the arm's coin) and lets go when it would land on bare shelf.
- * Skilled does the same, but whenever the swing is about to line up with a
- * hoop it locks there and holds for that hoop's charge, best hoop first.
- * Both are 0–100ms late, like people.
+ * The hoop a shot from `yaw` can drop through at stage time `t`, best
+ * first among `hoops`, and where its center is: one the line lights (it
+ * lines up, and the hoop is standing still), as a player sees it.
  */
-function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
-  const cannon = game.delivery as CannonDelivery
+function hoopPlan(c: CannonDelivery['config'], yaw: number, hoops: readonly Hoop[], t: number) {
+  for (const hoop of [...hoops].sort((a, b) => b.bonus - a.bonus)) {
+    const atX = hoopX(hoop, t)
+    // Well inside the lit stretch, as a person taps once a hoop has lit.
+    if (!hoopReady(hoop, t, c) || !linesUp(yaw, hoop, atX, c, 0.5 + (hoop.radius - 0.5) / 2))
+      continue
+    const shot = hoopShot(c, yaw, hoop, atX)
+    if (shot) return { hoop, atX, ...shot }
+  }
+  return null
+}
+
+/**
+ * The plunger bots, all reading the live dotted path as a player would.
+ * Random presses at random moments and lets go after a random time. Cue
+ * holds until the landing marker fills (the ball would come down on the
+ * strip by the back wall while the pusher is forward) inside the chute's
+ * width. Skilled waits for the same, and also for the path to end right
+ * behind the special object nearest the lip. Both judge a release 50ms
+ * ahead and let go 0–100ms late, like people, and give up waiting after 6s.
+ */
+function plungerBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const plunger = delivery as PlungerDelivery
+  const { chargeS } = plunger.config
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let pressedAt = 0
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.4 + rand() * 0.8
+      return
+    }
+    if (plunger.charge !== null) {
+      const ahead = 0.05
+      const power = Math.min(1, plunger.charge + (ahead * game.speed) / chargeS)
+      const land = plunger.landing(power, ahead)
+      const waited = t - pressedAt
+      // Skilled holds out for the special for a few seconds, then settles for the beat.
+      const target = bot === 'skilled' && waited < 4 ? frontmostSpecial(game) : null
+      const good =
+        plunger.landsClear(power, ahead) &&
+        Math.abs(land.x) < game.stage.table.chuteHalfWidth - 0.4 &&
+        (target === null || Math.abs(land.x - target) < 0.45)
+      if (good || waited > 6) releaseAt = t + rand() * 0.1
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    game.press()
+    pressedAt = t
+    if (bot === 'random') releaseAt = t + rand() * 1.6
+  }
+}
+
+/**
+ * The cannon bots, played in its two steps: lock the direction, then hold
+ * for distance. Random locks at a random moment, waits a random while and
+ * holds a random time. Cue locks wherever it points, charges fully (a full
+ * shot drops against the back wall onto the pusher, like the arm's coin)
+ * and lets go when it would land on bare shelf. Skilled waits for the
+ * swing to light a hoop — the +10 first, any after a swing, a full shot
+ * like cue's after two — taps once it's well lit, and holds for that
+ * hoop's charge. (A gliding hoop only lights while it'll still be there
+ * when the coin arrives.) Both time everything 0–100ms late, like people:
+ * aiming for 50ms from now, so each press and release is ±50ms.
+ */
+function cannonBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const cannon = delivery as CannonDelivery
   const c = cannon.config
   let nextAt = 0.5 + rand() * 1.5
+  let pending: { at: number; act: 'press' | 'release' } | null = null
+  // Random's wait before charging and how long it holds.
+  let chargeAt = 0
+  let holdS = 0
+  // Skilled's target, once it has one.
+  let plan: ReturnType<typeof hoopPlan> = null
+  let chargingSince = 0
+  // When a planned hold lets go, queued once the charge has started.
+  let nextRelease: number | null = null
+  const late = () => rand() * 0.1
+  return () => {
+    const t = game.engine.time
+    if (pending && t >= pending.at) {
+      const { act } = pending
+      pending = null
+      if (act === 'press') {
+        const wasLocked = cannon.isLocked
+        game.press()
+        if (cannon.charge !== null) chargingSince = t
+        // A person sees where it locked: re-aim the distance from there.
+        if (!wasLocked && cannon.isLocked && plan) {
+          const shot = hoopShot(c, cannon.yaw, plan.hoop, plan.atX)
+          plan = shot ? { ...plan, ...shot } : null
+        }
+      } else {
+        game.release()
+        plan = null
+        nextAt = t + 0.6 + rand() * 1.2
+      }
+      return
+    }
+    if (pending) return
+    const charge = cannon.charge
+    if (charge !== null && nextRelease !== null) {
+      pending = { at: nextRelease, act: 'release' }
+      nextRelease = null
+      return
+    }
+    if (charge !== null) {
+      // Holding for a full shot: let go when the coin would land on bare shelf.
+      const flight = cannon.previewPath().length * PHYSICS_STEP_S
+      if (
+        (charge >= 1 && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
+        t - chargingSince > 5
+      ) {
+        pending = { at: t + late(), act: 'release' }
+      }
+      return
+    }
+    if (cannon.isLocked) {
+      // Second step: start the charge.
+      if (bot === 'random') {
+        if (t < chargeAt) return
+        // The release is queued once the press lands.
+        pending = { at: t, act: 'press' }
+        nextRelease = t + holdS
+        return
+      }
+      if (bot === 'skilled' && plan) {
+        const holdFor = plan.power * c.chargeS
+        const at = t + late()
+        pending = { at, act: 'press' }
+        nextRelease = at + holdFor + (rand() - 0.5) * 0.1
+        return
+      }
+      pending = { at: t + late(), act: 'press' }
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    // First step: lock the direction.
+    if (bot === 'random') {
+      pending = { at: t, act: 'press' }
+      chargeAt = t + rand() * 1.5
+      holdS = rand() * 1.5
+      return
+    }
+    if (bot === 'skilled') {
+      // Patient: about a whole swing (4.4s, lingering over hoops) for the
+      // +10, then any hoop for another.
+      const waited = t - nextAt
+      const swing = 4.5
+      const hoops =
+        waited < swing ? c.hoops.filter(h => h.bonus >= 10) : waited < 2 * swing ? c.hoops : []
+      const ahead = game.dropperTime + 0.05 * game.speed
+      plan = hoopPlan(c, cannon.yawAhead(0.05 * game.speed), hoops, ahead)
+      if (!plan && waited < 2 * swing) return
+    }
+    pending = { at: t + late(), act: 'press' }
+  }
+}
+
+/** The special object nearest the lip on a crane's shelf, if any. */
+function frontmostSpecialAt(game: DropGame): { x: number; z: number } | null {
+  let best: { x: number; z: number } | null = null
+  for (const puck of game.engine.pucks) {
+    if (!puck.active || puck.kind !== 'special') continue
+    const p = puck.body.translation()
+    if (p.z > FIELD_FRONT_Z || p.y < -0.2) continue
+    if (!best || p.z > best.z) best = { x: p.x, z: p.z }
+  }
+  return best
+}
+
+/**
+ * The crane bots, all played by pointing (where the claw should go) and
+ * pressing, as the UI sends them. Random points anywhere the claw reaches
+ * and drops as soon as it gets there, swinging or not. Cue trusts the
+ * marker: it lets the swing settle and sets each coin down in front of
+ * the pusher (where the hint says), anywhere across, whenever it's ready.
+ * Skilled sets each coin in line with the moonstone nearest the lip, and
+ * waits for the pusher to be pulled back, so the coin lands in the gap in
+ * front of it and the next push carries it into the pile. Both are
+ * 0-100ms late, like people.
+ */
+function craneBot(game: DropGame, bot: Bot, rand: () => number, delivery = game.delivery) {
+  const crane = delivery as CraneDelivery
+  const { x: xs, z: zs } = crane.config
+  const period = game.engine.pusherPeriodS
+  let nextAt = 0.5 + rand() * 1.5
+  let aim: { x: number; z: number } | null = null
+  let aimedAt = 0
   let pressAt: number | null = null
-  let releaseAt: number | null = null
-  let holdingSince = 0
+  return () => {
+    const t = game.engine.time
+    if (pressAt !== null && t >= pressAt) {
+      // As the UI does: where the pointer is, then the press.
+      if (aim) game.input({ type: 'point', ...aim })
+      game.press()
+      pressAt = null
+      aim = null
+      nextAt = t + 0.4 + rand() * (bot === 'random' ? 1.4 : 0.6)
+      return
+    }
+    if (pressAt !== null || !game.canDrop || !crane.loaded || t < nextAt) return
+    if (!aim) {
+      const stone = bot === 'skilled' ? frontmostSpecialAt(game) : null
+      aim =
+        bot === 'random'
+          ? { x: xs[0] + rand() * (xs[1] - xs[0]), z: zs[0] + rand() * (zs[1] - zs[0]) }
+          : { x: stone?.x ?? (rand() - 0.5) * 6, z: CRANE_GAP_Z }
+      // Only as far as the claw reaches.
+      aim.x = Math.min(xs[1], Math.max(xs[0], aim.x))
+      aim.z = Math.min(zs[1], Math.max(zs[0], aim.z))
+      aimedAt = t
+      game.input({ type: 'point', ...aim })
+      return
+    }
+    // Wait for the claw to get there (a few seconds at most).
+    const there = Math.hypot(crane.trolley.x - aim.x, crane.trolley.z - aim.z) < 0.15
+    const late = t - aimedAt > 6
+    if (!there && !late) return
+    if (bot === 'random') {
+      pressAt = t
+      return
+    }
+    // Then for it to stop swinging, and (skilled) for the pusher to be
+    // pulled back when the coin lands, so it lands in front of the pusher
+    // rather than on its top.
+    if (crane.swing > 0.08 && !late) return
+    const land = t + 0.05 + crane.fallPath().length / 60
+    const pulledBack = Math.sin((2 * Math.PI * land) / period) < CRANE_PULLED_BACK
+    if (bot === 'cue' || pulledBack || late) pressAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * Where the crane bots that aim set coins down: just in front of the
+ * pusher's face when it's pulled all the way back (at z -2); and how far
+ * back in its stroke (sin of its phase) it must be when the coin lands.
+ */
+const CRANE_GAP_Z = -1
+const CRANE_PULLED_BACK = -0.5
+
+/**
+ * How far ahead the belt's skilled bot leads the mouth: roughly how long a
+ * drop takes to tip the lip. Measured: anything from 3s to 9s did about as well.
+ */
+const BELT_LEAD_S = 6
+
+/**
+ * The belt bots (Bramble's Midnight Snack). Random presses at random
+ * moments, whatever is over the shelf. Cue presses when the marked
+ * chocolate would land on bare shelf, wherever it is. Skilled also waits
+ * until the marked chocolate is over where the mouth will be once that
+ * drop has pushed through to the lip, giving up on aim after a few seconds.
+ * Both are 0–100ms late, like people.
+ */
+function beltBot(game: DropGame, bot: Bot, rand: () => number) {
+  const belt = game.delivery as BeltDelivery
+  const c = belt.config
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let waitingSince = 0
   return () => {
     const t = game.engine.time
     if (pressAt !== null && t >= pressAt) {
       game.press()
       pressAt = null
-      holdingSince = t
-    }
-    if (releaseAt !== null && t >= releaseAt) {
-      game.release()
-      releaseAt = null
-      nextAt = t + 0.6 + rand() * 1.2
+      nextAt = t + 0.6 + rand() * (bot === 'random' ? 1.2 : 0.4)
+      waitingSince = nextAt
       return
     }
-    if (cannon.charge !== null && releaseAt === null && pressAt === null) {
-      // Holding a full charge: let go when the coin would land on bare shelf.
-      const full = cannon.charge >= 1
-      const flight = cannon.previewPath().length / 60
-      if (
-        (full && shelfOpenAt(t + 0.05 + flight, game.engine.pusherPeriodS)) ||
-        t - holdingSince > 5
-      ) {
-        releaseAt = t + rand() * 0.1
-      }
-      return
-    }
-    if (cannon.charge !== null || pressAt !== null || !game.canDrop || t < nextAt) return
+    if (pressAt !== null || !game.canDrop || t < nextAt) return
+    const next = belt.next()
+    if (!next) return
     if (bot === 'random') {
       pressAt = t
-      releaseAt = t + rand() * 1.5
       return
     }
+    // Judged for a press 50ms from now.
+    const ahead = 0.05
+    const clear = shelfOpenAt(t + ahead + fallTimeToShelf(c.y), game.engine.pusherPeriodS)
+    if (!clear) return
     if (bot === 'skilled') {
-      const yaw = cannonYaw(game.dropperTime + 0.05 * game.speed, c)
-      const best = [...c.hoops].sort((a, b) => b.bonus - a.bonus)
-      for (const hoop of best) {
-        const p = hoopPower(c, yaw, hoop)
-        if (p === null) continue
-        pressAt = t + rand() * 0.1
-        releaseAt = pressAt + p * c.chargeS + (rand() - 0.5) * 0.1
-        return
-      }
+      const target = game.engine.chuteX(t + BELT_LEAD_S)
+      const x = next.x + c.speed * game.speed * ahead
+      const aim = Math.max(-c.dropHalfWidth + 0.3, Math.min(c.dropHalfWidth - 0.3, target))
+      if (Math.abs(x - aim) > 0.5 && t - waitingSince < 5) return
     }
-    // Charge fully; the release waits for the shelf (above).
     pressAt = t + rand() * 0.1
   }
+}
+
+/**
+ * The Cairn's spider bots. Nothing steers the spider, so all a bot picks is
+ * the moment to let go. Random lets go at random moments. Cue lets go when
+ * the landing dot fills (on a post and low enough to land soft), 0–100ms
+ * after it does, like a person reacting to it. Skilled looks ahead to the
+ * post it wants (shortest tower first, but the middle, which counts twice,
+ * runs a few coins taller), and lets go when the drop would land near that
+ * post's center and soft, 0–100ms either side; if the middle hasn't lined
+ * up in a few seconds it takes any post square.
+ */
+function spiderBot(game: DropGame, bot: Bot, rand: () => number) {
+  const MIDDLE_LEAD = 3
+  const spider = game.delivery as SpiderDelivery
+  const posts = game.towerPosts
+  const weights = game.stage.rules.goal.type === 'stack' ? game.stage.rules.goal.weights : []
+  const middle = weights.indexOf(Math.max(...weights))
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let since = nextAt
+  const wanted = () => {
+    const towers = game.state.towers
+    const need = (i: number) => towers[i] - (i === middle ? MIDDLE_LEAD : 0)
+    return posts.map((_, i) => i).sort((a, b) => need(a) - need(b))[0]
+  }
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.press()
+      releaseAt = null
+      nextAt = t + 0.2 + rand() * 0.6
+      since = nextAt
+      return
+    }
+    if (!spider.holding || t < nextAt) return
+    if (bot === 'random') {
+      releaseAt = t + rand() * 3
+      return
+    }
+    if (bot === 'cue') {
+      const tip = spider.tipAt()
+      if (spiderCueLit(game.landing(0, tip), tip)) releaseAt = t + rand() * 0.1
+      return
+    }
+    const ahead = 0.05
+    const tip = spider.tipAt(ahead)
+    const landing = game.landing(ahead, tip)
+    if (!spiderCueLit(landing, tip) || landing.offset > 0.15) return
+    const waited = t - since
+    if (landing.post === wanted() || waited > 6) releaseAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * The waterslide bots. The slide only picks a direction: a duck flies out
+ * along it, away from the slide's top. Random sends one at random moments.
+ * Cue sends one when the slide points at the drain. Skilled first looks
+ * for a duck in the water between the slide and the drain, Mama Ducks
+ * first, and points at it so the hit knocks it in; and it waits for the
+ * duck to land while the pusher is on its way forward, so the push helps.
+ * Both are 0–100ms late, like people.
+ */
+function slideBot(game: DropGame, bot: Bot, rand: () => number) {
+  const slide = game.delivery as SlideDelivery
+  const c = slide.config
+  const drain = game.stage.table.drain
+  const ride = rideTime(c)
+  const bearing = (p: { x: number; z: number }) => Math.atan2(p.x - c.pivot.x, p.z - c.pivot.z)
+  const range = (p: { x: number; z: number }) => Math.hypot(p.x - c.pivot.x, p.z - c.pivot.z)
+  let nextAt = 0.5 + rand() * 1.5
+  let pressAt: number | null = null
+  let waitingSince = 0
+  return () => {
+    const t = game.engine.time
+    if (pressAt !== null && t >= pressAt) {
+      if (game.press()) nextAt = t + 0.6 + rand() * 1.2
+      pressAt = null
+      waitingSince = nextAt
+      return
+    }
+    if (pressAt !== null || !slide.ready || t < nextAt) return
+    if (bot === 'random' || !drain) {
+      pressAt = t
+      return
+    }
+    // Judged for a press 50ms from now.
+    const yaw = slide.yawAfter(0.05)
+    let aimAt = bearing(drain)
+    let onBeat = true
+    if (bot === 'skilled') {
+      let best: { at: number; value: number; range: number } | null = null
+      for (const puck of game.engine.pucks) {
+        if (!puck.active || puck.kind === 'player') continue
+        const p = puck.body.translation()
+        if (p.y > 0.6) continue
+        const off = Math.abs(bearing(p) - bearing(drain))
+        const short = range(drain) - range(p)
+        if (off > 0.15 || short < 0.3 || short > 1.2) continue
+        const value = puck.spec.points
+        if (!best || value > best.value || (value === best.value && range(p) > best.range))
+          best = { at: bearing(p), value, range: range(p) }
+      }
+      if (best) aimAt = best.at
+      const flight = slideFlight(yaw, c).length / 60
+      onBeat = shelfOpenAt(t + 0.05 + ride + flight, game.engine.pusherPeriodS)
+    }
+    const aimed = Math.abs(yaw - aimAt) < 0.05
+    if ((aimed && onBeat) || t - waitingSince > 6) pressAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * An aim that hits `owl` with a pea fired `delay` seconds from now, if
+ * there is one: leads it by the pea's flight, then checks the shot step by
+ * step against where the owl will be, nudging the aim nearer or further
+ * until one connects.
+ */
+function leadAim(owls: OwlsDelivery, owl: Owl, delay: number): { aim: Vec; reach: number } | null {
+  const c = owls.config
+  let reach = 1
+  for (let i = 0; i < 4; i++) {
+    const p = owls.owlAhead(owl, delay + reach)
+    reach = peaShot(c.shooter, { ...p, y: c.aimY }).reach
+  }
+  const ahead = owls.owlAhead(owl, delay + reach)
+  for (const dz of [0, -0.3, 0.3, -0.6, 0.6, -0.9, 0.9]) {
+    const aim = { x: ahead.x, y: c.aimY, z: ahead.z + dz }
+    const shot = peaShot(c.shooter, aim)
+    let last = c.shooter
+    for (let t = PHYSICS_STEP_S; t < shot.reach + 0.45; t += PHYSICS_STEP_S) {
+      const at = peaAt(c.shooter, shot.velocity, t)
+      const o = owls.owlAhead(owl, delay + t)
+      if (Math.abs(o.x) <= OVER_BOOK_X && peaHits(last, at, o)) return { aim, reach: t }
+      last = at
+    }
+  }
+  return null
+}
+
+/**
+ * The pea-shooter bots. Random fires at random spots over the pages at
+ * random moments. Cue leads the nearest owl carrying a word as soon as it
+ * can: good aim, no choosing. Skilled leads too, but picks its owl: one
+ * whose word would land on bare page in front of a pulled-back pusher
+ * (landsWell, what the aim mark shows), nearest first, holding out up to
+ * 10s for one. Both aim ±0.25 off and fire 0–100ms late, like people.
+ */
+function owlsBot(game: DropGame, bot: Bot, rand: () => number) {
+  const owls = game.delivery as OwlsDelivery
+  const c = owls.config
+  let nextAt = 0.5 + rand()
+  let waitingSince = 0
+  let pending: { at: number; aim: Vec } | null = null
+  const fire = (aim: Vec, t: number) => {
+    pending = { at: t + (bot === 'random' ? 0 : rand() * 0.1), aim }
+  }
+  return () => {
+    const t = game.engine.time
+    if (pending && t >= pending.at) {
+      const { aim } = pending
+      game.input({ type: 'point', x: aim.x, z: aim.z })
+      if (game.press()) waitingSince = t
+      game.release()
+      pending = null
+      nextAt = t + (bot === 'random' ? 0.3 + rand() * 1.2 : 0.4)
+      return
+    }
+    if (pending || !owls.ready || t < nextAt) return
+    if (bot === 'random') {
+      const page = c.pages[Math.floor(rand() * c.pages.length)]
+      const z = page[0] + rand() * (page[1] - page[0])
+      fire({ x: (rand() * 2 - 1) * OVER_BOOK_X, y: c.aimY, z }, t)
+      return
+    }
+    let shots = owls.owls
+      .filter(o => o.backAt === null && o.carrying)
+      .flatMap(o => {
+        const lead = leadAim(owls, o, 0.05)
+        return lead ? [{ o, ...lead }] : []
+      })
+    if (bot === 'skilled') {
+      const { layout, pusherPeriodS } = game.engine
+      const good = shots.filter(({ o, reach }) => {
+        const land = owls.landing(o, 0.05 + reach)
+        return landsWell(layout, land.z, t + land.afterS, pusherPeriodS)
+      })
+      if (good.length || t - waitingSince > 10) shots = good.length ? good : shots
+      else return
+    }
+    if (!shots.length) return
+    const { aim } = shots.reduce((a, b) => (b.reach < a.reach ? b : a))
+    const jitter = () => (rand() - 0.5) * 0.5
+    fire({ x: aim.x + jitter(), y: aim.y, z: aim.z + jitter() }, t)
+  }
+}
+
+/**
+ * The track-switch bots (The Cascade Engine). All three send a coin every
+ * 0.6–1.8s, like the arm bots tap; they differ only in the route. Random
+ * flips each junction at random first. Cue routes once, onto the middle
+ * step's gold plate, and never touches the switches again: a player who
+ * found the gold and stopped watching it move. Skilled re-routes every
+ * coin: straight onto whichever gold plate is fullest (the bottom step's
+ * on a tie, nearer the chute), and while both steps' plates are moving,
+ * onto the top step's middle lane. All flips and sends go through
+ * game.input, as taps.
+ */
+function switchesBot(game: DropGame, bot: Bot, rand: () => number) {
+  const d = game.delivery as SwitchesDelivery
+  const c = d.config
+  let nextAt = 0.5 + rand() * 1.5
+  let routed = false
+  const tap = (x: number, z: number) => {
+    game.input({ type: 'point', x, z })
+    game.input({ type: 'press' })
+    game.input({ type: 'release' })
+  }
+  /** Sets the junctions to come out at `exit`, a tap per junction that needs flipping. */
+  const routeTo = (exit: number) => {
+    for (let k = 0; k < c.junctions.length; k++) {
+      const route = d.route()
+      if (route.exit === exit) return
+      // Flip the first junction on the way that points the wrong way (where
+      // tubes merge, both ways may lead there: leave those be).
+      for (const j of route.junctions) {
+        const flipped = [...d.ways]
+        flipped[j] = flipped[j] === 'left' ? 'right' : 'left'
+        if (!reaches(d.ways, j, exit) && reaches(flipped, j, exit)) {
+          tap(c.junctions[j].at.x, c.junctions[j].at.z)
+          break
+        }
+      }
+    }
+  }
+  const reaches = (ways: Way[], j: number, exit: number) => {
+    // Whether, with these ways, the route from junction j leads to exit (any setting beyond).
+    const visit = (track: Track): boolean =>
+      'exit' in track.to ? track.to.exit === exit : visitJ(track.to.junction)
+    const visitJ = (k: number): boolean =>
+      k === j
+        ? visit(c.junctions[k][ways[k]])
+        : visit(c.junctions[k].left) || visit(c.junctions[k].right)
+    return visitJ(j)
+  }
+  const exitOver = (deck: number, lane: number) =>
+    c.exits.findIndex(e => e.deck === deck && e.lane === lane)
+  const goldExit = (i: number) => exitOver(c.plates.decks[i].deck, d.plateLanes(i).gold)
+  const skilledExit = () => {
+    const live = c.plates.decks
+      .map((pd, i) => ({ i, deck: pd.deck, fill: d.plates[i].gold }))
+      .filter(p => !d.resetting(p.i))
+      .sort((a, b) => b.fill - a.fill || a.deck - b.deck)
+    return live.length ? goldExit(live[0].i) : exitOver(2, 1)
+  }
+  return () => {
+    const t = game.engine.time
+    if (t < nextAt || !d.ready) return
+    if (bot === 'random') {
+      for (const j of c.junctions) if (rand() < 0.5) tap(j.at.x, j.at.z)
+    } else if (bot === 'cue') {
+      if (!routed) routeTo(goldExit(c.plates.decks.findIndex(p => p.deck === 1)))
+      routed = true
+    } else {
+      routeTo(skilledExit())
+    }
+    // Send: a tap well away from every junction.
+    tap(0, 0)
+    nextAt = t + 0.6 + rand() * 1.2
+  }
+}
+
+/**
+ * Comet Homecoming's cannon, skilled: plays the cue bot's shot (a full
+ * charge, let go when it would land on bare shelf, where the pusher picks
+ * it up), but first waits for the swing to point in line with the comet,
+ * so the push goes into it. Lobbing coins to land just behind the comet
+ * was tried: they land on the pile, out of the pusher's reach, and barely
+ * move it (59 points, home 2 games in 3, against the cue bot's 70 and 3
+ * in 3). Once the comet is home, or after a whole swing with no line-up,
+ * it locks wherever it points. Everything 0–100ms late, like people.
+ * Random and cue are the cannon's own bots.
+ */
+function lobBot(game: DropGame, bot: Bot, rand: () => number, delivery: Delivery) {
+  if (bot !== 'skilled') return cannonBot(game, bot, rand, delivery)
+  const shoot = cannonBot(game, 'cue', rand, delivery)
+  const cannon = delivery as CannonDelivery
+  const c = cannon.config
+  let nextAt = 0
+  let waitingSince: number | null = null
+  let lockAt: number | null = null
+  return () => {
+    const t = game.engine.time
+    if (lockAt !== null) {
+      if (t < lockAt) return
+      game.press()
+      lockAt = null
+      waitingSince = null
+      return
+    }
+    if (cannon.isLocked || cannon.charge !== null) {
+      shoot()
+      if (cannon.charge === null && !cannon.isLocked) nextAt = t + 0.6 + rand() * 0.6
+      return
+    }
+    if (!game.canDrop || t < nextAt) return
+    waitingSince ??= t
+    const comet = frontmostSpecialAt(game)
+    const yaw = cannon.yawAhead(0.05 * game.speed)
+    const lined = comet !== null && Math.abs(lineXAt(c, yaw, comet.z) - comet.x) < 0.3
+    if (lined || !comet || t - waitingSince > c.periodS) lockAt = t + rand() * 0.1
+  }
+}
+
+/**
+ * Where the skilled bowler rolls the first ball: just right of the head pin,
+ * into the pocket between it and the pin behind it on the right. From a
+ * sweep of aims and strengths on an empty table: at full strength most aims
+ * within about 0.1 of the head pin strike, and 0.06 sits in that band with
+ * room for a wobble either way. Strength matters more than the exact aim.
+ */
+const POCKET_AIM = 0.06
+
+/**
+ * The bowling bots, each throw played as a swipe up the lane (a point, a
+ * press, the pointer moving up the lane, and a release, a fifth of a second
+ * apart). Random rolls any direction at any strength, after a random
+ * pause. Cue rolls straight at the head pin, middling hard, every ball.
+ * Skilled rolls the first ball into the pocket, hard; for the second it
+ * reads what's left standing and rolls at the middle of it. Both wobble
+ * like people swiping: ±0.04 radians (about 2°) of aim and ±0.1 of strength.
+ */
+function bowlingBot(game: DropGame, bot: Bot, rand: () => number) {
+  const lanes = game.delivery as BowlingDelivery
+  const c = lanes.config
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let to = { x: 0, z: 0 }
+  const wobble = (n: number) => (rand() * 2 - 1) * n
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.input({ type: 'point', ...to })
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.5 + rand() * 1.0
+      return
+    }
+    if (!lanes.ready || t < nextAt) return
+    let aim: number
+    let power: number
+    if (bot === 'random') {
+      aim = wobble(c.maxAim)
+      power = rand()
+    } else if (bot === 'cue') {
+      aim = wobble(0.04)
+      power = 0.5 + wobble(0.1)
+    } else {
+      aim = POCKET_AIM
+      if (lanes.ballInFrame === 2) {
+        // Aim at the middle of the pins left standing.
+        const left = lanes.spots.filter((_, i) => lanes.standing[i])
+        const x = left.reduce((n, p) => n + p.x, 0) / (left.length || 1)
+        const z = left.reduce((n, p) => n + p.z, 0) / (left.length || 1)
+        aim = Math.atan2(x, c.ballZ - z)
+      }
+      aim += wobble(0.04)
+      power = 0.9 + wobble(0.1)
+    }
+    const length = MIN_SWIPE + Math.min(1, power) * (FULL_SWIPE - MIN_SWIPE) + 0.01
+    const from = { x: 0, z: c.ballZ }
+    to = { x: from.x + Math.sin(aim) * length, z: from.z - Math.cos(aim) * length }
+    game.input({ type: 'point', ...from })
+    game.press()
+    releaseAt = t + 0.2
+  }
+}
+
+/**
+ * Comet Homecoming's finale tour: a bot for each phase's delivery, each
+ * playing only in its own phase.
+ */
+function phasedBot(game: DropGame, bot: Bot, rand: () => number) {
+  const phased = game.delivery as PhasedDelivery
+  const bots = phased.phases.map(d =>
+    d.kind === 'cannon' ? lobBot(game, bot, rand, d) : DELIVERY_BOTS[d.kind](game, bot, rand, d)
+  )
+  return () => bots[Math.min(game.phase, bots.length - 1)]()
 }
 
 /**
@@ -165,10 +846,21 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
  */
-const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
-  {
-    cannon: cannonBot,
-  }
+const DELIVERY_BOTS: Record<
+  string,
+  (game: DropGame, bot: Bot, rand: () => number, delivery?: Delivery) => () => void
+> = {
+  cannon: cannonBot,
+  switches: switchesBot,
+  owls: owlsBot,
+  plunger: plungerBot,
+  crane: craneBot,
+  belt: beltBot,
+  spider: spiderBot,
+  slide: slideBot,
+  bowling: bowlingBot,
+  phased: phasedBot,
+}
 
 function play(stage: StageDef, bot: Bot, seed: number) {
   const game = new DropGame(stage)
@@ -189,6 +881,9 @@ function play(stage: StageDef, bot: Bot, seed: number) {
   let drops = 0
   let scoreAtLastDrop = 0
   const stepMs: number[] = []
+  const plates = { gold: 0, red: 0 }
+  const phaseZ: string[] = []
+  let homeAfter = -1
 
   const deliveryBot = DELIVERY_BOTS[game.delivery.kind]?.(game, bot, rand) ?? null
 
@@ -257,7 +952,13 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       if (tap) pendingTapAt = t + (bot === 'random' ? 0 : rand() * 0.1)
     }
     const t0 = performance.now()
-    game.step()
+    for (const e of game.step()) {
+      if (e.type === 'plate') plates[e.plate]++
+      // Where the last-push object (the comet) is as each phase starts, and
+      // the drop it went home on.
+      if (e.type === 'phase') phaseZ.push(lastPushZ(game))
+      if (e.type === 'lastPush') homeAfter = drops
+    }
     if (firstPointAfter < 0 && game.state.score > 0) firstPointAfter = drops
     stepMs.push(performance.now() - t0)
     if (game.engine.pucks.length && (game.engine.time * 60) % 30 < 1) {
@@ -274,6 +975,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       }).length
     : 0
   const s = game.state
+  const bowling = game.delivery.kind === 'bowling' ? (game.delivery as BowlingDelivery) : null
   game.dispose()
   return {
     value: resultValue(s, stage.rules.goal) ?? -1,
@@ -284,18 +986,25 @@ function play(stage: StageDef, bot: Bot, seed: number) {
       .filter(([id]) => id !== stage.objects.drop.id)
       .reduce((n, [, c]) => n + c, 0),
     lost: s.lost,
+    gold: plates.gold,
+    red: plates.red,
     hits: s.hits,
     shots: s.shots,
     bestStreak: s.bestStreak,
     bestTempo: s.bestTempo,
     inBoard,
     home: stage.lastPush ? (s.collected[stage.lastPush.object] ?? 0) > 0 : false,
+    homeAfter,
+    phaseZ: phaseZ.join('/'),
     redline: stage.rules.tempo && s.bestTempo >= stage.rules.tempo.max ? 1 : 0,
     timeUp: s.timeUp ? 1 : 0,
     clock: Math.round(game.clockS),
     throughTable,
     firstPointAfter,
     scoreAtLastDrop,
+    strikes: bowling?.strikes ?? 0,
+    spares: bowling?.spares ?? 0,
+    pins: bowling?.pinsDown ?? 0,
     seconds: Math.round(game.engine.time),
     peakLive,
     p50: stepMs[stepMs.length >> 1],
@@ -329,8 +1038,15 @@ async function main() {
         ` · ★ ${atLeast(1)} ★★ ${atLeast(2)} ★★★ ${atLeast(3)}` +
         ` · first point after ${avg('firstPointAfter')} drops · scored by last drop ${avg('scoreAtLastDrop')}` +
         ` · through table ${avg('throughTable')}` +
-        (stage.lastPush ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` : '') +
+        (stage.lastPush
+          ? ` · core home ${runs.filter(r => r.home).length}/${runs.length}` +
+            ` (after drop ${runs.map(r => r.homeAfter).join(' ')}; z as phases start ${runs.map(r => r.phaseZ).join(' ')})`
+          : '') +
         (board ? ` · stuck in board ${avg('inBoard')}` : '') +
+        (stage.delivery?.kind === 'switches' ? ` · gold ${avg('gold')} red ${avg('red')}` : '') +
+        (stage.delivery?.kind === 'bowling'
+          ? ` · strikes ${avg('strikes')} spares ${avg('spares')} pins ${avg('pins')}`
+          : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +
         (stage.rules.tempo

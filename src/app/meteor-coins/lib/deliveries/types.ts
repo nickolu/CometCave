@@ -1,6 +1,7 @@
 import type { Vec } from '@/app/meteor-coins/lib/cannon'
 import type { PusherEngine } from '@/app/meteor-coins/lib/engine'
 import type { GameEvent } from '@/app/meteor-coins/lib/game'
+import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import type { GameState } from '@/app/meteor-coins/lib/rules'
 import type { StageDef } from '@/app/meteor-coins/lib/stages'
 
@@ -40,7 +41,7 @@ export interface Delivery {
   /** Where bonus coins pour from, if not the arm's tip. */
   bonusAt?(): Vec
   /**
-   * For a delivery that's held (deliveryHolds): 'tap' is the "Tap twice"
+   * For a delivery that's held (deliveryHolds): 'tap' is the "Tap, don't hold"
    * setting, where a second tap stands in for letting go.
    */
   setMode?(mode: 'hold' | 'tap'): void
@@ -57,7 +58,18 @@ export interface Delivery {
 export type DeliveryInput =
   | { type: 'press' }
   | { type: 'release' }
-  | { type: 'point'; x: number; z: number }
+  | {
+      type: 'point'
+      x: number
+      z: number
+      /**
+       * How the point moves along the pointer's ray per unit of height, for
+       * a delivery with things to tap at more than one height (the track
+       * switches). The UI sends it; a delivery that aims on the plane can
+       * ignore it.
+       */
+      rise?: { x: number; z: number }
+    }
   | { type: 'steer'; x: number; z: number }
 
 /** A coin to put on the table: where, how fast, and whether on edge. */
@@ -74,6 +86,12 @@ export interface DeliveryHost {
    */
   readonly dropperTime: number
   readonly speed: number
+  /** The phase the cabinet is in (0 on a stage without phases). */
+  readonly phase: number
+  /** Gravity now, as a share of the usual (a phase can lower it). */
+  readonly gravityScale: number
+  /** The moon pulling on things in the air now, if any: the stage's, or its phase's. */
+  readonly moonConfig: MoonConfig | undefined
   /** Whether a coin may go now: coins left, a free slot in the pool, the board clear. */
   readonly canDrop: boolean
   /** The rules state; change it only through the functions in lib/rules. */

@@ -19,6 +19,8 @@ type PartBase = {
   tone: Tone
   /** Visual-only parts are drawn but have no collider: markings, decorations. */
   visualOnly?: boolean
+  /** Lit from within, this strongly (0–1): drawn only, so a special reads in a dim pile. */
+  glow?: number
 }
 
 export type Part = PartBase &
@@ -65,20 +67,34 @@ export const COIN: ObjectSpec = {
   reach: PUCK_RADIUS,
 }
 
-/** A wide cream disc with an engraved crescent. Each one jarred refunds 3 coins. */
+/**
+ * A big, thick, softly glowing pale-blue disc with a raised crescent and a
+ * bright rim: bigger than a coin, a different colour, and lit from within,
+ * so it reads at a glance on top of the pile. Each one jarred refunds 3 coins.
+ */
 export const MOONSTONE: ObjectSpec = {
   id: 'moonstone',
   name: 'moonstone',
   plural: 'moonstones',
   parts: [
-    { shape: 'cylinder', radius: 0.72, height: 0.22, tone: 'moonstone' },
+    { shape: 'cylinder', radius: 0.85, height: 0.3, tone: 'moonstone', glow: 0.3 },
     {
       shape: 'arc',
-      radius: 0.36,
-      tube: 0.07,
+      radius: 0.42,
+      tube: 0.08,
       arc: Math.PI * 1.2,
-      at: [0, 0.115, 0],
+      at: [0, 0.155, 0],
       tone: 'moonstoneMark',
+      visualOnly: true,
+    },
+    {
+      shape: 'arc',
+      radius: 0.82,
+      tube: 0.05,
+      arc: Math.PI * 2,
+      at: [0, 0.15, 0],
+      tone: 'moonstoneRim',
+      glow: 1,
       visualOnly: true,
     },
   ],
@@ -87,7 +103,7 @@ export const MOONSTONE: ObjectSpec = {
   restitution: 0.05,
   points: 1,
   refund: 3,
-  reach: 0.72,
+  reach: 0.85,
 }
 
 const CHOCOLATE_SIDE = 0.8
@@ -166,6 +182,13 @@ function duck(scale: number, extra: Part[] = []): Part[] {
   ]
 }
 
+/**
+ * Ducks are rubber: they boing off each other, the soap and the tub's rims.
+ * Restitution averages between the two things touching, so against the
+ * dead floor a duck keeps only half of this and the pile still settles.
+ */
+const DUCK_BOUNCE = 0.85
+
 export const DUCK: ObjectSpec = {
   id: 'duck',
   name: 'duck',
@@ -173,7 +196,7 @@ export const DUCK: ObjectSpec = {
   parts: duck(1),
   density: 0.8,
   friction: 0.5,
-  restitution: 0.3,
+  restitution: DUCK_BOUNCE,
   points: 1,
   refund: 0,
   reach: 0.52,
@@ -197,7 +220,7 @@ export const MAMA_DUCK: ObjectSpec = {
   ]),
   density: 0.8,
   friction: 0.5,
-  restitution: 0.3,
+  restitution: DUCK_BOUNCE,
   points: 5,
   refund: 0,
   reach: 0.52 * MAMA,
@@ -274,29 +297,31 @@ export const METEORITE: ObjectSpec = {
   reach: 0.58,
 }
 
+/** The comet's round body, on its base: drawn with its face by scene/CometRig. */
+export const COMET_BODY_RADIUS = 0.62
+export const COMET_BODY_Y = 0.42
+
 /**
- * Comet Homecoming's comet core: a wide, heavy pale-blue disc with a raised
- * star-shaped cap (a cap and five points), worth 40.
+ * Comet Homecoming's comet: a big, round, softly glowing pale-blue body on
+ * a wide flat base, worth 40. The round body is part of the collider, so
+ * coins slide off it rather than burying it, and its face (scene/CometRig)
+ * stays in view. Lighter than its size suggests, so the pile can move it.
  */
 export const CORE: ObjectSpec = {
   id: 'core',
-  name: 'comet core',
-  plural: 'comet cores',
+  name: 'comet',
+  plural: 'comets',
   parts: [
-    { shape: 'cylinder', radius: 0.95, height: 0.42, tone: 'core' },
-    { shape: 'cylinder', radius: 0.3, height: 0.12, at: [0, 0.27, 0], tone: 'coreMark' },
-    ...Array.from(
-      { length: 5 },
-      (_, i): Part => ({
-        shape: 'box',
-        size: [0.16, 0.08, 0.34],
-        at: [0.42 * Math.sin((i * 2 * Math.PI) / 5), 0.25, 0.42 * Math.cos((i * 2 * Math.PI) / 5)],
-        tone: 'coreMark',
-        visualOnly: true,
-      })
-    ),
+    { shape: 'cylinder', radius: 0.95, height: 0.42, tone: 'core', glow: 0.15 },
+    {
+      shape: 'ball',
+      radius: COMET_BODY_RADIUS,
+      at: [0, COMET_BODY_Y, 0],
+      tone: 'core',
+      glow: 0.3,
+    },
   ],
-  density: 0.9,
+  density: 0.6,
   friction: 0.15,
   restitution: 0.02,
   points: 40,

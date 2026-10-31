@@ -4,8 +4,11 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { PlaceLine } from '@/app/meteor-coins/components/PlaceLine'
+import { ScoreBoard } from '@/app/meteor-coins/components/ScoreBoard'
 import { StarRow } from '@/app/meteor-coins/components/StarRow'
-import { FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
+import { useScores } from '@/app/meteor-coins/hooks/useScores'
+import { FIELD_FRONT_Z, FIELD_HALF_WIDTH } from '@/app/meteor-coins/lib/cabinet'
 import {
   deliveryAimY,
   deliveryHolds,
@@ -39,21 +42,25 @@ import {
   ringBonus,
   starsFor,
 } from '@/app/meteor-coins/lib/rules'
+import type { BoardView, Placement } from '@/app/meteor-coins/lib/scoreboard'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
+import { usePrefersReducedMotion } from '@/app/meteor-coins/scene/reducedMotion'
 import {
   CabinetCamera,
   Scene,
   type TableProjection,
   TableProjector,
 } from '@/app/meteor-coins/scene/Scene'
+import { NicknameDialog } from '@/components/nickname-dialog'
 
 /**
  * One Meteor Coins stage in play.
  *
  * Session shape: run-loop. Each stage has its own budget, table and stars;
- * "Next stage" (after a star) or "Try again" is the next action. The arm
- * swings on its own; a tap (or Space) drops a coin from its tip.
+ * "Next stage" (after a star) or "Try again" is the next action. Each stage
+ * has its own way of getting coins onto the table (lib/deliveries): a tap
+ * (or Space) drops, fires or lets go; the pointer and arrow keys aim.
  *
  * Takes over the viewport, so it carries its own cave exit (interaction model 2).
  */
@@ -62,7 +69,7 @@ import {
 const HUD_INSETS = { top: 72, bottom: 40, side: 8 }
 
 const SLOW_KEY = 'meteor-coins:slow'
-/** Fire the cannon with two taps instead of press, hold and let go. */
+/** Play held deliveries (the cannon, the plunger) with taps instead of press, hold and let go. */
 const TAP_TWICE_KEY = 'meteor-coins:tap-twice'
 
 function readFlag(key: string): boolean {
@@ -90,6 +97,9 @@ type Outcome = {
   slowed: boolean
 }
 
+/** Whether the run's score has reached the server's boards yet. */
+type Saving = 'idle' | 'saving' | 'failed'
+
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 export default function StageApp({ slug }: { slug: string }) {
@@ -104,8 +114,25 @@ export default function StageApp({ slug }: { slug: string }) {
     () => typeof window !== 'undefined' && readFlag(TAP_TWICE_KEY)
   )
   const [outcome, setOutcome] = useState<Outcome | null>(null)
+  const scoring = useScores()
+  const [saving, setSaving] = useState<Saving>('idle')
+  /** This stage's board as the save left it, for the result panel. */
+  const [board, setBoard] = useState<BoardView | null>(null)
+  const [naming, setNaming] = useState(false)
+  /** The save call, read through a ref so a sign-in mid-run can't rebuild the handler. */
+  const sendScore = useRef(scoring.send)
+  useEffect(() => {
+    sendScore.current = scoring.send
+  }, [scoring.send])
   const [popup, setPopup] = useState<{ id: number; text: string } | null>(null)
   const [announce, setAnnounce] = useState('')
+  /**
+   * The phase the cabinet is in, where phases change the delivery (so the
+   * controls, framing and how-to follow it), and the banner announcing it:
+   * which phase, and the coins left as it started.
+   */
+  const [phaseIndex, setPhaseIndex] = useState(0)
+  const [banner, setBanner] = useState<{ index: number; coinsAt: number | null } | null>(null)
   const [debug] = useState(
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
   )
@@ -124,8 +151,11 @@ export default function StageApp({ slug }: { slug: string }) {
       created = new DropGame(stage)
       setGame(created)
       setState(created.state)
+      setPhaseIndex(0)
+      setBanner(stage.phases?.[0]?.tool ? { index: 0, coinsAt: created.state.coinsLeft } : null)
       calledTempo.current = 1
       setOutcome(null)
+      setBoard(null)
     })
     return () => {
       cancelled = true
@@ -159,17 +189,36 @@ export default function StageApp({ slug }: { slug: string }) {
         if (e.type === 'phase') {
           const phase = stage.phases?.[e.index]
           if (phase) {
-            setPopup({ id: performance.now(), text: `Phase ${e.index + 1}: ${phase.name}` })
-            setAnnounce(`Phase ${e.index + 1}, ${phase.name}. ${phase.line}`)
+            setPhaseIndex(e.index)
+            // A phase with its own delivery gets a banner; others a pop-up.
+            if (phase.tool) setBanner({ index: e.index, coinsAt: game.state.coinsLeft })
+            else setPopup({ id: performance.now(), text: `Phase ${e.index + 1}: ${phase.name}` })
+            const how = phase.delivery ? ` ${deliveryHowTo(phase.delivery, tapTwice)}` : ''
+            setAnnounce(`Phase ${e.index + 1}, ${phase.name}. ${phase.line}${how}`)
           }
         }
         if (e.type === 'lastPush') {
-          setPopup({ id: performance.now(), text: 'Core home! Last Push!' })
-          setAnnounce('The comet core is home. Last Push: the pusher reaches twice as far.')
+          setPopup({ id: performance.now(), text: 'The comet is home! Last Push!' })
+          setAnnounce(
+            'The comet is home. Last Push: the pusher reaches twice as far for a few seconds.'
+          )
         }
         if (e.type === 'meteor') {
           setPopup({ id: performance.now(), text: 'Meteorite incoming!' })
           setAnnounce('Meteorite incoming. It lands where the countdown ring is.')
+        }
+        if (e.type === 'plate') {
+          if (e.plate === 'gold') {
+            setPopup({ id: performance.now(), text: `${e.line} +${e.bonus} ${drops}` })
+            setAnnounce(`Gold plate on the ${e.deck}. ${e.bonus} bonus ${drops}.`)
+          } else {
+            setPopup({ id: performance.now(), text: e.line })
+            setAnnounce(`Red plate on the ${e.deck}. Its edge is blocked for ${e.seconds} seconds.`)
+          }
+        }
+        if (e.type === 'callout') {
+          setPopup({ id: performance.now(), text: e.text })
+          setAnnounce(e.announce)
         }
         if (e.type === 'hoop') {
           setPopup({ id: performance.now(), text: `Hoop! +${e.bonus} ${drops}` })
@@ -219,6 +268,17 @@ export default function StageApp({ slug }: { slug: string }) {
         const following = nextPlayableAfter(stage) ?? nextStageAfter(stage)
         const after = recordResult(before, stage.slug, value, stars)
         saveProgress(after)
+        // The board gets this browser's best, which the run may have raised.
+        const best = after.best[stage.slug]
+        if (best !== undefined) {
+          setSaving('saving')
+          sendScore
+            .current([{ stage: stage.slug, value: best, stars: after.stars[stage.slug] ?? stars }])
+            .then(saved => {
+              setSaving(saved ? 'idle' : 'failed')
+              setBoard(saved?.boards[stage.slug] ?? null)
+            })
+        }
         setOutcome({
           stars,
           best: after.best[stage.slug] ?? null,
@@ -232,8 +292,15 @@ export default function StageApp({ slug }: { slug: string }) {
       }
       setState(prev => (prev === next ? prev : next))
     },
-    [game, stage]
+    [game, stage, tapTwice]
   )
+
+  // A phase's banner stays up for a while, and longer before the first coin.
+  useEffect(() => {
+    if (!banner || banner.index === 0) return
+    const id = window.setTimeout(() => setBanner(null), 9000)
+    return () => window.clearTimeout(id)
+  }, [banner])
 
   useEffect(() => {
     if (!popup) return
@@ -252,7 +319,19 @@ export default function StageApp({ slug }: { slug: string }) {
     game?.input({ type: 'release' })
   }, [game])
 
-  const delivery = useMemo(() => deliveryOf(stage), [stage])
+  const delivery = useMemo(() => deliveryOf(stage, phaseIndex), [stage, phaseIndex])
+  // A phase's own moon: its whole orbit stays in view, with the moon's size to spare.
+  const framingExtra = useMemo(() => {
+    const m = stage.phases?.[phaseIndex]?.moon
+    if (!m) return undefined
+    const { x, y, z } = m.center
+    return [
+      { x: x - m.radiusX - 0.6, y: y + 0.6, z },
+      { x: x + m.radiusX + 0.6, y: y + 0.6, z },
+      { x, y: y + 0.6, z: z - m.radiusZ - 0.6 },
+      { x, y: y + 0.6, z: z + m.radiusZ + 0.6 },
+    ]
+  }, [stage, phaseIndex])
   // Where the pointer is over the table, for deliveries that aim by it.
   const project = useRef<TableProjection | null>(null)
   const point = useCallback(
@@ -261,8 +340,11 @@ export default function StageApp({ slug }: { slug: string }) {
       const box = e.currentTarget.getBoundingClientRect()
       const ndcX = ((e.clientX - box.left) / box.width) * 2 - 1
       const ndcY = -((e.clientY - box.top) / box.height) * 2 + 1
-      const at = project.current(ndcX, ndcY, deliveryAimY(delivery))
-      if (at) game.input({ type: 'point', x: at.x, z: at.z })
+      const aimY = deliveryAimY(delivery)
+      const at = project.current(ndcX, ndcY, aimY)
+      const up = project.current(ndcX, ndcY, aimY + 1)
+      const rise = up && at ? { x: up.x - at.x, z: up.z - at.z } : undefined
+      if (at) game.input({ type: 'point', x: at.x, z: at.z, rise })
     },
     [game, delivery]
   )
@@ -282,7 +364,12 @@ export default function StageApp({ slug }: { slug: string }) {
       (held.has(plus) ? 1 : 0) - (held.has(minus) ? 1 : 0)
     function onArrow(e: KeyboardEvent) {
       if (!e.key.startsWith('Arrow')) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') held.add(e.key)
       else held.delete(e.key)
@@ -303,7 +390,12 @@ export default function StageApp({ slug }: { slug: string }) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key !== ' ' || e.repeat) return
-      if (e.target instanceof HTMLButtonElement || e.target instanceof HTMLAnchorElement) return
+      if (
+        e.target instanceof HTMLButtonElement ||
+        e.target instanceof HTMLAnchorElement ||
+        e.target instanceof HTMLInputElement
+      )
+        return
       e.preventDefault()
       if (e.type === 'keydown') press()
       else release()
@@ -316,13 +408,21 @@ export default function StageApp({ slug }: { slug: string }) {
     }
   }, [press, release])
 
-  const toggleSlow = () => {
+  // A toggle clicked with the pointer gives focus back to the game, so Space
+  // drops again rather than flipping the toggle. (From the keyboard, focus
+  // stays where the player put it.)
+  const giveBackFocus = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (e.detail > 0) e.currentTarget.blur()
+  }
+  const toggleSlow = (e: React.MouseEvent<HTMLButtonElement>) => {
+    giveBackFocus(e)
     setSlow(s => {
       writeFlag(SLOW_KEY, !s)
       return !s
     })
   }
-  const toggleTapTwice = () => {
+  const toggleTapTwice = (e: React.MouseEvent<HTMLButtonElement>) => {
+    giveBackFocus(e)
     setTapTwice(t => {
       writeFlag(TAP_TWICE_KEY, !t)
       return !t
@@ -335,12 +435,17 @@ export default function StageApp({ slug }: { slug: string }) {
   const starsNow = state ? hudStars(stage, state) : null
   const towers = state ? towerLines(stage, state) : []
   const timeLeft = state && game ? game.timeLeftS : null
+  // The banner goes once the phase's second coin is away.
+  const bannerPhase =
+    banner && state && !over && (banner.coinsAt ?? 0) - (state.coinsLeft ?? 0) < 2
+      ? stage.phases?.[banner.index]
+      : undefined
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
       <Link
-        href="/"
-        aria-label="Return to the cave"
+        href="/meteor-coins"
+        aria-label="Back to stages"
         className="absolute left-2 top-2 z-50 flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-sm text-white/60 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       >
         ✕
@@ -364,6 +469,7 @@ export default function StageApp({ slug }: { slug: string }) {
               layout={game.engine.layout}
               arm={stage.arm}
               delivery={delivery}
+              extra={framingExtra}
             />
             <TableProjector projectRef={project} />
             {debug && <FpsMeter fpsRef={fpsRef} />}
@@ -375,7 +481,7 @@ export default function StageApp({ slug }: { slug: string }) {
       </div>
 
       {state && measure && starsNow && (
-        <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex justify-center px-14">
+        <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex flex-col items-center gap-2 px-14">
           <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-lg bg-black/60 px-3 py-2 sm:gap-x-4 sm:px-4">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
             {timeLeft !== null && <Stat label="Time" value={clockText(timeLeft)} />}
@@ -390,6 +496,7 @@ export default function StageApp({ slug }: { slug: string }) {
               </div>
             )}
             {stage.rules.tempo && <TempoMeter tempo={state.tempo} max={stage.rules.tempo.max} />}
+            {stage.lastPush && game && <HomeMeter game={game} />}
             <Stat label={measure.label} value={measure.value} />
             {towers.length > 0 && (
               <ul
@@ -413,6 +520,17 @@ export default function StageApp({ slug }: { slug: string }) {
               </div>
             )}
           </div>
+          {bannerPhase && stage.phases && banner && (
+            <PhaseBanner
+              key={banner.index}
+              number={banner.index + 1}
+              of={stage.phases.length}
+              name={bannerPhase.name}
+              tool={bannerPhase.tool}
+              line={bannerPhase.line}
+              howTo={deliveryHowTo(deliveryOf(stage, banner.index), tapTwice)}
+            />
+          )}
         </div>
       )}
 
@@ -441,8 +559,8 @@ export default function StageApp({ slug }: { slug: string }) {
         <button
           type="button"
           aria-pressed={tapTwice}
-          aria-label="Tap twice to fire"
-          title="Tap twice to fire"
+          aria-label="Tap instead of holding"
+          title="Tap instead of holding"
           onPointerDown={e => e.stopPropagation()}
           onPointerUp={e => e.stopPropagation()}
           onClick={toggleTapTwice}
@@ -455,7 +573,7 @@ export default function StageApp({ slug }: { slug: string }) {
           <span aria-hidden className="material-symbols-outlined text-[20px]">
             touch_app
           </span>
-          <span className="hidden sm:inline">Tap twice</span>
+          <span className="hidden sm:inline">Tap, don&apos;t hold</span>
         </button>
       )}
 
@@ -482,7 +600,7 @@ export default function StageApp({ slug }: { slug: string }) {
                 Stage {stage.number} · {stage.name}
               </p>
               <p className="text-xs text-white/80 sm:text-sm">
-                {`${deliveryHowTo(delivery, tapTwice)} `}
+                {!stage.phases?.[0]?.tool && `${deliveryHowTo(delivery, tapTwice)} `}
                 {stage.ring.enabled &&
                   !stage.rules.tempo &&
                   `Hit the ring for bonus ${stage.objects.drop.plural}. `}
@@ -501,8 +619,23 @@ export default function StageApp({ slug }: { slug: string }) {
           stage={stage}
           state={state}
           outcome={outcome}
+          placement={scoring.status === 'off' ? null : (scoring.scores?.stages[stage.slug] ?? null)}
+          board={board}
+          uid={scoring.user?.uid ?? null}
+          saving={scoring.status === 'failed' ? 'failed' : saving}
+          signedUp={scoring.signedUp}
+          onPickNickname={() => setNaming(true)}
           primaryRef={primaryAction}
           onTryAgain={() => setRun(r => r + 1)}
+        />
+      )}
+
+      {naming && (
+        <NicknameDialog
+          initialValue=""
+          subtitle="Shown on the Meteor Coins scores."
+          onClose={() => setNaming(false)}
+          onSave={scoring.setNickname}
         />
       )}
 
@@ -513,7 +646,7 @@ export default function StageApp({ slug }: { slug: string }) {
 
 /**
  * Whether the result earns the stage's "clear" line. On Comet Homecoming
- * finishing is a star, but the clear line is about the core getting home.
+ * finishing is a star, but the clear line is about the comet getting home.
  */
 function cleared(stage: StageDef, state: GameState, stars: number): boolean {
   const { goal } = stage.rules
@@ -567,6 +700,83 @@ function TempoMeter({ tempo, max }: { tempo: number; max: number }) {
   )
 }
 
+/**
+ * A phase's opening banner, under the HUD: which phase, what it plays
+ * with, and what to do, in plain words.
+ */
+function PhaseBanner({
+  number,
+  of,
+  name,
+  tool,
+  line,
+  howTo,
+}: {
+  number: number
+  of: number
+  name: string
+  tool?: string
+  line: string
+  howTo: string
+}) {
+  return (
+    <div className="w-full max-w-md rounded-lg border border-white/20 bg-black/75 px-4 py-2.5 text-center">
+      <p className="text-[11px] uppercase tracking-wide text-white/60">
+        Phase {number} of {of}
+      </p>
+      <p className="text-lg font-bold leading-tight">{name}</p>
+      {tool && <p className="text-xs text-white/70">{tool}</p>}
+      <p className="mt-1 text-sm leading-snug">{line}</p>
+      <p className="mt-0.5 text-xs leading-snug text-white/70">{howTo}</p>
+    </div>
+  )
+}
+
+/**
+ * How far the stage's last-push object (the comet) has to go: a track
+ * from where it started to the front edge, filling as it gets nearer, and
+ * "Home!" once it's there. Reads the game a few times a second.
+ */
+function HomeMeter({ game }: { game: DropGame }) {
+  const id = game.stage.lastPush?.object
+  const puck = useMemo(() => game.engine.pucks.find(p => p.spec.id === id), [game, id])
+  const startZ = useMemo(() => (puck?.active ? puck.body.translation().z : 0), [puck])
+  const read = useCallback(() => {
+    if (!puck?.active) return 1
+    const z = puck.body.translation().z
+    return Math.min(1, Math.max(0, (z - startZ) / (FIELD_FRONT_Z - startZ)))
+  }, [puck, startZ])
+  const [share, setShare] = useState(read)
+  useEffect(() => {
+    const tick = window.setInterval(() => setShare(read()), 250)
+    return () => window.clearInterval(tick)
+  }, [read])
+  const home = !puck?.active
+  const percent = Math.round(share * 100)
+  return (
+    <div
+      className="text-center"
+      role="meter"
+      aria-label="The comet's way home"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      aria-valuetext={home ? 'Home' : `${percent}% of the way home`}
+    >
+      <div className="text-[11px] uppercase tracking-wide text-white/60">Comet</div>
+      <div className="text-sm font-bold leading-tight sm:text-base">
+        {home ? 'Home!' : `${percent}%`}
+      </div>
+      <div
+        aria-hidden
+        className="mt-0.5 h-1.5 w-14 overflow-hidden rounded-full border border-white/40"
+      >
+        <div className="h-full bg-white" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  )
+}
+
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="text-center">
@@ -585,12 +795,26 @@ function ResultPanel({
   stage,
   state,
   outcome,
+  placement,
+  board,
+  uid,
+  saving,
+  signedUp,
+  onPickNickname,
   primaryRef,
   onTryAgain,
 }: {
   stage: StageDef
   state: GameState
   outcome: Outcome
+  /** The player's standing on this stage's board; null while unknown or with no boards. */
+  placement: Placement | null
+  /** The board after this run's save, or null until it lands. */
+  board: BoardView | null
+  uid: string | null
+  saving: Saving
+  signedUp: boolean
+  onPickNickname: () => void
   primaryRef: React.RefObject<HTMLAnchorElement | HTMLButtonElement | null>
   onTryAgain: () => void
 }) {
@@ -599,6 +823,10 @@ function ResultPanel({
   const canAdvance = outcome.stars >= 1 && following?.playable
   const big = headline(stage, state)
   const hasGutters = stage.table.chuteHalfWidth < FIELD_HALF_WIDTH
+  // The run just took first place from someone: a new best that tops the
+  // board, with at least one other player to top. Repeating a #1 isn't one.
+  const topScore =
+    saving === 'idle' && outcome.isNewBest && placement?.rank === 1 && placement.players >= 2
 
   const share = async () => {
     const url = `${window.location.origin}/meteor-coins/${stage.slug}`
@@ -643,6 +871,7 @@ function ResultPanel({
         <div className="mt-3 flex justify-center">
           <StarRow earned={outcome.stars} size={30} label={`${outcome.stars} of 3 stars`} />
         </div>
+        {topScore && <TopScore />}
         {stage.rules.tempo && state.bestTempo >= stage.rules.tempo.max && (
           <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/40 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
             <span aria-hidden className="material-symbols-outlined text-[16px]">
@@ -665,6 +894,26 @@ function ResultPanel({
             ? 'New personal best!'
             : !!outcome.best && `Your best: ${outcome.best}.`}
         </p>
+        <div className="mt-2 min-h-5 text-sm text-white/80" aria-live="polite">
+          {saving === 'saving' && <p className="text-white/60">Saving your score…</p>}
+          {saving === 'failed' && (
+            <p className="text-white/60">Couldn&apos;t save your score to the board.</p>
+          )}
+          {saving === 'idle' && placement && (
+            <PlaceLine
+              stage={stage}
+              placement={placement}
+              signedUp={signedUp}
+              onPickNickname={onPickNickname}
+            />
+          )}
+        </div>
+        {saving === 'idle' && board && board.entries.length > 0 && (
+          <div className="mt-3 text-left">
+            <p className="mb-1 text-xs uppercase tracking-wide text-white/60">Top scores</p>
+            <ScoreBoard stage={stage} view={board} uid={uid} limit={5} />
+          </div>
+        )}
         {outcome.unlockedNext && following && (
           <p className="mt-2 text-sm font-semibold text-white">
             {following.playable
@@ -720,17 +969,75 @@ function ResultPanel({
           <button type="button" onClick={share} className={secondaryClass}>
             Share score
           </button>
-          <Link
-            href="/meteor-coins"
-            className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
-          >
-            Stage map
-          </Link>
+          <div className="flex justify-center gap-6">
+            <Link
+              href="/meteor-coins"
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Stage map
+            </Link>
+            <Link
+              href={`/meteor-coins/${stage.slug}/scores`}
+              className="min-h-11 py-3 text-sm text-white/70 underline-offset-4 hover:underline"
+            >
+              Scores
+            </Link>
+          </div>
         </div>
         <p className="mt-2 h-4 text-xs text-white/70" role="status">
           {status}
         </p>
       </section>
+    </div>
+  )
+}
+
+/**
+ * The one flourish in the result panel: a gold badge and a single burst of
+ * coin dots from it (interaction model 3). Under reduced motion the badge
+ * stands still, and the dots don't appear.
+ */
+function TopScore() {
+  const still = usePrefersReducedMotion()
+  const dots = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2
+    const distance = 70 + (i % 3) * 18
+    return {
+      tx: `${Math.round(Math.cos(angle) * distance)}px`,
+      ty: `${Math.round(Math.sin(angle) * distance)}px`,
+      size: 6 + (i % 3) * 2,
+    }
+  })
+  return (
+    <div className="relative mt-3 flex justify-center" role="status">
+      {!still && (
+        <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2">
+          {dots.map((d, i) => (
+            <span
+              key={i}
+              className="absolute animate-particle-burst rounded-full"
+              style={{
+                width: d.size,
+                height: d.size,
+                marginLeft: -d.size / 2,
+                marginTop: -d.size / 2,
+                background: PALETTE.puck,
+                ['--tx' as string]: d.tx,
+                ['--ty' as string]: d.ty,
+              }}
+            />
+          ))}
+        </span>
+      )}
+      <p
+        className="relative inline-flex items-center gap-1 rounded-full px-4 py-1 text-sm font-extrabold uppercase tracking-wider text-black"
+        style={{ background: PALETTE.puck }}
+      >
+        <span aria-hidden className="material-symbols-outlined text-[18px]">
+          workspace_premium
+        </span>
+        Top score on this stage
+      </p>
     </div>
   )
 }
