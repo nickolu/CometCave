@@ -1,6 +1,13 @@
 import RAPIER from '@dimforge/rapier3d-compat'
 
 import {
+  type Board,
+  CUP_FLOOR,
+  CUP_WALL,
+  GATE_TRAVEL,
+  sweeperX,
+} from '@/app/meteor-coins/lib/board'
+import {
   BACK_WALL_GAP,
   CHUTE_HALF_WIDTH,
   CLASSIC_LAYOUT,
@@ -27,6 +34,7 @@ import {
 } from '@/app/meteor-coins/lib/cabinet'
 import { COIN, OBJECTS, type ObjectSpec, type Part } from '@/app/meteor-coins/lib/objects'
 import type { PuckPose } from '@/app/meteor-coins/lib/piles'
+import { fallTimeToShelf, shelfOpenAt } from '@/app/meteor-coins/lib/timing'
 
 /**
  * The pusher machine as plain physics, with no rendering and no game rules.
@@ -117,6 +125,8 @@ export type EngineOptions = {
   /** Seconds per full pusher stroke. */
   pusherPeriodS?: number
   obstacles?: readonly Obstacle[]
+  /** A pachinko board over the drop line (see lib/board). */
+  board?: Board
   /**
    * Shelf friction. Low makes it ice: whatever is knocked onto it slides
    * away. It overrides what's sliding on it rather than averaging with it.
@@ -131,6 +141,8 @@ export type EngineOptions = {
   layout?: Layout
 }
 
+/** Seconds for a pachinko board's gate to slide open or shut. */
+const GATE_S = 0.12
 /** Seconds for a phased obstacle to rise out of the floor or sink into it. */
 const RISE_S = 0.8
 /** How long the Last Push takes to reach full reach, and to ease off again. */
@@ -157,6 +169,12 @@ export class PusherEngine {
   private readonly pushers: RAPIER.RigidBody[]
   private free: number[] = []
   private readonly movers: Mover[] = []
+  /** A pachinko board's gate, and the board, where it has one. */
+  private gate: RAPIER.RigidBody | null = null
+  private board: Board | null = null
+  /** How open the gate is, 0 to 1. */
+  private gateOpen = 0
+  private readonly sweepers: { s: Board['sweepers'][number]; body: RAPIER.RigidBody }[] = []
   /** The Last Push: from when, until when, the pushers reach twice as far forward. */
   private push: { from: number; until: number } | null = null
 
@@ -167,6 +185,7 @@ export class PusherEngine {
     chuteHalfWidth = CHUTE_HALF_WIDTH,
     pusherPeriodS = PUSHER_PERIOD_S,
     obstacles = [],
+    board,
     floorFriction,
     floorDrift = 0,
     layout = CLASSIC_LAYOUT,
@@ -304,6 +323,40 @@ export class PusherEngine {
       this.movers.push({ o, body, raised: up ? 1 : 0, up })
     }
 
+    if (board) {
+      buildBoard(world, fixed, board)
+      if (board.gated) {
+        // A plate whose top is the board's bottom, across the bins.
+        this.gate = world.createRigidBody(
+          RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(
+            0,
+            board.bottomY - 0.05,
+            board.z
+          )
+        )
+        world.createCollider(
+          RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, 0.05, board.slot / 2 + 0.05).setFriction(
+            0.3
+          ),
+          this.gate
+        )
+        this.board = board
+      }
+      for (const s of board.sweepers) {
+        const body = world.createRigidBody(
+          RAPIER.RigidBodyDesc.kinematicPositionBased().setTranslation(0, s.y, board.z)
+        )
+        world.createCollider(
+          RAPIER.ColliderDesc.cylinder(board.slot / 2, board.pinRadius * 1.5)
+            .setRotation({ x: Math.SQRT1_2, y: 0, z: 0, w: Math.SQRT1_2 })
+            .setFriction(0.2)
+            .setRestitution(0.3),
+          body
+        )
+        this.sweepers.push({ s, body })
+      }
+    }
+
     // Pool objects first, at the low indices; special objects after the pool.
     const pooled = pile.filter(pose => (pose.o ?? poolObject.id) === poolObject.id)
     const specials = pile.filter(pose => (pose.o ?? poolObject.id) !== poolObject.id)
@@ -391,12 +444,13 @@ export class PusherEngine {
     z: number,
     kind: PuckKind,
     yaw = 0,
-    velocity = { x: 0, y: -1, z: 0 }
+    velocity = { x: 0, y: -1, z: 0 },
+    upright = false
   ): number | null {
     const index = this.free.pop()
     if (index === undefined) return null
     this.pucks[index].kind = kind
-    this.wake(index, x, y, z, yaw, velocity)
+    this.wake(index, x, y, z, yaw, velocity, upright)
     return index
   }
 
@@ -426,12 +480,19 @@ export class PusherEngine {
     y: number,
     z: number,
     yaw: number,
-    velocity: { x: number; y: number; z: number }
+    velocity: { x: number; y: number; z: number },
+    upright = false
   ) {
     const puck = this.pucks[index]
     const half = yaw / 2
     puck.body.setTranslation({ x, y, z }, false)
-    puck.body.setRotation({ x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) }, false)
+    // Upright: stood on edge, facing the player, for a pachinko board's slot.
+    puck.body.setRotation(
+      upright
+        ? { x: Math.SQRT1_2, y: 0, z: 0, w: Math.SQRT1_2 }
+        : { x: 0, y: Math.sin(half), z: 0, w: Math.cos(half) },
+      false
+    )
     puck.body.setLinvel(velocity, false)
     puck.body.setAngvel({ x: 0, y: 0, z: 0 }, false)
     puck.body.setEnabled(true)
@@ -489,6 +550,25 @@ export class PusherEngine {
         z: deckPusherZ(deck, this.time, this.pusherPeriodS) + deckDir(deck) * extra,
       })
     })
+    for (const { s, body } of this.sweepers) {
+      body.setNextKinematicTranslation({
+        x: sweeperX(s, this.time),
+        y: s.y,
+        z: body.translation().z,
+      })
+    }
+    if (this.gate && this.board) {
+      // Open while a coin falling from the gate now would land on bare shelf.
+      const fallS = fallTimeToShelf(this.board.bottomY)
+      const open = shelfOpenAt(this.time + fallS, this.pusherPeriodS) ? 1 : 0
+      const stepBy = PHYSICS_STEP_S / GATE_S
+      this.gateOpen += Math.max(-stepBy, Math.min(stepBy, open - this.gateOpen))
+      this.gate.setNextKinematicTranslation({
+        x: 0,
+        y: this.board.bottomY - 0.05,
+        z: this.board.z - this.gateOpen * GATE_TRAVEL,
+      })
+    }
     for (const m of this.movers) {
       const toward = m.up ? 1 : 0
       const stepBy = PHYSICS_STEP_S / RISE_S
@@ -545,6 +625,11 @@ export class PusherEngine {
     this.world.free()
   }
 
+  /** Takes an object off the table (caught in a cup, say); a pooled one goes back in the pool. */
+  remove(index: number) {
+    this.park(index)
+  }
+
   private park(index: number) {
     const puck = this.pucks[index]
     puck.body.setEnabled(false)
@@ -553,6 +638,63 @@ export class PusherEngine {
     puck.body.setTranslation({ x: index * 2, y: PARK_Y, z: 0 }, false)
     puck.active = false
     if (puck.kind !== 'special') this.free.push(index)
+  }
+}
+
+/** The board's pins, glass and cups, fixed to the cabinet. */
+function buildBoard(world: RAPIER.World, fixed: RAPIER.RigidBody, board: Board) {
+  const { z: midZ, slot: depth } = board
+  // Rapier's cylinders stand along y; a quarter turn about x points them at the player.
+  const along = { x: Math.SQRT1_2, y: 0, z: 0, w: Math.SQRT1_2 }
+  for (const pin of board.pins) {
+    world.createCollider(
+      RAPIER.ColliderDesc.cylinder(depth / 2, board.pinRadius)
+        .setTranslation(pin.x, pin.y, midZ)
+        .setRotation(along)
+        .setFriction(0.2)
+        .setRestitution(0.3),
+      fixed
+    )
+  }
+  const glassHeight = board.topY - board.bottomY
+  for (const side of [-1, 1]) {
+    world.createCollider(
+      RAPIER.ColliderDesc.cuboid(FIELD_HALF_WIDTH, glassHeight / 2, 0.05)
+        .setTranslation(0, board.bottomY + glassHeight / 2, midZ + side * (depth / 2 + 0.05))
+        .setFriction(0.05),
+      fixed
+    )
+  }
+  // Ends, where the board stands taller than the cabinet's side walls.
+  for (const side of [-1, 1]) {
+    world.createCollider(
+      RAPIER.ColliderDesc.cuboid(0.05, glassHeight / 2, depth / 2 + 0.1)
+        .setTranslation(side * (FIELD_HALF_WIDTH + 0.05), board.bottomY + glassHeight / 2, midZ)
+        .setFriction(0.1),
+      fixed
+    )
+  }
+  const dividerHeight = board.dividerTop - board.bottomY
+  for (const x of board.dividers) {
+    world.createCollider(
+      RAPIER.ColliderDesc.cuboid(0.04, dividerHeight / 2, depth / 2)
+        .setTranslation(x, board.bottomY + dividerHeight / 2, midZ)
+        .setFriction(0.3)
+        .setRestitution(0.1),
+      fixed
+    )
+  }
+  for (const cup of board.cups) {
+    const box = (hx: number, hy: number, x: number, y: number) =>
+      world.createCollider(
+        RAPIER.ColliderDesc.cuboid(hx, hy, depth / 2)
+          .setTranslation(x, y, midZ)
+          .setFriction(0.5),
+        fixed
+      )
+    box(cup.width / 2, CUP_FLOOR / 2, cup.x, cup.y + CUP_FLOOR / 2)
+    for (const side of [-1, 1])
+      box(0.04, CUP_WALL / 2, cup.x + (side * cup.width) / 2, cup.y + CUP_WALL / 2)
   }
 }
 
