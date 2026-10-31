@@ -15,6 +15,11 @@ import type { FallResult } from '@/app/meteor-coins/lib/cabinet'
  * Bonus coins pour onto the table automatically; they never go back into
  * the budget, so a perfect run still ends.
  *
+ * A stage can also keep a tempo (Redline): each drop timed to land on bare
+ * shelf — on the beat — raises it by one, up to a top tempo; a drop off the
+ * beat sends it back to 1, and so does a long enough pause, one step at a
+ * time. Ring bonuses are multiplied by the tempo the drop was made at.
+ *
  * Pure state transitions, no physics — the game loop feeds events in.
  */
 
@@ -46,11 +51,18 @@ export type Goal =
   | { type: 'collect'; object: string; total: number; stars: StarThresholds }
   | { type: 'target'; object?: string; count: number; stars: StarThresholds }
 
+/** A stage's tempo: its top step, and how long a pause costs one step. */
+export type TempoConfig = { max: number; idleS: number }
+
 export type RuleConfig = {
   /** Coins the player can drop, or null for unlimited. */
   coins: number | null
-  /** Required when coins is unlimited: drops stop after this many seconds. */
+  /**
+   * Drops stop after this many seconds of arm time from the first drop, even
+   * with coins left. Required when coins is unlimited.
+   */
   timeLimitS?: number
+  tempo?: TempoConfig
   /** Bonus coins poured for the nth consecutive ring hit (n ≥ 1). */
   bonusForStreak: (streak: number) => number
   goal: Goal
@@ -60,8 +72,12 @@ export type GameState = {
   phase: Phase
   /** Null when the stage gives unlimited coins. */
   coinsLeft: number | null
-  /** Set once an unlimited stage's clock runs out; no more drops. */
+  /** Set once the stage's clock runs out; no more drops. */
   timeUp: boolean
+  /** The tempo now (1 when the stage keeps none), the highest it reached, and when it last changed (arm time). */
+  tempo: number
+  bestTempo: number
+  tempoAt: number
   score: number
   /** Objects into the chute, by object id. */
   collected: Record<string, number>
@@ -107,6 +123,9 @@ export function initialState(rules: RuleConfig): GameState {
     phase: 'ready',
     coinsLeft: rules.coins,
     timeUp: false,
+    tempo: 1,
+    bestTempo: 1,
+    tempoAt: 0,
     score: 0,
     collected: {},
     spareAtGoal: null,
@@ -123,7 +142,7 @@ export function initialState(rules: RuleConfig): GameState {
 }
 
 function outOfCoins(s: GameState): boolean {
-  return s.coinsLeft === null ? s.timeUp : s.coinsLeft <= 0
+  return s.timeUp || (s.coinsLeft !== null && s.coinsLeft <= 0)
 }
 
 export function canDrop(s: GameState): boolean {
@@ -135,8 +154,32 @@ export function drop(s: GameState): GameState {
   return { ...s, phase: 'playing', coinsLeft: s.coinsLeft === null ? null : s.coinsLeft - 1 }
 }
 
-/** A player's coin has passed the ring's height: through it, or not. */
-export function resolveShot(s: GameState, hit: boolean, rules: RuleConfig): GameState {
+/**
+ * A drop on a stage that keeps a tempo, made at arm time `t`: on the beat
+ * raises it a step, off the beat sends it back to 1.
+ */
+export function beatDrop(s: GameState, onBeat: boolean, t: number, rules: RuleConfig): GameState {
+  if (!rules.tempo) return s
+  const tempo = onBeat ? Math.min(s.tempo + 1, rules.tempo.max) : 1
+  return { ...s, tempo, bestTempo: Math.max(s.bestTempo, tempo), tempoAt: t }
+}
+
+/** A pause costs a step of tempo for every `idleS` of it (`t` is arm time). */
+export function tempoIdle(s: GameState, t: number, rules: RuleConfig): GameState {
+  if (!rules.tempo || s.tempo <= 1 || t - s.tempoAt < rules.tempo.idleS) return s
+  return { ...s, tempo: s.tempo - 1, tempoAt: t }
+}
+
+/** The ring bonus for a hit at `streak`, made at `tempo`. */
+export function ringBonus(streak: number, tempo: number, rules: RuleConfig): number {
+  return rules.bonusForStreak(streak) * (rules.tempo ? tempo : 1)
+}
+
+/**
+ * A player's coin has passed the ring's height: through it, or not. `tempo`
+ * is the tempo it was dropped at.
+ */
+export function resolveShot(s: GameState, hit: boolean, rules: RuleConfig, tempo = 1): GameState {
   if (!hit) return { ...s, shots: s.shots + 1, streak: 0 }
   const streak = s.streak + 1
   return {
@@ -145,7 +188,7 @@ export function resolveShot(s: GameState, hit: boolean, rules: RuleConfig): Game
     hits: s.hits + 1,
     streak,
     bestStreak: Math.max(s.bestStreak, streak),
-    showerLeft: s.showerLeft + rules.bonusForStreak(streak),
+    showerLeft: s.showerLeft + ringBonus(streak, tempo, rules),
   }
 }
 
@@ -219,16 +262,18 @@ export function goalMet(s: GameState, goal: Goal): boolean {
 /**
  * Moves the game toward its end. `t` is the stage clock. `inFlight` counts
  * player coins that haven't reached the ring yet — the game can't start
- * settling with a shot unresolved.
+ * settling with a shot unresolved. `clockS` is what the time limit counts:
+ * arm time since the first drop, so the slower arm stretches it.
  */
-export function tick(s: GameState, t: number, inFlight: number, rules: RuleConfig): GameState {
+export function tick(
+  s: GameState,
+  t: number,
+  inFlight: number,
+  rules: RuleConfig,
+  clockS = t
+): GameState {
   let next = s
-  if (
-    next.coinsLeft === null &&
-    !next.timeUp &&
-    rules.timeLimitS !== undefined &&
-    t >= rules.timeLimitS
-  ) {
+  if (!next.timeUp && rules.timeLimitS !== undefined && clockS >= rules.timeLimitS) {
     next = { ...next, timeUp: true }
   }
   if (next.phase === 'ready' && next.timeUp) next = { ...next, phase: 'playing' }

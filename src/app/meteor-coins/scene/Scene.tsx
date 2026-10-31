@@ -51,7 +51,9 @@ const RING_FLASH_S = 0.4
  * this only steps it at a fixed rate and copies positions onto meshes.
  */
 export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameEvent[]) => void }) {
-  // One instanced mesh per part of each kind of object on the table.
+  // One instanced mesh per part of each kind of object on the table. Where
+  // bonus coins have their own look, the pool's coins get a second set of
+  // meshes, and each coin is drawn in one set or the other.
   const groups = useMemo(() => {
     const bySpec = new Map<ObjectSpec, number[]>()
     game.engine.pucks.forEach((puck, i) => {
@@ -59,9 +61,14 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       list.push(i)
       bySpec.set(puck.spec, list)
     })
-    return [...bySpec].map(([spec, indices]) => ({ spec, indices }))
+    return [...bySpec].map(([spec, indices]) => ({
+      spec,
+      indices,
+      bonus: spec === game.engine.poolObject ? game.stage.objects.bonus : undefined,
+    }))
   }, [game])
   const groupMeshes = useRef<(THREE.InstancedMesh | null)[][]>([])
+  const bonusMeshes = useRef<(THREE.InstancedMesh | null)[][]>([])
   const pushers = useRef<(THREE.Mesh | null)[]>([])
   const riders = useRef<THREE.Group>(null)
   const arms = useRef<(THREE.Group | null)[]>([])
@@ -80,6 +87,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     q: new THREE.Quaternion(),
     one: new THREE.Vector3(1, 1, 1),
     zero: new THREE.Vector3(0, 0, 0),
+    hidden: new THREE.Matrix4().makeScale(0, 0, 0),
     base: new THREE.Color(PALETTE.ring),
     hit: new THREE.Color(PALETTE.ringHit),
   })
@@ -98,8 +106,9 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
     onStep(events)
 
     const s = scratch.current
-    groups.forEach(({ indices }, g) => {
+    groups.forEach(({ indices, bonus }, g) => {
       const meshes = groupMeshes.current[g] ?? []
+      const bonusSet = (bonus && bonusMeshes.current[g]) || []
       indices.forEach((index, i) => {
         const puck = game.engine.pucks[index]
         if (puck.active) {
@@ -109,9 +118,11 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
         } else {
           s.m.compose(s.p.set(0, -50, 0), s.q.identity(), s.zero)
         }
-        for (const mesh of meshes) mesh?.setMatrixAt(i, s.m)
+        const asBonus = bonus !== undefined && puck.kind === 'bonus'
+        for (const mesh of meshes) mesh?.setMatrixAt(i, asBonus ? s.hidden : s.m)
+        for (const mesh of bonusSet) mesh?.setMatrixAt(i, asBonus ? s.m : s.hidden)
       })
-      for (const mesh of meshes) if (mesh) mesh.instanceMatrix.needsUpdate = true
+      for (const mesh of [...meshes, ...bonusSet]) if (mesh) mesh.instanceMatrix.needsUpdate = true
     })
 
     if (cue.current && game.stage.cue) {
@@ -144,7 +155,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       const ribbon = ribbons.current[i]
       if (ribbon) ribbon.visible = game.line === i
     })
-    ring.current?.position.set(ringX(game.dropperTime), RING_Y, DROP_Z)
+    ring.current?.position.set(ringX(game.dropperTime, game.stage.ring), RING_Y, DROP_Z)
     if (ring.current) ring.current.visible = game.stage.ring.enabled
 
     flash.current = Math.max(0, flash.current - delta)
@@ -200,6 +211,21 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
             ref={mesh => {
               groupMeshes.current[g] ??= []
               groupMeshes.current[g][p] = mesh
+            }}
+            args={[partGeometry(part), undefined, indices.length]}
+            frustumCulled={false}
+          >
+            <PartMaterial part={part} />
+          </instancedMesh>
+        ))
+      )}
+      {groups.map(({ indices, bonus }, g) =>
+        bonus?.parts.map((part, p) => (
+          <instancedMesh
+            key={`bonus-${g}-${p}`}
+            ref={mesh => {
+              bonusMeshes.current[g] ??= []
+              bonusMeshes.current[g][p] = mesh
             }}
             args={[partGeometry(part), undefined, indices.length]}
             frustumCulled={false}
@@ -277,7 +303,7 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
 
       {/* Skill-shot ring: lies flat, slides left and right */}
       <mesh ref={ring} position={[0, RING_Y, DROP_Z]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[RING_RADIUS, RING_TUBE, 12, 40]} />
+        <torusGeometry args={[game.stage.ring.radius ?? RING_RADIUS, RING_TUBE, 12, 40]} />
         <meshStandardMaterial
           ref={ringMaterial}
           color={PALETTE.ring}
@@ -298,7 +324,9 @@ function partGeometry(part: Part): THREE.BufferGeometry {
   let g: THREE.BufferGeometry
   switch (part.shape) {
     case 'cylinder':
-      g = new THREE.CylinderGeometry(part.radius, part.radius, part.height, 28)
+      g = part.notches
+        ? notchedDisc(part.radius, part.height, part.notches)
+        : new THREE.CylinderGeometry(part.radius, part.radius, part.height, 28)
       break
     case 'box':
       g = new THREE.BoxGeometry(...part.size)
@@ -316,8 +344,29 @@ function partGeometry(part: Part): THREE.BufferGeometry {
   return g
 }
 
+/** A coin with V notches cut around its rim, centered like a cylinder. */
+function notchedDisc(radius: number, height: number, notches: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape()
+  const steps = notches * 8
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2
+    // Each notch is the first eighth of its stretch of rim, cut 0.14 deep at its middle.
+    const k = i % 8
+    const r = k === 1 ? radius - 0.14 : radius
+    const x = r * Math.cos(a)
+    const y = r * Math.sin(a)
+    if (i === 0) shape.moveTo(x, y)
+    else shape.lineTo(x, y)
+  }
+  return new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false })
+    .translate(0, 0, -height / 2)
+    .rotateX(Math.PI / 2)
+}
+
+const METALLIC: readonly Part['tone'][] = ['puck', 'amber', 'bonus']
+
 function PartMaterial({ part }: { part: Part }) {
-  const metal = part.tone === 'puck'
+  const metal = METALLIC.includes(part.tone)
   return (
     <meshStandardMaterial
       color={PALETTE[part.tone]}

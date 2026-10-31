@@ -70,12 +70,20 @@ export function armTip(
   return { x: ARM_LENGTH * Math.sin(a), y, z: dropLines(config)[line] }
 }
 
-export function ringX(t: number): number {
-  return RING_RANGE * Math.sin((2 * Math.PI * t) / RING_PERIOD_S + RING_PHASE)
+/** A stage's ring, where it isn't the usual: Redline's is faster and narrower. */
+export type RingConfig = { periodS?: number; radius?: number }
+
+export function ringX(t: number, ring: RingConfig = {}): number {
+  return RING_RANGE * Math.sin((2 * Math.PI * t) / (ring.periodS ?? RING_PERIOD_S) + RING_PHASE)
 }
 
-export function isHit(puckX: number, t: number, reach = PUCK_RADIUS): boolean {
-  return Math.abs(puckX - ringX(t)) <= RING_RADIUS - reach
+export function isHit(
+  puckX: number,
+  t: number,
+  reach = PUCK_RADIUS,
+  ring: RingConfig = {}
+): boolean {
+  return Math.abs(puckX - ringX(t, ring)) <= (ring.radius ?? RING_RADIUS) - reach
 }
 
 // Guard: the ring hangs on the drop line, which hugs the back wall.

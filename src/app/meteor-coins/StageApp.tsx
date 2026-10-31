@@ -25,7 +25,7 @@ import {
   recordResult,
   saveProgress,
 } from '@/app/meteor-coins/lib/progress'
-import { type GameState, resultValue, starsFor } from '@/app/meteor-coins/lib/rules'
+import { type GameState, resultValue, ringBonus, starsFor } from '@/app/meteor-coins/lib/rules'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
 import { CabinetCamera, Scene } from '@/app/meteor-coins/scene/Scene'
@@ -63,7 +63,14 @@ function writeFlag(key: string, on: boolean) {
   }
 }
 
-type Outcome = { stars: Stars; best: number | null; isNewBest: boolean; unlockedNext: boolean }
+type Outcome = {
+  stars: Stars
+  best: number | null
+  isNewBest: boolean
+  unlockedNext: boolean
+  /** A timed run played (at any point) with the slower arm, which stretches the clock. */
+  slowed: boolean
+}
 
 const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
@@ -85,6 +92,8 @@ export default function StageApp({ slug }: { slug: string }) {
     () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('debug')
   )
   const fpsRef = useRef(0)
+  /** The tempo last called out, so each new step is announced once. */
+  const calledTempo = useRef(1)
   /** The run whose result has been saved, so it's saved exactly once. */
   const recorded = useRef<DropGame | null>(null)
   const primaryAction = useRef<HTMLAnchorElement | HTMLButtonElement>(null)
@@ -97,6 +106,7 @@ export default function StageApp({ slug }: { slug: string }) {
       created = new DropGame(stage)
       setGame(created)
       setState(created.state)
+      calledTempo.current = 1
       setOutcome(null)
     })
     return () => {
@@ -113,6 +123,15 @@ export default function StageApp({ slug }: { slug: string }) {
   useEffect(() => {
     game?.setCannonMode(tapTwice ? 'tap' : 'hold')
   }, [game, tapTwice])
+
+  // The clock moves between game events, so a timed stage redraws it on its own.
+  const [, setClockTick] = useState(0)
+  const timed = stage.rules.timeLimitS !== undefined
+  useEffect(() => {
+    if (!timed || !game) return
+    const id = window.setInterval(() => setClockTick(n => n + 1), 250)
+    return () => window.clearInterval(id)
+  }, [timed, game])
 
   const onStep = useCallback(
     (events: GameEvent[]) => {
@@ -142,6 +161,18 @@ export default function StageApp({ slug }: { slug: string }) {
           )
         }
       }
+      const tempoMax = stage.rules.tempo?.max
+      if (tempoMax && game.state.tempo !== calledTempo.current) {
+        const tempo = game.state.tempo
+        if (tempo > calledTempo.current) {
+          const text = tempo === tempoMax ? `Tempo ${tempo} — REDLINE` : `Tempo ${tempo}`
+          setPopup({ id: performance.now(), text })
+          setAnnounce(`${text}.`)
+        } else if (tempo === 1) {
+          setAnnounce('Off the beat. Tempo 1.')
+        }
+        calledTempo.current = tempo
+      }
       // Record the result once per run, here rather than inside a state
       // updater: React may run updaters twice, and the second run would read
       // back the save the first just made (no "new best", no unlock notice).
@@ -161,6 +192,7 @@ export default function StageApp({ slug }: { slug: string }) {
           isNewBest: value !== null && value > (previousBest ?? 0),
           unlockedNext:
             stars >= 1 && (before.stars[stage.slug] ?? 0) === 0 && following !== undefined,
+          slowed: stage.rules.timeLimitS !== undefined && game.slowed,
         })
         const big = headline(stage, next)
         setAnnounce(`Stage over. ${big.value} ${big.caption}, ${stars} of 3 stars.`)
@@ -221,6 +253,7 @@ export default function StageApp({ slug }: { slug: string }) {
   const measure = state ? hudMeasure(stage, state) : null
   const starsNow = state ? hudStars(stage, state) : null
   const towers = state ? towerLines(stage, state) : []
+  const timeLeft = state && game ? game.timeLeftS : null
 
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
@@ -260,8 +293,10 @@ export default function StageApp({ slug }: { slug: string }) {
 
       {state && measure && starsNow && (
         <div className="pointer-events-none absolute inset-x-0 top-2 z-40 flex justify-center px-14">
-          <div className="flex items-center gap-4 rounded-lg bg-black/60 px-4 py-2">
+          <div className="flex max-w-full flex-wrap items-center justify-center gap-x-2.5 gap-y-1.5 rounded-lg bg-black/60 px-3 py-2 sm:gap-x-4 sm:px-4">
             <Stat label={capitalize(stage.objects.drop.plural)} value={state.coinsLeft ?? '∞'} />
+            {timeLeft !== null && <Stat label="Time" value={clockText(timeLeft)} />}
+            {stage.rules.tempo && <TempoMeter tempo={state.tempo} max={stage.rules.tempo.max} />}
             <Stat label={measure.label} value={measure.value} />
             {towers.length > 0 && (
               <ul
@@ -281,7 +316,7 @@ export default function StageApp({ slug }: { slug: string }) {
               <div className="text-xs leading-tight text-white/80">
                 Streak {state.streak}
                 <br />
-                next +{stage.rules.bonusForStreak(state.streak + 1)}
+                next +{ringBonus(state.streak + 1, state.tempo, stage.rules)}
               </div>
             )}
           </div>
@@ -359,7 +394,9 @@ export default function StageApp({ slug }: { slug: string }) {
                     ? 'Tap or press Space to aim, and again to fire. '
                     : 'Press and hold to aim; how long you hold sets the distance. Let go to fire. '
                   : 'Tap or press Space to drop. '}
-                {stage.ring.enabled && `Hit the ring for bonus ${stage.objects.drop.plural}. `}
+                {stage.ring.enabled &&
+                  !stage.rules.tempo &&
+                  `Hit the ring for bonus ${stage.objects.drop.plural}. `}
                 {stage.hint && `${stage.hint} `}
                 <span className="italic">{stage.voice.start}</span>
               </p>
@@ -405,11 +442,37 @@ function Loading({ name }: { name: string }) {
   )
 }
 
+/** Seconds as m:ss, rounded up so the clock reads 0:00 only when it's out. */
+function clockText(seconds: number): string {
+  const s = Math.ceil(seconds)
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+
+/** The tempo as a number and a row of pips, so it reads without color. */
+function TempoMeter({ tempo, max }: { tempo: number; max: number }) {
+  return (
+    <div className="text-center" aria-label={`Tempo ${tempo} of ${max}`} role="img">
+      <div className="text-[11px] uppercase tracking-wide text-white/60">
+        {tempo === max ? 'Redline' : 'Tempo'}
+      </div>
+      <div className="text-xl font-bold tabular-nums leading-none sm:text-2xl">{tempo}</div>
+      <div aria-hidden className="mt-0.5 flex justify-center gap-0.5">
+        {Array.from({ length: max }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-1.5 rounded-full ${i < tempo ? 'bg-white' : 'border border-white/40'}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="text-center">
       <div className="text-[11px] uppercase tracking-wide text-white/60">{label}</div>
-      <div className="text-2xl font-bold tabular-nums leading-none">{value}</div>
+      <div className="text-xl font-bold tabular-nums leading-none sm:text-2xl">{value}</div>
     </div>
   )
 }
@@ -481,6 +544,15 @@ function ResultPanel({
         <div className="mt-3 flex justify-center">
           <StarRow earned={outcome.stars} size={30} label={`${outcome.stars} of 3 stars`} />
         </div>
+        {stage.rules.tempo && state.bestTempo >= stage.rules.tempo.max && (
+          <p className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/40 px-3 py-0.5 text-xs font-bold uppercase tracking-wider">
+            <span aria-hidden className="material-symbols-outlined text-[16px]">
+              speed
+            </span>
+            Redline reached
+          </p>
+        )}
+        {outcome.slowed && <p className="mt-1 text-xs text-white/70">Played with Slower arm.</p>}
         <p className="mt-2 text-sm italic text-white/90">
           {outcome.stars >= 1 ? stage.voice.clear : stage.voice.miss}
         </p>
@@ -498,6 +570,12 @@ function ResultPanel({
           </p>
         )}
         <dl className="mt-4 grid grid-cols-3 gap-2 text-xs text-white/70">
+          {stage.rules.tempo && (
+            <div>
+              <dt>Top tempo</dt>
+              <dd className="text-base font-semibold text-white">{state.bestTempo}</dd>
+            </div>
+          )}
           {stage.cannon && (
             <div>
               <dt>Hoops</dt>

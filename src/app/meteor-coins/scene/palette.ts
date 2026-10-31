@@ -36,6 +36,9 @@ export const PALETTE = {
   word: '#2f3f9e',
   dream: '#f7f5ff',
   dreamMark: '#e0a526',
+  /** Redline: amber coins, with bonus coins a paler gold (and notched). */
+  amber: '#f08a24',
+  bonus: '#ffd98a',
   moonstone: '#efe6cf',
   moonstoneMark: '#6f7fae',
   chocolate: '#6b3a22',
