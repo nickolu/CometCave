@@ -1,5 +1,6 @@
 import * as THREE from 'three'
 
+import { deliveryOf } from '@/app/meteor-coins/lib/deliveries'
 import { type StageDef, playableStage } from '@/app/meteor-coins/lib/stages'
 
 import { type Insets, fitCamera, keyPoints } from './framing'
@@ -51,7 +52,7 @@ describe('fitCamera', () => {
 
   it.each(screens)("fits Hoop-La Cannon's cannon, hoops and arcs on a %s", (_, w, h) => {
     const stage = playableStage('hoop-la-cannon') as StageDef
-    const points = keyPoints(undefined, stage.arm, stage.cannon)
+    const points = keyPoints(undefined, stage.arm, deliveryOf(stage))
     const b = projectedBounds(w, h, points)
     expect(b.top).toBeGreaterThanOrEqual(INSETS.top - 1)
     expect(b.bottom).toBeLessThanOrEqual(h - INSETS.bottom + 1)

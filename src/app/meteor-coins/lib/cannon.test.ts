@@ -1,10 +1,16 @@
 import { chargeAfter, flightPath, launchVelocity, muzzleAt, throughHoop } from './cannon'
+import { CannonDelivery } from './deliveries/cannon'
 import { PusherEngine, initPhysics } from './engine'
 import { DropGame } from './game'
 import { type StageDef, playableStage } from './stages'
 
 const HOOP_LA = playableStage('hoop-la-cannon') as StageDef
 const CANNON = HOOP_LA.cannon!
+
+function cannon(game: DropGame): CannonDelivery {
+  if (!(game.delivery instanceof CannonDelivery)) throw new Error('no cannon')
+  return game.delivery
+}
 
 describe('the cannon', () => {
   beforeAll(async () => {
@@ -76,15 +82,15 @@ describe('the cannon', () => {
     const hoop = CANNON.hoops[0]
     // Wait for the swing to point at the hoop, then hold for its charge.
     const target = Math.atan2(hoop.x - CANNON.pivot.x, CANNON.pivot.z - hoop.z)
-    while (Math.abs(game.cannonYaw - target) > 0.01) game.step()
+    while (Math.abs(cannon(game).yaw - target) > 0.01) game.step()
     expect(game.press()).toBe(true)
-    const locked = game.cannonYaw
+    const locked = cannon(game).yaw
     let hooped = false
     for (let i = 0; i < 200 && !hooped; i++) {
-      const path = game.previewPath()
+      const path = cannon(game).previewPath()
       const lines = path.some((p, k) => k > 0 && throughHoop(hoop, path[k - 1], p, 0.5, 0.09))
-      if (lines && game.charge !== null) {
-        expect(game.cannonYaw).toBe(locked)
+      if (lines && cannon(game).charge !== null) {
+        expect(cannon(game).yaw).toBe(locked)
         expect(game.release()).toBe(true)
         expect(game.state.coinsLeft).toBe((HOOP_LA.rules.coins as number) - 1)
         for (let s = 0; s < 120; s++) {
@@ -101,7 +107,7 @@ describe('the cannon', () => {
 
   it('fires on a second tap in tap mode', () => {
     const game = new DropGame(HOOP_LA, { pile: [] })
-    game.setCannonMode('tap')
+    cannon(game).mode = 'tap'
     expect(game.press()).toBe(true)
     for (let i = 0; i < 30; i++) game.step()
     expect(game.release()).toBe(false)

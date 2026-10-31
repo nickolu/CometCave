@@ -23,7 +23,7 @@ import {
   slotOf,
   topDeck,
 } from '@/app/meteor-coins/lib/cabinet'
-import type { CannonConfig } from '@/app/meteor-coins/lib/cannon'
+import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
 import {
   ARM_LENGTH,
   ARM_PIVOT_Y,
@@ -39,7 +39,7 @@ import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { DropGame, GameEvent } from '@/app/meteor-coins/lib/game'
 import type { ObjectSpec, Part, Tone } from '@/app/meteor-coins/lib/objects'
 import { BoardMesh } from '@/app/meteor-coins/scene/BoardMesh'
-import { CannonRig } from '@/app/meteor-coins/scene/CannonRig'
+import { DeliveryRig } from '@/app/meteor-coins/scene/DeliveryRig'
 import { type Insets, fitCamera, keyPoints } from '@/app/meteor-coins/scene/framing'
 import { MoonRig } from '@/app/meteor-coins/scene/MoonRig'
 import { PALETTE } from '@/app/meteor-coins/scene/palette'
@@ -280,10 +280,10 @@ export function Scene({ game, onStep }: { game: DropGame; onStep: (events: GameE
       {/* Swinging arm: pivots above the table, holds the next coin at its tip.
           Where arms take turns there's one per drop line; the one whose turn
           it is holds the coin and wears a bookmark ribbon. */}
-      {game.cannon && <CannonRig game={game} cannon={game.cannon} />}
+      <DeliveryRig game={game} />
       {game.stage.moon && <MoonRig game={game} moon={game.stage.moon} />}
       {table.board && <BoardMesh board={table.board} engine={game.engine} />}
-      {!game.cannon &&
+      {game.delivery.kind === 'arm' &&
         lines.map((z, i) => (
           <group
             key={i}
@@ -726,12 +726,12 @@ export function CabinetCamera({
   insets,
   layout,
   arm,
-  cannon,
+  delivery,
 }: {
   insets: Insets
   layout: Layout
   arm: ArmConfig
-  cannon?: CannonConfig
+  delivery: DeliveryConfig
 }) {
   const get = useThree(s => s.get)
   const size = useThree(s => s.size)
@@ -742,9 +742,43 @@ export function CabinetCamera({
       size.width,
       size.height,
       insets,
-      keyPoints(layout, arm, cannon)
+      keyPoints(layout, arm, delivery)
     )
-  }, [get, size, insets, layout, arm, cannon])
+  }, [get, size, insets, layout, arm, delivery])
 
+  return null
+}
+
+/** Projects a point on screen (in normalized device coordinates) onto the plane y = `y`. */
+export type TableProjection = (
+  ndcX: number,
+  ndcY: number,
+  y: number
+) => { x: number; z: number } | null
+
+/**
+ * Lends the UI the camera, so pointer positions can be turned into table
+ * positions for deliveries that aim by the pointer.
+ */
+export function TableProjector({
+  projectRef,
+}: {
+  projectRef: React.MutableRefObject<TableProjection | null>
+}) {
+  const get = useThree(s => s.get)
+  useEffect(() => {
+    const ray = new THREE.Raycaster()
+    const ndc = new THREE.Vector2()
+    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0)
+    const hit = new THREE.Vector3()
+    projectRef.current = (ndcX, ndcY, y) => {
+      ray.setFromCamera(ndc.set(ndcX, ndcY), get().camera)
+      plane.constant = -y
+      return ray.ray.intersectPlane(plane, hit) ? { x: hit.x, z: hit.z } : null
+    }
+    return () => {
+      projectRef.current = null
+    }
+  }, [get, projectRef])
   return null
 }

@@ -14,6 +14,7 @@ import {
   deckDir,
 } from '@/app/meteor-coins/lib/cabinet'
 import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
+import type { DeliveryConfig } from '@/app/meteor-coins/lib/deliveries'
 import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
 import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
@@ -70,6 +71,12 @@ export type StageDef = {
   arm: ArmConfig
   /** A cannon at the front instead of the arm: coins are fired, not dropped. */
   cannon?: CannonConfig
+  /**
+   * How coins get onto the table, where it's neither the arm nor the cannon
+   * (see lib/deliveries). The arm's settings still matter where bonus coins
+   * pour from its tip.
+   */
+  delivery?: DeliveryConfig
   /** A moon circling over the table that bends everything falling. */
   moon?: MoonConfig
   /** Special objects that drop in on a timetable, each counted down where it will land. */
