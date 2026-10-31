@@ -106,4 +106,47 @@ describe('DropGame', () => {
     expect(game.tapDrop()).toBe(false)
     game.dispose()
   }, 60_000)
+
+  it('moves the middle Cairn post with the pusher and counts a coin landed on it', () => {
+    const cairn = playableStage('the-cairn') as StageDef
+    const game = new DropGame(cairn)
+    expect(game.state.towers).toEqual([0, 0, 0])
+    // Wait for a drop that lands square on the middle post, then drop it.
+    let steps = 0
+    while (!(game.landing().post === 1 && game.landing().offset < 0.1) && steps < 60 * 60) {
+      game.step()
+      steps++
+    }
+    expect(game.tapDrop()).toBe(true)
+    const zAtDrop = game.engine.pusherZ
+    for (let i = 0; i < 90; i++) game.step()
+    expect(game.engine.pusherZ).not.toBeCloseTo(zAtDrop, 1)
+    expect(game.state.towers).toEqual([0, 1, 0])
+    game.dispose()
+  })
+
+  it('slides whatever misses the posts off the ice', () => {
+    const cairn = playableStage('the-cairn') as StageDef
+    const game = new DropGame(cairn, { pile: [{ p: [1.1, 0.09, 0.6], q: [0, 0, 0, 1] }] })
+    let fell = 0
+    for (let i = 0; i < 60 * 5; i++) fell += game.step().filter(e => e.type === 'fall').length
+    expect(fell).toBe(1)
+    game.dispose()
+  })
+
+  it("takes turns between The Bedtime Book's pages, and scores what falls into the spine", () => {
+    const book = playableStage('the-bedtime-book') as StageDef
+    const game = new DropGame(book, { pile: [] })
+    const back = game.armTip().z
+    expect(game.dropDeck.pusher.reversed).toBeFalsy()
+    expect(game.tapDrop()).toBe(true)
+    expect(game.dropDeck.pusher.reversed).toBe(true)
+    expect(game.armTip().z).toBeCloseTo(-back, 6)
+    // A word dropped straight into the spine falls through and scores.
+    game.engine.spawn(0, 1, 0, 'player')
+    for (let i = 0; i < 60; i++) game.step()
+    expect(game.state.score).toBe(1)
+    expect(game.state.lost).toBe(0)
+    game.dispose()
+  })
 })

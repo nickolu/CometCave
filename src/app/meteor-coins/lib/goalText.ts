@@ -81,10 +81,27 @@ export function nextStarSentence(stage: StageDef, s: GameState): string {
   }
   const next = nextStar(s, goal)
   if (!next) return 'Every star on this stage.'
+  if (goal.type === 'stack') return `A height of ${next.at} for ${starWord(next.stars)}.`
   if (goal.type === 'target') {
     return `Finish with ${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
   }
   return `${next.at} ${stage.measure.caption} for ${starWord(next.stars)}.`
+}
+
+/**
+ * Each tower's height, by post name, for a stack goal: "Left 4", "Middle 3 ×2".
+ * Empty for other goals.
+ */
+export function towerLines(stage: StageDef, s: GameState): string[] {
+  const { goal } = stage.rules
+  if (goal.type !== 'stack') return []
+  const names = (stage.table.obstacles ?? []).flatMap(o =>
+    o.type === 'post' && o.tower ? [o.tower] : []
+  )
+  return names.map((name, i) => {
+    const weight = goal.weights[i] ?? 1
+    return `${name} ${s.towers[i] ?? 0}${weight > 1 ? ` ×${weight}` : ''}`
+  })
 }
 
 /** The map card's line for a stored best. */

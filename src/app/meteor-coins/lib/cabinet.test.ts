@@ -1,13 +1,21 @@
 import {
   BACK_WALL_Z,
   CHUTE_HALF_WIDTH,
+  CLASSIC_LAYOUT,
   FIELD_BACK_Z,
+  type Layout,
   PUSHER_AMP_Z,
   PUSHER_DEPTH,
   PUSHER_MID_Z,
   classifyFall,
+  deckFaceZ,
+  deckPusherZ,
+  fieldBackZ,
+  overEdge,
   pusherCenterZ,
+  slotOf,
 } from './cabinet'
+import { type StageDef, playableStage } from './stages'
 
 describe('cabinet geometry', () => {
   it('keeps the back of the pusher behind the back wall at full extension', () => {
@@ -34,5 +42,53 @@ describe('classifyFall', () => {
     expect(classifyFall(CHUTE_HALF_WIDTH)).toBe('chute')
     expect(classifyFall(-CHUTE_HALF_WIDTH - 0.01)).toBe('gutter')
     expect(classifyFall(3.5)).toBe('gutter')
+  })
+})
+
+describe('deck layouts', () => {
+  it('keeps the classic table exactly as it was', () => {
+    for (const t of [0, 0.4, 1.7, 3.1]) {
+      expect(deckPusherZ(CLASSIC_LAYOUT[0], t)).toBe(pusherCenterZ(t))
+    }
+    expect(fieldBackZ(CLASSIC_LAYOUT)).toBe(FIELD_BACK_Z)
+  })
+
+  it('stacks The Cascade Engine so each deck spills onto the pusher below', () => {
+    const layout = (playableStage('the-cascade-engine') as StageDef).table.layout as Layout
+    for (let i = 1; i < layout.length; i++) {
+      const below = layout[i - 1]
+      const faceMin = below.pusher.midZ - below.pusher.ampZ + below.pusher.depth / 2
+      // The upper edge overhangs the lower pusher's top, even pulled back…
+      expect(layout[i].frontZ).toBe(below.backZ)
+      expect(below.backZ).toBeLessThan(faceMin)
+      // …and the lower pusher's back end never comes out from under it.
+      expect(below.pusher.midZ + below.pusher.ampZ - below.pusher.depth / 2).toBeLessThan(
+        layout[i].frontZ
+      )
+    }
+  })
+
+  it("sets The Bedtime Book's pages face to face, pushing into the spine", () => {
+    const layout = (playableStage('the-bedtime-book') as StageDef).table.layout as Layout
+    const [back, front] = layout
+    expect(slotOf(layout)).toEqual([back.frontZ, front.frontZ])
+    for (const page of layout) {
+      // At full reach the face stops short of the spine, and each pusher's
+      // far end stays behind its wall all the way through the stroke.
+      const toward = Math.sign(page.frontZ - page.backZ)
+      expect(toward * (page.frontZ - deckFaceZ(page, 1))).toBeGreaterThan(2)
+      const farEnd = deckFaceZ(page, 1) - toward * page.pusher.depth
+      expect(toward * (page.backZ - farEnd)).toBeGreaterThanOrEqual(0)
+    }
+    // Half a stroke apart: while one page pushes, the other pulls back.
+    const zs = (t: number) => layout.map(page => deckPusherZ(page, t))
+    const [b0, f0] = zs(0)
+    const [b1, f1] = zs(0.4)
+    expect(b1 - b0).toBeGreaterThan(0)
+    expect(f1 - f0).toBeGreaterThan(0)
+    // The spine is the only way off the table.
+    expect(overEdge(layout, 0)).toBeGreaterThan(0)
+    expect(overEdge(layout, -3)).toBeLessThan(0)
+    expect(overEdge(layout, 3)).toBeLessThan(0)
   })
 })
