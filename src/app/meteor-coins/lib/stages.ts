@@ -1,5 +1,6 @@
 import {
   CHUTE_HALF_WIDTH,
+  DROP_Z,
   type Deck,
   FIELD_FRONT_Z,
   FIELD_HALF_WIDTH,
@@ -13,15 +14,18 @@ import {
 import { type CannonConfig } from '@/app/meteor-coins/lib/cannon'
 import { ARM_PERIOD_S, type ArmConfig, type RingConfig } from '@/app/meteor-coins/lib/dropper'
 import type { Obstacle } from '@/app/meteor-coins/lib/engine'
+import type { MoonConfig } from '@/app/meteor-coins/lib/moon'
 import {
   AMBER,
   AMBER_BONUS,
   CHOCOLATE,
   COIN,
   DUCK,
+  METEORITE,
   MOONSTONE,
   type ObjectId,
   type ObjectSpec,
+  SILVER,
   type Tone,
   WORD,
 } from '@/app/meteor-coins/lib/objects'
@@ -61,6 +65,10 @@ export type StageDef = {
   arm: ArmConfig
   /** A cannon at the front instead of the arm: coins are fired, not dropped. */
   cannon?: CannonConfig
+  /** A moon circling over the table that bends everything falling. */
+  moon?: MoonConfig
+  /** Special objects that drop in on a timetable, each counted down where it will land. */
+  meteors?: MeteorShower
   ring: { enabled: boolean } & RingConfig
   /**
    * What the arm drops and the pile is mostly made of, and how bonus coins
@@ -84,6 +92,18 @@ export type StageDef = {
   voice: { start: string; clear: string; miss: string }
   /** How to play, in plain words, where tapping to drop isn't the whole story. */
   hint?: string
+}
+
+/**
+ * A timetable of special objects dropping in from `y`: each is announced
+ * right after the player's `afterDrop`th coin and drops in `warnS` later.
+ * Tied to drops rather than the clock, so every run sees all of them.
+ */
+export type MeteorShower = {
+  object: ObjectSpec
+  y: number
+  warnS: number
+  schedule: readonly { afterDrop: number; x: number; z: number }[]
 }
 
 export type PileRecipe = {
@@ -544,6 +564,79 @@ const THE_BEDTIME_BOOK: StageDef = {
   },
 }
 
+/** Gravity Assist's posts: one at each front corner, narrowing the way into the gutters. */
+const GRAVITY_POSTS: Obstacle[] = [-3.2, 3.2].map(x => ({
+  type: 'post',
+  x,
+  z: 3.1,
+  radius: 0.3,
+  height: 0.9,
+}))
+
+const GRAVITY_ASSIST: StageDef = {
+  number: 9,
+  slug: 'gravity-assist',
+  name: 'Gravity Assist',
+  pitch:
+    'A small moon orbits above the table and bends every falling coin, visibly. Meteorites land on a fixed timetable.',
+  playable: true,
+  table: {
+    chuteHalfWidth: CHUTE_HALF_WIDTH,
+    pusherPeriodS: PUSHER_PERIOD_S,
+    obstacles: GRAVITY_POSTS,
+  },
+  // Hung higher than usual, so coins fall long enough for the bend to show.
+  arm: { periodS: ARM_PERIOD_S, pivotY: 14.5 },
+  // In front of the drop line, out over the shelf: falling coins pass by it
+  // and bend toward its side (see lib/moon for why never forward).
+  moon: {
+    center: { x: 0, y: 5.5, z: DROP_Z + 2 },
+    radiusX: 2.6,
+    radiusZ: 0.4,
+    periodS: 7,
+    strength: 30,
+    softening: 0.6,
+    minY: 1.6,
+  },
+  // Worth a single coin: the pusher is the game. The moon moves where a
+  // coin crosses it, so the dotted line is how you line it up.
+  ring: { enabled: true },
+  objects: { drop: SILVER },
+  cue: 'chevrons',
+  pile: 'gravity-assist',
+  bake: { seed: 9, floor: 150, top: 14 },
+  meteors: {
+    object: METEORITE,
+    y: 6,
+    warnS: 3,
+    // Near the lip, inside the chute, so a few well-timed pushes bring each one home.
+    schedule: [
+      { afterDrop: 4, x: -1.2, z: 2.4 },
+      { afterDrop: 10, x: 1.1, z: 2.0 },
+      { afterDrop: 16, x: 0, z: 2.6 },
+      { afterDrop: 22, x: -0.7, z: 1.8 },
+      { afterDrop: 28, x: 1.5, z: 2.4 },
+      { afterDrop: 34, x: 0.4, z: 2.1 },
+    ],
+  },
+  rules: {
+    coins: 40,
+    bonusForStreak: () => 1,
+    // From the sim (12 games each): a random tapper averages 24 (a star a
+    // quarter of the time). Dropping on the beat, judged where the bent coin
+    // lands, averages 50 (★★ 58%, ★★★ 25%); also aiming behind meteorites
+    // and taking ring lineups off the dotted line averages 58 (★★★ 50%).
+    goal: { type: 'score', stars: [25, 45, 60] },
+  },
+  measure: { label: 'Score', caption: 'points into the chute' },
+  hint: 'The moon bends every falling coin; the dotted line shows where. A meteorite is worth 5.',
+  voice: {
+    start: 'Watch the moon. It pulls on everything that falls.',
+    clear: 'Gravity assist! Your coins borrowed a little speed from the moon.',
+    miss: 'The moon will come round again.',
+  },
+}
+
 /** Redline's pegs: two posts near the lip that split the flow off the front. */
 const REDLINE_PEGS: Obstacle[] = [-1.4, 1.4].map(x => ({
   type: 'post',
@@ -623,7 +716,7 @@ export const STAGES: readonly Stage[] = [
     'The Doorstop',
     'Eight coins and a wedged bar that only swings from one end.'
   ),
-  soon(9, 'gravity-assist', 'Gravity Assist', 'A small moon bends every falling coin.'),
+  GRAVITY_ASSIST,
   THE_BEDTIME_BOOK,
   REDLINE,
   soon(12, 'comet-homecoming', 'Comet Homecoming', 'Help a sleepy giant comet back home.'),

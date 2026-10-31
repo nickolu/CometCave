@@ -70,12 +70,18 @@ export function launchVelocity(yaw: number, power: number, c: CannonConfig): Vec
   return { x: flat * Math.sin(yaw), y: speed * Math.sin(c.elevation), z: -flat * Math.cos(yaw) }
 }
 
-/** The arc a coin fired now would fly, step by step, until `stop` says it's done. */
+/**
+ * The arc a coin fired now would fly, step by step, until `stop` says it's
+ * done. `accel` is any pull besides gravity (Gravity Assist's moon), given
+ * where the body is and which step it's on, applied as the game applies
+ * it: added to the velocity just before each physics step.
+ */
 export function flightPath(
   start: Vec,
   velocity: Vec,
   stop: (p: Vec) => boolean,
-  maxSteps = 240
+  maxSteps = 240,
+  accel?: (p: Vec, step: number) => Vec
 ): Vec[] {
   const dt = PHYSICS_STEP_S
   const damp = 1 / (1 + dt * LINEAR_DAMPING)
@@ -83,6 +89,12 @@ export function flightPath(
   let { x: vx, y: vy, z: vz } = velocity
   const points: Vec[] = [{ x, y, z }]
   for (let i = 0; i < maxSteps; i++) {
+    if (accel) {
+      const a = accel({ x, y, z }, i)
+      vx += a.x * dt
+      vy += a.y * dt
+      vz += a.z * dt
+    }
     x += vx * dt
     y += (vy + GRAVITY * dt * SUBSTEP_GRAVITY) * dt
     z += vz * dt

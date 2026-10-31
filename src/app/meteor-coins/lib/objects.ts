@@ -230,6 +230,50 @@ export const AMBER_BONUS: ObjectSpec = {
   ],
 }
 
+/** Gravity Assist's coin: silver. Plays exactly like a coin. */
+export const SILVER: ObjectSpec = {
+  ...COIN,
+  parts: [{ shape: 'cylinder', radius: PUCK_RADIUS, height: PUCK_THICKNESS, tone: 'silver' }],
+}
+
+/**
+ * A dark meteorite, worth 5: a thick disc (so it settles instead of
+ * rolling away) with three craters on top.
+ */
+export const METEORITE: ObjectSpec = {
+  id: 'meteorite',
+  name: 'meteorite',
+  plural: 'meteorites',
+  parts: [
+    { shape: 'cylinder', radius: 0.58, height: 0.34, tone: 'meteorite' },
+    ...(
+      [
+        [0.24, 0.1, 0.12],
+        [-0.2, 0.22, 0.09],
+        [-0.12, -0.26, 0.1],
+      ] as const
+    ).map(
+      ([x, z, r]): Part => ({
+        shape: 'arc',
+        radius: r,
+        tube: 0.035,
+        arc: Math.PI * 2,
+        at: [x, 0.175, z],
+        tone: 'meteoriteMark',
+        visualOnly: true,
+      })
+    ),
+  ],
+  // Heavier than a coin, but light enough for the pile to push: at 2.5× it
+  // sat on top of the coins and dammed the shelf.
+  density: 1.3,
+  friction: 0.6,
+  restitution: 0.02,
+  points: 5,
+  refund: 0,
+  reach: 0.58,
+}
+
 const DREAM_SIDE = 0.8
 
 /** A white square with a crescent moon on it, worth 5 words. */
@@ -266,6 +310,7 @@ export const OBJECTS = {
   'mama-duck': MAMA_DUCK,
   word: WORD,
   dream: DREAM,
+  meteorite: METEORITE,
 }
 
 export type ObjectId = keyof typeof OBJECTS

@@ -39,6 +39,12 @@ export const PALETTE = {
   /** Redline: amber coins, with bonus coins a paler gold (and notched). */
   amber: '#f08a24',
   bonus: '#ffd98a',
+  /** Gravity Assist: silver coins, dark meteorites, a pale moon. */
+  silver: '#c9d1e3',
+  meteorite: '#4a3b36',
+  meteoriteMark: '#ff9a5c',
+  moon: '#e6e9f5',
+  moonMark: '#a7aec7',
   moonstone: '#efe6cf',
   moonstoneMark: '#6f7fae',
   chocolate: '#6b3a22',
