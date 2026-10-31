@@ -274,6 +274,36 @@ export const METEORITE: ObjectSpec = {
   reach: 0.58,
 }
 
+/**
+ * Comet Homecoming's comet core: a wide, heavy pale-blue disc with a raised
+ * star-shaped cap (a cap and five points), worth 40.
+ */
+export const CORE: ObjectSpec = {
+  id: 'core',
+  name: 'comet core',
+  plural: 'comet cores',
+  parts: [
+    { shape: 'cylinder', radius: 0.95, height: 0.42, tone: 'core' },
+    { shape: 'cylinder', radius: 0.3, height: 0.12, at: [0, 0.27, 0], tone: 'coreMark' },
+    ...Array.from(
+      { length: 5 },
+      (_, i): Part => ({
+        shape: 'box',
+        size: [0.16, 0.08, 0.34],
+        at: [0.42 * Math.sin((i * 2 * Math.PI) / 5), 0.25, 0.42 * Math.cos((i * 2 * Math.PI) / 5)],
+        tone: 'coreMark',
+        visualOnly: true,
+      })
+    ),
+  ],
+  density: 0.9,
+  friction: 0.15,
+  restitution: 0.02,
+  points: 40,
+  refund: 0,
+  reach: 0.95,
+}
+
 const DREAM_SIDE = 0.8
 
 /** A white square with a crescent moon on it, worth 5 words. */
@@ -311,6 +341,7 @@ export const OBJECTS = {
   word: WORD,
   dream: DREAM,
   meteorite: METEORITE,
+  core: CORE,
 }
 
 export type ObjectId = keyof typeof OBJECTS
