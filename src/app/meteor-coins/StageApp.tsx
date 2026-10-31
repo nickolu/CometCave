@@ -444,8 +444,8 @@ export default function StageApp({ slug }: { slug: string }) {
   return (
     <div className="fixed inset-0 z-40 select-none bg-ds-background text-white">
       <Link
-        href="/"
-        aria-label="Return to the cave"
+        href="/meteor-coins"
+        aria-label="Back to stages"
         className="absolute left-2 top-2 z-50 flex min-h-11 min-w-11 items-center justify-center rounded-md px-2 text-sm text-white/60 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       >
         ✕
