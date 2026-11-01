@@ -16,17 +16,20 @@ import { hoopHit } from '@/app/meteor-coins/lib/rules'
  * the strip of pusher top the arm drops on elsewhere), and the ball rolls
  * down the lane where the player aimed it, as hard as they threw it. The
  * lane is slick, so a pin the ball hits slides and scatters into the others
- * instead of standing its ground. Pins knocked off the deck fall into the
- * pit or over the sides, onto the pusher, which carries them to the chute
- * like any other coin. A ball rolled wide drops into a gutter and runs past
- * the pins.
+ * instead of standing its ground. Only coins knocked off the deck pay: they
+ * fall into the pit or over the sides, onto the pusher, which carries them
+ * to the chute like any other coin. A ball rolled wide drops into a gutter
+ * and runs past the pins.
  *
- * Then the pinsetter does what a real one does: it lifts the pins still
- * standing, a bar sweeps the knocked-down coins on the deck into the pit,
- * and the standing pins come back down for the second ball. After the
- * second ball (or a strike) the pins left standing are lifted away for
- * good and a fresh rack comes down. A strike pours `strikeBonus` coins
- * into the pit, a spare `spareBonus`.
+ * Every frame is two balls at the same rack, and nothing is swept between
+ * them: a pin the first ball only topples lies on the deck for the second
+ * ball to finish off. (A pinsetter's sweep used to push every toppled coin
+ * into the pit, so a glancing hit paid the same as a crushing one and the
+ * ball hardly mattered.) After the second ball the pinsetter lifts away
+ * whatever is left on the lane, standing or lying, and a fresh rack comes
+ * down. A strike (all six down on the first ball) pours `strikeBonus` coins
+ * into the pit and a spare (the rest down on the second) `spareBonus`; the
+ * second ball still rolls after a strike, at the coins the strike left.
  *
  * Controls: a swipe up the lane bowls — its direction is the aim and its
  * length the strength. On the keyboard the arrows turn the aim and holding
@@ -105,25 +108,13 @@ export const MOON_BALL: ObjectSpec = {
 
 /** Pins in the rack: a triangle of three rows. */
 export const PIN_ROWS = 3
-/** How long the pinsetter takes to lift (or lower) pins, and to sweep the deck. */
+/** How long the pinsetter takes to lift (or lower) pins, and how long it holds them up between. */
 export const LIFT_S = 0.35
-export const SWEEP_S = 1.2
+export const HOLD_S = 0.3
 /** How high the pinsetter lifts pins, above where they stand. */
 export const LIFT_HEIGHT = 1.2
-/**
- * The sweep bar: its height and depth, and where it starts in front of the
- * head pin. Tall enough to catch a knocked coin lying on top of others, not
- * only ones flat on the deck: a bar half as tall passed under them.
- */
-export const BAR_HEIGHT = 0.65
-export const BAR_DEPTH = 0.15
-const BAR_LEAD = 1.4
-/** The bar's weight per volume: about two, some fifteen coins' worth. */
-const BAR_DENSITY = 6
-/** The fastest the bar is driven to catch up with where it should be. */
-const BAR_MAX_SPEED = 5
-/** Where the bar waits, out of everything's way, between sweeps. */
-const PARKED_Y = 30
+/** How far in front of the head pin the pinsetter's plate is drawn reaching (scene/BowlingRig). */
+export const PLATE_LEAD = 1.4
 /** How fast the arrows turn the aim, in radians per second. */
 const AIM_RATE = 0.4
 /** A swipe shorter than this (table units) is a tap, not a throw. */
@@ -148,6 +139,8 @@ const STILL_SPEED = 0.25
  * short) left a pin up after nearly every hit, and almost no strikes.
  */
 const SPOT_TOLERANCE = 0.3
+/** How far a coin can lean off the bottom coin's centre and still be part of its stack. */
+const STACK_TOLERANCE = 0.3
 /** How a gutter ball runs: sunk this far below the lane, at least this fast. */
 const GUTTER_SINK = 0.25
 const GUTTER_MIN_SPEED = 2.5
@@ -219,33 +212,27 @@ export function swipeShot(
   return { aim, power }
 }
 
-/**
- * Where the sweep bar's middle is, `t` (0 to 1) of the way through a sweep:
- * from in front of the head pin to where its leading face meets the deck's
- * back edge. It stops there rather than reaching over the pit, where it
- * squeezed coins heaped up to the deck against the back wall and threw them
- * out of the cabinet.
- */
-export function sweepBarZ(t: number, c: BowlingConfig): number {
-  const from = c.headZ + BAR_LEAD
-  const to = c.endZ + BAR_DEPTH / 2
-  return from + (to - from) * t
-}
-
-/** How high the pinsetter holds its pins `t` seconds into a reset: up, held through the sweep, down. */
+/** How high the pinsetter holds its pins `t` seconds into a reset: up, held a moment, down. */
 export function liftAt(t: number): number {
   if (t < LIFT_S) return Math.max(0, t / LIFT_S)
-  if (t < LIFT_S + SWEEP_S) return 1
-  return Math.max(0, 1 - (t - LIFT_S - SWEEP_S) / LIFT_S)
+  if (t < LIFT_S + HOLD_S) return 1
+  return Math.max(0, 1 - (t - LIFT_S - HOLD_S) / LIFT_S)
 }
+
+/** How long a reset takes: the old rack up, a moment held, the new one down. */
+export const RESET_S = LIFT_S * 2 + HOLD_S
 
 type Phase = 'ready' | 'rolling' | 'settling' | 'resetting'
 
 /** A coin the pinsetter holds: where it stands on the deck, and its turn. */
 type Held = { index: number; x: number; y: number; z: number; q: RAPIER.Rotation }
 
-/** What the last finished ball did, for the scoreboard. */
-export type Call = 'strike' | 'spare' | 'down' | 'gutter' | null
+/**
+ * What the last finished ball did, for the scoreboard: a strike or spare,
+ * pins knocked down, coins knocked off the deck (with no pin to its name,
+ * after a strike), or nothing.
+ */
+export type Call = 'strike' | 'spare' | 'down' | 'off' | 'gutter' | null
 
 export class BowlingDelivery implements Delivery {
   readonly kind = 'bowling'
@@ -267,11 +254,14 @@ export class BowlingDelivery implements Delivery {
   /** The pins knocked down by the last ball, and by every ball so far. */
   lastKnocked = 0
   pinsDown = 0
+  /** The coins the last ball knocked off the deck (onto the pusher), and every ball's so far. */
+  lastOff = 0
+  coinsOff = 0
   phase: Phase = 'ready'
   /** When the current phase started (physics time). */
   phaseAt = 0
-  /** Whether this reset ends the frame (fresh rack) or sets up the second ball. */
-  private frameOver = false
+  /** The coins on the lane when the ball was bowled: those gone at the end of the roll were knocked off. */
+  private onLane = new Set<number>()
   /** The swipe in progress: where it started and where the pointer is now. */
   swipe: { from: { x: number; z: number }; to: { x: number; z: number } } | null = null
   /** When the held strength meter started (arm time), or null. */
@@ -285,14 +275,15 @@ export class BowlingDelivery implements Delivery {
   private rollAt = 0
   private gutter: { side: number; speed: number } | null = null
   private stillFor = 0
-  /** Coins the pinsetter holds up (standing pins between balls, or a fresh rack coming down). */
+  /** Coins the pinsetter holds up: a fresh rack coming down. */
   held: Held[] = []
-  /** The standing pins being lifted away for good at the end of a frame. */
-  private retiring: Held[] = []
+  /** Whatever was left on the lane at the end of a frame, being lifted away for good. */
+  private clearing: Held[] = []
+  /** Whether this reset has swapped the old rack for a fresh one yet. */
+  private racked = false
   readonly spots: PinSpot[]
   /** The coins each pin of the rack was set with (all of them, unless the pool ran short). */
   private pinHeights: number[]
-  private readonly bar: RAPIER.RigidBody
   private pours = 0
   private paid = 0
 
@@ -333,26 +324,6 @@ export class BowlingDelivery implements Delivery {
         fixed
       )
     }
-    // The pinsetter's sweep bar. It's a heavy body driven along the deck,
-    // not a kinematic one: a kinematic bar can't be stopped, and where the
-    // pit had heaped up to the deck after a strike it crushed coins against
-    // the back wall and threw them out of the cabinet. This one pushes about
-    // fifteen coins' weight and stalls against anything more. It rides only
-    // along the lane, upright, and sleeps out of the way between sweeps.
-    this.bar = world.createRigidBody(
-      RAPIER.RigidBodyDesc.dynamic()
-        .setTranslation(0, PARKED_Y, c.headZ)
-        .setGravityScale(0)
-        .lockRotations()
-        .enabledTranslations(false, false, true)
-        .setEnabled(false)
-    )
-    world.createCollider(
-      RAPIER.ColliderDesc.cuboid(c.halfWidth - 0.03, BAR_HEIGHT / 2, BAR_DEPTH / 2)
-        .setFriction(0.2)
-        .setDensity(BAR_DENSITY),
-      this.bar
-    )
     this.ball = engine.addParked(MOON_BALL)
     engine.pucks[this.ball].body.collider(0).setCollisionGroups(BALL_GROUPS)
     this.returnBall()
@@ -384,11 +355,6 @@ export class BowlingDelivery implements Delivery {
       return shot ?? { aim: this.aim, power: null }
     }
     return { aim: this.aim, power: this.meter }
-  }
-
-  /** Where the sweep bar is along the deck, or null when it isn't sweeping. */
-  get sweepZ(): number | null {
-    return this.bar.isEnabled() ? this.bar.translation().z : null
   }
 
   /** How high the pinsetter holds its pins now, 0 (down on the deck) to 1. */
@@ -489,6 +455,7 @@ export class BowlingDelivery implements Delivery {
     )
     if (index === null) return false
     this.paid++
+    this.onLane = new Set(this.coinsOnLane())
     const speed = ballSpeed(power, c)
     const d = aimDirection(this.aim)
     const body = this.host.engine.pucks[this.ball].body
@@ -567,7 +534,13 @@ export class BowlingDelivery implements Delivery {
     this.setPhase('settling')
   }
 
-  /** Once the deck is still, judges the ball and starts the pinsetter. */
+  /**
+   * Once the deck is still, judges the ball. After the first ball of a
+   * frame the ball comes straight back, to the same rack and whatever the
+   * first ball left lying; after the second the pinsetter clears the lane
+   * and sets a fresh rack (unless that was the last ball: then there's
+   * nothing more to set).
+   */
   private waitForPins(events: GameEvent[]) {
     const t = this.host.engine.time - this.phaseAt
     if (t < SETTLE_MIN_S) return
@@ -577,17 +550,25 @@ export class BowlingDelivery implements Delivery {
     const after = this.pinsStanding
     this.lastKnocked = before - after
     this.pinsDown += this.lastKnocked
+    const still = new Set(this.coinsOnLane())
+    this.lastOff = [...this.onLane].filter(i => !still.has(i)).length
+    this.coinsOff += this.lastOff
     const strike = this.ballInFrame === 1 && after === 0
-    const spare = this.ballInFrame === 2 && after === 0
-    const outOfBalls = !this.host.canDrop
-    this.frameOver = strike || this.ballInFrame === 2
+    const spare = this.ballInFrame === 2 && before > 0 && after === 0
     if (strike) this.call('strike', this.config.strikeBonus, events)
     else if (spare) this.call('spare', this.config.spareBonus, events)
-    else this.call(this.lastKnocked === 0 ? 'gutter' : 'down', 0, events)
-    // After the last ball the deck is still swept, so every pin knocked
-    // down reaches the pusher, but no fresh rack comes.
-    if (outOfBalls) this.frameOver = false
-    this.startReset()
+    else if (this.lastKnocked > 0) this.call('down', 0, events)
+    else if (this.lastOff > 0) this.call('off', 0, events)
+    else this.call('gutter', 0, events)
+    if (this.ballInFrame === 1) {
+      this.ballInFrame = 2
+      this.returnBall()
+      this.setPhase('ready')
+    } else if (this.host.canDrop) {
+      this.startReset()
+    } else {
+      this.setPhase('ready')
+    }
   }
 
   private call(call: Call, bonus: number, events: GameEvent[]) {
@@ -604,7 +585,14 @@ export class BowlingDelivery implements Delivery {
         announce: `${word} ${bonus} bonus coins.`,
       })
     } else if (call === 'gutter') {
-      events.push({ type: 'callout', text: 'Gutter ball', announce: 'Gutter ball. No pins down.' })
+      events.push({ type: 'callout', text: 'Gutter ball', announce: 'Gutter ball. Nothing down.' })
+    } else if (call === 'off') {
+      const n = this.lastOff
+      events.push({
+        type: 'callout',
+        text: `${n} ${n === 1 ? 'coin' : 'coins'} off`,
+        announce: `${n} ${n === 1 ? 'coin' : 'coins'} knocked off the deck.`,
+      })
     } else {
       events.push({
         type: 'callout',
@@ -612,6 +600,18 @@ export class BowlingDelivery implements Delivery {
         announce: `${this.lastKnocked} pins down.`,
       })
     }
+  }
+
+  /** The coins on the lane now (standing or lying, anywhere on it), by index. */
+  private coinsOnLane(): number[] {
+    const c = this.config
+    const on: number[] = []
+    this.host.engine.pucks.forEach((puck, index) => {
+      if (!puck.active || index === this.ball || !puck.body.isEnabled()) return
+      const p = puck.body.translation()
+      if (p.y > c.y && Math.abs(p.x) < c.halfWidth && p.z > c.endZ && p.z < c.frontZ) on.push(index)
+    })
+    return on
   }
 
   /** Whether every coin on the deck has stopped moving. */
@@ -629,7 +629,9 @@ export class BowlingDelivery implements Delivery {
 
   /**
    * Each spot's pin, if it's still standing: the coins stacked on it, bottom
-   * first, with the bottom one flat on the deck where the pin was set.
+   * first, with the bottom one flat on the deck where the pin was set. A
+   * coin lying loose beside a pin (nothing clears the deck between a
+   * frame's two balls) is neither its bottom nor part of its stack.
    */
   measurePins(): (number[] | null)[] {
     const c = this.config
@@ -644,86 +646,62 @@ export class BowlingDelivery implements Delivery {
       if (Math.abs(upY) < 0.9) return
       onDeck.push({ index, x: p.x, y: p.y, z: p.z })
     })
+    onDeck.sort((a, b) => a.y - b.y)
     return this.spots.map((spot, i) => {
       if (!this.standing[i]) return null
-      const stack = onDeck
-        .filter(p => Math.hypot(p.x - spot.x, p.z - spot.z) < SPOT_TOLERANCE + 0.25)
-        .sort((a, b) => a.y - b.y)
-      const bottom = stack[0]
+      const bottom = onDeck.find(
+        p =>
+          Math.abs(p.y - (c.y + PUCK_THICKNESS / 2)) < 0.06 &&
+          Math.hypot(p.x - spot.x, p.z - spot.z) < SPOT_TOLERANCE
+      )
       if (!bottom) return null
-      const flatOnDeck = Math.abs(bottom.y - (c.y + PUCK_THICKNESS / 2)) < 0.06
-      const onSpot = Math.hypot(bottom.x - spot.x, bottom.z - spot.z) < SPOT_TOLERANCE
-      if (!flatOnDeck || !onSpot || stack.length < this.pinHeights[i]) return null
+      const stack = onDeck.filter(
+        p => p.y >= bottom.y - 0.01 && Math.hypot(p.x - bottom.x, p.z - bottom.z) < STACK_TOLERANCE
+      )
+      if (stack.length < this.pinHeights[i]) return null
       return stack.map(p => p.index)
     })
   }
 
   /**
-   * The pinsetter starts: the standing pins go up, clear of the sweep. At
-   * the end of a frame they're lifted away for good; otherwise they come
-   * back down for the next ball.
+   * The frame is over: the pinsetter takes hold of everything left on the
+   * lane, standing pins and lying coins alike, to lift it away for good.
    */
   private startReset() {
     const engine = this.host.engine
-    const holds = this.measurePins()
-      .flatMap(pin => pin ?? [])
-      .map(index => {
-        const body = engine.pucks[index].body
-        const t = body.translation()
-        body.setEnabled(false)
-        return { index, x: t.x, y: t.y, z: t.z, q: body.rotation() }
-      })
-    if (this.frameOver) this.retiring = holds
-    else this.held = holds
+    this.clearing = this.coinsOnLane().map(index => {
+      const body = engine.pucks[index].body
+      const t = body.translation()
+      body.setEnabled(false)
+      return { index, x: t.x, y: t.y, z: t.z, q: body.rotation() }
+    })
+    this.racked = false
     this.setPhase('resetting')
   }
 
-  /** One step of the pinsetter: lift, sweep, lower (or a fresh rack), then the ball comes back. */
+  /** One step of the pinsetter: the old rack up and away, a fresh one down, then the ball comes back. */
   private runPinsetter() {
-    const c = this.config
     const engine = this.host.engine
     // This step's time: the engine's clock moves on after beforeStep.
     const t = engine.time + PHYSICS_STEP_S - this.phaseAt
     const lift = liftAt(t)
-    for (const h of [...this.held, ...this.retiring]) {
+    if (t >= LIFT_S && !this.racked) {
+      // Lifted away for good: back to the pool. The fresh rack takes its place, held up.
+      for (const h of this.clearing) {
+        engine.pucks[h.index].body.setEnabled(true)
+        engine.remove(h.index)
+      }
+      this.clearing = []
+      this.racked = true
+      this.setRack()
+      this.frame++
+      this.ballInFrame = 1
+    }
+    for (const h of [...this.held, ...this.clearing]) {
       const body = engine.pucks[h.index].body
       body.setTranslation({ x: h.x, y: h.y + lift * LIFT_HEIGHT, z: h.z }, false)
     }
-    const sweepT = (t - LIFT_S) / SWEEP_S
-    if (sweepT >= 0 && sweepT <= 1) {
-      if (this.retiring.length) {
-        // Lifted away for good: back to the pool.
-        for (const h of this.retiring) {
-          engine.pucks[h.index].body.setEnabled(true)
-          engine.remove(h.index)
-        }
-        this.retiring = []
-      }
-      const z = sweepBarZ(sweepT, c)
-      if (!this.bar.isEnabled()) {
-        this.bar.setTranslation({ x: 0, y: c.y + BAR_HEIGHT / 2 + 0.01, z: sweepBarZ(0, c) }, true)
-        this.bar.setEnabled(true)
-      }
-      // Driven toward where it should be by the end of this step.
-      const at = this.bar.translation().z
-      const vz = Math.max(-BAR_MAX_SPEED, Math.min(BAR_MAX_SPEED, (z - at) / PHYSICS_STEP_S))
-      this.bar.setLinvel({ x: 0, y: 0, z: vz }, true)
-      return
-    }
-    if (sweepT > 1 && this.bar.isEnabled()) {
-      this.bar.setLinvel({ x: 0, y: 0, z: 0 }, false)
-      this.bar.setTranslation({ x: 0, y: PARKED_Y, z: c.headZ }, false)
-      this.bar.setEnabled(false)
-      // A fresh rack comes down where the frame is over.
-      if (this.frameOver) {
-        this.setRack()
-        this.frame++
-        this.ballInFrame = 1
-      } else {
-        this.ballInFrame = 2
-      }
-    }
-    if (t >= LIFT_S * 2 + SWEEP_S) {
+    if (t >= RESET_S) {
       this.release()
       this.returnBall()
       this.setPhase('ready')

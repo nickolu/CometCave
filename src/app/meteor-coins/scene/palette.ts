@@ -151,7 +151,6 @@ export const PALETTE = {
   moonBall: '#dfe3f5',
   fingerHole: '#1d2033',
   pinsetter: '#2a2148',
-  sweepBar: '#c9973a',
   sign: '#120d26',
   signText: '#fff3c4',
 } as const

@@ -7,13 +7,12 @@ import * as THREE from 'three'
 import { BACK_WALL_Z, PUCK_RADIUS, PUCK_THICKNESS } from '@/app/meteor-coins/lib/cabinet'
 import {
   BALL_RADIUS,
-  BAR_DEPTH,
-  BAR_HEIGHT,
   type BowlingDelivery,
   GUTTER_WIDTH,
   KICKBACK_HEIGHT,
   KICKBACK_LEAD,
   LIFT_HEIGHT,
+  PLATE_LEAD,
   SIGN_TOP,
   aimDirection,
 } from '@/app/meteor-coins/lib/deliveries/bowling'
@@ -39,9 +38,9 @@ const SIGN_Z = BACK_WALL_Z + 0.08
  * spots and kickbacks, and the scoreboard sign over the pit. While the ball
  * waits it draws the aim (a dotted line up the lane, where the ball will
  * roll) and, while a throw is being lined up, a strength gauge beside the
- * ball that fills as the swipe lengthens or the meter rises. During a reset
- * it draws the pinsetter's plate holding the standing pins up and the bar
- * sweeping the deck. Reads the game every frame; owns no state of its own.
+ * ball that fills as the swipe lengthens or the meter rises. At the end of
+ * a frame it draws the pinsetter's plate lifting the old rack away and
+ * holding the new one. Reads the game every frame; owns no state of its own.
  */
 export function BowlingRig({ game, lanes }: { game: DropGame; lanes: BowlingDelivery }) {
   const c = lanes.config
@@ -49,7 +48,6 @@ export function BowlingRig({ game, lanes }: { game: DropGame; lanes: BowlingDeli
   const dotMaterial = useRef<THREE.MeshBasicMaterial>(null)
   const gauge = useRef<THREE.Group>(null)
   const fill = useRef<THREE.Mesh>(null)
-  const bar = useRef<THREE.Mesh>(null)
   const plate = useRef<THREE.Mesh>(null)
   const sign = useMemo(() => new SignPainter(), [])
   useEffect(() => () => sign.dispose(), [sign])
@@ -89,11 +87,6 @@ export function BowlingRig({ game, lanes }: { game: DropGame; lanes: BowlingDeli
       fill.current.scale.set(1, p, 1)
       fill.current.position.y = (GAUGE_H * p) / 2
     }
-    const sweepZ = lanes.sweepZ
-    if (bar.current) {
-      bar.current.visible = sweepZ !== null
-      bar.current.position.set(0, c.y + BAR_HEIGHT / 2 + 0.01, sweepZ ?? c.headZ)
-    }
     if (plate.current) {
       const lift = lanes.lift
       plate.current.visible = lift > 0
@@ -106,6 +99,7 @@ export function BowlingRig({ game, lanes }: { game: DropGame; lanes: BowlingDeli
       standing: lanes.standing,
       call: recent,
       knocked: lanes.lastKnocked,
+      off: lanes.lastOff,
       strikes: lanes.strikes,
       spares: lanes.spares,
     })
@@ -204,14 +198,14 @@ export function BowlingRig({ game, lanes }: { game: DropGame; lanes: BowlingDeli
         <planeGeometry args={[c.halfWidth * 2 + 1.2, SIGN_TOP - SIGN_BOTTOM]} />
         <meshBasicMaterial map={sign.texture} />
       </mesh>
-      {/* The pinsetter: its plate holding pins up, and the sweep bar. */}
-      <mesh ref={plate} visible={false} position={[0, c.y + LIFT_HEIGHT, (c.headZ + c.endZ) / 2]}>
-        <boxGeometry args={[c.halfWidth * 2 - 0.1, 0.06, c.headZ - c.endZ + 0.4]} />
+      {/* The pinsetter's plate, holding a rack up: over the deck and the lane just in front of it. */}
+      <mesh
+        ref={plate}
+        visible={false}
+        position={[0, c.y + LIFT_HEIGHT, (c.headZ + PLATE_LEAD + c.endZ) / 2]}
+      >
+        <boxGeometry args={[c.halfWidth * 2 - 0.1, 0.06, c.headZ + PLATE_LEAD - c.endZ + 0.2]} />
         <meshStandardMaterial color={PALETTE.pinsetter} transparent opacity={0.55} />
-      </mesh>
-      <mesh ref={bar} visible={false}>
-        <boxGeometry args={[c.halfWidth * 2 - 0.06, BAR_HEIGHT, BAR_DEPTH]} />
-        <meshStandardMaterial color={PALETTE.sweepBar} metalness={0.6} roughness={0.4} />
       </mesh>
       {/* The strength gauge, standing beside the ball: fills from the bottom. */}
       <group ref={gauge} visible={false} position={[c.halfWidth - 0.35, c.y, c.ballZ]}>
@@ -254,6 +248,7 @@ type SignState = {
   standing: readonly boolean[]
   call: BowlingDelivery['lastCall']
   knocked: number
+  off: number
   strikes: number
   spares: number
 }
@@ -315,7 +310,9 @@ class SignPainter {
             ? 'GUTTER'
             : s.call === 'down'
               ? `${s.knocked} DOWN`
-              : `FRAME ${s.frame}`
+              : s.call === 'off'
+                ? `${s.off} OFF`
+                : `FRAME ${s.frame}`
     ctx.textBaseline = 'middle'
     ctx.textAlign = 'left'
     ctx.font = 'bold 72px system-ui, sans-serif'
