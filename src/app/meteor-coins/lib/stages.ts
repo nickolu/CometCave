@@ -1192,14 +1192,14 @@ const GRAVITY_ASSIST: StageDef = {
 /**
  * Moonlight Lanes' alley (lib/deliveries/bowling): a lane floating over the
  * middle of the table, its pin deck over the pusher's top and its pit
- * opening onto the strip in front of the back wall, so every pin knocked
- * down lands where the arm's coins land on other stages and the pusher
- * carries it to the chute. Measured, each a lesson:
+ * opening onto the strip in front of the back wall, so every coin knocked
+ * off the deck lands where the arm's coins land on other stages and the
+ * pusher carries it to the chute. Measured, each a lesson:
  * - Height 2: the lane's underside (1.8) clears the baked heap (tallest
  *   coin top 1.5) and the coins the pusher carries under the deck.
  * - The pit (deck end -3.8 to the back wall) is 1.7 deep. At 1.3 it
- *   clogged: coins heaped up past the deck, and the sweep bar pushing into
- *   the heap threw coins out of the cabinet (two or three a game).
+ *   clogged: coins heaped up past the deck, and the pinsetter's sweep bar
+ *   (since gone) pushing into the heap threw coins out of the cabinet.
  * - Pins 1.3 apart, three coins each, on a slick deck (0.25). At 1.15
  *   apart a full-strength ball shoved the rack as one block and knocked
  *   one pin; at friction 0.35 hardly any fell; at 0.1 every roll struck.
@@ -1234,7 +1234,7 @@ const MOONLIGHT_LANES: StageDef = {
   slug: 'moonlight-lanes',
   name: 'Moonlight Lanes',
   pitch:
-    'A bowling alley under the moon. Every pin you knock down is a stack of coins, and it lands on the pusher.',
+    'A bowling alley under the moon. Every pin is a stack of coins. Knock them off the deck and they land on the pusher.',
   playable: true,
   table: { chuteHalfWidth: CHUTE_HALF_WIDTH, pusherPeriodS: PUSHER_PERIOD_S },
   // Unused: the ball is bowled, not dropped.
@@ -1245,24 +1245,29 @@ const MOONLIGHT_LANES: StageDef = {
   // The lane draws its own aim line.
   cue: null,
   pile: 'moonlight-lanes',
-  // A thinner heap than most stages (88 coins): knocked pins pile up on the
-  // pusher's top, and with 101 coins and twelve balls a run of strikes
-  // reached 248 live coins of the pool's 250.
-  bake: { seed: 11, floor: 85, top: 10 },
+  // A near-full heap (125 coins). It was thinned to 88 while the pinsetter
+  // swept every toppled coin into the pit (a run of strikes then reached
+  // 248 live coins of the pool's 250). With only the coins the ball knocks
+  // off the deck coming in, a thin heap never primed: 60 coins in paid 10
+  // out, and the first point came on the eighth ball. At 130 the first
+  // point comes on the third or fourth, and a run of strikes peaks around
+  // 226 live; at 150 it shed twice as many coins off the table's sides.
+  bake: { seed: 11, floor: 130, top: 10 },
   rules: {
     // Ten balls (coins), so ten frames at most.
     coins: 10,
     bonusForStreak: () => 0,
-    // From the sim (10 games each), every throw a swipe: rolling any way at
-    // any strength averages 15 (★ 70%, ★★ 10%), and knocks down about 2
-    // pins a ball. Straight at the head pin, middling hard, averages 31 (★
-    // every game, ★★ 50%): 3 pins a ball, mostly spares. Hard, just right of
-    // the head pin, then at what's left, averages 73 (★★★ 90%): 5 strikes
-    // in 10 balls. One star stays in easy reach, so stage 12 opens.
-    goal: { type: 'score', stars: [10, 30, 60] },
+    // From the sim (10 games each), every throw a swipe, and only coins
+    // knocked off the deck paying: rolling any way at any strength averages
+    // 14 (★ 80%), about 3 coins off a ball. Straight at the head pin,
+    // middling hard, averages 22 (★ every game, ★★ 40%): 5 coins off a
+    // ball, mostly spares. Hard, just right of the head pin, then at what's
+    // left lying, averages 43 (★★★ 60%): 8 coins off a ball, 4–5 strikes.
+    // One star stays in easy reach, so stage 12 opens.
+    goal: { type: 'score', stars: [10, 25, 40] },
   },
   measure: { label: 'Score', caption: 'coins into the chute' },
-  hint: 'Each coin buys a ball. Pins you knock down drop onto the pusher. Strike: +5 coins. Spare: +2.',
+  hint: 'Each coin buys a ball, two balls a rack. Coins you knock off the deck drop onto the pusher. Strike: +5 coins. Spare: +2.',
   voice: {
     start: 'Lanes are open. Roll it hard, right at the front pin.',
     clear: 'Strike up the band! The pins came home as coins.',

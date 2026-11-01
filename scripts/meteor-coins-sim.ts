@@ -779,7 +779,8 @@ const POCKET_AIM = 0.06
  * apart). Random rolls any direction at any strength, after a random
  * pause. Cue rolls straight at the head pin, middling hard, every ball.
  * Skilled rolls the first ball into the pocket, hard; for the second it
- * reads what's left standing and rolls at the middle of it. Both wobble
+ * reads what's left on the deck (standing or lying) and rolls at the middle
+ * of it. Both wobble
  * like people swiping: ±0.04 radians (about 2°) of aim and ±0.1 of strength.
  */
 function bowlingBot(game: DropGame, bot: Bot, rand: () => number) {
@@ -811,11 +812,16 @@ function bowlingBot(game: DropGame, bot: Bot, rand: () => number) {
     } else {
       aim = POCKET_AIM
       if (lanes.ballInFrame === 2) {
-        // Aim at the middle of the pins left standing.
-        const left = lanes.spots.filter((_, i) => lanes.standing[i])
-        const x = left.reduce((n, p) => n + p.x, 0) / (left.length || 1)
-        const z = left.reduce((n, p) => n + p.z, 0) / (left.length || 1)
-        aim = Math.atan2(x, c.ballZ - z)
+        // Aim at the middle of whatever the first ball left on the deck.
+        const left = game.engine.pucks.filter((p, i) => {
+          if (!p.active || i === lanes.ball) return false
+          const t = p.body.translation()
+          return t.y > c.y && Math.abs(t.x) < c.halfWidth && t.z > c.endZ && t.z < c.headZ + 1
+        })
+        const x = left.reduce((n, p) => n + p.body.translation().x, 0) / (left.length || 1)
+        const z = left.reduce((n, p) => n + p.body.translation().z, 0) / (left.length || 1)
+        // Clamped short of the aims that find the gutter.
+        aim = left.length ? Math.max(-0.22, Math.min(0.22, Math.atan2(x, c.ballZ - z))) : POCKET_AIM
       }
       aim += wobble(0.04)
       power = 0.9 + wobble(0.1)
@@ -1005,6 +1011,7 @@ function play(stage: StageDef, bot: Bot, seed: number) {
     strikes: bowling?.strikes ?? 0,
     spares: bowling?.spares ?? 0,
     pins: bowling?.pinsDown ?? 0,
+    off: bowling?.coinsOff ?? 0,
     seconds: Math.round(game.engine.time),
     peakLive,
     p50: stepMs[stepMs.length >> 1],
@@ -1045,7 +1052,7 @@ async function main() {
         (board ? ` · stuck in board ${avg('inBoard')}` : '') +
         (stage.delivery?.kind === 'switches' ? ` · gold ${avg('gold')} red ${avg('red')}` : '') +
         (stage.delivery?.kind === 'bowling'
-          ? ` · strikes ${avg('strikes')} spares ${avg('spares')} pins ${avg('pins')}`
+          ? ` · strikes ${avg('strikes')} spares ${avg('spares')} pins ${avg('pins')} off ${avg('off')}`
           : '') +
         ` · gutters ${avg('lost')} · hits ${avg('hits')}/${avg('shots')} · best streak ${avg('bestStreak')}` +
         (goal.type === 'stack' ? ` · towers ${runs.map(r => r.towers).join(' ')}` : '') +

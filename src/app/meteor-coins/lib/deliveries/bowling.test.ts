@@ -173,7 +173,7 @@ describe('bowling, in play', () => {
     game.dispose()
   })
 
-  it('a hard roll near the head pin is a strike: bonus coins, the deck swept, and a fresh rack', () => {
+  it('a hard roll near the head pin is a strike: bonus coins, and a second ball at what it left', () => {
     // Which hard rolls strike depends on how the pins scatter; most within
     // a few degrees of the head pin do. Take the first that does.
     let struck: { game: DropGame; lanes: BowlingDelivery; events: GameEvent[] } | null = null
@@ -194,19 +194,31 @@ describe('bowling, in play', () => {
     expect(events).toContainEqual(
       expect.objectContaining({ type: 'callout', text: 'Strike! +5 coins' })
     )
-    expect(lanes.frame).toBe(2)
-    expect(lanes.ballInFrame).toBe(1)
     // The bonus pours into the pit.
     expect(game.state.showerLeft + game.engine.pucks.filter(p => p.kind === 'bonus').length).toBe(
       lanes.config.strikeBonus
     )
-    // A fresh rack stands, and nothing else is left on the deck.
+    // No pin stands, but the frame goes on: the second ball rolls at the
+    // coins the strike left lying on the deck. Nothing was swept away.
+    expect(lanes.pinsStanding).toBe(0)
+    expect(lanes.frame).toBe(1)
+    expect(lanes.ballInFrame).toBe(2)
+    const left = onDeck(game, lanes).length
+    expect(left).toBe(6 * lanes.config.pinCoins - lanes.lastOff)
+    expect(lanes.lastOff).toBeGreaterThan(0)
+    // The second ball: no spare for a rack already down, and whatever it
+    // knocks off the deck is called as coins.
+    lanes.aim = 0
+    expect(lanes.bowl(1)).toBe(true)
+    const second = untilReady(game, lanes)
+    expect(lanes.spares).toBe(0)
+    expect(second.some(e => e.type === 'callout' && /coins? off|Gutter/.test(e.text))).toBe(true)
+    expect(lanes.frame).toBe(2)
     expect(lanes.pinsStanding).toBe(6)
-    expect(onDeck(game, lanes)).toHaveLength(6 * lanes.config.pinCoins)
     game.dispose()
   })
 
-  it('a gentle roll leaves pins for the second ball, set back where they stood', () => {
+  it('a gentle roll leaves the rack as it fell for the second ball: nothing swept, nothing moved', () => {
     const { game, lanes } = setUp()
     steps(game, 10)
     lanes.aim = 0.2
@@ -216,17 +228,41 @@ describe('bowling, in play', () => {
     const standing = lanes.pinsStanding
     expect(standing).toBeGreaterThan(0)
     expect(standing).toBeLessThan(6)
-    // Every standing pin is back on its spot, whole.
+    // Every standing pin is still on its spot, whole.
     const pins = lanes.measurePins()
     expect(pins.filter(p => p !== null)).toHaveLength(standing)
-    // The knocked-down coins went into the pit: nothing loose on the deck.
-    expect(onDeck(game, lanes)).toHaveLength(standing * lanes.config.pinCoins)
-    // The second ball ends the frame: a fresh rack, whatever it hits.
+    // The knocked-down coins lie where they fell: only what the ball sent
+    // off the deck is gone.
+    expect(onDeck(game, lanes)).toHaveLength(6 * lanes.config.pinCoins - lanes.lastOff)
+    expect(lanes.coinsOff).toBe(lanes.lastOff)
+    game.dispose()
+  })
+
+  it('after the second ball, whatever is left on the lane is lifted away and a fresh rack set', () => {
+    const { game, lanes } = setUp()
+    steps(game, 10)
+    lanes.aim = 0.2
+    expect(lanes.bowl(0.3)).toBe(true)
+    untilReady(game, lanes)
+    // Coins live off the lane (on the pusher, in the pit), the ball aside.
+    const offLane = () => game.engine.countActive().live - onDeck(game, lanes).length - 1
+    const before = offLane()
     lanes.aim = -0.4
     expect(lanes.bowl(0.5)).toBe(true)
+    // Judged, then the pinsetter runs: a reset, not a second ball.
+    for (let i = 0; i < 60 * 6 && lanes.phase !== 'resetting'; i++) game.step()
+    expect(lanes.phase).toBe('resetting')
+    expect(lanes.lift).toBeGreaterThanOrEqual(0)
     untilReady(game, lanes)
     expect(lanes.frame).toBe(2)
+    expect(lanes.ballInFrame).toBe(1)
     expect(lanes.pinsStanding).toBe(6)
+    // Exactly a fresh rack on the deck, and the old one gone back to the pool,
+    // not onto the pusher: the only coins newly off the lane are the one the
+    // ball cost, what the ball knocked off, and any bonus poured so far.
+    expect(onDeck(game, lanes)).toHaveLength(6 * lanes.config.pinCoins)
+    const bonus = lanes.spares > 0 ? lanes.config.spareBonus - game.state.showerLeft : 0
+    expect(offLane()).toBe(before + 1 + lanes.lastOff + bonus)
     game.dispose()
   })
 
@@ -242,14 +278,16 @@ describe('bowling, in play', () => {
     game.dispose()
   })
 
-  it('ends the stage once the last ball has been swept up', () => {
+  it('ends the stage once the last ball has rolled, with no fresh rack', () => {
     const { game, lanes } = setUp()
-    game.state = { ...game.state, coinsLeft: 1 }
+    game.state = { ...game.state, coinsLeft: 2 }
     steps(game, 10)
     lanes.aim = 0
     expect(lanes.bowl(1)).toBe(true)
     untilReady(game, lanes)
-    // No fresh rack after the last ball, and nothing left on the deck but what stands.
+    expect(lanes.bowl(1)).toBe(true)
+    untilReady(game, lanes)
+    // No fresh rack after the last ball: what's on the deck stays there.
     expect(lanes.frame).toBe(1)
     for (let i = 0; i < 60 * 60 && game.state.phase !== 'over'; i++) game.step()
     expect(game.state.phase).toBe('over')
