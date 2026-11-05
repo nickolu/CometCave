@@ -3,7 +3,6 @@ export const ROUTE_CONSTANTS = {
   TAP_TAP_ADVENTURE: '/tap-tap-adventure',
   HOME: '/',
   ORACLE: '/oracle',
-  RING_TOSS: '/ring-toss',
   VOTERS: '/voters',
   SECRET_WORD: '/secret-word',
   AVATAR_MAKER: '/avatar-maker',
