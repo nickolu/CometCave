@@ -20,12 +20,10 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'Whowouldwininator', icon: 'sports_mma', href: ROUTE_CONSTANTS.WHOWOULDWININATOR, description: 'Create two characters and see who would win' },
   { title: 'Chat Room of Infinity', icon: 'chat', href: ROUTE_CONSTANTS.CHAT_ROOM, description: 'Chat with fictional characters in a chat room' },
   { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Turn a photo into an avatar in any style you can name' },
-  { title: 'Storybook Factory', icon: 'auto_stories', href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, description: 'Create illustrated comic books and storybooks from your pictures' },
   { title: 'Speck Wars', icon: 'bug_report', href: ROUTE_CONSTANTS.SPECK_WARS, description: 'Command your specks to capture enemy bases in this real-time strategy micro-battle' },
   { title: 'Disneyland Hunt', icon: 'search', href: ROUTE_CONSTANTS.DISNEYLAND_HUNT, description: 'Scavenger hunt checklist for your Disneyland visit — track finds, earn bonus stars' },
   { title: 'Micro Land', icon: 'pest_control', href: ROUTE_CONSTANTS.MICRO_LAND, description: 'A tiny living world — build the ground, summon creatures, and watch them eat each other' },
   { title: 'Dicebound', icon: 'casino', href: ROUTE_CONSTANTS.DICEBOUND, description: 'Tell a dungeon master what you attempt — the dice decide whether it works' },
-  { title: 'Badge Run', icon: 'military_tech', href: ROUTE_CONSTANTS.BADGE_RUN, description: 'Draft a team of badge-wielding fighters and battle through a gauntlet of rivals' },
 ]
 
 export default function Home() {

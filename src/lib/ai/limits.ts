@@ -37,8 +37,6 @@ export const AI_FEATURES = {
   'tap-tap-text': 2,
   'whowouldwininator-text': 1,
   'whowouldwininator-image': 10,
-  'storybook-text': 1,
-  'storybook-image': 10,
   'avatar-maker-image': 10,
 } as const
 

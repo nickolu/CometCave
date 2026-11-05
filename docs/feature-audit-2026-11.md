@@ -17,7 +17,6 @@ Activity figures are commits in the last 180 days / lifetime, and the last commi
 | Hum | 1 / 1, Oct 2026 | none | Shipped a month ago; a synth-teaching toy with a clear voice. |
 | Starmatch | 3 / 3, Aug 2026 | none | Small, finished, quick re-entry. |
 | Micro Land | 413 / 413, Aug 2026 | summon only (now gated, weight 15 — the most expensive call in the cave) | A world, not a widget. Owned by its designer. Summoning is the one paid feature and now sits behind sign-in inside the panel. |
-| Badge Run | 49 / 49, Aug 2026 | none | Auto-battler with a leaderboard; no model calls at all. |
 | Dicebound | 43 / 43, Aug 2026 | every turn (gated, weight 4) | The one place the "fresh content" promise is the whole game. Keep, metered. |
 | Speck Wars | 418 / 418, Aug 2026 | none | RTS micro-battles with a skill doc behind it. Deep, no serve cost. |
 
@@ -35,8 +34,7 @@ These lead with the mechanism rather than the effect (principle 5), have no retu
 | Feature | Activity | Serve cost | Why it goes |
 |---|---|---|---|
 | Whowouldwininator | 9 / 50, Aug 2026 | 13 routes, 3 of them image generation (gpt-image-1) | Two characters, one fight, a wall of generated text and up to several images. No reason to return. Most expensive single session in the cave before the gate. |
-| Storybook Factory | 18 / 18, Aug 2026 | 4 routes incl. image generation from uploaded photos | Takes children's photos and makes illustrated stories: the privacy surface is wide for an all-ages site, the images are the cost, and it is a tool, not a game. |
-| Avatar Maker | 4 / 18, Aug 2026 | image edit from an uploaded photo | Same shape as Storybook, smaller. "AI-powered avatars" was the pitch. |
+| Avatar Maker | 4 / 18, Aug 2026 | image edit from an uploaded photo | Same shape as Storybook Factory (removed below), smaller. "AI-powered avatars" was the pitch. |
 | Voters | 9 / 29, Aug 2026 | 5 routes, one per simulated voter per question | A simulation of a crowd of model voters. Interesting once; the description on the home grid was literally "Create AI voters". |
 | Chat Room of Infinity | 23 / 66, Aug 2026 | 4 routes, gpt-4o per character per message | Chat with fictional characters. Open-ended chat is the hardest thing to keep kid-safe, it is pure serve cost, and it is the only surface built on MUI rather than the cave's components. |
 | I-Ching Oracle | 5 / 15, Aug 2026 | one gpt-4o call per reading | The interpretation step the whole thing leads to is a stub component — the reading renders a heading and nothing else. The library text works without a model. Either finish it or drop it; recommend drop. |
@@ -48,11 +46,13 @@ These lead with the mechanism rather than the effect (principle 5), have no retu
 |---|---|
 | Ring Toss | Declared sunset in CLAUDE.md, not on the home grid or in any nav. Two files, no tests. Deleted; CLAUDE.md note updated. |
 | fantasy-tycoon | Directory contained only `.DS_Store` files. Deleted. |
+| Storybook Factory | Nick's call, 4 Nov 2026. Page, four routes, home tile, both nav entries, `ROUTE_CONSTANTS` entry and the two `limits.ts` keys deleted. It was the only user of `@google/generative-ai`, so that dependency and `GEMINI_API_KEY` are gone with it. |
+| Badge Run | Nick's call, 4 Nov 2026. The audit had it under Keep (no model calls), but the call is his. Page, two routes, run store, five sim and eval scripts with their package.json entries, the ghost-findings doc, home tile and `ROUTE_CONSTANTS` entry deleted. Its two Firestore collections are server-only and were never named in `firestore.rules`, so nothing to remove there. |
 
 ## Also noticed
 
 - **Home grid order.** The grid lists the recommended-remove tools between Secret Word and Speck Wars. Once removals land, the remaining order should follow the daily beat: Trivia, Clusters, Comet Cards, then the run-loop games, then the worlds.
-- **Nav duplication.** `top-nav-bar` and `side-nav-bar` each carry their own hand-picked game list (Oracle, Voters, Storybook, Chat Room, Tap Tap). Both should derive from one list, and that list should not include anything on the remove list.
+- **Nav duplication.** `top-nav-bar` and `side-nav-bar` each carry their own hand-picked game list (Oracle, Voters, Chat Room, Tap Tap). Both should derive from one list, and that list should not include anything on the remove list.
 - **Daily trivia fallback generation.** `GET /api/v1/trivia/daily` still generates live questions if the nightly cron missed a day. It persists the result, so it is bounded to roughly one generation a day, but it is the one unauthenticated model call left. Worth replacing with a plain "today's questions aren't ready" response once the cron is trusted.
 - **Bring-your-own-key header.** Ten routes accept an `x-openai-api-key` header. No UI sends it. It costs nothing to leave, but it is dead surface area and should go with the next cleanup.
 - **Voice Journey** stays unlisted and unauthenticated by design (one child's course progress, no model calls).
