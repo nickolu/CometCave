@@ -4,6 +4,8 @@ import { Box, Divider } from '@mui/material'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
+import { AiGate } from '@/components/ai-gate'
+
 import { QueryProvider } from './providers/QueryProvider'
 
 const UserList = dynamic(() => import('./components/organisims/UserList'), {
@@ -14,7 +16,7 @@ const Chat = dynamic(() => import('./components/organisims/Chat'), {
   ssr: false,
 })
 
-export default function ChatRoomOfInfinity() {
+function ChatRoomOfInfinity() {
   return (
     <QueryProvider>
       <div className="max-w-3xl mx-auto py-12">
@@ -46,5 +48,13 @@ export default function ChatRoomOfInfinity() {
         </div>
       </div>
     </QueryProvider>
+  )
+}
+
+export default function ChatRoomOfInfinityGated() {
+  return (
+    <AiGate game="Chat Room of Infinity" redirectTo="/chat-room-of-infinity">
+      <ChatRoomOfInfinity />
+    </AiGate>
   )
 }

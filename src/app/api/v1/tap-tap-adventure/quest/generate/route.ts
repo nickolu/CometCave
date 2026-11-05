@@ -3,12 +3,16 @@ import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import { FantasyCharacterSchema } from '@/app/tap-tap-adventure/models/character'
 import { generateTimedQuest } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { FantasyCharacterSchema } from '@/app/tap-tap-adventure/models/character'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 export const maxDuration = 30
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   let character: unknown
 
   try {

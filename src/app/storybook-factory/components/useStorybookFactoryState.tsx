@@ -1,6 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+
+import { aiFetch } from '@/lib/api/ai-fetch'
+
 import type { GeneratedStory } from '../types'
 
 export interface StoryConfiguration {
@@ -189,7 +192,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setIsSuggestionsLoading(true)
     setSuggestionsError(null)
     try {
-      const response = await fetch('/api/v1/storybook-factory/suggest-configuration', {
+      const response = await aiFetch('/api/v1/storybook-factory/suggest-configuration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -230,7 +233,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setIsGenerating(true)
     setGenerationError(null)
     try {
-      const response = await fetch('/api/v1/storybook-factory/generate-story', {
+      const response = await aiFetch('/api/v1/storybook-factory/generate-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -290,7 +293,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     const generateOne = async (key: string, prompt: string) => {
       if (controller.signal.aborted) return
       try {
-        const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
+        const response = await aiFetch('/api/v1/storybook-factory/generate-illustration', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -349,7 +352,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
     setIsRevising(true)
     setRevisionError(null)
     try {
-      const response = await fetch('/api/v1/storybook-factory/revise-story', {
+      const response = await aiFetch('/api/v1/storybook-factory/revise-story', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -388,7 +391,7 @@ export function useStorybookFactoryState(): StorybookFactoryState {
       ? `A ${generatedStory.layout.type} story called "${generatedStory.layout.title}"`
       : ''
     try {
-      const response = await fetch('/api/v1/storybook-factory/generate-illustration', {
+      const response = await aiFetch('/api/v1/storybook-factory/generate-illustration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

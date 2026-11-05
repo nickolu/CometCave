@@ -12,18 +12,20 @@ import {
   loadTodayResult,
 } from '@/app/trivia/lib/todayLocalStorage'
 import type { TriviaGameResult } from '@/app/trivia/models/trivia'
+import { SignInToPlay } from '@/components/ai-gate'
+import { NicknameDialog } from '@/components/nickname-dialog'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader, ChunkyCardTitle } from '@/components/ui/chunky-card'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDisplayDate, getTodayPST } from '@/lib/dates'
 import { getDailyCategory } from '@/lib/trivia/categories'
 
-import { NicknameDialog } from '@/components/nickname-dialog'
 import { ResetNoticeButton } from './ResetNoticeButton'
 import { ResetStatsDialog } from './ResetStatsDialog'
 import { SignInBanner } from './SignInCTA'
 import { TriviaFooter } from './TriviaFooter'
 import { WeeklyWinnerBanner } from './WeeklyWinnerBanner'
+
 
 export function TriviaLanding() {
   const { user, loading: authLoading, configured: authConfigured, signOut } = useAuth()
@@ -224,24 +226,30 @@ export function TriviaLanding() {
             <h3 className="text-on-surface font-bold text-lg">Endless Run</h3>
             <p className="text-on-surface/50 text-sm">Answer as many questions as you can in a row.</p>
           </div>
-          <Link href="/trivia/infinite" className="w-full">
-            <ChunkyButton
-              variant="secondary"
-              size="lg"
-              className="w-full"
-            >
-              Start Infinite Trivia
-            </ChunkyButton>
-          </Link>
-          <Link href="/trivia/infinite?mode=practice" className="w-full">
-            <ChunkyButton
-              variant="ghost"
-              size="sm"
-              className="w-full"
-            >
-              Practice Mode
-            </ChunkyButton>
-          </Link>
+          {showSignInPromos ? (
+            <SignInToPlay compact game="Endless Run" redirectTo="/trivia/infinite" />
+          ) : (
+            <>
+              <Link href="/trivia/infinite" className="w-full">
+                <ChunkyButton
+                  variant="secondary"
+                  size="lg"
+                  className="w-full"
+                >
+                  Start Infinite Trivia
+                </ChunkyButton>
+              </Link>
+              <Link href="/trivia/infinite?mode=practice" className="w-full">
+                <ChunkyButton
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                >
+                  Practice Mode
+                </ChunkyButton>
+              </Link>
+            </>
+          )}
         </ChunkyCardContent>
       </ChunkyCard>
 

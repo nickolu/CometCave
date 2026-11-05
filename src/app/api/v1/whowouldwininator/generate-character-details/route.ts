@@ -3,8 +3,12 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 
 import { CharacterDetailsSchema } from '@/app/api/v1/whowouldwininator/types'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
-export async function POST() {
+export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'whowouldwininator-text')
+  if ('error' in gate) return gate.error
+
   const openaiClient = createOpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   })

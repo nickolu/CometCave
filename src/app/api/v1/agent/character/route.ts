@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config'
 import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
 import { Message } from '@/app/chat-room-of-infinity/services/ai/types'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 // Helper function to clean character responses
 function cleanCharacterResponse(response: string, characterName: string): string {
@@ -51,6 +52,9 @@ const RequestSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'chat-room')
+  if ('error' in gate) return gate.error
+
   try {
     const parseResult = RequestSchema.safeParse(await request.json())
     if (!parseResult.success) {

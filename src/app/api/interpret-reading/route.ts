@@ -3,6 +3,7 @@ import OpenAI from 'openai'
 
 import { hexagramDescriptions } from '@/app/oracle/library'
 import { getHexagramTrigrams } from '@/app/oracle/trigrams'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 function getOpenAI() {
   return new OpenAI({
@@ -31,6 +32,9 @@ interface InterpretationRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'oracle')
+  if ('error' in gate) return gate.error
+
   try {
     const body: InterpretationRequest = await request.json()
     const { question, context, presentHexagram, futureHexagram, changingLines } = body

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
 import { generatePublicId, uploadBase64Image } from '@/lib/cloudinary'
 import { isImageGenerationAllowed } from '@/lib/utils'
 
@@ -20,6 +21,9 @@ export const maxDuration = 300 // 5 minutes in seconds
 export const runtime = 'nodejs'
 
 export async function POST(req: Request) {
+  const gate = await requireAiAccess(req, 'avatar-maker-image')
+  if ('error' in gate) return gate.error
+
   try {
     // Check if image generation is allowed
     if (!isImageGenerationAllowed()) {

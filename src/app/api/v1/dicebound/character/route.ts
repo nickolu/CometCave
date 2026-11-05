@@ -23,9 +23,9 @@ import { z } from 'zod'
 import {
   ATTRIBUTES,
   ATTRIBUTE_IDS,
+  type AttributeId,
   SKILLS,
   SKILL_IDS,
-  type AttributeId,
   type SkillId,
   isSkillId,
   skillsOf,
@@ -34,16 +34,17 @@ import { MAX_CONCEPT } from '@/app/dicebound/domain/campaign'
 import {
   ATTRIBUTE_BUDGET,
   type Character,
-  type SkillRecord,
   MAX_ATTRIBUTE,
   MAX_STARTING_SKILLS,
   MIN_ATTRIBUTE,
+  type SkillRecord,
   blankAttributes,
   normalizeAttributes,
   startingSkills,
 } from '@/app/dicebound/domain/character'
 import { FALLBACK_SPECIES, type Species, validateSpecies } from '@/app/dicebound/domain/kit'
 import { isPlainObject } from '@/app/dicebound/domain/validate'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 import { NoApiKeyError, callForTool, requireApiKey, toolSchema } from '@/lib/dicebound/anthropic'
 
 export const maxDuration = 60
@@ -194,6 +195,9 @@ interface CreationInput {
 }
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'dicebound-character')
+  if ('error' in gate) return gate.error
+
   let body: { concept?: unknown; premise?: unknown }
   try {
     body = (await request.json()) as { concept?: unknown; premise?: unknown }

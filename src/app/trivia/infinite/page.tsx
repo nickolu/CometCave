@@ -1,8 +1,10 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
+
 import { InfiniteGame } from '@/app/trivia/components/InfiniteGame'
 import type { InfiniteMode } from '@/app/trivia/hooks/useInfiniteRun'
+import { AiGate } from '@/components/ai-gate'
 
 function InfiniteTriviaPageInner() {
   const router = useRouter()
@@ -39,8 +41,10 @@ function InfiniteTriviaPageInner() {
 
 export default function InfiniteTriviaPage() {
   return (
-    <Suspense fallback={null}>
-      <InfiniteTriviaPageInner />
-    </Suspense>
+    <AiGate game="Endless Run" redirectTo="/trivia/infinite">
+      <Suspense fallback={null}>
+        <InfiniteTriviaPageInner />
+      </Suspense>
+    </AiGate>
   )
 }

@@ -2,9 +2,9 @@
 import { useCallback, useMemo, useState } from 'react'
 
 import {
-  calculateStartingStats,
   ClassOption,
   RaceOption,
+  calculateStartingStats,
 } from '@/app/tap-tap-adventure/config/characterOptions'
 import { DIFFICULTY_MODES, DifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import {
@@ -16,14 +16,14 @@ import {
   DEFAULT_STAT_MIN,
 } from '@/app/tap-tap-adventure/config/gameDefaults'
 import { getStartingSpell } from '@/app/tap-tap-adventure/config/startingSpells'
-import { calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { calculateMaxHp } from '@/app/tap-tap-adventure/lib/leveling'
-import { Item } from '@/app/tap-tap-adventure/models/item'
-import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { calculateMaxHp , calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
 import { ClassSkillTree } from '@/app/tap-tap-adventure/models/classSkillTree'
+import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { Item } from '@/app/tap-tap-adventure/models/item'
 import { Spell } from '@/app/tap-tap-adventure/models/spell'
 import { FantasyAbility, FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 /** Map static class IDs to their combat style for skill tree generation. */
 const STATIC_CLASS_COMBAT_STYLES: Record<string, string> = {
@@ -79,7 +79,7 @@ export function useCharacterCreation() {
   const fetchSkillTree = useCallback(async (classId: string, className: string, combatStyle: string) => {
     setIsFetchingTree(true)
     try {
-      const response = await fetch('/api/v1/tap-tap-adventure/skill-tree/generate', {
+      const response = await aiFetch('/api/v1/tap-tap-adventure/skill-tree/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ classId, className, combatStyle }),
@@ -98,7 +98,7 @@ export function useCharacterCreation() {
   const fetchGeneratedClasses = useCallback(async () => {
     setIsLoadingClasses(true)
     try {
-      const response = await fetch('/api/v1/tap-tap-adventure/classes/generate', {
+      const response = await aiFetch('/api/v1/tap-tap-adventure/classes/generate', {
         method: 'POST',
       })
       if (response.ok) {
@@ -157,7 +157,7 @@ export function useCharacterCreation() {
     let className: string
     let spellbook: Spell[] = []
     let classData: GeneratedClass | undefined
-    let classSkillTree: ClassSkillTree | undefined = skillTreeData ?? undefined
+    const classSkillTree: ClassSkillTree | undefined = skillTreeData ?? undefined
 
     if (selectedGeneratedClass) {
       finalStats = {

@@ -1,5 +1,8 @@
 'use client'
 import { useState } from 'react'
+
+import { AiGate } from '@/components/ai-gate'
+
 import CharacterList from './components/CharacterList'
 import GameUI from './components/GameUI'
 import { HudBar } from './components/HudBar'
@@ -11,7 +14,7 @@ import { useGameStore } from './hooks/useGameStore'
 
 type initialView = 'game' | 'characters'
 
-export default function TapTapAdventurePage() {
+function TapTapAdventurePage() {
   const { gameState, clearRunSummary } = useGameStore()
   const [showMetaFromSummary, setShowMetaFromSummary] = useState(false)
   const [showCreationFromSummary, setShowCreationFromSummary] = useState(false)
@@ -60,5 +63,13 @@ export default function TapTapAdventurePage() {
         </>
       )}
     </PageTemplate>
+  )
+}
+
+export default function TapTapAdventurePageGated() {
+  return (
+    <AiGate game="Tap Tap Adventure" redirectTo="/tap-tap-adventure">
+      <TapTapAdventurePage />
+    </AiGate>
   )
 }

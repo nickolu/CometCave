@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 
 import { Character } from '@/app/chat-room-of-infinity/types'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const FALLBACK_CHARACTERS: Omit<Character, 'id'>[] = [
   {
@@ -31,6 +32,9 @@ const FALLBACK_CHARACTERS: Omit<Character, 'id'>[] = [
 ]
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'chat-room')
+  if ('error' in gate) return gate.error
+
   try {
     const { previousCharacters, criteria } = await request.json()
 

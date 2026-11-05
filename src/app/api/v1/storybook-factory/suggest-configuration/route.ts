@@ -3,6 +3,8 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
+
 const SuggestionSchema = z.object({
   storyType: z.enum(['comic', 'storybook', 'fairy-tale', 'adventure']),
   artStyle: z.enum(['cartoon', 'anime', 'watercolor', 'pixel-art', 'realistic']),
@@ -14,6 +16,9 @@ const SuggestionSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'storybook-text')
+  if ('error' in gate) return gate.error
+
   try {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,

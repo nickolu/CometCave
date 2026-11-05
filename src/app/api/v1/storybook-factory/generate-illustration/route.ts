@@ -1,8 +1,9 @@
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateText } from 'ai'
 import { NextResponse } from 'next/server'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
 import { generatePublicId, uploadBase64Image } from '@/lib/cloudinary'
 import { isImageGenerationAllowed } from '@/lib/utils'
 
@@ -14,6 +15,9 @@ export const runtime = 'nodejs'
 // The @google/generative-ai SDK is used for this. Could be swapped to OpenAI gpt-image-1 if needed.
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'storybook-image')
+  if ('error' in gate) return gate.error
+
   try {
     // Check if image generation is allowed
     if (!isImageGenerationAllowed()) {

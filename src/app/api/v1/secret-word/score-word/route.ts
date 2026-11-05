@@ -3,6 +3,8 @@ import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
+
 // Schema describing the expected structure of the LLM response
 const WordFrequencySchema = z.object({
   score: z.number().min(0).max(100).describe('Frequency score for the provided word (0–100)'),
@@ -12,6 +14,9 @@ const WordFrequencySchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'secret-word')
+  if ('error' in gate) return gate.error
+
   try {
     // Resolve OpenAI API key – prefer header over env for per-request overrides
     let apiKey = process.env.OPENAI_API_KEY

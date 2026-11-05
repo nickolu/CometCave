@@ -1,5 +1,7 @@
 import { useCallback, useState } from 'react'
 
+import { aiFetch } from '@/lib/api/ai-fetch'
+
 interface CharacterStats {
   strength: number
   speed: number
@@ -172,7 +174,7 @@ export function useWhowouldwininatorState() {
 
       setIsGenerating(true)
       try {
-        const response = await fetch('/api/v1/whowouldwininator/get-random-character', {
+        const response = await aiFetch('/api/v1/whowouldwininator/get-random-character', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -213,7 +215,7 @@ export function useWhowouldwininatorState() {
 
       setIsGenerating(true)
       try {
-        const response = await fetch('/api/v1/whowouldwininator/generate-character-description', {
+        const response = await aiFetch('/api/v1/whowouldwininator/generate-character-description', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -263,7 +265,7 @@ export function useWhowouldwininatorState() {
       setLoading(prev => ({ ...prev, [detailType]: true }))
 
       try {
-        const response = await fetch(
+        const response = await aiFetch(
           `/api/v1/whowouldwininator/generate-character-details/${detailType}`,
           {
             method: 'POST',
@@ -318,7 +320,7 @@ export function useWhowouldwininatorState() {
   const generateRandomScenario = useCallback(async () => {
     setIsGeneratingScenario(true)
     try {
-      const response = await fetch('/api/v1/whowouldwininator/generate-random-scenario', {
+      const response = await aiFetch('/api/v1/whowouldwininator/generate-random-scenario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -362,7 +364,7 @@ Victory: First to incapacitate their opponent wins`
   const generateContestResults = useCallback(async () => {
     setIsGeneratingResults(true)
     try {
-      const response = await fetch('/api/v1/whowouldwininator/generate-contest-results', {
+      const response = await aiFetch('/api/v1/whowouldwininator/generate-contest-results', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -394,7 +396,7 @@ Victory: First to incapacitate their opponent wins`
 
     setIsGeneratingStory(true)
     try {
-      const response = await fetch('/api/v1/whowouldwininator/generate-contest-story', {
+      const response = await aiFetch('/api/v1/whowouldwininator/generate-contest-story', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -434,7 +436,7 @@ Victory: First to incapacitate their opponent wins`
 
     setIsGeneratingImage(true)
     try {
-      const response = await fetch('/api/v1/whowouldwininator/generate-contest-results-image', {
+      const response = await aiFetch('/api/v1/whowouldwininator/generate-contest-results-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -480,7 +482,7 @@ Victory: First to incapacitate their opponent wins`
 
       setIsGeneratingSectionImages(prev => ({ ...prev, [sectionType]: true }))
       try {
-        const response = await fetch('/api/v1/whowouldwininator/generate-story-section-image', {
+        const response = await aiFetch('/api/v1/whowouldwininator/generate-story-section-image', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

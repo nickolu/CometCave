@@ -1,5 +1,6 @@
 import { changingLineDescriptions } from '@/app/oracle/library'
 import { DivinationQuestion, DivinationResult } from '@/app/oracle/types'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 export async function getInterpretation(
   divinationQuestion: DivinationQuestion,
@@ -19,7 +20,7 @@ export async function getInterpretation(
       })
       .filter((line): line is NonNullable<typeof line> => line !== null)
 
-    const response = await fetch('/api/interpret-reading', {
+    const response = await aiFetch('/api/interpret-reading', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

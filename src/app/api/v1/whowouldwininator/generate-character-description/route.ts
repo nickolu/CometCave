@@ -4,12 +4,16 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const RequestSchema = z.object({
   name: z.string().min(1, 'Character name is required').max(200),
 })
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'whowouldwininator-text')
+  if ('error' in gate) return gate.error
+
   try {
     const body = await request.json()
     const parseResult = RequestSchema.safeParse(body)

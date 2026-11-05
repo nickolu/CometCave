@@ -10,8 +10,10 @@ import { generateLLMEvents } from '@/app/tap-tap-adventure/lib/llmEventGenerator
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Item } from '@/app/tap-tap-adventure/models/item'
 import { FantasyDecisionOption, FantasyDecisionPoint, FantasyStoryEvent } from '@/app/tap-tap-adventure/models/story'
-import { buildTownHubDecisionPoint, extractTownFeatures } from './townHubBuilder'
+import { requireAiAccess } from '@/lib/api/ai-gate'
+
 import { maybeGenerateTownEvent } from './townEventGenerator'
+import { buildTownHubDecisionPoint, extractTownFeatures } from './townHubBuilder'
 
 function hashString(str: string): number {
   let hash = 0
@@ -84,6 +86,9 @@ type ResolveDecisionResponse = {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await requireAiAccess(req, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const body = (await req.json()) as ResolveDecisionRequest
 
@@ -848,7 +853,7 @@ export async function POST(req: NextRequest) {
       const teRoll = Math.random()
       const teSuccess = teRoll < teProb
 
-      let teUpdatedCharacter = { ...character }
+      const teUpdatedCharacter = { ...character }
       let teOutcomeDesc: string
 
       if (teSuccess) {

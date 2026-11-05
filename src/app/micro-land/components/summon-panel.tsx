@@ -4,10 +4,13 @@ import { useEffect, useRef, useState } from 'react'
 
 import type { CreatureBlueprint } from '@/app/micro-land/domain/types'
 import { useMicroLand } from '@/app/micro-land/store'
+import { SignInToPlay, useIsSignedIn } from '@/components/ai-gate'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 import { CreaturePortrait } from './creature-chip'
 import { SparkleIcon } from './sparkle-icon'
 import { SummonLoader } from './summon-loader'
+
 
 const CREATURE_IDEAS = [
   'a tiny glowing snail that eats moss',
@@ -40,7 +43,7 @@ async function requestGenerate(
   prompt: string,
   signal: AbortSignal
 ) {
-  const response = await fetch('/api/v1/micro-land/summon', {
+  const response = await aiFetch('/api/v1/micro-land/summon', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ mode, prompt }),
@@ -83,6 +86,10 @@ export function SummonPanel({
   const pending = useMicroLand(s => s.pendingSummons)
   const addPending = useMicroLand(s => s.addPendingSummon)
   const removePending = useMicroLand(s => s.removePendingSummon)
+
+  // Summoning is the one model call in Micro Land, so it alone is behind the
+  // gate; drawing, terrain tools and the world itself stay open to everyone.
+  const { signedIn } = useIsSignedIn()
 
   const [text, setText] = useState('')
   const [made, setMade] = useState<CreatureBlueprint[]>([])
@@ -311,7 +318,11 @@ export function SummonPanel({
           </button>
         </div>
 
-        {busy ? (
+        {!signedIn ? (
+          <div className="p-4">
+            <SignInToPlay compact game="Micro Land" what="summon" redirectTo="/micro-land" />
+          </div>
+        ) : busy ? (
           <SummonLoader
             mode={mode}
             prompt={text.trim()}

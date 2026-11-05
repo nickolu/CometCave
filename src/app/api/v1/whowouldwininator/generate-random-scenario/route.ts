@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const RandomScenarioSchema = z.object({
   setting: z.string().describe('The battle setting and environment'),
@@ -228,6 +229,9 @@ const SCENARIO_CATEGORIES = [
 ]
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'whowouldwininator-text')
+  if ('error' in gate) return gate.error
+
   try {
     const { character1Name, character2Name, character1Description, character2Description } =
       await request.json()

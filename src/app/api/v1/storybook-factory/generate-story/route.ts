@@ -3,6 +3,8 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
+
 export const maxDuration = 300
 
 const StoryPanelSchema = z.object({
@@ -44,6 +46,9 @@ const StoryLayoutSchema = z.object({
 })
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'storybook-text')
+  if ('error' in gate) return gate.error
+
   try {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
 
 import { generateClassSkillTree } from '@/app/tap-tap-adventure/lib/classSkillTreeGenerator'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const body = await request.json()
     const { classId, className, combatStyle } = body as {

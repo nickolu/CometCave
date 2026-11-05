@@ -4,6 +4,7 @@ import { z } from 'zod'
 
 import { getNPCById, getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const DialogueRequestSchema = z.object({
   npcId: z.string(),
@@ -29,6 +30,9 @@ function getOpenAI() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await requireAiAccess(req, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const body = await req.json()
     const parseResult = DialogueRequestSchema.safeParse(body)

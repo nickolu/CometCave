@@ -37,6 +37,7 @@ import {
   proceduralScene,
 } from '@/app/micro-land/domain/procedural'
 import { TerrainSchema } from '@/app/micro-land/domain/terrain'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const MODEL = 'claude-opus-5'
 const API_URL = 'https://api.anthropic.com/v1/messages'
@@ -208,6 +209,9 @@ interface SummonRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'micro-land-summon')
+  if ('error' in gate) return gate.error
+
   let body: SummonRequest
   try {
     body = (await request.json()) as SummonRequest

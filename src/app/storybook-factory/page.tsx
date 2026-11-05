@@ -1,5 +1,7 @@
 'use client'
 
+import { AiGate } from '@/components/ai-gate'
+
 import { Step01UploadAndDescribe } from './components/step01-upload-and-describe'
 import { Step02StoryConfiguration } from './components/step02-story-configuration'
 import { Step03Generation } from './components/step03-generation'
@@ -7,7 +9,7 @@ import { Step04ReviewAndRevise } from './components/step04-review-and-revise'
 import { useStorybookFactoryState } from './components/useStorybookFactoryState'
 import { useWorkflow } from './components/useWorkflow'
 
-export default function StorybookFactory() {
+function StorybookFactory() {
   const { currentStep, nextStep, previousStep } = useWorkflow()
   const state = useStorybookFactoryState()
 
@@ -88,5 +90,13 @@ export default function StorybookFactory() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function StorybookFactoryGated() {
+  return (
+    <AiGate game="Storybook Factory" redirectTo="/storybook-factory" what="use">
+      <StorybookFactory />
+    </AiGate>
   )
 }

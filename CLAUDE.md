@@ -12,6 +12,7 @@ This file captures the durable UX principles that govern the whole app. They app
 Every game must be fully playable without an account. Sign-up is sold on **depth** — stats, leaderboards, streaks, persistent identity — never gated as access. Share links must drop visitors directly into play.
 - **Do** surface sign-up at moments of earned value: after a win, when a streak forms, when stats become interesting.
 - **Don't** prompt for sign-up before the first interaction.
+- **Exception — generated content.** Anything that calls a model on the server (a dungeon master's turn, a summoned creature, a judged free-text answer, an image) costs money per use, so it requires a signed-in account and draws from a daily allowance. Games that are entirely generated (Dicebound, Secret Word, Tap Tap Adventure, the tool-style games) sit behind `<AiGate>` in place; games with one generated feature (Micro Land's summon, Trivia's free-text judge) gate just that feature and stay playable without an account. The server side is `requireAiAccess` in `src/lib/api/ai-gate.ts`; the allowance table is `src/lib/ai/limits.ts`. Every new model-calling route must go through it.
 
 ### 2. The cave is light, the worlds are loud
 The shell — home, navigation, profile, transitions — stays minimal: low motion, no ambient sound, restrained color, fast to re-enter. Each game is free to be its own visual dimension. Juice and ceremony live **inside** games.
@@ -71,7 +72,8 @@ If it doesn't, cut it. When proposing a UX change, name the metric you expect it
 - **Home page (current era):** grid/library of games. **Home page (future era):** daily activity feed centered on the user — flips when the user page earns enough value to be home. Principles hold across both eras.
 - **Identity is light:** nickname + streak. No avatars, customization, or narrative progression yet.
 - **Cave↔game transitions** are deliberately under-designed today; this is a known opportunity, not a current investment.
-- **Ring Toss is sunset** — do not extend it, do not mirror its patterns.
+- **Ring Toss was removed (Nov 2026)** after a long sunset — do not resurrect it or mirror its patterns.
+- **AI access.** Every route that calls a model goes through `requireAiAccess(request, feature)` (or `requireSignedIn` + `spendForClaims` when the model is reached only on some branches). Feature weights and the daily budget live in `src/lib/ai/limits.ts`; usage is metered per player per Pacific day in `users/{uid}/aiUsage/{day}`. The owner is never metered. Clients call gated routes through `aiFetch` (`src/lib/api/ai-fetch.ts`), which attaches the token and turns refusals into an `AiAccessError` whose message is fit to show. Gate a surface with `<AiGate>` / `<SignInToPlay>` from `src/components/ai-gate.tsx`.
 
 ## Audience
 

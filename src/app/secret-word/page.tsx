@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SecretWordChat } from '@/app/secret-word/components/SecretWordChat'
 import { SecretWordEnd } from '@/app/secret-word/components/SecretWordEnd'
 import { SecretWordSetup } from '@/app/secret-word/components/SecretWordSetup'
+import { AiGate } from '@/components/ai-gate'
 
 import { useAIResponse, useGenerateWord } from './api/hooks'
 import { QueryProvider } from './providers/QueryProvider'
@@ -355,10 +356,18 @@ function SecretWordGameContent() {
   )
 }
 
-export default function SecretWordGame() {
+function SecretWordGame() {
   return (
     <QueryProvider>
       <SecretWordGameContent />
     </QueryProvider>
+  )
+}
+
+export default function SecretWordGameGated() {
+  return (
+    <AiGate game="Secret Word" redirectTo="/secret-word">
+      <SecretWordGame />
+    </AiGate>
   )
 }

@@ -1,5 +1,7 @@
 'use client'
 
+import { AiGate } from '@/components/ai-gate'
+
 import { Step01DefineCharacters } from './components/step01-define-characters'
 import { Step02ReviewCharacters } from './components/step02-review-characters'
 import { Step03DefineScenario } from './components/step03-define-scenario'
@@ -7,7 +9,7 @@ import { Step04ViewResults } from './components/step04-view-results'
 import { useWhowouldwininatorState } from './components/useWhowouldwininatorState'
 import { useWorkflow } from './components/useWorkflow'
 
-export default function Whowouldwininator() {
+function Whowouldwininator() {
   const { currentStep, nextStep, previousStep } = useWorkflow()
   const {
     candidate1Name,
@@ -116,5 +118,13 @@ export default function Whowouldwininator() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function WhowouldwininatorGated() {
+  return (
+    <AiGate game="Whowouldwininator" redirectTo="/whowouldwininator">
+      <Whowouldwininator />
+    </AiGate>
   )
 }

@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { requireSignedIn } from '@/lib/api/ai-gate'
 import { verifyRequestAuth } from '@/lib/api/auth';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { CATEGORY_META } from '@/lib/trivia/categories';
@@ -75,7 +76,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await verifyRequestAuth(request);
+  // Starting a run leads to generated questions and model-judged answers, so
+  // it takes a real account. Anonymous players keep the daily game.
+  const auth = await requireSignedIn(request);
   if ('error' in auth) return auth.error;
 
   try {
