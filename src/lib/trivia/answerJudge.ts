@@ -54,3 +54,29 @@ Default to ACCEPTING when the user clearly knows the answer but typed a casual o
 
   return result.object.correct
 }
+
+/**
+ * Model-free answer matching, for players the judge is not available to.
+ *
+ * Case, punctuation, surrounding whitespace and a leading article are ignored,
+ * and a typed answer that is one whole word of a multi-word correct answer
+ * ("Einstein" for "Albert Einstein") counts. It is stricter than the model and
+ * that is the point: it costs nothing, so it is what everyone gets by default.
+ */
+export function matchesPlainly(userAnswer: string, correctAnswer: string): boolean {
+  const a = normalize(userAnswer)
+  const c = normalize(correctAnswer)
+  if (!a || GAMING_PATTERNS.test(userAnswer.trim())) return false
+  if (a === c) return true
+  const words = c.split(' ')
+  return words.length > 1 && a.length >= 3 && words.includes(a)
+}
+
+function normalize(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/^(the|a|an) /, '')
+}
