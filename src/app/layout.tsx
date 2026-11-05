@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, Be_Vietnam_Pro, Lexend } from 'next/font/google'
+import localFont from 'next/font/local'
 
 import { AmbientOrbs } from '@/components/ambient-orbs'
 import { Footer } from '@/components/footer'
@@ -11,23 +11,27 @@ import { Providers } from './providers'
 import type { Metadata } from 'next'
 import type React from 'react'
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  weight: ['500', '800'],
+// Self-hosted so the build never asks Google for a stylesheet. See src/app/fonts/README.md.
+const plusJakartaSans = localFont({
+  src: './fonts/plus-jakarta-sans-200-800-latin.woff2',
+  weight: '200 800',
   variable: '--font-headline',
   display: 'swap',
 })
 
-const beVietnamPro = Be_Vietnam_Pro({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
+const beVietnamPro = localFont({
+  src: [
+    { path: './fonts/be-vietnam-pro-400-latin.woff2', weight: '400' },
+    { path: './fonts/be-vietnam-pro-500-latin.woff2', weight: '500' },
+    { path: './fonts/be-vietnam-pro-700-latin.woff2', weight: '700' },
+  ],
   variable: '--font-body',
   display: 'swap',
 })
 
-const lexend = Lexend({
-  subsets: ['latin'],
-  weight: ['700'],
+const lexend = localFont({
+  src: './fonts/lexend-100-900-latin.woff2',
+  weight: '100 900',
   variable: '--font-label',
   display: 'swap',
 })
