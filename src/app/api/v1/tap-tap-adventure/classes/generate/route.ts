@@ -6,8 +6,12 @@ import {
   pickRandomSeeds,
 } from '@/app/tap-tap-adventure/lib/classGenerator'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
-export async function POST() {
+export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const seeds = pickRandomSeeds(4)
     const usedFallbackIds = new Set<string>()

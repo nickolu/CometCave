@@ -4,7 +4,8 @@ CometCave is a modern web application featuring a collection of interactive brow
 
 ## 🎮 Features
 
-- **Ring Toss Game**: A physics-based game built with PixiJS
+- A library of small browser games — daily trivia, word puzzles, card games, a coin pusher, a dungeon master and more
+- Generated content (a dungeon master's turn, a summoned creature) requires sign-in and draws from a per-player daily allowance — see `src/lib/ai/limits.ts`
 - Modern, responsive UI with Tailwind CSS
 - Smooth animations and transitions
 - Dark theme with beautiful gradients

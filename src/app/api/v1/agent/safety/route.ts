@@ -4,8 +4,12 @@ import { NextResponse } from 'next/server'
 
 import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/config'
 import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'chat-room')
+  if ('error' in gate) return gate.error
+
   try {
     const { message } = await request.json()
 

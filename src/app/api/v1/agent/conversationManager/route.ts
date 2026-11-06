@@ -6,6 +6,7 @@ import { getAIServiceConfig } from '@/app/chat-room-of-infinity/services/ai/conf
 import { AIServiceFactory } from '@/app/chat-room-of-infinity/services/ai/factory'
 import { Message } from '@/app/chat-room-of-infinity/services/ai/types'
 import { Character } from '@/app/chat-room-of-infinity/types'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 interface ConversationManagerRequest {
   chatMessages: {
@@ -22,6 +23,9 @@ interface ConversationManagerRequest {
 }
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'chat-room')
+  if ('error' in gate) return gate.error
+
   try {
     const { chatMessages, characters, charactersRespondToEachOther } =
       (await request.json()) as ConversationManagerRequest

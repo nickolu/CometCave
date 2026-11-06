@@ -1,4 +1,4 @@
-import { Fredoka, Nunito } from 'next/font/google'
+import localFont from 'next/font/local'
 
 import type { Metadata } from 'next'
 import type React from 'react'
@@ -8,16 +8,16 @@ import type React from 'react'
  * It is not a game on the arcade floor — it is one child's practice tracker,
  * unlisted and unlinked, so the shared chrome would only be in the way.
  */
-const fredoka = Fredoka({
-  subsets: ['latin'],
-  weight: ['500', '600', '700'],
+const fredoka = localFont({
+  src: '../fonts/fredoka-300-700-latin.woff2',
+  weight: '300 700',
   variable: '--font-voice-display',
   display: 'swap',
 })
 
-const nunito = Nunito({
-  subsets: ['latin'],
-  weight: ['600', '700', '800'],
+const nunito = localFont({
+  src: '../fonts/nunito-200-1000-latin.woff2',
+  weight: '200 1000',
   variable: '--font-voice-body',
   display: 'swap',
 })

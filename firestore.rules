@@ -57,6 +57,11 @@ service cloud.firestore {
       // Dicebound chapters — transcript that condense has archived out of the
       // live campaign. Write-once, never read during a turn, owner-only.
       match /diceboundChapters/{docId} { allow read, write: if false; }
+
+      // AI allowance — one doc per Pacific day with the credits spent and a
+      // per-feature breakdown. Server-only, written inside the transaction in
+      // src/lib/ai/usage.ts. Readable by nobody: the limit is the server's.
+      match /aiUsage/{day} { allow read, write: if false; }
     }
 
     // Singing course progress — one unlisted page, no account behind it.

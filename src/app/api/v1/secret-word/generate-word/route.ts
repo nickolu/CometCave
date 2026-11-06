@@ -3,6 +3,8 @@ import { generateObject } from 'ai'
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
+import { requireAiAccess } from '@/lib/api/ai-gate'
+
 const SecretWordSchema = z.object({
   word: z.string().describe('A creative, challenging secret word for the AI to use'),
   difficulty: z.enum(['easy', 'medium', 'hard']).describe('The difficulty level of the word'),
@@ -43,6 +45,9 @@ const categories = [
 ]
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAiAccess(request, 'secret-word')
+  if ('error' in gate) return gate.error
+
   try {
     // Get API key from environment variable or request header
     let apiKey = process.env.OPENAI_API_KEY

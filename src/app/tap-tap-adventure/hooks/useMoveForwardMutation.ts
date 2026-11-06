@@ -2,15 +2,15 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
-import { generateTimedQuest, checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { checkQuestProgress, generateTimedQuest } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import {
   FantasyCharacter,
   FantasyDecisionPoint,
   FantasyStoryEvent,
   Item,
 } from '@/app/tap-tap-adventure/models/types'
-
-import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 
@@ -86,7 +86,7 @@ export function useMoveForwardMutation() {
       if (data.shopEvent) {
         soundEngine.playGold()
         // Step milestone triggered a shop - fetch shop items from server
-        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+        const shopRes = await aiFetch('/api/v1/tap-tap-adventure/shop/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ character: currentCharacter }),

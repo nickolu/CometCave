@@ -5,9 +5,9 @@ import { getRandomMount } from '@/app/tap-tap-adventure/config/mounts'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { rollWeather } from '@/app/tap-tap-adventure/config/weather'
 import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
-import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
-
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+import { FantasyCharacter, FantasyDecisionPoint, Item } from '@/app/tap-tap-adventure/models/types'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 import { useGameStateBuilder, useGameStore } from './useGameStore'
 
@@ -190,7 +190,7 @@ export function useResolveDecisionMutation() {
           const destRegion = getRegion(regionId)
           const { gameState: gs } = useGameStore.getState()
           const bossContext = `A powerful guardian of ${destRegion.name} blocks the path. This ${destRegion.element !== 'none' ? destRegion.element + '-aligned ' : ''}boss protects the entrance to ${destRegion.name} (${destRegion.theme}). Enemy types in this region: ${destRegion.enemyTypes.join(', ')}. The boss should be a powerful version of these creatures.`
-          const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
+          const combatRes = await aiFetch('/api/v1/tap-tap-adventure/combat/start', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -269,7 +269,7 @@ export function useResolveDecisionMutation() {
       }
 
       const { gameState: gs } = useGameStore.getState()
-      const res = await fetch('/api/v1/tap-tap-adventure/resolve-decision', {
+      const res = await aiFetch('/api/v1/tap-tap-adventure/resolve-decision', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -342,7 +342,7 @@ export function useResolveDecisionMutation() {
         const currentCharacter = getSelectedCharacter()
         const landmarkState = (currentCharacter ?? data.updatedCharacter)?.landmarkState
         const townLandmark = landmarkState?.landmarks?.[landmarkState?.activeTargetIndex ?? 0]
-        const shopRes = await fetch('/api/v1/tap-tap-adventure/shop/generate', {
+        const shopRes = await aiFetch('/api/v1/tap-tap-adventure/shop/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -388,7 +388,7 @@ export function useResolveDecisionMutation() {
         const isSecretBoss = optionId === 'fight-secret-boss'
         // Mini-boss: 5% chance on non-boss combat when distance > 100
         const isMiniBoss = !isBoss && !isSecretBoss && (data.updatedCharacter.distance ?? 0) > 100 && Math.random() < 0.05
-        const combatRes = await fetch('/api/v1/tap-tap-adventure/combat/start', {
+        const combatRes = await aiFetch('/api/v1/tap-tap-adventure/combat/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

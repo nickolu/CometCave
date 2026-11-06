@@ -1,3 +1,5 @@
+import { aiFetch } from '@/lib/api/ai-fetch'
+
 import type {
   AIResponseRequest,
   AIResponseResponse,
@@ -14,7 +16,7 @@ async function post<TResponse>(
   endpoint: string,
   data: Record<string, unknown> | object
 ): Promise<TResponse> {
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await aiFetch(`${API_BASE}${endpoint}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

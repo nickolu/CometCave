@@ -10,6 +10,7 @@ import VoterManagement from './components/VoterManagement'
 import VotingCriteriaComponent from './components/VotingCriteria'
 import VotingExecution from './components/VotingExecution'
 import VotingResults from './components/VotingResults'
+import { AiGate } from '@/components/ai-gate'
 
 const queryClient = new QueryClient()
 
@@ -17,7 +18,7 @@ type Step = 'voters' | 'criteria' | 'voting' | 'results'
 
 const VOTERS_STORAGE_KEY = 'voters-app-voters'
 
-export default function VotingSimulation() {
+function VotingSimulation() {
   const [currentStep, setCurrentStep] = useState<Step>('voters')
   const [voters, setVoters] = useState<Voter[]>([])
   const [criteria, setCriteria] = useState<VotingCriteria>({
@@ -140,5 +141,13 @@ export default function VotingSimulation() {
         </div>
       </div>
     </QueryClientProvider>
+  )
+}
+
+export default function VotingSimulationGated() {
+  return (
+    <AiGate game="Voters" redirectTo="/voters">
+      <VotingSimulation />
+    </AiGate>
   )
 }

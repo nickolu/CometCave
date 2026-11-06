@@ -7,7 +7,7 @@ import { Pill } from '@/components/ui/pill'
 import { ROUTE_CONSTANTS } from './route-constants'
 
 const games: readonly { title: string; icon: string; href: string; description: string; hot?: boolean }[] = [
-  { title: 'Daily Trivia', icon: 'quiz', href: ROUTE_CONSTANTS.TRIVIA, description: 'Test your knowledge with daily AI-curated questions', hot: true },
+  { title: 'Daily Trivia', icon: 'quiz', href: ROUTE_CONSTANTS.TRIVIA, description: 'Ten fresh questions a day — beat the clock, keep your streak', hot: true },
   { title: 'Clusters', icon: 'grid_view', href: ROUTE_CONSTANTS.CLUSTERS, description: 'Sixteen words hide four groups of four — find them all before four mistakes' },
   { title: 'Meteor Coins', icon: 'toll', href: ROUTE_CONSTANTS.METEOR_COINS, description: 'Time your drops from a swinging arm and push a heap of coins over the edge' },
   { title: 'Hum', icon: 'graphic_eq', href: ROUTE_CONSTANTS.HUM, description: 'Turn a flat line into sound one knob at a time, then build a beat from it' },
@@ -16,16 +16,14 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'I-Ching Oracle', icon: 'auto_awesome', href: ROUTE_CONSTANTS.ORACLE, description: 'Seek wisdom and guidance from the ancient I-Ching' },
   { title: 'Tap Tap Adventure', icon: 'swords', href: ROUTE_CONSTANTS.TAP_TAP_ADVENTURE, description: 'Tap to travel, fight monsters, and collect loot' },
   { title: 'Secret Word', icon: 'lock', href: ROUTE_CONSTANTS.SECRET_WORD, description: 'Guess the secret word!' },
-  { title: 'Voters', icon: 'how_to_vote', href: ROUTE_CONSTANTS.VOTERS, description: 'Create AI voters and see how they vote on topics' },
+  { title: 'Voters', icon: 'how_to_vote', href: ROUTE_CONSTANTS.VOTERS, description: 'Invent a crowd of voters and see how they split on any question' },
   { title: 'Whowouldwininator', icon: 'sports_mma', href: ROUTE_CONSTANTS.WHOWOULDWININATOR, description: 'Create two characters and see who would win' },
   { title: 'Chat Room of Infinity', icon: 'chat', href: ROUTE_CONSTANTS.CHAT_ROOM, description: 'Chat with fictional characters in a chat room' },
-  { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Create unique AI-powered avatars from your photos' },
-  { title: 'Storybook Factory', icon: 'auto_stories', href: ROUTE_CONSTANTS.STORYBOOK_FACTORY, description: 'Create illustrated comic books and storybooks from your pictures' },
+  { title: 'Avatar Maker', icon: 'face', href: ROUTE_CONSTANTS.AVATAR_MAKER, description: 'Turn a photo into an avatar in any style you can name' },
   { title: 'Speck Wars', icon: 'bug_report', href: ROUTE_CONSTANTS.SPECK_WARS, description: 'Command your specks to capture enemy bases in this real-time strategy micro-battle' },
   { title: 'Disneyland Hunt', icon: 'search', href: ROUTE_CONSTANTS.DISNEYLAND_HUNT, description: 'Scavenger hunt checklist for your Disneyland visit — track finds, earn bonus stars' },
   { title: 'Micro Land', icon: 'pest_control', href: ROUTE_CONSTANTS.MICRO_LAND, description: 'A tiny living world — build the ground, summon creatures, and watch them eat each other' },
   { title: 'Dicebound', icon: 'casino', href: ROUTE_CONSTANTS.DICEBOUND, description: 'Tell a dungeon master what you attempt — the dice decide whether it works' },
-  { title: 'Badge Run', icon: 'military_tech', href: ROUTE_CONSTANTS.BADGE_RUN, description: 'Draft a team of badge-wielding fighters and battle through a gauntlet of rivals' },
 ]
 
 export default function Home() {

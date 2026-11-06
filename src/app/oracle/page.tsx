@@ -3,6 +3,7 @@
 import { AnimatePresence } from 'framer-motion'
 import { useState } from 'react'
 
+import { AiGate } from '@/components/ai-gate'
 import { Button } from '@/components/ui/button'
 import { Typography } from '@/components/ui/typography'
 
@@ -77,4 +78,10 @@ const OraclePage = () => {
   )
 }
 
-export default OraclePage
+export default function OraclePageGated() {
+  return (
+    <AiGate game="the Oracle" redirectTo="/oracle" what="consult">
+      <OraclePage />
+    </AiGate>
+  )
+}

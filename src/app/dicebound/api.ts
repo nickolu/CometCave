@@ -5,6 +5,8 @@
  * and their voice, so there is nothing to do here but carry JSON and turn a
  * non-OK response into a thrown `TurnError` the UI can render in character.
  */
+import { aiFetch } from '@/lib/api/ai-fetch'
+
 import type { Campaign, CheckEntry } from './domain/campaign'
 import type { Character } from './domain/character'
 import type { TurnResult } from './domain/turn'
@@ -26,7 +28,7 @@ async function errorFrom(response: Response, fallback: string): Promise<TurnErro
 }
 
 export async function createCharacter(concept: string, premise: string): Promise<Character> {
-  const response = await fetch('/api/v1/dicebound/character', {
+  const response = await aiFetch('/api/v1/dicebound/character', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ concept, premise }),
@@ -73,7 +75,7 @@ export async function takeTurn(
   const creating = campaign.transcript.length === 0
   const body = token ? (creating ? { action, campaign } : { action }) : { campaign, action }
 
-  const response = await fetch('/api/v1/dicebound/turn', {
+  const response = await aiFetch('/api/v1/dicebound/turn', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',

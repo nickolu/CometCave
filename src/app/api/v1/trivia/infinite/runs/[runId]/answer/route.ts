@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { verifyRequestAuth } from '@/lib/api/auth';
+import { requireSignedIn, spendForClaims } from '@/lib/api/ai-gate';
 import { getFirestoreDb } from '@/lib/firebase/server';
 import { judgeAnswer } from '@/lib/trivia/answerJudge';
 import { submitAnswer } from '@/lib/trivia/infiniteRuns';
@@ -10,7 +10,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ runId: string }> }
 ) {
-  const auth = await verifyRequestAuth(request);
+  const auth = await requireSignedIn(request);
   if ('error' in auth) return auth.error;
 
   const { runId } = await params;
@@ -34,7 +34,12 @@ export async function POST(
     }
     const qData = qSnap.data()!;
 
-    // Grade the answer — timeout (empty) is automatically incorrect
+    // Grade the answer — timeout (empty) is automatically incorrect, and
+    // costs nothing. A real answer is judged by a model, so it spends allowance.
+    if (!isTimeout) {
+      const access = await spendForClaims(auth.claims, 'trivia-infinite-judge');
+      if ('error' in access) return access.error;
+    }
     const correct = isTimeout ? false : await judgeAnswer(qData.question, qData.correctAnswer, answer);
 
     // Submit to run

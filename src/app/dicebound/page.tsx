@@ -7,8 +7,16 @@
  * in a column, and keeping the shell means the nav is the exit and this game
  * adds no duplicate one (interaction model 2).
  */
+import { AiGate } from '@/components/ai-gate'
+
 import { DiceboundGame } from './DiceboundGame'
 
 export default function DiceboundPage() {
-  return <DiceboundGame />
+  // Every turn is a model call, so the table itself is behind the gate
+  // (CLAUDE.md principle 1, the generated-content exception).
+  return (
+    <AiGate game="Dicebound" redirectTo="/dicebound">
+      <DiceboundGame />
+    </AiGate>
+  )
 }

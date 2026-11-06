@@ -3,6 +3,7 @@ import { OpenAI } from 'openai'
 import { z } from 'zod'
 
 import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const PERSONALITY_WEIGHTS: Record<string, Record<string, number>> = {
   brave:      { flatter: 0, charm: -1, threaten: 1, inquire: 1, offend: -1 },
@@ -35,6 +36,9 @@ function getOpenAI() {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await requireAiAccess(req, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const body = await req.json()
     const parseResult = DialogueRequestSchema.safeParse(body)

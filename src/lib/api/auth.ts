@@ -1,10 +1,10 @@
-import { type NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 
 import { getFirebaseAuthAdmin } from '@/lib/firebase/server'
 import type { AuthClaims } from '@/lib/users/profile'
 
 export async function verifyRequestAuth(
-  request: NextRequest
+  request: Request
 ): Promise<{ claims: AuthClaims } | { error: NextResponse }> {
   const authHeader =
     request.headers.get('authorization') ?? request.headers.get('Authorization')

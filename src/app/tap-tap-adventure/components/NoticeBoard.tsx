@@ -1,10 +1,12 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
-import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
-import { getRegion, REGIONS } from '@/app/tap-tap-adventure/config/regions'
+import { useEffect, useState } from 'react'
+
+import { REGIONS, getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { generateTimedQuest } from '@/app/tap-tap-adventure/lib/questGenerator'
+import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 interface NoticeBoardProps {
   character: FantasyCharacter
@@ -77,7 +79,7 @@ export function NoticeBoard({ character, activeQuest, onAcceptQuest, onClose }: 
     if (activeQuest) return
 
     setIsLoading(true)
-    fetch('/api/v1/tap-tap-adventure/quest/generate', {
+    aiFetch('/api/v1/tap-tap-adventure/quest/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ character }),

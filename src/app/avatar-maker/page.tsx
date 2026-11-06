@@ -10,10 +10,12 @@ import {
 import Image from 'next/image'
 import React, { useEffect, useRef, useState } from 'react'
 
+import { AiGate } from '@/components/ai-gate'
 import { Autocomplete } from '@/components/ui/autocomplete'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { aiFetch } from '@/lib/api/ai-fetch'
 import {
   cn,
   getImageGenerationDisableReasonClient,
@@ -172,7 +174,7 @@ const ALL_STYLES: string[] = Array.from(
   )
 )
 
-export default function AvatarMakerPage() {
+function AvatarMakerPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string>('')
@@ -308,7 +310,7 @@ export default function AvatarMakerPage() {
       formData.append('n', '4')
       formData.append('size', size)
 
-      const res = await fetch('/api/v1/avatar-maker/edit', {
+      const res = await aiFetch('/api/v1/avatar-maker/edit', {
         method: 'POST',
         body: formData,
       })
@@ -581,5 +583,13 @@ export default function AvatarMakerPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function AvatarMakerPageGated() {
+  return (
+    <AiGate game="Avatar Maker" redirectTo="/avatar-maker" what="use">
+      <AvatarMakerPage />
+    </AiGate>
   )
 }

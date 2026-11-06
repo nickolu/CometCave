@@ -1,7 +1,8 @@
 'use client'
-import { useState, useCallback } from 'react'
+import { useCallback, useState } from 'react'
 
 import { GameNPC, IntentType } from '@/app/tap-tap-adventure/config/npcs'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 interface ConversationMessage {
   role: 'user' | 'assistant'
@@ -80,7 +81,7 @@ export function useNPCDialogue(): UseNPCDialogueReturn {
     const recentHistory = conversationHistory.slice(-6)
 
     try {
-      const res = await fetch('/api/v1/tap-tap-adventure/npc/dialogue', {
+      const res = await aiFetch('/api/v1/tap-tap-adventure/npc/dialogue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

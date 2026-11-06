@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { READING_LEVEL } from '@/app/api/v1/whowouldwininator/constants'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 const RandomCharacterSchema = z.object({
   name: z.string().describe('The name of the character'),
@@ -93,6 +94,9 @@ const obscureOrWellKnown = () => {
 }
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'whowouldwininator-text')
+  if ('error' in gate) return gate.error
+
   try {
     const openaiClient = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY,

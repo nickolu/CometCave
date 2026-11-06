@@ -3,6 +3,7 @@
 import { useMutation } from '@tanstack/react-query'
 
 import { Vote, Voter, VotingCriteria } from '@/app/voters/types/voting'
+import { aiFetch } from '@/lib/api/ai-fetch'
 
 // Types for API responses
 interface GenerateRandomVoterResponse {
@@ -29,7 +30,7 @@ interface GenerateSummaryResponse {
 const generateRandomVoter = async (
   existingVoters: Voter[]
 ): Promise<GenerateRandomVoterResponse> => {
-  const response = await fetch('/api/v1/voters/generate-random-voter', {
+  const response = await aiFetch('/api/v1/voters/generate-random-voter', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -47,7 +48,7 @@ const generateRandomVoter = async (
 }
 
 const generateRandomQuestion = async (): Promise<GenerateRandomQuestionResponse> => {
-  const response = await fetch('/api/v1/voters/generate-random-question', {
+  const response = await aiFetch('/api/v1/voters/generate-random-question', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -65,7 +66,7 @@ const generateCriteria = async (params: {
   question: string
   existingOptions: string[]
 }): Promise<GenerateCriteriaResponse> => {
-  const response = await fetch('/api/v1/voters/generate-criteria', {
+  const response = await aiFetch('/api/v1/voters/generate-criteria', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -85,7 +86,7 @@ const castVote = async (params: {
   criteria: VotingCriteria
   instance: number
 }): Promise<CastVoteResponse> => {
-  const response = await fetch('/api/v1/voters/cast-vote', {
+  const response = await aiFetch('/api/v1/voters/cast-vote', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -106,7 +107,7 @@ const generateSummary = async (params: {
   votes: Vote[]
   criteria: VotingCriteria
 }): Promise<GenerateSummaryResponse> => {
-  const response = await fetch('/api/v1/voters/generate-summary', {
+  const response = await aiFetch('/api/v1/voters/generate-summary', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

@@ -24,11 +24,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
-import {
-  type Campaign,
-  type TranscriptEntry,
-  validateCampaign,
-} from '@/app/dicebound/domain/campaign'
+import { type Campaign, type TranscriptEntry } from '@/app/dicebound/domain/campaign'
 import type { Item, Kit, Power } from '@/app/dicebound/domain/kit'
 import { SUGGESTION_COUNT, cleanSuggestions } from '@/app/dicebound/domain/suggest'
 import {
@@ -39,7 +35,7 @@ import {
   openThreads,
   relevanceWindow,
 } from '@/app/dicebound/domain/world'
-import { verifyRequestAuth } from '@/lib/api/auth'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 import {
   SUGGEST_MODEL,
   type ToolDef,
@@ -127,10 +123,6 @@ const OFFER: ToolDef = {
   input_schema: toolSchema(OfferSchema),
 }
 
-interface SuggestRequest {
-  campaign?: unknown
-}
-
 /**
  * The campaign these suggestions are for.
  *
@@ -141,37 +133,24 @@ interface SuggestRequest {
  * a signed-in player with nothing stored has nothing to suggest against, and
  * the simpler rule is the correct one rather than a copy waiting to drift.
  */
-async function campaignFor(request: NextRequest, body: SuggestRequest): Promise<Campaign | null> {
-  const hasToken = /^Bearer\s+.+$/i.test(
-    request.headers.get('authorization') ?? request.headers.get('Authorization') ?? ''
-  )
-
-  // No token is the local-only backend: Firebase unconfigured, so there is no
-  // server-side story and the client sends its own, exactly as it does for a turn.
-  if (!hasToken) return validateCampaign(body.campaign)
-
-  const auth = await verifyRequestAuth(request)
+async function campaignFor(request: NextRequest): Promise<Campaign | null> {
+  // Suggestions are a model call like a turn, so they take the same gate. A
+  // refusal here is silent — see the note in POST — which also covers the
+  // anonymous player who should never have reached this far.
+  const auth = await requireAiAccess(request, 'dicebound-suggest')
   if ('error' in auth) return null
 
   return await loadCampaign(auth.claims.uid)
 }
 
 export async function POST(request: NextRequest) {
-  let body: SuggestRequest = {}
-  try {
-    body = (await request.json()) as SuggestRequest
-  } catch {
-    // An empty body is the ordinary signed-in case — the server loads its own
-    // campaign, so there is nothing for the request to carry.
-  }
-
   // Every failure below answers the same way: no suggestions, and a playable
   // game. This is an affordance beside the composer, not a turn — a player who
   // never learns it was meant to be there has lost nothing, and an error banner
   // over a story that is working would be worse than the silence.
   let campaign: Campaign | null
   try {
-    campaign = await campaignFor(request, body)
+    campaign = await campaignFor(request)
   } catch (error) {
     console.error('dicebound suggest could not load the campaign:', error)
     return NextResponse.json({ suggestions: [] })

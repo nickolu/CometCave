@@ -3,8 +3,12 @@ import { generateObject } from 'ai'
 import { NextResponse } from 'next/server'
 
 import { ContestResultsSchema } from '@/app/api/v1/whowouldwininator/types'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 export async function POST(request: Request) {
+  const gate = await requireAiAccess(request, 'whowouldwininator-text')
+  if ('error' in gate) return gate.error
+
   try {
     // Check content length before parsing to prevent large payloads
     const contentLength = request.headers.get('content-length')

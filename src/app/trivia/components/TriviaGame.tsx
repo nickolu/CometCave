@@ -8,6 +8,7 @@ import { AnswerOption } from '@/components/ui/answer-option'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { ChunkyCard, ChunkyCardContent, ChunkyCardHeader } from '@/components/ui/chunky-card'
 import { Input } from '@/components/ui/input'
+import { aiFetch } from '@/lib/api/ai-fetch'
 import { getTodayPST } from '@/lib/dates'
 
 import { TriviaHUD } from './TriviaHUD'
@@ -139,7 +140,7 @@ export function TriviaGame({ onFinish, onFlee, date: dateProp }: { onFinish: (re
     try {
       const question = questions[currentIndex]
 
-      const res = await fetch('/api/v1/trivia/check-answer', {
+      const res = await aiFetch('/api/v1/trivia/check-answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

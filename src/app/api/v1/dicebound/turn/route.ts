@@ -171,7 +171,7 @@ import {
   reconcileWorld,
   relevanceWindow,
 } from '@/app/dicebound/domain/world'
-import { verifyRequestAuth } from '@/lib/api/auth'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 import {
   type ContentBlock,
   DM_MODEL,
@@ -781,19 +781,10 @@ async function campaignFor(
 ): Promise<
   { campaign: Campaign; uid: string | null } | { error: NextResponse } | { notFound: true }
 > {
-  const hasToken = /^Bearer\s+.+$/i.test(
-    request.headers.get('authorization') ?? request.headers.get('Authorization') ?? ''
-  )
-
-  if (!hasToken) {
-    const campaign = validateCampaign(body.campaign)
-    if (!campaign) {
-      return { error: NextResponse.json({ error: 'That is not a campaign.' }, { status: 400 }) }
-    }
-    return { campaign, uid: null }
-  }
-
-  const auth = await verifyRequestAuth(request)
+  // Every turn is a model call, so every turn needs a signed-in player with
+  // allowance left for today. The unsigned, client-authoritative path that
+  // used to live here is gone with it: without an account there is no turn.
+  const auth = await requireAiAccess(request, 'dicebound-turn')
   if ('error' in auth) return { error: auth.error }
 
   const stored = await loadCampaign(auth.claims.uid)

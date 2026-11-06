@@ -138,7 +138,7 @@ export default function UserSelector() {
               }}
               onClick={() => handleCharacterSelect(character.id)}
               tabIndex={0}
-              onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCharacterSelect(character.id) } }}
+              onKeyDown={(e: KeyboardEvent<HTMLLIElement>) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCharacterSelect(character.id) } }}
             >
               <ListItemAvatar>
                 <Avatar>{(character.name?.[0] ?? '?').toUpperCase()}</Avatar>

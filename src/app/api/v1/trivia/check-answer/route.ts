@@ -4,7 +4,9 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 
 import { dailyCache } from '@/app/trivia/lib/questionCache'
+import { requireSignedIn, spendForClaims } from '@/lib/api/ai-gate'
 import { getTodayPST } from '@/lib/dates'
+import { matchesPlainly } from '@/lib/trivia/answerJudge'
 import { getDailyQuestions } from '@/lib/trivia/dailyQuestionsDb'
 import { getTopWrongAnswers, recordWrongAnswer } from '@/lib/trivia/wrongAnswers'
 
@@ -50,8 +52,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Question not found.' }, { status: 404 })
     }
 
-    // For AI questions, use semantic matching via GPT
-    if (question.source === 'ai') {
+    // Free-text questions are judged by a model — but only for a signed-in
+    // player with allowance left today. Anyone else gets plain matching below,
+    // so the daily game stays playable without an account (CLAUDE.md #1) while
+    // the model call itself stays behind the gate.
+    const signedIn = await requireSignedIn(request)
+    const judged = 'error' in signedIn ? null : await spendForClaims(signedIn.claims, 'trivia-judge')
+    const mayUseJudge = judged !== null && !('error' in judged)
+
+    if (question.source === 'ai' && mayUseJudge) {
       let apiKey = process.env.OPENAI_API_KEY
       const headerApiKey = request.headers.get('x-openai-api-key')
       if (headerApiKey) apiKey = headerApiKey
@@ -102,9 +111,9 @@ Be generous — if the core concept is correct, mark it correct.`,
       })
     }
 
-    // For OpenTDB questions, use exact string matching
-    const correct =
-      answer.trim().toLowerCase() === question.correctAnswer.trim().toLowerCase()
+    // Multiple-choice questions, and free-text answers from players who are
+    // not signed in (or are out of allowance), are matched without a model.
+    const correct = matchesPlainly(answer, question.correctAnswer)
 
     return NextResponse.json({
       correct,

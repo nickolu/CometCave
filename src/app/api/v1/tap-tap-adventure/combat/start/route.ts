@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 
 import { getDifficultyModifiers } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
-import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
 import { initializePlayerCombatState } from '@/app/tap-tap-adventure/lib/combatEngine'
-import { generateCombatEncounter, generateBossEncounter, generateMiniBossEncounter, generateFinalBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
-import { CombatState, CombatEnemy } from '@/app/tap-tap-adventure/models/combat'
-import { getEnemyCount, generateEnemyVariant, scaleBossForParty } from '@/app/tap-tap-adventure/lib/enemyVariants'
+import { generateBossEncounter, generateCombatEncounter, generateFinalBossEncounter, generateMiniBossEncounter } from '@/app/tap-tap-adventure/lib/combatGenerator'
+import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { generateEnemyVariant, getEnemyCount, scaleBossForParty } from '@/app/tap-tap-adventure/lib/enemyVariants'
+import { CombatEnemy, CombatState } from '@/app/tap-tap-adventure/models/combat'
+import { requireAiAccess } from '@/lib/api/ai-gate'
 
 export async function POST(req: NextRequest) {
+  const gate = await requireAiAccess(req, 'tap-tap-text')
+  if ('error' in gate) return gate.error
+
   try {
     const { character, storyEvents = [], eventContext, isBoss = false, isMiniBoss = false, isSecretBoss = false, pendingRegionId } = await req.json()
     const storyContext = buildStoryContext(character, storyEvents)

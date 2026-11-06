@@ -1,13 +1,13 @@
 import { after } from 'next/server'
 import { type NextRequest, NextResponse } from 'next/server'
 
-import { verifyRequestAuth } from '@/lib/api/auth'
+import { requireSignedIn, spendForClaims } from '@/lib/api/ai-gate'
+import { getFirestoreDb } from '@/lib/firebase/server'
 import type { AIQuestion } from '@/lib/trivia/aiQuestions'
 import { saveAIQuestion } from '@/lib/trivia/aiQuestions'
 import { CATEGORY_META } from '@/lib/trivia/categories'
 import { generateInfiniteQuestion } from '@/lib/trivia/generateQuestion'
 import { MAX_GENERATIONS_PER_WINDOW, WINDOW_MS, checkAndIncrementGenerationLimit } from '@/lib/trivia/generationLimit'
-import { getFirestoreDb } from '@/lib/firebase/server'
 import { sampleNextQuestion } from '@/lib/trivia/sampler'
 import { trackExhaustion } from '@/lib/trivia/triviaStats'
 import { warmQuestionPoolForUser } from '@/lib/trivia/warmQuestionPool'
@@ -15,7 +15,7 @@ import { warmQuestionPoolForUser } from '@/lib/trivia/warmQuestionPool'
 // GET /api/v1/trivia/infinite/next?streak=N[&categoryIds=12,13,15][&customCategory=roman+empire]
 // Backward-compat: also accepts the legacy single ?categoryId=N param.
 export async function GET(request: NextRequest) {
-  const auth = await verifyRequestAuth(request)
+  const auth = await requireSignedIn(request)
   if ('error' in auth) return auth.error
 
   const { searchParams } = new URL(request.url)
@@ -130,6 +130,10 @@ export async function GET(request: NextRequest) {
           { status: 429 }
         )
       }
+
+      // Generation is a model call: spend today's allowance before making it.
+      const access = await spendForClaims(auth.claims, 'trivia-infinite-generate')
+      if ('error' in access) return access.error
 
       try {
         const genOptions: Parameters<typeof generateInfiniteQuestion>[0] = { streak: parsedStreak }
