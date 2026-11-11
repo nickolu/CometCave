@@ -23,6 +23,7 @@ import {
   throughHoop,
 } from '@/app/meteor-coins/lib/cannon'
 import type { CannonDelivery } from '@/app/meteor-coins/lib/deliveries/cannon'
+import { type SpiderDelivery, spiderCueLit } from '@/app/meteor-coins/lib/deliveries/spider'
 import { RING_Y, ringX } from '@/app/meteor-coins/lib/dropper'
 import { initPhysics } from '@/app/meteor-coins/lib/engine'
 import { DropGame } from '@/app/meteor-coins/lib/game'
@@ -161,6 +162,73 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 }
 
 /**
+ * The Cairn's spider bots. Random walks to a random spot and lets go at a
+ * random moment. Cue walks to a post picked at random and lets go when the
+ * landing dot fills (square on the post and low enough to land soft).
+ * Skilled waits over the middle post for the dot, which means the bob's low
+ * point as the post crosses, and falls back on a side post after a few
+ * seconds. Both are 0–100ms late, like people.
+ */
+function spiderBot(game: DropGame, bot: Bot, rand: () => number) {
+  const MIDDLE_LEAD = 3
+  const spider = game.delivery as SpiderDelivery
+  const posts = game.towerPosts
+  const weights = game.stage.rules.goal.type === 'stack' ? game.stage.rules.goal.weights : []
+  const middle = weights.indexOf(Math.max(...weights))
+  let goalX = 0
+  let nextAt = 0.5 + rand() * 1.5
+  let releaseAt: number | null = null
+  let since = 0
+  let fallback = false
+  const aim = (t: number) => {
+    since = t
+    fallback = false
+    if (bot === 'random') goalX = (rand() * 2 - 1) * spider.config.halfWidth
+    else if (bot === 'cue') goalX = posts[Math.floor(rand() * posts.length)].x
+    else {
+      // Spread the coins, shortest tower first, but let the middle run a
+      // few coins taller: it counts twice, and a tower past a dozen coins
+      // tends to come down.
+      const towers = game.state.towers
+      const need = (i: number) => towers[i] - (i === middle ? MIDDLE_LEAD : 0)
+      const next = posts.map((_, i) => i).sort((a, b) => need(a) - need(b))[0]
+      goalX = posts[next].x
+    }
+    game.input({ type: 'point', x: goalX, z: spider.config.z })
+  }
+  aim(0)
+  return () => {
+    const t = game.engine.time
+    if (releaseAt !== null) {
+      if (t < releaseAt) return
+      game.press()
+      game.release()
+      releaseAt = null
+      nextAt = t + 0.2 + rand() * 0.6
+      aim(nextAt)
+      return
+    }
+    if (!spider.holding || t < nextAt || Math.abs(spider.x - goalX) > 0.05) return
+    if (bot === 'random') {
+      releaseAt = t + rand() * 2
+      return
+    }
+    if (bot === 'skilled' && !fallback && t - since > 6) {
+      // The middle isn't lining up: take whichever side post is nearer.
+      fallback = true
+      const sides = posts.filter((_, i) => i !== middle)
+      goalX = sides[Math.floor(rand() * sides.length)].x
+      game.input({ type: 'point', x: goalX, z: spider.config.z })
+      return
+    }
+    const tip = spider.tipAt(0.05)
+    const landing = game.landing(0.05, tip)
+    const square = bot === 'skilled' ? landing.offset < 0.15 : true
+    if ((spiderCueLit(landing, tip) && square) || t - since > 12) releaseAt = t + rand() * 0.1
+  }
+}
+
+/**
  * Bots for every delivery but the arm, by kind. Each is made once per game
  * and returns a function run before every step; it plays the delivery
  * through game.input as random, cue and skilled players would.
@@ -168,6 +236,7 @@ function cannonBot(game: DropGame, bot: Bot, rand: () => number) {
 const DELIVERY_BOTS: Record<string, (game: DropGame, bot: Bot, rand: () => number) => () => void> =
   {
     cannon: cannonBot,
+    spider: spiderBot,
   }
 
 function play(stage: StageDef, bot: Bot, seed: number) {

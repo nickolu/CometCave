@@ -393,28 +393,29 @@ const HOOP_LA_CANNON: StageDef = {
 }
 
 /** The Cairn's drop line, forward over its posts. */
-const CAIRN_DROP_Z = 0.6
+const CAIRN_DROP_Z = 1.2
 const CAIRN_POST = { type: 'post', radius: 0.7, height: 0.8 } as const
+/** The middle post slides this far either side of the drop line. */
+const CAIRN_SLIDE = { ampZ: 0.7, periodS: 4.6 }
 
 /**
- * Two stone posts at the sides, and one in the middle mounted on the pusher's
- * front on a short bracket. The middle post reaches the drop line only at the
- * front of its stroke, so you catch it as it arrives.
+ * Two stone posts at the sides, and one in the middle that slides forward
+ * and back on its own across the drop line, so it lines up twice a trip.
+ * (It used to ride the pusher on a bracket and only lined up at the front
+ * of the stroke: almost impossible to hit, in Nick's playtest.)
  */
 const CAIRN_POSTS: Obstacle[] = [
   { ...CAIRN_POST, x: -2.2, z: CAIRN_DROP_Z, tower: 'Left' },
-  { ...CAIRN_POST, x: 0, z: CAIRN_DROP_Z - PUSHER_AMP_Z, rides: true, tower: 'Middle' },
+  { ...CAIRN_POST, x: 0, z: CAIRN_DROP_Z, slide: CAIRN_SLIDE, tower: 'Middle' },
   { ...CAIRN_POST, x: 2.2, z: CAIRN_DROP_Z, tower: 'Right' },
 ]
-const PUSHER_FACE_Z = PUSHER_MID_Z + PUSHER_DEPTH / 2
-const CAIRN_BRACKET: Obstacle = {
-  type: 'block',
-  x: 0,
-  z: (PUSHER_FACE_Z - 0.1 + CAIRN_DROP_Z - PUSHER_AMP_Z) / 2,
-  width: 0.5,
-  depth: CAIRN_DROP_Z - PUSHER_AMP_Z - PUSHER_FACE_Z + 0.1,
-  height: 0.3,
-  rides: true,
+// Guard: at the back of its slide the middle post stays clear of the
+// pusher's face at full reach, with room to spare so no coin is pinched.
+if (
+  CAIRN_DROP_Z - CAIRN_SLIDE.ampZ - CAIRN_POST.radius <
+  PUSHER_MID_Z + PUSHER_AMP_Z + PUSHER_DEPTH / 2 + 0.25
+) {
+  throw new Error("The Cairn's middle post would slide into the pusher")
 }
 
 const THE_CAIRN: StageDef = {
@@ -422,37 +423,54 @@ const THE_CAIRN: StageDef = {
   slug: 'the-cairn',
   name: 'The Cairn',
   pitch:
-    'Build towers that hold on three stone posts. The middle one rides the pusher, so catch it as it slides by.',
+    'Build towers that hold on three stone posts. A spider lets the coins down. The middle post slides back and forth, so catch it as it passes.',
   playable: true,
   // An icy floor, sloping gently to the front: whatever misses a post, or
   // falls off one, slides away.
   table: {
     chuteHalfWidth: FIELD_HALF_WIDTH,
     pusherPeriodS: PUSHER_PERIOD_S,
-    obstacles: [...CAIRN_POSTS, CAIRN_BRACKET],
+    obstacles: CAIRN_POSTS,
     floorFriction: 0.05,
     floorDrift: 2,
   },
-  // Lowered and moved forward to just above the posts. A coin dropped from
-  // the usual height hits a tower hard enough to knock it down: in the
-  // headless prototype, falls of ~4 kept a third as many coins up as falls
-  // of ~2.5.
+  // Unused (the spider delivers), but kept over the posts.
   arm: { periodS: 4, pivotY: 10.6, dropZ: CAIRN_DROP_Z },
+  // A spider on a thread lets the coins down, bobbing so that only some
+  // moments give a soft drop. A coin dropped from high hits a tower hard
+  // enough to knock it down: in the headless prototype, falls of ~4 kept a
+  // third as many coins up as falls of ~2.5.
+  delivery: {
+    kind: 'spider',
+    z: CAIRN_DROP_Z,
+    halfWidth: 3.2,
+    lowY: 3.4,
+    highY: 6.4,
+    bobPeriodS: 2.8,
+    speed: 3.5,
+    reloadS: 0.6,
+  },
   ring: { enabled: false },
   objects: { drop: COIN },
-  cue: 'dot',
+  // The spider draws its own landing dot (scene/SpiderRig).
+  cue: null,
   pile: null,
   rules: {
     coins: 30,
     bonusForStreak: () => 0,
-    // From the sim (16 games each): a random tapper makes one star about half
-    // the time; tapping when the dot fills makes two ~90% of the time but
-    // rarely catches the middle post; holding out for the middle makes three
-    // ~30% of the time. No tower needs more than 13 coins for three stars.
-    goal: { type: 'stack', weights: [1, 2, 1], stars: [6, 18, 32] },
+    // From the sim (10 games each): letting go at random averages 4.6 (one
+    // star 30% of the time: drops from high in the bob knock towers down);
+    // letting go on any post when the dot fills averages 28.5, two stars
+    // 90% and three 10%, but its middle tower stays short (a perfect middle
+    // drop waits ~2.8s for the post and the bob to line up, a side one
+    // ~0.7s); spreading the coins and letting the middle run a few taller,
+    // waiting for the dot square on its center, averages 35.6 (p50 41),
+    // three stars 60%. Towers past a dozen coins tend to come down, still
+    // or sliding, so no tower needs more than 13 coins for three stars.
+    goal: { type: 'stack', weights: [1, 2, 1], stars: [6, 22, 38] },
   },
   measure: { label: 'Height', caption: 'coins high, middle counted twice' },
-  hint: 'Land coins on the posts to build towers. The dot fills in when a drop would land square. The middle post counts twice.',
+  hint: 'Land coins on the posts to build towers. The dot fills in when a drop would land square and soft: let go when the spider is low. The middle post counts twice.',
   voice: {
     start: 'Stack it true. The ice only takes what falls.',
     clear: 'The cairn stands. Someone will find their way by it.',

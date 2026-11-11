@@ -330,10 +330,12 @@ export class DropGame implements DeliveryHost {
 
   /**
    * Where a coin released `ahead` seconds from now would land, judged against
-   * where each post will be when it gets there (the middle one moves).
+   * where each post will be when it gets there (the middle one moves). It
+   * falls from the arm's tip, or from `from` for a delivery that drops from
+   * somewhere else (The Cairn's spider).
    */
-  landing(ahead = 0): Landing {
-    const tip = this.armTip(ahead)
+  landing(ahead = 0, from?: Vec): Landing {
+    const tip = from ? { ...from } : this.armTip(ahead)
     const releaseAt = this.engine.time + ahead
     for (let i = 0; i < this.towerPosts.length; i++) {
       const top = this.towerTop(i)
