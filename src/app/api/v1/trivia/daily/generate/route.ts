@@ -24,6 +24,7 @@ export async function POST(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const lookahead = Math.min(parseInt(searchParams.get('lookahead') ?? '2', 10), 7)
+  const force = searchParams.get('force') === 'true'
 
   const today = getTodayPST()
   const dates = Array.from({ length: lookahead + 1 }, (_, i) => {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
   for (const dateStr of dates) {
     const existing = await getDailyQuestions(dateStr)
-    if (existing && existing.questions.length > 0) {
+    if (!force && existing && existing.questions.length > 0) {
       skipped.push(dateStr)
       continue
     }
