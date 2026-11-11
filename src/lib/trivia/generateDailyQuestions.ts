@@ -85,7 +85,7 @@ export async function fetchOpenTDBQuestions(dateStr: string): Promise<TriviaQues
 
       if (data.response_code === 0 && data.results.length > 0) {
         for (const q of data.results) {
-          const seed = days * 1000 + questions.length
+          const seed = days * 1013 + questions.length
           const options = seededShuffle(
             [q.correct_answer, ...q.incorrect_answers].map(decodeHTML),
             seed
@@ -220,7 +220,7 @@ export async function generateFallbackQuestions(
       maxTokens: 300,
     })
 
-    const seed = days * 1000 + questions.length
+    const seed = days * 1013 + questions.length
     const options = seededShuffle(
       [result.object.correctAnswer, ...result.object.wrongAnswers],
       seed
