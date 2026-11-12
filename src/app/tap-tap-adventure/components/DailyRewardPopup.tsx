@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+
 import { DailyReward } from '@/app/tap-tap-adventure/config/dailyRewards'
 import { ClaimResult } from '@/app/tap-tap-adventure/lib/dailyRewardTracker'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { BrassPlate, PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface DailyRewardPopupProps {
   streak: number
@@ -13,6 +15,7 @@ interface DailyRewardPopupProps {
   onDismiss: () => void
 }
 
+/** A season ticket: seven boxes, one stamped each day you come back. */
 export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRewardPopupProps) {
   const [isVisible, setIsVisible] = useState(false)
   const [claimed, setClaimed] = useState(false)
@@ -62,6 +65,11 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
     }
   }
 
+  const handleDismiss = () => {
+    setIsVisible(false)
+    dismissTimerRef.current = setTimeout(onDismiss, 300)
+  }
+
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
@@ -69,82 +77,86 @@ export function DailyRewardPopup({ streak, reward, onClaim, onDismiss }: DailyRe
       }`}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={claimed ? () => { setIsVisible(false); dismissTimerRef.current = setTimeout(onDismiss, 300) } : undefined} />
+      <div className="absolute inset-0 bg-ps-house/70" onClick={claimed ? handleDismiss : undefined} />
 
       {/* Content */}
       <div
-        className={`relative transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
+        className={`relative mx-4 w-full max-w-sm transition-[transform,opacity] duration-500 motion-reduce:transition-none ${
+          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-75'
         }`}
       >
         <div
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label="Daily Reward"
+          aria-label="Daily reward"
           tabIndex={-1}
-          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 outline-none"
+          className="outline-none"
         >
-          {!claimed ? (
-            <>
-              {/* Title */}
-              <h2 className="text-2xl font-bold text-amber-400 mb-1">Daily Reward</h2>
-              <p className="text-slate-400 text-sm mb-4">
-                Day {dayInCycle} of 7
-              </p>
+          <PlaybillSheet className="px-5 pb-5 pt-4 text-center">
+            {!claimed ? (
+              <>
+                <PlaybillCaption>Day {dayInCycle} of 7</PlaybillCaption>
+                <PlaybillTitle size="md" className="mt-1.5">Daily reward</PlaybillTitle>
 
-              {/* Streak indicator */}
-              <div className="flex justify-center gap-1.5 mb-4">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                      i < dayInCycle
-                        ? 'bg-amber-500 text-black'
-                        : 'bg-[#2a2b3f] text-slate-500 border border-[#3a3c56]'
-                    } ${i === dayInCycle - 1 ? 'ring-2 ring-amber-300 ring-offset-1 ring-offset-[#161723]' : ''}`}
-                  >
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
+                {/* The seven boxes on the ticket */}
+                <ol className="mt-4 grid grid-cols-7 gap-1.5" aria-label={`Days claimed this week: ${dayInCycle} of 7`}>
+                  {Array.from({ length: 7 }).map((_, i) => {
+                    const stamped = i < dayInCycle
+                    const today = i === dayInCycle - 1
+                    return (
+                      <li
+                        key={i}
+                        className={cn(
+                          'flex h-10 items-center justify-center rounded-[2px] border-2 font-playbill text-base leading-none tabular-nums',
+                          stamped ? 'border-ps-stamp-gold text-ps-stamp-gold' : 'border-ps-ink/40 text-ps-ink-soft',
+                          today && 'outline outline-2 outline-offset-1 outline-ps-stamp-red'
+                        )}
+                        aria-current={today ? 'date' : undefined}
+                      >
+                        <span className={cn(stamped && '-rotate-6')}>{i + 1}</span>
+                      </li>
+                    )
+                  })}
+                </ol>
 
-              {/* Reward description */}
-              <div className="bg-[#2a2b3f] border border-[#3a3c56] rounded-lg p-4 mb-4">
-                <p className="text-lg font-semibold text-white mb-1">{reward.label}</p>
-                <p className="text-sm text-slate-300">{reward.description}</p>
-              </div>
+                {/* The reward on brass */}
+                <BrassPlate className="mt-4 px-4 py-3">
+                  <p className="font-playbill text-lg uppercase leading-tight tracking-wide">{reward.label}</p>
+                  <p className="mt-1 font-body text-xs leading-snug text-ps-ink/80">{reward.description}</p>
+                </BrassPlate>
 
-              {/* Claim button */}
-              <Button
-                className="w-full bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold py-3 rounded-lg text-lg"
-                onClick={handleClaim}
-              >
-                Claim Reward
-              </Button>
-            </>
-          ) : (
-            <>
-              {/* Claimed state */}
-              <h2 className="text-2xl font-bold text-green-400 mb-3">Reward Claimed!</h2>
-
-              <div className="bg-[#2a2b3f] border border-[#3a3c56] rounded-lg p-4 mb-3 space-y-1">
-                {claimResult && claimResult.goldAwarded > 0 && (
-                  <p className="text-amber-300 text-sm">+{claimResult.goldAwarded} Gold</p>
-                )}
-                {claimResult && claimResult.reputationAwarded > 0 && (
-                  <p className="text-blue-300 text-sm">+{claimResult.reputationAwarded} Reputation</p>
-                )}
-                {claimResult && claimResult.items.map(item => (
-                  <p key={item.id} className="text-green-300 text-sm">
-                    Received: {item.name}
-                  </p>
-                ))}
-              </div>
-
-              <p className="text-slate-500 text-xs">Auto-dismissing...</p>
-            </>
-          )}
+                <PaperButton variant="brass" className="mt-4 w-full" onClick={handleClaim}>
+                  Claim reward
+                </PaperButton>
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="mt-2 rounded-[2px] px-2 py-1 font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft hover:text-ps-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+                >
+                  Not now
+                </button>
+              </>
+            ) : (
+              <>
+                <PlaybillTitle size="md">Claimed</PlaybillTitle>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-2" role="status">
+                  {claimResult && claimResult.goldAwarded > 0 && (
+                    <Stamp tone="gold" animate className="text-xs">+{claimResult.goldAwarded} gold</Stamp>
+                  )}
+                  {claimResult && claimResult.reputationAwarded > 0 && (
+                    <Stamp tone="blue" animate className="text-xs">+{claimResult.reputationAwarded} repute</Stamp>
+                  )}
+                  {claimResult && claimResult.items.map(item => (
+                    <Stamp key={item.id} tone="violet" animate className="text-xs">
+                      {item.name}
+                    </Stamp>
+                  ))}
+                </div>
+                <PlaybillCaption className="mt-4">Closing…</PlaybillCaption>
+              </>
+            )}
+          </PlaybillSheet>
         </div>
       </div>
     </div>

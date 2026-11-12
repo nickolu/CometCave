@@ -69,8 +69,8 @@ function FloatingNumber({ event }: { event: DamageEvent }) {
       {event.isCritical && '★ '}
       {event.isDot ? `${event.amount}` : `-${event.amount}`}
       {event.isCritical && ' ★'}
-      {event.effectiveness === 'super' && <span className="text-yellow-300 text-[10px] ml-0.5">⚡</span>}
-      {event.effectiveness === 'resisted' && <span className="text-blue-400 text-[10px] ml-0.5">~</span>}
+      {event.effectiveness === 'super' && <span className="text-yellow-300 text-xs ml-0.5">⚡</span>}
+      {event.effectiveness === 'resisted' && <span className="text-blue-400 text-xs ml-0.5">~</span>}
     </span>
   )
 }

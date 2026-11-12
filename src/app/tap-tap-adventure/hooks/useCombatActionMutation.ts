@@ -34,6 +34,7 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
   const queryClient = useQueryClient()
   const { getSelectedCharacter, addHeirloom, deleteCharacter, awardSoulEssence, setRunSummary, recordRun } = useGameStore()
   const {
+    gameState: builderState,
     addItem,
     addStoryEvent,
     commit,
@@ -161,8 +162,6 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
 
         if (data.combatState.status === 'victory' && data.rewards) {
           soundEngine.playVictory()
-          // Track daily challenge: win_combats
-          useGameStore.getState().updateDailyChallengeProgress('win_combats', 1)
           // Add loot items and collect for story event
           const processedLoot: Item[] = []
           for (const lootItem of data.rewards.loot) {
@@ -209,31 +208,28 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
           const repGain = pendingRegionId ? 3 : 1
           updateSelectedCharacter({ reputation: (character.reputation ?? 0) + repGain })
 
-          // Check main quest milestones
+          // Check main quest milestones. Nothing here may write into `character`:
+          // it is the store's frozen object, and a throw would leave the fight open.
           if (character.mainQuest && character.mainQuest.status === 'active') {
             const updatedVisited = pendingRegionId
               ? [...(character.visitedRegions ?? ['green_meadows']), pendingRegionId]
               : (character.visitedRegions ?? ['green_meadows'])
             const conquered = getConqueredCount(updatedVisited)
-            const milestoneGold = claimNewMilestones(character.mainQuest, conquered)
+            const { mainQuest, goldAwarded: milestoneGold } = claimNewMilestones(character.mainQuest, conquered)
+            updateSelectedCharacter({ mainQuest })
             if (milestoneGold > 0) {
-              updateSelectedCharacter({ mainQuest: character.mainQuest })
-              // Use fresh gold from store since updateSelectedCharacter has been called multiple times
-              const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
+              // Use fresh gold from the builder since updateSelectedCharacter has been called multiple times
+              const freshChar = builderState.characters.find(c => c.id === character.id)
               if (freshChar) {
                 updateSelectedCharacter({ gold: freshChar.gold + milestoneGold })
               }
-            } else {
-              updateSelectedCharacter({ mainQuest: character.mainQuest })
             }
 
-            // Check if the main quest just completed (final boss victory)
-            // claimNewMilestones mutates the mainQuest object in place, so status may now be 'completed'
-            const questStatus = (character.mainQuest as { status: string }).status
-            if (questStatus === 'completed') {
-              const freshChar = useGameStore.getState().gameState.characters.find(c => c.id === character.id)
-              const victoryEssence = awardSoulEssence(freshChar ?? character, 5)
+            // The main quest just completed (final boss victory)
+            if (mainQuest.status === 'completed') {
+              const freshChar = builderState.characters.find(c => c.id === character.id)
               const victoryChar = freshChar ?? character
+              const victoryEssence = awardSoulEssence(victoryChar, 5)
               setRunSummary({
                 character: { ...victoryChar },
                 reason: 'victory',
@@ -443,6 +439,11 @@ export function useCombatActionMutation(options?: { onMountDrop?: (mount: Mount)
       }
 
       commit()
+
+      // Daily challenge progress is a direct store write, so it goes after commit() or the clone overwrites it.
+      if (data.combatState.status === 'victory') {
+        useGameStore.getState().updateDailyChallengeProgress('win_combats', 1)
+      }
 
       // Permadeath deletion must happen AFTER commit() to avoid the stale snapshot overwriting it
       if (data.combatState.status === 'defeat') {

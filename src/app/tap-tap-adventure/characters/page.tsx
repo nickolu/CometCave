@@ -1,15 +1,15 @@
 'use client'
-import CharacterList from '@/app/tap-tap-adventure/components/CharacterList'
-import { HudBar } from '@/app/tap-tap-adventure/components/HudBar'
-import { PageTemplate } from '@/app/tap-tap-adventure/components/ui/PageTemplate'
 
-export default function TapTapAdventurePageCharacters() {
+import CharacterList from '@/app/tap-tap-adventure/components/CharacterList'
+import { Foyer } from '@/app/tap-tap-adventure/stage/Foyer'
+import { AiGate } from '@/components/ai-gate'
+
+export default function TapTapAdventureCharactersPage() {
   return (
-    <PageTemplate pageId="characters">
-      <div className="flex-1">
-        <HudBar />
-      </div>
-      <CharacterList />
-    </PageTemplate>
+    <AiGate game="Tap Tap Adventure" redirectTo="/tap-tap-adventure/characters">
+      <Foyer>
+        <CharacterList />
+      </Foyer>
+    </AiGate>
   )
 }

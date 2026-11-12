@@ -1,8 +1,14 @@
 'use client'
 
+/**
+ * Status effects as the printer's stamps: a debuff is stamped in red, a buff
+ * in green, and the number is the turns it has left. Tap a stamp to read
+ * what it does on a small paper slip.
+ */
 import { useState } from 'react'
 
-import { StatusEffect, CombatBuff, ActiveSpellEffect } from '@/app/tap-tap-adventure/models/combat'
+import { ActiveSpellEffect, CombatBuff, StatusEffect } from '@/app/tap-tap-adventure/models/combat'
+import { Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface StatusEffectsHUDProps {
   statusEffects: StatusEffect[]
@@ -11,56 +17,20 @@ interface StatusEffectsHUDProps {
   side: 'player' | 'enemy'
 }
 
-const STATUS_EFFECT_ICONS: Record<string, string> = {
-  poison: '☠️',
-  burn: '🔥',
-  slow: '🐌',
-  curse: '💀',
-  thorns: '🌿',
-  berserk: '😡',
-  fear: '😨',
-  reflect: '🪞',
-}
-
-const SPELL_EFFECT_ICONS: Record<string, string> = {
-  heal_over_time: '💚',
-  damage_reduction: '🛡️',
-  damage_over_time: '🩸',
-  bleed: '🩸',
-}
-
 const DEBUFF_TYPES = new Set(['poison', 'burn', 'curse', 'slow', 'fear'])
 const BUFF_TYPES = new Set(['berserk', 'thorns', 'reflect', 'shield', 'defending'])
 
-function getStatusEffectStyle(type: string): string {
-  if (DEBUFF_TYPES.has(type)) {
-    const map: Record<string, string> = {
-      poison: 'bg-green-950/60 border-green-700/60 text-green-300',
-      burn: 'bg-orange-950/60 border-orange-700/60 text-orange-300',
-      slow: 'bg-blue-950/60 border-blue-700/60 text-blue-300',
-      curse: 'bg-purple-950/60 border-purple-700/60 text-purple-300',
-      fear: 'bg-yellow-950/60 border-yellow-700/60 text-yellow-300',
-    }
-    return map[type] ?? 'bg-red-950/60 border-red-700/60 text-red-300'
-  }
-  if (BUFF_TYPES.has(type)) {
-    const map: Record<string, string> = {
-      berserk: 'bg-red-950/60 border-red-600/60 text-red-300',
-      thorns: 'bg-green-950/60 border-green-600/60 text-green-300',
-      reflect: 'bg-slate-800/60 border-slate-500/60 text-slate-300',
-      shield: 'bg-cyan-950/60 border-cyan-600/60 text-cyan-300',
-      defending: 'bg-blue-950/60 border-blue-600/60 text-blue-300',
-    }
-    return map[type] ?? 'bg-green-950/60 border-green-600/60 text-green-300'
-  }
-  return 'bg-slate-800/60 border-slate-600/60 text-slate-300'
+function getStatusEffectTone(type: string): StampTone {
+  if (DEBUFF_TYPES.has(type)) return 'red'
+  if (BUFF_TYPES.has(type)) return 'green'
+  return 'ink'
 }
 
-function getSpellEffectStyle(effectType: string): string {
-  if (effectType === 'heal_over_time') return 'bg-green-950/60 border-green-600/60 text-green-300'
-  if (effectType === 'damage_reduction') return 'bg-cyan-950/60 border-cyan-600/60 text-cyan-300'
-  if (effectType === 'damage_over_time' || effectType === 'bleed') return 'bg-red-950/60 border-red-600/60 text-red-300'
-  return 'bg-purple-950/60 border-purple-600/60 text-purple-300'
+function getSpellEffectTone(effectType: string): StampTone {
+  if (effectType === 'heal_over_time') return 'green'
+  if (effectType === 'damage_reduction') return 'green'
+  if (effectType === 'damage_over_time' || effectType === 'bleed') return 'red'
+  return 'violet'
 }
 
 function getStatusEffectDescription(effect: StatusEffect): string {
@@ -90,35 +60,38 @@ function getSpellEffectDescription(effect: ActiveSpellEffect): string {
 }
 
 interface EffectPillProps {
-  icon: string
   name: string
   turnsRemaining: number
-  styleClass: string
+  tone: StampTone
   tooltipTitle: string
   tooltipDescription: string
   isNew?: boolean
 }
 
-function EffectPill({ icon, name, turnsRemaining, styleClass, tooltipTitle, tooltipDescription, isNew }: EffectPillProps) {
+function EffectPill({ name, turnsRemaining, tone, tooltipTitle, tooltipDescription, isNew }: EffectPillProps) {
   const [showTooltip, setShowTooltip] = useState(false)
+  const turnsText = `${turnsRemaining} turn${turnsRemaining !== 1 ? 's' : ''} remaining`
 
   return (
     <div className="relative">
       <button
         type="button"
-        className={`flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border transition-all cursor-pointer select-none ${styleClass} ${isNew ? 'animate-pulse' : ''}`}
+        className="rounded-[2px] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
         onClick={() => setShowTooltip(v => !v)}
         onBlur={() => setShowTooltip(false)}
+        aria-expanded={showTooltip}
+        aria-label={`${tooltipTitle}: ${tooltipDescription}. ${turnsText}`}
       >
-        <span>{icon}</span>
-        <span className="max-w-[48px] truncate leading-tight">{name}</span>
-        <span className="opacity-70 shrink-0">{turnsRemaining}t</span>
+        <Stamp tone={tone} tilt={false} animate={isNew} className="cursor-pointer select-none">
+          <span className="max-w-[140px] truncate">{name}</span>
+          <span className="border-l border-current pl-1 tabular-nums opacity-80">{turnsRemaining}</span>
+        </Stamp>
       </button>
       {showTooltip && (
-        <div className="absolute left-0 top-full mt-1 z-50 w-44 bg-slate-900 border border-slate-600 rounded-lg p-2 shadow-lg text-left">
-          <p className="text-xs font-semibold text-white mb-0.5">{tooltipTitle}</p>
-          <p className="text-[10px] text-slate-300 leading-snug">{tooltipDescription}</p>
-          <p className="text-[10px] text-slate-400 mt-1">{turnsRemaining} turn{turnsRemaining !== 1 ? 's' : ''} remaining</p>
+        <div className="ps-paper-flat absolute left-0 top-full z-50 mt-1 w-44 rounded-[3px] border-2 border-ps-ink p-2 text-left" role="tooltip">
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink">{tooltipTitle}</p>
+          <p className="mt-0.5 font-body text-xs leading-snug text-ps-ink">{tooltipDescription}</p>
+          <p className="mt-1 font-body text-xs text-ps-ink-soft">{turnsText}</p>
         </div>
       )}
     </div>
@@ -137,15 +110,14 @@ export function StatusEffectsHUD({ statusEffects, activeBuffs, activeSpellEffect
   const buffs = statusEffects.filter(e => !DEBUFF_TYPES.has(e.type))
 
   return (
-    <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+    <div className="ps-scroll flex max-h-20 flex-wrap gap-1.5 overflow-y-auto py-0.5">
       {/* Debuffs first */}
       {debuffs.map((effect, i) => (
         <EffectPill
           key={`debuff-${effect.id ?? i}`}
-          icon={STATUS_EFFECT_ICONS[effect.type] ?? '⬡'}
           name={effect.name}
           turnsRemaining={effect.turnsRemaining}
-          styleClass={getStatusEffectStyle(effect.type)}
+          tone={getStatusEffectTone(effect.type)}
           tooltipTitle={effect.name}
           tooltipDescription={getStatusEffectDescription(effect)}
         />
@@ -154,10 +126,9 @@ export function StatusEffectsHUD({ statusEffects, activeBuffs, activeSpellEffect
       {buffs.map((effect, i) => (
         <EffectPill
           key={`buff-status-${effect.id ?? i}`}
-          icon={STATUS_EFFECT_ICONS[effect.type] ?? '⬡'}
           name={effect.name}
           turnsRemaining={effect.turnsRemaining}
-          styleClass={getStatusEffectStyle(effect.type)}
+          tone={getStatusEffectTone(effect.type)}
           tooltipTitle={effect.name}
           tooltipDescription={getStatusEffectDescription(effect)}
         />
@@ -166,10 +137,9 @@ export function StatusEffectsHUD({ statusEffects, activeBuffs, activeSpellEffect
       {activeBuffs.map((buff, i) => (
         <EffectPill
           key={`statbuff-${i}`}
-          icon="⬆️"
           name={`+${buff.value} ${buff.stat}`}
           turnsRemaining={buff.turnsRemaining}
-          styleClass="bg-emerald-950/60 border-emerald-600/60 text-emerald-300"
+          tone="green"
           tooltipTitle={`${buff.stat} Buff`}
           tooltipDescription={`Increases ${buff.stat} by ${buff.value}`}
         />
@@ -178,10 +148,9 @@ export function StatusEffectsHUD({ statusEffects, activeBuffs, activeSpellEffect
       {activeSpellEffects.map((effect, i) => (
         <EffectPill
           key={`spell-${effect.spellId}-${i}`}
-          icon={SPELL_EFFECT_ICONS[effect.effectType] ?? '✨'}
           name={effect.effectType.replace(/_/g, ' ')}
           turnsRemaining={effect.turnsRemaining}
-          styleClass={getSpellEffectStyle(effect.effectType)}
+          tone={getSpellEffectTone(effect.effectType)}
           tooltipTitle={effect.effectType.replace(/_/g, ' ')}
           tooltipDescription={getSpellEffectDescription(effect)}
         />

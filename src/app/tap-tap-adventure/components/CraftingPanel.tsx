@@ -2,9 +2,11 @@
 import { useEffect, useState } from 'react'
 
 import { CRAFTING_RECIPES, CraftingRecipe } from '@/app/tap-tap-adventure/config/craftingRecipes'
-import { canCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { canCraft } from '@/app/tap-tap-adventure/lib/craftingEngine'
 import { Item } from '@/app/tap-tap-adventure/models/types'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 function countAvailableByType(inventory: Item[], type: Item['type']): number {
   return inventory
@@ -12,7 +14,16 @@ function countAvailableByType(inventory: Item[], type: Item['type']): number {
     .reduce((sum, item) => sum + (item.quantity ?? 1), 0)
 }
 
-function RecipeCard({
+const INGREDIENT_LABEL: Record<string, string> = {
+  consumable: 'consumable',
+  equipment: 'equipment',
+  spell_scroll: 'spell scroll',
+  trade_good: 'trade good',
+  quest: 'quest item',
+  misc: 'sundry',
+}
+
+function RecipeRow({
   recipe,
   inventory,
   gold,
@@ -24,76 +35,66 @@ function RecipeCard({
   onCraft: (recipeId: string) => void
 }) {
   const craftable = canCraft(recipe, inventory, gold)
+  const goldOk = gold >= recipe.goldCost
+  const shortfalls = recipe.ingredients.filter(ing => countAvailableByType(inventory, ing.type) < ing.quantity)
+  const reason = !craftable
+    ? [
+        ...shortfalls.map(ing => `${ing.quantity - countAvailableByType(inventory, ing.type)} more ${INGREDIENT_LABEL[ing.type ?? 'misc'] ?? ing.type}`),
+        ...(goldOk ? [] : [`${recipe.goldCost - gold} more gold`]),
+      ].join(', ')
+    : null
+  const resultEffects = recipe.result.effects
+    ? Object.entries(recipe.result.effects)
+        .filter(([, v]) => v !== undefined && v !== 0)
+        .map(([k, v]) => `${(v as number) > 0 ? '+' : ''}${v} ${k}`)
+    : []
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] p-4 rounded-lg space-y-2 mb-3">
-      <div className="flex items-center justify-between gap-2">
-        <div className="font-bold text-white">{recipe.name}</div>
-        <span className="text-xs px-2 py-0.5 bg-yellow-900/50 text-yellow-400 border border-yellow-700/50 rounded whitespace-nowrap">
-          {recipe.goldCost}g
-        </span>
+    <li className="border-b-2 border-dotted border-ps-ink/40 py-3 last:border-b-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="font-body text-base font-medium leading-tight text-ps-ink">{recipe.name}</p>
+          <p className="mt-1 font-body text-xs leading-snug text-ps-ink-soft">{recipe.description}</p>
+        </div>
+        <Stamp tone="gold" tilt={false} className="shrink-0 font-playbill text-xs normal-case tracking-normal">
+          {recipe.goldCost} g
+        </Stamp>
       </div>
-      <div className="text-xs text-gray-400">{recipe.description}</div>
 
-      <div className="space-y-1">
-        <div className="text-xs text-gray-500 uppercase font-semibold">Ingredients</div>
-        {recipe.ingredients.map((ingredient, idx) => {
-          const available = countAvailableByType(inventory, ingredient.type)
-          const met = available >= ingredient.quantity
-          return (
-            <div key={idx} className="flex items-center gap-2 text-xs">
-              <span className={met ? 'text-green-400' : 'text-red-400'}>
-                {met ? '✓' : '✗'}
-              </span>
-              <span className={met ? 'text-gray-300' : 'text-gray-500'}>
-                {ingredient.quantity}x {ingredient.type === 'spell_scroll' ? 'spell scroll' : ingredient.type}
-                {' '}
-                <span className={met ? 'text-green-500' : 'text-red-500'}>
-                  ({available}/{ingredient.quantity})
-                </span>
-              </span>
-            </div>
-          )
-        })}
-        <div className="flex items-center gap-2 text-xs">
-          <span className={gold >= recipe.goldCost ? 'text-green-400' : 'text-red-400'}>
-            {gold >= recipe.goldCost ? '✓' : '✗'}
-          </span>
-          <span className={gold >= recipe.goldCost ? 'text-gray-300' : 'text-gray-500'}>
-            {recipe.goldCost}g gold
-            {' '}
-            <span className={gold >= recipe.goldCost ? 'text-green-500' : 'text-red-500'}>
-              ({gold}/{recipe.goldCost})
-            </span>
-          </span>
+      <div className="mt-2">
+        <PlaybillCaption className="text-xs">Needs</PlaybillCaption>
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {recipe.ingredients.map((ingredient, idx) => {
+            const available = countAvailableByType(inventory, ingredient.type)
+            const met = available >= ingredient.quantity
+            return (
+              <Stamp key={idx} tone={met ? 'green' : 'red'} tilt={false} title={met ? 'You have enough' : 'Not enough in your pack'}>
+                {ingredient.quantity}× {INGREDIENT_LABEL[ingredient.type ?? 'misc'] ?? ingredient.type}
+                <span className="opacity-70">{available}/{ingredient.quantity}</span>
+              </Stamp>
+            )
+          })}
+          <Stamp tone={goldOk ? 'green' : 'red'} tilt={false} title={goldOk ? 'You can pay' : 'Not enough gold'}>
+            {recipe.goldCost} gold <span className="opacity-70">{gold}/{recipe.goldCost}</span>
+          </Stamp>
         </div>
       </div>
 
-      <div className="text-xs text-gray-500 uppercase font-semibold pt-1">Result</div>
-      <div className="text-xs text-emerald-400">
-        {recipe.result.name}
-        {recipe.result.effects && Object.entries(recipe.result.effects).filter(([, v]) => v !== undefined && v !== 0).length > 0 && (
-          <span className="ml-1 text-gray-400">
-            ({Object.entries(recipe.result.effects)
-              .filter(([, v]) => v !== undefined && v !== 0)
-              .map(([k, v]) => `${(v as number) > 0 ? '+' : ''}${v} ${k}`)
-              .join(', ')})
-          </span>
-        )}
+      <div className="mt-2">
+        <PlaybillCaption className="text-xs">Makes</PlaybillCaption>
+        <p className="mt-0.5 font-body text-sm text-ps-ink">
+          {recipe.result.name}
+          {resultEffects.length > 0 && <span className="text-ps-ink-soft"> · {resultEffects.join(', ')}</span>}
+        </p>
       </div>
 
-      <button
-        disabled={!craftable}
-        onClick={() => onCraft(recipe.id)}
-        className={`w-full mt-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
-          craftable
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
-            : 'bg-[#2a2b3f] text-gray-600 cursor-not-allowed border border-[#3a3c56]'
-        }`}
-      >
-        Craft
-      </button>
-    </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <PaperButton size="sm" variant={craftable ? 'brass' : 'outline'} disabled={!craftable} onClick={() => onCraft(recipe.id)}>
+          Craft
+        </PaperButton>
+        {reason && <span className="font-body text-xs italic text-ps-ink-soft">Needs {reason}</span>}
+      </div>
+    </li>
   )
 }
 
@@ -115,8 +116,8 @@ export function CraftingPanel() {
   if (!character) {
     return (
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Crafting Forge</h3>
-        <p className="text-gray-400 text-sm">No character selected.</p>
+        <PlaybillTitle size="sm" rules={false} className="text-left">Workbench</PlaybillTitle>
+        <p className="mt-2 font-body text-sm italic text-ps-ink-soft">No character selected.</p>
       </div>
     )
   }
@@ -133,26 +134,31 @@ export function CraftingPanel() {
 
   return (
     <div className="w-full">
-      <div className="mb-3">
-        <h3 className="text-lg font-semibold text-white">Crafting Forge</h3>
-        <p className="text-xs text-gray-500">Combine items to create better gear</p>
+      <div className="flex items-end justify-between gap-3 border-b-2 border-ps-ink pb-2">
+        <div>
+          <PlaybillTitle size="sm" rules={false} className="text-left">Workbench</PlaybillTitle>
+          <p className="mt-0.5 font-body text-xs text-ps-ink-soft">Combine what you carry into better gear.</p>
+        </div>
+        <span className="shrink-0 font-playbill text-sm tabular-nums text-ps-ink" title="Your gold">
+          {gold} g
+        </span>
       </div>
 
       {feedbackMessage && (
-        <div
-          className={`mb-3 p-2 rounded-md text-sm animate-pulse border ${
-            feedbackSuccess
-              ? 'bg-green-900/50 border-green-700 text-green-300'
-              : 'bg-red-900/50 border-red-700 text-red-300'
-          }`}
+        <p
+          role="status"
+          className={cn(
+            'mt-3 rounded-[2px] border-2 px-2.5 py-1.5 font-body text-sm',
+            feedbackSuccess ? 'border-ps-stamp-green text-ps-stamp-green' : 'border-ps-stamp-red text-ps-stamp-red'
+          )}
         >
           {feedbackMessage}
-        </div>
+        </p>
       )}
 
-      <div>
+      <ul className="m-0 list-none p-0">
         {CRAFTING_RECIPES.map(recipe => (
-          <RecipeCard
+          <RecipeRow
             key={recipe.id}
             recipe={recipe}
             inventory={inventory}
@@ -160,7 +166,7 @@ export function CraftingPanel() {
             onCraft={handleCraft}
           />
         ))}
-      </div>
+      </ul>
     </div>
   )
 }

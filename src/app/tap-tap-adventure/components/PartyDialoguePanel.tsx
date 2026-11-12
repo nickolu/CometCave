@@ -1,8 +1,17 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+
+/**
+ * A word with someone in your party, printed on the party drawer's bill:
+ * their lines as paragraphs under their name, yours to the right.
+ */
+import { useEffect, useRef, useState } from 'react'
+
 import { getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import { usePartyDialogue } from '@/app/tap-tap-adventure/hooks/usePartyDialogue'
 import type { PartyMember } from '@/app/tap-tap-adventure/models/partyMember'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PrintingDots, Stamp, type StampTone, deltaTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface PartyDialoguePanelProps {
   member: PartyMember
@@ -13,6 +22,24 @@ interface PartyDialoguePanelProps {
   disposition: number
   onDispositionChange: (delta: number) => void
   onClose: () => void
+}
+
+const TIER_TONE: Record<string, StampTone> = {
+  hostile: 'red',
+  unfriendly: 'gold',
+  neutral: 'ink',
+  friendly: 'green',
+  trusted: 'blue',
+  bonded: 'violet',
+}
+
+const TIER_BAR: Record<string, string> = {
+  hostile: 'bg-ps-stamp-red',
+  unfriendly: 'bg-ps-stamp-gold',
+  neutral: 'bg-ps-ink',
+  friendly: 'bg-ps-stamp-green',
+  trusted: 'bg-ps-stamp-blue',
+  bonded: 'bg-ps-stamp-violet',
 }
 
 export function PartyDialoguePanel({
@@ -73,68 +100,72 @@ export function PartyDialoguePanel({
   }
 
   const tier = getRelationshipTier(currentDisposition)
-  const tierColors: Record<string, string> = {
-    hostile: 'text-red-400 bg-red-900/30',
-    unfriendly: 'text-orange-400 bg-orange-900/30',
-    neutral: 'text-slate-300 bg-slate-700/30',
-    friendly: 'text-green-400 bg-green-900/30',
-    trusted: 'text-blue-400 bg-blue-900/30',
-    bonded: 'text-amber-400 bg-amber-900/30',
-  }
+  const name = member.customName ?? member.name
+  const barPct = Math.max(0, Math.min(100, (currentDisposition + 100) / 2))
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3 max-h-[400px] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">{member.icon}</span>
-          <div>
-            <div className="text-sm font-semibold text-slate-200">{member.customName ?? member.name}</div>
-            <div className="text-[10px] text-slate-400">{member.className}</div>
+    <div className="flex max-h-[400px] flex-col rounded-[3px] border-2 border-ps-ink p-3">
+      {/* Who */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="font-body text-xl leading-none" aria-hidden>{member.icon}</span>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-playbill text-base uppercase leading-tight tracking-wide text-ps-ink">{name}</span>
+              <Stamp tone={TIER_TONE[tier.tier] ?? 'ink'} tilt={false}>{tier.label}</Stamp>
+            </div>
+            <PlaybillCaption>{member.className}</PlaybillCaption>
           </div>
-          <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${tierColors[tier.tier] ?? ''}`}>
-            {tier.label}
-          </span>
         </div>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close dialogue">&#x2715;</button>
+        <PaperButton variant="outline" size="sm" className="w-8 shrink-0 px-0" onClick={onClose} aria-label="Close dialogue">
+          <CloseIcon />
+        </PaperButton>
       </div>
 
-      {/* Disposition bar */}
-      <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 rounded-full transition-all"
-          style={{ width: `${Math.max(0, Math.min(100, (currentDisposition + 100) / 2))}%` }}
-        />
-      </div>
+      {/* Standing */}
+      <span
+        className="mt-2 block h-1.5 overflow-hidden rounded-full bg-ps-ink/20"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(barPct)}
+        aria-label={`Standing with ${name}: ${tier.label}`}
+      >
+        <span className={cn('block h-full rounded-full transition-[width]', TIER_BAR[tier.tier] ?? 'bg-ps-ink')} style={{ width: `${barPct}%` }} />
+      </span>
 
-      {/* Conversation log */}
-      <div ref={logRef} className="flex-1 overflow-y-auto space-y-2 min-h-[120px] max-h-[200px]">
+      {/* What has been said */}
+      <div ref={logRef} className="ps-scroll mt-3 max-h-[200px] min-h-[120px] flex-1 space-y-3 overflow-y-auto border-y-2 border-dotted border-ps-ink/40 py-2 pr-1">
         {conversationLog.map((entry, i) => (
-          <div key={i} className={`text-xs ${entry.role === 'player' ? 'text-right' : ''}`}>
+          <div key={i} className={cn('ps-print-in', entry.role === 'player' && 'pl-8 text-right')}>
             {entry.role === 'player' ? (
-              <div className="inline-block bg-indigo-900/40 border border-indigo-700/30 rounded px-2 py-1 text-indigo-200">
-                {entry.content}
-              </div>
+              <>
+                <PlaybillCaption className="text-ps-ink-faint">You</PlaybillCaption>
+                <p className="mt-0.5 break-words font-body text-sm italic leading-relaxed text-ps-ink-soft">{entry.content}</p>
+              </>
             ) : (
-              <div className="text-slate-300">
-                <span className="text-slate-500">{member.customName ?? member.name}:</span> {entry.content}
-                {entry.dispositionDelta !== undefined && entry.dispositionDelta !== 0 && (
-                  <span className={`ml-1 text-[10px] ${entry.dispositionDelta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    ({entry.dispositionDelta > 0 ? '+' : ''}{entry.dispositionDelta})
-                  </span>
-                )}
-              </div>
+              <>
+                <PlaybillCaption>{name}</PlaybillCaption>
+                <p className="mt-0.5 break-words font-body text-sm leading-relaxed text-ps-ink">
+                  {entry.content}
+                  {entry.dispositionDelta !== undefined && entry.dispositionDelta !== 0 && (
+                    <Stamp tone={deltaTone(entry.dispositionDelta)} tilt={false} className="ml-2 align-middle">
+                      {entry.dispositionDelta > 0 ? '+' : ''}{entry.dispositionDelta}
+                    </Stamp>
+                  )}
+                </p>
+              </>
             )}
           </div>
         ))}
-        {isLoading && <div className="text-[10px] text-slate-500 italic">Thinking...</div>}
+        {isLoading && <PrintingDots label="Thinking" />}
       </div>
 
-      {/* Input */}
-      <div className="flex gap-2">
+      {/* Your reply */}
+      <div className="mt-3 flex gap-2">
         <input
           type="text"
-          className="flex-1 bg-[#252638] border border-[#3a3c56] rounded px-2 py-1 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+          className="h-8 min-w-0 flex-1 rounded-[3px] border-2 border-ps-ink bg-transparent px-2 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary disabled:opacity-50"
           placeholder={conversationComplete ? 'Conversation ended' : 'Say something...'}
           aria-label="Dialogue input"
           value={inputText}
@@ -142,26 +173,14 @@ export function PartyDialoguePanel({
           onKeyDown={e => e.key === 'Enter' && handleSend()}
           disabled={isLoading || conversationComplete}
         />
-        <button
-          className={`text-xs px-3 py-1 rounded transition-colors ${
-            isLoading || conversationComplete || !inputText.trim()
-              ? 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-              : 'bg-indigo-700/50 text-indigo-300 hover:bg-indigo-600/60'
-          }`}
-          onClick={handleSend}
-          disabled={isLoading || conversationComplete || !inputText.trim()}
-        >
+        <PaperButton size="sm" onClick={handleSend} disabled={isLoading || conversationComplete || !inputText.trim()}>
           Send
-        </button>
+        </PaperButton>
       </div>
 
-      {/* End conversation */}
-      <button
-        className="text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
-        onClick={onClose}
-      >
+      <PaperButton variant="outline" size="sm" className="mt-2 w-full border-ps-ink/50 text-ps-ink-soft" onClick={onClose}>
         {conversationComplete ? 'Close' : 'End conversation'}
-      </button>
+      </PaperButton>
     </div>
   )
 }

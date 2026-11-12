@@ -1,7 +1,19 @@
 'use client'
 
 import { useState } from 'react'
+
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillTitle } from '@/app/tap-tap-adventure/stage/Playbill'
+
+/** A ruled line of the ledger: a label and a figure. */
+function LedgerLine({ label, value, title }: { label: string; value: React.ReactNode; title?: string }) {
+  return (
+    <li className="flex items-baseline justify-between gap-3 border-b-2 border-dotted border-ps-ink/40 py-1.5 last:border-b-0" title={title}>
+      <span className="font-body text-sm text-ps-ink">{label}</span>
+      <span className="font-playbill text-base tabular-nums text-ps-ink">{value}</span>
+    </li>
+  )
+}
 
 export function StatsPanel() {
   const { gameState } = useGameStore()
@@ -42,131 +54,79 @@ export function StatsPanel() {
   const maxClassCount = classEntries.length > 0 ? classEntries[0][1] : 1
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg overflow-hidden">
-      {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2.5 text-left hover:bg-[#252640] transition-colors"
-      >
-        <span className="text-sm font-semibold text-slate-200">
-          📊 Adventure Statistics
-        </span>
-        <span className="text-slate-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
-      </button>
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-2 border-b-2 border-ps-ink pb-2">
+        <PlaybillTitle size="sm" rules={false} className="text-left">The figures</PlaybillTitle>
+        <PaperButton size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setIsExpanded(!isExpanded)} aria-expanded={isExpanded}>
+          {isExpanded ? 'Fold' : 'Unfold'}
+        </PaperButton>
+      </div>
 
       {isExpanded && (
-        <div className="p-3 space-y-4">
+        <div className="mt-3 space-y-4">
           {/* Lifetime Stats */}
-          <div>
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-              Lifetime Stats
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-[#161723] border border-[#3a3c56] rounded-md p-2.5">
-                <div className="text-lg font-bold text-indigo-300">
-                  {totalDistance.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">🗺 Distance</div>
-              </div>
-              <div className="bg-[#161723] border border-[#3a3c56] rounded-md p-2.5">
-                <div className="text-lg font-bold text-yellow-300">
-                  {totalGold.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">💰 Gold</div>
-              </div>
-              <div className="bg-[#161723] border border-[#3a3c56] rounded-md p-2.5">
-                <div className="text-lg font-bold text-green-300">
-                  {totalCharacters.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">⚔ Characters</div>
-              </div>
-              <div className="bg-[#161723] border border-[#3a3c56] rounded-md p-2.5">
-                <div className="text-lg font-bold text-red-300">
-                  {totalDeaths.toLocaleString()}
-                </div>
-                <div className="text-xs text-slate-400 mt-0.5">💀 Deaths</div>
-              </div>
-            </div>
-            <div className="mt-2 bg-[#161723] border border-[#3a3c56] rounded-md px-3 py-2 text-sm text-slate-300">
-              🌍 {totalRegionsDiscovered.toLocaleString()} region{totalRegionsDiscovered !== 1 ? 's' : ''} discovered
-            </div>
-          </div>
+          <section>
+            <PlaybillCaption>Across every run</PlaybillCaption>
+            <BrassPlate className="mt-1.5 grid grid-cols-4 divide-x-2 divide-ps-brass-deep/60" aria-label="Lifetime figures">
+              <BrassFigure label="Km" value={totalDistance.toLocaleString()} title={`${totalDistance.toLocaleString()} km walked in all`} />
+              <BrassFigure label="Gold" value={totalGold.toLocaleString()} title="Gold held across all characters" />
+              <BrassFigure label="Heroes" value={totalCharacters.toLocaleString()} title="Characters made" />
+              <BrassFigure label="Deaths" value={totalDeaths.toLocaleString()} title="Deaths across all runs" />
+            </BrassPlate>
+            <p className="mt-2 font-body text-sm text-ps-ink-soft">
+              <span className="font-playbill text-ps-ink">{totalRegionsDiscovered.toLocaleString()}</span> region{totalRegionsDiscovered !== 1 ? 's' : ''} discovered
+            </p>
+          </section>
 
           {/* Records */}
-          <div>
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-              Records
-            </h3>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">🏆 Highest Level</span>
-                <span className="text-slate-200 font-medium">{highestLevel.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">🏃 Longest Run</span>
-                <span className="text-slate-200 font-medium">{longestRun.toLocaleString()} km</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">💰 Most Gold</span>
-                <span className="text-slate-200 font-medium">{mostGold.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-400">🗺 Most Regions</span>
-                <span className="text-slate-200 font-medium">{mostRegions.toLocaleString()}</span>
-              </div>
-            </div>
-          </div>
+          <section>
+            <PlaybillCaption>Records</PlaybillCaption>
+            <ul className="m-0 mt-1 list-none p-0">
+              <LedgerLine label="Highest level" value={highestLevel.toLocaleString()} />
+              <LedgerLine label="Longest run" value={`${longestRun.toLocaleString()} km`} />
+              <LedgerLine label="Most gold" value={mostGold.toLocaleString()} />
+              <LedgerLine label="Most regions" value={mostRegions.toLocaleString()} />
+            </ul>
+          </section>
 
           {/* Class Breakdown */}
           {classEntries.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                Class Breakdown
-              </h3>
-              <div className="space-y-2">
+            <section>
+              <PlaybillCaption>By class</PlaybillCaption>
+              <ul className="m-0 mt-1 list-none space-y-2 p-0">
                 {classEntries.map(([cls, count]) => (
-                  <div key={cls} className="space-y-0.5">
-                    <div className="flex justify-between text-xs text-slate-300">
+                  <li key={cls}>
+                    <div className="flex items-baseline justify-between font-body text-sm text-ps-ink">
                       <span>{cls}</span>
-                      <span>{count}</span>
+                      <span className="font-playbill tabular-nums">{count}</span>
                     </div>
-                    <div className="h-2 bg-[#161723] rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-indigo-500 rounded-full transition-all"
-                        style={{ width: `${(count / maxClassCount) * 100}%` }}
-                      />
+                    <div
+                      className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ps-ink/20"
+                      role="progressbar"
+                      aria-valuemin={0}
+                      aria-valuemax={maxClassCount}
+                      aria-valuenow={count}
+                      aria-label={`${cls}: ${count}`}
+                    >
+                      <div className="h-full rounded-full bg-ps-ink transition-[width]" style={{ width: `${(count / maxClassCount) * 100}%` }} />
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           )}
 
           {/* Meta Progression */}
           {meta && (
-            <div>
-              <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
-                Meta Progression
-              </h3>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Total Runs</span>
-                  <span className="text-slate-200 font-medium">{(meta.totalRuns ?? 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Soul Essence</span>
-                  <span className="text-purple-300 font-medium">{(meta.totalEssenceEarned ?? 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Best Distance</span>
-                  <span className="text-slate-200 font-medium">{(meta.bestDistance ?? 0).toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-400">Best Level</span>
-                  <span className="text-slate-200 font-medium">{(meta.bestLevel ?? 0).toLocaleString()}</span>
-                </div>
-              </div>
-            </div>
+            <section>
+              <PlaybillCaption>Carried between runs</PlaybillCaption>
+              <ul className="m-0 mt-1 list-none p-0">
+                <LedgerLine label="Runs" value={(meta.totalRuns ?? 0).toLocaleString()} />
+                <LedgerLine label="Soul essence" value={(meta.totalEssenceEarned ?? 0).toLocaleString()} />
+                <LedgerLine label="Best distance" value={(meta.bestDistance ?? 0).toLocaleString()} />
+                <LedgerLine label="Best level" value={(meta.bestLevel ?? 0).toLocaleString()} />
+              </ul>
+            </section>
           )}
         </div>
       )}

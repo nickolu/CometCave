@@ -31,19 +31,23 @@ export default function Home() {
     <div className="flex flex-col gap-12 py-12 max-w-5xl mx-auto">
       {/* Hero */}
       <ChunkyCard variant="surface-container" shadow="hero" className="border-[6px]">
-        <ChunkyCardContent className="py-12 px-8 text-center flex flex-col items-center gap-6">
-          <Pill tone="info" icon="rocket_launch">NEW RELEASE</Pill>
-          <h1 className="font-headline text-headline-lg text-on-surface drop-shadow-[0_4px_0_var(--surface-container-lowest)]">
-            Comet Cave
-          </h1>
-          <p className="text-body-lg text-on-surface-variant max-w-xl">
-            A collection of browser games — play daily trivia, card games, strategy, and more.
-          </p>
-          <Link href={ROUTE_CONSTANTS.TRIVIA}>
-            <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined" aria-hidden="true">play_circle</span>}>
-              PLAY NOW
-            </ChunkyButton>
-          </Link>
+        <ChunkyCardContent className="grid md:grid-cols-[minmax(0,1fr)_auto] items-center text-center md:text-left gap-6 md:gap-8 px-5 pt-10 pb-8 md:px-10 md:py-12">
+          <div className="flex flex-col items-center md:items-start gap-3.5 min-w-0">
+            <h1 className="font-headline font-extrabold text-[2.25rem] md:text-[2.75rem] leading-[1.1] tracking-[-0.025em] text-balance text-on-surface drop-shadow-[0_4px_0_var(--surface-container-lowest)]">
+              Comet Cave
+            </h1>
+            <p className="text-body-lg text-on-surface-variant max-w-[30rem] text-pretty">
+              A collection of browser games — play daily trivia, card games, strategy, and more.
+            </p>
+          </div>
+          <div className="flex flex-col items-center gap-4 w-full md:w-auto px-8 py-7 rounded-ds-sm bg-surface-container-low shadow-rim-inset-deep border-4 border-surface-container-lowest">
+            <Pill tone="info" icon="rocket_launch">NEW RELEASE</Pill>
+            <Link href={ROUTE_CONSTANTS.TRIVIA} className="inline-flex rounded-full">
+              <ChunkyButton variant="primary" size="hero" iconEnd={<span className="material-symbols-outlined" aria-hidden="true">play_circle</span>}>
+                PLAY NOW
+              </ChunkyButton>
+            </Link>
+          </div>
         </ChunkyCardContent>
       </ChunkyCard>
 
@@ -55,19 +59,23 @@ export default function Home() {
           </span>
           Arcade Floor
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter">
           {games.map((game) => (
             <Link key={game.href} href={game.href}>
               <ChunkyCard variant="surface-variant" interactive cornerGlow="primary" className="h-full">
-                <ChunkyCardContent className="pt-6 pb-6 flex flex-col items-center text-center gap-3">
-                  <div className="flex items-center justify-center w-16 h-16 rounded-full bg-ds-surface border-2 border-outline-variant">
-                    <span className="material-symbols-outlined text-[32px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
-                      {game.icon}
-                    </span>
+                <ChunkyCardContent className="pt-5 pb-6 flex flex-col gap-4 text-left">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-center w-11 h-11 shrink-0 rounded-full bg-ds-surface border-2 border-outline-variant">
+                      <span className="material-symbols-outlined text-[22px] text-ds-primary" style={{ fontVariationSettings: "'FILL' 1" }} aria-hidden="true">
+                        {game.icon}
+                      </span>
+                    </div>
+                    {game.hot && <Pill tone="hot" size="xs" pulse icon="local_fire_department">HOT!</Pill>}
                   </div>
-                  {game.hot && <Pill tone="hot" pulse icon="local_fire_department">HOT!</Pill>}
-                  <h3 className="font-headline text-lg font-bold text-on-surface">{game.title}</h3>
-                  <p className="text-body-md text-on-surface-variant text-sm">{game.description}</p>
+                  <div className="flex flex-col gap-1.5">
+                    <h3 className="font-headline font-extrabold text-[1.4375rem] leading-[1.15] tracking-[-0.02em] text-on-surface text-balance">{game.title}</h3>
+                    <p className="text-body-md text-on-surface-variant text-sm text-pretty">{game.description}</p>
+                  </div>
                 </ChunkyCardContent>
               </ChunkyCard>
             </Link>

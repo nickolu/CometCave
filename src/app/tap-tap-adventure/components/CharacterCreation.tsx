@@ -11,11 +11,26 @@ import { DIFFICULTY_MODES, DifficultyMode } from '@/app/tap-tap-adventure/config
 import { useCharacterCreation } from '@/app/tap-tap-adventure/hooks/useCharacterCreation'
 import { GeneratedClass } from '@/app/tap-tap-adventure/models/generatedClass'
 import { FantasyCharacter, Item } from '@/app/tap-tap-adventure/models/types'
+import {
+  BrassFigure,
+  BrassPlate,
+  PaperButton,
+  PlaybillCaption,
+  PlaybillLine,
+  PlaybillTitle,
+  PrintingDots,
+  Stamp,
+  deltaTone,
+} from '@/app/tap-tap-adventure/stage/Playbill'
+import { ChunkyButton } from '@/components/ui/chunky-button'
+import { cn } from '@/lib/utils'
 
+/** A printed "STR +2" with the sign in the printer's ink. */
 function StatBadge({ label, value }: { label: string; value: number }) {
   const sign = value > 0 ? '+' : ''
+  const tone = deltaTone(value)
   return (
-    <span className="text-xs text-slate-400">
+    <span className={cn('font-label text-xs font-bold uppercase tracking-widest tabular-nums', tone === 'green' && 'text-ps-stamp-green', tone === 'red' && 'text-ps-stamp-red')}>
       {label} {sign}
       {value}
     </span>
@@ -24,14 +39,19 @@ function StatBadge({ label, value }: { label: string; value: number }) {
 
 function ModifierBadges({ modifiers }: { modifiers: StatModifiers }) {
   return (
-    <div className="flex gap-2 mt-2">
+    <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
       <StatBadge label="STR" value={modifiers.strength} />
       <StatBadge label="INT" value={modifiers.intelligence} />
       <StatBadge label="LCK" value={modifiers.luck} />
       <StatBadge label="CHA" value={modifiers.charisma} />
-    </div>
+    </span>
   )
 }
+
+/** The classes a chosen line takes on a bill. The hover state is the selected state, held. */
+const SELECTED_LINE = 'border-ps-ink bg-ps-ink text-ps-playbill hover:bg-ps-ink-soft hover:border-ps-ink-soft'
+/** Stamps on an inverted line are printed on a paper patch so they stay legible. */
+const ON_INK = 'bg-ps-playbill mix-blend-normal'
 
 function OptionCard<T extends RaceOption | ClassOption>({
   option,
@@ -43,19 +63,20 @@ function OptionCard<T extends RaceOption | ClassOption>({
   onSelect: (option: T) => void
 }) {
   return (
-    <button
-      type="button"
+    <PlaybillLine
       onClick={() => onSelect(option)}
-      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
-        selected
-          ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500'
-          : 'border-[#3a3c56] bg-[#2a2b3f] hover:border-[#5a5c76]'
-      }`}
+      aria-pressed={selected}
+      className={cn('items-center', selected && SELECTED_LINE)}
+      note={
+        <>
+          <span className="block">{option.description}</span>
+          <ModifierBadges modifiers={option.modifiers} />
+        </>
+      }
+      trailing={selected ? <Stamp tone="gold" tilt={false} className={ON_INK}>Chosen</Stamp> : undefined}
     >
-      <div className="text-slate-200 font-semibold text-sm">{option.name}</div>
-      <div className="text-xs text-slate-400 mt-1">{option.description}</div>
-      <ModifierBadges modifiers={option.modifiers} />
-    </button>
+      <span className="font-playbill text-base uppercase tracking-wide">{option.name}</span>
+    </PlaybillLine>
   )
 }
 
@@ -68,47 +89,49 @@ function GeneratedClassCard({
   selected: boolean
   onSelect: (gc: GeneratedClass) => void
 }) {
+  const weapon = generatedClass.startingWeapon
   return (
-    <button
-      type="button"
+    <PlaybillLine
       onClick={() => onSelect(generatedClass)}
-      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
-        selected
-          ? 'border-indigo-500 bg-indigo-500/10 ring-1 ring-indigo-500'
-          : 'border-[#3a3c56] bg-[#2a2b3f] hover:border-[#5a5c76]'
-      }`}
+      aria-pressed={selected}
+      className={cn('items-start', selected && SELECTED_LINE)}
+      trailing={selected ? <Stamp tone="gold" tilt={false} className={ON_INK}>Chosen</Stamp> : undefined}
+      note={
+        <>
+          <span className="block">{generatedClass.description}</span>
+          <span className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 font-label text-xs font-bold uppercase tracking-widest tabular-nums">
+            <span>STR {generatedClass.statDistribution.strength}</span>
+            <span>INT {generatedClass.statDistribution.intelligence}</span>
+            <span>LCK {generatedClass.statDistribution.luck}</span>
+            <span>CHA {generatedClass.statDistribution.charisma}</span>
+          </span>
+          <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-label text-xs font-bold uppercase tracking-widest">
+            <span>{generatedClass.favoredSchool}</span>
+            <span>{generatedClass.spellSlots} spell slots</span>
+            <span>{generatedClass.manaMultiplier}x mana</span>
+          </span>
+          {weapon && (
+            <span className="mt-2 block border-t border-dotted border-current/50 pt-1.5">
+              <span className="font-medium">{weapon.name}</span>
+              <span className="opacity-80"> · {weapon.effects.range} range</span>
+              {(weapon.effects.strength || weapon.effects.intelligence) && (
+                <span className="block opacity-80">
+                  {weapon.effects.strength ? `+${weapon.effects.strength} STR` : ''}
+                  {weapon.effects.strength && weapon.effects.intelligence ? ' · ' : ''}
+                  {weapon.effects.intelligence ? `+${weapon.effects.intelligence} INT` : ''}
+                </span>
+              )}
+            </span>
+          )}
+          <span className="mt-2 block border-t border-dotted border-current/50 pt-1.5">
+            <span className="font-medium">{generatedClass.startingAbility.name}</span>
+            <span className="block opacity-80">{generatedClass.startingAbility.description}</span>
+          </span>
+        </>
+      }
     >
-      <div className="text-slate-200 font-semibold text-sm">{generatedClass.name}</div>
-      <div className="text-xs text-slate-400 mt-1">{generatedClass.description}</div>
-      <div className="flex gap-2 mt-2">
-        <span className="text-xs text-amber-400">STR {generatedClass.statDistribution.strength}</span>
-        <span className="text-xs text-sky-400">INT {generatedClass.statDistribution.intelligence}</span>
-        <span className="text-xs text-emerald-400">LCK {generatedClass.statDistribution.luck}</span>
-        <span className="text-xs text-pink-400">CHA {generatedClass.statDistribution.charisma}</span>
-      </div>
-      <div className="flex gap-2 mt-1 flex-wrap">
-        <span className="text-xs text-purple-400">{generatedClass.favoredSchool}</span>
-        <span className="text-xs text-slate-500">{generatedClass.spellSlots} spell slots</span>
-        <span className="text-xs text-slate-500">{generatedClass.manaMultiplier}x mana</span>
-      </div>
-      {generatedClass.startingWeapon && (
-        <div className="mt-2 pt-2 border-t border-[#3a3c56]">
-          <div className="text-xs text-amber-300 font-medium">
-            {'⚔️ '}{generatedClass.startingWeapon.name}
-            <span className="ml-1 text-slate-500 font-normal">({generatedClass.startingWeapon.effects.range} range)</span>
-          </div>
-          <div className="text-xs text-slate-500 mt-0.5">
-            {generatedClass.startingWeapon.effects.strength ? `+${generatedClass.startingWeapon.effects.strength} STR` : ''}
-            {generatedClass.startingWeapon.effects.strength && generatedClass.startingWeapon.effects.intelligence ? ' · ' : ''}
-            {generatedClass.startingWeapon.effects.intelligence ? `+${generatedClass.startingWeapon.effects.intelligence} INT` : ''}
-          </div>
-        </div>
-      )}
-      <div className="mt-2 pt-2 border-t border-[#3a3c56]">
-        <div className="text-xs text-indigo-300 font-medium">{generatedClass.startingAbility.name}</div>
-        <div className="text-xs text-slate-500 mt-0.5">{generatedClass.startingAbility.description}</div>
-      </div>
-    </button>
+      <span className="font-playbill text-base uppercase tracking-wide">{generatedClass.name}</span>
+    </PlaybillLine>
   )
 }
 
@@ -121,43 +144,37 @@ function HeirloomCard({
   selected: boolean
   onSelect: (item: Item) => void
 }) {
+  const effects = item.effects
+    ? Object.entries(item.effects)
+        .filter(([, v]) => v !== undefined && v !== 0)
+        .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
+        .join(', ')
+    : ''
   return (
-    <button
-      type="button"
+    <PlaybillLine
       onClick={() => onSelect(item)}
-      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
-        selected
-          ? 'border-amber-500 bg-amber-500/10 ring-1 ring-amber-500'
-          : 'border-amber-700/40 bg-[#2a2b3f] hover:border-amber-600/60'
-      }`}
+      aria-pressed={selected}
+      className={cn('items-start', selected && SELECTED_LINE)}
+      trailing={
+        <>
+          {item.type && (
+            <Stamp tone="violet" tilt={false} className={cn(selected && ON_INK)}>
+              {item.type === 'spell_scroll' ? 'Spell scroll' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
+            </Stamp>
+          )}
+          {selected && <Stamp tone="gold" tilt={false} className={ON_INK}>Chosen</Stamp>}
+        </>
+      }
+      note={
+        <>
+          <span className="block">{item.description}</span>
+          {effects && <span className={cn('mt-1 block font-label text-xs font-bold uppercase tracking-widest', !selected && 'text-ps-stamp-green')}>{effects}</span>}
+        </>
+      }
     >
-      <div className="flex items-center gap-2">
-        <span className="text-amber-400 text-sm">&#9733;</span>
-        <span className="text-slate-200 font-semibold text-sm">{item.name}</span>
-        {item.type && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/50 text-amber-300 rounded">
-            {item.type === 'spell_scroll' ? 'Spell Scroll' : item.type.charAt(0).toUpperCase() + item.type.slice(1)}
-          </span>
-        )}
-      </div>
-      <div className="text-xs text-slate-400 mt-1">{item.description}</div>
-      {item.effects && (
-        <div className="text-xs text-emerald-400 mt-1">
-          {Object.entries(item.effects)
-            .filter(([, v]) => v !== undefined && v !== 0)
-            .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
-            .join(', ')}
-        </div>
-      )}
-    </button>
+      <span className="font-playbill text-base uppercase tracking-wide">{item.name}</span>
+    </PlaybillLine>
   )
-}
-
-const DIFFICULTY_COLORS: Record<string, string> = {
-  normal: 'border-indigo-500 bg-indigo-500/10 ring-indigo-500',
-  hard: 'border-red-500 bg-red-500/10 ring-red-500',
-  ironman: 'border-orange-500 bg-orange-500/10 ring-orange-500',
-  casual: 'border-green-500 bg-green-500/10 ring-green-500',
 }
 
 function DifficultyModeCard({
@@ -169,81 +186,82 @@ function DifficultyModeCard({
   selected: boolean
   onSelect: (mode: DifficultyMode) => void
 }) {
-  const selectedColors = DIFFICULTY_COLORS[mode.id] ?? 'border-indigo-500 bg-indigo-500/10 ring-indigo-500'
+  const m = mode.modifiers
+  const notes = [
+    m.enemyHpMultiplier !== 1 && `Enemy HP ${m.enemyHpMultiplier}x`,
+    m.enemyAttackMultiplier !== 1 && `Enemy ATK ${m.enemyAttackMultiplier}x`,
+    m.goldMultiplier !== 1 && `Gold ${m.goldMultiplier}x`,
+    m.healRateMultiplier !== 1 && `Heal rate ${m.healRateMultiplier}x`,
+    m.lootChanceMultiplier !== 1 && `Loot ${m.lootChanceMultiplier}x`,
+  ].filter(Boolean) as string[]
   return (
-    <button
-      type="button"
+    <PlaybillLine
       onClick={() => onSelect(mode)}
-      className={`text-left p-4 rounded-lg border transition-all cursor-pointer focus:outline-none ${
-        selected
-          ? `${selectedColors} ring-1`
-          : 'border-[#3a3c56] bg-[#2a2b3f] hover:border-[#5a5c76]'
-      }`}
+      aria-pressed={selected}
+      className={cn('items-start', selected && SELECTED_LINE)}
+      trailing={
+        <>
+          {m.permadeath && <Stamp tone="red" tilt={false} className={cn(selected && ON_INK)}>Permadeath</Stamp>}
+          {selected && <Stamp tone="gold" tilt={false} className={ON_INK}>Chosen</Stamp>}
+        </>
+      }
+      note={
+        <>
+          <span className="block">{mode.description}</span>
+          {notes.length > 0 && (
+            <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 font-label text-xs font-bold uppercase tracking-widest tabular-nums">
+              {notes.map(n => <span key={n}>{n}</span>)}
+            </span>
+          )}
+        </>
+      }
     >
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{mode.icon}</span>
-        <span className="text-slate-200 font-semibold text-sm">{mode.name}</span>
-      </div>
-      <div className="text-xs text-slate-400 mt-1">{mode.description}</div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-[10px] text-slate-500">
-        {mode.modifiers.enemyHpMultiplier !== 1 && (
-          <span>Enemy HP {mode.modifiers.enemyHpMultiplier}x</span>
-        )}
-        {mode.modifiers.enemyAttackMultiplier !== 1 && (
-          <span>Enemy ATK {mode.modifiers.enemyAttackMultiplier}x</span>
-        )}
-        {mode.modifiers.goldMultiplier !== 1 && (
-          <span>Gold {mode.modifiers.goldMultiplier}x</span>
-        )}
-        {mode.modifiers.healRateMultiplier !== 1 && (
-          <span>Heal Rate {mode.modifiers.healRateMultiplier}x</span>
-        )}
-        {mode.modifiers.lootChanceMultiplier !== 1 && (
-          <span>Loot {mode.modifiers.lootChanceMultiplier}x</span>
-        )}
-        {mode.modifiers.permadeath && (
-          <span className="text-red-400">Permadeath</span>
-        )}
-      </div>
-    </button>
+      <span className="font-playbill text-base uppercase tracking-wide">{mode.name}</span>
+    </PlaybillLine>
   )
 }
 
+/** Ruled numerals across the top of the bill: done ones filled ink, the current one on brass. */
 function StepIndicator({ currentStep, hasHeirlooms }: { currentStep: number; hasHeirlooms: boolean }) {
   const steps = hasHeirlooms
     ? ['Difficulty', 'Name', 'Race', 'Class', 'Heirloom']
     : ['Difficulty', 'Name', 'Race', 'Class']
   return (
-    <div className="flex items-center justify-center gap-2 mb-6">
+    <ol className="mb-5 flex items-start justify-center gap-1 sm:gap-2" aria-label="Steps">
       {steps.map((label, i) => {
         const stepNum = i + 1
         const isActive = stepNum === currentStep
         const isCompleted = stepNum < currentStep
         return (
           <React.Fragment key={label}>
-            {i > 0 && <div className="w-8 h-px bg-[#3a3c56]" />}
-            <div className="flex items-center gap-1.5">
-              <div
-                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold ${
+            {i > 0 && <li aria-hidden className="mt-4 h-0 w-4 flex-none border-t-2 border-dotted border-ps-ink/50 sm:w-8" />}
+            <li className="flex flex-col items-center gap-1" aria-current={isActive ? 'step' : undefined}>
+              <span
+                className={cn(
+                  'flex h-8 w-8 items-center justify-center rounded-full border-2 font-playbill text-sm leading-none',
                   isActive
-                    ? 'bg-indigo-500 text-white'
+                    ? 'border-ps-brass-deep bg-ps-brass text-ps-ink'
                     : isCompleted
-                      ? 'bg-indigo-500/30 text-indigo-300'
-                      : 'bg-[#2a2b3f] text-slate-500 border border-[#3a3c56]'
-                }`}
+                      ? 'border-ps-ink bg-ps-ink text-ps-playbill'
+                      : 'border-ps-ink/40 text-ps-ink-soft'
+                )}
               >
                 {stepNum}
-              </div>
+              </span>
               <span
-                className={`text-xs ${isActive ? 'text-slate-200' : isCompleted ? 'text-indigo-300' : 'text-slate-500'}`}
+                className={cn(
+                  'font-label text-xs font-bold uppercase tracking-widest',
+                  isActive ? 'text-ps-ink' : 'text-ps-ink-soft',
+                  !isActive && 'hidden sm:block'
+                )}
               >
                 {label}
               </span>
-            </div>
+            </li>
           </React.Fragment>
         )
       })}
-    </div>
+    </ol>
   )
 }
 
@@ -296,14 +314,14 @@ export default function CharacterCreation({
   const canProceedFromRace = selectedRace !== null
 
   return (
-    <form className="space-y-6 p-1" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <StepIndicator currentStep={step} hasHeirlooms={hasHeirlooms} />
 
       {/* Step 1: Difficulty */}
       {step === 1 && (
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Difficulty</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="ps-print-in">
+          <PlaybillTitle size="sm">Choose your difficulty</PlaybillTitle>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {DIFFICULTY_MODES.map(mode => (
               <DifficultyModeCard
                 key={mode.id}
@@ -313,56 +331,46 @@ export default function CharacterCreation({
               />
             ))}
           </div>
-          <button
-            type="button"
-            onClick={() => setStep(2)}
-            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-          >
-            Next: Name Your Character
-          </button>
+          <div className="mt-4 flex justify-end">
+            <PaperButton type="button" onClick={() => setStep(2)} className="w-full sm:w-auto">
+              Next: name your character
+            </PaperButton>
+          </div>
         </div>
       )}
 
       {/* Step 2: Name */}
       {step === 2 && (
-        <div>
-          <label htmlFor="characterName" className="block text-sm font-medium text-slate-300 mb-1">
-            Character Name
+        <div className="ps-print-in">
+          <PlaybillTitle size="sm">Name your character</PlaybillTitle>
+          <label htmlFor="characterName" className="mt-4 block font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">
+            Character name
           </label>
           <input
             id="characterName"
             type="text"
-            className="w-full p-3 bg-slate-800/60 border border-[#3a3c56] rounded-md text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-colors shadow-sm"
+            className="mt-1.5 h-11 w-full rounded-[3px] border-2 border-ps-ink bg-transparent px-3 font-body text-base text-ps-ink placeholder:text-ps-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
             placeholder="E.g., Aragorn, Gandalf"
             value={character.name || ''}
             onChange={e => updateCharacter({ name: e.target.value })}
             autoFocus
           />
-          <div className="flex gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
-            >
+          <div className="mt-4 flex gap-2">
+            <PaperButton type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">
               Back
-            </button>
-            <button
-              type="button"
-              disabled={!canProceedFromName}
-              onClick={() => setStep(3)}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-            >
-              Next: Choose Race
-            </button>
+            </PaperButton>
+            <PaperButton type="button" disabled={!canProceedFromName} onClick={() => setStep(3)} className="flex-1">
+              Next: choose race
+            </PaperButton>
           </div>
         </div>
       )}
 
       {/* Step 3: Race */}
       {step === 3 && (
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-3">Choose Your Race</label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="ps-print-in">
+          <PlaybillTitle size="sm">Choose your race</PlaybillTitle>
+          <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {RACES.map(race => (
               <OptionCard
                 key={race.id}
@@ -372,47 +380,48 @@ export default function CharacterCreation({
               />
             ))}
           </div>
-          <div className="flex gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
-            >
+          <div className="mt-4 flex gap-2">
+            <PaperButton type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
               Back
-            </button>
-            <button
-              type="button"
-              disabled={!canProceedFromRace}
-              onClick={() => setStep(4)}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-            >
-              Next: Choose Class
-            </button>
+            </PaperButton>
+            <PaperButton type="button" disabled={!canProceedFromRace} onClick={() => setStep(4)} className="flex-1">
+              Next: choose class
+            </PaperButton>
           </div>
         </div>
       )}
 
       {/* Step 4: Class (Generated) */}
       {step === 4 && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <label className="block text-sm font-medium text-slate-300">Choose Your Class</label>
-            <button
+        <div className="ps-print-in">
+          <PlaybillTitle size="sm">Choose your class</PlaybillTitle>
+          <div className="mt-3 flex items-center justify-between gap-3">
+            <PlaybillCaption>Four classes, printed fresh for this character</PlaybillCaption>
+            <PaperButton
               type="button"
+              variant="outline"
+              size="sm"
               onClick={fetchGeneratedClasses}
               disabled={isLoadingClasses}
-              className="text-xs text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 transition-colors focus:outline-none"
             >
-              {isLoadingClasses ? 'Generating...' : 'Reroll Classes'}
-            </button>
+              {isLoadingClasses ? 'Printing…' : 'Reroll classes'}
+            </PaperButton>
           </div>
 
           {isLoadingClasses ? (
             <div className="flex items-center justify-center py-12">
-              <div className="text-slate-400 text-sm">Generating unique classes...</div>
+              <PrintingDots label="Printing classes" />
+            </div>
+          ) : generatedClasses.length === 0 ? (
+            <div className="mt-3 rounded-[3px] border-2 border-dashed border-ps-ink/40 px-4 py-8 text-center">
+              <p className="font-body text-sm text-ps-ink">The classes didn&rsquo;t print.</p>
+              <p className="mt-1 font-body text-xs text-ps-ink-soft">Check your connection and try again.</p>
+              <PaperButton type="button" variant="outline" size="sm" className="mt-3" onClick={fetchGeneratedClasses}>
+                Try again
+              </PaperButton>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
               {generatedClasses.map(gc => (
                 <GeneratedClassCard
                   key={gc.id}
@@ -425,54 +434,32 @@ export default function CharacterCreation({
           )}
 
           {/* Stat Preview */}
-          <div className="mt-4 p-4 bg-[#1e1f33] border border-[#3a3c56] rounded-lg">
-            <div className="text-sm font-medium text-slate-300 mb-2">Stat Preview</div>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="text-xs text-slate-500 uppercase">Strength</div>
-                <div className="text-lg font-bold text-amber-400">{stats.strength}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 uppercase">Intelligence</div>
-                <div className="text-lg font-bold text-sky-400">{stats.intelligence}</div>
-              </div>
-              <div>
-                <div className="text-xs text-slate-500 uppercase">Luck</div>
-                <div className="text-lg font-bold text-emerald-400">{stats.luck}</div>
-              </div>
-            </div>
+          <div className="mt-4">
+            <PlaybillCaption className="mb-1.5 text-center">Your figures</PlaybillCaption>
+            <BrassPlate className="grid grid-cols-3 divide-x-2 divide-ps-brass-deep/60" aria-label="Stat preview">
+              <BrassFigure label="Strength" value={stats.strength} />
+              <BrassFigure label="Intelligence" value={stats.intelligence} />
+              <BrassFigure label="Luck" value={stats.luck} />
+            </BrassPlate>
             {selectedRace && selectedGeneratedClass && (
-              <div className="text-xs text-slate-500 mt-2 text-center">
+              <p className="mt-1.5 text-center font-body text-xs text-ps-ink-soft">
                 {selectedGeneratedClass.name} base + {selectedRace.name} racial bonuses
-              </div>
+              </p>
             )}
           </div>
 
-          <div className="flex gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(3)}
-              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
-            >
+          <div className="mt-4 flex gap-2">
+            <PaperButton type="button" variant="outline" onClick={() => setStep(3)} className="flex-1">
               Back
-            </button>
+            </PaperButton>
             {hasHeirlooms ? (
-              <button
-                type="button"
-                disabled={!isValid}
-                onClick={() => setStep(5)}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-              >
-                Next: Choose Heirloom
-              </button>
+              <PaperButton type="button" disabled={!isValid} onClick={() => setStep(5)} className="flex-1">
+                Next: choose heirloom
+              </PaperButton>
             ) : (
-              <button
-                type="submit"
-                disabled={!isValid}
-                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-              >
-                Create Character
-              </button>
+              <ChunkyButton type="submit" variant="primary" disabled={!isValid} className="flex-1">
+                Begin
+              </ChunkyButton>
             )}
           </div>
         </div>
@@ -480,12 +467,12 @@ export default function CharacterCreation({
 
       {/* Step 5: Heirloom Selection */}
       {step === 5 && hasHeirlooms && (
-        <div>
-          <label className="block text-sm font-medium text-slate-300 mb-3">Choose an Heirloom (Optional)</label>
-          <p className="text-xs text-slate-400 mb-4">
+        <div className="ps-print-in">
+          <PlaybillTitle size="sm">Choose an heirloom</PlaybillTitle>
+          <p className="mt-3 font-body text-sm leading-snug text-ps-ink-soft">
             Previous characters left behind these items. Pick one to start your journey with, or skip to begin without one.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
             {legacyHeirlooms.map((item: Item) => (
               <HeirloomCard
                 key={item.id}
@@ -497,21 +484,13 @@ export default function CharacterCreation({
               />
             ))}
           </div>
-          <div className="flex gap-3 mt-4">
-            <button
-              type="button"
-              onClick={() => setStep(4)}
-              className="flex-1 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-300 font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none border border-[#3a3c56]"
-            >
+          <div className="mt-4 flex gap-2">
+            <PaperButton type="button" variant="outline" onClick={() => setStep(4)} className="flex-1">
               Back
-            </button>
-            <button
-              type="submit"
-              disabled={!isValid}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold px-4 py-3 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:ring-offset-[#161723] shadow-md"
-            >
-              {selectedHeirloom ? 'Create with Heirloom' : 'Create without Heirloom'}
-            </button>
+            </PaperButton>
+            <ChunkyButton type="submit" variant="primary" disabled={!isValid} className="flex-1">
+              {selectedHeirloom ? 'Begin with heirloom' : 'Begin without heirloom'}
+            </ChunkyButton>
           </div>
         </div>
       )}

@@ -1,10 +1,19 @@
 'use client'
+
+/**
+ * The mailbox: letters as ruled rows that open into the full letter, unread
+ * ones stamped in red; writing a letter costs a few gold.
+ */
 import { useState } from 'react'
-import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
-import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+
 import { getNPCById } from '@/app/tap-tap-adventure/config/npcs'
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillLine, PlaybillSheet, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface MailboxPanelProps {
   character: FantasyCharacter
@@ -26,42 +35,51 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
 
   const sendCost = Math.max(5, Math.round(5 * getRegion(character.currentRegion ?? 'green_meadows').difficultyMultiplier))
 
+  const backToInbox = (label = 'Back to inbox', onClick: () => void) => (
+    <PaperButton variant="outline" size="sm" className="border-ps-ink/50 text-ps-ink-soft" onClick={onClick}>
+      {label}
+    </PaperButton>
+  )
+
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-amber-400">
-          📬 Mailbox {unreadCount > 0 && <span className="text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded-full ml-1">{unreadCount}</span>}
-        </span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close mailbox">✕</button>
+    <section aria-label="Mailbox">
+      <div className="flex items-start gap-2">
+        <PlaybillTitle size="sm" className="min-w-0 flex-1">
+          Mailbox
+          {unreadCount > 0 && <Stamp tone="red" className="ml-2 align-middle">{unreadCount} unread</Stamp>}
+        </PlaybillTitle>
+        <PaperButton variant="outline" size="sm" className="w-8 shrink-0 px-0" onClick={onClose} aria-label="Close mailbox">
+          <CloseIcon />
+        </PaperButton>
       </div>
 
       {composing ? (
-        <div className="space-y-3">
-          <button className="text-[10px] text-slate-400 hover:text-slate-200" onClick={() => { setComposing(false); setSelectedNpcId(null); setMessageText(''); setSendResult(null) }}>← Back to inbox</button>
+        <div className="mt-3 space-y-3">
+          {backToInbox('Back to inbox', () => { setComposing(false); setSelectedNpcId(null); setMessageText(''); setSendResult(null) })}
 
-          <h4 className="text-xs font-semibold text-slate-300">Write a Letter</h4>
+          <PlaybillCaption>Write a letter</PlaybillCaption>
 
           {/* NPC contact selection */}
           <div>
-            <div className="text-[10px] text-slate-400 mb-1">To:</div>
-            <div className="space-y-1 max-h-[120px] overflow-y-auto">
+            <PlaybillCaption className="mb-1 text-ps-ink-faint">To</PlaybillCaption>
+            <div className="ps-scroll grid max-h-[160px] gap-1.5 overflow-y-auto pr-1">
               {Object.entries(character.npcEncounters ?? {})
                 .filter(([, enc]) => (enc.disposition ?? 0) >= 0)
                 .map(([npcId]) => {
                   const npc = getNPCById(npcId)
                   if (!npc) return null
+                  const selected = selectedNpcId === npcId
                   return (
-                    <button
+                    <PlaybillLine
                       key={npcId}
-                      className={`w-full text-left text-[10px] px-2 py-1.5 rounded border transition-colors ${
-                        selectedNpcId === npcId
-                          ? 'border-indigo-500 bg-indigo-900/30 text-indigo-200'
-                          : 'border-[#3a3c56] bg-[#252638] text-slate-300 hover:border-slate-500'
-                      }`}
+                      aria-pressed={selected}
+                      className={cn('py-1.5 text-sm', selected && 'bg-ps-ink text-ps-playbill')}
+                      note={npc.role}
                       onClick={() => setSelectedNpcId(npcId)}
                     >
-                      {npc.icon} {npc.name} — {npc.role}
-                    </button>
+                      <span aria-hidden className="mr-2">{npc.icon}</span>
+                      {npc.name}
+                    </PlaybillLine>
                   )
                 })}
             </div>
@@ -70,10 +88,10 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
           {/* Message input */}
           {selectedNpcId && (
             <>
-              <div>
-                <div className="text-[10px] text-slate-400 mb-1">Message:</div>
+              <label className="block">
+                <PlaybillCaption className="mb-1 text-ps-ink-faint">Message</PlaybillCaption>
                 <textarea
-                  className="w-full text-[11px] bg-[#252638] border border-[#3a3c56] rounded p-2 text-slate-200 placeholder-slate-600 resize-none focus:outline-none focus:border-indigo-500"
+                  className="w-full resize-none rounded-[3px] border-2 border-ps-ink bg-transparent p-2 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
                   rows={3}
                   maxLength={200}
                   placeholder="Write your message..."
@@ -81,19 +99,16 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
                   onChange={(e) => setMessageText(e.target.value)}
                   aria-label="Message"
                 />
-                <div className="text-[10px] text-slate-600 text-right">{messageText.length}/200</div>
-              </div>
+                <span className="block text-right font-label text-xs font-bold uppercase tracking-widest tabular-nums text-ps-ink-soft">{messageText.length}/200</span>
+              </label>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-amber-400">
-                  Cost: {sendCost} gold
+              <div className="flex items-center justify-between gap-3">
+                <span className="font-body text-sm text-ps-ink">
+                  Postage <span className="font-playbill tabular-nums">{sendCost} g</span>
                 </span>
-                <button
-                  className={`text-[10px] px-3 py-1.5 rounded font-semibold transition-colors ${
-                    messageText.trim().length > 0
-                      ? 'bg-indigo-900/50 text-indigo-300 hover:bg-indigo-800/60'
-                      : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-                  }`}
+                <PaperButton
+                  variant="brass"
+                  size="sm"
                   disabled={messageText.trim().length === 0}
                   onClick={() => {
                     const success = sendMail(selectedNpcId!, messageText.trim())
@@ -106,115 +121,122 @@ export function MailboxPanel({ character, onClose }: MailboxPanelProps) {
                     }
                   }}
                 >
-                  Send Letter
-                </button>
+                  Send letter
+                </PaperButton>
               </div>
-
-              {sendResult && (
-                <div className={`text-[10px] p-2 rounded ${sendResult.includes('sent') ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
-                  {sendResult}
-                </div>
-              )}
             </>
+          )}
+
+          {sendResult && (
+            <p
+              role="status"
+              className={cn(
+                'rounded-[2px] border-2 border-dotted px-3 py-2 font-body text-sm',
+                sendResult.includes('sent') ? 'border-ps-stamp-green text-ps-stamp-green' : 'border-ps-stamp-red text-ps-stamp-red'
+              )}
+            >
+              {sendResult}
+            </p>
           )}
         </div>
       ) : selectedMail ? (
-        // Reading a message
-        <div className="space-y-2">
-          <button className="text-[10px] text-slate-400 hover:text-slate-200" onClick={() => setSelectedMailId(null)}>← Back to inbox</button>
-          <div className="bg-[#252638] border border-[#3a3c56] rounded p-3 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">{selectedMail.fromIcon}</span>
-              <div>
-                <div className="text-xs font-semibold text-slate-200">{selectedMail.fromName}</div>
-                <div className="text-[10px] text-slate-500">Day {selectedMail.day}</div>
-              </div>
+        // Reading a letter
+        <div className="mt-3 space-y-3">
+          {backToInbox('Back to inbox', () => setSelectedMailId(null))}
+          <PlaybillSheet flat as="article" className="p-4">
+            <div className="flex items-center justify-between gap-2">
+              <PlaybillCaption className="text-ps-ink">
+                <span aria-hidden className="mr-1.5 normal-case">{selectedMail.fromIcon}</span>
+                From {selectedMail.fromName}
+              </PlaybillCaption>
+              <PlaybillCaption className="shrink-0 tabular-nums">Day {selectedMail.day}</PlaybillCaption>
             </div>
-            <div className="text-xs font-semibold text-slate-300">{selectedMail.subject}</div>
-            <div className="text-xs text-slate-400 leading-relaxed whitespace-pre-wrap">{selectedMail.body}</div>
-            {selectedMail.attachedGold && selectedMail.attachedGold > 0 && (
-              <div className="mt-2">
-                <button
-                  className="text-[10px] px-2 py-1 bg-amber-900/40 text-amber-400 rounded hover:bg-amber-800/50 transition-colors"
-                  onClick={() => {
-                    claimMailGold(selectedMail.id)
-                    setSelectedMailId(null)
-                  }}
-                >
-                  💰 Claim {selectedMail.attachedGold} gold
-                </button>
+            <h3 className="mt-2 font-playbill text-base leading-tight text-ps-ink">{selectedMail.subject}</h3>
+            <p className="mt-2 whitespace-pre-wrap font-body text-sm leading-relaxed text-ps-ink">{selectedMail.body}</p>
+            {((selectedMail.attachedGold && selectedMail.attachedGold > 0) ||
+              (selectedMail.attachedItems && selectedMail.attachedItems.length > 0 && !selectedMail.itemsClaimed)) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {selectedMail.attachedGold && selectedMail.attachedGold > 0 ? (
+                  <PaperButton
+                    variant="brass"
+                    size="sm"
+                    onClick={() => {
+                      claimMailGold(selectedMail.id)
+                      setSelectedMailId(null)
+                    }}
+                  >
+                    Claim <span className="tabular-nums">{selectedMail.attachedGold} g</span>
+                  </PaperButton>
+                ) : null}
+                {selectedMail.attachedItems && selectedMail.attachedItems.length > 0 && !selectedMail.itemsClaimed && (
+                  <PaperButton
+                    size="sm"
+                    onClick={() => {
+                      claimMailItems(selectedMail.id)
+                      setSelectedMailId(null)
+                    }}
+                  >
+                    Claim {selectedMail.attachedItems!.length} item(s)
+                  </PaperButton>
+                )}
               </div>
             )}
-            {selectedMail.attachedItems && selectedMail.attachedItems.length > 0 && !selectedMail.itemsClaimed && (
-              <div className="mt-2">
-                <button
-                  className="text-[10px] px-2 py-1 bg-purple-900/40 text-purple-400 rounded hover:bg-purple-800/50 transition-colors"
-                  onClick={() => {
-                    claimMailItems(selectedMail.id)
-                    setSelectedMailId(null)
-                  }}
-                >
-                  🎁 Claim {selectedMail.attachedItems!.length} item(s)
-                </button>
-              </div>
-            )}
-          </div>
+          </PlaybillSheet>
         </div>
       ) : (
         // Inbox list
-        <div className="space-y-1.5">
-          <div className="flex justify-between items-center">
-            <span className="text-[10px] text-slate-500">Inbox</span>
-            <button
-              className="text-[10px] px-2 py-1 bg-indigo-900/40 text-indigo-300 rounded hover:bg-indigo-800/50"
-              onClick={() => setComposing(true)}
-            >
-              ✉️ Write Letter
-            </button>
+        <div className="mt-3">
+          <div className="flex items-center justify-between gap-2">
+            <PlaybillCaption>Inbox</PlaybillCaption>
+            <PaperButton variant="outline" size="sm" onClick={() => setComposing(true)}>
+              Write a letter
+            </PaperButton>
           </div>
 
           {(character.pendingReplies ?? []).length > 0 && (
-            <div className="text-[10px] text-indigo-400 italic bg-indigo-900/20 border border-indigo-700/30 rounded p-2">
-              ✉️ {character.pendingReplies!.length} letter(s) sent — replies expected in a few days
-            </div>
+            <p className="mt-2 font-body text-xs italic text-ps-ink-soft">
+              {character.pendingReplies!.length} letter(s) sent — replies expected in a few days
+            </p>
           )}
 
-          <div className="space-y-1.5 max-h-[280px] overflow-y-auto">
+          <div className="ps-scroll mt-2 max-h-[280px] overflow-y-auto pr-1">
             {mail.length === 0 ? (
-              <div className="text-xs text-slate-500 italic py-4 text-center">No mail yet. Befriend NPCs and they may write to you!</div>
+              <p className="py-4 text-center font-body text-sm italic text-ps-ink-soft">No mail yet. Befriend NPCs and they may write to you!</p>
             ) : (
-              mail.sort((a, b) => b.day - a.day).map(m => (
-                <button
-                  key={m.id}
-                  className={`w-full text-left bg-[#252638] border rounded p-2 flex items-center gap-2 transition-colors ${
-                    m.read ? 'border-[#3a3c56] hover:border-slate-500' : 'border-indigo-700/50 hover:border-indigo-500'
-                  }`}
-                  onClick={() => {
-                    if (!m.read) markMailRead(m.id)
-                    setSelectedMailId(m.id)
-                  }}
-                >
-                  <span className="text-lg">{m.fromIcon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className={`text-xs font-semibold ${m.read ? 'text-slate-400' : 'text-slate-200'}`}>{m.fromName}</span>
-                      {!m.read && <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full" />}
-                      {m.attachedGold && m.attachedGold > 0 && <span className="text-[10px] text-amber-400">💰</span>}
-                      {m.attachedItems && m.attachedItems.length > 0 && !m.itemsClaimed && <span className="text-[10px] text-purple-400">🎁</span>}
-                    </div>
-                    <div className={`text-[10px] truncate ${m.read ? 'text-slate-500' : 'text-slate-300'}`}>{m.subject}</div>
-                  </div>
-                  <span className="text-[10px] text-slate-600 shrink-0">Day {m.day}</span>
-                </button>
-              ))
+              <ul className="divide-y-2 divide-dotted divide-ps-ink/40" aria-label="Letters">
+                {mail.sort((a, b) => b.day - a.day).map(m => (
+                  <li key={m.id}>
+                    <button
+                      type="button"
+                      className="flex w-full items-center gap-3 px-1 py-2.5 text-left transition-colors hover:bg-ps-ink/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+                      onClick={() => {
+                        if (!m.read) markMailRead(m.id)
+                        setSelectedMailId(m.id)
+                      }}
+                    >
+                      <span aria-hidden className="w-6 shrink-0 text-center font-body text-base leading-none">{m.fromIcon}</span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-1.5">
+                          <span className={cn('font-body text-sm font-semibold', m.read ? 'text-ps-ink-soft' : 'text-ps-ink')}>{m.fromName}</span>
+                          {!m.read && <Stamp tone="red" tilt={false}>New</Stamp>}
+                          {m.attachedGold && m.attachedGold > 0 ? <Stamp tone="gold" tilt={false}>Gold</Stamp> : null}
+                          {m.attachedItems && m.attachedItems.length > 0 && !m.itemsClaimed && <Stamp tone="violet" tilt={false}>Gift</Stamp>}
+                        </span>
+                        <span className={cn('block truncate font-body text-xs', m.read ? 'text-ps-ink-faint' : 'text-ps-ink-soft')}>{m.subject}</span>
+                      </span>
+                      <span className="shrink-0 font-label text-xs font-bold uppercase tracking-widest tabular-nums text-ps-ink-faint">Day {m.day}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
       )}
 
-      <button className="w-full text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors" onClick={onClose}>
-        ← Back to Town
-      </button>
-    </div>
+      <PaperButton variant="outline" className="mt-4 w-full border-ps-ink/50 text-ps-ink-soft" onClick={onClose}>
+        Back to town
+      </PaperButton>
+    </section>
   )
 }

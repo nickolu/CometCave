@@ -1,102 +1,78 @@
 'use client'
 
-import { useRef, useState } from 'react'
-import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { getReputationTier, ReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
-import { calculateDay, levelProgress, stepsToNextLevel, stepsRequiredForLevel } from '@/app/tap-tap-adventure/lib/leveling'
-import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { useEffect, useRef, useState } from 'react'
+
+import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
+import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
+import { getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
-import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { ReputationTier, getReputationTier } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { calculateDay, levelProgress, stepsRequiredForLevel, stepsToNextLevel } from '@/app/tap-tap-adventure/lib/leveling'
 import { getMountDisplayName } from '@/app/tap-tap-adventure/lib/mountUtils'
 import { getSkillBonus } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
-import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
-import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { EquipmentSlotType } from '@/app/tap-tap-adventure/models/equipment'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface PlayerStatusViewProps {
   onClose: () => void
 }
 
-const REPUTATION_TIER_COLORS: Record<ReputationTier, string> = {
-  'Wanted Criminal': 'text-red-400',
-  Infamous: 'text-red-400',
-  Disreputable: 'text-orange-400',
-  Unknown: 'text-slate-400',
-  Respected: 'text-blue-400',
-  Renowned: 'text-purple-400',
-  Legendary: 'text-amber-400',
-  'Living Legend': 'text-yellow-300',
+/** The printer's ink for each standing. */
+const REPUTATION_TONE: Record<ReputationTier, StampTone> = {
+  'Wanted Criminal': 'red',
+  Infamous: 'red',
+  Disreputable: 'red',
+  Unknown: 'ink',
+  Respected: 'blue',
+  Renowned: 'violet',
+  Legendary: 'gold',
+  'Living Legend': 'gold',
 }
 
-const REPUTATION_TIER_BG: Record<ReputationTier, string> = {
-  'Wanted Criminal': 'bg-red-500',
-  Infamous: 'bg-red-400',
-  Disreputable: 'bg-orange-400',
-  Unknown: 'bg-slate-400',
-  Respected: 'bg-blue-400',
-  Renowned: 'bg-purple-400',
-  Legendary: 'bg-amber-400',
-  'Living Legend': 'bg-yellow-300',
+const REPUTATION_BAR: Record<ReputationTier, string> = {
+  'Wanted Criminal': 'bg-ps-stamp-red',
+  Infamous: 'bg-ps-stamp-red',
+  Disreputable: 'bg-ps-stamp-red',
+  Unknown: 'bg-ps-ink',
+  Respected: 'bg-ps-stamp-blue',
+  Renowned: 'bg-ps-stamp-violet',
+  Legendary: 'bg-ps-stamp-gold',
+  'Living Legend': 'bg-ps-stamp-gold',
 }
 
 const SLOT_LABELS: Record<EquipmentSlotType, string> = {
   weapon: 'Weapon',
-  armor: 'Armor',
+  armor: 'Armour',
   accessory: 'Accessory',
 }
 
-const SLOT_ICONS: Record<EquipmentSlotType, string> = {
-  weapon: 'ATK',
-  armor: 'DEF',
-  accessory: 'LCK',
+const MOUNT_RARITY_TONE: Record<string, StampTone> = {
+  common: 'ink',
+  uncommon: 'green',
+  rare: 'blue',
+  legendary: 'gold',
 }
 
-const MOUNT_RARITY_COLORS: Record<string, string> = {
-  common: 'text-slate-300 border-slate-500',
-  uncommon: 'text-green-300 border-green-500',
-  rare: 'text-blue-300 border-blue-500',
-  legendary: 'text-yellow-300 border-yellow-500',
-}
-
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="bg-[#1e1f30] border border-slate-700/50 rounded-lg p-4 space-y-3">
-      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400 border-b border-slate-700/50 pb-2">
-        {title}
-      </h3>
-      {children}
-    </div>
+    <section className={cn('mt-5', className)}>
+      <PlaybillCaption className="border-b-2 border-dotted border-ps-ink/40 pb-1">{title}</PlaybillCaption>
+      <div className="mt-2">{children}</div>
+    </section>
   )
 }
 
-function StatBar({
-  label,
-  current,
-  max,
-  color,
-}: {
-  label: string
-  current: number
-  max: number
-  color: string
-}) {
-  const pct = max > 0 ? Math.round((current / max) * 100) : 0
+function Track({ value, tone, label }: { value: number; tone: string; label: string }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)))
   return (
-    <div>
-      <div className="flex justify-between text-sm mb-1">
-        <span className="text-slate-300">{label}</span>
-        <span className="font-bold text-white">
-          {current} / {max}
-        </span>
-      </div>
-      <div className="h-2.5 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-300 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
+    <div className="h-2 w-full overflow-hidden rounded-full bg-ps-ink/20" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={label}>
+      <div className={cn('h-full rounded-full transition-[width] duration-300', tone)} style={{ width: `${pct}%` }} />
     </div>
   )
 }
@@ -121,6 +97,14 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
   const [showRenameModal, setShowRenameModal] = useState(false)
   const dialogRef = useRef<HTMLDivElement>(null)
   useDialogFocus(dialogRef)
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   const character = getSelectedCharacter()
   if (!character) return null
@@ -208,320 +192,267 @@ export function PlayerStatusView({ onClose }: PlayerStatusViewProps) {
     return parts.join(', ')
   }
 
+  const attributes = [
+    { key: 'Strength', value: character.strength, note: formatBonus(baseStr, equipBonuses.strength, mountStatBonuses.strength, metaBonuses.bonusStrength, skillBonuses.strength) },
+    { key: 'Intelligence', value: character.intelligence, note: formatBonus(baseInt, equipBonuses.intelligence, mountStatBonuses.intelligence, metaBonuses.bonusIntelligence, skillBonuses.intelligence) },
+    { key: 'Luck', value: character.luck, note: formatBonus(baseLck, equipBonuses.luck, mountStatBonuses.luck, metaBonuses.bonusLuck, skillBonuses.luck) },
+    { key: 'Charisma', value: character.charisma, note: formatBonus(baseCha, equipBonuses.charisma, mountStatBonuses.charisma, 0, skillBonuses.charisma) },
+  ]
+
+  const hpPct = maxHp > 0 ? hp / maxHp : 0
+  const manaPct = maxMana > 0 ? mana / maxMana : 0
+
   return (
-    <div ref={dialogRef} className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-label="Character status">
-      {/* Fixed header with close button */}
-      <div className="shrink-0 bg-[#1a1b2e] border-b border-slate-700/50 px-4 py-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold text-white">Character Status</h2>
-        <button
-          onClick={onClose}
-          className="px-3 py-1.5 text-sm font-semibold rounded border border-slate-600 bg-[#2a2b3f] hover:bg-[#3a3c56] text-slate-200 transition-colors"
-        >
-          Close
-        </button>
-      </div>
-
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto bg-[#1a1b2e]">
-        <div className="max-w-2xl mx-auto px-4 py-4 space-y-4">
-          {/* Header section */}
-          <SectionCard title="Character">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="text-xl font-bold text-white">{character.name}</span>
-                <span className="text-sm text-slate-400">
-                  {character.race} {character.class}
-                </span>
-              </div>
-              {character.classData?.description && (
-                <p className="text-xs text-slate-500 italic">{character.classData.description}</p>
-              )}
-              <div className="flex flex-wrap gap-3 text-sm">
-                <span className="text-orange-300">
-                  Level {level}
-                  <span className="text-xs text-slate-500 ml-1">
-                    ({stepsIntoLevel}/{stepsNeeded} to next)
-                  </span>
-                </span>
-                <span className="text-slate-400">Day {day}</span>
-                <span className="text-slate-400">{distance} km</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-emerald-300 text-sm">
-                  {region.icon} {region.name}
-                </span>
-              </div>
-              {/* Level progress bar */}
-              <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-orange-400 rounded-full transition-all"
-                  style={{ width: `${progress * 100}%` }}
-                />
-              </div>
+    <div
+      ref={dialogRef}
+      className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-ps-house/70 p-3 sm:px-6 sm:pb-6 sm:pt-24"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Character status"
+      tabIndex={-1}
+    >
+      <PlaybillSheet as="article" className="my-auto w-full max-w-2xl">
+        <div className="px-4 pb-5 pt-4 sm:px-7 sm:pb-7 sm:pt-5">
+          {/* Masthead */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <PlaybillTitle size="lg" rules={false} className="mt-1 text-left">
+                {character.name}
+              </PlaybillTitle>
+              <p className="mt-1 font-body text-sm text-ps-ink-soft">
+                Level {level} {character.race} {character.class}
+              </p>
             </div>
-          </SectionCard>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 border-ps-ink text-ps-ink transition-colors hover:bg-ps-ink hover:text-ps-playbill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+              aria-label="Close the character sheet"
+            >
+              <CloseIcon />
+            </button>
+          </div>
+          {character.classData?.description && (
+            <p className="mt-2 font-body text-sm italic leading-snug text-ps-ink-soft">{character.classData.description}</p>
+          )}
+          <div className="mt-3 flex flex-wrap items-center gap-1 border-y-2 border-ps-ink py-2">
+            <Stamp tone="ink" tilt={false} title={region.description}>
+              <span className="font-body normal-case tracking-normal">{region.icon}</span> {region.name}
+            </Stamp>
+            <Stamp tone="ink" tilt={false}>Day {day}</Stamp>
+            <Stamp tone="ink" tilt={false}>{Math.round(distance)} km</Stamp>
+            <Stamp tone="ink" tilt={false} title={difficultyMode.description}>
+              {difficultyMode.name}
+            </Stamp>
+          </div>
 
-          {/* Core Stats */}
-          <SectionCard title="Core Stats">
-            <div className="space-y-3">
-              <StatBar label="HP" current={hp} max={maxHp} color="bg-green-500" />
-              <StatBar label="Mana" current={mana} max={maxMana} color="bg-blue-500" />
+          {/* Vitals on brass */}
+          <BrassPlate className="mt-4 grid grid-cols-2 divide-x-2 divide-ps-brass-deep/60 sm:grid-cols-4" aria-label="Vitals">
+            <BrassFigure
+              label="Health"
+              value={hp}
+              sub={`of ${maxHp}`}
+              bar={hpPct}
+              barTone={hpPct > 0.5 ? 'green' : hpPct > 0.25 ? 'ink' : 'red'}
+              title={`HP ${hp} of ${maxHp}`}
+            />
+            <BrassFigure label="Mana" value={mana} sub={`of ${maxMana}`} bar={manaPct} title={`Mana ${mana} of ${maxMana}`} />
+            <BrassFigure label="Gold" value={character.gold} className="border-t-2 border-ps-brass-deep/60 sm:border-t-0" />
+            <BrassFigure
+              label="Level"
+              value={level}
+              sub={`${Math.max(0, stepsIntoLevel)} of ${stepsNeeded} km`}
+              bar={progress}
+              title={`Level ${level}: ${Math.max(0, stepsIntoLevel)} of ${stepsNeeded} km walked toward the next`}
+              className="border-t-2 border-ps-brass-deep/60 sm:border-t-0"
+            />
+          </BrassPlate>
 
-              <div className="grid grid-cols-2 gap-3 pt-1">
-                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                  <div className="text-xs text-slate-500 mb-1">Strength</div>
-                  <div className="text-xl font-bold text-purple-300">{character.strength}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseStr, equipBonuses.strength, mountStatBonuses.strength, metaBonuses.bonusStrength, skillBonuses.strength)}
-                  </div>
-                </div>
-                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                  <div className="text-xs text-slate-500 mb-1">Intelligence</div>
-                  <div className="text-xl font-bold text-blue-300">{character.intelligence}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseInt, equipBonuses.intelligence, mountStatBonuses.intelligence, metaBonuses.bonusIntelligence, skillBonuses.intelligence)}
-                  </div>
-                </div>
-                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                  <div className="text-xs text-slate-500 mb-1">Luck</div>
-                  <div className="text-xl font-bold text-yellow-300">{character.luck}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseLck, equipBonuses.luck, mountStatBonuses.luck, metaBonuses.bonusLuck, skillBonuses.luck)}
-                  </div>
-                </div>
-                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                  <div className="text-xs text-slate-500 mb-1">Charisma</div>
-                  <div className="text-xl font-bold text-pink-400">{character.charisma}</div>
-                  <div className="text-[10px] text-slate-500 mt-0.5">
-                    {formatBonus(baseCha, equipBonuses.charisma, mountStatBonuses.charisma, 0, skillBonuses.charisma)}
-                  </div>
-                </div>
-                <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                  <div className="text-xs text-slate-500 mb-1">Gold</div>
-                  <div className="text-xl font-bold text-yellow-400">{character.gold}</div>
-                </div>
-              </div>
-            </div>
-          </SectionCard>
+          {/* Attributes */}
+          <Section title="Attributes">
+            <BrassPlate className="grid grid-cols-4 divide-x-2 divide-ps-brass-deep/60" aria-label="Attributes">
+              {attributes.map(a => (
+                <BrassFigure key={a.key} label={a.key.slice(0, 3)} value={a.value} title={`${a.key}: ${a.note}`} />
+              ))}
+            </BrassPlate>
+            <ul className="m-0 mt-2 list-none p-0">
+              {attributes.map(a => (
+                <li key={a.key} className="flex items-baseline justify-between gap-3 border-b border-dotted border-ps-ink/40 py-1 font-body text-xs last:border-b-0">
+                  <span className="text-ps-ink">{a.key}</span>
+                  <span className="text-right text-ps-ink-soft">{a.note}</span>
+                </li>
+              ))}
+            </ul>
+          </Section>
 
           {/* Reputation */}
-          <SectionCard title="Reputation">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <span className={`text-lg font-bold ${REPUTATION_TIER_COLORS[reputationTier]}`}>
-                  {reputationTier}
-                </span>
-                <span className="text-sm text-slate-400">({reputation})</span>
-              </div>
-              {/* Reputation bar: -100 to 200 */}
-              <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`absolute h-full rounded-full transition-all ${REPUTATION_TIER_BG[reputationTier]}`}
-                  style={{ width: `${repBarPct}%` }}
-                />
-              </div>
-              <div className="flex justify-between text-[10px] text-slate-500">
+          <Section title="Standing">
+            <div className="flex flex-wrap items-center gap-2">
+              <Stamp tone={REPUTATION_TONE[reputationTier]} className="text-xs">{reputationTier}</Stamp>
+              <span className="font-playbill text-base tabular-nums text-ps-ink">{reputation}</span>
+            </div>
+            <div className="mt-2">
+              <Track value={repBarPct / 100} tone={REPUTATION_BAR[reputationTier]} label={`Reputation ${reputation} on a scale from -100 to 200`} />
+              <div className="mt-1 flex justify-between font-label text-xs font-bold uppercase tracking-widest text-ps-ink-faint" aria-hidden>
                 <span>-100</span>
                 <span>0</span>
                 <span>100</span>
                 <span>200</span>
               </div>
             </div>
-          </SectionCard>
+          </Section>
 
           {/* Equipment */}
-          <SectionCard title="Equipment">
-            <div className="space-y-2">
+          <Section title="Worn">
+            <ul className="m-0 list-none p-0">
               {(['weapon', 'armor', 'accessory'] as EquipmentSlotType[]).map(slot => {
                 const item = equipment[slot]
                 return (
-                  <div
-                    key={slot}
-                    className="bg-[#161723] border border-slate-700/30 p-3 rounded-lg flex items-center gap-3"
-                  >
-                    <span className="text-xs font-bold text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded shrink-0">
-                      {SLOT_ICONS[slot]}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="text-xs text-slate-500 uppercase">{SLOT_LABELS[slot]}</div>
+                  <li key={slot} className="flex items-start justify-between gap-3 border-b-2 border-dotted border-ps-ink/40 py-2 last:border-b-0">
+                    <div className="min-w-0 flex-1">
+                      <PlaybillCaption className="text-xs">{SLOT_LABELS[slot]}</PlaybillCaption>
                       {item ? (
-                        <>
-                          <div className="font-bold text-white text-sm truncate">{item.name}</div>
-                          {item.effects && (
-                            <div className="text-xs text-emerald-400">
-                              {Object.entries(item.effects)
-                                .filter(([, v]) => v !== undefined && v !== 0)
-                                .map(([k, v]) => `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`)
-                                .join(', ')}
-                            </div>
-                          )}
-                        </>
+                        <p className="mt-0.5 font-body text-sm font-medium text-ps-ink">{item.name}</p>
                       ) : (
-                        <div className="text-sm text-slate-500 italic">Empty</div>
+                        <p className="mt-0.5 font-body text-sm italic text-ps-ink-soft">Nothing worn</p>
                       )}
                     </div>
-                  </div>
+                    {item?.effects && (
+                      <div className="flex max-w-[55%] flex-wrap items-center justify-end gap-1">
+                        {Object.entries(item.effects)
+                          .filter(([, v]) => v !== undefined && v !== 0)
+                          .map(([k, v]) => (
+                            <Stamp key={k} tone={typeof v === 'number' && v < 0 ? 'red' : 'green'} tilt={false}>
+                              {typeof v === 'number' && v > 0 ? '+' : ''}{String(v)} {k.charAt(0).toUpperCase() + k.slice(1)}
+                            </Stamp>
+                          ))}
+                      </div>
+                    )}
+                  </li>
                 )
               })}
-            </div>
-          </SectionCard>
+            </ul>
+          </Section>
 
           {/* Spellbook */}
-          <SectionCard title="Spellbook">
+          <Section title="Spellbook">
             {spellbook.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No spells learned</p>
+              <p className="font-body text-sm italic text-ps-ink-soft">No spells learned</p>
             ) : (
-              <div className="space-y-2">
+              <ul className="m-0 list-none p-0">
                 {spellbook.map(spell => (
-                  <div
-                    key={spell.id}
-                    className="bg-[#161723] border border-slate-700/30 p-3 rounded-lg"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-sm text-white">{spell.name}</span>
-                      <div className="flex items-center gap-2 text-xs">
-                        <span className="text-violet-400 capitalize">{spell.school}</span>
-                        <span className="text-blue-300">{spell.manaCost} MP</span>
+                  <li key={spell.id} className="border-b-2 border-dotted border-ps-ink/40 py-2 last:border-b-0">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="min-w-0 font-body text-sm font-medium text-ps-ink">{spell.name}</span>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Stamp tone="violet" tilt={false} className="capitalize">{spell.school}</Stamp>
+                        <Stamp tone="blue" tilt={false}>{spell.manaCost} MP</Stamp>
                       </div>
                     </div>
-                    <p className="text-xs text-slate-400 mt-1">{spell.description}</p>
-                  </div>
+                    <p className="mt-1 font-body text-xs leading-snug text-ps-ink-soft">{spell.description}</p>
+                  </li>
                 ))}
-              </div>
+              </ul>
             )}
-          </SectionCard>
+          </Section>
 
           {/* Active Mount */}
-          <SectionCard title="Active Mount">
+          <Section title="Mount">
             {!mount ? (
-              <p className="text-sm text-slate-500 italic">No mount</p>
+              <p className="font-body text-sm italic text-ps-ink-soft">On foot</p>
             ) : (
               <>
-              <div className={`bg-[#161723] border rounded-lg p-3 ${MOUNT_RARITY_COLORS[mount.rarity] ?? 'border-slate-700/30 text-slate-300'}`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-2xl">{mount.icon}</span>
-                  <div>
-                    <div className="font-bold text-sm">{getMountDisplayName(mount)}</div>
-                    {mount.customName && (
-                      <div className="text-[10px] text-slate-500 italic">{mount.name}</div>
-                    )}
-                    <div className="text-[10px] uppercase tracking-wider opacity-70">{mount.rarity}</div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2 text-xs">
-                  {mount.bonuses.strength ? (
-                    <span className="bg-purple-900/30 text-purple-300 px-2 py-0.5 rounded">+{mount.bonuses.strength} STR</span>
-                  ) : null}
-                  {mount.bonuses.intelligence ? (
-                    <span className="bg-blue-900/30 text-blue-300 px-2 py-0.5 rounded">+{mount.bonuses.intelligence} INT</span>
-                  ) : null}
-                  {mount.bonuses.luck ? (
-                    <span className="bg-yellow-900/30 text-yellow-300 px-2 py-0.5 rounded">+{mount.bonuses.luck} LCK</span>
-                  ) : null}
-                  {mount.bonuses.autoWalkSpeed ? (
-                    <span className="bg-emerald-900/30 text-emerald-300 px-2 py-0.5 rounded">{mount.bonuses.autoWalkSpeed}x Speed</span>
-                  ) : null}
-                  {mount.bonuses.healRate ? (
-                    <span className="bg-green-900/30 text-green-300 px-2 py-0.5 rounded">+{mount.bonuses.healRate} Heal</span>
-                  ) : null}
-                  {mount.personality && MOUNT_PERSONALITY_INFO[mount.personality] && (
-                    <span className="bg-amber-900/30 text-amber-300 px-2 py-0.5 rounded">
-                      {MOUNT_PERSONALITY_INFO[mount.personality].icon} {MOUNT_PERSONALITY_INFO[mount.personality].label}
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs text-slate-400 mt-2">{mount.dailyCost} gp/day upkeep</div>
-                <button
-                  className="mt-2 text-xs text-red-400 hover:text-red-300 border border-red-400/30 rounded px-2 py-1 bg-[#2a2b3f] hover:bg-[#3a3c56] transition-colors"
-                  onClick={() => setMount(null)}
-                >
-                  Release Mount
-                </button>
-              </div>
-              <button
-                className="mt-2 text-xs px-3 py-1.5 rounded border border-amber-500/40 bg-[#2a2b3f] hover:bg-[#3a3c56] text-amber-300 transition-colors"
-                onClick={() => setShowRenameModal(true)}
-              >
-                Rename Mount
-              </button>
-              {showRenameModal && (
-                <MountNamingModal
-                  mount={mount}
-                  isOpen={showRenameModal}
-                  onConfirm={(customName) => {
-                    setMount(mount, customName)
-                    setShowRenameModal(false)
-                  }}
-                />
-              )}
-              </>
-            )}
-          </SectionCard>
-
-          {/* Passive Skills */}
-          <SectionCard title="Passive Skills">
-            {unlockedSkills.length === 0 ? (
-              <p className="text-sm text-slate-500 italic">No skills unlocked</p>
-            ) : (
-              <div className="space-y-2">
-                {unlockedSkills.map(skill => (
-                  <div
-                    key={skill.id}
-                    className="bg-[#161723] border border-cyan-700/30 rounded-lg p-2.5 flex items-center gap-2"
-                  >
-                    <span className="text-base">{skill.icon}</span>
-                    <div>
-                      <div className="text-sm font-semibold text-cyan-400">{skill.name}</div>
-                      <div className="text-xs text-slate-400">{skill.description}</div>
+                <div className="rounded-[3px] border-2 border-ps-ink p-3">
+                  <div className="flex items-start gap-3">
+                    <span className="font-body text-2xl leading-none" aria-hidden>{mount.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="font-body text-base font-medium leading-tight text-ps-ink">{getMountDisplayName(mount)}</span>
+                        <Stamp tone={MOUNT_RARITY_TONE[mount.rarity] ?? 'ink'} tilt={false} className="capitalize">{mount.rarity}</Stamp>
+                      </div>
+                      {mount.customName && <p className="font-body text-xs italic text-ps-ink-soft">a {mount.name}</p>}
                     </div>
                   </div>
-                ))}
-              </div>
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
+                    {mount.bonuses.strength ? <Stamp tone="green" tilt={false}>+{mount.bonuses.strength} STR</Stamp> : null}
+                    {mount.bonuses.intelligence ? <Stamp tone="green" tilt={false}>+{mount.bonuses.intelligence} INT</Stamp> : null}
+                    {mount.bonuses.luck ? <Stamp tone="green" tilt={false}>+{mount.bonuses.luck} LCK</Stamp> : null}
+                    {mount.bonuses.autoWalkSpeed ? <Stamp tone="blue" tilt={false}>{mount.bonuses.autoWalkSpeed}× speed</Stamp> : null}
+                    {mount.bonuses.healRate ? <Stamp tone="green" tilt={false}>+{mount.bonuses.healRate} heal</Stamp> : null}
+                    {mount.personality && MOUNT_PERSONALITY_INFO[mount.personality] && (
+                      <Stamp tone="gold" tilt={false}>
+                        <span className="font-body normal-case tracking-normal">{MOUNT_PERSONALITY_INFO[mount.personality].icon}</span> {MOUNT_PERSONALITY_INFO[mount.personality].label}
+                      </Stamp>
+                    )}
+                  </div>
+                  <p className="mt-2 font-body text-xs text-ps-ink-soft">{mount.dailyCost} gold a day to keep</p>
+                  <div className="mt-2.5 flex flex-wrap gap-1.5">
+                    <PaperButton size="sm" variant="outline" onClick={() => setShowRenameModal(true)}>
+                      Rename
+                    </PaperButton>
+                    <PaperButton size="sm" variant="danger" onClick={() => setMount(null)}>
+                      Release
+                    </PaperButton>
+                  </div>
+                </div>
+                {showRenameModal && (
+                  <MountNamingModal
+                    mount={mount}
+                    isOpen={showRenameModal}
+                    onConfirm={(customName) => {
+                      setMount(mount, customName)
+                      setShowRenameModal(false)
+                    }}
+                  />
+                )}
+              </>
             )}
-          </SectionCard>
+          </Section>
+
+          {/* Passive Skills */}
+          <Section title="Passive skills">
+            {unlockedSkills.length === 0 ? (
+              <p className="font-body text-sm italic text-ps-ink-soft">None earned yet</p>
+            ) : (
+              <ul className="m-0 list-none p-0">
+                {unlockedSkills.map(skill => (
+                  <li key={skill.id} className="flex items-start gap-2 border-b-2 border-dotted border-ps-ink/40 py-2 last:border-b-0">
+                    <span className="font-body text-base leading-none" aria-hidden>{skill.icon}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-body text-sm font-medium text-ps-ink">{skill.name}</p>
+                      <p className="font-body text-xs leading-snug text-ps-ink-soft">{skill.description}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Section>
 
           {/* Meta-Progression Bonuses */}
           {metaBonusDescriptions.length > 0 && (
-            <SectionCard title="Eternal Upgrades">
-              <div className="space-y-1">
+            <Section title="Eternal upgrades">
+              <div className="flex flex-wrap items-center gap-1">
                 {metaBonusDescriptions.map((desc, i) => (
-                  <div key={i} className="text-sm text-amber-300 flex items-center gap-2">
-                    <span className="text-amber-500">+</span>
-                    <span>{desc}</span>
-                  </div>
+                  <Stamp key={i} tone="gold" tilt={false}>{desc}</Stamp>
                 ))}
               </div>
-            </SectionCard>
+            </Section>
           )}
 
           {/* Run Stats */}
-          <SectionCard title="Run Stats">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                <div className="text-xs text-slate-500">Deaths</div>
-                <div className="text-lg font-bold text-red-400">{character.deathCount ?? 0}</div>
-              </div>
-              <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                <div className="text-xs text-slate-500">Difficulty</div>
-                <div className="text-lg font-bold text-white">
-                  {difficultyMode.icon} {difficultyMode.name}
-                </div>
-              </div>
-              <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                <div className="text-xs text-slate-500">Distance</div>
-                <div className="text-lg font-bold text-emerald-300">{distance} km</div>
-              </div>
-              <div className="bg-[#161723] rounded-lg p-3 border border-slate-700/30">
-                <div className="text-xs text-slate-500">Days Survived</div>
-                <div className="text-lg font-bold text-orange-300">{day}</div>
-              </div>
-            </div>
-          </SectionCard>
+          <Section title="This run">
+            <BrassPlate className="grid grid-cols-3 divide-x-2 divide-ps-brass-deep/60" aria-label="This run">
+              <BrassFigure label="Deaths" value={character.deathCount ?? 0} />
+              <BrassFigure label="Km" value={distance} />
+              <BrassFigure label="Days" value={day} />
+            </BrassPlate>
+          </Section>
 
-          {/* Bottom padding for scrolling */}
-          <div className="h-4" />
+          <PaperButton className="mt-6 w-full" onClick={onClose}>
+            Close
+          </PaperButton>
         </div>
-      </div>
+      </PlaybillSheet>
     </div>
   )
 }

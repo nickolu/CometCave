@@ -86,9 +86,8 @@ How a player leaves a game and returns to the cave.
 **Trigger:** explicit user intent to leave a game while in any state.
 
 **Placement:**
-- The persistent shell's logo + Home nav is the **canonical exit**. It is always visible, always functional, in every game.
-- A game that takes over the viewport, enters fullscreen, or otherwise hides the shell **must** provide an in-game exit affordance: top-left, cave/portal icon, accessible label "Return to the cave."
-- A game that does **not** hide the shell **must not** add a duplicate in-game exit. The shell is the exit; redundancy clutters the chrome.
+- **Decided 11 Nov 2026: every game owns the whole window.** Game routes are immersive (`IMMERSIVE_ROUTES` in `src/components/layout-shell.tsx`); the shell's nav and footer are not shown inside a game. The in-game exit affordance is therefore the canonical exit: top-left, cave/portal icon, accessible label "Return to the cave." Tap Tap Adventure is the first game on this model; games still rendered inside the shell keep the shell's logo + Home nav as their exit until they are revisited.
+- A game that does **not** yet hide the shell **must not** add a duplicate in-game exit. The shell is the exit; redundancy clutters the chrome.
 
 **Voice:** the affordance, when present, says "Cave" or uses a cave/portal icon — never "Back" or "Home" alone. The cave is the destination; we name it.
 

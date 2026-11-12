@@ -1,19 +1,21 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
+import { MAX_ENCHANT_LEVEL, getEnchantBonusStat, getEnchantCost } from '@/app/tap-tap-adventure/config/enchanting'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { getEnchantCost, getEnchantBonusStat, MAX_ENCHANT_LEVEL } from '@/app/tap-tap-adventure/config/enchanting'
 import type { Item } from '@/app/tap-tap-adventure/models/item'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 type EquipSlot = 'weapon' | 'armor' | 'accessory'
 
 const SLOT_LABELS: Record<EquipSlot, string> = {
   weapon: 'Weapon',
-  armor: 'Armor',
+  armor: 'Armour',
   accessory: 'Accessory',
 }
 
-function EnchantSlotCard({
+function EnchantSlotRow({
   slot,
   item,
   gold,
@@ -26,12 +28,10 @@ function EnchantSlotCard({
 }) {
   if (!item) {
     return (
-      <div className="bg-[#1e1f30] border border-[#3a3c56] p-3 rounded-lg flex items-center justify-between gap-2 opacity-50">
-        <div>
-          <div className="text-xs text-gray-500 uppercase font-semibold">{SLOT_LABELS[slot]}</div>
-          <div className="text-sm text-gray-600 italic mt-0.5">Empty</div>
-        </div>
-      </div>
+      <li className="border-b-2 border-dotted border-ps-ink/40 py-3 last:border-b-0">
+        <PlaybillCaption>{SLOT_LABELS[slot]}</PlaybillCaption>
+        <p className="mt-0.5 font-body text-sm italic text-ps-ink-soft">Nothing worn</p>
+      </li>
     )
   }
 
@@ -46,50 +46,46 @@ function EnchantSlotCard({
     ? `${item.name} +${currentLevel}`
     : item.name
 
+  const reason = isMaxed
+    ? 'Enchanted as far as it goes'
+    : bonusStat === null
+      ? 'Nothing on it to boost'
+      : !canAfford && cost !== null
+        ? `Needs ${cost - gold} more gold`
+        : null
+
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] p-3 rounded-lg space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div>
-          <div className="text-xs text-gray-500 uppercase font-semibold">{SLOT_LABELS[slot]}</div>
-          <div className="text-sm text-white font-medium mt-0.5">
-            {currentLevel > 0 && <span className="mr-1 text-yellow-400">✨</span>}
-            {displayName}
+    <li className="border-b-2 border-dotted border-ps-ink/40 py-3 last:border-b-0">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <PlaybillCaption>{SLOT_LABELS[slot]}</PlaybillCaption>
+          <p className="mt-0.5 font-body text-base font-medium leading-tight text-ps-ink">{displayName}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-1">
+            {bonusStat ? (
+              <Stamp tone="blue" tilt={false}>
+                Boosts {bonusStat} <span className="opacity-70">now {item.effects?.[bonusStat] ?? 0}</span>
+              </Stamp>
+            ) : (
+              <Stamp tone="ink" tilt={false} className="opacity-70">No stat to boost</Stamp>
+            )}
+            {cost !== null && <Stamp tone="gold" tilt={false}>Next {cost} g</Stamp>}
           </div>
-          {bonusStat && (
-            <div className="text-xs text-indigo-300 mt-0.5">
-              Boosts: {bonusStat} (currently {item.effects?.[bonusStat] ?? 0})
-            </div>
-          )}
-          {!bonusStat && (
-            <div className="text-xs text-gray-500 mt-0.5 italic">No boostable stat</div>
-          )}
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-xs text-gray-500">Level</div>
-          <div className="text-sm font-bold text-amber-400">{currentLevel}/{MAX_ENCHANT_LEVEL}</div>
+        <div className="shrink-0 text-right" title={`Enchantment level ${currentLevel} of ${MAX_ENCHANT_LEVEL}`}>
+          <span className="block font-playbill text-xl leading-none tabular-nums text-ps-ink">
+            {currentLevel}<span className="text-ps-ink-soft">/{MAX_ENCHANT_LEVEL}</span>
+          </span>
+          <PlaybillCaption className="mt-1 text-xs">Level</PlaybillCaption>
         </div>
       </div>
 
-      <button
-        disabled={!canEnchant}
-        onClick={() => onEnchant(slot)}
-        className={`w-full py-1.5 px-3 rounded-md text-sm font-medium transition-colors ${
-          isMaxed
-            ? 'bg-[#2a2b3f] text-amber-600 cursor-not-allowed border border-amber-800/40'
-            : canEnchant
-            ? 'bg-indigo-600 hover:bg-indigo-700 text-white cursor-pointer'
-            : 'bg-[#2a2b3f] text-gray-600 cursor-not-allowed border border-[#3a3c56]'
-        }`}
-      >
-        {isMaxed
-          ? 'Max Level'
-          : bonusStat === null
-          ? 'No Stat to Boost'
-          : cost !== null
-          ? `Enchant — ${cost}g`
-          : 'Enchant'}
-      </button>
-    </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <PaperButton size="sm" variant={canEnchant ? 'brass' : 'outline'} disabled={!canEnchant} onClick={() => onEnchant(slot)}>
+          {cost !== null && canEnchant ? `Enchant · ${cost} g` : 'Enchant'}
+        </PaperButton>
+        {reason && <span className="font-body text-xs italic text-ps-ink-soft">{reason}</span>}
+      </div>
+    </li>
   )
 }
 
@@ -111,8 +107,8 @@ export function EnchantingPanel() {
   if (!character) {
     return (
       <div>
-        <h3 className="text-lg font-semibold text-white mb-1">Enchanting</h3>
-        <p className="text-gray-400 text-sm">No character selected.</p>
+        <PlaybillTitle size="sm" rules={false} className="text-left">Enchanting</PlaybillTitle>
+        <p className="mt-2 font-body text-sm italic text-ps-ink-soft">No character selected.</p>
       </div>
     )
   }
@@ -129,26 +125,31 @@ export function EnchantingPanel() {
 
   return (
     <div className="w-full">
-      <div className="mb-3">
-        <h3 className="text-lg font-semibold text-white">✨ Enchanting</h3>
-        <p className="text-xs text-gray-500">Spend gold to boost equipped item stats</p>
+      <div className="flex items-end justify-between gap-3 border-b-2 border-ps-ink pb-2">
+        <div>
+          <PlaybillTitle size="sm" rules={false} className="text-left">Enchanting</PlaybillTitle>
+          <p className="mt-0.5 font-body text-xs text-ps-ink-soft">Pay gold to sharpen what you wear.</p>
+        </div>
+        <span className="shrink-0 font-playbill text-sm tabular-nums text-ps-ink" title="Your gold">
+          {gold} g
+        </span>
       </div>
 
       {feedbackMessage && (
-        <div
-          className={`mb-3 p-2 rounded-md text-sm animate-pulse border ${
-            feedbackSuccess
-              ? 'bg-green-900/50 border-green-700 text-green-300'
-              : 'bg-red-900/50 border-red-700 text-red-300'
-          }`}
+        <p
+          role="status"
+          className={cn(
+            'mt-3 rounded-[2px] border-2 px-2.5 py-1.5 font-body text-sm',
+            feedbackSuccess ? 'border-ps-stamp-green text-ps-stamp-green' : 'border-ps-stamp-red text-ps-stamp-red'
+          )}
         >
           {feedbackMessage}
-        </div>
+        </p>
       )}
 
-      <div className="space-y-2">
+      <ul className="m-0 list-none p-0">
         {(['weapon', 'armor', 'accessory'] as EquipSlot[]).map(slot => (
-          <EnchantSlotCard
+          <EnchantSlotRow
             key={slot}
             slot={slot}
             item={(equipment ?? {})[slot] ?? null}
@@ -156,7 +157,7 @@ export function EnchantingPanel() {
             onEnchant={handleEnchant}
           />
         ))}
-      </div>
+      </ul>
     </div>
   )
 }

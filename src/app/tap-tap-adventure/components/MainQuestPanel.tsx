@@ -1,15 +1,23 @@
 'use client'
 
-import { getConqueredCount, CONQUERABLE_REGIONS, TOTAL_CONQUERABLE } from '@/app/tap-tap-adventure/lib/mainQuestManager'
+/**
+ * The main quest, printed at the ruled top of the quests bill: the title,
+ * how many countries are taken, and the milestones with the finished ones
+ * struck through.
+ */
 import { getRegion } from '@/app/tap-tap-adventure/config/regions'
+import { CONQUERABLE_REGIONS, TOTAL_CONQUERABLE, getConqueredCount } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { PlaybillCaption, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
-const DIFF_COLORS: Record<string, string> = {
-  easy: 'bg-green-500',
-  medium: 'bg-yellow-500',
-  hard: 'bg-orange-500',
-  very_hard: 'bg-red-500',
-  extreme: 'bg-purple-500',
+/** The printer's ink for a region's difficulty: a dot beside its name. */
+const DIFF_DOT: Record<string, string> = {
+  easy: 'bg-ps-stamp-green',
+  medium: 'bg-ps-stamp-gold',
+  hard: 'bg-ps-stamp-red',
+  very_hard: 'bg-ps-stamp-red',
+  extreme: 'bg-ps-stamp-violet',
 }
 
 export function MainQuestPanel({ character }: { character: FantasyCharacter }) {
@@ -20,58 +28,83 @@ export function MainQuestPanel({ character }: { character: FantasyCharacter }) {
   const conquered = getConqueredCount(visited)
   const progress = conquered / TOTAL_CONQUERABLE
   const isComplete = mainQuest.status === 'completed'
+  const currentMilestone = mainQuest.milestones.find(m => !m.claimed)
 
   return (
-    <div className={`border rounded-lg p-3 space-y-2 ${isComplete ? 'bg-amber-950/30 border-amber-700/50' : 'bg-[#1e1f30] border-indigo-700/30'}`}>
-      <div className="flex justify-between items-center">
-        <span className={`text-sm font-bold ${isComplete ? 'text-amber-400' : 'text-indigo-400'}`}>
-          {isComplete ? '👑 Quest Complete!' : '⚔️ Main Quest'}
-        </span>
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-900/50 text-indigo-300">
-          {conquered}/{TOTAL_CONQUERABLE}
-        </span>
-      </div>
-      <p className="text-xs text-white font-semibold">{mainQuest.title}</p>
-      <p className="text-[10px] text-slate-400">{mainQuest.description}</p>
+    <section aria-label="Main quest">
+      <PlaybillTitle size="sm">{isComplete ? 'Quest complete' : 'The main quest'}</PlaybillTitle>
 
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex justify-between text-[10px] text-slate-400">
-          <span>Regions Conquered</span>
-          <span>{Math.round(progress * 100)}%</span>
+      <div className="mt-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-body text-base font-semibold leading-snug text-ps-ink">{mainQuest.title}</p>
+          <p className="mt-1 font-body text-sm leading-snug text-ps-ink-soft">{mainQuest.description}</p>
         </div>
-        <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${isComplete ? 'bg-amber-500' : 'bg-indigo-500'}`}
-            style={{ width: `${progress * 100}%` }}
-          />
-        </div>
+        {isComplete ? (
+          <Stamp tone="gold" animate className="shrink-0">Done</Stamp>
+        ) : (
+          <span className="shrink-0 font-playbill text-lg leading-none tabular-nums text-ps-ink" title={`${conquered} of ${TOTAL_CONQUERABLE} regions conquered`}>
+            {conquered}<span className="text-ps-ink-soft">/{TOTAL_CONQUERABLE}</span>
+          </span>
+        )}
       </div>
 
-      {/* Region list */}
-      <div className="grid grid-cols-2 gap-1">
+      <div className="mt-3">
+        <div className="flex items-center justify-between">
+          <PlaybillCaption>Regions conquered</PlaybillCaption>
+          <span className="font-label text-xs font-bold tabular-nums text-ps-ink-soft">{Math.round(progress * 100)}%</span>
+        </div>
+        <div
+          className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-ps-playbill-edge"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(progress * 100)}
+          aria-label="Regions conquered"
+        >
+          <div className={cn('h-full rounded-full transition-[width] duration-300', isComplete ? 'bg-ps-stamp-gold' : 'bg-ps-ink')} style={{ width: `${progress * 100}%` }} />
+        </div>
+      </div>
+
+      <ul className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5" aria-label="Regions">
         {CONQUERABLE_REGIONS.map(regionId => {
           const region = getRegion(regionId)
           const isVisited = visited.includes(regionId)
           return (
-            <div key={regionId} className={`text-[10px] px-1.5 py-0.5 rounded flex items-center gap-1 ${isVisited ? 'text-emerald-400 bg-emerald-950/30' : 'text-slate-500 bg-slate-800/50'}`}>
-              <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${DIFF_COLORS[region.difficulty] ?? 'bg-slate-500'}`} />
-              {region.icon} {region.name} {isVisited ? '✓' : ''}
-            </div>
+            <li
+              key={regionId}
+              className={cn('flex min-w-0 items-center gap-1.5 font-body text-xs leading-tight', isVisited ? 'text-ps-ink' : 'text-ps-ink-soft')}
+              title={`${region.name} · ${region.difficulty.replace('_', ' ')}${isVisited ? ' · conquered' : ''}`}
+            >
+              <span aria-hidden className={cn('inline-block h-1.5 w-1.5 shrink-0 rounded-full', DIFF_DOT[region.difficulty] ?? 'bg-ps-ink-faint')} />
+              <span aria-hidden className="shrink-0">{region.icon}</span>
+              <span className={cn('truncate', isVisited && 'line-through decoration-ps-ink-soft')}>{region.name}</span>
+              {isVisited && <span className="sr-only">conquered</span>}
+            </li>
           )
         })}
-      </div>
+      </ul>
 
-      {/* Milestones */}
-      <div className="space-y-1">
-        <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Milestones</p>
-        {mainQuest.milestones.map(m => (
-          <div key={m.regionsRequired} className={`flex justify-between text-[10px] ${m.claimed ? 'text-emerald-400' : conquered >= m.regionsRequired - 1 ? 'text-yellow-400' : 'text-slate-500'}`}>
-            <span>{m.claimed ? '✓' : '○'} {m.title} ({m.regionsRequired} regions)</span>
-            <span>+{m.goldReward} gold</span>
-          </div>
-        ))}
-      </div>
-    </div>
+      <PlaybillCaption className="mt-3">Milestones</PlaybillCaption>
+      <ol className="mt-1 divide-y border-y border-ps-playbill-edge divide-ps-playbill-edge">
+        {mainQuest.milestones.map(m => {
+          const isCurrent = !isComplete && currentMilestone?.regionsRequired === m.regionsRequired
+          return (
+            <li
+              key={m.regionsRequired}
+              className={cn('flex items-center justify-between gap-2 py-1.5 font-body text-sm leading-snug', m.claimed ? 'text-ps-ink-soft' : 'text-ps-ink')}
+            >
+              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                <span className={cn('min-w-0', m.claimed && 'line-through')}>
+                  {m.title} <span className="text-ps-ink-soft">({m.regionsRequired} regions)</span>
+                </span>
+                {m.claimed && <span className="sr-only">done</span>}
+                {isCurrent && <Stamp tone="red">Now</Stamp>}
+              </span>
+              <span className="shrink-0 font-playbill text-sm tabular-nums">+{m.goldReward} gold</span>
+            </li>
+          )
+        })}
+      </ol>
+    </section>
   )
 }

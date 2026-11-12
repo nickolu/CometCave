@@ -789,3 +789,140 @@ body {
     page-break-inside: avoid;
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Paper Stage — scoped to .paper-stage (Tap Tap Adventure)
+   A Victorian paper toy theatre: a peacock-blue and gilt proscenium, cobalt
+   night, painted card flats per region, playbill cream for anything
+   that carries text. Comet Mint stays the only press colour (the
+   footlights = the WALK bar). Only this block may name the stage's hex.
+   ─────────────────────────────────────────────────────────────────── */
+
+.paper-stage {
+  /* the house */
+  --ps-lacquer: #22668a;
+  --ps-lacquer-deep: #164a66;
+  --ps-lacquer-ink: #0c2436;
+  --ps-brass: #d9a441;
+  --ps-brass-light: #f2d27a;
+  --ps-brass-deep: #8a6420;
+  --ps-cobalt: #141c4a;
+  --ps-cobalt-deep: #0c1030;
+  --ps-house: #0a0b16;          /* the dark of the auditorium around the stage */
+
+  /* paper */
+  --ps-playbill: #f1e4c3;
+  --ps-playbill-edge: #d9c89a;
+  --ps-playbill-shade: #e3d3a8;
+  --ps-ink: #2b1a10;
+  --ps-ink-soft: #5c4a3a;
+  --ps-ink-faint: #8a7a66;
+
+  /* stamps on paper (the only colour ink the printer owns) */
+  --ps-stamp-red: #b3261e;
+  --ps-stamp-green: #2f7a4e;
+  --ps-stamp-blue: #27518a;
+  --ps-stamp-violet: #6b3fa0;
+  --ps-stamp-gold: #a8731a;
+
+  /* footlights are the cave's one press colour */
+  --ps-footlight: var(--ds-primary);
+  --ps-on-footlight: var(--on-primary-container);
+  --ps-footlight-glow: 0 0 28px rgba(0, 255, 194, 0.45);
+
+  /* a default scene (Green Meadows) so the stage is never unpainted */
+  --ps-sky: #9fd3e8;
+  --ps-far: #7fb069;
+  --ps-mid: #5f9a4e;
+  --ps-near: #3f7a3a;
+  --ps-ground: #6a4a2a;
+  --ps-cutout: #2b1a10;
+
+  /* motion */
+  --ps-slide: 220ms;
+  --ps-rock: 420ms;
+}
+
+/* Each region is a different set of painted flats. */
+.paper-stage [data-region='green_meadows']   { --ps-sky: #9fd3e8; --ps-far: #7fb069; --ps-mid: #5f9a4e; --ps-near: #3f7a3a; --ps-ground: #6a4a2a; }
+.paper-stage [data-region='dark_forest']     { --ps-sky: #3b4f5c; --ps-far: #2b4a3a; --ps-mid: #1f3a2c; --ps-near: #15291f; --ps-ground: #2a1f17; }
+.paper-stage [data-region='crystal_caves']   { --ps-sky: #2a2550; --ps-far: #6a5acd; --ps-mid: #4b3fa0; --ps-near: #2e2a6e; --ps-ground: #1c1a3a; }
+.paper-stage [data-region='scorched_wastes'] { --ps-sky: #f0a05a; --ps-far: #c2652b; --ps-mid: #a0481c; --ps-near: #7a3414; --ps-ground: #5a2a10; }
+.paper-stage [data-region='frozen_peaks']    { --ps-sky: #bfe3f5; --ps-far: #9ec9e0; --ps-mid: #7aa8c4; --ps-near: #5a86a4; --ps-ground: #e8f4fb; }
+.paper-stage [data-region='shadow_realm']    { --ps-sky: #2a1a3a; --ps-far: #4a2a5a; --ps-mid: #351f45; --ps-near: #231330; --ps-ground: #120a1a; }
+.paper-stage [data-region='sky_citadel']     { --ps-sky: #cfe6ff; --ps-far: #e6f0ff; --ps-mid: #b8cfe8; --ps-near: #8fb0d8; --ps-ground: #6f90b8; }
+.paper-stage [data-region='abyssal_depths']  { --ps-sky: #0a2a40; --ps-far: #0f4a6a; --ps-mid: #0b3a55; --ps-near: #072a40; --ps-ground: #041a2a; }
+.paper-stage [data-region='celestial_throne']{ --ps-sky: #ffe9b0; --ps-far: #ffd166; --ps-mid: #f0b84a; --ps-near: #d99a2a; --ps-ground: #b07a1a; }
+.paper-stage [data-region='sunken_ruins']    { --ps-sky: #5a8a8a; --ps-far: #3a7070; --ps-mid: #2a5a5a; --ps-near: #1a4545; --ps-ground: #113535; }
+.paper-stage [data-region='volcanic_forge']  { --ps-sky: #3a1a10; --ps-far: #ff6a2a; --ps-mid: #c9401a; --ps-near: #8a2a10; --ps-ground: #4a1a0a; }
+
+/* Time of day is a gel over the backcloth: nightfall drops toward cobalt. */
+.paper-stage [data-time='morning']   { --ps-gel: rgba(255, 220, 160, 0.18); }
+.paper-stage [data-time='midday']    { --ps-gel: rgba(255, 255, 255, 0); }
+.paper-stage [data-time='afternoon'] { --ps-gel: rgba(255, 170, 90, 0.16); }
+.paper-stage [data-time='nightfall'] { --ps-gel: rgba(13, 22, 64, 0.55); }
+
+/* Playbill paper: a faint laid texture, one hard card shadow (stacked card, not a soft glow). */
+.paper-stage .ps-paper {
+  background-color: var(--ps-playbill);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(43, 26, 16, 0.035) 0 1px, transparent 1px 3px);
+  color: var(--ps-ink);
+  box-shadow: 0 3px 0 0 var(--ps-playbill-edge), 0 6px 0 0 var(--ps-lacquer-ink);
+}
+
+.paper-stage .ps-paper-flat {
+  background-color: var(--ps-playbill);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(43, 26, 16, 0.035) 0 1px, transparent 1px 3px);
+  color: var(--ps-ink);
+}
+
+/* Browser surfaces inside the theatre carry the world too. */
+.paper-stage ::selection { background: var(--ps-brass); color: var(--ps-ink); }
+.paper-stage .ps-paper ::selection,
+.paper-stage .ps-paper-flat ::selection { background: var(--ps-stamp-red); color: var(--ps-playbill); }
+.paper-stage input, .paper-stage textarea { caret-color: var(--ps-stamp-red); }
+.paper-stage .ps-scroll { scrollbar-width: thin; scrollbar-color: var(--ps-brass-deep) transparent; }
+.paper-stage .ps-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.paper-stage .ps-scroll::-webkit-scrollbar-thumb { background: var(--ps-brass-deep); border-radius: 4px; }
+.paper-stage .ps-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* The stage's motion grammar. Every one of these collapses under the global reduced-motion rule. */
+@keyframes ps-flat-in-left  { from { transform: translateX(-12%); opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+@keyframes ps-flat-in-right { from { transform: translateX(12%);  opacity: 0.4; } to { transform: translateX(0); opacity: 1; } }
+@keyframes ps-rock { 0% { transform: rotate(0deg); } 30% { transform: rotate(-6deg); } 70% { transform: rotate(5deg); } 100% { transform: rotate(0deg); } }
+@keyframes ps-print-in { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes ps-footlight-pulse { 0%, 100% { box-shadow: 0 6px 0 0 var(--surface-container-lowest); } 50% { box-shadow: 0 6px 0 0 var(--surface-container-lowest), var(--ps-footlight-glow); } }
+@keyframes ps-stamp { 0% { transform: scale(1.6) rotate(-8deg); opacity: 0; } 60% { transform: scale(0.96) rotate(-3deg); opacity: 1; } 100% { transform: scale(1) rotate(-3deg); opacity: 1; } }
+
+.paper-stage .ps-flat-in-left  { animation: ps-flat-in-left var(--ps-slide) cubic-bezier(0.16, 1, 0.3, 1) both; }
+.paper-stage .ps-flat-in-right { animation: ps-flat-in-right var(--ps-slide) cubic-bezier(0.16, 1, 0.3, 1) both; }
+.paper-stage .ps-rock { animation: ps-rock var(--ps-rock) cubic-bezier(0.16, 1, 0.3, 1) both; transform-origin: 50% 100%; }
+.paper-stage .ps-print-in { animation: ps-print-in 150ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.paper-stage .ps-footlight-pulse { animation: ps-footlight-pulse 900ms ease-in-out infinite; }
+.paper-stage .ps-stamp { animation: ps-stamp 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .paper-stage .ps-flat-in-left,
+  .paper-stage .ps-flat-in-right,
+  .paper-stage .ps-rock,
+  .paper-stage .ps-print-in,
+  .paper-stage .ps-stamp { animation: none; }
+  .paper-stage .ps-footlight-pulse { animation: none; box-shadow: 0 6px 0 0 var(--surface-container-lowest), var(--ps-footlight-glow); }
+}
+
+/* Poster paint, not pastel: the flats are printed in saturated card, and at
+   nightfall the backcloth is the cobalt night itself (not a gel over the day). */
+.paper-stage [data-region='green_meadows']   { --ps-sky: #5fb4e6; --ps-far: #74b84a; --ps-mid: #4e9a3a; --ps-near: #2f7a2a; --ps-ground: #8a5a2e; }
+.paper-stage [data-region='dark_forest']     { --ps-sky: #2e4a66; --ps-far: #1f6a4a; --ps-mid: #155238; --ps-near: #0d3a27; --ps-ground: #3a2718; }
+.paper-stage [data-region='crystal_caves']   { --ps-sky: #241f5a; --ps-far: #7b5ce6; --ps-mid: #5a3fc0; --ps-near: #3b2a8a; --ps-ground: #1c1a3a; }
+.paper-stage [data-region='scorched_wastes'] { --ps-sky: #f2a24a; --ps-far: #d9662a; --ps-mid: #b5461a; --ps-near: #8a2f12; --ps-ground: #5a2a10; }
+.paper-stage [data-region='frozen_peaks']    { --ps-sky: #8fd0f5; --ps-far: #a9d6ee; --ps-mid: #6fa8cc; --ps-near: #4a84ab; --ps-ground: #e8f4fb; }
+.paper-stage [data-region='shadow_realm']    { --ps-sky: #2c1548; --ps-far: #5e2f7a; --ps-mid: #43205c; --ps-near: #2a1240; --ps-ground: #120a1a; }
+.paper-stage [data-region='sky_citadel']     { --ps-sky: #4aa3f0; --ps-far: #eaf3ff; --ps-mid: #b9d4f2; --ps-near: #87b0e0; --ps-ground: #5f8fc6; }
+.paper-stage [data-region='abyssal_depths']  { --ps-sky: #073a5c; --ps-far: #0f6a8e; --ps-mid: #0b5070; --ps-near: #073a55; --ps-ground: #041a2a; }
+.paper-stage [data-region='celestial_throne']{ --ps-sky: #ffd97a; --ps-far: #ffc14a; --ps-mid: #f0a52a; --ps-near: #d98a1a; --ps-ground: #b07a1a; }
+.paper-stage [data-region='sunken_ruins']    { --ps-sky: #3f9a9a; --ps-far: #2f8080; --ps-mid: #1f6565; --ps-near: #144a4a; --ps-ground: #113535; }
+.paper-stage [data-region='volcanic_forge']  { --ps-sky: #4a1a10; --ps-far: #ff7a2a; --ps-mid: #e04a1a; --ps-near: #9a2a10; --ps-ground: #4a1a0a; }
+.paper-stage [data-time='nightfall'] { --ps-sky: var(--ps-cobalt); --ps-gel: rgba(13, 22, 64, 0.35); }

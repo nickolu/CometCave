@@ -1,8 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+/**
+ * The ranks: a ledger of other players' runs, fetched from the server. Your
+ * own row is stamped. The name you appear under is set in a small dialog.
+ */
+import { useEffect, useRef, useState } from 'react'
+
 import type { AdventureScoreEntry, LeaderboardCategory, LeaderboardPeriod } from '@/app/tap-tap-adventure/lib/adventureLeaderboardStore'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, PrintingDots, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface AdventureLeaderboardProps {
   onBack: () => void
@@ -28,8 +35,8 @@ function setStoredPlayerName(name: string): void {
 
 const PERIOD_LABELS: Record<LeaderboardPeriod, string> = {
   daily: 'Today',
-  weekly: 'This Week',
-  alltime: 'All-Time',
+  weekly: 'This week',
+  alltime: 'All time',
 }
 
 const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
@@ -39,12 +46,16 @@ const CATEGORY_LABELS: Record<LeaderboardCategory, string> = {
   regionsConquered: 'Regions',
 }
 
+const INPUT_CLASS =
+  'h-10 w-full rounded-[3px] border-2 border-ps-ink bg-transparent px-3 font-body text-base text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary'
+
 export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardProps) {
   const [period, setPeriod] = useState<LeaderboardPeriod>('daily')
   const [category, setCategory] = useState<LeaderboardCategory>('distance')
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<{ period: string; category: string; entries: AdventureScoreEntry[] } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
   const [playerName, setPlayerName] = useState<string>('')
   const [showNameDialog, setShowNameDialog] = useState(false)
   const [nameInput, setNameInput] = useState('')
@@ -60,7 +71,7 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
     }
   }, [])
 
-  // Fetch leaderboard when period or category changes
+  // Fetch leaderboard when period or category changes (or the player asks again)
   useEffect(() => {
     const controller = new AbortController()
     async function load() {
@@ -76,14 +87,14 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
         setData(json)
       } catch (err) {
         if ((err as Error)?.name === 'AbortError') return
-        setError('Failed to load leaderboard.')
+        setError('The ranks could not be fetched.')
       } finally {
         setLoading(false)
       }
     }
     load()
     return () => controller.abort()
-  }, [period, category])
+  }, [period, category, reloadKey])
 
   const handleSaveName = () => {
     const trimmed = nameInput.trim()
@@ -103,7 +114,7 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
       case 'level':
         return `Lv ${entry.level}`
       case 'gold':
-        return `${entry.gold.toLocaleString()} gp`
+        return `${entry.gold.toLocaleString()} gold`
       case 'regionsConquered':
         return `${entry.regionsConquered} regions`
     }
@@ -127,160 +138,144 @@ export default function AdventureLeaderboard({ onBack }: AdventureLeaderboardPro
 
     if (data.entries.length === 0) {
       return (
-        <div className="text-center text-slate-400 py-8">
-          No scores yet. Be the first!
-        </div>
+        <p className="py-6 text-center font-body text-sm italic text-ps-ink-soft">
+          No one is on the board yet. Walk and you will be the first name on it.
+        </p>
       )
     }
 
-    return data.entries.map((entry, i) => {
-      const isCurrentUser =
-        entry.playerName.toLowerCase().trim() === currentNameLower && currentNameLower !== ''
-      return (
-        <LeaderboardRow
-          key={`${entry.playerName}-${entry.characterId}-${i}`}
-          rank={i + 1}
-          name={entry.playerName}
-          primary={renderPrimary(entry)}
-          secondary={renderSecondary(entry)}
-          isCurrentUser={isCurrentUser}
-        />
-      )
-    })
+    return (
+      <ol className="divide-y divide-ps-playbill-edge border-y border-ps-playbill-edge" aria-label={`${PERIOD_LABELS[period]} by ${CATEGORY_LABELS[category].toLowerCase()}`}>
+        {data.entries.map((entry, i) => {
+          const isCurrentUser =
+            entry.playerName.toLowerCase().trim() === currentNameLower && currentNameLower !== ''
+          return (
+            <LeaderboardRow
+              key={`${entry.playerName}-${entry.characterId}-${i}`}
+              rank={i + 1}
+              name={entry.playerName}
+              primary={renderPrimary(entry)}
+              secondary={renderSecondary(entry)}
+              isCurrentUser={isCurrentUser}
+            />
+          )
+        })}
+      </ol>
+    )
   }
 
   return (
-    <div className="w-full mx-auto p-4 sm:p-6 bg-[#1a1b2e] min-h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          type="button"
-          onClick={onBack}
-          className="text-slate-400 hover:text-slate-200 text-sm px-3 py-1.5 rounded border border-[#3a3c56] hover:border-slate-500 transition-colors"
-        >
-          &larr; Back
-        </button>
-        <h2 className="text-2xl font-bold text-amber-400">Leaderboard</h2>
-        <div className="w-16" />
+    <section aria-label="Ranks" className="space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <PaperButton size="sm" variant="outline" onClick={onBack}>
+          Back
+        </PaperButton>
+        <PaperButton size="sm" variant="outline" onClick={() => setReloadKey(k => k + 1)} disabled={loading}>
+          Refresh
+        </PaperButton>
       </div>
+      <PlaybillTitle size="sm">Ranks</PlaybillTitle>
 
-      {/* Player name display */}
-      <div className="text-center mb-4">
+      <p className="text-center font-body text-sm text-ps-ink-soft">
         {playerName ? (
-          <p className="text-slate-400 text-sm">
-            Playing as{' '}
+          <>
+            Entered as{' '}
             <button
               type="button"
               onClick={() => { setNameInput(playerName); setShowNameDialog(true) }}
-              className="text-amber-400 hover:underline"
+              className="rounded-[2px] font-semibold text-ps-ink underline decoration-ps-ink-faint underline-offset-2 hover:decoration-ps-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
             >
               {playerName}
             </button>
-          </p>
+          </>
         ) : (
-          <p className="text-slate-400 text-sm">
+          <>
             <button
               type="button"
               onClick={() => { setNameInput(''); setShowNameDialog(true) }}
-              className="text-amber-400 hover:underline"
+              className="rounded-[2px] font-semibold text-ps-ink underline decoration-ps-ink-faint underline-offset-2 hover:decoration-ps-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
             >
-              Set your player name
+              Set your name
             </button>{' '}
-            to appear on the leaderboard
-          </p>
+            to be entered on the board
+          </>
         )}
-      </div>
+      </p>
 
-      {/* Period tabs */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-3 gap-1" role="group" aria-label="Period">
         {(['daily', 'weekly', 'alltime'] as LeaderboardPeriod[]).map(p => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => setPeriod(p)}
-            className={`py-2 px-3 rounded text-sm font-medium transition-colors ${
-              period === p
-                ? 'bg-indigo-600/30 border border-indigo-500/50 text-indigo-300'
-                : 'bg-[#161723] border border-[#3a3c56] text-slate-400 hover:text-slate-200 hover:border-slate-500'
-            }`}
-          >
+          <PaperButton key={p} size="sm" variant={period === p ? 'ink' : 'outline'} aria-pressed={period === p} onClick={() => setPeriod(p)}>
             {PERIOD_LABELS[p]}
-          </button>
+          </PaperButton>
         ))}
       </div>
-
-      {/* Category tabs */}
-      <div className="grid grid-cols-4 gap-2 mb-4">
+      <div className="grid grid-cols-4 gap-1" role="group" aria-label="Ranked by">
         {(['distance', 'level', 'gold', 'regionsConquered'] as LeaderboardCategory[]).map(c => (
-          <button
-            key={c}
-            type="button"
-            onClick={() => setCategory(c)}
-            className={`py-1.5 px-2 rounded text-xs font-medium transition-colors ${
-              category === c
-                ? 'bg-amber-600/20 border border-amber-500/40 text-amber-300'
-                : 'bg-[#161723] border border-[#3a3c56] text-slate-400 hover:text-slate-200 hover:border-slate-500'
-            }`}
-          >
+          <PaperButton key={c} size="sm" variant={category === c ? 'ink' : 'outline'} aria-pressed={category === c} onClick={() => setCategory(c)} className="px-1">
             {CATEGORY_LABELS[c]}
-          </button>
+          </PaperButton>
         ))}
       </div>
 
-      {/* Entries */}
-      <div className="bg-[#161723] border border-[#3a3c56] rounded-lg p-3">
+      <div aria-live="polite">
         {loading ? (
-          <div className="text-center text-slate-400 py-8">Loading...</div>
+          <div className="flex justify-center py-6">
+            <PrintingDots label="Fetching the ranks" />
+          </div>
         ) : error ? (
-          <div className="text-center text-red-400 py-8">{error}</div>
+          <div className="flex flex-col items-center gap-3 py-5 text-center">
+            <Stamp tone="red">Not fetched</Stamp>
+            <p className="font-body text-sm text-ps-ink">{error}</p>
+            <p className="font-body text-xs text-ps-ink-soft">Check your connection and ask again.</p>
+            <PaperButton size="sm" variant="outline" onClick={() => setReloadKey(k => k + 1)}>
+              Try again
+            </PaperButton>
+          </div>
         ) : (
-          <div className="flex flex-col gap-1.5">{renderEntries()}</div>
+          renderEntries()
         )}
       </div>
 
-      {/* Name dialog */}
       {showNameDialog && (
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-label="Set player name" className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-md bg-[#1a1b2e] border border-[#3a3c56] rounded-lg p-6 flex flex-col gap-4">
-            <h3 className="text-xl font-bold text-amber-400 text-center">
-              {playerName ? 'Change Player Name' : 'Set Player Name'}
-            </h3>
-            <p className="text-slate-400 text-sm text-center">
-              This name will appear on the leaderboard (1-20 characters).
-            </p>
-            <input
-              type="text"
-              value={nameInput}
-              onChange={e => setNameInput(e.target.value.slice(0, 20))}
-              placeholder="Your player name"
-              aria-label="Your player name"
-              className="w-full px-3 py-2 rounded bg-[#161723] border border-[#3a3c56] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
-              onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              {playerName && (
-                <button
-                  type="button"
-                  onClick={() => setShowNameDialog(false)}
-                  className="flex-1 py-2 px-4 rounded bg-slate-700/30 border border-slate-600/40 text-slate-300 hover:bg-slate-700/50 transition-colors"
-                >
-                  Cancel
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={handleSaveName}
-                disabled={nameInput.trim().length === 0}
-                className="flex-1 py-2 px-4 rounded bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 font-semibold hover:bg-indigo-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Save
-              </button>
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Set player name"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "color-mix(in srgb, var(--ps-house) 70%, transparent)" }}
+          onKeyDown={e => {
+            if (e.key === 'Escape' && playerName) setShowNameDialog(false)
+          }}
+        >
+          <PlaybillSheet className="w-full max-w-md">
+            <div className="flex flex-col gap-4 px-5 pb-5 pt-4">
+              <PlaybillTitle size="md">{playerName ? 'Change your name' : 'Your name on the board'}</PlaybillTitle>
+              <PlaybillCaption className="text-center">1 to 20 characters · shown to other players</PlaybillCaption>
+              <input
+                type="text"
+                value={nameInput}
+                onChange={e => setNameInput(e.target.value.slice(0, 20))}
+                placeholder="Your name"
+                aria-label="Your player name"
+                className={INPUT_CLASS}
+                onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
+                autoFocus
+              />
+              <div className="flex gap-2">
+                {playerName && (
+                  <PaperButton variant="outline" className="flex-1" onClick={() => setShowNameDialog(false)}>
+                    Cancel
+                  </PaperButton>
+                )}
+                <PaperButton className="flex-1" onClick={handleSaveName} disabled={nameInput.trim().length === 0}>
+                  Save
+                </PaperButton>
+              </div>
             </div>
-          </div>
+          </PlaybillSheet>
         </div>
       )}
-    </div>
+    </section>
   )
 }
 
@@ -297,35 +292,25 @@ function LeaderboardRow({
   secondary: string
   isCurrentUser: boolean
 }) {
-  const rankEmoji = rank === 1 ? '\uD83E\uDD47' : rank === 2 ? '\uD83E\uDD48' : rank === 3 ? '\uD83E\uDD49' : null
-
   return (
-    <div
-      className={`flex items-center justify-between py-2.5 px-3 rounded ${
-        isCurrentUser
-          ? 'bg-amber-600/15 border border-amber-500/30'
-          : 'bg-[#1a1b2e]'
-      }`}
+    <li
+      className={cn('flex items-center gap-3 py-2 pl-1 pr-2', isCurrentUser && 'bg-ps-playbill-shade')}
+      aria-current={isCurrentUser ? 'true' : undefined}
     >
-      <div className="flex items-center gap-3 min-w-0 flex-1">
-        <div className="flex items-center justify-center w-8 shrink-0">
-          {rankEmoji ? (
-            <span className="text-xl">{rankEmoji}</span>
-          ) : (
-            <span className="text-slate-500 text-sm font-mono">#{rank}</span>
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className={`font-medium truncate ${isCurrentUser ? 'text-amber-400' : 'text-slate-200'}`}>
-            {name}
-            {isCurrentUser && <span className="text-xs ml-2 text-amber-400/60">(you)</span>}
-          </div>
-          <div className="text-slate-500 text-xs">{secondary}</div>
-        </div>
-      </div>
-      <div className={`font-bold text-right shrink-0 ml-2 ${isCurrentUser ? 'text-amber-400' : 'text-slate-200'}`}>
-        {primary}
-      </div>
-    </div>
+      <span
+        className={cn('w-7 shrink-0 text-right font-playbill text-base tabular-nums leading-none', rank <= 3 ? 'text-ps-stamp-gold' : 'text-ps-ink-soft')}
+        aria-label={`Rank ${rank}`}
+      >
+        {rank}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="truncate font-body text-sm font-semibold text-ps-ink">{name}</span>
+          {isCurrentUser && <Stamp tone="red">You</Stamp>}
+        </span>
+        <span className="block font-body text-xs text-ps-ink-soft">{secondary}</span>
+      </span>
+      <span className="shrink-0 font-playbill text-base tabular-nums text-ps-ink">{primary}</span>
+    </li>
   )
 }

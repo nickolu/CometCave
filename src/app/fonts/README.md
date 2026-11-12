@@ -20,8 +20,9 @@ variable cut, so it is three static weights.
 | `lexend-100-900-latin.woff2` | Lexend | 100–900 (variable) |
 | `fredoka-300-700-latin.woff2` | Fredoka | 300–700 (variable) |
 | `nunito-200-1000-latin.woff2` | Nunito | 200–1000 (variable) |
+| `abril-fatface-400-latin.woff2`, `abril-fatface-400-latin-ext.woff2` | Abril Fatface (Tap Tap Adventure's playbill face) | 400 |
 
-All five families are published under the SIL Open Font License 1.1
+All six families are published under the SIL Open Font License 1.1
 (https://openfontlicense.org), which permits bundling and redistribution.
 To add a weight or subset, fetch the css2 stylesheet with a browser user agent
 and copy the `url(...)` from the matching `@font-face` block.

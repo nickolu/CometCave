@@ -6,8 +6,21 @@ import { calculateDay } from '@/app/tap-tap-adventure/lib/leveling'
 import { CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCalculator'
 import type { RunSummaryData } from '@/app/tap-tap-adventure/models/types'
-import { getTodayPST } from '@/lib/dates'
+import {
+  BrassFigure,
+  BrassPlate,
+  PaperButton,
+  PlaybillCaption,
+  PlaybillRule,
+  PlaybillSheet,
+  PlaybillTitle,
+  PrintingDots,
+  Stamp,
+} from '@/app/tap-tap-adventure/stage/Playbill'
+import { ChunkyButton } from '@/components/ui/chunky-button'
 import { useAuth } from '@/hooks/useAuth'
+import { getTodayPST } from '@/lib/dates'
+import { cn } from '@/lib/utils'
 
 import AdventureLeaderboard from './AdventureLeaderboard'
 
@@ -36,6 +49,25 @@ interface RunSummaryProps {
   onBackToCharacters: () => void
 }
 
+/** One line of the receipt. */
+function ReceiptRow({ label, value, tone }: { label: string; value: string; tone?: 'red' | 'green' | 'gold' }) {
+  return (
+    <div className="flex items-baseline justify-between gap-3 py-1 font-body text-sm text-ps-ink-soft">
+      <span>{label}</span>
+      <span
+        className={cn(
+          'tabular-nums text-ps-ink',
+          tone === 'red' && 'text-ps-stamp-red',
+          tone === 'green' && 'text-ps-stamp-green',
+          tone === 'gold' && 'text-ps-stamp-gold'
+        )}
+      >
+        {value}
+      </span>
+    </div>
+  )
+}
+
 function EssenceBreakdown({ character, isVictory, essenceEarned }: { character: RunSummaryData['character']; isVictory?: boolean; essenceEarned?: number }) {
   const baseEssence = Math.floor(character.distance / 10)
   const levelBonus = character.level * 5
@@ -58,38 +90,19 @@ function EssenceBreakdown({ character, isVictory, essenceEarned }: { character: 
   const displayTotal = isVictory && essenceEarned !== undefined ? essenceEarned : calculateSoulEssence(character)
 
   return (
-    <div className="space-y-1 text-sm text-slate-400">
-      <div className="flex justify-between">
-        <span>Base (distance / 10)</span>
-        <span className="text-amber-300">+{baseEssence}</span>
-      </div>
-      <div className="flex justify-between">
-        <span>Level bonus (level x 5)</span>
-        <span className="text-amber-300">+{levelBonus}</span>
-      </div>
+    <div className="divide-y divide-dotted divide-ps-ink/40" aria-label={`Soul essence receipt, subtotal ${subtotal}`}>
+      <ReceiptRow label="Base (distance / 10)" value={`+${baseEssence}`} />
+      <ReceiptRow label="Level bonus (level x 5)" value={`+${levelBonus}`} />
       {character.deathCount > 0 && (
-        <div className="flex justify-between">
-          <span>Death penalty ({character.deathCount} deaths)</span>
-          <span className="text-red-400">x{deathPenaltyMultiplier.toFixed(1)}</span>
-        </div>
+        <ReceiptRow label={`Death penalty (${character.deathCount} deaths)`} value={`x${deathPenaltyMultiplier.toFixed(1)}`} tone="red" />
       )}
       {diffMultiplier !== 1 && (
-        <div className="flex justify-between">
-          <span>{diffLabel} difficulty</span>
-          <span className={diffMultiplier > 1 ? 'text-green-400' : 'text-red-400'}>
-            x{diffMultiplier}
-          </span>
-        </div>
+        <ReceiptRow label={`${diffLabel} difficulty`} value={`x${diffMultiplier}`} tone={diffMultiplier > 1 ? 'green' : 'red'} />
       )}
-      {isVictory && (
-        <div className="flex justify-between">
-          <span>Victory bonus</span>
-          <span className="text-yellow-400">x5</span>
-        </div>
-      )}
-      <div className="flex justify-between border-t border-slate-700 pt-1 font-semibold text-amber-400">
+      {isVictory && <ReceiptRow label="Victory bonus" value="x5" tone="gold" />}
+      <div className="flex items-baseline justify-between gap-3 border-t-2 border-ps-ink pt-2 font-playbill text-lg uppercase tracking-wide text-ps-ink">
         <span>Total</span>
-        <span>{displayTotal}</span>
+        <span className="tabular-nums">{displayTotal}</span>
       </div>
     </div>
   )
@@ -163,21 +176,14 @@ export default function RunSummary({
 
   const isRetirement = reason === 'retirement'
   const isVictory = reason === 'victory'
-  const headerText = isVictory ? 'World Conquered!' : isRetirement ? 'Run Complete' : 'Fallen in Battle'
-  const headerColor = isVictory
-    ? 'text-yellow-300'
-    : isRetirement
-      ? 'text-purple-300'
-      : 'text-red-400'
-  const headerBorder = isVictory
-    ? 'border-yellow-500/30'
-    : isRetirement
-      ? 'border-purple-500/30'
-      : 'border-red-500/30'
+  const headerText = isVictory ? 'A triumph' : isRetirement ? 'A bow' : 'The curtain falls'
 
   const regionsConquered = character.visitedRegions?.filter(r => CONQUERABLE_REGIONS.includes(r)).length ?? 0
 
   const daysSurvived = calculateDay(character.distance)
+  const diffLabel = character.difficultyMode
+    ? character.difficultyMode.charAt(0).toUpperCase() + character.difficultyMode.slice(1)
+    : 'Normal'
 
   // Count combat victories from story events if available (not tracked here, show N/A)
   // We don't have storyEvents in the summary data, so we skip enemies defeated
@@ -185,238 +191,177 @@ export default function RunSummary({
   // Leaderboard overlay
   if (showLeaderboard) {
     return (
-      <div className="fixed inset-0 z-50 overflow-y-auto bg-[#1a1b2e] p-4" role="dialog" aria-modal="true" aria-label="Leaderboard">
+      <div className="ps-scroll fixed inset-0 z-50 overflow-y-auto bg-ps-house p-4" role="dialog" aria-modal="true" aria-label="Leaderboard">
         <AdventureLeaderboard onBack={() => setShowLeaderboard(false)} />
       </div>
     )
   }
 
   return (
-    <div className="w-full mx-auto p-4 sm:p-6 bg-[#1a1b2e] border border-[#3a3c56] rounded-lg mt-6 max-w-2xl">
-      {/* Header */}
-      <div className={`text-center pb-4 mb-6 border-b ${headerBorder}`}>
-        <h2 className={`text-3xl sm:text-4xl font-bold ${headerColor}`}>
+    <PlaybillSheet as="article" className="ps-print-in mx-auto w-full max-w-2xl px-4 pb-5 pt-5 sm:px-8 sm:pb-6" aria-label="The final bill">
+      {/* The result, large */}
+      <div className="text-center">
+        <PlaybillCaption>The final bill</PlaybillCaption>
+        <PlaybillTitle size="lg" className="mt-2">
           {headerText}
-        </h2>
-        <p className="text-slate-400 mt-2 text-lg">
-          {character.name} &mdash; Level {character.level} {character.race} {character.class}
-        </p>
+        </PlaybillTitle>
+        <p className="mt-3 font-playbill text-xl uppercase leading-tight tracking-wide text-ps-ink">{character.name}</p>
+        <PlaybillCaption className="mt-1">
+          Level {character.level} · {character.race} · {character.class}
+        </PlaybillCaption>
         {reason === 'victory' && (
-          <p className="text-yellow-400 mt-2 font-semibold">You have united all lands under your banner.</p>
+          <p className="mt-3 font-body text-base italic leading-relaxed text-ps-ink">You have united all lands under your banner.</p>
         )}
         {killedBy && (reason === 'death' || reason === 'permadeath') && (
-          <p className="text-slate-300 mt-2">Slain by <span className="font-semibold text-red-300">{killedBy}</span></p>
+          <p className="mt-3 font-body text-base italic leading-relaxed text-ps-ink">
+            Slain by <span className="font-medium not-italic">{killedBy}</span>.
+          </p>
+        )}
+        {reason === 'retirement' && (
+          <p className="mt-3 font-body text-base italic leading-relaxed text-ps-ink">Retired from the road.</p>
         )}
         {reason === 'permadeath' && (
-          <p className="text-red-500 text-sm mt-1 italic">This character is gone forever.</p>
+          <div className="mt-3 flex flex-col items-center gap-1.5">
+            <Stamp tone="red" animate className="text-xs">Gone for good</Stamp>
+            <p className="font-body text-xs italic text-ps-stamp-red">This character is gone forever.</p>
+          </div>
         )}
       </div>
 
-      {/* Run Stats Grid */}
-      <div className="mb-6">
-        <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">
-          Run Statistics
-        </h3>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <StatCard label="Distance" value={character.distance.toLocaleString()} sublabel="km" />
-          <StatCard label="Level" value={String(character.level)} />
-          <StatCard label="Days Survived" value={String(daysSurvived)} />
-          <StatCard label="Gold" value={character.gold.toLocaleString()} />
-          <StatCard
+      {/* The figures */}
+      <section className="mt-5" aria-label="Run statistics">
+        <BrassPlate className="grid grid-cols-3 divide-x-2 divide-ps-brass-deep/60 sm:grid-cols-5">
+          <BrassFigure label="Distance" value={character.distance.toLocaleString()} sub="km" />
+          <BrassFigure label="Level" value={character.level} />
+          <BrassFigure label="Days" value={daysSurvived} />
+          <BrassFigure label="Gold" value={character.gold.toLocaleString()} className="border-t-2 border-ps-brass-deep/60 sm:border-t-0" />
+          <BrassFigure
             label="Deaths"
-            value={String(character.deathCount)}
-            highlight={character.deathCount === 0 ? 'green' : undefined}
+            value={character.deathCount}
+            className="border-t-2 border-ps-brass-deep/60 sm:border-t-0"
           />
-          <StatCard
-            label="Difficulty"
-            value={
-              character.difficultyMode
-                ? character.difficultyMode.charAt(0).toUpperCase() +
-                  character.difficultyMode.slice(1)
-                : 'Normal'
-            }
-          />
-          <StatCard
-            label="Regions Conquered"
-            value={String(regionsConquered)}
-            highlight={regionsConquered >= 14 ? 'green' : undefined}
-          />
+        </BrassPlate>
+        <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+          <Stamp tone={diffLabel === 'Casual' ? 'green' : diffLabel === 'Normal' ? 'ink' : 'red'} tilt={false}>
+            {diffLabel}
+          </Stamp>
+          <Stamp tone={regionsConquered >= 14 ? 'gold' : 'ink'} tilt={false}>
+            {regionsConquered} {regionsConquered === 1 ? 'region' : 'regions'} conquered
+          </Stamp>
         </div>
-      </div>
+      </section>
 
-      {/* Leaderboard Section */}
-      <div className="mb-6 p-4 bg-indigo-950/30 border border-indigo-600/30 rounded-lg">
-        <h3 className="text-sm font-semibold text-indigo-400 uppercase tracking-wider mb-3">
-          Submit to Leaderboard
-        </h3>
+      <PlaybillRule className="my-5" />
 
-        {/* Player name input */}
+      {/* Soul essence receipt */}
+      <section aria-label="Soul essence earned">
+        <PlaybillTitle size="sm">Soul essence earned</PlaybillTitle>
+        <p className="mt-3 text-center font-playbill text-5xl leading-none tabular-nums text-ps-ink sm:text-6xl">{essenceEarned}</p>
+        <PlaybillCaption className="mt-1 text-center">Soul essence</PlaybillCaption>
+        <div className="mt-4">
+          <EssenceBreakdown character={character} isVictory={isVictory} essenceEarned={essenceEarned} />
+        </div>
+      </section>
+
+      {/* Heirloom */}
+      {heirloom && (
+        <section className="mt-5 rounded-[3px] border-2 border-ps-stamp-violet px-4 py-3" aria-label="Heirloom">
+          <div className="flex flex-wrap items-center gap-2">
+            <Stamp tone="violet" animate>Heirloom</Stamp>
+            {heirloom.type && (
+              <Stamp tone="violet" tilt={false}>
+                {heirloom.type === 'equipment' ? 'Equipment' : heirloom.type === 'spell_scroll' ? 'Spell scroll' : 'Item'}
+              </Stamp>
+            )}
+          </div>
+          <p className="mt-2 font-playbill text-base uppercase tracking-wide text-ps-ink">{heirloom.name}</p>
+          <p className="mt-1 font-body text-sm leading-snug text-ps-ink">{heirloom.description}</p>
+          <p className="mt-1.5 font-body text-xs italic text-ps-ink-soft">This item will be available for your next character.</p>
+        </section>
+      )}
+
+      <PlaybillRule className="my-5" />
+
+      {/* Leaderboard */}
+      <section aria-label="Leaderboard">
+        <PlaybillTitle size="sm">Leaderboard</PlaybillTitle>
+
         {showNameInput ? (
-          <div className="flex gap-2 mb-3">
+          <div className="mt-3 flex gap-2">
             <input
               type="text"
               value={nameInput}
               onChange={e => setNameInput(e.target.value.slice(0, 20))}
-              placeholder="Enter your player name"
+              placeholder="Your player name"
               aria-label="Player name"
-              className="flex-1 px-3 py-2 rounded bg-[#161723] border border-[#3a3c56] text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm"
+              className="h-10 min-w-0 flex-1 rounded-[3px] border-2 border-ps-ink bg-transparent px-3 font-body text-base text-ps-ink placeholder:text-ps-ink-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
               onKeyDown={e => { if (e.key === 'Enter') handleSaveName() }}
             />
-            <button
-              type="button"
-              onClick={handleSaveName}
-              disabled={nameInput.trim().length === 0}
-              className="px-3 py-2 rounded bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 text-sm font-medium hover:bg-indigo-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <PaperButton onClick={handleSaveName} disabled={nameInput.trim().length === 0}>
               Save
-            </button>
+            </PaperButton>
           </div>
         ) : (
-          <p className="text-slate-400 text-sm mb-3">
+          <p className="mt-3 font-body text-sm text-ps-ink-soft">
             Submitting as{' '}
             <button
               type="button"
               onClick={() => { setNameInput(playerName); setShowNameInput(true) }}
-              className="text-indigo-400 hover:underline"
+              className="rounded-[2px] font-medium text-ps-ink underline decoration-dotted underline-offset-2 hover:decoration-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
             >
               {playerName}
             </button>
           </p>
         )}
 
-        {/* Submit button / status */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
           {submitStatus === 'idle' && (
-            <button
-              type="button"
-              onClick={handleSubmitScore}
-              disabled={!playerName || showNameInput}
-              className="py-2 px-4 rounded bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 text-sm font-semibold hover:bg-indigo-600/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Submit Score
-            </button>
+            <PaperButton variant="brass" onClick={handleSubmitScore} disabled={!playerName || showNameInput}>
+              Submit score
+            </PaperButton>
           )}
           {submitStatus === 'submitting' && (
-            <span className="py-2 px-4 text-slate-400 text-sm">Submitting...</span>
+            <span className="inline-flex h-10 items-center px-2">
+              <PrintingDots label="Submitting" />
+            </span>
           )}
           {submitStatus === 'success' && (
-            <span className="py-2 px-1 text-green-400 text-sm">Score submitted!</span>
+            <Stamp tone="green" animate className="text-xs" role="status">Score submitted</Stamp>
           )}
           {submitStatus === 'error' && (
-            <button
-              type="button"
-              onClick={handleSubmitScore}
-              className="py-2 px-4 rounded bg-red-600/20 border border-red-500/40 text-red-300 text-sm font-semibold hover:bg-red-600/30 transition-colors"
-            >
-              Failed — Retry?
-            </button>
+            <PaperButton variant="danger" onClick={handleSubmitScore}>
+              Failed — try again
+            </PaperButton>
           )}
-          <button
-            type="button"
-            onClick={() => setShowLeaderboard(true)}
-            className="py-2 px-4 rounded bg-[#161723] border border-[#3a3c56] text-slate-300 text-sm hover:border-slate-500 hover:text-slate-100 transition-colors"
-          >
-            View Leaderboard
-          </button>
+          <PaperButton variant="outline" onClick={() => setShowLeaderboard(true)}>
+            View leaderboard
+          </PaperButton>
         </div>
-      </div>
+      </section>
 
-      {/* Soul Essence Section */}
-      <div className="mb-6 p-4 bg-amber-950/30 border border-amber-600/30 rounded-lg">
-        <h3 className="text-sm font-semibold text-amber-500 uppercase tracking-wider mb-3">
-          Soul Essence Earned
-        </h3>
-        <div className="text-center mb-4">
-          <span className="text-5xl sm:text-6xl font-bold text-amber-400 drop-shadow-[0_0_12px_rgba(251,191,36,0.4)]">
-            {essenceEarned}
-          </span>
-          <p className="text-amber-500/70 text-sm mt-1">Soul Essence</p>
-        </div>
-        <EssenceBreakdown character={character} isVictory={isVictory} essenceEarned={essenceEarned} />
-      </div>
+      <PlaybillRule className="my-5" />
 
-      {/* Heirloom Section */}
-      {heirloom && (
-        <div className="mb-6 p-4 bg-purple-950/30 border border-purple-600/30 rounded-lg">
-          <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wider mb-2">
-            Heirloom Generated
-          </h3>
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded bg-purple-800/40 border border-purple-500/30 flex items-center justify-center text-lg shrink-0">
-              {heirloom.type === 'equipment' ? '\u2694' : heirloom.type === 'spell_scroll' ? '\u{1F4DC}' : '\u2728'}
-            </div>
-            <div>
-              <p className="font-semibold text-purple-200">{heirloom.name}</p>
-              <p className="text-sm text-slate-400 mt-0.5">{heirloom.description}</p>
-              <p className="text-xs text-purple-400/70 mt-1 italic">
-                This item will be available for your next character.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Call to Action Buttons */}
-      <div className="space-y-3">
+      {/* Next action */}
+      <div className="grid gap-2">
         {isVictory && (
-          <button
-            type="button"
-            onClick={onBackToCharacters}
-            className="w-full py-3 px-4 rounded-lg bg-yellow-600/20 border border-yellow-500/40 text-yellow-300 font-semibold text-lg hover:bg-yellow-600/30 transition-colors cursor-pointer"
-          >
-            Continue Playing (Post-Game)
-          </button>
+          <PaperButton variant="outline" onClick={onBackToCharacters} className="w-full">
+            Continue playing (post-game)
+          </PaperButton>
         )}
-        <button
-          type="button"
-          onClick={onViewUpgrades}
-          className="w-full py-3 px-4 rounded-lg bg-amber-600/20 border border-amber-500/40 text-amber-300 font-semibold text-lg hover:bg-amber-600/30 transition-colors cursor-pointer"
-        >
-          View Eternal Upgrades
-        </button>
-        <button
-          type="button"
-          onClick={onNewCharacter}
-          className="w-full py-3 px-4 rounded-lg bg-indigo-600/20 border border-indigo-500/40 text-indigo-300 font-semibold text-lg hover:bg-indigo-600/30 transition-colors cursor-pointer"
-        >
-          Create New Character
-        </button>
-        {!isVictory && (
-          <button
-            type="button"
-            onClick={onBackToCharacters}
-            className="w-full py-3 px-4 rounded-lg bg-slate-700/30 border border-slate-600/40 text-slate-300 font-semibold text-lg hover:bg-slate-700/50 transition-colors cursor-pointer"
-          >
-            Back to Characters
-          </button>
-        )}
+        <ChunkyButton variant="primary" size="lg" onClick={onNewCharacter} className="w-full">
+          New character
+        </ChunkyButton>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <PaperButton variant="outline" onClick={onViewUpgrades} className="w-full">
+            View upgrades
+          </PaperButton>
+          {!isVictory && (
+            <PaperButton variant="outline" onClick={onBackToCharacters} className="w-full">
+              Back to characters
+            </PaperButton>
+          )}
+        </div>
       </div>
-    </div>
-  )
-}
-
-function StatCard({
-  label,
-  value,
-  sublabel,
-  highlight,
-}: {
-  label: string
-  value: string
-  sublabel?: string
-  highlight?: 'green'
-}) {
-  return (
-    <div className="bg-[#161723] border border-[#3a3c56] rounded-lg p-3 text-center">
-      <p className="text-xs text-slate-500 uppercase tracking-wider">{label}</p>
-      <p
-        className={`text-xl font-bold mt-1 ${
-          highlight === 'green' ? 'text-green-400' : 'text-slate-200'
-        }`}
-      >
-        {value}
-      </p>
-      {sublabel && <p className="text-xs text-slate-500">{sublabel}</p>}
-    </div>
+    </PlaybillSheet>
   )
 }

@@ -4,65 +4,42 @@ import { useState } from 'react'
 import { AiGate } from '@/components/ai-gate'
 
 import CharacterList from './components/CharacterList'
-import GameUI from './components/GameUI'
-import { HudBar } from './components/HudBar'
 import MetaProgression from './components/MetaProgression'
-import { PlayerStatusView } from './components/PlayerStatusView'
 import RunSummary from './components/RunSummary'
-import { PageTemplate } from './components/ui/PageTemplate'
 import { useGameStore } from './hooks/useGameStore'
-
-type initialView = 'game' | 'characters'
+import { Foyer } from './stage/Foyer'
+import GameStage from './stage/GameStage'
 
 function TapTapAdventurePage() {
   const { gameState, clearRunSummary } = useGameStore()
   const [showMetaFromSummary, setShowMetaFromSummary] = useState(false)
   const [showCreationFromSummary, setShowCreationFromSummary] = useState(false)
-  const [showStatus, setShowStatus] = useState(false)
 
-  let initialView: initialView = 'characters'
-
-  if (gameState?.selectedCharacterId) {
-    initialView = 'game'
+  // The run summary takes the stage over everything else.
+  const runSummary = gameState?.runSummary ?? null
+  if (runSummary) {
+    return (
+      <Foyer>
+        <RunSummary
+          data={runSummary}
+          onViewUpgrades={() => setShowMetaFromSummary(true)}
+          onNewCharacter={() => {
+            clearRunSummary()
+            setShowCreationFromSummary(true)
+          }}
+          onBackToCharacters={() => clearRunSummary()}
+        />
+        {showMetaFromSummary && <MetaProgression onClose={() => setShowMetaFromSummary(false)} />}
+      </Foyer>
+    )
   }
 
-  // Run summary takes priority over everything
-  const runSummary = gameState?.runSummary ?? null
+  if (gameState?.selectedCharacterId) return <GameStage />
 
   return (
-    <PageTemplate pageId={initialView}>
-      <div className="flex-1">
-        <HudBar onOpenStatus={() => setShowStatus(true)} />
-      </div>
-      {showStatus && <PlayerStatusView onClose={() => setShowStatus(false)} />}
-      {runSummary ? (
-        <>
-          <RunSummary
-            data={runSummary}
-            onViewUpgrades={() => {
-              setShowMetaFromSummary(true)
-            }}
-            onNewCharacter={() => {
-              clearRunSummary()
-              setShowCreationFromSummary(true)
-            }}
-            onBackToCharacters={() => {
-              clearRunSummary()
-            }}
-          />
-          {showMetaFromSummary && (
-            <MetaProgression onClose={() => setShowMetaFromSummary(false)} />
-          )}
-        </>
-      ) : (
-        <>
-          {initialView === 'game' && <GameUI onOpenStatus={() => setShowStatus(true)} />}
-          {initialView === 'characters' && (
-            <CharacterList defaultShowCreation={showCreationFromSummary} onCreationShown={() => setShowCreationFromSummary(false)} />
-          )}
-        </>
-      )}
-    </PageTemplate>
+    <Foyer>
+      <CharacterList defaultShowCreation={showCreationFromSummary} onCreationShown={() => setShowCreationFromSummary(false)} />
+    </Foyer>
   )
 }
 

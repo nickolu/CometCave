@@ -1,36 +1,31 @@
 'use client'
 import { useCallback, useMemo } from 'react'
 
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { EquipmentSlots, EquipmentSlotType, getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
+import { EquipmentSlotType, EquipmentSlots, getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
 import { Item } from '@/app/tap-tap-adventure/models/item'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillTitle, Stamp, type StampTone, deltaTone } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface EquipmentPanelProps {
   equipment: EquipmentSlots
 }
 
-const RARITY_COLORS: Record<string, { border: string; text: string; bg: string; label: string }> = {
-  common: { border: 'border-gray-600/50', text: 'text-gray-400', bg: 'bg-gray-900/30', label: 'Common' },
-  uncommon: { border: 'border-green-600/50', text: 'text-green-400', bg: 'bg-green-900/30', label: 'Uncommon' },
-  rare: { border: 'border-blue-500/60', text: 'text-blue-400', bg: 'bg-blue-900/30', label: 'Rare' },
-  epic: { border: 'border-purple-500/60', text: 'text-purple-400', bg: 'bg-purple-900/30', label: 'Epic' },
-  legendary: { border: 'border-amber-500/60', text: 'text-amber-400', bg: 'bg-amber-900/30', label: 'Legendary' },
+const RARITY_TONE: Record<string, { tone: StampTone; label: string }> = {
+  common: { tone: 'ink', label: 'Common' },
+  uncommon: { tone: 'green', label: 'Uncommon' },
+  rare: { tone: 'blue', label: 'Rare' },
+  epic: { tone: 'violet', label: 'Epic' },
+  legendary: { tone: 'gold', label: 'Legendary' },
 }
 
 const SLOT_LABELS: Record<EquipmentSlotType, string> = {
   weapon: 'Weapon',
-  armor: 'Armor',
+  armor: 'Armour',
   accessory: 'Accessory',
 }
 
-const SLOT_ICONS: Record<EquipmentSlotType, string> = {
-  weapon: 'ATK',
-  armor: 'DEF',
-  accessory: 'LCK',
-}
-
 const COMPARE_STATS = ['strength', 'intelligence', 'luck', 'charisma'] as const
+const STAT_SHORT: Record<(typeof COMPARE_STATS)[number], string> = { strength: 'STR', intelligence: 'INT', luck: 'LCK', charisma: 'CHA' }
 
 /** Sum the total stat value of an item across STR/INT/LCK/CHA */
 function itemStatTotal(item: Item | null): number {
@@ -56,6 +51,15 @@ function findBestUpgrade(inventory: Item[], slot: EquipmentSlotType, equipped: I
   }
 
   return best
+}
+
+function SmallPrint({ label, children, tone = 'soft' }: { label: string; children: React.ReactNode; tone?: 'soft' | 'red' }) {
+  return (
+    <p className={tone === 'red' ? 'font-body text-xs leading-snug text-ps-stamp-red' : 'font-body text-xs leading-snug text-ps-ink-soft'}>
+      <span className="font-label text-xs font-bold uppercase tracking-widest">{label} </span>
+      {children}
+    </p>
+  )
 }
 
 export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
@@ -87,143 +91,111 @@ export function EquipmentPanel({ equipment }: EquipmentPanelProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inventory, equipment])
 
+  // What everything worn adds up to, for the brass plate.
+  const totals = COMPARE_STATS.map(key => ({
+    key,
+    value: slots.reduce((sum, slot) => sum + (equipment[slot]?.effects?.[key] ?? 0), 0),
+  }))
+
   return (
-    <div className="w-full flex flex-col">
-      <h3 className="text-lg font-semibold text-white mb-3">Equipment</h3>
-      <div className="space-y-2">
+    <div className="w-full">
+      <PlaybillTitle size="sm" rules={false} className="text-left">Worn</PlaybillTitle>
+      <div className="mt-3 space-y-2">
         {slots.map(slot => {
           const item = equipment[slot]
           const upgrade = upgrades[slot]
+          const rarity = item ? RARITY_TONE[item.rarity ?? 'common'] : null
           return (
-            <div
-              key={slot}
-              className={`bg-[#1e1f30] border p-3 rounded-lg ${
-                upgrade ? 'border-green-700/50' : 'border-[#3a3c56]'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="text-xs font-bold text-indigo-400 bg-indigo-900/30 px-2 py-1 rounded shrink-0">
-                    {SLOT_ICONS[slot]}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-500 uppercase">{SLOT_LABELS[slot]}</div>
-                    {item ? (
-                      <>
-                        {(() => {
-                          const rarityStyle = RARITY_COLORS[item.rarity ?? 'common']
-                          return (
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <div className={`font-bold text-sm truncate ${item.rarity && item.rarity !== 'common' ? rarityStyle.text : 'text-white'}`}>{item.name}</div>
-                              {item.enchantmentLevel && item.enchantmentLevel > 0 && (
-                                <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
-                                  +{item.enchantmentLevel}
-                                </span>
-                              )}
-                              {item.rarity && item.rarity !== 'common' && (
-                                <span className={`text-[10px] px-1.5 py-0.5 ${rarityStyle.bg} ${rarityStyle.text} rounded`}>
-                                  {rarityStyle.label}
-                                </span>
-                              )}
-                            </div>
-                          )
-                        })()}
-                        {item.effects && (
-                          <div className="text-xs text-emerald-400">
-                            {Object.entries(item.effects)
-                              .filter(
-                                ([k, v]) => v !== undefined && v !== 0 && k !== 'range'
-                              )
-                              .map(
-                                ([k, v]) =>
-                                  `+${v} ${k.charAt(0).toUpperCase() + k.slice(1)}`
-                              )
-                              .join(', ')}
-                          </div>
-                        )}
+            <div key={slot} className="rounded-[3px] border-2 border-ps-ink p-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <PlaybillCaption>{SLOT_LABELS[slot]}</PlaybillCaption>
+                  {item ? (
+                    <>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="font-body text-base font-medium leading-tight text-ps-ink">{item.name}</span>
+                        {item.enchantmentLevel && item.enchantmentLevel > 0 ? <Stamp tone="blue" tilt={false}>+{item.enchantmentLevel}</Stamp> : null}
+                        {item.rarity && item.rarity !== 'common' && rarity && <Stamp tone={rarity.tone} tilt={false}>{rarity.label}</Stamp>}
+                      </div>
+                      {item.effects && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                          {Object.entries(item.effects)
+                              .filter(([k, v]) => v !== undefined && v !== 0 && k !== 'range')
+                              .map(([k, v]) => (
+                                <Stamp key={k} tone={typeof v === 'number' ? deltaTone(v) : 'ink'} tilt={false}>
+                                  {typeof v === 'number' && v > 0 ? '+' : ''}{String(v)} {k.charAt(0).toUpperCase() + k.slice(1)}
+                                </Stamp>
+                              ))}
+                          {slot === 'weapon' && item.effects?.range && (
+                            <Stamp tone={item.effects.range === 'far' ? 'blue' : item.effects.range === 'mid' ? 'gold' : 'red'} tilt={false}>
+                              {item.effects.range.charAt(0).toUpperCase() + item.effects.range.slice(1)} range
+                            </Stamp>
+                          )}
+                        </div>
+                      )}
+                      <div className="mt-1.5 space-y-0.5">
                         {item.onHitEffect && (
-                          <div className="text-xs text-orange-400">
-                            On Hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
-                          </div>
+                          <SmallPrint label="On hit">{item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)</SmallPrint>
                         )}
-                        {item.passiveEffect && (
-                          <div className="text-xs text-cyan-400">
-                            Passive: {item.passiveEffect.description}
-                          </div>
-                        )}
+                        {item.passiveEffect && <SmallPrint label="Passive">{item.passiveEffect.description}</SmallPrint>}
                         {item.grantsSpell && (
-                          <div className="text-xs text-purple-400">
-                            Grants: {item.grantsSpell.spellName} ({item.grantsSpell.usesPerCombat}x/combat)
-                          </div>
+                          <SmallPrint label="Grants">{item.grantsSpell.spellName} ({item.grantsSpell.usesPerCombat}× a fight)</SmallPrint>
                         )}
                         {item.drawback && (
-                          <div className="text-xs text-red-400">
-                            Drawback: {item.drawback.description} ({item.drawback.value} {item.drawback.stat})
-                          </div>
+                          <SmallPrint label="Drawback" tone="red">{item.drawback.description} ({item.drawback.value} {item.drawback.stat})</SmallPrint>
                         )}
-                        {slot === 'weapon' && item.effects?.range && (
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded mt-0.5 inline-block ${
-                              item.effects.range === 'far'
-                                ? 'bg-blue-900/50 text-blue-400'
-                                : item.effects.range === 'mid'
-                                  ? 'bg-yellow-900/50 text-yellow-400'
-                                  : 'bg-red-900/50 text-red-400'
-                            }`}
-                          >
-                            {item.effects.range.charAt(0).toUpperCase() +
-                              item.effects.range.slice(1)}{' '}
-                            Range
-                          </span>
-                        )}
-                      </>
-                    ) : (
-                      <div className="text-sm text-gray-500 italic">Empty</div>
-                    )}
-                  </div>
+                      </div>
+                    </>
+                  ) : (
+                    <p className="mt-0.5 font-body text-sm italic text-ps-ink-soft">Nothing worn</p>
+                  )}
                 </div>
                 {item && (
-                  <Button
-                    className="shrink-0 bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-white text-xs py-1 px-2 rounded-md transition-colors"
-                    onClick={() => handleUnequip(slot)}
-                  >
+                  <PaperButton size="sm" variant="outline" className="shrink-0" onClick={() => handleUnequip(slot)}>
                     Unequip
-                  </Button>
+                  </PaperButton>
                 )}
               </div>
 
               {/* Upgrade indicator */}
               {upgrade && (
-                <div className="mt-2 pt-2 border-t border-[#3a3c56] flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="text-[10px] text-green-400 font-semibold">
-                      ⬆ Upgrade available
-                    </div>
-                    <div className="text-xs text-slate-300 truncate">{upgrade.name}</div>
-                    <div className="text-[10px] text-slate-400">
+                <div className="mt-2.5 flex items-center justify-between gap-2 border-t-2 border-dotted border-ps-ink/40 pt-2.5">
+                  <div className="min-w-0 flex-1">
+                    <PlaybillCaption className="text-ps-stamp-green">Better in your pack</PlaybillCaption>
+                    <p className="mt-0.5 truncate font-body text-sm font-medium text-ps-ink">{upgrade.name}</p>
+                    <div className="mt-1 flex flex-wrap items-center gap-1">
                       {COMPARE_STATS.map(key => {
                         const diff = (upgrade.effects?.[key] ?? 0) - (item?.effects?.[key] ?? 0)
                         if (diff === 0) return null
                         return (
-                          <span key={key} className={`mr-1.5 ${diff > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {diff > 0 ? '+' : ''}{diff} {key.slice(0, 3).toUpperCase()}
-                          </span>
+                          <Stamp key={key} tone={deltaTone(diff)} tilt={false}>
+                            {diff > 0 ? '+' : ''}{diff} {STAT_SHORT[key]}
+                          </Stamp>
                         )
                       })}
                     </div>
                   </div>
-                  <Button
-                    className="shrink-0 bg-green-900/50 border border-green-700 hover:bg-green-800 text-green-200 text-xs py-1 px-2 rounded-md transition-colors"
-                    onClick={() => handleEquipUpgrade(upgrade.id)}
-                  >
+                  <PaperButton size="sm" className="shrink-0" onClick={() => handleEquipUpgrade(upgrade.id)}>
                     Equip
-                  </Button>
+                  </PaperButton>
                 </div>
               )}
             </div>
           )
         })}
       </div>
+
+      <PlaybillCaption className="mt-4">What it adds up to</PlaybillCaption>
+      <BrassPlate className="mt-1.5 grid grid-cols-4 divide-x-2 divide-ps-brass-deep/60" aria-label="Bonuses from everything worn">
+        {totals.map(t => (
+          <BrassFigure
+            key={t.key}
+            label={STAT_SHORT[t.key]}
+            value={`${t.value > 0 ? '+' : ''}${t.value}`}
+            title={`${t.value > 0 ? '+' : ''}${t.value} ${t.key} from everything worn`}
+          />
+        ))}
+      </BrassPlate>
     </div>
   )
 }

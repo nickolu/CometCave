@@ -1,8 +1,16 @@
 'use client'
 
+/**
+ * Feats, printed as ruled rows on the bill: a search line, a row of category
+ * filters, and each feat with its progress rule or a gold "Done" stamp.
+ */
 import { useState } from 'react'
+
 import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
 import { AchievementCategory, PlayerAchievement } from '@/app/tap-tap-adventure/models/achievement'
+import { SearchIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 const CATEGORY_LABELS: Record<AchievementCategory, string> = {
   travel: 'Travel',
@@ -15,8 +23,8 @@ const CATEGORY_LABELS: Record<AchievementCategory, string> = {
 const CATEGORY_ORDER: AchievementCategory[] = ['travel', 'combat', 'collection', 'progression', 'special']
 
 export function AchievementPanel({ achievements }: { achievements: PlayerAchievement[] }) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [category, setCategory] = useState<AchievementCategory | null>(null)
   const achievementMap = new Map<string, PlayerAchievement>()
   for (const pa of achievements) {
     achievementMap.set(pa.achievementId, pa)
@@ -24,122 +32,126 @@ export function AchievementPanel({ achievements }: { achievements: PlayerAchieve
 
   const completedCount = achievements.filter(a => a.completed).length
   const totalCount = ACHIEVEMENTS.length
+  const overall = totalCount > 0 ? completedCount / totalCount : 0
 
-  if (!isExpanded) {
-    return (
-      <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-amber-700/50 transition-colors"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-amber-400">Achievements</span>
-          <span className="text-xs text-slate-400">
-            {completedCount}/{totalCount}
-          </span>
-        </div>
-        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-2">
-          <div
-            className="h-full bg-amber-500 rounded-full transition-all duration-300"
-            style={{ width: `${totalCount > 0 ? (completedCount / totalCount) * 100 : 0}%` }}
-          />
-        </div>
-      </button>
-    )
-  }
+  const matches = (a: (typeof ACHIEVEMENTS)[number]) =>
+    !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()) || a.description.toLowerCase().includes(searchQuery.toLowerCase())
+  const shownCategories = category ? [category] : CATEGORY_ORDER
+  const anyShown = shownCategories.some(c => ACHIEVEMENTS.some(a => a.category === c && matches(a)))
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
+    <section aria-label="Feats" className="space-y-3">
+      <PlaybillTitle size="sm">Feats</PlaybillTitle>
+
+      <div className="flex items-center gap-3">
+        <div
+          className="h-1.5 flex-1 overflow-hidden rounded-full bg-ps-playbill-edge"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(overall * 100)}
+          aria-label="Feats done"
         >
-          Achievements
-        </button>
-        <span className="text-xs text-slate-400">
-          {completedCount}/{totalCount}
+          <div className="h-full rounded-full bg-ps-stamp-gold transition-[width] duration-300" style={{ width: `${overall * 100}%` }} />
+        </div>
+        <span className="shrink-0 font-playbill text-sm tabular-nums text-ps-ink" title={`${completedCount} of ${totalCount} feats done`}>
+          {completedCount}<span className="text-ps-ink-soft">/{totalCount}</span>
         </span>
       </div>
-      <input
-        type="text"
-        placeholder="Search achievements..."
-        aria-label="Search achievements"
-        value={searchQuery}
-        onChange={e => setSearchQuery(e.target.value)}
-        className="w-full bg-[#161723] border border-[#2a2b3f] rounded px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"
-      />
-      {CATEGORY_ORDER.map(category => {
-        const categoryAchievements = ACHIEVEMENTS.filter(a => a.category === category)
-          .filter(a => !searchQuery || a.name.toLowerCase().includes(searchQuery.toLowerCase()) || a.description.toLowerCase().includes(searchQuery.toLowerCase()))
+
+      <label className="relative block">
+        <span className="sr-only">Search feats</span>
+        <SearchIcon size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ps-ink-soft" />
+        <input
+          type="search"
+          placeholder="Search feats"
+          aria-label="Search achievements"
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+          className="h-9 w-full rounded-[3px] border-2 border-ps-ink bg-transparent pl-8 pr-2 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+        />
+      </label>
+
+      <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by category">
+        <PaperButton size="sm" variant={category === null ? 'ink' : 'outline'} aria-pressed={category === null} onClick={() => setCategory(null)}>
+          All
+        </PaperButton>
+        {CATEGORY_ORDER.map(c => (
+          <PaperButton key={c} size="sm" variant={category === c ? 'ink' : 'outline'} aria-pressed={category === c} onClick={() => setCategory(category === c ? null : c)}>
+            {CATEGORY_LABELS[c]}
+          </PaperButton>
+        ))}
+      </div>
+
+      {!anyShown && <p className="py-3 font-body text-sm italic text-ps-ink-soft">Nothing matches.</p>}
+
+      {shownCategories.map(cat => {
+        const categoryAchievements = ACHIEVEMENTS.filter(a => a.category === cat).filter(matches)
         if (categoryAchievements.length === 0) return null
 
         return (
-          <div key={category} className="space-y-1.5">
-            <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-              {CATEGORY_LABELS[category]}
-            </h4>
-            {categoryAchievements.map(achievement => {
-              const playerAchievement = achievementMap.get(achievement.id)
-              const progress = playerAchievement?.progress ?? 0
-              const completed = playerAchievement?.completed ?? false
-              const progressPct = Math.min(1, progress / achievement.requirement)
+          <div key={cat}>
+            <PlaybillCaption className="mb-1">{CATEGORY_LABELS[cat]}</PlaybillCaption>
+            <ul className="divide-y divide-ps-playbill-edge border-y border-ps-playbill-edge">
+              {categoryAchievements.map(achievement => {
+                const playerAchievement = achievementMap.get(achievement.id)
+                const progress = playerAchievement?.progress ?? 0
+                const completed = playerAchievement?.completed ?? false
+                const progressPct = Math.min(1, progress / achievement.requirement)
 
-              return (
-                <div
-                  key={achievement.id}
-                  className={`rounded p-2 text-xs ${
-                    completed
-                      ? 'bg-emerald-950/30 border border-emerald-700/30'
-                      : 'bg-[#161723] border border-[#2a2b3f]'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{achievement.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <span className={`font-semibold truncate ${completed ? 'text-emerald-400' : 'text-white'}`}>
-                          {completed && <span className="mr-1">&#10003;</span>}
-                          {achievement.name}
-                        </span>
-                        {completed && playerAchievement?.completedAt && (
-                          <span className="text-[9px] text-slate-500 ml-1 flex-shrink-0">
-                            {new Date(playerAchievement.completedAt).toLocaleDateString()}
+                return (
+                  <li key={achievement.id} className="flex items-start gap-2.5 py-2">
+                    <span aria-hidden className={cn('mt-px w-6 shrink-0 text-center font-body text-base leading-none', !completed && 'opacity-70')}>
+                      {achievement.icon}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className={cn('block truncate font-body text-sm font-semibold leading-snug', completed ? 'text-ps-ink' : 'text-ps-ink')}>
+                            {achievement.name}
                           </span>
-                        )}
+                          <span className="block font-body text-xs leading-snug text-ps-ink-soft">{achievement.description}</span>
+                        </div>
+                        <span className="flex shrink-0 flex-col items-end gap-1">
+                          {completed && <Stamp tone="gold">Done</Stamp>}
+                          {completed && playerAchievement?.completedAt && (
+                            <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-faint">
+                              {new Date(playerAchievement.completedAt).toLocaleDateString()}
+                            </span>
+                          )}
+                        </span>
                       </div>
-                      <p className="text-[10px] text-slate-400 truncate">{achievement.description}</p>
                       {(achievement.reward?.gold || achievement.reward?.reputation) && (
-                        <p className="text-[10px] text-amber-400/80 mt-0.5">
-                          {'🪙 '}
-                          {achievement.reward.gold ? `+${achievement.reward.gold}g` : ''}
-                          {achievement.reward.gold && achievement.reward.reputation ? '  ' : ''}
-                          {achievement.reward.reputation ? `⭐ +${achievement.reward.reputation} rep` : ''}
-                        </p>
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {achievement.reward.gold && <Stamp tone="gold" tilt={false} className="text-xs">+{achievement.reward.gold} gold</Stamp>}
+                          {achievement.reward.reputation && <Stamp tone="blue" tilt={false} className="text-xs">+{achievement.reward.reputation} rep</Stamp>}
+                        </div>
                       )}
                       {!completed && (
-                        <div className="mt-1">
-                          <div className="flex justify-between text-[9px] text-slate-500">
-                            <span>
-                              {progress}/{achievement.requirement}
-                            </span>
-                            <span>{Math.round(progressPct * 100)}%</span>
+                        <div className="mt-1.5 flex items-center gap-2">
+                          <div
+                            className="h-1 flex-1 overflow-hidden rounded-full bg-ps-playbill-edge"
+                            role="progressbar"
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                            aria-valuenow={Math.round(progressPct * 100)}
+                            aria-label={`${achievement.name} progress`}
+                          >
+                            <div className="h-full rounded-full bg-ps-ink transition-[width] duration-300" style={{ width: `${progressPct * 100}%` }} />
                           </div>
-                          <div className="h-1 bg-slate-700 rounded-full overflow-hidden mt-0.5">
-                            <div
-                              className="h-full bg-amber-600 rounded-full transition-all duration-300"
-                              style={{ width: `${progressPct * 100}%` }}
-                            />
-                          </div>
+                          <span className="shrink-0 font-playbill text-xs tabular-nums text-ps-ink-soft">
+                            {progress}/{achievement.requirement}
+                          </span>
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              )
-            })}
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )
       })}
-    </div>
+    </section>
   )
 }

@@ -43,6 +43,15 @@ const BASE_STEPS = 200
 const STEPS_PER_LEVEL_INCREMENT = 50
 
 // Milestone constants
+/**
+ * Mounts step 1.2, 1.3 or 1.5 km at a time, and adding those in floating point
+ * drifts into 1493.4999999999868. Every distance written to a character goes
+ * through this, so storage holds tenths of a km and nothing more.
+ */
+export function roundKm(km: number): number {
+  return Math.round(km * 10) / 10
+}
+
 export const STEPS_PER_DAY = 50
 export const SHOP_MILESTONE_INTERVAL = 100
 export const BOSS_MILESTONE_INTERVAL = 500

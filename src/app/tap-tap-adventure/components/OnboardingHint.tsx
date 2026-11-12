@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { PaperButton, PlaybillSheet, PlaybillTitle } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface OnboardingHintProps {
   title: string
@@ -10,6 +11,7 @@ interface OnboardingHintProps {
   onDismiss: () => void
 }
 
+/** A small bill held up in front of the stage the first time something happens. */
 export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) {
   const [isVisible, setIsVisible] = useState(false)
 
@@ -47,29 +49,24 @@ export function OnboardingHint({ title, body, onDismiss }: OnboardingHintProps) 
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      <div className="absolute inset-0 bg-black/60" onClick={handleDismiss} />
+      <div className="absolute inset-0 bg-ps-house/70" onClick={handleDismiss} />
       <div
-        className={`relative transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        className={`relative mx-4 w-full max-w-sm transition-[transform,opacity] duration-500 motion-reduce:transition-none ${
+          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-75'
         }`}
+        onKeyDown={e => { if (e.key === 'Escape') handleDismiss() }}
       >
-        <div
-          ref={dialogRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={title}
-          className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4"
-          onKeyDown={e => { if (e.key === 'Escape') handleDismiss() }}
-        >
-          <p className="text-amber-400 font-bold text-lg mb-3">{title}</p>
-          <p className="text-slate-300 text-sm leading-relaxed mb-5">{body}</p>
-          <Button
-            className="bg-amber-600 hover:bg-amber-500 text-white px-6 py-2 rounded-md"
-            onClick={handleDismiss}
-          >
-            Got it!
-          </Button>
-        </div>
+        <PlaybillSheet className="px-5 pb-5 pt-4 text-center">
+          <PlaybillTitle size="md">{title}</PlaybillTitle>
+          <p className="mt-3 font-body text-sm leading-relaxed text-ps-ink">{body}</p>
+          <PaperButton className="mt-4 w-full" onClick={handleDismiss}>
+            Got it
+          </PaperButton>
+        </PlaybillSheet>
       </div>
     </div>
   )

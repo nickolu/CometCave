@@ -12,7 +12,7 @@ import { calculateSoulEssence } from '@/app/tap-tap-adventure/lib/soulEssenceCal
 import { computeUnlockedSkillIds, computeUnlockedTreeSkillIds } from '@/app/tap-tap-adventure/lib/skillTracker'
 import { defaultGameState } from '@/app/tap-tap-adventure/lib/defaultGameState'
 import { useItem as applyItemUse } from '@/app/tap-tap-adventure/lib/itemEffects'
-import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana } from '@/app/tap-tap-adventure/lib/leveling'
+import { applyLevelFromDistance, calculateDay, calculateMaxHp, calculateMaxMana, roundKm } from '@/app/tap-tap-adventure/lib/leveling'
 import { checkQuestProgress } from '@/app/tap-tap-adventure/lib/questGenerator'
 import { createMainQuest, CONQUERABLE_REGIONS } from '@/app/tap-tap-adventure/lib/mainQuestManager'
 import { getUpgradeById } from '@/app/tap-tap-adventure/config/eternalUpgrades'
@@ -170,7 +170,7 @@ export interface GameStore {
   setDecisionPoint: (decisionPoint: FantasyDecisionPoint | null) => void
   setGameState: (gameState: GameState) => void
   setGenericMessage: (message: string) => void
-  useItem: (itemId: string) => { message: string; consumed: boolean } | null
+  useItem: (itemId: string) => { message: string; consumed: boolean; revealedLandmark?: { index: number; name: string } } | null
   setActiveQuest: (quest: TimedQuest | null) => void
   discardItem: (itemId: string) => void
   restoreItem: (itemId: string) => void
@@ -336,7 +336,7 @@ export const useGameStore = create<GameStore>()(
             }
 
             const oldDistance = selectedCharacter.distance || 0
-            const newDistance = oldDistance + distanceMultiplier
+            const newDistance = roundKm(oldDistance + distanceMultiplier)
             const metaBonuses = get().getMetaBonuses()
             const campBonuses = get().getCampBonuses()
             let updatedCharacter = applyLevelFromDistance({
@@ -349,7 +349,7 @@ export const useGameStore = create<GameStore>()(
               const ls = updatedCharacter.landmarkState
               let newLandmarkState = {
                 ...ls,
-                positionInRegion: (ls.positionInRegion ?? 0) + distanceMultiplier,
+                positionInRegion: roundKm((ls.positionInRegion ?? 0) + distanceMultiplier),
               }
 
               // Update 2D position toward active target
@@ -689,6 +689,7 @@ export const useGameStore = create<GameStore>()(
         return {
           message: result.message,
           consumed: result.consumed,
+          revealedLandmark: result.revealedLandmark,
         }
       },
       discardItem: (itemId: string) => {
@@ -1879,7 +1880,7 @@ export const useGameStore = create<GameStore>()(
               positionInRegion: newPosition,
               position: newLsPosition,
             }
-            updates.distance = (character.distance ?? 0) + effect.value
+            updates.distance = roundKm((character.distance ?? 0) + effect.value)
             message = `${spell.name}: Advanced ${effect.value} km! (${manaCost} MP spent)`
             break
           }
@@ -1953,7 +1954,7 @@ export const useGameStore = create<GameStore>()(
               positionInRegion: newPosition,
               position: newLsPosition,
             }
-            updates.distance = (character.distance ?? 0) + travelDist
+            updates.distance = roundKm((character.distance ?? 0) + travelDist)
             message = `${spell.name}: Teleported ${travelDist} km instantly! (${manaCost} MP spent)`
             break
           }

@@ -1,9 +1,11 @@
 'use client'
-import { motion } from 'framer-motion'
 import React from 'react'
 
 import { getDifficultyMode } from '@/app/tap-tap-adventure/config/difficultyModes'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { BrassPlate, PaperButton, PlaybillCaption, PlaybillSheet, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface CharacterCardProps {
   character: FantasyCharacter
@@ -11,6 +13,22 @@ interface CharacterCardProps {
   onSelect?: (character: FantasyCharacter) => void
   onDelete?: (e: React.MouseEvent, id: string) => void
   onRetire?: (e: React.MouseEvent, id: string) => void
+}
+
+const DIFF_TONE: Record<string, StampTone> = {
+  hard: 'red',
+  ironman: 'red',
+  casual: 'green',
+}
+
+/** One engraved figure on the poster's brass strip. */
+function Figure({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 flex-col items-center px-1 py-1.5 text-center">
+      <span className="font-playbill text-base leading-none tabular-nums">{value}</span>
+      <span className="mt-1 font-label text-xs font-bold uppercase leading-none tracking-widest text-ps-ink/80">{label}</span>
+    </div>
+  )
 }
 
 export default function CharacterCard({
@@ -22,63 +40,96 @@ export default function CharacterCard({
 }: CharacterCardProps) {
   const canRetire = character.status === 'active' && (character.distance ?? 0) >= 100
   const diffMode = getDifficultyMode(character.difficultyMode ?? 'normal')
-  const diffColorMap: Record<string, string> = {
-    normal: 'text-indigo-300',
-    hard: 'text-red-300',
-    ironman: 'text-orange-300',
-    casual: 'text-green-300',
-  }
+  const ended = character.status === 'retired' || character.status === 'dead'
+
   return (
-    <motion.div
-      whileHover={{ scale: 1.04 }}
-      className={`relative flex flex-col items-center justify-between p-4 rounded-lg border transition-colors cursor-pointer focus:outline-none select-none ${selected ? 'ring-2 ring-sky-500' : ''}`}
+    <PlaybillSheet
+      className={cn(
+        'flex min-h-[300px] cursor-pointer select-none flex-col px-4 pb-4 pt-5 text-ps-ink',
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary',
+        selected && 'outline outline-4 outline-offset-2 outline-ps-brass'
+      )}
       onClick={() => onSelect?.(character)}
       tabIndex={0}
+      aria-label={`${character.name}, level ${character.level} ${character.race} ${character.class}${ended ? `, ${character.status}` : ''}`}
     >
-      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-sky-600 to-indigo-700 flex items-center justify-center mb-3 border border-[#3a3c56] text-white text-2xl font-bold">
-        {character.name.slice(0, 2).toUpperCase()}
+      {/* the bill's head */}
+      <div className={cn('text-center', ended && 'opacity-70')}>
+        <PlaybillCaption>
+          Lv {character.level} · {character.race} · {character.class}
+        </PlaybillCaption>
+        <h3 className="mt-1 break-words border-y-2 border-ps-ink px-2 py-1.5 font-playbill text-xl uppercase leading-tight tracking-wide sm:text-2xl">
+          {character.name}
+        </h3>
       </div>
-      <div className="text-slate-200 font-semibold text-lg truncate w-full text-center">
-        {character.name}
-      </div>
-      <div className="text-xs text-slate-400 mb-2">
-        Lv.{character.level} {character.race} {character.class}
-        {diffMode.id !== 'normal' && (
-          <span className={`ml-1 ${diffColorMap[diffMode.id] ?? 'text-slate-300'}`}>
-            {diffMode.icon}
-          </span>
-        )}
-      </div>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300 mt-1 justify-center">
-        <span>Gold: {character.gold}</span>
-        <span>Rep: {character.reputation}</span>
-        <span>STR: {character.strength}</span>
-        <span>INT: {character.intelligence}</span>
-        <span>LUCK: {character.luck}</span>
-        <span>CHA: {character.charisma}</span>
-        {(character.deathCount ?? 0) > 0 && (
-          <span className="text-red-400">Deaths: {character.deathCount}</span>
-        )}
-      </div>
-      {character.status === 'retired' && (
-        <span className="text-xs text-amber-400 mt-1">Retired</span>
+
+      {/* stamps the printer added */}
+      {(diffMode.id !== 'normal' || (character.deathCount ?? 0) > 0) && (
+        <div className={cn('mt-3 flex flex-wrap items-center justify-center gap-2', ended && 'opacity-70')}>
+          {diffMode.id !== 'normal' && (
+            <Stamp tone={DIFF_TONE[diffMode.id] ?? 'ink'} title={diffMode.description}>
+              {diffMode.name}
+            </Stamp>
+          )}
+          {(character.deathCount ?? 0) > 0 && (
+            <Stamp tone="red" tilt={false}>
+              {character.deathCount} {character.deathCount === 1 ? 'death' : 'deaths'}
+            </Stamp>
+          )}
+        </div>
       )}
-      {character.status === 'dead' && (
-        <span className="text-xs text-red-400 mt-1">Dead</span>
-      )}
+
+      {/* the figures */}
+      <BrassPlate className={cn('mt-auto pt-3', ended && 'opacity-80')} aria-label={`${character.name}'s figures`}>
+        <div className="grid grid-cols-2 divide-x-2 divide-ps-brass-deep/60 border-b-2 border-ps-brass-deep/60">
+          <Figure label="Gold" value={character.gold} />
+          <Figure label="Repute" value={character.reputation} />
+        </div>
+        <div className="grid grid-cols-4 divide-x-2 divide-ps-brass-deep/60">
+          <Figure label="Str" value={character.strength} />
+          <Figure label="Int" value={character.intelligence} />
+          <Figure label="Lck" value={character.luck} />
+          <Figure label="Cha" value={character.charisma} />
+        </div>
+      </BrassPlate>
+
       {onRetire && canRetire && (
-        <button
-          type="button"
+        <PaperButton
+          variant="outline"
+          size="sm"
+          className="mt-3 w-full"
           onClick={e => {
             e.stopPropagation()
             onRetire(e, character.id)
           }}
-          className="mt-2 text-xs px-3 py-1 bg-amber-700/50 hover:bg-amber-600/60 text-amber-200 rounded transition-colors focus:outline-none border border-amber-600/40"
           aria-label={`Retire ${character.name}`}
         >
           Retire
-        </button>
+        </PaperButton>
       )}
+
+      {/* the big stamp across a finished poster */}
+      {character.status === 'retired' && (
+        <Stamp
+          tone="gold"
+          tilt={false}
+          className="pointer-events-none absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 -rotate-12 border-[3px] px-3 py-1 font-playbill text-2xl tracking-widest"
+          aria-hidden
+        >
+          Retired
+        </Stamp>
+      )}
+      {character.status === 'dead' && (
+        <Stamp
+          tone="red"
+          tilt={false}
+          className="pointer-events-none absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 -rotate-12 border-[3px] px-3 py-1 font-playbill text-2xl tracking-widest"
+          aria-hidden
+        >
+          Dead
+        </Stamp>
+      )}
+
       {onDelete && (
         <button
           type="button"
@@ -86,12 +137,12 @@ export default function CharacterCard({
             e.stopPropagation()
             onDelete(e, character.id)
           }}
-          className="absolute top-2 right-2 text-slate-500 hover:text-red-500 transition-colors focus:outline-none text-2xl leading-none p-1"
+          className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border-2 border-ps-ink/50 text-ps-ink-soft transition-colors hover:border-ps-stamp-red hover:bg-ps-stamp-red hover:text-ps-playbill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
           aria-label={`Delete ${character.name}`}
         >
-          &times;
+          <CloseIcon size={14} />
         </button>
       )}
-    </motion.div>
+    </PlaybillSheet>
   )
 }

@@ -1,15 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { SPELL_COMBOS } from '@/app/tap-tap-adventure/lib/spellCombos'
 
-const ELEMENT_ICONS: Record<string, string> = {
-  fire: '🔥',
-  ice: '❄️',
-  lightning: '⚡',
-  shadow: '🌑',
-  nature: '🌿',
-  arcane: '✨',
+import { SPELL_COMBOS } from '@/app/tap-tap-adventure/lib/spellCombos'
+import { PaperButton, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+
+/** The printer's ink for each element. */
+const ELEMENT_TONE: Record<string, StampTone> = {
+  fire: 'red',
+  ice: 'blue',
+  lightning: 'gold',
+  shadow: 'violet',
+  nature: 'green',
+  arcane: 'violet',
 }
 
 /** Derive the stored combo ID from the combo name (mirrors useCombatActionMutation logic) */
@@ -45,43 +48,46 @@ interface SpellComboPanelProps {
 }
 
 export function SpellComboPanel({ discoveredCombos }: SpellComboPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
 
   const discoveredCount = SPELL_COMBOS.filter(c =>
     discoveredCombos.includes(comboNameToId(c.result.comboName))
   ).length
 
+  const tally = (
+    <Stamp tone="ink" tilt={false} title={`${discoveredCount} of ${SPELL_COMBOS.length} combos found`}>
+      {discoveredCount}/{SPELL_COMBOS.length} found
+    </Stamp>
+  )
+
   if (!isExpanded) {
     return (
       <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-indigo-700/50 transition-colors"
+        type="button"
+        className="flex w-full items-center justify-between gap-2 rounded-[3px] border-2 border-ps-ink p-3 text-left transition-colors hover:bg-ps-playbill-shade focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
         onClick={() => setIsExpanded(true)}
+        aria-expanded={false}
       >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-indigo-400">Spell Combos</span>
-          <span className="text-xs text-slate-400">{discoveredCount} / {SPELL_COMBOS.length} discovered</span>
-        </div>
+        <PlaybillTitle size="sm" rules={false} className="text-left">Spell combos</PlaybillTitle>
+        {tally}
       </button>
     )
   }
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-indigo-400">Spell Combos</span>
-        <button
-          className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          Collapse
-        </button>
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-2 border-b-2 border-ps-ink pb-2">
+        <PlaybillTitle size="sm" rules={false} className="text-left">Spell combos</PlaybillTitle>
+        <div className="flex items-center gap-2">
+          {tally}
+          <PaperButton size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setIsExpanded(false)} aria-expanded>
+            Fold
+          </PaperButton>
+        </div>
       </div>
+      <p className="mt-2 font-body text-xs text-ps-ink-soft">Cast spells of these elements in order during a fight and the combo fires.</p>
 
-      <p className="text-xs text-slate-400">
-        Discovered: {discoveredCount} / {SPELL_COMBOS.length}
-      </p>
-
-      <div className="space-y-2">
+      <ul className="m-0 mt-1 list-none p-0">
         {SPELL_COMBOS.map((combo) => {
           const comboId = comboNameToId(combo.result.comboName)
           const isDiscovered = discoveredCombos.includes(comboId)
@@ -89,43 +95,36 @@ export function SpellComboPanel({ discoveredCombos }: SpellComboPanelProps) {
 
           if (isDiscovered) {
             return (
-              <div
-                key={comboId}
-                className="bg-[#161723] border border-indigo-900/40 rounded-md p-2 space-y-1"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-green-400 text-sm">&#10003;</span>
-                  <span className="text-sm font-semibold text-indigo-300">{combo.result.comboName}</span>
+              <li key={comboId} className="border-b-2 border-dotted border-ps-ink/40 py-3 last:border-b-0">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-body text-base font-medium leading-tight text-ps-ink">{combo.result.comboName}</span>
+                  <Stamp tone="green" tilt={false}>Found</Stamp>
                 </div>
-                <div className="flex items-center gap-1 flex-wrap">
+                <div className="mt-1.5 flex flex-wrap items-center gap-1" aria-label="Sequence">
                   {combo.sequence.map((el, i) => (
-                    <span key={i} className="flex items-center gap-0.5 text-xs text-slate-300">
-                      {i > 0 && <span className="text-slate-600 mx-0.5">+</span>}
-                      <span>{ELEMENT_ICONS[el] ?? el}</span>
-                      <span className="capitalize">{el}</span>
+                    <span key={i} className="flex items-center gap-1">
+                      {i > 0 && <span className="font-playbill text-xs text-ps-ink-soft" aria-hidden>+</span>}
+                      <Stamp tone={ELEMENT_TONE[el] ?? 'ink'} tilt={false} className="capitalize">{el}</Stamp>
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-slate-400">{getEffectDescription(combo.result)}</p>
-              </div>
+                <p className="mt-1.5 font-body text-xs leading-snug text-ps-ink-soft">{getEffectDescription(combo.result)}</p>
+              </li>
             )
           }
 
           return (
-            <div
-              key={comboId}
-              className="bg-[#161723] border border-slate-700/40 rounded-md p-2 space-y-1 opacity-60"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="text-slate-500 text-sm">?</span>
-                <span className="text-sm font-semibold text-slate-500">???</span>
-                <span className="text-xs text-slate-600 ml-auto">{elementCount}-element combo</span>
+            <li key={comboId} className="border-b-2 border-dotted border-ps-ink/40 py-3 text-ps-ink-faint last:border-b-0">
+              <div className="flex items-center gap-2">
+                <span className="font-playbill text-lg leading-none" aria-hidden>?</span>
+                <span className="font-body text-base font-medium leading-tight">Not yet found</span>
+                <span className="ml-auto font-label text-xs font-bold uppercase tracking-widest">{elementCount} elements</span>
               </div>
-              <p className="text-xs text-slate-600">Discover by casting the right sequence!</p>
-            </div>
+              <p className="mt-1 font-body text-xs italic leading-snug">Cast the right sequence in a fight to find it.</p>
+            </li>
           )
         })}
-      </div>
+      </ul>
     </div>
   )
 }
