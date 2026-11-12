@@ -1,10 +1,15 @@
 'use client'
 
+/**
+ * Naming a new mount: a bill held up in front of the dark house. Escape or
+ * the scrim skips naming; the mount is bought either way.
+ */
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
-import { Mount } from '@/app/tap-tap-adventure/models/mount'
+
 import { MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface MountNamingModalProps {
   mount: Mount
@@ -12,11 +17,11 @@ interface MountNamingModalProps {
   onConfirm: (customName?: string) => void
 }
 
-const MOUNT_RARITY_COLORS: Record<string, string> = {
-  common: 'border-slate-400 text-slate-300',
-  uncommon: 'border-green-400 text-green-300',
-  rare: 'border-blue-400 text-blue-300',
-  legendary: 'border-yellow-400 text-yellow-300',
+const MOUNT_RARITY_TONE: Record<string, StampTone> = {
+  common: 'ink',
+  uncommon: 'green',
+  rare: 'blue',
+  legendary: 'gold',
 }
 
 export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalProps) {
@@ -49,74 +54,73 @@ export function MountNamingModal({ mount, isOpen, onConfirm }: MountNamingModalP
 
   if (!isOpen) return null
 
-  const rarityColor = MOUNT_RARITY_COLORS[mount.rarity] ?? 'border-slate-400 text-slate-300'
+  const rarityTone = MOUNT_RARITY_TONE[mount.rarity] ?? 'ink'
+  const personality = mount.personality ? MOUNT_PERSONALITY_INFO[mount.personality] : undefined
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" onClick={handleSkip} />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Scrim: the dark house */}
+      <div className="absolute inset-0 bg-ps-house/70" onClick={handleSkip} />
 
-      {/* Content */}
       <div
         ref={dialogRef}
-        className="relative z-10 bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-amber-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-amber-500/20 max-w-sm mx-4 w-full"
+        className="relative z-10 w-full max-w-sm"
         role="dialog"
         aria-modal="true"
         aria-label="New Mount"
       >
-        <h2 className="text-2xl font-bold text-amber-400 mb-1">New Mount!</h2>
-        <p className="text-slate-400 text-sm mb-5">Would you like to give it a name?</p>
+      <PlaybillSheet className="p-5 text-center sm:p-6">
+        <PlaybillTitle size="md">A new mount</PlaybillTitle>
+        <p className="mt-2 font-body text-sm text-ps-ink-soft">Would you like to give it a name?</p>
 
-        {/* Mount display */}
-        <div className={`bg-[#2a2b3f] border rounded-lg p-4 mb-5 ${rarityColor}`}>
-          <div className="flex items-center justify-center gap-3 mb-2">
-            <span className="text-4xl">{mount.icon}</span>
-            <div className="text-left">
-              <div className="font-bold text-white text-lg">{mount.name}</div>
-              <div className="text-xs uppercase tracking-wider opacity-70">{mount.rarity}</div>
-            </div>
-          </div>
-          <p className="text-xs text-slate-400">{mount.description}</p>
-          {mount.personality && MOUNT_PERSONALITY_INFO[mount.personality] && (
-            <div className="mt-2 flex items-center gap-2 bg-amber-950/30 rounded px-2 py-1">
-              <span>{MOUNT_PERSONALITY_INFO[mount.personality].icon}</span>
-              <div className="text-left">
-                <span className="text-xs font-semibold text-amber-300">{MOUNT_PERSONALITY_INFO[mount.personality].label}</span>
-                <span className="text-[10px] text-slate-400 ml-1">— {MOUNT_PERSONALITY_INFO[mount.personality].description}</span>
+        {/* The mount */}
+        <div className="mt-4 rounded-[3px] border-2 border-ps-ink p-3 text-left">
+          <div className="flex items-center gap-3">
+            <span className="font-body text-3xl leading-none" aria-hidden>{mount.icon}</span>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-playbill text-lg leading-tight text-ps-ink">{mount.name}</span>
+                <Stamp tone={rarityTone} tilt={false}>{mount.rarity}</Stamp>
               </div>
             </div>
+          </div>
+          <p className="mt-2 font-body text-sm leading-snug text-ps-ink-soft">{mount.description}</p>
+          {personality && (
+            <p className="mt-2 flex flex-wrap items-center gap-2 font-body text-xs text-ps-ink-soft">
+              <Stamp tone="ink" tilt={false}>
+                <span aria-hidden>{personality.icon}</span> {personality.label}
+              </Stamp>
+              <span>{personality.description}</span>
+            </p>
           )}
         </div>
 
-        {/* Name input */}
-        <input
-          type="text"
-          aria-label="Mount name (optional)"
-          value={inputValue}
-          onChange={e => setInputValue(e.target.value.slice(0, 30))}
-          placeholder="Enter a name... (optional)"
-          maxLength={30}
-          className="w-full bg-[#2a2b3f] border border-[#3a3c56] rounded-lg px-3 py-2 text-white text-sm placeholder-slate-500 focus:outline-none focus:border-amber-500/50 mb-1"
-          onKeyDown={e => { if (e.key === 'Enter') handleConfirm() }}
-          autoFocus
-        />
-        <div className="text-right text-[10px] text-slate-500 mb-4">{inputValue.length}/30</div>
+        {/* Name */}
+        <label className="mt-4 block text-left">
+          <PlaybillCaption>Name (optional)</PlaybillCaption>
+          <input
+            type="text"
+            aria-label="Mount name (optional)"
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value.slice(0, 30))}
+            placeholder="A name for your mount"
+            maxLength={30}
+            className="mt-1 h-10 w-full rounded-[3px] border-2 border-ps-ink bg-transparent px-3 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+            onKeyDown={e => { if (e.key === 'Enter') handleConfirm() }}
+            autoFocus
+          />
+        </label>
+        <p className="mt-1 text-right font-label text-xs font-bold uppercase tracking-widest tabular-nums text-ps-ink-soft">{inputValue.length}/30</p>
 
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <Button
-            className="flex-1 bg-[#2a2b3f] border border-[#3a3c56] hover:bg-[#3a3c56] text-slate-300 font-semibold py-2 rounded-lg"
-            onClick={handleSkip}
-          >
+        <div className="mt-4 flex gap-3">
+          <PaperButton variant="outline" className="flex-1" onClick={handleSkip}>
             Skip
-          </Button>
-          <Button
-            className="flex-1 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-white font-bold py-2 rounded-lg"
-            onClick={handleConfirm}
-          >
-            Name Mount
-          </Button>
+          </PaperButton>
+          <PaperButton className="flex-1" onClick={handleConfirm}>
+            Name it
+          </PaperButton>
         </div>
+      </PlaybillSheet>
       </div>
     </div>
   )

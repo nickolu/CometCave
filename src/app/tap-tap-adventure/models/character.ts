@@ -122,6 +122,8 @@ export const FantasyCharacterSchema = z.object({
       hidden: z.boolean().default(false),
       isSecret: z.boolean().default(false),
       explored: z.boolean().default(false),
+      /** Named by a map or chart: shown on the map at any distance. */
+      mapped: z.boolean().optional(),
       position: z.object({ x: z.number(), y: z.number() }).optional(),
       hasInn: z.boolean().optional(),
       hasStable: z.boolean().optional(),

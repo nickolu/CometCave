@@ -13,6 +13,8 @@ export interface GeneratedLandmark {
   hidden: boolean
   isSecret: boolean
   explored: boolean
+  /** Named by a map or chart: shown on the map at any distance. */
+  mapped?: boolean
   position: { x: number; y: number }
   hasInn?: boolean
   hasStable?: boolean

@@ -1,41 +1,39 @@
 'use client'
 
+/**
+ * The factions: each a ruled row with your standing stamped and ruled, and
+ * under it the gear they will sell you once you stand well enough with them.
+ */
 import { useState } from 'react'
 
-import { FACTIONS, FACTION_IDS, getFactionRepTier, FactionId, FactionGearItem } from '@/app/tap-tap-adventure/config/factions'
+import { FACTIONS, FACTION_IDS, FactionGearItem, FactionId, getFactionRepTier } from '@/app/tap-tap-adventure/config/factions'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { ChevronIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface FactionPanelProps {
   character: FantasyCharacter
 }
 
-function RepBar({ rep, max = 200 }: { rep: number; max?: number }) {
-  const pct = max > 0 ? Math.max(0, Math.min(100, (rep / max) * 100)) : 0
-  return (
-    <div className="flex items-center gap-1.5 text-[10px]">
-      <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-indigo-500 rounded-full transition-all"
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <span className="text-slate-400 text-right w-12">{rep}/200</span>
-    </div>
-  )
+/** The printer's ink for each standing. */
+const TIER_TONE: Record<string, StampTone> = {
+  Neutral: 'ink',
+  Friendly: 'green',
+  Honored: 'blue',
+  Exalted: 'gold',
 }
 
-function TierBadge({ label }: { label: string }) {
-  const colors: Record<string, string> = {
-    Neutral: 'text-slate-300 bg-slate-700/60',
-    Friendly: 'text-green-400 bg-green-900/40',
-    Honored: 'text-blue-400 bg-blue-900/40',
-    Exalted: 'text-amber-400 bg-amber-900/40',
-  }
+function RepBar({ rep, max = 200, label }: { rep: number; max?: number; label: string }) {
+  const pct = max > 0 ? Math.max(0, Math.min(100, (rep / max) * 100)) : 0
   return (
-    <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize font-semibold ${colors[label] ?? 'text-slate-300 bg-slate-700/60'}`}>
-      {label}
-    </span>
+    <div className="flex items-center gap-2">
+      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-ps-playbill-edge" role="progressbar" aria-valuemin={0} aria-valuemax={max} aria-valuenow={rep} aria-label={label}>
+        <div className="h-full rounded-full bg-ps-ink transition-[width] duration-300" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="w-14 shrink-0 text-right font-playbill text-xs tabular-nums text-ps-ink-soft">{rep}/{max}</span>
+    </div>
   )
 }
 
@@ -53,28 +51,34 @@ function GearItemRow({ gear, rep, gold, factionId }: { gear: FactionGearItem; re
   if (gear.effects.charisma) effectParts.push(`+${gear.effects.charisma} CHA`)
 
   return (
-    <div className="bg-[#1a1b2e] border border-[#3a3c56] rounded p-2 flex items-center justify-between gap-2">
-      <div className="flex-1 min-w-0">
-        <div className="text-xs font-semibold text-slate-200 truncate">{gear.name}</div>
-        <div className="text-[10px] text-slate-400 mt-0.5">{effectParts.join(' · ')} · {gear.slot}</div>
-        <div className="text-[10px] text-slate-500 mt-0.5">Requires: {requiredTier.label}</div>
+    <li className="flex items-center justify-between gap-2 py-2">
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-body text-sm font-semibold leading-snug text-ps-ink">{gear.name}</div>
+        <div className="mt-0.5 font-body text-xs text-ps-ink-soft">
+          {effectParts.join(' · ')} · <span className="capitalize">{gear.slot}</span>
+        </div>
+        <div className="mt-1 flex items-center gap-1.5">
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">Needs</span>
+          <Stamp tone={hasRep ? TIER_TONE[requiredTier.label] ?? 'ink' : 'red'} tilt={false} className="text-xs">
+            {requiredTier.label}
+          </Stamp>
+        </div>
       </div>
-      <div className="text-right shrink-0">
-        <div className="text-[10px] text-amber-400 font-semibold mb-1">{gear.price}g</div>
-        <button
-          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-            canBuy
-              ? 'bg-indigo-700/50 text-indigo-300 hover:bg-indigo-600/60'
-              : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-          }`}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <BrassPlate className={cn('px-2 py-1 font-playbill text-sm leading-none tabular-nums', !canAfford && 'opacity-70')} title={canAfford ? `Costs ${gear.price} gold` : `Costs ${gear.price} gold; you have ${gold}`}>
+          {gear.price} gold
+        </BrassPlate>
+        <PaperButton
+          size="sm"
+          variant="brass"
           disabled={!canBuy}
           onClick={() => purchaseFactionGear(factionId, gear.id)}
-          title={!hasRep ? `Need ${requiredTier.label} standing` : !canAfford ? `Need ${gear.price}g` : ''}
+          title={!hasRep ? `Need ${requiredTier.label} standing` : !canAfford ? `Need ${gear.price} gold` : `Buy ${gear.name}`}
         >
           Buy
-        </button>
+        </PaperButton>
       </div>
-    </div>
+    </li>
   )
 }
 
@@ -85,25 +89,30 @@ function FactionCard({ factionId, character }: { factionId: FactionId; character
   const tier = getFactionRepTier(rep)
 
   return (
-    <div className="bg-[#252638] border border-[#3a3c56] rounded-lg overflow-hidden">
+    <li>
       <button
-        className="w-full p-2.5 flex items-center gap-2 text-left hover:bg-[#2e3050] transition-colors"
+        type="button"
+        className="flex w-full items-center gap-2.5 py-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
         onClick={() => setExpanded(prev => !prev)}
+        aria-expanded={expanded}
       >
-        <span className="text-lg leading-none">{faction.icon}</span>
-        <div className="flex-1 min-w-0">
-          <div className="text-xs font-semibold text-slate-200 truncate">{faction.name}</div>
-          <RepBar rep={rep} />
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <TierBadge label={tier.label} />
-          <span className="text-slate-500 text-[10px]">{expanded ? '▲' : '▼'}</span>
-        </div>
+        <span aria-hidden className="w-7 shrink-0 text-center font-body text-xl leading-none">{faction.icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-2">
+            <span className="truncate font-playbill text-base uppercase leading-none tracking-wide text-ps-ink">{faction.name}</span>
+            <Stamp tone={TIER_TONE[tier.label] ?? 'ink'} tilt={false} className="shrink-0 text-xs">{tier.label}</Stamp>
+          </span>
+          <span className="mt-1.5 block">
+            <RepBar rep={rep} label={`Standing with ${faction.name}`} />
+          </span>
+        </span>
+        <ChevronIcon className={cn('shrink-0 text-ps-ink transition-transform motion-reduce:transition-none', expanded && 'rotate-90')} />
       </button>
       {expanded && (
-        <div className="px-2.5 pb-2.5 space-y-1.5 border-t border-[#3a3c56] pt-2">
-          <p className="text-[10px] text-slate-400 italic">{faction.description}</p>
-          <div className="space-y-1.5 mt-1.5">
+        <div className="mb-2 ml-3 border-l-2 border-ps-ink-faint pl-3">
+          <p className="font-body text-sm italic leading-snug text-ps-ink-soft">{faction.description}</p>
+          <PlaybillCaption className="mt-2">Their wares</PlaybillCaption>
+          <ul className="mt-1 divide-y divide-ps-playbill-edge">
             {faction.gear.map(gear => (
               <GearItemRow
                 key={gear.id}
@@ -113,53 +122,31 @@ function FactionCard({ factionId, character }: { factionId: FactionId; character
                 factionId={factionId}
               />
             ))}
-          </div>
+          </ul>
         </div>
       )}
-    </div>
+    </li>
   )
 }
 
 export function FactionPanel({ character }: FactionPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-
   const factionReps = character.factionReputations ?? {}
   const activeFactionCount = FACTION_IDS.filter(id => (factionReps[id] ?? 0) > 0).length
 
-  if (!isExpanded) {
-    return (
-      <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-indigo-700/50 transition-colors"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-indigo-400">🏰 Factions</span>
-          <span className="text-xs text-slate-400">
-            {activeFactionCount > 0 ? `${activeFactionCount} active` : 'No standing'}
-          </span>
-        </div>
-      </button>
-    )
-  }
-
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          🏰 Factions
-        </button>
-        <span className="text-xs text-amber-300 font-semibold">
-          &#x1F4B0; {character.gold.toLocaleString()}g
-        </span>
+    <section aria-label="Factions" className="space-y-3">
+      <PlaybillTitle size="sm">Factions</PlaybillTitle>
+      <div className="flex items-center justify-between gap-3">
+        <PlaybillCaption>{activeFactionCount > 0 ? `Standing with ${activeFactionCount} of ${FACTION_IDS.length}` : 'No standing yet'}</PlaybillCaption>
+        <BrassPlate className="shrink-0">
+          <BrassFigure label="Gold" value={character.gold.toLocaleString()} />
+        </BrassPlate>
       </div>
-      <div className="space-y-2">
+      <ul className="divide-y divide-ps-playbill-edge border-y border-ps-playbill-edge">
         {FACTION_IDS.map(id => (
           <FactionCard key={id} factionId={id} character={character} />
         ))}
-      </div>
-    </div>
+      </ul>
+    </section>
   )
 }

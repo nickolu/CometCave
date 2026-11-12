@@ -1,9 +1,18 @@
 'use client'
-import { useState, useEffect } from 'react'
+
+/**
+ * The town stable: your mounts and the ones for sale, each on a small card
+ * on the bill, with heal, stash, sell and buy priced in gold.
+ */
+import { useEffect, useState } from 'react'
+
+import { MOUNT_PERSONALITY_INFO, getMountMaxHp, getMountPrice, getMountSellPrice, getShopMount } from '@/app/tap-tap-adventure/config/mounts'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { getMountMaxHp, getMountSellPrice, getMountPrice, getShopMount, MOUNT_PERSONALITY_INFO } from '@/app/tap-tap-adventure/config/mounts'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface StablePanelProps {
   character: FantasyCharacter
@@ -11,45 +20,36 @@ interface StablePanelProps {
   regionId?: string
 }
 
+const RARITY_TONE: Record<string, StampTone> = {
+  common: 'ink',
+  uncommon: 'green',
+  rare: 'blue',
+  legendary: 'gold',
+}
+
 function MountStatBadges({ mount }: { mount: Mount }) {
   const badges: React.ReactNode[] = []
   const b = mount.bonuses ?? {}
 
   if (b.autoWalkSpeed && b.autoWalkSpeed > 1) {
-    badges.push(
-      <span key="speed" className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] bg-blue-900/40 text-blue-300">
-        ⚡ {b.autoWalkSpeed}x speed
-      </span>
-    )
+    badges.push(<Stamp key="speed" tone="blue" tilt={false}>{b.autoWalkSpeed}x speed</Stamp>)
   }
   if (b.strength && b.strength > 0) {
-    badges.push(
-      <span key="str" className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] bg-red-900/40 text-red-300">
-        ⚔️ +{b.strength} STR
-      </span>
-    )
+    badges.push(<Stamp key="str" tone="red" tilt={false}>+{b.strength} STR</Stamp>)
   }
   if (b.intelligence && b.intelligence > 0) {
-    badges.push(
-      <span key="int" className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] bg-purple-900/40 text-purple-300">
-        📖 +{b.intelligence} INT
-      </span>
-    )
+    badges.push(<Stamp key="int" tone="violet" tilt={false}>+{b.intelligence} INT</Stamp>)
   }
   if (b.luck && b.luck > 0) {
-    badges.push(
-      <span key="luck" className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] bg-green-900/40 text-green-300">
-        🍀 +{b.luck} LCK
-      </span>
-    )
+    badges.push(<Stamp key="luck" tone="green" tilt={false}>+{b.luck} LCK</Stamp>)
   }
   if (mount.personality) {
     const info = MOUNT_PERSONALITY_INFO[mount.personality]
     if (info) {
       badges.push(
-        <span key="personality" className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] bg-slate-700/60 text-slate-300">
-          {info.icon} {info.label}
-        </span>
+        <Stamp key="personality" tone="ink" tilt={false}>
+          <span aria-hidden>{info.icon}</span> {info.label}
+        </Stamp>
       )
     }
   }
@@ -62,39 +62,47 @@ function MountCard({ mount, actions }: { mount: Mount; actions: React.ReactNode 
   const maxHp = mount.maxHp ?? getMountMaxHp(mount.rarity)
   const currentHp = mount.hp ?? maxHp
   const hpPct = Math.max(0, Math.min(100, (currentHp / maxHp) * 100))
-  const rarityColors: Record<string, string> = {
-    common: 'text-slate-300 bg-slate-700/60',
-    uncommon: 'text-green-400 bg-green-900/40',
-    rare: 'text-blue-400 bg-blue-900/40',
-    legendary: 'text-amber-400 bg-amber-900/40',
-  }
 
   return (
-    <div className="bg-[#252638] border border-[#3a3c56] rounded p-2 space-y-1.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-lg">{mount.icon}</span>
-          <div>
-            <div className="text-xs font-semibold text-slate-200">{mount.customName ?? mount.name}</div>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize font-semibold ${rarityColors[mount.rarity] ?? ''}`}>
-              {mount.rarity}
-            </span>
+    <div className="rounded-[3px] border-2 border-ps-ink p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="font-body text-xl leading-none" aria-hidden>{mount.icon}</span>
+          <div className="min-w-0">
+            <div className="font-body text-base font-semibold leading-tight text-ps-ink">{mount.customName ?? mount.name}</div>
+            <Stamp tone={RARITY_TONE[mount.rarity] ?? 'ink'} tilt={false} className="mt-1">{mount.rarity}</Stamp>
           </div>
         </div>
-        <div className="text-[10px] text-slate-400">{mount.dailyCost}g/day</div>
+        <span className="shrink-0 whitespace-nowrap font-body text-xs tabular-nums text-ps-ink-soft">
+          <span className="font-playbill text-sm text-ps-ink">{mount.dailyCost} g</span>/day
+        </span>
       </div>
-      <div className="flex items-center gap-1.5 text-[10px]">
-        <span className="text-slate-400 w-5">HP</span>
-        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-          <div className="h-full bg-red-500 rounded-full transition-all" style={{ width: `${hpPct}%` }} />
-        </div>
-        <span className="text-slate-400 w-12 text-right">{currentHp}/{maxHp}</span>
+      <div className="mt-2 flex items-center gap-2 font-body text-xs text-ps-ink-soft">
+        <span className="w-5 font-label text-xs font-bold uppercase tracking-widest">HP</span>
+        <span
+          className="block h-1.5 flex-1 overflow-hidden rounded-full bg-ps-ink/20"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(hpPct)}
+          aria-label={`${mount.customName ?? mount.name} health`}
+        >
+          <span className={cn('block h-full rounded-full', hpPct < 35 ? 'bg-ps-stamp-red' : 'bg-ps-stamp-green')} style={{ width: `${hpPct}%` }} />
+        </span>
+        <span className="w-12 text-right tabular-nums">{currentHp}/{maxHp}</span>
       </div>
-      <MountStatBadges mount={mount} />
-      <div className="flex items-center gap-1.5 flex-wrap">{actions}</div>
+      <div className="mt-2">
+        <MountStatBadges mount={mount} />
+      </div>
+      <div className="mt-2.5 flex flex-wrap items-center gap-1.5">{actions}</div>
     </div>
   )
 }
+
+const TABS = [
+  { id: 'your', label: 'Your mounts' },
+  { id: 'buy', label: 'For sale' },
+] as const
 
 export function StablePanel({ character, onClose }: StablePanelProps) {
   const { stashMount, retrieveMount, healMount, sellMount, buyStableMount } = useGameStore()
@@ -119,6 +127,7 @@ export function StablePanel({ character, onClose }: StablePanelProps) {
       seen.add(m.id)
       attempts++
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setShopMounts(generated)
   }, [character.level])
 
@@ -141,149 +150,104 @@ export function StablePanel({ character, onClose }: StablePanelProps) {
     setConfirmSellId(null)
   }
 
+  const sellActions = (mount: Mount, isActive: boolean) =>
+    confirmSellId === mount.id ? (
+      <>
+        <span className="font-body text-xs text-ps-stamp-red">Sell for <span className="tabular-nums">{getMountSellPrice(mount.rarity)} g</span>?</span>
+        <PaperButton variant="danger" size="sm" onClick={() => handleSell(mount.id, isActive)}>Yes</PaperButton>
+        <PaperButton variant="outline" size="sm" onClick={() => setConfirmSellId(null)}>No</PaperButton>
+      </>
+    ) : (
+      <PaperButton variant="danger" size="sm" onClick={() => setConfirmSellId(mount.id)}>
+        Sell · <span className="tabular-nums">{getMountSellPrice(mount.rarity)} g</span>
+      </PaperButton>
+    )
+
+  const healAction = (mount: Mount, isActive: boolean) =>
+    getHealCost(mount) > 0 ? (
+      <PaperButton variant="brass" size="sm" disabled={character.gold < getHealCost(mount)} onClick={() => healMount(mount.id, isActive)}>
+        Heal · <span className="tabular-nums">{getHealCost(mount)} g</span>
+      </PaperButton>
+    ) : null
+
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-amber-400">Town Stable</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close stable">x</button>
+    <section aria-label="The stable">
+      <div className="flex items-start gap-2">
+        <PlaybillTitle size="sm" className="min-w-0 flex-1">Town stable</PlaybillTitle>
+        <PaperButton variant="outline" size="sm" className="w-8 shrink-0 px-0" onClick={onClose} aria-label="Close stable">
+          <CloseIcon />
+        </PaperButton>
       </div>
 
-      <div className="text-[10px] text-slate-400">
-        Gold: <span className="text-amber-300 font-semibold">{character.gold.toLocaleString()}g</span>
-        {' · '}Stabled: {roster.length}/5
-      </div>
+      <PlaybillCaption className="mt-2 text-center">
+        <span className="font-playbill text-sm normal-case tabular-nums text-ps-ink">{character.gold.toLocaleString()} g</span>
+        {' · '}Stabled <span className="tabular-nums">{roster.length}/5</span>
+      </PlaybillCaption>
 
-      {/* Tab navigation */}
-      <div className="flex gap-1">
-        <button
-          className={`flex-1 text-[11px] py-1 rounded transition-colors font-medium ${
-            tab === 'your'
-              ? 'bg-amber-700/50 text-amber-300'
-              : 'bg-slate-700/40 text-slate-400 hover:bg-slate-700/60 hover:text-slate-200'
-          }`}
-          onClick={() => setTab('your')}
-        >
-          Your Mounts
-        </button>
-        <button
-          className={`flex-1 text-[11px] py-1 rounded transition-colors font-medium ${
-            tab === 'buy'
-              ? 'bg-amber-700/50 text-amber-300'
-              : 'bg-slate-700/40 text-slate-400 hover:bg-slate-700/60 hover:text-slate-200'
-          }`}
-          onClick={() => setTab('buy')}
-        >
-          Buy Mounts
-        </button>
+      <div role="tablist" className="mt-3 flex flex-wrap gap-1 border-b-2 border-ps-ink pb-2">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'rounded-[2px] border-2 px-2.5 py-1 font-playbill text-xs uppercase tracking-widest transition-colors',
+              'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ds-primary',
+              tab === t.id ? 'border-ps-ink bg-ps-ink text-ps-playbill' : 'border-transparent text-ps-ink-soft hover:border-ps-ink hover:text-ps-ink'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === 'your' && (
-        <div className="space-y-3">
+        <div className="mt-3 space-y-4">
           {/* Active Mount */}
           <div>
-            <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Active Mount</h4>
+            <PlaybillCaption className="mb-2">Riding</PlaybillCaption>
             {activeMount ? (
               <MountCard mount={activeMount} actions={
                 <>
-                  {getHealCost(activeMount) > 0 && (
-                    <button
-                      className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                        character.gold >= getHealCost(activeMount)
-                          ? 'bg-green-900/30 text-green-400 hover:bg-green-800/40'
-                          : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-                      }`}
-                      disabled={character.gold < getHealCost(activeMount)}
-                      onClick={() => healMount(activeMount.id, true)}
-                    >
-                      Heal ({getHealCost(activeMount)}g)
-                    </button>
-                  )}
+                  {healAction(activeMount, true)}
                   {roster.length < 5 ? (
                     confirmStash ? (
                       <>
-                        <span className="text-[10px] text-amber-400">Stash mount?</span>
-                        <button className="text-[10px] px-1.5 py-0.5 bg-amber-900/50 text-amber-400 rounded hover:bg-amber-800/50"
-                          onClick={() => { stashMount(); setConfirmStash(false) }}>Yes</button>
-                        <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
-                          onClick={() => setConfirmStash(false)}>No</button>
+                        <span className="font-body text-xs text-ps-ink">Stash this mount?</span>
+                        <PaperButton size="sm" onClick={() => { stashMount(); setConfirmStash(false) }}>Yes</PaperButton>
+                        <PaperButton variant="outline" size="sm" onClick={() => setConfirmStash(false)}>No</PaperButton>
                       </>
                     ) : (
-                      <button
-                        className="text-[10px] px-2 py-0.5 bg-amber-900/30 text-amber-400 rounded hover:bg-amber-800/40 transition-colors"
-                        onClick={() => setConfirmStash(true)}
-                      >
+                      <PaperButton variant="outline" size="sm" onClick={() => setConfirmStash(true)}>
                         Stash
-                      </button>
+                      </PaperButton>
                     )
                   ) : (
-                    <span className="text-[10px] text-slate-500">Roster full (5/5)</span>
+                    <span className="font-body text-xs text-ps-ink-soft">Stable full (5/5)</span>
                   )}
-                  {confirmSellId === activeMount.id ? (
-                    <>
-                      <span className="text-[10px] text-red-400">Sell for {getMountSellPrice(activeMount.rarity)}g?</span>
-                      <button className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded hover:bg-red-800/50"
-                        onClick={() => handleSell(activeMount.id, true)}>Yes</button>
-                      <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
-                        onClick={() => setConfirmSellId(null)}>No</button>
-                    </>
-                  ) : (
-                    <button
-                      className="text-[10px] px-2 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
-                      onClick={() => setConfirmSellId(activeMount.id)}
-                    >
-                      Sell ({getMountSellPrice(activeMount.rarity)}g)
-                    </button>
-                  )}
+                  {sellActions(activeMount, true)}
                 </>
               } />
             ) : (
-              <div className="text-xs text-slate-500 italic">No active mount. Retrieve one from the stable or purchase a new one.</div>
+              <p className="font-body text-sm italic text-ps-ink-soft">No mount under you. Take one out of the stable or buy a new one.</p>
             )}
           </div>
 
           {/* Stabled Mounts */}
           {roster.length > 0 && (
             <div>
-              <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Stabled Mounts ({roster.length}/5)</h4>
-              <div className="space-y-1.5">
+              <PlaybillCaption className="mb-2">Stabled ({roster.length}/5)</PlaybillCaption>
+              <div className="space-y-2">
                 {roster.map(mount => (
                   <MountCard key={mount.id} mount={mount} actions={
                     <>
-                      <button
-                        className="text-[10px] px-2 py-0.5 bg-indigo-900/30 text-indigo-300 rounded hover:bg-indigo-800/40 transition-colors"
-                        onClick={() => retrieveMount(mount.id)}
-                      >
-                        {activeMount ? 'Swap' : 'Retrieve'}
-                      </button>
-                      {getHealCost(mount) > 0 && (
-                        <button
-                          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                            character.gold >= getHealCost(mount)
-                              ? 'bg-green-900/30 text-green-400 hover:bg-green-800/40'
-                              : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-                          }`}
-                          disabled={character.gold < getHealCost(mount)}
-                          onClick={() => healMount(mount.id, false)}
-                        >
-                          Heal ({getHealCost(mount)}g)
-                        </button>
-                      )}
-                      {confirmSellId === mount.id ? (
-                        <>
-                          <span className="text-[10px] text-red-400">Sell for {getMountSellPrice(mount.rarity)}g?</span>
-                          <button className="text-[10px] px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded hover:bg-red-800/50"
-                            onClick={() => handleSell(mount.id, false)}>Yes</button>
-                          <button className="text-[10px] px-1.5 py-0.5 bg-slate-700/50 text-slate-300 rounded hover:bg-slate-600/50"
-                            onClick={() => setConfirmSellId(null)}>No</button>
-                        </>
-                      ) : (
-                        <button
-                          className="text-[10px] px-2 py-0.5 bg-red-900/30 text-red-400 rounded hover:bg-red-800/40 transition-colors"
-                          onClick={() => setConfirmSellId(mount.id)}
-                        >
-                          Sell ({getMountSellPrice(mount.rarity)}g)
-                        </button>
-                      )}
+                      <PaperButton size="sm" onClick={() => retrieveMount(mount.id)}>
+                        {activeMount ? 'Swap' : 'Take out'}
+                      </PaperButton>
+                      {healAction(mount, false)}
+                      {sellActions(mount, false)}
                     </>
                   } />
                 ))}
@@ -292,20 +256,20 @@ export function StablePanel({ character, onClose }: StablePanelProps) {
           )}
 
           {!activeMount && roster.length === 0 && (
-            <div className="text-xs text-slate-500 italic text-center py-2">
-              You have no mounts. Visit the Buy Mounts tab to find one!
-            </div>
+            <p className="py-2 text-center font-body text-sm italic text-ps-ink-soft">
+              You have no mounts. The ones for sale are under the other tab.
+            </p>
           )}
         </div>
       )}
 
       {tab === 'buy' && (
-        <div className="space-y-2">
-          <p className="text-[10px] text-slate-400">Mounts available at this stable:</p>
+        <div className="mt-3 space-y-2">
+          <p className="font-body text-sm text-ps-ink-soft">Mounts for sale at this stable:</p>
           {shopMounts.length === 0 ? (
-            <div className="text-xs text-slate-500 italic text-center py-2">No mounts available right now.</div>
+            <p className="py-2 text-center font-body text-sm italic text-ps-ink-soft">No mounts for sale right now.</p>
           ) : (
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {shopMounts.map((mount) => {
                 const price = getMountPrice(mount.rarity)
                 const affordable = character.gold >= price
@@ -313,45 +277,45 @@ export function StablePanel({ character, onClose }: StablePanelProps) {
                 const buyable = affordable && hasRoom
                 return (
                   <MountCard key={mount.id} mount={mount} actions={
-                    <button
-                      className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
-                        buyable
-                          ? 'bg-amber-900/30 text-amber-400 hover:bg-amber-800/40'
-                          : 'bg-slate-700/40 text-slate-500 cursor-not-allowed'
-                      }`}
-                      disabled={!buyable}
-                      title={
-                        !affordable ? 'Not enough gold' :
-                        !hasRoom ? 'No room (active + roster full)' :
-                        `Buy for ${price}g`
-                      }
-                      onClick={() => {
-                        if (buyStableMount(mount)) {
-                          // Remove the purchased mount from the shop listing
-                          setShopMounts(prev => prev.filter(m => m.id !== mount.id))
+                    <>
+                      <PaperButton
+                        variant="brass"
+                        size="sm"
+                        disabled={!buyable}
+                        title={
+                          !affordable ? 'Not enough gold' :
+                          !hasRoom ? 'No room (active + roster full)' :
+                          `Buy for ${price}g`
                         }
-                      }}
-                    >
-                      Buy ({price}g)
-                    </button>
+                        onClick={() => {
+                          if (buyStableMount(mount)) {
+                            // Remove the purchased mount from the shop listing
+                            setShopMounts(prev => prev.filter(m => m.id !== mount.id))
+                          }
+                        }}
+                      >
+                        Buy · <span className="tabular-nums">{price} g</span>
+                      </PaperButton>
+                      {!buyable && (
+                        <span className="font-body text-xs text-ps-stamp-red">
+                          {!affordable ? 'Not enough gold' : 'No room in the stable'}
+                        </span>
+                      )}
+                    </>
                   } />
                 )
               })}
             </div>
           )}
           {!activeMount && roster.length === 0 && (
-            <p className="text-[10px] text-slate-500 italic">Tip: Your first mount goes to the active slot automatically.</p>
+            <p className="font-body text-xs italic text-ps-ink-soft">Your first mount goes straight under you.</p>
           )}
         </div>
       )}
 
-      {/* Back button */}
-      <button
-        className="w-full text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors"
-        onClick={onClose}
-      >
-        Back to Town
-      </button>
-    </div>
+      <PaperButton variant="outline" className="mt-4 w-full border-ps-ink/50 text-ps-ink-soft" onClick={onClose}>
+        Back to town
+      </PaperButton>
+    </section>
   )
 }

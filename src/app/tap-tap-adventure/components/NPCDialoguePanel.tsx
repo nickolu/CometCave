@@ -1,10 +1,16 @@
 'use client'
 
+/**
+ * Talking to someone: their lines print onto the bill as paragraphs under
+ * their name; what you said sits to the right in a quieter hand. The
+ * cut-out of the speaker is already on the scenery above.
+ */
 import { useEffect, useRef, useState } from 'react'
-import { LoaderCircle } from 'lucide-react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+
 import { GameNPC, getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import { useNPCDialogue } from '@/app/tap-tap-adventure/hooks/useNPCDialogue'
+import { PaperButton, PlaybillCaption, PrintingDots, Stamp, type StampTone, deltaTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface NPCDialoguePanelProps {
   npc: GameNPC
@@ -22,6 +28,24 @@ interface NPCDialoguePanelProps {
   onClose: () => void
   onRecruit?: () => void
   isRecruited?: boolean
+}
+
+const TIER_TONE: Record<string, StampTone> = {
+  hostile: 'red',
+  unfriendly: 'gold',
+  neutral: 'ink',
+  friendly: 'green',
+  trusted: 'blue',
+  bonded: 'violet',
+}
+
+const TIER_BAR: Record<string, string> = {
+  hostile: 'bg-ps-stamp-red',
+  unfriendly: 'bg-ps-stamp-gold',
+  neutral: 'bg-ps-ink',
+  friendly: 'bg-ps-stamp-green',
+  trusted: 'bg-ps-stamp-blue',
+  bonded: 'bg-ps-stamp-violet',
 }
 
 export function NPCDialoguePanel({
@@ -57,17 +81,7 @@ export function NPCDialoguePanel({
   const logEndRef = useRef<HTMLDivElement>(null)
 
   const tier = getRelationshipTier(disposition)
-
-  const tierBadgeColors: Record<string, string> = {
-    hostile: 'text-red-500',
-    unfriendly: 'text-orange-400',
-    neutral: 'text-slate-400',
-    friendly: 'text-green-400',
-    trusted: 'text-blue-400',
-    bonded: 'text-amber-400',
-  }
-
-  const badgeColor = tierBadgeColors[tier.tier] ?? 'text-slate-400'
+  const tierPct = Math.max(5, Math.min(100, ((disposition - tier.min) / (tier.max - tier.min)) * 100))
 
   // Auto-scroll to bottom of conversation log
   useEffect(() => {
@@ -142,102 +156,84 @@ export function NPCDialoguePanel({
   }
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-4 space-y-3">
-      {/* NPC Header */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl" aria-hidden="true">{npc.icon}</span>
-          <div>
-            <div className="font-bold text-white text-sm">{npc.name}</div>
-            <div className="text-xs text-slate-400">{npc.role}</div>
-          </div>
+    <div>
+      {/* Who, and how they feel about you */}
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0">
+          <h3 className="font-playbill text-base uppercase leading-tight tracking-wide text-ps-ink">{npc.name}</h3>
+          <PlaybillCaption>{npc.role}</PlaybillCaption>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-end gap-0.5">
-            <span className={`text-[10px] font-semibold uppercase tracking-wide ${badgeColor}`}>
-              {tier.label}
-            </span>
-            {/* Disposition progress bar */}
-            <div className="w-20 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  tier.tier === 'hostile' ? 'bg-red-500' :
-                  tier.tier === 'unfriendly' ? 'bg-orange-400' :
-                  tier.tier === 'neutral' ? 'bg-slate-400' :
-                  tier.tier === 'friendly' ? 'bg-green-400' :
-                  tier.tier === 'trusted' ? 'bg-blue-400' :
-                  'bg-amber-400'
-                }`}
-                style={{ width: `${Math.max(5, Math.min(100, ((disposition - tier.min) / (tier.max - tier.min)) * 100))}%` }}
-              />
-            </div>
-            <span className="text-[9px] text-slate-500">({disposition > 0 ? '+' : ''}{disposition})</span>
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-2">
+            <Stamp tone={TIER_TONE[tier.tier] ?? 'ink'} tilt={false}>{tier.label}</Stamp>
+            <span className="font-body text-xs tabular-nums text-ps-ink-soft">({disposition > 0 ? '+' : ''}{disposition})</span>
           </div>
-          <button
-            className="text-slate-400 hover:text-white text-xs px-2 py-1 border border-[#3a3c56] rounded hover:border-slate-500 transition-colors"
-            onClick={onClose}
+          <span
+            className="block h-1.5 w-24 overflow-hidden rounded-full bg-ps-ink/20"
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(tierPct)}
+            aria-label={`Standing with ${npc.name}: ${tier.label}`}
           >
-            Close
-          </button>
+            <span className={cn('block h-full rounded-full transition-[width] duration-500', TIER_BAR[tier.tier] ?? 'bg-ps-ink')} style={{ width: `${tierPct}%` }} />
+          </span>
         </div>
       </div>
 
-      {/* Exchange counter */}
       {exchangeCount > 1 && (
-        <div className="text-[10px] text-slate-500 text-right">
-          Exchange {exchangeCount - 1}
-        </div>
+        <PlaybillCaption className="mt-2 text-right text-ps-ink-faint">Exchange {exchangeCount - 1}</PlaybillCaption>
       )}
 
-      {/* Conversation log */}
-      <div className="max-h-60 overflow-y-auto bg-[#161723] border border-[#2a2b3f] rounded p-3 space-y-2">
+      {/* What has been said */}
+      <div className="ps-scroll mt-3 max-h-60 space-y-3 overflow-y-auto border-y-2 border-dotted border-ps-ink/40 py-3 pr-1">
         {conversationLog.length === 0 && !isLoading && (
-          <p className="text-sm text-slate-500 italic">Approach {npc.name} to speak...</p>
+          <p className="font-body text-sm italic text-ps-ink-soft">Approach {npc.name} to speak...</p>
         )}
         {conversationLog.map((entry, idx) => (
-          <div key={idx} className={`flex flex-col ${entry.role === 'player' ? 'items-end' : 'items-start'}`}>
+          <div key={idx} className={cn('ps-print-in', entry.role === 'player' && 'pl-8 text-right')}>
             {entry.role === 'npc' ? (
-              <p className="text-sm text-slate-200 leading-relaxed italic max-w-[90%]">
-                <span className="not-italic mr-1">{npc.icon}</span>
-                &ldquo;{entry.content}&rdquo;
-              </p>
+              <>
+                <PlaybillCaption>{npc.name}</PlaybillCaption>
+                <p className="mt-0.5 break-words font-body text-base leading-relaxed text-ps-ink">&ldquo;{entry.content}&rdquo;</p>
+              </>
             ) : (
-              <p className="text-sm text-slate-300 leading-relaxed max-w-[90%] bg-[#252640] rounded px-2 py-1">
-                {entry.content}
-              </p>
+              <>
+                <PlaybillCaption className="text-ps-ink-faint">You</PlaybillCaption>
+                <p className="mt-0.5 break-words font-body text-sm italic leading-relaxed text-ps-ink-soft">{entry.content}</p>
+              </>
             )}
             {entry.role === 'player' && entry.intent && entry.intent !== 'neutral' && (
-              <span className="text-[9px] text-slate-500 mt-0.5 capitalize">{entry.intent}</span>
+              <span className="mt-0.5 inline-block font-label text-xs font-bold uppercase tracking-widest text-ps-ink-faint">{entry.intent}</span>
             )}
             {entry.role === 'npc' && entry.dispositionDelta !== undefined && entry.dispositionDelta !== 0 && (
-              <span className={`text-[9px] mt-0.5 ${entry.dispositionDelta > 0 ? 'text-green-500' : 'text-red-400'}`}>
-                {entry.dispositionDelta > 0 ? '+' : ''}{entry.dispositionDelta} rep
-              </span>
+              <Stamp tone={deltaTone(entry.dispositionDelta)} className="mt-1.5">
+                {entry.dispositionDelta > 0 ? '+' : ''}{entry.dispositionDelta} standing
+              </Stamp>
             )}
           </div>
         ))}
         {isLoading && (
-          <div className="flex items-center gap-2 text-slate-400 text-sm">
-            <LoaderCircle className="animate-spin h-4 w-4" />
-            <span>{npc.name} is speaking...</span>
+          <div className="py-1">
+            <PrintingDots label={`${npc.name} is speaking`} />
           </div>
         )}
         <div ref={logEndRef} />
       </div>
 
-      {/* Reward notification */}
       {rewardMessage && (
-        <div className="text-xs text-amber-300 bg-amber-900/20 border border-amber-700/30 rounded px-2 py-1.5">
-          {npc.name} granted you: {rewardMessage}
-        </div>
+        <p role="status" className="mt-3 flex flex-wrap items-center gap-2 font-body text-sm text-ps-ink">
+          <Stamp tone="gold" animate>Gift</Stamp>
+          <span>{npc.name} granted you: {rewardMessage}</span>
+        </p>
       )}
 
-      {/* Text input */}
+      {/* Your reply */}
       {!conversationComplete && (
-        <div className="flex gap-2">
+        <div className="mt-3 flex gap-2">
           <input
             type="text"
-            className="flex-1 bg-[#161723] border border-[#2a2b3f] rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-600 disabled:opacity-50"
+            className="h-10 min-w-0 flex-1 rounded-[3px] border-2 border-ps-ink bg-transparent px-3 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary disabled:opacity-50"
             placeholder="Type your response..."
             aria-label="Type your response"
             value={playerInput}
@@ -245,32 +241,24 @@ export function NPCDialoguePanel({
             onKeyDown={handleKeyDown}
             disabled={isLoading || conversationComplete}
           />
-          <Button
-            className="text-sm border border-indigo-700 bg-indigo-800 hover:bg-indigo-700 text-white px-3 py-2 rounded disabled:opacity-60"
+          <PaperButton
             onClick={() => void handleSend()}
             disabled={isLoading || !playerInput.trim() || conversationComplete}
           >
             Send
-          </Button>
+          </PaperButton>
         </div>
       )}
 
-      {/* Action row */}
-      <div className="flex gap-2">
+      <div className="mt-3 flex gap-2">
         {npc.combatRole === 'combatant' && !isRecruited && disposition >= 20 && onRecruit && (
-          <Button
-            className="flex-1 text-sm border border-green-700 bg-green-800 hover:bg-green-700 text-white py-2 rounded"
-            onClick={onRecruit}
-          >
+          <PaperButton className="flex-1" onClick={onRecruit}>
             Join my party
-          </Button>
+          </PaperButton>
         )}
-        <Button
-          className="flex-1 text-sm border border-[#3a3c56] bg-[#2a2b3f] hover:bg-[#3a3c56] text-white py-2 rounded"
-          onClick={onClose}
-        >
-          {conversationComplete ? 'Farewell' : 'Walk Away'}
-        </Button>
+        <PaperButton variant="outline" className="flex-1" onClick={onClose}>
+          {conversationComplete ? 'Farewell' : 'Walk away'}
+        </PaperButton>
       </div>
     </div>
   )

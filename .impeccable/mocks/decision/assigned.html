@@ -1,0 +1,42 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>The Stitched Frieze</title>
+<link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Be+Vietnam+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:#1b1f3a;color:#efe6d2;font-family:"Be Vietnam Pro",sans-serif}
+body{background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 2px,transparent 2px 6px),repeating-linear-gradient(-45deg,rgba(0,0,0,.18) 0 2px,transparent 2px 6px)}
+.top{height:64px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;border-bottom:3px dashed #e0a93a}
+.mark{font-family:"Alfa Slab One",serif;font-size:22px;letter-spacing:.04em}.mark b{color:#00ffc2}
+.ctl{display:flex;gap:16px;font-size:13px;letter-spacing:.12em;text-transform:uppercase}
+.ctl span{padding:8px 14px;border:2px dashed #c8463a;color:#efe6d2}
+.frieze{position:relative;height:520px;margin:28px 32px 0;display:grid;grid-template-columns:200px 220px 220px 1fr;gap:18px;padding:22px;border:6px double #e0a93a;background:rgba(0,0,0,.18)}
+.scene{border:4px dashed #e0a93a;padding:14px;display:flex;flex-direction:column;justify-content:flex-end;position:relative;background:rgba(224,169,58,.06)}
+.scene .art{flex:1;margin-bottom:12px;background:linear-gradient(#5f8f4e 0 60%,#c8463a 60% 100%);opacity:.8;border:3px dashed #efe6d2}
+.scene .cap{font-family:"Alfa Slab One",serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#e0a93a;line-height:1.5}
+.s1{opacity:.32}.s2{opacity:.5}.s3{opacity:.72}
+.new{border-color:#c8463a;background:rgba(200,70,58,.12);display:grid;grid-template-rows:1fr auto auto;gap:14px}
+.new .art{background:linear-gradient(#5f8f4e 0 55%,#2f6f8f 55% 100%);opacity:1;margin:0}
+.new .cap{font-size:15px;color:#efe6d2}
+.new h2{font-family:"Alfa Slab One",serif;font-size:28px;letter-spacing:.06em;text-transform:uppercase;color:#e0a93a;line-height:1.15}
+.new p{font-size:18px;line-height:1.5;max-width:60ch}
+.choices{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.choices div{border:3px dashed #efe6d2;padding:12px 14px;font-size:14px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#efe6d2}
+.walkrow{margin:22px 32px 0;display:grid;grid-template-columns:1fr 420px;gap:18px;align-items:stretch}
+.walk{background:#00ffc2;color:#002018;border-radius:999px;height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 0 0 #080916}
+.walk b{font-family:"Alfa Slab One",serif;font-size:34px;letter-spacing:.2em}.walk span{font-size:13px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.hud{border:4px dashed #5f8f4e;display:grid;grid-template-columns:repeat(4,1fr);align-items:center;text-align:center;font-family:"Alfa Slab One",serif}
+.hud div{font-size:26px;color:#efe6d2}.hud small{display:block;font-family:"Be Vietnam Pro",sans-serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#e0a93a}
+.hem{position:absolute;left:0;right:0;bottom:0;height:88px;border-top:4px dashed #c8463a;display:grid;grid-template-columns:repeat(6,1fr);align-items:center;text-align:center;font-family:"Alfa Slab One",serif;font-size:18px;letter-spacing:.14em;text-transform:uppercase;color:#e0a93a}
+.hem div:last-child{opacity:.45}
+</style></head><body>
+<div class="top"><div class="mark"><b>COMET</b>CAVE &nbsp;·&nbsp; Tap Tap Adventure</div><div class="ctl"><span>Return to the cave</span><span>Sound</span><span>Share</span></div></div>
+<div class="frieze">
+  <div class="scene s1"><div class="art"></div><div class="cap">Day 1 · Hearthwood<br>set out at dawn</div></div>
+  <div class="scene s2"><div class="art"></div><div class="cap">Day 2 · The Old Mill<br>traded 12 gold for a lantern</div></div>
+  <div class="scene s3"><div class="art"></div><div class="cap">Day 2 · fought a marsh wolf<br>and won</div></div>
+  <div class="scene new"><div class="art"></div><div><div class="cap">Day 3 · 212 km · Pebble Ford · light rain</div><h2>A cart lies on its side in the shallows</h2><p>Bramble the tinker, soaked to the knees, offers a brass whistle to whoever helps.</p></div>
+    <div class="choices"><div>Heave the cart upright · Strength · 70%</div><div>Wade in for her tools · Luck · 55%</div><div>Walk on</div></div></div>
+</div>
+<div class="walkrow"><div class="walk"><b>WALK</b><span>tap to step · hold to keep walking</span></div>
+<div class="hud"><div>48<small>HP of 60</small></div><div>134<small>Gold</small></div><div>12<small>Reputation</small></div><div>4<small>Wren · Elf Ranger</small></div></div></div>
+<div class="hem"><div>Pack</div><div>Gear</div><div>Quests</div><div>Map</div><div>Party</div><div>Town</div></div>
+</body></html>

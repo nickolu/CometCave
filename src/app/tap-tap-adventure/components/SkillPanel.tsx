@@ -1,9 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+
 import { SKILLS } from '@/app/tap-tap-adventure/config/skills'
 import { ClassSkillTree, SkillTreeNode } from '@/app/tap-tap-adventure/models/classSkillTree'
 import { SkillCategory } from '@/app/tap-tap-adventure/models/skill'
+import { PaperButton, PlaybillCaption, PlaybillRule, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 const CATEGORY_LABELS: Record<SkillCategory, string> = {
   combat: 'Combat',
@@ -54,13 +57,64 @@ interface SkillPanelProps {
   characterLevel?: number
 }
 
+/** One skill on the bill: filled ink when earned, outlined when still locked. */
+function SkillNode({
+  icon,
+  name,
+  unlocked,
+  description,
+  lockReason,
+  stamp,
+  className,
+}: {
+  icon: string
+  name: string
+  unlocked: boolean
+  description: string
+  lockReason?: string | null
+  stamp?: React.ReactNode
+  className?: string
+}) {
+  return (
+    <div
+      className={cn(
+        'rounded-[3px] border-2 p-2',
+        unlocked ? 'border-ps-ink bg-ps-ink text-ps-playbill' : 'border-ps-ink/50 text-ps-ink',
+        className
+      )}
+      title={unlocked ? description : lockReason ?? description}
+    >
+      <div className="flex items-start gap-2">
+        <span className={cn('font-body text-base leading-none', !unlocked && 'opacity-50 grayscale')} aria-hidden>
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className={cn('font-body text-sm font-medium leading-tight', !unlocked && 'text-ps-ink-soft')}>
+              {name}
+            </span>
+            {unlocked ? (
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-playbill/80">Earned</span>
+            ) : (
+              stamp
+            )}
+          </div>
+          <p className={cn('mt-0.5 font-body text-xs leading-snug', unlocked ? 'text-ps-playbill/85' : 'text-ps-ink-soft')}>
+            {unlocked ? description : lockReason ?? description}
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function SkillPanel({
   unlockedSkillIds,
   classSkillTree,
   unlockedTreeSkillIds = [],
   characterLevel = 1,
 }: SkillPanelProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(true)
   const unlockedSet = new Set(unlockedSkillIds)
   const unlockedTreeSet = new Set(unlockedTreeSkillIds)
 
@@ -70,30 +124,40 @@ export function SkillPanel({
   const treeUnlockedCount = unlockedTreeSkillIds.length
   const treeTotal = classSkillTree?.nodes.length ?? 0
 
+  const counts = (
+    <div className="flex items-center gap-1">
+      {classSkillTree && (
+        <Stamp tone="violet" tilt={false} title={`${treeUnlockedCount} of ${treeTotal} class skills`}>
+          {treeUnlockedCount}/{treeTotal} class
+        </Stamp>
+      )}
+      <Stamp tone="ink" tilt={false} title={`${unlockedCount} of ${totalCount} passive skills`}>
+        {unlockedCount}/{totalCount}
+      </Stamp>
+    </div>
+  )
+
   if (!isExpanded) {
     return (
       <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-cyan-700/50 transition-colors"
+        type="button"
+        className="w-full rounded-[3px] border-2 border-ps-ink p-3 text-left transition-colors hover:bg-ps-playbill-shade focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
         onClick={() => setIsExpanded(true)}
+        aria-expanded={false}
       >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-cyan-400">Passive Skills</span>
-          <div className="flex items-center gap-2">
-            {classSkillTree && (
-              <span className="text-xs text-purple-400">
-                {treeUnlockedCount}/{treeTotal} class
-              </span>
-            )}
-            <span className="text-xs text-slate-400">
-              {unlockedCount}/{totalCount}
-            </span>
-          </div>
+        <div className="flex items-center justify-between gap-2">
+          <PlaybillTitle size="sm" rules={false} className="text-left">Passive skills</PlaybillTitle>
+          {counts}
         </div>
-        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-2">
-          <div
-            className="h-full bg-cyan-500 rounded-full transition-all duration-300"
-            style={{ width: `${totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0}%` }}
-          />
+        <div
+          className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ps-ink/20"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={totalCount}
+          aria-valuenow={unlockedCount}
+          aria-label="Passive skills earned"
+        >
+          <div className="h-full rounded-full bg-ps-ink transition-[width] duration-300" style={{ width: `${totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0}%` }} />
         </div>
       </button>
     )
@@ -107,120 +171,103 @@ export function SkillPanel({
   }
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-cyan-400 hover:text-cyan-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          Passive Skills
-        </button>
+    <div className="w-full">
+      <div className="flex items-center justify-between gap-2">
+        <PlaybillTitle size="sm" rules={false} className="text-left">Passive skills</PlaybillTitle>
         <div className="flex items-center gap-2">
-          {classSkillTree && (
-            <span className="text-xs text-purple-400">
-              {treeUnlockedCount}/{treeTotal} class
-            </span>
-          )}
-          <span className="text-xs text-slate-400">
-            {unlockedCount}/{totalCount}
-          </span>
+          {counts}
+          <PaperButton size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setIsExpanded(false)} aria-expanded>
+            Fold
+          </PaperButton>
         </div>
+      </div>
+      <div
+        className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-ps-ink/20"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={totalCount}
+        aria-valuenow={unlockedCount}
+        aria-label="Passive skills earned"
+      >
+        <div className="h-full rounded-full bg-ps-ink transition-[width] duration-300" style={{ width: `${totalCount > 0 ? (unlockedCount / totalCount) * 100 : 0}%` }} />
       </div>
 
       {/* Global passive skills */}
-      {CATEGORY_ORDER.map(category => {
-        const categorySkills = SKILLS.filter(s => s.category === category)
-        if (categorySkills.length === 0) return null
+      <div className="mt-3 space-y-3">
+        {CATEGORY_ORDER.map(category => {
+          const categorySkills = SKILLS.filter(s => s.category === category)
+          if (categorySkills.length === 0) return null
 
-        return (
-          <div key={category} className="space-y-1.5">
-            <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-              {CATEGORY_LABELS[category]}
-            </h4>
-            {categorySkills.map(skill => {
-              const unlocked = unlockedSet.has(skill.id)
+          return (
+            <div key={category}>
+              <PlaybillCaption className="border-b-2 border-dotted border-ps-ink/40 pb-1">{CATEGORY_LABELS[category]}</PlaybillCaption>
+              <div className="mt-1.5 space-y-1.5">
+                {categorySkills.map(skill => {
+                  const unlocked = unlockedSet.has(skill.id)
+                  return (
+                    <SkillNode
+                      key={skill.id}
+                      icon={skill.icon}
+                      name={skill.name}
+                      unlocked={unlocked}
+                      description={skill.description}
+                      lockReason={getRequirementText(skill.requirement)}
+                      stamp={
+                        skill.requirement.type === 'level' ? (
+                          <Stamp tone="ink" tilt={false}>Lv {skill.requirement.value}</Stamp>
+                        ) : (
+                          <Stamp tone="ink" tilt={false}>Locked</Stamp>
+                        )
+                      }
+                    />
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Class skill tree */}
+      {classSkillTree && (
+        <>
+          <PlaybillRule className="my-4" />
+          <PlaybillTitle size="sm" rules={false} className="text-left">
+            {classSkillTree.className} skills
+          </PlaybillTitle>
+          <div className="mt-2 space-y-3">
+            {([1, 2, 3, 4] as const).map(tier => {
+              const tierNodes = classSkillTree.nodes.filter(n => n.tier === tier)
+              if (tierNodes.length === 0) return null
 
               return (
-                <div
-                  key={skill.id}
-                  className={`rounded p-2 text-xs ${
-                    unlocked
-                      ? 'bg-cyan-950/30 border border-cyan-700/30'
-                      : 'bg-[#161723] border border-[#2a2b3f] opacity-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className={`text-base ${unlocked ? '' : 'grayscale'}`}>{skill.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex justify-between items-center">
-                        <span className={`font-semibold truncate ${unlocked ? 'text-cyan-400' : 'text-slate-500'}`}>
-                          {unlocked && <span className="mr-1">&#10003;</span>}
-                          {skill.name}
-                        </span>
-                      </div>
-                      <p className={`text-[10px] truncate ${unlocked ? 'text-slate-300' : 'text-slate-500'}`}>
-                        {unlocked ? skill.description : getRequirementText(skill.requirement)}
-                      </p>
-                    </div>
+                <div key={tier}>
+                  <PlaybillCaption className="border-b-2 border-dotted border-ps-ink/40 pb-1">{TIER_LABELS[tier]}</PlaybillCaption>
+                  <div className="mt-1.5 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                    {tierNodes.map(node => {
+                      const unlocked = unlockedTreeSet.has(node.id)
+                      const lockReason = !unlocked
+                        ? getTreeNodeLockReason(node, characterLevel, unlockedTreeSet, classSkillTree.nodes)
+                        : null
+
+                      return (
+                        <SkillNode
+                          key={node.id}
+                          icon={node.icon}
+                          name={node.name}
+                          unlocked={unlocked}
+                          description={node.description}
+                          lockReason={lockReason}
+                          stamp={<Stamp tone={characterLevel >= node.requiredLevel ? 'ink' : 'red'} tilt={false}>Lv {node.requiredLevel}</Stamp>}
+                        />
+                      )
+                    })}
                   </div>
                 </div>
               )
             })}
           </div>
-        )
-      })}
-
-      {/* Class skill tree */}
-      {classSkillTree && (
-        <div className="space-y-2 pt-1 border-t border-[#2a2b3f]">
-          <h4 className="text-[10px] uppercase tracking-wider text-purple-400 font-semibold">
-            Class Skills — {classSkillTree.className}
-          </h4>
-          {([1, 2, 3, 4] as const).map(tier => {
-            const tierNodes = classSkillTree.nodes.filter(n => n.tier === tier)
-            if (tierNodes.length === 0) return null
-
-            return (
-              <div key={tier} className="space-y-1">
-                <span className="text-[9px] uppercase tracking-wider text-slate-600 font-semibold">
-                  {TIER_LABELS[tier]}
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {tierNodes.map(node => {
-                    const unlocked = unlockedTreeSet.has(node.id)
-                    const lockReason = !unlocked
-                      ? getTreeNodeLockReason(node, characterLevel, unlockedTreeSet, classSkillTree.nodes)
-                      : null
-
-                    return (
-                      <div
-                        key={node.id}
-                        className={`flex-1 min-w-[120px] rounded p-2 text-xs ${
-                          unlocked
-                            ? 'bg-purple-950/30 border border-purple-700/30'
-                            : 'bg-[#161723] border border-[#2a2b3f] opacity-50'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-base ${unlocked ? '' : 'grayscale'}`}>{node.icon}</span>
-                          <div className="flex-1 min-w-0">
-                            <span className={`font-semibold block truncate ${unlocked ? 'text-purple-300' : 'text-slate-500'}`}>
-                              {unlocked && <span className="mr-1">&#10003;</span>}
-                              {node.name}
-                            </span>
-                            <p className={`text-[10px] ${unlocked ? 'text-slate-300' : 'text-slate-500'}`}>
-                              {unlocked ? node.description : lockReason}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+        </>
       )}
     </div>
   )

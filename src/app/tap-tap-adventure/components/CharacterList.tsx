@@ -4,6 +4,8 @@ import React, { useState } from 'react'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import type { GameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { Placard, PlaybillCaption, PlaybillSheet } from '@/app/tap-tap-adventure/stage/Playbill'
 
 import AddCharacterCard from './AddCharacterCard'
 import CharacterCard from './CharacterCard'
@@ -67,29 +69,34 @@ export default function CharacterList({ defaultShowCreation, onCreationShown }: 
   }
 
   return (
-    <div className="w-full mx-auto p-6 p-4 bg-[#161723] border border-[#3a3c56] rounded-lg mt-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-slate-200">Your Characters</h2>
-        <div className="flex items-center gap-3">
+    <section className="w-full" aria-label="Your characters">
+      {/* the brass-ruled band above the posters */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b-2 border-ps-brass-deep pb-3">
+        <h2 className="font-playbill text-xl uppercase tracking-widest text-ps-brass-light sm:text-2xl">Your characters</h2>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowMetaProgression(true)}
-            className="text-sm text-purple-300 bg-purple-900/30 border border-purple-600/40 px-3 py-1 rounded-full hover:bg-purple-900/50 transition-colors cursor-pointer"
+            className="inline-flex h-8 items-center gap-2 rounded-[3px] border border-ps-brass-deep bg-ps-brass/15 px-2.5 font-label text-xs font-bold uppercase tracking-widest text-ps-brass-light transition-colors hover:bg-ps-brass/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
           >
-            <span className="text-amber-400">&#10022;</span>{' '}
-            Eternal Upgrades
+            Eternal upgrades
             {(metaProgression?.soulEssence ?? 0) > 0 && (
-              <span className="ml-1 text-amber-400">({metaProgression?.soulEssence})</span>
+              <span className="font-playbill text-sm normal-case tracking-normal tabular-nums" title="Soul essence">
+                {metaProgression?.soulEssence}
+              </span>
             )}
           </button>
           {legacyHeirlooms.length > 0 && (
-            <span className="text-sm text-amber-400 bg-amber-900/30 border border-amber-600/40 px-3 py-1 rounded-full">
-              Legacy Items: {legacyHeirlooms.length}
-            </span>
+            <Placard className="h-8" title="Heirlooms left by earlier characters">
+              Legacy items
+              <span className="font-playbill text-sm normal-case tracking-normal tabular-nums">{legacyHeirlooms.length}</span>
+            </Placard>
           )}
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+
+      {/* posters on the wall */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {characters.map((char: FantasyCharacter) => (
           <CharacterCard
             key={char.id}
@@ -102,25 +109,27 @@ export default function CharacterList({ defaultShowCreation, onCreationShown }: 
         ))}
         {characters.length < 5 && <AddCharacterCard onClick={handleNewCharacter} />}
       </div>
+
       {showMetaProgression && (
         <MetaProgression onClose={() => setShowMetaProgression(false)} />
       )}
+
       {showCreation && (
-        <div className="mt-6 bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-slate-200">Create Character</h3>
+        <PlaybillSheet as="section" className="ps-print-in mt-6 px-4 pb-5 pt-4 sm:px-6" aria-label="New character">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <PlaybillCaption>Printing a new character</PlaybillCaption>
             <button
               type="button"
-              className="text-slate-400 hover:text-slate-200 transition-colors text-2xl leading-none font-semibold"
+              className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-ps-ink text-ps-ink transition-colors hover:bg-ps-ink hover:text-ps-playbill focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
               onClick={handleCloseCreation}
               aria-label="Close"
             >
-              &times;
+              <CloseIcon />
             </button>
           </div>
           <CharacterCreation onComplete={handleCloseCreation} />
-        </div>
+        </PlaybillSheet>
       )}
-    </div>
+    </section>
   )
 }

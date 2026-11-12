@@ -1,11 +1,45 @@
 'use client'
+
+/**
+ * Everyone you have met, as a ruled list on the bill: their standing with
+ * you as a stamp and a thin ink rule, and a page for each.
+ */
 import { useState } from 'react'
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
-import { getRelationshipTier, NPCS, ENCOUNTER_NPCS } from '@/app/tap-tap-adventure/config/npcs'
+
+import { ENCOUNTER_NPCS, NPCS, getRelationshipTier } from '@/app/tap-tap-adventure/config/npcs'
 import type { GameNPC } from '@/app/tap-tap-adventure/config/npcs'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { ChevronIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface ContactsListProps {
   character: FantasyCharacter
+}
+
+/** The printer's ink for each standing. */
+const TIER_TONE: Record<string, StampTone> = {
+  hostile: 'red',
+  unfriendly: 'red',
+  neutral: 'ink',
+  friendly: 'green',
+  trusted: 'blue',
+  bonded: 'gold',
+}
+
+function DispositionBar({ disposition, label }: { disposition: number; label: string }) {
+  const pct = Math.max(5, ((disposition + 100) / 200) * 100)
+  return (
+    <div
+      className="h-1.5 w-full overflow-hidden rounded-full bg-ps-playbill-edge"
+      role="progressbar"
+      aria-valuemin={-100}
+      aria-valuemax={100}
+      aria-valuenow={disposition}
+      aria-label={label}
+    >
+      <div className={`h-full rounded-full transition-[width] duration-300 ${disposition < -10 ? 'bg-ps-stamp-red' : 'bg-ps-ink'}`} style={{ width: `${pct}%` }} />
+    </div>
+  )
 }
 
 export function ContactsList({ character }: ContactsListProps) {
@@ -35,11 +69,12 @@ export function ContactsList({ character }: ContactsListProps) {
 
   if (contacts.length === 0) {
     return (
-      <div className="text-center py-8 text-slate-400 text-sm">
-        <p className="text-2xl mb-2">👥</p>
-        <p>You haven&apos;t met any NPCs yet.</p>
-        <p className="text-xs mt-1 text-slate-500">Explore landmarks and travel the roads to meet characters.</p>
-      </div>
+      <section aria-label="Contacts" className="space-y-3">
+        <PlaybillTitle size="sm">Contacts</PlaybillTitle>
+        <p className="py-3 font-body text-sm italic text-ps-ink-soft">
+          You have not met anyone yet. People are found at landmarks and on the road.
+        </p>
+      </section>
     )
   }
 
@@ -47,98 +82,78 @@ export function ContactsList({ character }: ContactsListProps) {
 
   if (selected) {
     // Detail view
-    const tierBgColor = selected.tier.tier === 'hostile' ? 'bg-red-500' :
-      selected.tier.tier === 'unfriendly' ? 'bg-orange-400' :
-      selected.tier.tier === 'neutral' ? 'bg-slate-400' :
-      selected.tier.tier === 'friendly' ? 'bg-green-400' :
-      selected.tier.tier === 'trusted' ? 'bg-blue-400' : 'bg-amber-400'
-
     return (
-      <div className="space-y-3">
-        <button
-          onClick={() => setSelectedNpc(null)}
-          className="text-xs text-slate-400 hover:text-white transition-colors"
-        >
-          ← Back to contacts
-        </button>
-        <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <span className="text-3xl">{selected.icon}</span>
-            <div>
-              <div className="font-semibold text-white">{selected.name}</div>
-              <div className="text-xs text-slate-400">{selected.role}</div>
-            </div>
+      <section aria-label={selected.name} className="space-y-3">
+        <PaperButton size="sm" variant="outline" onClick={() => setSelectedNpc(null)}>
+          Back to contacts
+        </PaperButton>
+        <div className="text-center">
+          <span className="font-body text-3xl leading-none" aria-hidden>{selected.icon}</span>
+          <PlaybillTitle size="md" className="mt-2">{selected.name}</PlaybillTitle>
+          <PlaybillCaption className="mt-2">{selected.role}</PlaybillCaption>
+        </div>
+        <p className="font-body text-sm leading-relaxed text-ps-ink">{selected.description}</p>
+        {selected.personality && (
+          <p className="font-body text-sm italic leading-snug text-ps-ink-soft">&ldquo;{selected.personality}&rdquo;</p>
+        )}
+        <div>
+          <div className="flex items-center justify-between gap-2">
+            <PlaybillCaption>Standing</PlaybillCaption>
+            <Stamp tone={TIER_TONE[selected.tier.tier] ?? 'ink'}>{selected.tier.label}</Stamp>
           </div>
-          <p className="text-xs text-slate-300">{selected.description}</p>
-          {selected.personality && (
-            <p className="text-xs text-slate-500 italic">&quot;{selected.personality}&quot;</p>
-          )}
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400">Relationship:</span>
-              <span className={`text-xs font-semibold ${selected.tier.color}`}>{selected.tier.label}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${tierBgColor}`}
-                  style={{ width: `${Math.max(5, ((selected.disposition + 100) / 200) * 100)}%` }}
-                />
-              </div>
-              <span className="text-[10px] text-slate-500 w-8 text-right">
-                {selected.disposition > 0 ? '+' : ''}{selected.disposition}
-              </span>
-            </div>
-          </div>
-          <div className="flex gap-4 text-xs text-slate-400">
-            <span>Times spoken: {selected.timesSpoken}</span>
-            <span>Region: {selected.regionId.replace(/_/g, ' ')}</span>
+          <div className="mt-1.5 flex items-center gap-2">
+            <DispositionBar disposition={selected.disposition} label={`Standing with ${selected.name}`} />
+            <span className="w-8 shrink-0 text-right font-playbill text-sm tabular-nums text-ps-ink">
+              {selected.disposition > 0 ? '+' : ''}{selected.disposition}
+            </span>
           </div>
         </div>
-      </div>
+        <dl className="divide-y divide-ps-playbill-edge border-y border-ps-playbill-edge font-body text-sm">
+          <div className="flex justify-between gap-3 py-1.5">
+            <dt className="text-ps-ink-soft">Times spoken</dt>
+            <dd className="tabular-nums text-ps-ink">{selected.timesSpoken}</dd>
+          </div>
+          <div className="flex justify-between gap-3 py-1.5">
+            <dt className="text-ps-ink-soft">Country</dt>
+            <dd className="capitalize text-ps-ink">{selected.regionId.replace(/_/g, ' ')}</dd>
+          </div>
+        </dl>
+      </section>
     )
   }
 
   // List view
   return (
-    <div className="space-y-2">
-      <div className="text-xs text-slate-500 mb-1">{contacts.length} contact{contacts.length !== 1 ? 's' : ''}</div>
-      {contacts.map(contact => {
-        const tierBgColor = contact.tier.tier === 'hostile' ? 'bg-red-500' :
-          contact.tier.tier === 'unfriendly' ? 'bg-orange-400' :
-          contact.tier.tier === 'neutral' ? 'bg-slate-400' :
-          contact.tier.tier === 'friendly' ? 'bg-green-400' :
-          contact.tier.tier === 'trusted' ? 'bg-blue-400' : 'bg-amber-400'
-
-        return (
-          <button
-            key={contact.id}
-            onClick={() => setSelectedNpc(contact.id)}
-            className="w-full text-left bg-[#1e1f30] border border-[#3a3c56] hover:border-indigo-700/50 rounded-lg px-3 py-2.5 transition-colors"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-xl">{contact.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-white truncate">{contact.name}</span>
-                  <span className={`text-[10px] font-semibold uppercase tracking-wide ${contact.tier.color}`}>
-                    {contact.tier.label}
-                  </span>
-                </div>
-                <div className="text-[11px] text-slate-500">{contact.role} · Met {contact.timesSpoken} time{contact.timesSpoken !== 1 ? 's' : ''}</div>
-              </div>
-              <div className="w-16">
-                <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${tierBgColor}`}
-                    style={{ width: `${Math.max(5, ((contact.disposition + 100) / 200) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            </div>
-          </button>
-        )
-      })}
-    </div>
+    <section aria-label="Contacts" className="space-y-3">
+      <PlaybillTitle size="sm">Contacts</PlaybillTitle>
+      <PlaybillCaption>{contacts.length} met</PlaybillCaption>
+      <ul className="divide-y divide-ps-playbill-edge border-y border-ps-playbill-edge">
+        {contacts.map(contact => (
+          <li key={contact.id}>
+            <button
+              type="button"
+              onClick={() => setSelectedNpc(contact.id)}
+              className="flex w-full items-center gap-2.5 py-2.5 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+              aria-label={`${contact.name}, ${contact.role}, ${contact.tier.label}`}
+            >
+              <span aria-hidden className="w-7 shrink-0 text-center font-body text-xl leading-none">{contact.icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center gap-2">
+                  <span className="truncate font-playbill text-base uppercase leading-none tracking-wide text-ps-ink">{contact.name}</span>
+                  <Stamp tone={TIER_TONE[contact.tier.tier] ?? 'ink'} tilt={false} className="text-xs">{contact.tier.label}</Stamp>
+                </span>
+                <span className="mt-1 block font-body text-xs text-ps-ink-soft">
+                  {contact.role} · Met {contact.timesSpoken} time{contact.timesSpoken !== 1 ? 's' : ''}
+                </span>
+                <span className="mt-1.5 block w-24">
+                  <DispositionBar disposition={contact.disposition} label={`Standing with ${contact.name}`} />
+                </span>
+              </span>
+              <ChevronIcon className="shrink-0 text-ps-ink" />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

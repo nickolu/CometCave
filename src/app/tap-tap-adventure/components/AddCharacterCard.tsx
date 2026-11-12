@@ -1,23 +1,24 @@
 'use client'
-import { motion } from 'framer-motion'
 import React from 'react'
 
 interface AddCharacterCardProps {
   onClick: () => void
 }
 
+/** An empty poster frame on the foyer wall, waiting for a new bill. */
 export default function AddCharacterCard({ onClick }: AddCharacterCardProps) {
   return (
-    <motion.button
-      whileHover={{ scale: 1.05, boxShadow: '0 8px 28px rgba(0,0,0,0.25)' }}
-      className="flex flex-col items-center justify-center p-4 rounded-lg border-2 border-dashed border-sky-500 bg-[#161723] text-sky-400 hover:bg-sky-500/10 hover:border-sky-400 transition-all cursor-pointer focus:outline-none min-h-[200px] shadow-lg"
+    <button
+      className="flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-[3px] border-2 border-dashed border-ps-brass p-4 text-ps-brass-light transition-colors hover:bg-ps-lacquer-ink/60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
       onClick={onClick}
       tabIndex={0}
-      aria-label="Add Character"
+      aria-label="Print a new character"
       type="button"
     >
-      <span className="text-5xl font-light mb-2">+</span>
-      <span className="font-medium text-base">Add New Character</span>
-    </motion.button>
+      <span className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-ps-brass font-playbill text-3xl leading-none" aria-hidden>
+        +
+      </span>
+      <span className="font-playbill text-base uppercase tracking-widest">Print a new character</span>
+    </button>
   )
 }

@@ -2,11 +2,13 @@ import { MoveForwardResponse } from '@/app/api/v1/tap-tap-adventure/move-forward
 import { getRegion, getConnectedRegions, canEnterRegion } from '@/app/tap-tap-adventure/config/regions'
 import { getRandomEncounterNPC } from '@/app/tap-tap-adventure/config/npcs'
 import { buildStoryContext } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { type DiscoveryTier, discoveryTier } from '@/app/tap-tap-adventure/lib/discovery'
 import { generateLLMEvents, generateLegendaryEvent } from '@/app/tap-tap-adventure/lib/llmEventGenerator'
 import {
   crossedMilestone,
   SHOP_MILESTONE_INTERVAL,
   calculateDay,
+  roundKm,
 } from '@/app/tap-tap-adventure/lib/leveling'
 import { generateLandmarks, seededRandom } from '@/app/tap-tap-adventure/lib/landmarkGenerator'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
@@ -15,17 +17,8 @@ import { moveToward, hasArrived, Vec2 } from '@/app/tap-tap-adventure/lib/moveme
 
 const BASE_DISTANCE = 1
 
-function getBypassDiscoveryTier(distance: number, isExplored: boolean, isHidden: boolean = false): 'hidden' | 'distant' | 'unknown' | 'revealed' {
-  if (isExplored) return 'revealed'
-  if (isHidden) {
-    if (distance > 100) return 'hidden'
-    if (distance > 20) return 'unknown'
-    return 'revealed'
-  }
-  if (distance > 100) return 'hidden'
-  if (distance > 50) return 'distant'
-  if (distance > 20) return 'unknown'
-  return 'revealed'
+function getBypassDiscoveryTier(distance: number, isExplored: boolean, isHidden: boolean = false, isMapped: boolean = false): DiscoveryTier {
+  return discoveryTier(distance, { explored: isExplored, hidden: isHidden, mapped: isMapped })
 }
 
 function getBypassDisplayName(tier: string, realName: string, realIcon: string): { name: string; icon: string } {
@@ -43,7 +36,7 @@ export async function moveForwardService(
 ): Promise<MoveForwardResponse> {
   const mountSpeed = character.activeMount?.bonuses?.autoWalkSpeed ?? 1
   const moveDistance = BASE_DISTANCE * mountSpeed
-  const newDistance = character.distance + moveDistance
+  const newDistance = roundKm(character.distance + moveDistance)
   const updatedCharacter = { ...character, distance: newDistance }
   const day = calculateDay(newDistance)
 
@@ -154,7 +147,7 @@ export async function moveForwardService(
   const landmarkState = existingLandmarkState
 
   // Increment positionInRegion by moveDistance for this step
-  const newPositionInRegion = (landmarkState.positionInRegion ?? 0) + moveDistance
+  const newPositionInRegion = roundKm((landmarkState.positionInRegion ?? 0) + moveDistance)
   const activeTargetIndex = landmarkState.activeTargetIndex ?? 0
 
   // Compute updated 2D position for this step
@@ -246,7 +239,7 @@ export async function moveForwardService(
       for (let i = activeTargetIndex + 1; i < landmarkState.landmarks.length; i++) {
         const nextLm = landmarkState.landmarks[i]
         const dist = nextLm.distanceFromEntry - newPositionInRegion
-        const tier = getBypassDiscoveryTier(dist, nextLm.explored ?? false, nextLm.hidden ?? false)
+        const tier = getBypassDiscoveryTier(dist, nextLm.explored ?? false, nextLm.hidden ?? false, nextLm.mapped ?? false)
         if (tier === 'hidden') continue
         const display = getBypassDisplayName(tier, nextLm.name, nextLm.icon)
         bypassOptions.push({

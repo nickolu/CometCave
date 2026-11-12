@@ -1,6 +1,14 @@
 'use client'
+
+/**
+ * Waypoints: the towns you have been to, printed as lines on the bill, each
+ * with its fare on a brass chip.
+ */
+import { REGIONS, getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
-import { getRegion, REGIONS } from '@/app/tap-tap-adventure/config/regions'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillLine, PlaybillTitle } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 interface WaypointPanelProps {
   character: FantasyCharacter
@@ -16,21 +24,23 @@ export function WaypointPanel({ character, currentTownName, onTravel, onClose }:
   )
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-amber-400">🗺️ Waypoints</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close waypoints">✕</button>
+    <section aria-label="Waypoints">
+      <div className="flex items-start gap-2">
+        <PlaybillTitle size="sm" className="min-w-0 flex-1">Waypoints</PlaybillTitle>
+        <PaperButton variant="outline" size="sm" className="w-8 shrink-0 px-0" onClick={onClose} aria-label="Close waypoints">
+          <CloseIcon />
+        </PaperButton>
       </div>
 
-      <div className="text-[10px] text-slate-400 italic">
-        Travel instantly to a town you&apos;ve visited before. Cost varies by distance.
-      </div>
+      <p className="mt-3 font-body text-sm leading-relaxed text-ps-ink-soft">
+        Travel straight to a town you have visited before. The fare depends on the distance.
+      </p>
 
-      <div className="space-y-1.5 max-h-[250px] overflow-y-auto">
+      <div className="ps-scroll mt-3 grid max-h-[250px] gap-2 overflow-y-auto pr-1">
         {visitedTowns.length === 0 ? (
-          <div className="text-xs text-slate-500 italic py-3 text-center">
-            No other waypoints discovered yet. Visit more towns to unlock fast travel!
-          </div>
+          <p className="py-3 text-center font-body text-sm italic text-ps-ink-soft">
+            No other waypoints yet. Visit more towns to open up fast travel.
+          </p>
         ) : (
           visitedTowns.map((town, i) => {
             const region = REGIONS[town.regionId]
@@ -41,38 +51,39 @@ export function WaypointPanel({ character, currentTownName, onTravel, onClose }:
             const canAfford = (character.gold ?? 0) >= cost
 
             return (
-              <button
+              <PlaybillLine
                 key={`${town.landmarkId}-${town.regionId}-${i}`}
-                className={`w-full text-left bg-[#252638] border rounded p-2 flex items-center gap-2 transition-colors ${
-                  canAfford
-                    ? 'border-[#3a3c56] hover:border-indigo-500'
-                    : 'border-[#3a3c56] opacity-50 cursor-not-allowed'
-                }`}
                 disabled={!canAfford}
                 onClick={() => canAfford && onTravel(town.regionId, town.landmarkId, cost)}
-              >
-                <span className="text-lg">{town.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="text-xs font-semibold text-slate-200">{town.name}</div>
-                  <div className="text-[10px] text-slate-500">
+                note={
+                  <>
                     {region?.icon} {region?.name ?? town.regionId}
                     {isSameRegion && ' (same region)'}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <div className={`text-[10px] font-semibold ${canAfford ? 'text-amber-400' : 'text-red-400'}`}>
-                    {cost}g
-                  </div>
-                </div>
-              </button>
+                    {!canAfford && <span className="text-ps-stamp-red"> · Not enough gold</span>}
+                  </>
+                }
+                trailing={
+                  <span
+                    className={cn(
+                      'rounded-[3px] border px-1.5 py-0.5 font-playbill text-sm leading-none tabular-nums',
+                      canAfford ? 'border-ps-brass-deep bg-ps-brass text-ps-ink' : 'border-ps-stamp-red text-ps-stamp-red'
+                    )}
+                  >
+                    {cost} g
+                  </span>
+                }
+              >
+                <span aria-hidden className="mr-2 inline-block w-6 text-center font-body text-base leading-none">{town.icon}</span>
+                {town.name}
+              </PlaybillLine>
             )
           })
         )}
       </div>
 
-      <button className="w-full text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors" onClick={onClose}>
-        ← Back to Town
-      </button>
-    </div>
+      <PaperButton variant="outline" className="mt-4 w-full border-ps-ink/50 text-ps-ink-soft" onClick={onClose}>
+        Back to town
+      </PaperButton>
+    </section>
   )
 }

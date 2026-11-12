@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react'
 
+import { ResourceGlyph } from '@/app/tap-tap-adventure/stage/glyphs'
+import { Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+
 export interface ResourceEvent {
   id: string
   type: 'gold' | 'reputation' | 'item'
@@ -35,34 +38,20 @@ function FloatingResource({ event, index }: { event: ResourceEvent; index: numbe
   if (!visible) return null
 
   const isPositive = event.value > 0
-  // Color by rarity for item events, otherwise by positive/negative
-  const RARITY_TEXT_COLORS: Record<string, string> = {
-    uncommon: 'text-green-400',
-    rare: 'text-blue-400',
-    epic: 'text-purple-400',
-    legendary: 'text-amber-400',
-  }
-  const defaultColor = isPositive ? 'text-green-400' : 'text-red-400'
-  const color = event.type === 'item' && event.rarity && event.rarity !== 'common'
-    ? (RARITY_TEXT_COLORS[event.rarity] ?? defaultColor)
-    : defaultColor
-  const isRareItem = event.type === 'item' && (event.rarity === 'rare' || event.rarity === 'epic' || event.rarity === 'legendary')
-  const icon = event.type === 'gold' ? '💰' : event.type === 'reputation' ? '⭐' : '🎁'
-  const label = event.type === 'item' ? event.label : event.type === 'gold' ? 'Gold' : 'Rep'
+  const tone: StampTone =
+    event.type === 'item'
+      ? event.rarity === 'legendary' ? 'gold' : event.rarity === 'epic' || event.rarity === 'rare' ? 'violet' : 'ink'
+      : isPositive ? 'green' : 'red'
+  const label = event.type === 'item' ? event.label : event.type === 'gold' ? 'gold' : 'repute'
   const sign = isPositive ? '+' : ''
   // Stagger vertically so multiple rewards don't overlap
-  const topOffset = index * 24
+  const topOffset = index * 26
 
   return (
-    <span
-      className={`absolute animate-float-up pointer-events-none ${color} text-sm font-bold drop-shadow-lg whitespace-nowrap ${isRareItem ? 'drop-shadow-[0_0_6px_currentColor]' : ''}`}
-      style={{
-        left: '50%',
-        top: `${topOffset}px`,
-        transform: 'translateX(-50%)',
-      }}
-    >
-      {icon} {sign}{event.value} {label}
+    <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 animate-float-up whitespace-nowrap" style={{ top: `${topOffset}px` }}>
+      <Stamp tone={tone} animate className="bg-ps-playbill text-xs">
+        <ResourceGlyph kind={event.type} size={12} /> {event.type === 'item' ? label : `${sign}${event.value} ${label}`}
+      </Stamp>
     </span>
   )
 }

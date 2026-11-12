@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { TimedQuest } from '@/app/tap-tap-adventure/models/quest'
+import { PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface QuestCelebrationProps {
   quest: TimedQuest
@@ -32,6 +33,8 @@ export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
     claimTimerRef.current = setTimeout(onClaim, 300)
   }
 
+  const { rewards } = quest
+
   return (
     <div
       ref={dialogRef}
@@ -42,44 +45,55 @@ export function QuestCelebration({ quest, onClaim }: QuestCelebrationProps) {
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-ps-house/70" />
       <div
-        className={`relative transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
+        className={`relative mx-4 w-full max-w-sm transition-[transform,opacity] duration-500 motion-reduce:transition-none ${
+          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-75'
         }`}
       >
-        <div className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-emerald-500/50 rounded-2xl px-8 py-6 text-center shadow-2xl shadow-emerald-500/20 max-w-sm mx-4">
-          <div className="text-3xl mb-2">
-            <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>🏆</span>
-            <span className="inline-block animate-bounce mx-2" style={{ animationDelay: '150ms' }}>⭐</span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>🏆</span>
+        <PlaybillSheet className="px-6 pb-5 pt-6 text-center">
+          <div className="flex justify-center">
+            <Stamp tone="green" animate className="border-[3px] px-4 py-1.5 font-playbill text-2xl tracking-widest">
+              Quest complete
+            </Stamp>
           </div>
-          <h2 className="text-2xl font-bold text-emerald-400 mb-1">Quest Complete!</h2>
-          <p className="text-slate-300 text-sm mb-4">{quest.title}</p>
+          <PlaybillTitle size="md" className="mt-4">{quest.title}</PlaybillTitle>
 
-          <div className="bg-emerald-950/40 border border-emerald-700/30 rounded-lg p-3 mb-4 space-y-1">
-            <p className="text-xs text-emerald-300 font-semibold uppercase tracking-wider mb-1">Rewards</p>
-            {quest.rewards.gold && (
-              <p className="text-sm text-yellow-400">+{quest.rewards.gold} Gold</p>
+          <PlaybillCaption className="mt-4 text-center">Rewards</PlaybillCaption>
+          <ul className="mt-1.5 divide-y divide-dotted divide-ps-ink/40 border-y-2 border-dotted border-ps-ink/40 text-left font-body text-sm text-ps-ink">
+            {rewards.gold && (
+              <li className="flex items-center justify-between gap-3 py-2">
+                <span>Gold</span>
+                <Stamp tone="gold" tilt={false}>+{rewards.gold}</Stamp>
+              </li>
             )}
-            {quest.rewards.reputation && (
-              <p className="text-sm text-blue-400">+{quest.rewards.reputation} Reputation</p>
+            {rewards.reputation && (
+              <li className="flex items-center justify-between gap-3 py-2">
+                <span>Reputation</span>
+                <Stamp tone="blue" tilt={false}>+{rewards.reputation}</Stamp>
+              </li>
             )}
-            {quest.rewards.items?.map(item => (
-              <p key={item.id} className="text-sm text-purple-400">+ {item.name}</p>
+            {rewards.items?.map(item => (
+              <li key={item.id} className="flex items-center justify-between gap-3 py-2">
+                <span>{item.name}</span>
+                <Stamp tone="violet" tilt={false}>Item</Stamp>
+              </li>
             ))}
-            {quest.rewards.companion && (
-              <p className="text-sm text-green-400">+ {quest.rewards.companion.icon ?? '⚔️'} {quest.rewards.companion.name} joins your party!</p>
+            {rewards.companion && (
+              <li className="flex items-center justify-between gap-3 py-2">
+                <span>
+                  {rewards.companion.icon && <span className="mr-1" aria-hidden>{rewards.companion.icon}</span>}
+                  {rewards.companion.name} joins your party
+                </span>
+                <Stamp tone="green" tilt={false}>Companion</Stamp>
+              </li>
             )}
-          </div>
+          </ul>
 
-          <Button
-            className="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-md"
-            onClick={handleClaim}
-          >
-            Claim Rewards
-          </Button>
-        </div>
+          <PaperButton className="mt-4 w-full" onClick={handleClaim}>
+            Claim rewards
+          </PaperButton>
+        </PlaybillSheet>
       </div>
     </div>
   )

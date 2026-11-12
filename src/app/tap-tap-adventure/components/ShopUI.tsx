@@ -1,19 +1,25 @@
 'use client'
 
+/**
+ * The merchant's stall: a price list on a bill. Wares and the player's own
+ * pack sit under two tabs; each ware is a ruled row with its price set in
+ * the playbill's wood type; a mount for sale gets its own small bill with a
+ * brass price.
+ */
 import { useState } from 'react'
 
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
 import { MountNamingModal } from '@/app/tap-tap-adventure/components/MountNamingModal'
-import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
-import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
-import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
-import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
 import { getMountSellPrice } from '@/app/tap-tap-adventure/config/mounts'
-import { Item } from '@/app/tap-tap-adventure/models/types'
-import { Mount } from '@/app/tap-tap-adventure/models/mount'
-import { getEquipmentSlot, EquipmentSlots } from '@/app/tap-tap-adventure/models/equipment'
-import { ItemEffects } from '@/app/tap-tap-adventure/models/item'
+import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { getNPCDispositionPriceMultiplier } from '@/app/tap-tap-adventure/lib/contextBuilder'
+import { inferItemTypeAndEffects } from '@/app/tap-tap-adventure/lib/itemPostProcessor'
+import { calculateSellPrice } from '@/app/tap-tap-adventure/lib/sellPrice'
+import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
+import { EquipmentSlots, getEquipmentSlot } from '@/app/tap-tap-adventure/models/equipment'
+import { Mount } from '@/app/tap-tap-adventure/models/mount'
+import { Item } from '@/app/tap-tap-adventure/models/types'
+import { BrassPlate, PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 type ShopTab = 'buy' | 'sell'
 
@@ -43,12 +49,20 @@ const STAT_KEYS: { key: NumericEffectKey; label: string }[] = [
   { key: 'charisma', label: 'CHA' },
 ]
 
+const RARITY_TONE: Record<string, StampTone> = {
+  legendary: 'gold',
+  epic: 'violet',
+  rare: 'blue',
+  uncommon: 'green',
+  common: 'ink',
+}
+
 function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentSlots }) {
   if (item.type !== 'equipment') return null
   const slot = getEquipmentSlot(item)
   const equipped = equipment[slot]
   if (!equipped) {
-    return <div className="text-xs text-green-400">No item in {slot} slot — direct upgrade</div>
+    return <div className="font-body text-xs text-ps-stamp-green">No item in {slot} slot — direct upgrade</div>
   }
   const deltas = STAT_KEYS.map(({ key, label }) => {
     const newVal = Number(item.effects?.[key] ?? 0)
@@ -58,13 +72,13 @@ function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentS
     return { label, diff }
   }).filter(Boolean) as { label: string; diff: number }[]
 
-  if (deltas.length === 0) return <div className="text-xs text-gray-500">Same stats as equipped {equipped.name}</div>
+  if (deltas.length === 0) return <div className="font-body text-xs text-ps-ink-soft">Same stats as equipped {equipped.name}</div>
 
   return (
-    <div className="text-xs space-x-2">
-      <span className="text-gray-500">vs {equipped.name}:</span>
+    <div className="flex flex-wrap items-center gap-x-2 font-body text-xs">
+      <span className="text-ps-ink-soft">vs {equipped.name}:</span>
       {deltas.map(d => (
-        <span key={d.label} className={d.diff > 0 ? 'text-green-400' : 'text-red-400'}>
+        <span key={d.label} className={cn('font-semibold tabular-nums', d.diff > 0 ? 'text-ps-stamp-green' : 'text-ps-stamp-red')}>
           {d.diff > 0 ? '+' : ''}{d.diff} {d.label}
         </span>
       ))}
@@ -72,8 +86,100 @@ function ItemComparison({ item, equipment }: { item: Item; equipment: EquipmentS
   )
 }
 
+/** A price set in the playbill's wood type: "18 g". */
+function Price({ value, className }: { value: number | string; className?: string }) {
+  return (
+    <span className={cn('whitespace-nowrap font-playbill text-lg leading-none tabular-nums text-ps-ink', className)}>
+      {value}
+      <span className="ml-0.5 text-sm">g</span>
+    </span>
+  )
+}
+
+/** The item's stamps: enchantment, rarity, type. */
+function ItemStamps({ item, showQuantity = false }: { item: Item; showQuantity?: boolean }) {
+  return (
+    <>
+      {item.enchantmentLevel && item.enchantmentLevel > 0 ? (
+        <Stamp tone="blue" tilt={false}>+{item.enchantmentLevel}</Stamp>
+      ) : null}
+      {item.rarity && item.rarity !== 'common' && (
+        <Stamp tone={RARITY_TONE[item.rarity] ?? 'ink'} tilt={false}>{item.rarity}</Stamp>
+      )}
+      {item.type && item.type !== 'misc' && (
+        <Stamp tone="ink" tilt={false}>{item.type}</Stamp>
+      )}
+      {showQuantity && item.quantity > 1 && (
+        <span className="font-body text-xs tabular-nums text-ps-ink-soft">×{item.quantity}</span>
+      )}
+    </>
+  )
+}
+
+function mountBonusParts(mount: Mount): string[] {
+  const bonusParts: string[] = []
+  if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
+  if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
+  if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
+  if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
+  if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/km`)
+  return bonusParts
+}
+
+/** A mount on its own small bill, price on brass. */
+function MountBill({
+  caption,
+  mount,
+  price,
+  note,
+  action,
+}: {
+  caption: string
+  mount: Mount
+  price: number
+  note?: React.ReactNode
+  action: React.ReactNode
+}) {
+  const bonusParts = mountBonusParts(mount)
+  return (
+    <PlaybillSheet flat className="p-3 sm:p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <PlaybillCaption>{caption}</PlaybillCaption>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <span className="font-body text-base leading-none" aria-hidden>{mount.icon}</span>
+            <span className="font-playbill text-base text-ps-ink">{mount.name}</span>
+            <Stamp tone={RARITY_TONE[mount.rarity] ?? 'ink'} tilt={false}>{mount.rarity}</Stamp>
+          </div>
+        </div>
+        <BrassPlate className="shrink-0 px-2.5 py-1.5">
+          <Price value={price} />
+        </BrassPlate>
+      </div>
+      <p className="mt-2 font-body text-sm leading-snug text-ps-ink-soft">{mount.description}</p>
+      {bonusParts.length > 0 && <p className="mt-1 font-body text-xs text-ps-ink">{bonusParts.join(', ')}</p>}
+      <p className="mt-1 font-body text-xs text-ps-ink-soft">Daily upkeep: {mount.dailyCost} gold</p>
+      {note}
+      <div className="mt-3">{action}</div>
+    </PlaybillSheet>
+  )
+}
+
+const TABS: { id: ShopTab; label: string }[] = [
+  { id: 'buy', label: 'Wares' },
+  { id: 'sell', label: 'Your pack' },
+]
+
+const SORTS = [
+  ['default', 'Default'],
+  ['price-low', 'Low price'],
+  ['price-high', 'High price'],
+  ['rarity', 'Rarity'],
+  ['type', 'Type'],
+] as const
+
 export function ShopUI() {
-  const { gameState, setShopState, setGameState, setMount } = useGameStore()
+  const { gameState, setShopState, setGameState } = useGameStore()
   const [feedback, setFeedback] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState<ShopTab>('buy')
@@ -269,307 +375,208 @@ export function ShopUI() {
     return 0
   })
 
+  const feedbackIsBad = !!feedback && /fail|not enough/i.test(feedback)
+
   return (
-    <div className="space-y-4">
-      <h4 className="font-semibold w-full text-center uppercase border-b border-[#3a3c56] pb-2 mb-4">
-        Milestone Shop
-      </h4>
-      <p className="text-sm text-gray-400 text-center">
-        A merchant&apos;s caravan comes into view!
-      </p>
-      <div className="text-sm text-center text-yellow-400 font-semibold">
-        Your Gold: {character.gold}
+    <div>
+      <PlaybillTitle size="sm">The merchant&apos;s stall</PlaybillTitle>
+      <p className="mt-2 text-center font-body text-sm italic text-ps-ink-soft">A merchant&apos;s caravan comes into view!</p>
+      <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
+        <PlaybillCaption className="text-ps-ink">
+          Your purse · <span className="font-playbill text-sm normal-case tabular-nums">{character.gold} g</span>
+        </PlaybillCaption>
         {npcDiscountPercent > 0 && (
-          <span className="text-xs text-green-400 ml-2">
-            ({npcDiscountPercent}% NPC discount applied)
-          </span>
+          <Stamp tone="green" tilt={false}>{npcDiscountPercent}% off, a friend&apos;s price</Stamp>
         )}
       </div>
 
-      {/* Tab toggle */}
-      <div className="flex gap-2">
-        <Button
-          className={`flex-1 font-bold text-sm py-2 rounded border ${
-            activeTab === 'buy'
-              ? 'bg-gradient-to-r from-yellow-600 to-amber-600 border-yellow-400/30 text-white'
-              : 'bg-[#2a2b3f] border-[#3a3c56] text-gray-400 hover:bg-[#3a3c56]'
-          }`}
-          onClick={() => { setActiveTab('buy'); setFeedback(null) }}
-        >
-          Buy
-        </Button>
-        <Button
-          className={`flex-1 font-bold text-sm py-2 rounded border ${
-            activeTab === 'sell'
-              ? 'bg-gradient-to-r from-emerald-600 to-green-600 border-green-400/30 text-white'
-              : 'bg-[#2a2b3f] border-[#3a3c56] text-gray-400 hover:bg-[#3a3c56]'
-          }`}
-          onClick={() => { setActiveTab('sell'); setFeedback(null) }}
-        >
-          Sell
-        </Button>
+      {/* Tabs (the Drawers' SubTabs pattern) */}
+      <div role="tablist" className="mt-4 flex flex-wrap gap-1 border-b-2 border-ps-ink pb-2">
+        {TABS.map(t => (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === t.id}
+            onClick={() => { setActiveTab(t.id); setFeedback(null) }}
+            className={cn(
+              'rounded-[2px] border-2 px-2.5 py-1 font-playbill text-xs uppercase tracking-widest transition-colors',
+              'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ds-primary',
+              activeTab === t.id ? 'border-ps-ink bg-ps-ink text-ps-playbill' : 'border-transparent text-ps-ink-soft hover:border-ps-ink hover:text-ps-ink'
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {feedback && (
-        <div className="text-sm text-center text-green-400">{feedback}</div>
+        <p
+          role="status"
+          className={cn(
+            'mt-3 rounded-[2px] border-2 border-dotted px-3 py-2 text-center font-body text-sm',
+            feedbackIsBad ? 'border-ps-stamp-red text-ps-stamp-red' : 'border-ps-ink/50 text-ps-ink'
+          )}
+        >
+          {feedback}
+        </p>
       )}
 
-      {/* Buy tab */}
+      {/* Wares */}
       {activeTab === 'buy' && (
-        <div className="space-y-3">
-          <div className="flex gap-1 items-center flex-wrap text-[10px]">
-            <span className="text-slate-500">Sort:</span>
-            {([
-              ['default', 'Default'],
-              ['price-low', 'Price \u2191'],
-              ['price-high', 'Price \u2193'],
-              ['rarity', 'Rarity'],
-              ['type', 'Type'],
-            ] as const).map(([key, label]) => (
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center gap-1">
+            <PlaybillCaption className="mr-1">Sort</PlaybillCaption>
+            {SORTS.map(([key, label]) => (
               <button
                 key={key}
-                className={`px-1.5 py-0.5 rounded transition-colors ${
-                  sortBy === key ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
-                }`}
+                type="button"
+                aria-pressed={sortBy === key}
                 onClick={() => setSortBy(key)}
+                className={cn(
+                  'rounded-[2px] border px-1.5 py-0.5 font-label text-xs font-bold uppercase tracking-widest transition-colors',
+                  'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ds-primary',
+                  sortBy === key ? 'border-ps-ink bg-ps-ink text-ps-playbill' : 'border-ps-ink/40 text-ps-ink-soft hover:border-ps-ink hover:text-ps-ink'
+                )}
               >
                 {label}
               </button>
             ))}
           </div>
-          {/* Mount for sale */}
+
           {shopState.shopMount && (() => {
             const { mount, price } = shopState.shopMount
             const canAffordMount = character.gold >= price
-            const rarityColors: Record<string, string> = {
-              common: 'text-gray-300',
-              uncommon: 'text-green-400',
-              rare: 'text-blue-400',
-              legendary: 'text-yellow-400',
-            }
-            const bonusParts: string[] = []
-            if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
-            if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
-            if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
-            if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
-            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/km`)
             return (
-              <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
-                <div className="flex justify-between items-start">
-                  <div className="font-semibold text-white">
-                    {mount.icon} {mount.name}
-                    <span className={`ml-2 text-xs uppercase ${rarityColors[mount.rarity]}`}>
-                      {mount.rarity}
-                    </span>
-                  </div>
-                  <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
-                    {price} gold
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400">{mount.description}</div>
-                <div className="text-xs text-purple-300">{bonusParts.join(', ')}</div>
-                <div className="text-xs text-gray-500">Daily upkeep: {mount.dailyCost} gold</div>
-                {character.activeMount && (
-                  <div className="text-xs text-amber-400">
-                    Replaces current mount: {character.activeMount.icon} {character.activeMount.name}
-                  </div>
-                )}
-                <Button
-                  className="w-full mt-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={!canAffordMount || busy}
-                  onClick={handleBuyMount}
-                >
-                  {canAffordMount ? 'Buy Mount' : 'Not enough gold'}
-                </Button>
+              <div className="mt-3">
+                <MountBill
+                  caption="Mount for sale"
+                  mount={mount}
+                  price={price}
+                  note={
+                    character.activeMount ? (
+                      <p className="mt-1 font-body text-xs text-ps-stamp-gold">
+                        Replaces your current mount: {character.activeMount.icon} {character.activeMount.name}
+                      </p>
+                    ) : undefined
+                  }
+                  action={
+                    <PaperButton variant="brass" className="w-full" disabled={!canAffordMount || busy} onClick={handleBuyMount}>
+                      {canAffordMount ? 'Buy mount' : 'Not enough gold'}
+                    </PaperButton>
+                  }
+                />
               </div>
             )
           })()}
 
-          {sortedShopItems.map(item => {
-            const canAfford = character.gold >= (item.price ?? 0)
-            return (
-              <div
-                key={item.id}
-                className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="font-semibold text-white">
-                    {item.name}
-                    {item.enchantmentLevel && item.enchantmentLevel > 0 && (
-                      <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
-                        +{item.enchantmentLevel}
-                      </span>
+          <ul className="mt-2 divide-y-2 divide-dotted divide-ps-ink/40" aria-label="Wares">
+            {sortedShopItems.map(item => {
+              const canAfford = character.gold >= (item.price ?? 0)
+              return (
+                <li key={item.id} className="flex items-start gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-body text-base font-semibold leading-snug text-ps-ink">{item.name}</span>
+                      <ItemStamps item={item} />
+                    </div>
+                    <p className="mt-0.5 font-body text-sm leading-snug text-ps-ink-soft">{item.description}</p>
+                    <p className="mt-1 font-body text-xs text-ps-ink">{formatEffects(item.effects)}</p>
+                    {item.onHitEffect && (
+                      <p className="mt-0.5 font-body text-xs text-ps-ink-soft">
+                        On hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                      </p>
                     )}
-                    {item.rarity && item.rarity !== 'common' && (
-                      <span className={`ml-2 text-[10px] uppercase font-bold ${
-                        item.rarity === 'legendary' ? 'text-yellow-400' :
-                        item.rarity === 'epic' ? 'text-purple-400' :
-                        item.rarity === 'rare' ? 'text-blue-400' :
-                        item.rarity === 'uncommon' ? 'text-green-400' :
-                        'text-slate-400'
-                      }`}>
-                        {item.rarity}
-                      </span>
+                    {item.drawback && (
+                      <p className="mt-0.5 font-body text-xs text-ps-stamp-red">Drawback: {item.drawback.description}</p>
                     )}
-                    {item.type && item.type !== 'misc' && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-slate-700 text-slate-300 ml-1">
-                        {item.type}
-                      </span>
+                    {item.loreText && (
+                      <p className="mt-0.5 font-body text-xs italic text-ps-ink-soft">{item.loreText}</p>
+                    )}
+                    {character.equipment && (
+                      <div className="mt-1">
+                        <ItemComparison item={item} equipment={character.equipment as EquipmentSlots} />
+                      </div>
                     )}
                   </div>
-                  <div className="text-yellow-400 font-bold text-sm whitespace-nowrap ml-2">
-                    {item.price ?? '?'} gold
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <Price value={item.price ?? '?'} />
+                    <PaperButton variant="brass" size="sm" disabled={!canAfford || busy} onClick={() => handlePurchase(item)}>
+                      {canAfford ? 'Buy' : 'Not enough gold'}
+                    </PaperButton>
                   </div>
-                </div>
-                <div className="text-xs text-gray-400">{item.description}</div>
-                <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
-                {item.onHitEffect && (
-                  <div className="text-[10px] text-orange-300">
-                    ⚡ On-hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
-                  </div>
-                )}
-                {item.drawback && (
-                  <div className="text-[10px] text-red-400">
-                    ⚠ Drawback: {item.drawback.description}
-                  </div>
-                )}
-                {item.loreText && (
-                  <div className="text-[10px] text-slate-500 italic mt-0.5">{item.loreText}</div>
-                )}
-                {character.equipment && (
-                  <ItemComparison item={item} equipment={character.equipment as EquipmentSlots} />
-                )}
-                <Button
-                  className="w-full mt-2 bg-gradient-to-r from-yellow-600 to-amber-600 hover:from-yellow-500 hover:to-amber-500 border border-yellow-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={!canAfford || busy}
-                  onClick={() => handlePurchase(item)}
-                >
-                  {canAfford ? 'Buy' : 'Not enough gold'}
-                </Button>
-              </div>
-            )
-          })}
+                </li>
+              )
+            })}
+          </ul>
 
           {shopState.items.length === 0 && (
-            <div className="text-sm text-gray-500 text-center">The merchant has nothing left to sell.</div>
+            <p className="py-4 text-center font-body text-sm italic text-ps-ink-soft">The merchant has nothing left to sell.</p>
           )}
         </div>
       )}
 
-      {/* Sell tab */}
+      {/* Your pack */}
       {activeTab === 'sell' && (
-        <div className="space-y-3">
-          {/* Sell Mount */}
+        <div className="mt-3">
           {character.activeMount && (() => {
             const mount = character.activeMount
             const sellPrice = getMountSellPrice(mount.rarity)
-            const rarityColors: Record<string, string> = {
-              common: 'text-gray-300',
-              uncommon: 'text-green-400',
-              rare: 'text-blue-400',
-              legendary: 'text-yellow-400',
-            }
-            const bonusParts: string[] = []
-            if (mount.bonuses.strength) bonusParts.push(`+${mount.bonuses.strength} STR`)
-            if (mount.bonuses.intelligence) bonusParts.push(`+${mount.bonuses.intelligence} INT`)
-            if (mount.bonuses.luck) bonusParts.push(`+${mount.bonuses.luck} LCK`)
-            if (mount.bonuses.autoWalkSpeed) bonusParts.push(`${mount.bonuses.autoWalkSpeed}x speed`)
-            if (mount.bonuses.healRate) bonusParts.push(`+${mount.bonuses.healRate} heal/km`)
             return (
-              <div className="border border-purple-500/40 bg-[#2a2040] rounded-lg p-3 space-y-1">
-                <div className="flex justify-between items-start">
-                  <div className="font-semibold text-white">
-                    {mount.icon} {mount.name}
-                    <span className={`ml-2 text-xs uppercase ${rarityColors[mount.rarity]}`}>
-                      {mount.rarity}
-                    </span>
-                  </div>
-                  <div className="text-emerald-400 font-bold text-sm whitespace-nowrap ml-2">
-                    {sellPrice} gold
-                  </div>
-                </div>
-                <div className="text-xs text-gray-400">{mount.description}</div>
-                <div className="text-xs text-purple-300">{bonusParts.join(', ')}</div>
-                <div className="text-xs text-gray-500">Daily upkeep: {mount.dailyCost} gold</div>
-                <Button
-                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={busy}
-                  onClick={handleSellMount}
-                >
-                  Sell Mount
-                </Button>
-              </div>
+              <MountBill
+                caption="Your mount"
+                mount={mount}
+                price={sellPrice}
+                action={
+                  <PaperButton variant="outline" className="w-full" disabled={busy} onClick={handleSellMount}>
+                    Sell mount
+                  </PaperButton>
+                }
+              />
             )
           })()}
 
-          {sellableItems.map(item => {
-            const sellPrice = calculateSellPrice(item)
-            return (
-              <div
-                key={item.id}
-                className="border border-[#3a3c56] bg-[#2a2b3f] rounded-lg p-3 space-y-1"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="font-semibold text-white">
-                    {item.name}
-                    {item.enchantmentLevel && item.enchantmentLevel > 0 && (
-                      <span className="text-[10px] px-1 py-0.5 bg-cyan-900/50 text-cyan-300 border border-cyan-700/40 rounded font-semibold ml-1">
-                        +{item.enchantmentLevel}
-                      </span>
+          <ul className="mt-2 divide-y-2 divide-dotted divide-ps-ink/40" aria-label="Your pack">
+            {sellableItems.map(item => {
+              const sellPrice = calculateSellPrice(item)
+              return (
+                <li key={item.id} className="flex items-start gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-body text-base font-semibold leading-snug text-ps-ink">{item.name}</span>
+                      <ItemStamps item={item} showQuantity />
+                    </div>
+                    <p className="mt-0.5 font-body text-sm leading-snug text-ps-ink-soft">{item.description}</p>
+                    <p className="mt-1 font-body text-xs text-ps-ink">{formatEffects(item.effects)}</p>
+                    {item.onHitEffect && (
+                      <p className="mt-0.5 font-body text-xs text-ps-ink-soft">
+                        On hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
+                      </p>
                     )}
-                    {item.rarity && item.rarity !== 'common' && (
-                      <span className={`ml-1 text-[10px] uppercase font-bold ${
-                        item.rarity === 'legendary' ? 'text-yellow-400' :
-                        item.rarity === 'epic' ? 'text-purple-400' :
-                        item.rarity === 'rare' ? 'text-blue-400' :
-                        'text-green-400'
-                      }`}>
-                        {item.rarity}
-                      </span>
-                    )}
-                    {item.quantity > 1 && (
-                      <span className="text-xs text-gray-400 ml-1">(x{item.quantity})</span>
+                    {item.drawback && (
+                      <p className="mt-0.5 font-body text-xs text-ps-stamp-red">Drawback: {item.drawback.description}</p>
                     )}
                   </div>
-                  <div className="text-emerald-400 font-bold text-sm whitespace-nowrap ml-2">
-                    {sellPrice} gold
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <Price value={sellPrice} />
+                    <PaperButton variant="outline" size="sm" disabled={busy} onClick={() => handleSell(item)}>
+                      Sell
+                    </PaperButton>
                   </div>
-                </div>
-                <div className="text-xs text-gray-400">{item.description}</div>
-                <div className="text-xs text-indigo-300">{formatEffects(item.effects)}</div>
-                {item.onHitEffect && (
-                  <div className="text-[10px] text-orange-300">
-                    ⚡ On-hit: {item.onHitEffect.description} ({Math.round(item.onHitEffect.chance * 100)}% chance)
-                  </div>
-                )}
-                {item.drawback && (
-                  <div className="text-[10px] text-red-400">
-                    ⚠ Drawback: {item.drawback.description}
-                  </div>
-                )}
-                <Button
-                  className="w-full mt-2 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 border border-green-400/30 text-white font-bold text-base py-3 rounded disabled:opacity-40 disabled:cursor-not-allowed"
-                  disabled={busy}
-                  onClick={() => handleSell(item)}
-                >
-                  Sell
-                </Button>
-              </div>
-            )
-          })}
+                </li>
+              )
+            })}
+          </ul>
 
           {sellableItems.length === 0 && !character.activeMount && (
-            <div className="text-sm text-gray-500 text-center">You have nothing to sell.</div>
+            <p className="py-4 text-center font-body text-sm italic text-ps-ink-soft">You have nothing to sell.</p>
           )}
         </div>
       )}
 
-      <Button
-        className="w-full bg-[#2a2b3f] hover:bg-[#3a3c56] border border-[#3a3c56] text-white font-bold text-sm py-3 rounded"
-        onClick={handleLeaveShop}
-      >
-        Leave Shop
-      </Button>
+      <PaperButton variant="outline" className="mt-4 w-full border-ps-ink/50 text-ps-ink-soft" onClick={handleLeaveShop}>
+        Leave the shop
+      </PaperButton>
 
       {pendingMount && (
         <MountNamingModal

@@ -1,10 +1,13 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+
 import { soundEngine } from '@/app/tap-tap-adventure/lib/soundEngine'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { PaperButton, PlaybillSheet, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
 
-const PARTICLE_COLORS = ['#FACC15', '#FB923C', '#A78BFA', '#60A5FA']
+// Paper confetti: brass, paper and the printer's gold, never a glow.
+const PARTICLE_COLORS = ['var(--ps-brass)', 'var(--ps-brass-light)', 'var(--ps-stamp-gold)', 'var(--ps-playbill)']
 const PARTICLES = Array.from({ length: 12 }, (_, i) => {
   const angle = (i / 12) * 2 * Math.PI
   const radius = [40, 55, 70][i % 3]
@@ -39,69 +42,65 @@ export function LevelUpCelebration({ level, onDismiss }: LevelUpCelebrationProps
     return () => clearTimeout(timer)
   }, [onDismiss])
 
+  const handleDismiss = () => {
+    setIsVisible(false)
+    setTimeout(onDismiss, 300)
+  }
+
   return (
     <div
       ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Level up!"
-      className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+      className={`pointer-events-none fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40" />
+      <div className="absolute inset-0 bg-ps-house/70" />
 
       {/* Content */}
       <div
-        className={`relative pointer-events-auto transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
+        className={`pointer-events-auto relative mx-4 w-full max-w-sm transition-[transform,opacity] duration-500 motion-reduce:transition-none ${
+          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-75'
         }`}
-        onClick={() => {
-          setIsVisible(false)
-          setTimeout(onDismiss, 300)
-        }}
+        onClick={handleDismiss}
       >
-        <div className="relative bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-yellow-500/50 rounded-2xl px-10 py-8 text-center shadow-2xl shadow-yellow-500/20">
+        <PlaybillSheet className="px-6 pb-5 pt-6 text-center">
           {isVisible && PARTICLES.map(p => (
             <span
               key={p.id}
-              className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full pointer-events-none animate-particle-burst"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 animate-particle-burst motion-reduce:hidden"
               style={{
                 '--tx': `${p.tx}px`,
                 '--ty': `${p.ty}px`,
                 backgroundColor: p.color,
                 animationDelay: `${p.id * 40}ms`,
               } as React.CSSProperties}
+              aria-hidden
             />
           ))}
-          {/* Stars */}
-          <div className="text-4xl mb-2">
-            <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>
-              *
-            </span>
-            <span className="inline-block animate-bounce mx-2" style={{ animationDelay: '150ms' }}>
-              *
-            </span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>
-              *
-            </span>
+
+          <div className="flex justify-center">
+            <Stamp tone="gold" animate className="border-[3px] px-4 py-1.5 font-playbill text-3xl tracking-widest">
+              Level {level}
+            </Stamp>
           </div>
 
-          {/* Title */}
-          <h2 className="text-3xl font-bold text-yellow-400 mb-1">Level Up!</h2>
+          <PlaybillTitle size="sm" className="mt-4">You grow stronger</PlaybillTitle>
 
-          {/* Level */}
-          <div className="text-6xl font-black text-white my-3">{level}</div>
+          {/* The facts, ruled */}
+          <ul className="mt-3 divide-y divide-dotted divide-ps-ink/40 text-left font-body text-sm text-ps-ink">
+            <li className="flex justify-between py-1.5"><span>Strength</span><span className="tabular-nums text-ps-stamp-green">+1</span></li>
+            <li className="flex justify-between py-1.5"><span>Intelligence</span><span className="tabular-nums text-ps-stamp-green">+1</span></li>
+            <li className="flex justify-between py-1.5"><span>Luck</span><span className="tabular-nums text-ps-stamp-green">+1</span></li>
+          </ul>
 
-          {/* Stats message */}
-          <p className="text-slate-300 text-sm mb-4">
-            +1 Strength, +1 Intelligence, +1 Luck
-          </p>
-
-          {/* Dismiss hint */}
-          <p className="text-slate-500 text-xs">Tap to continue</p>
-        </div>
+          <PaperButton className="mt-4 w-full" onClick={handleDismiss}>
+            Continue
+          </PaperButton>
+        </PlaybillSheet>
       </div>
     </div>
   )

@@ -1,54 +1,51 @@
 'use client'
 
-import { useState } from 'react'
+/**
+ * The camp: its buildings as ruled rows, each with its level in wood type,
+ * the next upgrade's price on brass, and a brass button to pay it.
+ */
 import { BASE_BUILDINGS } from '@/app/tap-tap-adventure/config/baseBuildings'
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 export function BasePanel() {
   const { getSelectedCharacter, upgradeBuilding } = useGameStore()
-  const [isExpanded, setIsExpanded] = useState(false)
 
   const character = getSelectedCharacter()
   const buildingLevels = character?.campState?.buildingLevels ?? {}
   const gold = character?.gold ?? 0
 
-  if (!isExpanded) {
-    const totalLevels = Object.values(buildingLevels).reduce((sum, v) => sum + v, 0)
-    const maxLevels = BASE_BUILDINGS.length * 3
-    return (
-      <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-amber-700/50 transition-colors"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-amber-400">&#x1F3D5; Camp Buildings</span>
-          <span className="text-xs text-slate-400">{totalLevels}/{maxLevels} levels</span>
-        </div>
-        <div className="h-1.5 bg-slate-700 rounded-full overflow-hidden mt-2">
-          <div
-            className="h-full bg-amber-500 rounded-full transition-all duration-300"
-            style={{ width: `${maxLevels > 0 ? (totalLevels / maxLevels) * 100 : 0}%` }}
-          />
-        </div>
-      </button>
-    )
-  }
+  const totalLevels = Object.values(buildingLevels).reduce((sum, v) => sum + v, 0)
+  const maxLevels = BASE_BUILDINGS.reduce((sum, b) => sum + b.maxLevel, 0)
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          &#x1F3D5; Camp Buildings
-        </button>
-        <span className="text-xs text-amber-300 font-semibold">
-          &#x1F4B0; {gold.toLocaleString()}g
-        </span>
+    <section aria-label="Camp" className="space-y-3">
+      <PlaybillTitle size="sm">Camp</PlaybillTitle>
+
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <PlaybillCaption>Built</PlaybillCaption>
+          <div className="mt-1 flex items-center gap-2">
+            <div
+              className="h-1.5 flex-1 overflow-hidden rounded-full bg-ps-playbill-edge"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={maxLevels > 0 ? Math.round((totalLevels / maxLevels) * 100) : 0}
+              aria-label="Camp built"
+            >
+              <div className="h-full rounded-full bg-ps-ink transition-[width] duration-300" style={{ width: `${maxLevels > 0 ? (totalLevels / maxLevels) * 100 : 0}%` }} />
+            </div>
+            <span className="shrink-0 font-playbill text-sm tabular-nums text-ps-ink">{totalLevels}<span className="text-ps-ink-soft">/{maxLevels}</span></span>
+          </div>
+        </div>
+        <BrassPlate className="shrink-0">
+          <BrassFigure label="Gold" value={gold.toLocaleString()} />
+        </BrassPlate>
       </div>
 
-      <div className="grid grid-cols-1 gap-2">
+      <ul className="divide-y-2 divide-dotted divide-ps-ink-faint border-y-2 border-ps-ink">
         {BASE_BUILDINGS.map(building => {
           const level = buildingLevels[building.id] ?? 0
           const isMaxed = level >= building.maxLevel
@@ -56,66 +53,45 @@ export function BasePanel() {
           const canAfford = cost !== null && cost !== undefined && gold >= cost
 
           return (
-            <div
-              key={building.id}
-              className={`rounded-lg p-2.5 border text-xs ${
-                isMaxed
-                  ? 'bg-amber-950/20 border-amber-600/30'
-                  : 'bg-[#161723] border-[#2a2b3f]'
-              }`}
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-xl leading-none mt-0.5">{building.icon}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`font-semibold ${isMaxed ? 'text-amber-400' : 'text-slate-200'}`}>
-                      {building.name}
+            <li key={building.id} className="py-3">
+              <div className="flex items-start gap-2.5">
+                <span aria-hidden className="mt-0.5 w-6 shrink-0 text-center font-body text-lg leading-none">{building.icon}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="truncate font-playbill text-base uppercase leading-none tracking-wide text-ps-ink">{building.name}</span>
+                    <span className="shrink-0 font-playbill text-sm tabular-nums text-ps-ink" title={`Level ${level} of ${building.maxLevel}`}>
+                      Lv {level}<span className="text-ps-ink-soft">/{building.maxLevel}</span>
                     </span>
-                    {/* Level pips */}
-                    <div className="flex gap-0.5 shrink-0">
-                      {Array.from({ length: building.maxLevel }).map((_, i) => (
-                        <span
-                          key={i}
-                          className={`text-[10px] ${i < level ? 'text-amber-400' : 'text-slate-600'}`}
-                        >
-                          {i < level ? '\u25CF' : '\u25CB'}
-                        </span>
-                      ))}
-                    </div>
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{building.description}</p>
-                  <p className="text-[10px] text-amber-300/80 mt-0.5">{building.effectDescription}</p>
+                  <p className="mt-1 font-body text-xs leading-snug text-ps-ink-soft">{building.description}</p>
+                  <p className="mt-0.5 font-body text-sm leading-snug text-ps-ink">{building.effectDescription}</p>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between mt-2 gap-2">
+              <div className="mt-2 flex items-center justify-end gap-2 pl-[34px]">
                 {isMaxed ? (
-                  <span className="text-[10px] uppercase tracking-wider text-amber-500 font-semibold">
-                    Maxed
-                  </span>
+                  <Stamp tone="gold">Fully built</Stamp>
                 ) : (
                   <>
-                    <span className="text-[10px] text-slate-400">
-                      Cost: <span className={canAfford ? 'text-amber-300' : 'text-red-400'}>{cost}g</span>
-                    </span>
-                    <button
-                      className={`text-[10px] px-2 py-1 rounded font-semibold transition-colors ${
-                        canAfford
-                          ? 'bg-amber-600 hover:bg-amber-500 text-white'
-                          : 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                      }`}
+                    <BrassPlate className={cn('px-2 py-1 font-playbill text-sm leading-none tabular-nums', !canAfford && 'opacity-70')} title={canAfford ? `Costs ${cost} gold` : `Costs ${cost} gold; you have ${gold}`}>
+                      {cost} gold
+                    </BrassPlate>
+                    <PaperButton
+                      size="sm"
+                      variant="brass"
                       disabled={!canAfford}
                       onClick={() => upgradeBuilding(building.id)}
+                      title={canAfford ? `Upgrade ${building.name} to level ${level + 1}` : `Need ${cost} gold`}
                     >
                       Upgrade
-                    </button>
+                    </PaperButton>
                   </>
                 )}
               </div>
-            </div>
+            </li>
           )
         })}
-      </div>
-    </div>
+      </ul>
+    </section>
   )
 }

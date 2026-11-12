@@ -1,26 +1,33 @@
 'use client'
 
+/**
+ * The bestiary: every beast met so far, each on a small ruled card with its
+ * figures set in the playbill's wood type and its weaknesses stamped on.
+ */
 import { useState } from 'react'
-import { BestiaryEntry } from '@/app/tap-tap-adventure/models/bestiary'
+
 import { getElementalMultiplier } from '@/app/tap-tap-adventure/config/elements'
+import { BestiaryEntry } from '@/app/tap-tap-adventure/models/bestiary'
 import { SpellElement } from '@/app/tap-tap-adventure/models/spell'
+import { SearchIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
 
-const ELEMENT_STYLES: Record<string, string> = {
-  nature: 'bg-green-900/40 text-green-300',
-  shadow: 'bg-slate-800/60 text-slate-300',
-  arcane: 'bg-violet-900/40 text-violet-300',
-  fire: 'bg-orange-900/40 text-orange-300',
-  ice: 'bg-cyan-900/40 text-cyan-300',
-  none: 'bg-slate-800/40 text-slate-400',
+const ELEMENTS: SpellElement[] = ['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane']
+
+/** The printer's ink for each element's stamp. */
+const ELEMENT_TONE: Record<string, StampTone> = {
+  fire: 'red',
+  ice: 'blue',
+  lightning: 'gold',
+  shadow: 'ink',
+  nature: 'green',
+  arcane: 'violet',
+  none: 'ink',
 }
 
-const ELEMENT_ICONS: Record<string, string> = {
-  fire: '🔥', ice: '❄️', lightning: '⚡', shadow: '🌑', nature: '🌿', arcane: '✨',
-}
-
-function getElementStyle(element?: string): string {
-  if (!element) return ELEMENT_STYLES['none']
-  return ELEMENT_STYLES[element] ?? ELEMENT_STYLES['none']
+function elementTone(element?: string): StampTone {
+  if (!element) return ELEMENT_TONE['none']
+  return ELEMENT_TONE[element] ?? ELEMENT_TONE['none']
 }
 
 function getWeaknessResistance(enemyElement?: string): { weak: SpellElement[]; resists: SpellElement[] } {
@@ -36,27 +43,21 @@ function getWeaknessResistance(enemyElement?: string): { weak: SpellElement[]; r
   return { weak, resists }
 }
 
+function Figure({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">{label}</span>
+      <span className="font-playbill text-sm tabular-nums text-ps-ink">{value}</span>
+    </span>
+  )
+}
+
 export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [elementFilter, setElementFilter] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'name' | 'level' | 'defeated'>('level')
 
   const count = bestiary.length
-
-  if (!isExpanded) {
-    return (
-      <button
-        className="w-full bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 text-left hover:border-indigo-700/50 transition-colors"
-        onClick={() => setIsExpanded(true)}
-      >
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-bold text-indigo-400">Bestiary</span>
-          <span className="text-xs text-slate-400">{count} discovered</span>
-        </div>
-      </button>
-    )
-  }
 
   // Filter and sort
   const filteredBestiary = bestiary
@@ -86,73 +87,60 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
   const regionKeys = Array.from(byRegion.keys())
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-3">
-      <div className="flex justify-between items-center">
-        <button
-          className="text-sm font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
-          onClick={() => setIsExpanded(false)}
-        >
-          Bestiary
-        </button>
-        <span className="text-xs text-slate-400">
-          {filteredBestiary.length !== bestiary.length
-            ? `${filteredBestiary.length} / ${count} shown`
-            : `${count} discovered`}
-        </span>
+    <section aria-label="Bestiary" className="space-y-3">
+      <PlaybillTitle size="sm">Bestiary</PlaybillTitle>
+      <div className="flex items-center justify-between gap-2">
+        <PlaybillCaption>
+          {filteredBestiary.length !== bestiary.length ? `${filteredBestiary.length} of ${count} shown` : `${count} met`}
+        </PlaybillCaption>
       </div>
 
-      {/* Search and filters */}
-      <div className="space-y-2">
-        <input
-          type="text"
-          placeholder="Search enemies..."
-          aria-label="Search enemies"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          className="w-full bg-[#161723] border border-[#2a2b3f] rounded px-2 py-1.5 text-xs text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-600"
-        />
-        <div className="flex flex-wrap gap-1">
-          <button
-            className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
-              !elementFilter ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
-            }`}
-            onClick={() => setElementFilter(null)}
-          >
-            All
-          </button>
-          {['fire', 'ice', 'lightning', 'shadow', 'nature', 'arcane'].map(el => (
-            <button
-              key={el}
-              className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
-                elementFilter === el ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
-              }`}
-              onClick={() => setElementFilter(elementFilter === el ? null : el)}
-            >
-              {ELEMENT_ICONS[el]} {el}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-1 text-[10px]">
-          <span className="text-slate-500 self-center">Sort:</span>
-          {(['level', 'name', 'defeated'] as const).map(opt => (
-            <button
-              key={opt}
-              className={`px-1.5 py-0.5 rounded transition-colors capitalize ${
-                sortBy === opt ? 'bg-indigo-700/50 text-indigo-200' : 'bg-slate-700/40 text-slate-400 hover:bg-slate-600/40'
-              }`}
-              onClick={() => setSortBy(opt)}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      </div>
+      {count > 0 && (
+        <>
+          <label className="relative block">
+            <span className="sr-only">Search beasts</span>
+            <SearchIcon size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-ps-ink-soft" />
+            <input
+              type="search"
+              placeholder="Search beasts"
+              aria-label="Search enemies"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              className="h-9 w-full rounded-[3px] border-2 border-ps-ink bg-transparent pl-8 pr-2 font-body text-sm text-ps-ink placeholder:text-ps-ink-faint focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
+            />
+          </label>
+          <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by element">
+            <PaperButton size="sm" variant={!elementFilter ? 'ink' : 'outline'} aria-pressed={!elementFilter} onClick={() => setElementFilter(null)}>
+              All
+            </PaperButton>
+            {ELEMENTS.map(el => (
+              <PaperButton
+                key={el}
+                size="sm"
+                variant={elementFilter === el ? 'ink' : 'outline'}
+                aria-pressed={elementFilter === el}
+                onClick={() => setElementFilter(elementFilter === el ? null : el)}
+              >
+                {el}
+              </PaperButton>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1" role="group" aria-label="Sort">
+            <PlaybillCaption className="mr-1">Sort</PlaybillCaption>
+            {(['level', 'name', 'defeated'] as const).map(opt => (
+              <PaperButton key={opt} size="sm" variant={sortBy === opt ? 'ink' : 'outline'} aria-pressed={sortBy === opt} onClick={() => setSortBy(opt)}>
+                {opt}
+              </PaperButton>
+            ))}
+          </div>
+        </>
+      )}
 
       {filteredBestiary.length === 0 && count > 0 && (
-        <p className="text-xs text-slate-500 italic">No enemies match your filters.</p>
+        <p className="py-3 font-body text-sm italic text-ps-ink-soft">Nothing matches.</p>
       )}
       {count === 0 && (
-        <p className="text-xs text-slate-500 italic">No monsters encountered yet. Defeat enemies to fill your bestiary.</p>
+        <p className="py-3 font-body text-sm italic text-ps-ink-soft">Nothing met yet. Every beast you fight is drawn here.</p>
       )}
 
       {regionKeys.map(region => {
@@ -162,77 +150,73 @@ export function BestiaryPanel({ bestiary }: { bestiary: BestiaryEntry[] }) {
           .replace(/\b\w/g, c => c.toUpperCase())
 
         return (
-          <div key={region} className="space-y-1.5">
-            <h4 className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
-              {regionLabel}
-            </h4>
-            {entries.map(entry => (
-              <div
-                key={entry.name}
-                className="rounded p-2 text-xs bg-[#161723] border border-[#2a2b3f]"
-              >
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-semibold text-white">{entry.name}</span>
-                  {entry.isBoss && (
-                    <span className="text-[9px] font-bold uppercase tracking-wide bg-amber-900/50 text-amber-300 border border-amber-600/40 rounded px-1 py-0.5">
-                      Boss
-                    </span>
-                  )}
-                  {entry.element && (
-                    <span className={`text-[9px] font-semibold uppercase tracking-wide rounded px-1 py-0.5 ${getElementStyle(entry.element)}`}>
-                      {entry.element}
-                    </span>
-                  )}
-                  <span className="text-slate-500 ml-auto">Lv {entry.level}</span>
-                </div>
-                <div className="flex gap-3 mt-1 text-[10px] text-slate-400">
-                  <span>HP <span className="text-slate-200">{entry.maxHp}</span></span>
-                  <span>ATK <span className="text-slate-200">{entry.attack}</span></span>
-                  <span>DEF <span className="text-slate-200">{entry.defense}</span></span>
-                </div>
-                {(() => {
-                  const { weak, resists } = getWeaknessResistance(entry.element)
-                  if (weak.length === 0 && resists.length === 0) return null
-                  return (
-                    <div className="flex items-center gap-3 mt-1 text-[10px]">
-                      {weak.length > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          <span className="text-green-500">Weak:</span>
-                          {weak.map(e => <span key={e} className="text-green-400" title={`${e} deals 2x`}>{ELEMENT_ICONS[e]}</span>)}
-                        </span>
-                      )}
-                      {resists.length > 0 && (
-                        <span className="flex items-center gap-0.5">
-                          <span className="text-red-500">Resists:</span>
-                          {resists.map(e => <span key={e} className="text-red-400" title={`${e} deals 0.5x`}>{ELEMENT_ICONS[e]}</span>)}
-                        </span>
-                      )}
+          <div key={region}>
+            <PlaybillCaption className="mb-1.5">{regionLabel}</PlaybillCaption>
+            <ul className="space-y-2">
+              {entries.map(entry => {
+                const { weak, resists } = getWeaknessResistance(entry.element)
+                return (
+                  <li key={entry.name} className="rounded-[3px] border-2 border-ps-ink p-2.5">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-playbill text-base uppercase leading-none tracking-wide text-ps-ink">{entry.name}</span>
+                      {entry.isBoss && <Stamp tone="gold">Boss</Stamp>}
+                      {entry.element && <Stamp tone={elementTone(entry.element)} tilt={false}>{entry.element}</Stamp>}
+                      <span className="ml-auto font-playbill text-sm tabular-nums text-ps-ink">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">Lv </span>
+                        {entry.level}
+                      </span>
                     </div>
-                  )
-                })()}
-                {(entry.specialAbility || entry.statusAbility) && (
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {entry.specialAbility && (
-                      <span className="text-[9px] bg-purple-900/30 text-purple-300 border border-purple-700/30 rounded px-1 py-0.5">
-                        {entry.specialAbility.name}
+                    <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 border-t border-ps-playbill-edge pt-1.5">
+                      <Figure label="HP" value={entry.maxHp} />
+                      <Figure label="Atk" value={entry.attack} />
+                      <Figure label="Def" value={entry.defense} />
+                      <span className="ml-auto inline-flex items-baseline gap-1" title={`Defeated ${entry.timesDefeated} time${entry.timesDefeated !== 1 ? 's' : ''}`}>
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">Slain</span>
+                        <span className="font-playbill text-sm tabular-nums text-ps-ink">{entry.timesDefeated}×</span>
                       </span>
+                    </div>
+                    {(weak.length > 0 || resists.length > 0) && (
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        {weak.length > 0 && (
+                          <span className="flex flex-wrap items-center gap-1">
+                            <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">Weak to</span>
+                            {weak.map(e => (
+                              <Stamp key={e} tone="green" tilt={false} className="text-xs" title={`${e} deals 2x`}>{e}</Stamp>
+                            ))}
+                          </span>
+                        )}
+                        {resists.length > 0 && (
+                          <span className="flex flex-wrap items-center gap-1">
+                            <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">Resists</span>
+                            {resists.map(e => (
+                              <Stamp key={e} tone="red" tilt={false} className="text-xs" title={`${e} deals 0.5x`}>{e}</Stamp>
+                            ))}
+                          </span>
+                        )}
+                      </div>
                     )}
-                    {entry.statusAbility && (
-                      <span className="text-[9px] bg-rose-900/30 text-rose-300 border border-rose-700/30 rounded px-1 py-0.5">
-                        {entry.statusAbility.type}
-                      </span>
+                    {(entry.specialAbility || entry.statusAbility) && (
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {entry.specialAbility && (
+                          <Stamp tone="violet" tilt={false} className="text-xs" title={entry.specialAbility.description}>
+                            {entry.specialAbility.name}
+                          </Stamp>
+                        )}
+                        {entry.statusAbility && (
+                          <Stamp tone="red" tilt={false} className="text-xs">{entry.statusAbility.type}</Stamp>
+                        )}
+                      </div>
                     )}
-                  </div>
-                )}
-                <div className="flex justify-between mt-1 text-[9px] text-slate-500">
-                  <span>Defeated <span className="text-slate-300">{entry.timesDefeated}x</span></span>
-                  <span>First seen {new Date(entry.firstEncountered).toLocaleDateString()}</span>
-                </div>
-              </div>
-            ))}
+                    <p className="mt-1.5 font-label text-xs font-bold uppercase tracking-widest text-ps-ink-faint">
+                      First met {new Date(entry.firstEncountered).toLocaleDateString()}
+                    </p>
+                  </li>
+                )
+              })}
+            </ul>
           </div>
         )
       })}
-    </div>
+    </section>
   )
 }

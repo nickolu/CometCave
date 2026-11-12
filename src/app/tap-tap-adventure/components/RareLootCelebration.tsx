@@ -1,29 +1,24 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
-import { Item } from '@/app/tap-tap-adventure/models/types'
-import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
 
-const RARITY_CONFIG = {
+import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { Item } from '@/app/tap-tap-adventure/models/types'
+import { PaperButton, PlaybillSheet, PlaybillTitle, Stamp, type StampTone } from '@/app/tap-tap-adventure/stage/Playbill'
+
+// One stamp colour per rarity; the confetti is cut from brass and paper.
+const RARITY_CONFIG: Record<'legendary' | 'epic', { tone: StampTone; particleColors: readonly string[]; label: string }> = {
   legendary: {
-    borderColor: 'border-amber-500',
-    glowColor: 'shadow-amber-500/40',
-    textColor: 'text-amber-400',
-    bgGlow: 'bg-amber-900/20',
-    particleColors: ['#FACC15', '#FB923C', '#FDE047', '#F59E0B'],
-    label: 'LEGENDARY',
-    emoji: '✨',
+    tone: 'gold',
+    particleColors: ['var(--ps-brass)', 'var(--ps-brass-light)', 'var(--ps-stamp-gold)', 'var(--ps-playbill)'],
+    label: 'Legendary',
   },
   epic: {
-    borderColor: 'border-purple-500',
-    glowColor: 'shadow-purple-500/40',
-    textColor: 'text-purple-400',
-    bgGlow: 'bg-purple-900/20',
-    particleColors: ['#A78BFA', '#C084FC', '#7C3AED', '#DDD6FE'],
-    label: 'EPIC',
-    emoji: '💜',
+    tone: 'violet',
+    particleColors: ['var(--ps-stamp-violet)', 'var(--ps-brass)', 'var(--ps-brass-light)', 'var(--ps-playbill)'],
+    label: 'Epic',
   },
-} as const
+}
 
 type CelebrationRarity = keyof typeof RARITY_CONFIG
 
@@ -93,66 +88,63 @@ export function RareLootCelebration({ item, onDismiss }: RareLootCelebrationProp
       role="dialog"
       aria-modal="true"
       aria-label="Rare loot drop"
-      className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+      className={`pointer-events-none fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
     >
       {/* Backdrop */}
-      <div className={`absolute inset-0 bg-black/50 ${config.bgGlow}`} />
+      <div className="absolute inset-0 bg-ps-house/70" />
 
       {/* Content */}
       <div
-        className={`relative pointer-events-auto transition-all duration-500 ${
-          isVisible ? 'scale-100 translate-y-0' : 'scale-75 translate-y-8'
+        className={`pointer-events-auto relative mx-4 w-full max-w-sm transition-[transform,opacity] duration-500 motion-reduce:transition-none ${
+          isVisible ? 'translate-y-0 scale-100' : 'translate-y-8 scale-75'
         }`}
         onClick={handleDismiss}
       >
-        <div className={`relative bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 ${config.borderColor} rounded-2xl px-10 py-8 text-center shadow-2xl ${config.glowColor} max-w-sm mx-4`}>
+        <PlaybillSheet className="px-6 pb-5 pt-6 text-center">
           {/* Particles */}
           {isVisible && particles.map(p => (
             <span
               key={p.id}
-              className="absolute top-1/2 left-1/2 w-2 h-2 rounded-full pointer-events-none animate-particle-burst"
+              className="pointer-events-none absolute left-1/2 top-1/2 h-2 w-2 animate-particle-burst motion-reduce:hidden"
               style={{
                 '--tx': `${p.tx}px`,
                 '--ty': `${p.ty}px`,
                 backgroundColor: p.color,
                 animationDelay: `${p.id * 30}ms`,
               } as React.CSSProperties}
+              aria-hidden
             />
           ))}
 
-          {/* Emoji sparkles */}
-          <div className="text-3xl mb-2">
-            <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>{config.emoji}</span>
-            <span className="inline-block animate-bounce mx-2" style={{ animationDelay: '150ms' }}>{config.emoji}</span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>{config.emoji}</span>
-          </div>
-
-          {/* Rarity badge */}
-          <div className={`text-xs font-black tracking-widest uppercase mb-2 ${config.textColor}`}>
-            {config.label} DROP
+          {/* Rarity stamp */}
+          <div className="flex justify-center">
+            <Stamp tone={config.tone} animate className="border-[3px] px-4 py-1.5 font-playbill text-3xl tracking-widest">
+              {config.label}
+            </Stamp>
           </div>
 
           {/* Item name */}
-          <h2 className={`text-2xl font-bold mb-3 ${config.textColor}`}>{item.name}</h2>
+          <PlaybillTitle size="md" className="mt-4">{item.name}</PlaybillTitle>
 
           {/* Description */}
-          <p className="text-slate-300 text-sm mb-2">{item.description}</p>
+          <p className="mt-3 font-body text-sm leading-relaxed text-ps-ink">{item.description}</p>
 
           {/* Effects */}
           {effectsSummary && (
-            <p className="text-emerald-400 text-xs font-semibold mb-2">{effectsSummary}</p>
+            <p className="mt-2 font-label text-xs font-bold uppercase tracking-widest text-ps-stamp-green">{effectsSummary}</p>
           )}
 
           {/* Lore text */}
           {item.loreText && (
-            <p className="text-amber-300/70 text-xs italic mb-3">&ldquo;{item.loreText}&rdquo;</p>
+            <p className="mt-3 font-body text-xs italic leading-relaxed text-ps-ink-soft">&ldquo;{item.loreText}&rdquo;</p>
           )}
 
-          {/* Dismiss hint */}
-          <p className="text-slate-500 text-xs mt-3">Tap to continue</p>
-        </div>
+          <PaperButton className="mt-4 w-full" onClick={handleDismiss}>
+            Continue
+          </PaperButton>
+        </PlaybillSheet>
       </div>
     </div>
   )

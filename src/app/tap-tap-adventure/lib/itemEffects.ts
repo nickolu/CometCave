@@ -7,6 +7,8 @@ export interface UseItemResult {
   character: FantasyCharacter
   consumed: boolean
   message: string
+  /** Set when a map or chart put a place on the map: where it now sits in `landmarkState.landmarks`. */
+  revealedLandmark?: { index: number; name: string }
 }
 
 export function useItem(character: FantasyCharacter, item: Item): UseItemResult {
@@ -71,32 +73,46 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     updatedCharacter.charisma += effects.charisma
     effectMessages.push(`${effects.charisma > 0 ? '+' : ''}${effects.charisma} Charisma`)
   }
+  let revealedLandmark: UseItemResult['revealedLandmark']
   if (effects.revealLandmark) {
     const ls = updatedCharacter.landmarkState
     if (ls) {
       const hiddenIdx = ls.landmarks.findIndex(lm => lm.hidden)
       if (hiddenIdx !== -1) {
-        // Reveal existing hidden landmark
+        // Reveal existing hidden landmark; "mapped" keeps it on the map at any distance.
         const updatedLandmarks = ls.landmarks.map((lm, i) =>
-          i === hiddenIdx ? { ...lm, hidden: false } : lm
+          i === hiddenIdx ? { ...lm, hidden: false, mapped: true } : lm
         )
         updatedCharacter = {
           ...updatedCharacter,
           landmarkState: { ...ls, landmarks: updatedLandmarks },
         }
+        revealedLandmark = { index: hiddenIdx, name: ls.landmarks[hiddenIdx].name }
         effectMessages.push(`Revealed a hidden landmark: ${ls.landmarks[hiddenIdx].name}`)
       } else {
         // No hidden landmarks — generate a new one
         const bounds = ls.regionBounds ?? { width: 500, height: 500 }
         const newLandmark = generateMapLandmark(ls.regionId, ls.landmarks as GeneratedLandmark[], bounds)
         if (newLandmark) {
-          const updatedLandmarks = [...ls.landmarks, newLandmark].sort(
+          const mapped = { ...newLandmark, mapped: true }
+          const updatedLandmarks = [...ls.landmarks, mapped].sort(
             (a, b) => a.distanceFromEntry - b.distanceFromEntry
           )
+          // The new place slots in by distance, so every index at or after it
+          // moves up one. Keep the target (and the exits, which sit past the
+          // last landmark) pointing at the same place.
+          const newIdx = updatedLandmarks.indexOf(mapped)
+          const shift = (idx: number) => (idx >= newIdx ? idx + 1 : idx)
           updatedCharacter = {
             ...updatedCharacter,
-            landmarkState: { ...ls, landmarks: updatedLandmarks },
+            landmarkState: {
+              ...ls,
+              landmarks: updatedLandmarks,
+              activeTargetIndex: shift(ls.activeTargetIndex ?? 0),
+              nextLandmarkIndex: shift(ls.nextLandmarkIndex ?? 0),
+            },
           }
+          revealedLandmark = { index: newIdx, name: newLandmark.name }
           effectMessages.push(`Your map reveals a new location: ${newLandmark.name}`)
         } else {
           effectMessages.push('Your map shows nothing new in this area')
@@ -136,5 +152,6 @@ export function useItem(character: FantasyCharacter, item: Item): UseItemResult 
     character: updatedCharacter,
     consumed: true,
     message,
+    ...(revealedLandmark ? { revealedLandmark } : {}),
   }
 }

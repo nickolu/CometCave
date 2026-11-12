@@ -2,8 +2,9 @@
 
 import { useRef, useState } from 'react'
 
-import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
 import { useDialogFocus } from '@/app/tap-tap-adventure/lib/useDialogFocus'
+import { FantasyCharacter } from '@/app/tap-tap-adventure/models/character'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillSheet, PlaybillTitle, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface StatAllocationScreenProps {
   character: FantasyCharacter
@@ -53,84 +54,70 @@ export function StatAllocationScreen({ character, onConfirm }: StatAllocationScr
   return (
     <div ref={dialogRef} className="fixed inset-0 z-50 flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Allocate stat points">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/60" />
+      <div className="absolute inset-0 bg-ps-house/70" />
 
       {/* Content */}
-      <div className="relative w-full max-w-sm mx-4">
-        <div className="bg-gradient-to-b from-[#1e1f30] to-[#161723] border-2 border-yellow-500/50 rounded-2xl px-6 py-8 text-center shadow-2xl shadow-yellow-500/20">
-          {/* Stars */}
-          <div className="text-4xl mb-2">
-            <span className="inline-block animate-bounce" style={{ animationDelay: '0ms' }}>
-              *
-            </span>
-            <span className="inline-block animate-bounce mx-2" style={{ animationDelay: '150ms' }}>
-              *
-            </span>
-            <span className="inline-block animate-bounce" style={{ animationDelay: '300ms' }}>
-              *
-            </span>
+      <div className="relative mx-4 w-full max-w-sm">
+        <PlaybillSheet className="ps-print-in px-5 pb-5 pt-5">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <Stamp tone="gold" animate className="border-[3px] px-3 py-1 font-playbill text-2xl tracking-widest">
+              Level {character.level}
+            </Stamp>
+            <PlaybillTitle size="sm" className="w-full">Spend your points</PlaybillTitle>
           </div>
 
-          {/* Title */}
-          <h2 className="text-3xl font-bold text-yellow-400 mb-1">Level Up!</h2>
-          <div className="text-5xl font-black text-white my-2">{character.level}</div>
-
-          {/* Remaining points */}
-          <p className="text-slate-300 text-sm mb-6">
-            {remaining} point{remaining !== 1 ? 's' : ''} remaining
-          </p>
+          {/* Remaining points on brass */}
+          <BrassPlate className="mx-auto mt-4 w-fit min-w-[140px]">
+            <BrassFigure label={remaining === 1 ? 'point left' : 'points left'} value={remaining} />
+          </BrassPlate>
 
           {/* Stat rows */}
-          <div className="space-y-3 mb-6">
+          <ul className="mt-4 divide-y-2 divide-dotted divide-ps-ink/40 border-y-2 border-dotted border-ps-ink/40">
             {stats.map(stat => (
-              <div key={stat} className="flex items-center justify-between gap-2">
-                <div className="text-left flex-1">
-                  <div className="text-white font-semibold text-sm">
-                    {STAT_LABELS[stat]}{' '}
-                    <span className="text-slate-400 font-normal">
-                      {character[stat]}
-                      {allocation[stat] > 0 && (
-                        <span className="text-green-400"> +{allocation[stat]}</span>
-                      )}
-                    </span>
+              <li key={stat} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="min-w-0 flex-1 text-left">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-playbill text-base uppercase tracking-wide text-ps-ink">{STAT_LABELS[stat]}</span>
+                    <span className="font-playbill text-xl leading-none tabular-nums text-ps-ink">{character[stat]}</span>
+                    {allocation[stat] > 0 && (
+                      <Stamp tone="green" tilt={false} className="text-xs">
+                        +{allocation[stat]}
+                      </Stamp>
+                    )}
                   </div>
-                  <div className="text-slate-500 text-xs">{STAT_DESCRIPTIONS[stat]}</div>
+                  <PlaybillCaption className="mt-0.5 normal-case tracking-normal">{STAT_DESCRIPTIONS[stat]}</PlaybillCaption>
                 </div>
                 <div className="flex items-center gap-1">
-                  <button
-                    className="w-8 h-8 rounded bg-[#2a2b3f] border border-[#3a3c56] text-white font-bold hover:bg-[#3a3c56] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  <PaperButton
+                    variant="outline"
+                    size="sm"
+                    className="w-8 px-0 font-playbill text-base"
                     onClick={() => removePoint(stat)}
                     disabled={allocation[stat] <= 0}
                     aria-label={`Remove point from ${STAT_LABELS[stat]}`}
                   >
-                    -
-                  </button>
-                  <button
-                    className="w-8 h-8 rounded bg-[#2a2b3f] border border-[#3a3c56] text-white font-bold hover:bg-[#3a3c56] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    &minus;
+                  </PaperButton>
+                  <PaperButton
+                    variant="outline"
+                    size="sm"
+                    className="w-8 px-0 font-playbill text-base"
                     onClick={() => addPoint(stat)}
                     disabled={remaining <= 0}
                     aria-label={`Add point to ${STAT_LABELS[stat]}`}
                   >
                     +
-                  </button>
+                  </PaperButton>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
 
           {/* Confirm button */}
-          <button
-            className={`w-full py-3 rounded-xl font-bold text-lg transition-all duration-200 ${
-              allSpent
-                ? 'bg-gradient-to-r from-yellow-500 to-amber-500 text-black hover:from-yellow-400 hover:to-amber-400 shadow-lg shadow-yellow-500/20'
-                : 'bg-[#2a2b3f] text-slate-500 cursor-not-allowed border border-[#3a3c56]'
-            }`}
-            onClick={handleConfirm}
-            disabled={!allSpent}
-          >
+          <PaperButton className="mt-4 w-full" onClick={handleConfirm} disabled={!allSpent}>
             {allSpent ? 'Confirm' : `Allocate ${remaining} more point${remaining !== 1 ? 's' : ''}`}
-          </button>
-        </div>
+          </PaperButton>
+        </PlaybillSheet>
       </div>
     </div>
   )

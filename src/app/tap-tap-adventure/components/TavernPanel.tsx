@@ -1,6 +1,13 @@
 'use client'
+
+/**
+ * The tavern, set on the town's bill: the room described, a night's rest
+ * priced on brass, and what the regulars are saying.
+ */
+import { REGIONS, getRegion } from '@/app/tap-tap-adventure/config/regions'
 import { FantasyCharacter } from '@/app/tap-tap-adventure/models/types'
-import { getRegion, REGIONS } from '@/app/tap-tap-adventure/config/regions'
+import { CloseIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { BrassFigure, BrassPlate, PaperButton, PlaybillCaption, PlaybillTitle } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface TavernPanelProps {
   character: FantasyCharacter
@@ -86,85 +93,59 @@ export function TavernPanel({ character, townName, onRest, isResting, onClose }:
   const flavor = getTavernFlavor(regionId)
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-4">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <span className="text-sm font-bold text-amber-400">🍺 Tavern &amp; Inn</span>
-        <button className="text-slate-400 hover:text-white text-sm" onClick={onClose} aria-label="Close tavern">✕</button>
+    <section aria-label={`The tavern in ${townName}`}>
+      <div className="flex items-start gap-2">
+        <PlaybillTitle size="sm" className="min-w-0 flex-1">Tavern &amp; Inn</PlaybillTitle>
+        <PaperButton variant="outline" size="sm" className="w-8 shrink-0 px-0" onClick={onClose} aria-label="Close tavern">
+          <CloseIcon />
+        </PaperButton>
       </div>
 
-      {/* Atmosphere */}
-      <div className="text-[11px] text-slate-300 leading-relaxed italic bg-[#181929] border border-[#2a2c42] rounded p-2">
-        {flavor}
-      </div>
+      <p className="mt-3 font-body text-sm italic leading-relaxed text-ps-ink-soft">{flavor}</p>
 
-      {/* Rest section */}
-      <div>
-        <h4 className="text-xs font-semibold text-slate-400 uppercase border-b border-[#3a3c56] pb-1 mb-2">
-          Rest &amp; Recover
-        </h4>
-        <div className="bg-[#252638] border border-[#3a3c56] rounded p-2 space-y-2">
-          <div className="flex gap-4 text-[10px]">
-            <span>
-              <span className="text-slate-400">HP </span>
-              <span className="text-red-400 font-semibold">{hp}</span>
-              <span className="text-slate-600"> / {maxHp}</span>
-            </span>
-            <span>
-              <span className="text-slate-400">MP </span>
-              <span className="text-blue-400 font-semibold">{mana}</span>
-              <span className="text-slate-600"> / {maxMana}</span>
-            </span>
-            <span>
-              <span className="text-amber-300 font-semibold">🪙 {character.gold} gold</span>
-            </span>
-          </div>
-          <div className="text-[10px] text-slate-400">
-            A night&apos;s rest costs <span className="text-amber-300 font-semibold">{innCost} gold</span> and fully restores HP and MP.
-          </div>
-          {isFullHealth ? (
-            <div className="text-[10px] text-green-400 italic">You are already at full health and mana.</div>
-          ) : !canAfford ? (
-            <div className="text-[10px] text-red-400 italic">
-              Not enough gold. You need {innCost}g (have {character.gold ?? 0}g).
-            </div>
-          ) : null}
-          <button
-            className={`text-[10px] px-3 py-1.5 rounded transition-colors font-semibold ${
-              canAfford && !isResting
-                ? 'bg-teal-900/50 text-teal-300 hover:bg-teal-800/60'
-                : 'bg-slate-700/40 text-slate-500 cursor-not-allowed opacity-60'
-            }`}
-            disabled={!canAfford || isResting}
-            onClick={onRest}
-          >
-            {isResting ? 'Resting...' : `Rest (${innCost} gold)`}
-          </button>
-        </div>
+      {/* Rest */}
+      <PlaybillCaption className="mt-4">Rest and recover</PlaybillCaption>
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <BrassPlate className="flex items-stretch divide-x-2 divide-ps-brass-deep">
+          <BrassFigure label="HP" value={<>{hp}<span className="text-sm text-ps-ink/70">/{maxHp}</span></>} bar={maxHp > 0 ? hp / maxHp : 0} barTone={hp / Math.max(1, maxHp) < 0.35 ? 'red' : 'green'} />
+          <BrassFigure label="MP" value={<>{mana}<span className="text-sm text-ps-ink/70">/{maxMana}</span></>} bar={maxMana > 0 ? mana / maxMana : 0} />
+          <BrassFigure label="A night" value={<>{innCost}<span className="text-sm">g</span></>} />
+        </BrassPlate>
+        <p className="min-w-[10rem] flex-1 font-body text-sm leading-snug text-ps-ink">
+          A night&apos;s rest costs <span className="font-playbill tabular-nums">{innCost} gold</span> and fully restores HP and MP.
+        </p>
       </div>
+      {isFullHealth ? (
+        <p className="mt-2 font-body text-sm italic text-ps-stamp-green">You are already at full health and mana.</p>
+      ) : !canAfford ? (
+        <p className="mt-2 font-body text-sm italic text-ps-stamp-red">
+          Not enough gold. You need {innCost}g (have {character.gold ?? 0}g).
+        </p>
+      ) : null}
+      <PaperButton variant="brass" className="mt-3 w-full sm:w-auto" disabled={!canAfford || isResting} onClick={onRest}>
+        {isResting ? 'Resting…' : <>Rest · <span className="tabular-nums">{innCost} g</span></>}
+      </PaperButton>
 
-      {/* Rumors section */}
-      <div>
-        <h4 className="text-xs font-semibold text-slate-400 uppercase border-b border-[#3a3c56] pb-1 mb-2">
-          Tavern Rumors
-        </h4>
-        <div className="space-y-2">
-          {rumors.map((rumor, i) => (
-            <div key={i} className="flex gap-1.5 text-[10px] text-slate-400 italic leading-relaxed">
-              <span className="shrink-0">💬</span>
-              <span>{rumor}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Company */}
+      <PlaybillCaption className="mt-5">Looking for company</PlaybillCaption>
+      <p className="mt-2 font-body text-sm leading-snug text-ps-ink">
+        Companions and mercenaries for hire are listed in the Party drawer while you are in town.
+      </p>
 
-      {/* Back button */}
-      <button
-        className="w-full text-xs text-slate-400 hover:text-slate-200 py-1 transition-colors"
-        onClick={onClose}
-      >
-        Back to Town
-      </button>
-    </div>
+      {/* Rumors */}
+      <PlaybillCaption className="mt-5">Tavern rumors</PlaybillCaption>
+      <ul className="mt-2 space-y-2">
+        {rumors.map((rumor, i) => (
+          <li key={i} className="flex gap-2 font-body text-sm italic leading-relaxed text-ps-ink">
+            <span aria-hidden className="shrink-0 text-ps-ink-soft">—</span>
+            <span>{rumor}</span>
+          </li>
+        ))}
+      </ul>
+
+      <PaperButton variant="outline" className="mt-5 w-full border-ps-ink/50 text-ps-ink-soft" onClick={onClose}>
+        Back to town
+      </PaperButton>
+    </section>
   )
 }

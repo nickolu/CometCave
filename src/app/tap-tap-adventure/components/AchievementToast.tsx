@@ -1,13 +1,16 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+
 import { ACHIEVEMENTS } from '@/app/tap-tap-adventure/config/achievements'
+import { PlaybillCaption, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
 
 interface AchievementToastProps {
   achievementId: string
   onDismiss: () => void
 }
 
+/** A small bill dropped from the flies for a moment. */
 export function AchievementToast({ achievementId, onDismiss }: AchievementToastProps) {
   const [isVisible, setIsVisible] = useState(false)
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -31,30 +34,27 @@ export function AchievementToast({ achievementId, onDismiss }: AchievementToastP
 
   if (!achievement) return null
 
+  const { reward } = achievement
+
   return (
     <div
-      className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
+      className={`fixed left-1/2 top-4 z-[100] w-[calc(100%-32px)] md:top-24 max-w-sm -translate-x-1/2 transition-[transform,opacity] duration-300 motion-reduce:transition-none ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-4 opacity-0'
       }`}
+      role="status"
     >
-      <div className="bg-gradient-to-r from-amber-900/90 to-yellow-900/90 border border-amber-500/50 rounded-lg px-5 py-3 shadow-lg shadow-amber-500/20 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">{achievement.icon}</span>
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-amber-400 font-semibold">
-              Achievement Unlocked!
+      <div className="ps-paper flex items-center gap-3 rounded-[3px] border-2 border-ps-ink px-4 py-3 text-ps-ink">
+        <span className="shrink-0 font-body text-2xl leading-none" aria-hidden>{achievement.icon}</span>
+        <div className="min-w-0 flex-1">
+          <PlaybillCaption>Achievement unlocked</PlaybillCaption>
+          <p className="mt-0.5 truncate font-playbill text-base uppercase leading-tight tracking-wide">{achievement.name}</p>
+          <p className="mt-0.5 font-body text-xs leading-snug text-ps-ink-soft">{achievement.description}</p>
+          {(reward?.gold || reward?.reputation) && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {reward.gold ? <Stamp tone="gold" tilt={false}>+{reward.gold} gold</Stamp> : null}
+              {reward.reputation ? <Stamp tone="blue" tilt={false}>+{reward.reputation} repute</Stamp> : null}
             </div>
-            <div className="text-sm font-bold text-white">{achievement.name}</div>
-            <div className="text-[10px] text-amber-200/70">{achievement.description}</div>
-            {(achievement.reward?.gold || achievement.reward?.reputation) && (
-              <div className="text-[10px] text-yellow-300 font-semibold mt-0.5">
-                Reward:{' '}
-                {achievement.reward.gold ? `+${achievement.reward.gold}g` : ''}
-                {achievement.reward.gold && achievement.reward.reputation ? ', ' : ''}
-                {achievement.reward.reputation ? `+${achievement.reward.reputation} rep` : ''}
-              </div>
-            )}
-          </div>
+          )}
         </div>
       </div>
     </div>
@@ -62,23 +62,31 @@ export function AchievementToast({ achievementId, onDismiss }: AchievementToastP
 }
 
 export function AchievementToastContainer({ achievementIds }: { achievementIds: string[] }) {
+  // Newly completed ids are queued as they arrive; the head of the queue is on
+  // screen, and dismissing it shows the next. The queue is kept as state
+  // derived from the prop during render, not in an effect.
   const [queue, setQueue] = useState<string[]>([])
-  const [currentId, setCurrentId] = useState<string | null>(null)
+  const [seenIds, setSeenIds] = useState<string[] | null>(null)
+  const [shown, setShown] = useState(0)
 
-  useEffect(() => {
+  if (achievementIds !== seenIds) {
+    setSeenIds(achievementIds)
     if (achievementIds.length > 0) {
       setQueue(prev => [...prev, ...achievementIds])
     }
-  }, [achievementIds])
+  }
 
-  useEffect(() => {
-    if (!currentId && queue.length > 0) {
-      setCurrentId(queue[0])
-      setQueue(prev => prev.slice(1))
-    }
-  }, [currentId, queue])
-
+  const currentId = queue[0] ?? null
   if (!currentId) return null
 
-  return <AchievementToast achievementId={currentId} onDismiss={() => setCurrentId(null)} />
+  return (
+    <AchievementToast
+      key={shown}
+      achievementId={currentId}
+      onDismiss={() => {
+        setQueue(prev => prev.slice(1))
+        setShown(s => s + 1)
+      }}
+    />
+  )
 }

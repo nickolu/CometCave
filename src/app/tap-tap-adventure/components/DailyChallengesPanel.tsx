@@ -1,10 +1,18 @@
 'use client'
 
+/**
+ * Today's three challenges as a printed checklist: a box ticked when done,
+ * a thin ink rule for progress, the reward as a stamp, and the day's bonus
+ * paid out on brass.
+ */
 import { useState } from 'react'
-import { Button } from '@/app/tap-tap-adventure/components/ui/button'
+
 import { useGameStore } from '@/app/tap-tap-adventure/hooks/useGameStore'
 import { canClaimBonusReward, computeBonusReward, getTodayDateString } from '@/app/tap-tap-adventure/lib/dailyChallengeTracker'
 import { DailyChallenge } from '@/app/tap-tap-adventure/models/dailyChallenge'
+import { ChevronIcon } from '@/app/tap-tap-adventure/stage/icons'
+import { PaperButton, PlaybillCaption, PlaybillRule, Stamp } from '@/app/tap-tap-adventure/stage/Playbill'
+import { cn } from '@/lib/utils'
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-').map(Number)
@@ -12,37 +20,57 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+function Tick({ done }: { done: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={cn('mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-[2px] border-2 border-ps-ink', done ? 'bg-ps-ink text-ps-playbill' : 'bg-transparent')}
+    >
+      {done && (
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 12l5 5L20 6" />
+        </svg>
+      )}
+    </span>
+  )
+}
+
 function ChallengeRow({ challenge }: { challenge: DailyChallenge }) {
   const pct = Math.min(100, Math.round((challenge.progress / challenge.target) * 100))
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-xs text-slate-300 flex-1">{challenge.description}</span>
-        <div className="flex items-center gap-1 shrink-0">
-          {challenge.reward.gold && (
-            <span className="text-[10px] text-yellow-400">+{challenge.reward.gold}g</span>
-          )}
-          {challenge.reward.reputation && (
-            <span className="text-[10px] text-blue-400">+{challenge.reward.reputation} rep</span>
-          )}
-          {challenge.completed && (
-            <span className="text-emerald-400 text-xs font-bold ml-1">&#10003;</span>
-          )}
+    <li className="py-2">
+      <div className="flex items-start gap-2.5">
+        <Tick done={challenge.completed} />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <span className={cn('font-body text-sm leading-snug', challenge.completed ? 'text-ps-ink-soft line-through' : 'text-ps-ink')}>
+              {challenge.description}
+              {challenge.completed && <span className="sr-only"> (done)</span>}
+            </span>
+            <span className="flex shrink-0 items-center gap-1">
+              {challenge.reward.gold && <Stamp tone="gold" tilt={false}>+{challenge.reward.gold} gold</Stamp>}
+              {challenge.reward.reputation && <Stamp tone="blue" tilt={false}>+{challenge.reward.reputation} rep</Stamp>}
+            </span>
+          </div>
+          <div className="mt-1.5 flex items-center gap-2">
+            <div
+              className="h-1 flex-1 overflow-hidden rounded-full bg-ps-playbill-edge"
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={pct}
+              aria-label={challenge.description}
+            >
+              <div className={cn('h-full rounded-full transition-[width] duration-300', challenge.completed ? 'bg-ps-stamp-green' : 'bg-ps-ink')} style={{ width: `${pct}%` }} />
+            </div>
+            <span className="w-12 shrink-0 text-right font-playbill text-xs tabular-nums text-ps-ink-soft">
+              {challenge.progress}/{challenge.target}
+            </span>
+          </div>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all duration-300 ${challenge.completed ? 'bg-emerald-500' : 'bg-indigo-500'}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-        <span className="text-[10px] text-slate-400 shrink-0 w-12 text-right">
-          {challenge.progress}/{challenge.target}
-        </span>
-      </div>
-    </div>
+    </li>
   )
 }
 
@@ -62,62 +90,64 @@ export function DailyChallengesPanel() {
   const allDone = challenges.challenges.every(c => c.completed)
   const canClaim = canClaimBonusReward(challenges)
   const bonus = computeBonusReward(challenges.streak)
+  const doneCount = challenges.challenges.filter(c => c.completed).length
 
   return (
-    <div className="bg-[#1e1f30] border border-[#3a3c56] rounded-lg p-3 space-y-2">
-      {/* Header */}
+    <section aria-label="Daily challenges">
       <button
-        className="w-full flex items-center justify-between text-left"
+        type="button"
+        className="flex w-full items-center justify-between gap-2 border-y-2 border-ps-ink py-1.5 px-1 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ds-primary"
         onClick={() => setExpanded(prev => !prev)}
+        aria-expanded={expanded}
       >
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold text-amber-400">Daily Challenges</span>
-          <span className="text-[10px] px-1.5 py-0.5 bg-slate-700 text-slate-300 rounded">
-            {formatDate(displayDate)}
-          </span>
+        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="font-playbill text-sm uppercase tracking-widest text-ps-ink">Today&apos;s challenges</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-ps-ink-soft">{formatDate(displayDate)}</span>
           {challenges.streak > 0 && (
-            <span className="text-[10px] px-1.5 py-0.5 bg-orange-900/50 text-orange-300 rounded">
-              &#128293; {challenges.streak}
-            </span>
+            <Stamp tone="red" tilt={false} title={`${challenges.streak}-day streak`}>
+              {challenges.streak}-day streak
+            </Stamp>
           )}
-        </div>
-        <span className="text-slate-500 text-xs">{expanded ? '▲' : '▼'}</span>
+        </span>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="font-playbill text-sm tabular-nums text-ps-ink">{doneCount}<span className="text-ps-ink-soft">/{challenges.challenges.length}</span></span>
+          <ChevronIcon className={cn('text-ps-ink transition-transform motion-reduce:transition-none', expanded && 'rotate-90')} />
+        </span>
       </button>
 
       {expanded && (
         <>
-          {/* Challenge rows */}
-          <div className="space-y-3 pt-1">
+          <ol className="divide-y divide-ps-playbill-edge">
             {challenges.challenges.map(challenge => (
               <ChallengeRow key={challenge.id} challenge={challenge} />
             ))}
-          </div>
+          </ol>
 
-          {/* Bonus section */}
           {canClaim && (
-            <div className="mt-2 bg-emerald-950/40 border border-emerald-700/40 rounded p-2 space-y-1">
-              <p className="text-xs font-semibold text-emerald-400">All Complete! Bonus Reward:</p>
-              <div className="flex gap-3 text-[10px]">
-                <span className="text-yellow-400">+{bonus.gold} Gold</span>
-                <span className="text-blue-400">+{bonus.reputation} Reputation</span>
+            <>
+              <PlaybillRule className="my-2" />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <PlaybillCaption>All three done · bonus</PlaybillCaption>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    <Stamp tone="gold" animate>+{bonus.gold} gold</Stamp>
+                    <Stamp tone="blue" animate>+{bonus.reputation} repute</Stamp>
+                  </div>
+                </div>
+                <PaperButton variant="brass" onClick={() => claimDailyChallengeBonus()}>
+                  Claim bonus
+                </PaperButton>
               </div>
-              <Button
-                className="w-full bg-emerald-700 hover:bg-emerald-600 text-white text-xs py-1 rounded mt-1"
-                onClick={() => claimDailyChallengeBonus()}
-              >
-                Claim Bonus
-              </Button>
-            </div>
+            </>
           )}
 
-          {/* Already claimed */}
           {allDone && challenges.allCompletedClaimed && (
-            <p className="text-[10px] text-emerald-400 text-center py-1">
-              Challenges complete for today!
-            </p>
+            <div className="flex justify-center pt-2">
+              <Stamp tone="green">Bonus claimed today</Stamp>
+            </div>
           )}
         </>
       )}
-    </div>
+    </section>
   )
 }

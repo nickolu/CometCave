@@ -31,17 +31,21 @@ export function getConqueredCount(visitedRegions: string[]): number {
   return visitedRegions.filter(r => CONQUERABLE_REGIONS.includes(r)).length
 }
 
-/** Check for newly reached milestones and return total gold to award. Mutates milestone claimed flags. */
-export function claimNewMilestones(mainQuest: MainQuest, conqueredCount: number): number {
+/**
+ * Claim every milestone the conquered count has reached. Returns the quest
+ * with those milestones claimed (and completed when all regions are taken)
+ * plus the gold they award. Does not touch the quest it is given: the store's
+ * objects are frozen, and writing into one throws.
+ */
+export function claimNewMilestones(mainQuest: MainQuest, conqueredCount: number): { mainQuest: MainQuest; goldAwarded: number } {
   let goldAwarded = 0
-  for (const milestone of mainQuest.milestones) {
+  const milestones = mainQuest.milestones.map(milestone => {
     if (!milestone.claimed && conqueredCount >= milestone.regionsRequired) {
-      milestone.claimed = true
       goldAwarded += milestone.goldReward
+      return { ...milestone, claimed: true }
     }
-  }
-  if (conqueredCount >= TOTAL_CONQUERABLE) {
-    mainQuest.status = 'completed'
-  }
-  return goldAwarded
+    return milestone
+  })
+  const status = conqueredCount >= TOTAL_CONQUERABLE ? 'completed' : mainQuest.status
+  return { mainQuest: { ...mainQuest, milestones, status }, goldAwarded }
 }
