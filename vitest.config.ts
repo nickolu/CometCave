@@ -19,6 +19,7 @@ export default defineConfig({
       'src/lib/trivia/**/*.test.ts',
       'src/app/trivia/**/*.test.ts',
       'src/app/micro-land/**/*.test.ts',
+      'src/app/postmortem/**/*.test.ts',
       'src/lib/micro-land/**/*.test.ts',
       'src/app/dicebound/**/*.test.ts',
       'src/app/dicebound/**/*.test.tsx',
