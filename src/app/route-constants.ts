@@ -17,6 +17,8 @@ export const ROUTE_CONSTANTS = {
   CLUSTERS: '/clusters',
   HUM: '/hum',
   METEOR_COINS: '/meteor-coins',
+  // Prototype (#4042): reachable by URL only, not on the home grid.
+  POSTMORTEM: '/postmortem',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
 }
