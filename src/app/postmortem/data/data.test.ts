@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { CARDS, CARDS_BY_ID, CATEGORIES } from './cards'
+import { CARD_INFO, CATALOG_URL, CATEGORY_MEANINGS, catalogUrl, tellApart } from './card-info'
 import { incidents, newIncidents, seeds } from './incidents'
 
 // Hardcoded from the issue #4042 table. Do not derive this from cards.ts.
@@ -102,6 +103,7 @@ describe('incidents', () => {
     for (const clue of inc.clues) expect(clue.trim().length).toBeGreaterThan(0)
     expect(inc.title.trim().length).toBeGreaterThan(0)
     expect(inc.explanation.trim().length).toBeGreaterThan(0)
+    expect(inc.background.trim().length).toBeGreaterThan(0)
     expect(inc.factors.length).toBeGreaterThanOrEqual(2)
     expect(inc.factors.length).toBeLessThanOrEqual(3)
     expect(inc.decoys.length).toBeGreaterThanOrEqual(2)
@@ -113,5 +115,93 @@ describe('incidents', () => {
     expect(new Set(decoyIds).size).toBe(decoyIds.length)
     expect(inc.factors.filter(f => decoyIds.includes(f))).toEqual([])
     for (const d of inc.decoys) expect(d.whyNot.trim().length).toBeGreaterThan(0)
+  })
+})
+
+describe('incident backgrounds', () => {
+  const sentences = (t: string) => t.split(/(?<=[.!?])\s+/).filter(Boolean)
+
+  it.each(incidents.map(i => [i.id, i] as const))('%s has a short plain background that does not name a card', (_id, inc) => {
+    expect(sentences(inc.background).length).toBeGreaterThanOrEqual(2)
+    expect(sentences(inc.background).length).toBeLessThanOrEqual(3)
+    expect(inc.background).not.toMatch(/CF-\d{4}/)
+  })
+
+  it('keeps the four seed clues verbatim', () => {
+    const friday = seeds.find(i => i.id === 'friday-flag')
+    expect(friday?.clues[0]).toBe('14:02 Checkout errors jump in every region at once. No deploy in the last 6 hours.')
+    expect(seeds.map(i => i.clues.length)).toEqual([3, 3, 3, 3])
+  })
+})
+
+describe('card info', () => {
+  const words = (t: string) => t.trim().split(/\s+/).length
+  const sentenceCount = (t: string) => t.split(/(?<=[.!?])\s+/).filter(Boolean).length
+
+  it('has info for exactly the 38 cards', () => {
+    expect(Object.keys(CARD_INFO).sort()).toEqual(CARDS.map(c => c.id).sort())
+  })
+
+  it('has a meaning for each of the 7 categories', () => {
+    expect(Object.keys(CATEGORY_MEANINGS)).toHaveLength(7)
+    for (const c of CATEGORIES) expect(CATEGORY_MEANINGS[c.id].trim().length).toBeGreaterThan(0)
+  })
+
+  it.each(CARDS.map(c => [c.id] as const))('%s has every section filled in', id => {
+    const info = CARD_INFO[id]
+    expect(info.id).toBe(id)
+    expect(info.meaning.trim().length).toBeGreaterThan(0)
+    expect(sentenceCount(info.meaning)).toBeGreaterThanOrEqual(2)
+    expect(sentenceCount(info.meaning)).toBeLessThanOrEqual(3)
+    for (const list of [info.situations, info.clues]) {
+      expect(list.length).toBeGreaterThanOrEqual(2)
+      expect(list.length).toBeLessThanOrEqual(3)
+      for (const line of list) {
+        expect(line.trim().length).toBeGreaterThan(0)
+        expect(words(line), line).toBeLessThanOrEqual(15)
+      }
+    }
+    expect(info.confusedWith.length).toBeGreaterThanOrEqual(2)
+    expect(info.confusedWith.length).toBeLessThanOrEqual(3)
+  })
+
+  it.each(CARDS.map(c => [c.id] as const))('%s: confusedWith IDs are valid, unique and not itself', id => {
+    const ids = CARD_INFO[id].confusedWith.map(c => c.id)
+    for (const other of ids) expect(CARDS_BY_ID[other], `${other} is not a card`).toBeDefined()
+    expect(new Set(ids).size).toBe(ids.length)
+    expect(ids).not.toContain(id)
+    for (const c of CARD_INFO[id].confusedWith) expect(c.howToTell.trim().length).toBeGreaterThan(0)
+  })
+
+  it('links every card to its catalog entry with a lowercase anchor', () => {
+    expect(CATALOG_URL).toBe('https://revelara.ai/blog/causal-factor-enumeration/')
+    for (const c of CARDS) {
+      expect(CARD_INFO[c.id].catalogUrl).toBe(`https://revelara.ai/blog/causal-factor-enumeration/#cf-${c.id.slice(3)}`)
+      expect(CARD_INFO[c.id].catalogUrl).toMatch(/#cf-\d{4}$/)
+    }
+    expect(catalogUrl('CF-0026')).toBe('https://revelara.ai/blog/causal-factor-enumeration/#cf-0026')
+  })
+
+  it('uses the decoys the incidents actually use for the cards they sit next to', () => {
+    // For each incident, every decoy should list at least one of that incident's factors,
+    // or be listed by one of them, so the game and the modal reinforce each other.
+    const weak: string[] = []
+    for (const inc of incidents) {
+      for (const d of inc.decoys) {
+        const linked = inc.factors.some(
+          f => CARD_INFO[f].confusedWith.some(c => c.id === d.id) || CARD_INFO[d.id].confusedWith.some(c => c.id === f)
+        )
+        if (!linked) weak.push(`${inc.id}: ${d.id}`)
+      }
+    }
+    // A few decoys are generic distractors (Bad Release, Over Capacity, Noisy Batch Job); allow a small number.
+    expect(weak.length, weak.join(', ')).toBeLessThanOrEqual(4)
+  })
+
+  it('picks a preferred look-alike for the reveal screen, else the first entry', () => {
+    expect(tellApart('CF-0010', ['CF-0037'])?.id).toBe('CF-0037')
+    expect(tellApart('CF-0010', [])?.id).toBe('CF-0011')
+    expect(tellApart('CF-0010', ['CF-9999'])?.id).toBe('CF-0011')
+    expect(tellApart('CF-9999')).toBeUndefined()
   })
 })

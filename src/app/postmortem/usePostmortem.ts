@@ -5,12 +5,16 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { incidents as ALL_INCIDENTS } from './data/incidents'
 import {
   HAND_SIZE,
-  CLUE_COUNT,
+  MAX_ELIMINATIONS,
   buildHand,
+  canClose,
+  cluesRevealedFor,
   createRng,
+  eliminateCard,
   isNewHighScore,
-  multiplierFor,
   pickIncidents,
+  playCard,
+  roundMultiplier,
   scoreIncident,
   summarizeRun,
   toResult,
@@ -19,15 +23,19 @@ import { highScore } from './lib/storage'
 import { getStoredData, saveFinishedRun } from './useStoredData'
 
 import type { Incident } from './data/incidents'
-import type { IncidentResult, IncidentScore, RunSummaryStats } from './lib/rules'
+import type { IncidentResult, IncidentScore, Rng, Round, RunSummaryStats } from './lib/rules'
 
 export type Run = {
   incidents: Incident[]
   hands: string[][]
   index: number
-  selected: string[]
-  cluesRevealed: number
-  /** Set once the player has committed this incident. */
+  /** Cards locked in for this incident, in play order. Results stay hidden until the case closes. */
+  played: string[]
+  /** Cards removed by Eliminate this incident. */
+  eliminated: string[]
+  /** The card waiting for a second click or key press to be played. */
+  armed: string | null
+  /** Set once the player has closed this incident. */
   outcome: IncidentScore | null
   results: IncidentResult[]
   totalScore: number
@@ -52,8 +60,9 @@ export function startRun(seed: string = newSeed()): Run {
     incidents: picked,
     hands: picked.map(i => buildHand(i, rng)),
     index: 0,
-    selected: [],
-    cluesRevealed: 1,
+    played: [],
+    eliminated: [],
+    armed: null,
     outcome: null,
     results: [],
     totalScore: 0,
@@ -71,39 +80,93 @@ function isNativeControl(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && target.closest('a, [data-pm-native]') !== null
 }
 
-export function usePostmortem({ keysActive }: { keysActive: boolean }) {
+export function roundOf(run: Pick<Run, 'hands' | 'index' | 'played' | 'eliminated'>): Round {
+  return { hand: run.hands[run.index] ?? [], played: run.played, eliminated: run.eliminated }
+}
+
+export function usePostmortem({
+  keysActive,
+  onOpenInfo,
+  rng = Math.random,
+}: {
+  keysActive: boolean
+  /** Called with the armed card's id when the player presses ?. */
+  onOpenInfo?: (cardId: string) => void
+  /** Injectable so Eliminate is testable. */
+  rng?: Rng
+}) {
   const [run, setRun] = useState<Run>(() => startRun())
   const [finished, setFinished] = useState<FinishedRun | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
 
-  const toggleIndex = useCallback((cardIndex: number) => {
-    setRun(r => {
-      const id = r.hands[r.index]?.[cardIndex]
-      if (!id || r.outcome) return r
-      const selected = r.selected.includes(id) ? r.selected.filter(s => s !== id) : [...r.selected, id]
-      return { ...r, selected }
-    })
+  const round = roundOf(run)
+  const multiplier = roundMultiplier(round)
+  const cluesRevealed = run.outcome ? 3 : cluesRevealedFor(run.played.length)
+
+  /** First press arms a card ("Play?"), a second press on the same card plays it. */
+  const pressCard = useCallback(
+    (cardIndex: number) => {
+      const id = run.hands[run.index]?.[cardIndex]
+      if (!id || run.outcome) return
+      if (run.played.includes(id)) {
+        setNotice('That card is already played.')
+        return
+      }
+      if (run.eliminated.includes(id)) {
+        setNotice('That card was eliminated.')
+        return
+      }
+      setNotice(null)
+      if (run.armed !== id) {
+        setRun({ ...run, armed: id })
+        return
+      }
+      const played = playCard(roundOf(run), id)
+      if (!played.ok) return
+      setRun({ ...run, played: [...played.round.played], armed: null })
+    },
+    [run]
+  )
+
+  const disarm = useCallback(() => {
+    setRun(r => (r.armed ? { ...r, armed: null } : r))
     setNotice(null)
   }, [])
 
-  const revealNext = useCallback(() => {
-    setRun(r => (r.outcome || r.cluesRevealed >= CLUE_COUNT ? r : { ...r, cluesRevealed: r.cluesRevealed + 1 }))
-  }, [])
+  const eliminate = useCallback(() => {
+    if (run.outcome) return
+    const result = eliminateCard(run.incidents[run.index], roundOf(run), rng)
+    if (!result.ok) {
+      setNotice(result.reason === 'min-multiplier' ? 'No eliminations left: the multiplier is already at ×1.' : 'No safe card left to eliminate.')
+      return
+    }
+    setNotice(null)
+    setRun({ ...run, eliminated: [...result.round.eliminated], armed: run.armed === result.removed ? null : run.armed })
+  }, [run, rng])
+
+  const openArmedInfo = useCallback(() => {
+    if (run.armed) onOpenInfo?.(run.armed)
+    else setNotice('Click a card once to arm it, then press ? for its info.')
+  }, [run.armed, onOpenInfo])
 
   const commit = useCallback(() => {
     if (run.outcome) return
+    if (!canClose(roundOf(run))) {
+      setNotice('Play at least one card before you close the case.')
+      return
+    }
     const incident = run.incidents[run.index]
-    const result = scoreIncident(incident, run.hands[run.index], run.selected, run.cluesRevealed)
+    const result = scoreIncident(incident, run.hands[run.index], run.played, roundMultiplier(roundOf(run)))
     if (!result.ok) {
-      setNotice('Pick at least one card before you commit.')
+      setNotice('Play at least one card before you close the case.')
       return
     }
     setNotice(null)
     const { score } = result
     setRun({
       ...run,
+      armed: null,
       outcome: score,
-      cluesRevealed: CLUE_COUNT,
       results: [...run.results, toResult(incident, score)],
       totalScore: run.totalScore + score.points,
     })
@@ -112,7 +175,7 @@ export function usePostmortem({ keysActive }: { keysActive: boolean }) {
   const next = useCallback(() => {
     if (!run.outcome) return
     if (run.index + 1 < run.incidents.length) {
-      setRun({ ...run, index: run.index + 1, selected: [], cluesRevealed: 1, outcome: null })
+      setRun({ ...run, index: run.index + 1, played: [], eliminated: [], armed: null, outcome: null })
       return
     }
     // Last incident: save, then show the summary.
@@ -135,21 +198,16 @@ export function usePostmortem({ keysActive }: { keysActive: boolean }) {
   }, [])
 
   // Keep the latest handlers reachable from one stable key listener.
-  const handlers = useRef({ toggleIndex, revealNext, commit, next })
+  const handlers = useRef({ pressCard, disarm, eliminate, openArmedInfo, commit, next })
   useEffect(() => {
-    handlers.current = { toggleIndex, revealNext, commit, next }
+    handlers.current = { pressCard, disarm, eliminate, openArmedInfo, commit, next }
   })
 
   useEffect(() => {
     if (!keysActive || finished) return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (isTypingTarget(e.target) || isNativeControl(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
-      if (e.key === ' ') {
-        // Always stop the page from scrolling.
-        e.preventDefault()
-        if (!e.repeat) handlers.current.revealNext()
-        return
-      }
+      // Radix calls preventDefault on the Esc that closes a dialog; don't also disarm a card.
+      if (e.defaultPrevented || isTypingTarget(e.target) || isNativeControl(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.repeat) return
       if (e.key === 'Enter') {
         // Take over Enter so a focused card or button is not also clicked.
@@ -158,29 +216,32 @@ export function usePostmortem({ keysActive }: { keysActive: boolean }) {
         else handlers.current.commit()
         return
       }
-      if (/^[1-8]$/.test(e.key) && Number(e.key) <= HAND_SIZE) {
-        handlers.current.toggleIndex(Number(e.key) - 1)
+      if (run.outcome) return
+      if (e.key === 'Escape') {
+        handlers.current.disarm()
+      } else if (e.key === 'e' || e.key === 'E') {
+        handlers.current.eliminate()
+      } else if (e.key === '?') {
+        handlers.current.openArmedInfo()
+      } else if (/^[1-8]$/.test(e.key) && Number(e.key) <= HAND_SIZE) {
+        // Take over so a focused card is not also clicked by the same key.
+        handlers.current.pressCard(Number(e.key) - 1)
       }
     }
-    // Some browsers fire a click for Space on keyup, even if keydown was cancelled.
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key === ' ' && !isTypingTarget(e.target) && !isNativeControl(e.target)) e.preventDefault()
-    }
     window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
-    return () => {
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
-    }
+    return () => window.removeEventListener('keydown', onKeyDown)
   }, [keysActive, finished, run.outcome])
 
   return {
     run,
     finished,
     notice,
-    multiplier: multiplierFor(run.cluesRevealed),
-    toggleIndex,
-    revealNext,
+    multiplier,
+    cluesRevealed,
+    eliminationsLeft: MAX_ELIMINATIONS - run.eliminated.length,
+    pressCard,
+    disarm,
+    eliminate,
     commit,
     next,
     playAgain,

@@ -7,11 +7,11 @@ export const MAX_TOP_RUNS = 5
 export type CardStats = {
   /** Times this card was a factor in an incident you played. */
   factor: number
-  /** Times it was a factor and you picked it. */
+  /** Times it was a factor and you played it. */
   correct: number
-  /** Times you picked it and it was not a factor. */
+  /** Times you played it and it was not a factor. */
   wrong: number
-  /** Times it was a factor and you did not pick it. */
+  /** Times it was a factor and you did not play it. */
   missed: number
 }
 

@@ -17,6 +17,7 @@ export function TopBar({
   score,
   best,
   multiplier,
+  eliminationsLeft,
   onCollection,
 }: {
   incidentNumber: number
@@ -24,6 +25,7 @@ export function TopBar({
   score: number
   best: number | null
   multiplier: number
+  eliminationsLeft: number
   onCollection: () => void
 }) {
   return (
@@ -32,6 +34,7 @@ export function TopBar({
       <Stat label="Score" value={String(score)} />
       <Stat label="High score" value={best === null ? 'None yet' : String(best)} />
       <Stat label="Multiplier" value={`×${multiplier}`} />
+      <Stat label="Eliminations left" value={String(eliminationsLeft)} />
       <div className="pm-topbar__spacer" />
       <ChunkyButton variant="utility" size="sm" data-pm-native onClick={onCollection}>
         Collection

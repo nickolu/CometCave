@@ -3,17 +3,21 @@ export type Decoy = { id: string; whyNot: string }
 export type Incident = {
   id: string
   title: string
+  /** 2-3 plain sentences shown above the timeline: what the system is, how it is built, what changed lately. Never names the answer. */
+  background: string
   clues: [string, string, string] // revealed in order
   factors: string[] // 2 or 3 CF ids
   decoys: Decoy[] // 2 or 3
   explanation: string // shown on reveal
 }
 
-// The 4 seeds come straight from the issue and are used unchanged.
+// The 4 seeds keep their clues verbatim; the background is additive.
 export const seeds: Incident[] = [
   {
     id: 'friday-flag',
     title: 'The Friday Flag',
+    background:
+      'A shopping site runs checkout in several regions behind a load balancer, and the team switches features on and off with flags. The load balancer sends traffic only to instances that pass a regular health check. Lately the team has been rolling features out one region at a time, and apps automatically resend any request that fails.',
     clues: [
       '14:02 Checkout errors jump in every region at once. No deploy in the last 6 hours.',
       '14:10 The load balancer shows every instance healthy. A flag change meant for one region went out at 14:01.',
@@ -31,6 +35,8 @@ export const seeds: Incident[] = [
   {
     id: 'midnight-renewal',
     title: 'Midnight Renewal',
+    background:
+      "A company's internal services talk to each other over encrypted connections, using certificates from the company's own authority. A login service hands out tokens that every other service checks. Certificates are renewed by hand from a runbook that nobody has needed for a long while.",
     clues: [
       '00:00 Every internal API call starts failing with handshake errors.',
       '00:07 Users cannot log in; the token service cannot reach its key store.',
@@ -47,6 +53,8 @@ export const seeds: Incident[] = [
   {
     id: 'cache-flush',
     title: 'Routine Maintenance',
+    background:
+      "An online store keeps product and page data in a cache tier, so most page views never reach the main database. Orders go into a queue that background workers process. Maintenance windows are planned a week ahead, and this week's was the first to include the cache tier.",
     clues: [
       '09:00 Scheduled maintenance restarts the cache tier. 09:01 Database CPU hits 100%.',
       '09:05 Every page view is reading straight from the database. Traffic is at normal levels.',
@@ -64,6 +72,8 @@ export const seeds: Incident[] = [
   {
     id: 'two-robots',
     title: 'Two Robots',
+    background:
+      'An API runs as containers spread across a fleet of hosts. An autoscaler adds and removes containers as traffic changes, and a deploy tool rolls out new versions. This week the team switched on a new rolling deploy that also manages how many containers run during a rollout.',
     clues: [
       "16:20 The API fleet's instance count swings between 12 and 30 every few minutes.",
       '16:26 The deploy tool is adding instances for a rollout while the autoscaler removes them as surplus.',
@@ -83,6 +93,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'bulk-refunds',
     title: 'The Blank Row',
+    background:
+      'A payments platform lets merchants refund one payment at a time or upload a file of many refunds. One chart tracks the success rate across every kind of payment, and an alert fires when it drops. The team ships releases several times a week and has been adding features for large merchants.',
     clues: [
       '10:15 Bulk refund uploads start failing for some merchants. Single refunds and overall payment success look normal.',
       '10:40 Every failing upload has at least one row with a blank amount. The bulk refund feature shipped in a release at 10:00.',
@@ -106,6 +118,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'view-counter',
     title: 'The Counter That Ran Out',
+    background:
+      "A streaming service records every view in a database, so it can rank shows and pay creators. The table that holds the counts was created years ago, when the service was much smaller. Tonight a long-awaited season premiere goes live, expected to be the biggest in the service's history.",
     clues: [
       '20:02 Playback fails for the new season premiere. Viewers see a spinner, then an error.',
       "20:09 The errors come from the write that records each view. The failing row is the premiere's, with a count above two billion.",
@@ -126,6 +140,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'dispatch-failover',
     title: 'The Hand-Built Trip Log',
+    background:
+      'A ride-hailing app stores trips in a main database that copies each write to a standby replica a moment later. If the main host fails, automated failover promotes the replica within a couple of minutes. The database hosts are several years old and sit in the same server room as the replica.',
     clues: [
       '07:48 Ride requests fail for about two minutes, then recover. Drivers say recent trips are missing from their history.',
       '07:52 The main database host went offline at 07:46 with a disk error. Failover finished in 90 seconds and the app is serving normally.',
@@ -148,6 +164,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'renamed-column',
     title: 'The Renamed Column',
+    background:
+      'A subscription service sends invoice emails from a nightly job that reads plan details from the main database. The web app and several other jobs use the same database. The team runs planned database changes overnight, in a window that starts at 03:00.',
     clues: [
       '03:10 Invoice emails stop going out. The web app looks fine for customers.',
       "03:25 The invoice job logs 'column not found: plan_code'. A planned migration at 03:00 renamed plan_code to plan_id and dropped the old column.",
@@ -168,6 +186,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'disk-guard',
     title: 'The Helpful Janitor',
+    background:
+      'An analytics platform keeps raw data, long-running job folders and exports together on one large shared disk. An old script runs every hour and frees space when the disk gets too full. A few jobs that each run for half a day started this morning.',
     clues: [
       '13:05 Dashboards and scheduled exports fail across the analytics platform. Nothing was deployed today.',
       '13:12 Shared storage was 91% full. A guard script that deletes the oldest files whenever disk passes 90% ran at 13:00.',
@@ -185,6 +205,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'launch-lobby',
     title: 'Launch Day Lobby',
+    background:
+      'An online game sells bundles through an outside payment provider and matches players through lobby servers in three regions. Today is launch day, and servers were scaled up last week for the crowd. The European region reaches its data center over a rented carrier link.',
     clues: [
       "20:00 The game launches. Players can't buy the launch bundle and can't find matches. Support files it all as one ticket: 'launch is broken'.",
       '20:12 The team spends 40 minutes chasing one suspected cause. The logs show two different errors: purchase calls time out, and match requests from Europe cannot connect.',
@@ -204,6 +226,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'everyone-waiting',
     title: 'Everyone Waiting',
+    background:
+      'A mobile app talks to one API service that keeps a fixed pool of workers. To answer a request, the API often asks other internal services for data, such as profile details from a service run by another team. That team moved their service to a new platform last week.',
     clues: [
       '18:30 The mobile app hangs on the home screen for most users. Servers are up and request volume is normal.',
       '18:36 Every API worker is busy, and each one is waiting on the profile service. Database CPU is at 12%.',
@@ -221,6 +245,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'quarter-end-report',
     title: 'The Quarter-End Report',
+    background:
+      'A school platform serves course pages from one main database that also stores every grade. Staff also run scheduled jobs against that database, and today is the last day of the quarter. Students log in at a steady pace on school days.',
     clues: [
       '09:00 Course pages load slowly for teachers and students, then time out. Student traffic matches last Monday.',
       '09:07 Database CPU is pegged, mostly by three queries that each scan the entire grades table. The connection pool has plenty of free connections.',
@@ -244,6 +270,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'power-out',
     title: 'Lights Out in Hall B',
+    background:
+      'A live-video service serves each region from its own data center, and each one keeps caches of recent video segments. If a region goes down, viewers are redirected to another region. Tonight is a championship game, and a heat wave has hit the west coast this week.',
     clues: [
       '19:40 The live stream drops for viewers on the west coast. Other regions are fine.',
       '19:44 Every host in one data hall is unreachable. The building lost utility power at 19:38 and the backup generator did not start.',
@@ -260,6 +288,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'account-hold',
     title: 'Account on Hold',
+    background:
+      'A marketplace takes card payments through an outside processor. Its status dashboard counts a payment as a success whenever the processor replies with an HTTP 200. It has been a busy month, with a big promotion and more refunds than usual.',
     clues: [
       "11:00 A marketplace's card payments all fail at once. Our own pages and APIs are fine.",
       "11:08 The payment processor answers every request quickly with a 'merchant on hold' code. Our dashboard counts any HTTP 200 as a success, so it shows 100% green.",
@@ -277,6 +307,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'strange-workers',
     title: 'Strange Workers',
+    background:
+      "A company runs nightly batch jobs on a cluster of hosts in a cloud account. Staff and contractors reach the account with access keys. Last month a contractor's project ended, and the team has been wrapping up the old accounts.",
     clues: [
       '02:10 Memory alarms fire on most hosts in the batch cluster. Hosts start restarting.',
       '02:25 The memory is full of processes nobody recognizes, launched on every host. No scheduled job or release accounts for them.',
@@ -294,6 +326,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'short-ttl',
     title: 'The Short TTL',
+    background:
+      "A mobile app finds its API by looking up a hostname in DNS, served by the company's own resolvers. The team wants failovers to happen faster, so it has been tuning DNS settings. The resolvers have run at about a quarter of their capacity for months.",
     clues: [
       "11:05 The mobile app says 'cannot connect' for about a third of users. API servers are healthy.",
       '11:12 Lookups for the API address sometimes return no answer. The DNS resolvers are seeing 40 times their normal query rate.',
@@ -314,6 +348,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'doorbuster',
     title: 'Doorbuster',
+    background:
+      "A retailer runs checkout on a group of servers behind a load balancer. More servers are added by an operations script that engineers run by hand, with each batch approved first. This year's Black Friday campaign is bigger than last year's.",
     clues: [
       '06:00 The Black Friday sale opens. Checkout slows down within minutes, then starts timing out.',
       '06:10 Traffic is 8 times a normal day. The team planned for 3 times. All checkout servers are at full CPU.',
@@ -330,6 +366,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'growing-pains',
     title: 'Growing Pains',
+    background:
+      'A business-software company lets customers generate reports on a pool of report servers. New servers are ordered once a quarter, and an alert pages the team when average CPU passes 80%. Signups have been strong since the summer.',
     clues: [
       '10:00 Report generation takes 40 seconds for many customers, up from 5 in the spring. Nothing was released this week.',
       '10:20 Average CPU on the report servers looks fine at 55%. In busy hours the slowest reports take over 30 seconds. The alert is set on the average.',
@@ -347,6 +385,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'quota-day',
     title: 'Quota Day',
+    background:
+      "A company's build platform runs each build on a short-lived cloud instance that an autoscaler starts on demand. The cloud account has a cap on how many instances can run at once. A test change last week made some jobs end abnormally.",
     clues: [
       "09:00 Builds queue for 40 minutes on the engineering team's build platform. Build volume is the same as any Monday.",
       '09:15 The autoscaler is stuck at 200 agents, the cloud account instance quota. 45 of them are idle leftovers from failed jobs.',
@@ -363,6 +403,8 @@ export const newIncidents: Incident[] = [
   {
     id: 'wrong-prices',
     title: 'Wrong Prices',
+    background:
+      "A grocery app shows prices worked out from product records plus discount rules that staff edit in an admin tool. For speed, product pages come from a cache that refreshes a product's entry whenever that product changes. This morning staff were setting up a clearance sale.",
     clues: [
       '06:05 Customers report the grocery app showing 90% off nearly everything. Orders pour in.',
       '06:20 A discount rule meant for one clearance category was saved at 06:00 with the category field blank. A blank matches every product.',
