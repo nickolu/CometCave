@@ -47,21 +47,79 @@ export function buildHand(incident: Incident, rng: Rng, allCardIds: readonly str
   return shuffle([...unique, ...fill], rng)
 }
 
-/** Clues revealed at commit time (1 to 3) -> multiplier. */
-export function multiplierFor(cluesRevealed: number): 3 | 2 | 1 {
-  if (cluesRevealed <= 1) return 3
-  if (cluesRevealed === 2) return 2
-  return 1
+export const START_MULTIPLIER = 3
+export const MAX_ELIMINATIONS = START_MULTIPLIER - 1
+
+export type Multiplier = 3 | 2 | 1
+
+/** The multiplier changes only through Eliminate: each use costs one step, never below x1. */
+export function multiplierFor(eliminatedCount: number): Multiplier {
+  const m = START_MULTIPLIER - Math.max(0, Math.floor(eliminatedCount))
+  return m <= 1 ? 1 : m >= 3 ? 3 : 2
+}
+
+/** Clue 1 is free. Each played card unlocks the next clue, up to CLUE_COUNT. */
+export function cluesRevealedFor(playedCount: number): number {
+  return Math.min(CLUE_COUNT, 1 + Math.max(0, playedCount))
+}
+
+/** What the player has done so far in one incident. */
+export type Round = {
+  hand: readonly string[]
+  /** In the order they were played. */
+  played: readonly string[]
+  eliminated: readonly string[]
+}
+
+export function newRound(hand: readonly string[]): Round {
+  return { hand, played: [], eliminated: [] }
+}
+
+export function roundMultiplier(round: Pick<Round, 'eliminated'>): Multiplier {
+  return multiplierFor(round.eliminated.length)
+}
+
+export type PlayOutcome = { ok: true; round: Round } | { ok: false; reason: 'not-in-hand' | 'already-played' | 'eliminated' }
+
+/** Plays a card: it is locked in and cannot be taken back. */
+export function playCard(round: Round, id: string): PlayOutcome {
+  if (!round.hand.includes(id)) return { ok: false, reason: 'not-in-hand' }
+  if (round.played.includes(id)) return { ok: false, reason: 'already-played' }
+  if (round.eliminated.includes(id)) return { ok: false, reason: 'eliminated' }
+  return { ok: true, round: { ...round, played: [...round.played, id] } }
+}
+
+/** Closing the case needs at least one played card. */
+export function canClose(round: Pick<Round, 'played'>): boolean {
+  return round.played.length > 0
+}
+
+/** Cards Eliminate may remove: in the hand, not a factor, not played, not already eliminated. */
+export function eliminationCandidates(incident: Incident, round: Round): string[] {
+  return round.hand.filter(id => !incident.factors.includes(id) && !round.played.includes(id) && !round.eliminated.includes(id))
+}
+
+export type EliminateOutcome =
+  | { ok: true; round: Round; removed: string }
+  | { ok: false; reason: 'min-multiplier' | 'no-candidates' }
+
+/** Removes one random safe card and costs one multiplier step. A failed attempt costs nothing. */
+export function eliminateCard(incident: Incident, round: Round, rng: Rng): EliminateOutcome {
+  if (round.eliminated.length >= MAX_ELIMINATIONS) return { ok: false, reason: 'min-multiplier' }
+  const candidates = eliminationCandidates(incident, round)
+  if (candidates.length === 0) return { ok: false, reason: 'no-candidates' }
+  const removed = candidates[Math.min(candidates.length - 1, Math.floor(rng() * candidates.length))]
+  return { ok: true, removed, round: { ...round, eliminated: [...round.eliminated, removed] } }
 }
 
 export type CardResult = 'correct' | 'wrong' | 'missed' | 'neutral'
 
-/** Marks for every card in the hand. 'neutral' = not a factor and not picked. */
-export function classifyHand(incident: Incident, hand: readonly string[], selected: readonly string[]): Record<string, CardResult> {
+/** Marks for every card in the hand. 'neutral' = not a factor and not played. */
+export function classifyHand(incident: Incident, hand: readonly string[], played: readonly string[]): Record<string, CardResult> {
   const out: Record<string, CardResult> = {}
   for (const id of hand) {
     const isFactor = incident.factors.includes(id)
-    const isPicked = selected.includes(id)
+    const isPicked = played.includes(id)
     out[id] = isFactor ? (isPicked ? 'correct' : 'missed') : isPicked ? 'wrong' : 'neutral'
   }
   return out
@@ -71,7 +129,7 @@ export type IncidentScore = {
   correct: string[]
   wrong: string[]
   missed: string[]
-  multiplier: 3 | 2 | 1
+  multiplier: Multiplier
   points: number
   solved: boolean
 }
@@ -82,15 +140,14 @@ export type ScoreOutcome = { ok: true; score: IncidentScore } | { ok: false; rea
 export function scoreIncident(
   incident: Incident,
   hand: readonly string[],
-  selected: readonly string[],
-  cluesRevealed: number
+  played: readonly string[],
+  multiplier: Multiplier
 ): ScoreOutcome {
-  const picked = [...new Set(selected)].filter(id => hand.includes(id))
+  const picked = [...new Set(played)].filter(id => hand.includes(id))
   if (picked.length === 0) return { ok: false, reason: 'empty' }
   const correct = picked.filter(id => incident.factors.includes(id))
   const wrong = picked.filter(id => !incident.factors.includes(id))
   const missed = incident.factors.filter(id => !picked.includes(id))
-  const multiplier = multiplierFor(cluesRevealed)
   const points = correct.length * CORRECT_POINTS * multiplier - wrong.length * WRONG_PENALTY
   return { ok: true, score: { correct, wrong, missed, multiplier, points, solved: wrong.length === 0 && missed.length === 0 } }
 }

@@ -8,7 +8,15 @@ import { useStoredData } from '@/app/postmortem/useStoredData'
 
 import { PostmortemCard } from './PostmortemCard'
 
-export function CollectionView({ onBack, backLabel }: { onBack: () => void; backLabel: string }) {
+export function CollectionView({
+  onBack,
+  backLabel,
+  onInfo,
+}: {
+  onBack: () => void
+  backLabel: string
+  onInfo: (cardId: string, trigger: HTMLElement) => void
+}) {
   const data = useStoredData()
 
   return (
@@ -22,7 +30,7 @@ export function CollectionView({ onBack, backLabel }: { onBack: () => void; back
       </header>
       <div className="pm-page">
         <div className="pm-page__inner">
-          <p className="pm-acc">Under each card: how often you picked it when it was a real factor.</p>
+          <p className="pm-acc">Under each card: how often you played it when it was a real factor. Press the i on a card to read about it.</p>
           {CATEGORIES.map(cat => (
             <section key={cat.id} className={`pm-group pm-cat-${cat.id}`}>
               <h2>
@@ -34,7 +42,7 @@ export function CollectionView({ onBack, backLabel }: { onBack: () => void; back
                   const acc = accuracy(stats)
                   return (
                     <div key={card.id} className="pm-cell">
-                      <PostmortemCard card={card} />
+                      <PostmortemCard card={card} onInfo={onInfo} />
                       <span className="pm-acc">
                         {acc === null || !stats ? 'Not seen yet' : `${stats.correct} of ${stats.factor} (${Math.round(acc * 100)}%)`}
                       </span>
