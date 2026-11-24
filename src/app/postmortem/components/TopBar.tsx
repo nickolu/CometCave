@@ -29,14 +29,14 @@ export function TopBar({
   onCollection: () => void
 }) {
   return (
-    <header className="pm-topbar">
+    <header className="pm-topbar pm-topbar--stats">
       <Stat label="Incident" value={`${incidentNumber} of ${total}`} />
       <Stat label="Score" value={String(score)} />
       <Stat label="High score" value={best === null ? 'None yet' : String(best)} />
       <Stat label="Multiplier" value={`×${multiplier}`} />
       <Stat label="Eliminations left" value={String(eliminationsLeft)} />
       <div className="pm-topbar__spacer" />
-      <ChunkyButton variant="utility" size="sm" data-pm-native onClick={onCollection}>
+      <ChunkyButton variant="utility" size="sm" className="pm-topbtn" data-pm-native onClick={onCollection}>
         Collection
       </ChunkyButton>
     </header>

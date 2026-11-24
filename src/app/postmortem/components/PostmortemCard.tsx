@@ -1,5 +1,7 @@
 'use client'
 
+import { useEffect, useRef } from 'react'
+
 import type { Card } from '@/app/postmortem/data/cards'
 import type { CardResult } from '@/app/postmortem/lib/rules'
 
@@ -45,6 +47,14 @@ export function PostmortemCard({
   /** Opens the info modal. Receives the button so focus can return to it. */
   onInfo?: (cardId: string, trigger: HTMLElement) => void
 }) {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  // On phones the hand is a horizontal scroll row: keep a card chosen with a number key in view.
+  useEffect(() => {
+    if (armed && window.matchMedia?.('(max-width: 767px)').matches) {
+      wrapRef.current?.scrollIntoView?.({ block: 'nearest', inline: 'nearest' })
+    }
+  }, [armed])
+
   const faceDown = played && !result
   const playable = !!onClick && !played && !eliminated
   const mark = result && result !== 'neutral' ? RESULT_LABEL[result] : null
@@ -81,7 +91,7 @@ export function PostmortemCard({
   const label = `${card.nickname}, ${card.id}. ${card.officialName}${state ? `. ${state}` : ''}`
 
   return (
-    <div className={`pm-cardwrap pm-cat-${card.category}`} data-armed={armed ? 'true' : 'false'} data-playable={playable ? 'true' : 'false'}>
+    <div ref={wrapRef} className={`pm-cardwrap pm-cat-${card.category}`} data-armed={armed ? 'true' : 'false'} data-playable={playable ? 'true' : 'false'}>
       {onClick ? (
         <button type="button" {...common} disabled={!playable} aria-pressed={armed} aria-label={label} onClick={onClick}>
           {content}

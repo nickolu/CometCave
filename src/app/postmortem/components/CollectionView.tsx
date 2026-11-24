@@ -24,7 +24,7 @@ export function CollectionView({
       <header className="pm-topbar">
         <h1 className="pm-title">Collection</h1>
         <div className="pm-topbar__spacer" />
-        <ChunkyButton variant="utility" size="sm" data-pm-native onClick={onBack}>
+        <ChunkyButton variant="utility" size="sm" className="pm-topbtn" data-pm-native onClick={onBack}>
           {backLabel}
         </ChunkyButton>
       </header>

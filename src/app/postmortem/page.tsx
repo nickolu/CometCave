@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function PostmortemPage() {
   return (
-    <div className="fixed inset-0 z-40">
+    <div className="pm-viewport fixed inset-0 z-40">
       <PostmortemRoot />
     </div>
   )
