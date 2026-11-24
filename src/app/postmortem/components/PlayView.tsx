@@ -50,6 +50,8 @@ export function PlayView({
       : run.armed
         ? 'Unselect your card to use the lifeline'
         : `Removes one random wrong card · costs ×1 multiplier (×${multiplier} → ×${nextMultiplier}) · ${eliminationsLeft} left`
+  const lifelineShortNote =
+    eliminationsLeft <= 0 ? 'None left' : run.armed ? 'Unselect card first' : `−1× · ${eliminationsLeft} left`
   const playedNames = run.played.map(id => CARDS_BY_ID[id].nickname)
 
   return (
@@ -138,7 +140,7 @@ export function PlayView({
         ) : (
           <>
             <ChunkyButton size="lg" disabled={!run.armed} onClick={game.lockIn}>
-              Lock in (L)
+              Lock in<span className="pm-keyhint"> (L)</span>
             </ChunkyButton>
             <ChunkyButton
               variant="secondary"
@@ -146,14 +148,23 @@ export function PlayView({
               className="pm-lifeline"
               disabled={eliminationsLeft <= 0 || !!run.armed}
               title={lifelineNote}
-              aria-describedby="pm-lifeline-note"
+              aria-describedby="pm-lifeline-desc"
               onClick={game.eliminate}
             >
-              <span className="pm-lifeline__label">Lifeline: eliminate a wrong card (E)</span>
-              <span id="pm-lifeline-note" className="pm-lifeline__note" aria-hidden>
-                {lifelineNote}
+              <span className="pm-lifeline__label">
+                <span className="pm-long">
+                  Lifeline: eliminate a wrong card<span className="pm-keyhint"> (E)</span>
+                </span>
+                <span className="pm-short">Lifeline</span>
+              </span>
+              <span className="pm-lifeline__note" aria-hidden>
+                <span className="pm-long">{lifelineNote}</span>
+                <span className="pm-short">{lifelineShortNote}</span>
               </span>
             </ChunkyButton>
+            <span id="pm-lifeline-desc" className="sr-only">
+              {lifelineNote}
+            </span>
             <ChunkyButton size="lg" disabled={run.played.length === 0} onClick={game.commit}>
               Close the case
             </ChunkyButton>
