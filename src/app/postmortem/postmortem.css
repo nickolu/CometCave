@@ -152,7 +152,7 @@ button.pm-card:disabled { cursor: default; }
 .pm-card__info:hover { background: var(--pm-accent, var(--cc-mint, #5eead4)); color: #04120f; }
 .pm-card__info:focus-visible { outline: 3px solid var(--cc-text-default, #e6fff7); outline-offset: 2px; }
 
-/* armed: waiting for a second press */
+/* selected: waiting for Lock in */
 .pm-card[data-armed='true'] {
   background: color-mix(in srgb, var(--pm-accent) 14%, #04120f);
   box-shadow:
@@ -247,7 +247,11 @@ button.pm-card:disabled { cursor: default; }
   justify-content: center;
   gap: 12px;
   padding: 10px 24px;
+  flex-wrap: wrap;
 }
+.pm-lifeline { height: auto; min-height: 48px; padding-top: 6px; padding-bottom: 6px; flex-direction: column; gap: 0; white-space: normal; }
+.pm-lifeline__label { line-height: 1.2; }
+.pm-lifeline__note { font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none; line-height: 1.2; opacity: 0.85; max-width: 34ch; }
 .pm-background { margin: 0; font-size: 16px; line-height: 1.5; color: var(--cc-text-muted, #bbb); }
 .pm-played { font-size: 13px; color: var(--cc-text-muted, #aaa); }
 .pm-notice { color: var(--pm-missed); font-size: 14px; }

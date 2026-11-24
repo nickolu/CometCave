@@ -43,6 +43,13 @@ export function PlayView({
     const tell = tellApart(id, others)
     return tell ? [{ id, tell }] : []
   })
+  const nextMultiplier = Math.max(1, multiplier - 1)
+  const lifelineNote =
+    eliminationsLeft <= 0
+      ? 'No lifelines left: the multiplier is already at ×1'
+      : run.armed
+        ? 'Unselect your card to use the lifeline'
+        : `Removes one random wrong card · costs ×1 multiplier (×${multiplier} → ×${nextMultiplier}) · ${eliminationsLeft} left`
   const playedNames = run.played.map(id => CARDS_BY_ID[id].nickname)
 
   return (
@@ -130,8 +137,22 @@ export function PlayView({
           </ChunkyButton>
         ) : (
           <>
-            <ChunkyButton variant="secondary" size="lg" disabled={eliminationsLeft <= 0} onClick={game.eliminate}>
-              Eliminate (E)
+            <ChunkyButton size="lg" disabled={!run.armed} onClick={game.lockIn}>
+              Lock in (L)
+            </ChunkyButton>
+            <ChunkyButton
+              variant="secondary"
+              size="lg"
+              className="pm-lifeline"
+              disabled={eliminationsLeft <= 0 || !!run.armed}
+              title={lifelineNote}
+              aria-describedby="pm-lifeline-note"
+              onClick={game.eliminate}
+            >
+              <span className="pm-lifeline__label">Lifeline: eliminate a wrong card (E)</span>
+              <span id="pm-lifeline-note" className="pm-lifeline__note" aria-hidden>
+                {lifelineNote}
+              </span>
             </ChunkyButton>
             <ChunkyButton size="lg" disabled={run.played.length === 0} onClick={game.commit}>
               Close the case
@@ -166,7 +187,7 @@ export function PlayView({
       <div className="pm-hint">
         {outcome
           ? 'Enter moves on.'
-          : 'Keys: 1 to 8 arm a card, press again to play it (Esc cancels). E eliminates a card at the cost of one multiplier step. ? shows info for the armed card. Enter closes the case.'}
+          : 'Keys: 1 to 8 select a card (press again to unselect), L locks it in, Esc clears. E uses the lifeline: removes a random wrong card for one multiplier step. ? shows info for the selected card. Enter closes the case.'}
       </div>
     </>
   )

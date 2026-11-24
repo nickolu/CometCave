@@ -33,7 +33,7 @@ export type Run = {
   played: string[]
   /** Cards removed by Eliminate this incident. */
   eliminated: string[]
-  /** The card waiting for a second click or key press to be played. */
+  /** The selected card, waiting for Lock in. Selecting never plays it. */
   armed: string | null
   /** Set once the player has closed this incident. */
   outcome: IncidentScore | null
@@ -90,7 +90,7 @@ export function usePostmortem({
   rng = Math.random,
 }: {
   keysActive: boolean
-  /** Called with the armed card's id when the player presses ?. */
+  /** Called with the selected card's id when the player presses ?. */
   onOpenInfo?: (cardId: string) => void
   /** Injectable so Eliminate is testable. */
   rng?: Rng
@@ -103,7 +103,7 @@ export function usePostmortem({
   const multiplier = roundMultiplier(round)
   const cluesRevealed = run.outcome ? 3 : cluesRevealedFor(run.played.length)
 
-  /** First press arms a card ("Play?"), a second press on the same card plays it. */
+  /** Toggles selection. Pressing never plays a card; use lockIn for that. */
   const pressCard = useCallback(
     (cardIndex: number) => {
       const id = run.hands[run.index]?.[cardIndex]
@@ -117,16 +117,23 @@ export function usePostmortem({
         return
       }
       setNotice(null)
-      if (run.armed !== id) {
-        setRun({ ...run, armed: id })
-        return
-      }
-      const played = playCard(roundOf(run), id)
-      if (!played.ok) return
-      setRun({ ...run, played: [...played.round.played], armed: null })
+      setRun({ ...run, armed: run.armed === id ? null : id })
     },
     [run]
   )
+
+  /** Plays the selected card. It is locked in and cannot be taken back. */
+  const lockIn = useCallback(() => {
+    if (run.outcome) return
+    if (!run.armed) {
+      setNotice('Select a card first.')
+      return
+    }
+    const played = playCard(roundOf(run), run.armed)
+    if (!played.ok) return
+    setNotice(null)
+    setRun({ ...run, played: [...played.round.played], armed: null })
+  }, [run])
 
   const disarm = useCallback(() => {
     setRun(r => (r.armed ? { ...r, armed: null } : r))
@@ -135,18 +142,22 @@ export function usePostmortem({
 
   const eliminate = useCallback(() => {
     if (run.outcome) return
+    if (run.armed) {
+      setNotice('Unselect your card to use the lifeline.')
+      return
+    }
     const result = eliminateCard(run.incidents[run.index], roundOf(run), rng)
     if (!result.ok) {
       setNotice(result.reason === 'min-multiplier' ? 'No eliminations left: the multiplier is already at ×1.' : 'No safe card left to eliminate.')
       return
     }
     setNotice(null)
-    setRun({ ...run, eliminated: [...result.round.eliminated], armed: run.armed === result.removed ? null : run.armed })
+    setRun({ ...run, eliminated: [...result.round.eliminated], armed: null })
   }, [run, rng])
 
   const openArmedInfo = useCallback(() => {
     if (run.armed) onOpenInfo?.(run.armed)
-    else setNotice('Click a card once to arm it, then press ? for its info.')
+    else setNotice('Select a card, then press ? for its info.')
   }, [run.armed, onOpenInfo])
 
   const commit = useCallback(() => {
@@ -198,15 +209,15 @@ export function usePostmortem({
   }, [])
 
   // Keep the latest handlers reachable from one stable key listener.
-  const handlers = useRef({ pressCard, disarm, eliminate, openArmedInfo, commit, next })
+  const handlers = useRef({ pressCard, lockIn, disarm, eliminate, openArmedInfo, commit, next })
   useEffect(() => {
-    handlers.current = { pressCard, disarm, eliminate, openArmedInfo, commit, next }
+    handlers.current = { pressCard, lockIn, disarm, eliminate, openArmedInfo, commit, next }
   })
 
   useEffect(() => {
     if (!keysActive || finished) return
     const onKeyDown = (e: KeyboardEvent) => {
-      // Radix calls preventDefault on the Esc that closes a dialog; don't also disarm a card.
+      // Radix calls preventDefault on the Esc that closes a dialog; don't also clear the selection.
       if (e.defaultPrevented || isTypingTarget(e.target) || isNativeControl(e.target) || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.repeat) return
       if (e.key === 'Enter') {
@@ -219,6 +230,10 @@ export function usePostmortem({
       if (run.outcome) return
       if (e.key === 'Escape') {
         handlers.current.disarm()
+      } else if (e.key === 'l' || e.key === 'L' || e.key === ' ') {
+        // Take over Space so a focused button is not also clicked.
+        e.preventDefault()
+        handlers.current.lockIn()
       } else if (e.key === 'e' || e.key === 'E') {
         handlers.current.eliminate()
       } else if (e.key === '?') {
@@ -240,6 +255,7 @@ export function usePostmortem({
     cluesRevealed,
     eliminationsLeft: MAX_ELIMINATIONS - run.eliminated.length,
     pressCard,
+    lockIn,
     disarm,
     eliminate,
     commit,
