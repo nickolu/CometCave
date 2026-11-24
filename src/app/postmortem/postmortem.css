@@ -1,7 +1,7 @@
 /*
  * Postmortem styles. Category colors live here as --pm-cat-* variables so no
- * hex values are needed in .ts/.tsx files. Desktop only: the hand is a single
- * row of 8 cards and is not designed to wrap on a phone.
+ * hex values are needed in .ts/.tsx files. Phone rules live in the
+ * @media (max-width: 767px) block at the end; desktop is the base.
  */
 .pm-root {
   --pm-cat-1: #ff6b6b; /* Wrong Logic */
@@ -132,7 +132,9 @@ button.pm-card:disabled { cursor: default; }
 
 /* card wrapper carries the lift so the info button moves with the card */
 .pm-cardwrap { position: relative; flex: none; transition: transform 0.12s ease-out; }
-.pm-cardwrap[data-playable='true']:hover { transform: translateY(-4px); }
+@media (hover: hover) and (pointer: fine) {
+  .pm-cardwrap[data-playable='true']:hover { transform: translateY(-4px); }
+}
 .pm-cardwrap[data-armed='true'] { transform: translateY(-14px); }
 .pm-card__info {
   position: absolute;
@@ -314,6 +316,7 @@ button.pm-card:disabled { cursor: default; }
   transform: translate(-50%, -50%);
   width: min(680px, calc(100vw - 32px));
   max-height: calc(100vh - 48px);
+  max-height: calc(100dvh - 48px);
   display: flex;
   flex-direction: column;
   height: auto;
@@ -327,7 +330,7 @@ button.pm-card:disabled { cursor: default; }
 .pm-modal__title { margin: 0; font-size: 24px; font-weight: 800; color: var(--pm-accent); }
 .pm-modal__sub { font-size: 14px; margin-top: 2px; }
 .pm-modal__cat { font-size: 13px; margin-top: 6px; color: var(--cc-text-muted, #aaa); }
-.pm-modal__close { align-self: flex-start; width: 32px; height: 32px; border: 1px solid var(--pm-panel-line); border-radius: 8px; background: none; color: inherit; font-size: 20px; cursor: pointer; }
+.pm-modal__close { position: relative; flex: none; align-self: flex-start; width: 32px; height: 32px; border: 1px solid var(--pm-panel-line); border-radius: 8px; background: none; color: inherit; font-size: 20px; cursor: pointer; }
 .pm-modal__close:focus-visible, .pm-modal__link:focus-visible { outline: 3px solid var(--cc-text-default, #e6fff7); outline-offset: 2px; }
 .pm-modal__body { overflow-y: auto; padding: 12px 20px 18px; display: flex; flex-direction: column; gap: 12px; font-size: 15px; line-height: 1.45; }
 .pm-modal__body h3 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--cc-text-muted, #aaa); }
@@ -337,4 +340,117 @@ button.pm-card:disabled { cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   .pm-card, .pm-cardwrap { transition: none; }
+}
+
+/* ---------- Touch ---------- */
+@media (pointer: coarse) {
+  .pm-hint,
+  .pm-keyhint { display: none; }
+  /* Grow the hit areas to 44px without growing what is drawn. */
+  .pm-card__info::after { content: ''; position: absolute; inset: -9px; }
+  .pm-modal__close::after { content: ''; position: absolute; inset: -6px; }
+  .pm-topbtn { min-height: 44px; }
+}
+
+/* ---------- Phones ---------- */
+.pm-short { display: none; }
+
+@media (max-width: 767px) {
+  .pm-long { display: none; }
+  .pm-short { display: inline; }
+
+  /*
+   * The page scrolls instead of being a fixed 100dvh column. CosmicShell is
+   * overflow-hidden with an inline height, so it is overridden here only,
+   * through the .pm-viewport wrapper in page.tsx. viewport-fit=cover is set in
+   * layout.tsx, so the notch inset is applied here.
+   */
+  .pm-viewport {
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+  }
+  .pm-viewport .cosmic-cards {
+    height: auto !important;
+    min-height: calc(100dvh - env(safe-area-inset-top));
+    overflow: visible;
+  }
+  .pm-viewport .cosmic-cards > .relative {
+    height: auto !important;
+    min-height: calc(100dvh - env(safe-area-inset-top));
+  }
+  .pm-root { flex: 1 0 auto; height: auto; min-height: calc(100dvh - env(safe-area-inset-top)); }
+
+  /* Card text: at 150px wide the container-query sizes come out at 12px or more. */
+  .pm-card__top { font-size: 8cqw; }
+
+  /* Top bar: two rows, Collection always in the second row. */
+  .pm-topbar { flex-wrap: wrap; gap: 8px 12px; padding: 8px 16px 8px 64px; }
+  .pm-topbar--stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+  .pm-topbar--stats .pm-topbar__spacer { display: none; }
+  .pm-topbar--stats .pm-topbtn { justify-self: end; align-self: center; }
+  .pm-stat__label { letter-spacing: 0.06em; }
+  .pm-title { font-size: 22px; }
+
+  .pm-middle { flex: 1 0 auto; overflow: visible; padding: 12px 16px; }
+
+  /* Hand: one scrolling row, snapping card by card. */
+  .pm-hand {
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 22px 16px 18px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    scrollbar-width: thin;
+    overscroll-behavior-x: contain;
+    order: 1;
+  }
+  .pm-hand::-webkit-scrollbar { height: 4px; }
+  .pm-hand::-webkit-scrollbar-thumb { background: var(--pm-panel-line); border-radius: 2px; }
+  .pm-hand .pm-cardwrap { flex: 0 0 auto; scroll-snap-align: start; }
+  .pm-hand .pm-card { width: 150px; }
+
+  /* Actions: a sticky bar under the hand. Played list and notice sit on a single line above the buttons. */
+  .pm-controls {
+    order: 2;
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    flex-wrap: wrap;
+    gap: 6px 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    background: #060f0d;
+    border-top: 1px solid var(--pm-panel-line);
+    box-shadow: 0 -8px 16px rgba(0, 0, 0, 0.4);
+  }
+  .pm-controls > button { flex: 1 1 0; min-width: 0; padding-inline: 8px; font-size: 14px; line-height: 1.15; white-space: normal; text-align: center; }
+  .pm-controls > .pm-played,
+  .pm-controls > .pm-notice {
+    order: -1;
+    flex: 1 0 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .pm-controls > .pm-notice { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .pm-lifeline { padding-top: 4px; padding-bottom: 4px; }
+  .pm-lifeline__note { max-width: none; font-size: 11px; }
+  .pm-hint { order: 3; }
+
+  /* Collection and summary */
+  .pm-page { padding: 12px 16px 24px; }
+  .pm-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px 12px; }
+  .pm-grid .pm-cell .pm-card { width: min(100%, 170px); }
+  .pm-actions { flex-direction: column; }
+  .pm-actions > button { width: 100%; }
+  .pm-bigscore { font-size: 44px; }
+
+  /* Info dialog */
+  .pm-modal { width: calc(100vw - 24px); max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
+  .pm-modal__head { padding: 14px 16px 10px; gap: 12px; }
+  .pm-modal__title { font-size: 20px; }
+  .pm-modal__body { padding: 12px 16px 16px; }
 }

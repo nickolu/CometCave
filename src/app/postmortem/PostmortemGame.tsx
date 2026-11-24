@@ -15,11 +15,6 @@ import './postmortem.css'
 type Screen = 'play' | 'collection'
 
 /**
- * Desktop only. This is a deliberate, documented exception to CLAUDE.md
- * principle 8 (mobile = desktop): the prototype spec (#4042) puts mobile
- * layout out of scope, and the hand is one row of 8 cards with number-key
- * controls.
- *
  * "Play" shows the run summary once all 10 incidents are done.
  */
 export function PostmortemGame() {
