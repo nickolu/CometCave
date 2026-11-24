@@ -15,7 +15,7 @@ const RESULT_LABEL: Record<Exclude<CardResult, 'neutral'>, string> = {
  * adapted from Comet Cards' TokenCard.
  *
  * The "i" button is a sibling of the card button (not nested in it), so it can
- * never arm or play the card.
+ * never select or play the card.
  */
 export function PostmortemCard({
   card,
@@ -31,7 +31,7 @@ export function PostmortemCard({
   card: Card
   /** Number key (1-8) shown in the top-left corner. */
   keyHint?: number
-  /** Waiting for a second click to be played. */
+  /** Selected, waiting for Lock in. */
   armed?: boolean
   /** Locked in and face-down. Pass `result` once the case is closed to flip it. */
   played?: boolean
@@ -48,7 +48,7 @@ export function PostmortemCard({
   const faceDown = played && !result
   const playable = !!onClick && !played && !eliminated
   const mark = result && result !== 'neutral' ? RESULT_LABEL[result] : null
-  const foot = mark ?? (eliminated ? 'Eliminated' : faceDown ? 'Played' : armed ? 'Play? Press again' : footer)
+  const foot = mark ?? (eliminated ? 'Eliminated' : faceDown ? 'Played' : armed ? 'Selected' : footer)
 
   const content = faceDown ? (
     <div className="pm-card__back" aria-hidden>
@@ -77,7 +77,7 @@ export function PostmortemCard({
     'data-result': result,
   } as const
 
-  const state = eliminated ? 'eliminated' : faceDown ? 'played, face down' : armed ? 'armed, press again to play' : ''
+  const state = eliminated ? 'eliminated' : faceDown ? 'played, face down' : armed ? 'selected' : ''
   const label = `${card.nickname}, ${card.id}. ${card.officialName}${state ? `. ${state}` : ''}`
 
   return (
