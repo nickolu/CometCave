@@ -31,6 +31,7 @@ export const AI_FEATURES = {
 
   // Tool-style games
   'secret-word': 1,
+  'blanks-story': 2, // one story template per topic; a few hundred tokens of prose
   'voters': 1,
   'oracle': 2,
   'chat-room': 2,
