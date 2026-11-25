@@ -1,0 +1,342 @@
+/* Blanks — a worksheet on the cave floor: cream paper, ruled lines, one
+   marker-ink color for the words the player wrote. The topic step is still
+   cave-side; the paper appears once there is a story. Every animation here is
+   off under prefers-reduced-motion; the static page shows the same thing. */
+
+.blanks {
+  --blanks-paper: #f6efdc;
+  --blanks-paper-edge: #e6dcc2;
+  --blanks-rule: rgba(70, 58, 36, 0.14);
+  --blanks-ink: #221d2b;
+  --blanks-ink-soft: #5e5768;
+  --blanks-marker: #c2185b;
+  --blanks-marker-soft: rgba(194, 24, 91, 0.45);
+  --blanks-hint: #2b5fcf;
+  --blanks-tape: rgba(255, 221, 120, 0.6);
+}
+
+/* --- Progress (cave-side chrome, kept quiet) ---------------------------- */
+
+.blanks-steps {
+  display: flex;
+  gap: 14px;
+  font-family: var(--font-label), sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.blanks-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.blanks-step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 2px solid var(--outline-variant);
+  font-size: 0.65rem;
+}
+
+.blanks-step[data-state='current'] {
+  color: var(--on-surface);
+}
+.blanks-step[data-state='current'] .blanks-step-num {
+  border-color: var(--ds-primary);
+  color: var(--ds-primary);
+}
+.blanks-step[data-state='done'] .blanks-step-num {
+  background: var(--primary-container);
+  border-color: var(--primary-container);
+  color: var(--on-primary-container);
+}
+
+/* --- Topic step ---------------------------------------------------------- */
+
+.blanks-topic-input {
+  flex: 1 1 auto; /* basis auto, or the column layout on phones squashes it */
+  min-width: 0;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 2px solid var(--outline-variant);
+  background: var(--surface-container);
+  color: var(--on-surface);
+  font-size: 1rem;
+}
+.blanks-topic-input::placeholder {
+  color: var(--on-surface-variant);
+  opacity: 0.8;
+}
+.blanks-topic-input:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+
+.blanks-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.blanks-chip {
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--outline-variant);
+  background: var(--surface-container-high);
+  color: var(--on-surface);
+  font-size: 0.95rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 120ms ease-out,
+    transform 120ms ease-out;
+}
+.blanks-chip:hover {
+  border-color: var(--ds-primary);
+  transform: translateY(-2px);
+}
+.blanks-chip:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+
+.blanks-link {
+  color: var(--ds-primary);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.blanks-link:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.blanks-error {
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--ds-error);
+  color: var(--on-surface);
+  background: var(--surface-container-high);
+  font-size: 0.95rem;
+}
+
+/* --- Paper --------------------------------------------------------------- */
+
+.blanks-paper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 40px 28px 32px;
+  border-radius: 6px;
+  color: var(--blanks-ink);
+  background-color: var(--blanks-paper);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent 31px,
+    var(--blanks-rule) 31px,
+    var(--blanks-rule) 32px
+  );
+  background-position: 0 14px;
+  border: 1px solid var(--blanks-paper-edge);
+  box-shadow:
+    0 2px 0 var(--blanks-paper-edge),
+    0 22px 48px rgba(0, 0, 0, 0.5);
+}
+
+.blanks-paper::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  width: 120px;
+  height: 28px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: var(--blanks-tape);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.blanks-paper-sm {
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .blanks-paper {
+    padding: 48px 48px 40px;
+  }
+}
+
+.blanks-eyebrow {
+  font-family: var(--font-label), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--blanks-ink-soft);
+}
+
+.blanks-title {
+  font-family: var(--font-headline), sans-serif;
+  font-size: clamp(1.6rem, 4vw, 2.25rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.blanks-ink-soft {
+  color: var(--blanks-ink-soft);
+}
+
+.blanks-prose {
+  font-size: 1.125rem;
+  line-height: 32px; /* matches the ruled lines */
+  white-space: pre-wrap;
+}
+
+.blanks-word {
+  display: inline;
+  padding: 0 0.12em;
+  background: none;
+  color: var(--blanks-marker);
+  font-weight: 700;
+  text-decoration: underline wavy var(--blanks-marker-soft);
+  text-decoration-skip-ink: none;
+  text-underline-offset: 5px;
+  animation: blanks-pop 420ms ease-out both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes blanks-pop {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* --- Filling in --------------------------------------------------------- */
+
+/* The ghost button's text is the cave's light ink; on paper it needs the paper's. */
+.blanks-paper .blanks-back {
+  color: var(--blanks-ink-soft);
+}
+.blanks-paper .blanks-back:hover {
+  background: rgba(70, 58, 36, 0.08);
+}
+
+.blanks-hint {
+  font-family: var(--font-headline), sans-serif;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--blanks-hint);
+  text-transform: lowercase;
+}
+.blanks-hint::first-letter {
+  text-transform: uppercase;
+}
+
+.blanks-word-input {
+  width: 100%;
+  padding: 6px 4px;
+  border: 0;
+  border-bottom: 3px dashed var(--blanks-ink-soft);
+  border-radius: 0;
+  background: transparent;
+  color: var(--blanks-marker);
+  font-size: 1.75rem;
+  font-weight: 700;
+  text-align: center;
+  caret-color: var(--blanks-marker);
+}
+.blanks-word-input:focus-visible {
+  outline: none;
+  border-bottom-color: var(--blanks-marker);
+}
+
+.blanks-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.blanks-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  border: 2px solid var(--blanks-ink-soft);
+}
+.blanks-dot[data-state='done'] {
+  background: var(--blanks-marker);
+  border-color: var(--blanks-marker);
+}
+.blanks-dot[data-state='current'] {
+  border-color: var(--blanks-hint);
+  transform: scale(1.25);
+}
+
+/* --- Waiting for the story ---------------------------------------------- */
+
+.blanks-shimmer-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 6px 0;
+}
+.blanks-shimmer {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--blanks-rule) 0%,
+    rgba(70, 58, 36, 0.28) 50%,
+    var(--blanks-rule) 100%
+  );
+  background-size: 200% 100%;
+  animation: blanks-shimmer 1.4s linear infinite;
+}
+@keyframes blanks-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* The paper's buttons sit on the dark cave; the paper itself has no juice
+   beyond the reveal. */
+@media (prefers-reduced-motion: reduce) {
+  .blanks-word,
+  .blanks-shimmer {
+    animation: none;
+  }
+  .blanks-chip {
+    transition: none;
+  }
+  .blanks-chip:hover {
+    transform: none;
+  }
+}
