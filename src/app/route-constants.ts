@@ -22,4 +22,5 @@ export const ROUTE_CONSTANTS = {
   POSTMORTEM: '/postmortem',
   // Unlisted on purpose — not on the home grid, not in the nav.
   VOICE_JOURNEY: '/voice-journey',
+  WISHLIST: '/wishlist',
 }

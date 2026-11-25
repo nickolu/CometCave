@@ -25,6 +25,7 @@ export default defineConfig({
       'src/app/dicebound/**/*.test.tsx',
       'src/lib/dicebound/**/*.test.ts',
       'src/lib/voice-journey/**/*.test.ts',
+      'src/lib/wishlist/**/*.test.ts',
       'src/lib/clusters/**/*.test.ts',
       'src/app/clusters/**/*.test.ts',
       'src/app/hum/**/*.test.ts',

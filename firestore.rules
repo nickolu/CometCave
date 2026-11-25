@@ -74,6 +74,11 @@ service cloud.firestore {
     // guess-checking design is decorative.
     match /dailyClusters/{date} { allow read, write: if false; }
 
+    // Family wish lists — published from the Three Kids General Store, read
+    // and marked through /api/v1/wishlist/[id]. The list id in the shared link
+    // is the only key, so the client must never reach the collection directly.
+    match /wishlists/{listId}/{path=**} { allow read, write: if false; }
+
     // Nicknames uniqueness index — server only
     match /nicknames/{name} { allow read, write: if false; }
 
