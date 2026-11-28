@@ -18,6 +18,7 @@ export const ROUTE_CONSTANTS = {
   HUM: '/hum',
   METEOR_COINS: '/meteor-coins',
   BLANKS: '/blanks',
+  PICTURE_TELEPHONE: '/picture-telephone',
   // Prototype (#4042): reachable by URL only, not on the home grid.
   POSTMORTEM: '/postmortem',
   // Unlisted on purpose — not on the home grid, not in the nav.

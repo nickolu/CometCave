@@ -1,0 +1,395 @@
+/* Picture Telephone — a sketchbook passed down a long table: dark cave floor
+   around, warm paper cards on top, one marker color for the player's own
+   words. Every animation here is off under prefers-reduced-motion; the static
+   page shows the same thing. */
+
+.pt-shell {
+  --pt-paper: #f6efdc;
+  --pt-paper-edge: #e6dcc2;
+  --pt-ink: #221d2b;
+  --pt-ink-soft: #5e5768;
+  --pt-marker: #c2185b;
+  --pt-tape: rgba(255, 221, 120, 0.7);
+  min-height: 100dvh;
+  width: 100%;
+  background: var(--surface);
+  color: var(--on-surface);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+.pt-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 44rem;
+  margin: 0 auto;
+}
+
+.pt-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 10px) 16px 10px;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.pt-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 2px solid var(--outline-variant);
+  font-family: var(--font-label), sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--on-surface);
+  background: transparent;
+  cursor: pointer;
+}
+.pt-exit:hover {
+  background: var(--surface-container-high);
+}
+.pt-exit:focus-visible,
+.pt-input:focus-visible,
+.pt-select:focus-visible,
+.pt-chip:focus-visible {
+  outline: 2px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+
+.pt-title {
+  font-family: var(--font-headline), sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.pt-progress {
+  margin-left: auto;
+  font-family: var(--font-label), sans-serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.pt-leave {
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--outline-variant);
+  background: var(--surface-container-high);
+}
+
+.pt-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px 16px calc(env(safe-area-inset-bottom) + 20px);
+}
+
+/* The primary action sits at the thumb on a phone and in the flow on a desktop. */
+.pt-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+.pt-actions > * {
+  min-height: 44px;
+}
+@media (max-width: 640px) {
+  .pt-actions-sticky {
+    position: sticky;
+    bottom: 0;
+    padding: 12px 0 calc(env(safe-area-inset-bottom) + 4px);
+    background: linear-gradient(to top, var(--surface) 70%, transparent);
+  }
+}
+
+.pt-heading {
+  font-family: var(--font-headline), sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  outline: none;
+}
+.pt-sub {
+  color: var(--on-surface-variant);
+  font-size: 0.95rem;
+}
+
+.pt-notice {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--ds-error);
+  background: var(--error-container);
+  color: var(--on-error-container);
+  font-size: 0.95rem;
+}
+
+/* --- Setup --------------------------------------------------------------- */
+
+.pt-panel {
+  border: 2px solid var(--outline-variant);
+  border-radius: 14px;
+  background: var(--surface-container);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pt-seats {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pt-seat {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-container-high);
+}
+@media (min-width: 560px) {
+  .pt-seat {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+  }
+}
+.pt-seat-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pt-input,
+.pt-select {
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 2px solid var(--outline-variant);
+  background: var(--surface-container-lowest);
+  color: var(--on-surface);
+  font-size: 1rem;
+}
+
+.pt-chip {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid var(--outline-variant);
+  background: transparent;
+  color: var(--on-surface);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pt-chip[aria-pressed='true'] {
+  background: var(--primary-container);
+  border-color: var(--primary-container);
+  color: var(--on-primary-container);
+}
+.pt-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pt-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.pt-stepper output {
+  min-width: 2ch;
+  text-align: center;
+  font-family: var(--font-headline), sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.pt-rules {
+  margin: 0;
+  padding-left: 1.2em;
+  color: var(--on-surface-variant);
+  font-size: 0.95rem;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* --- Pictures and paper -------------------------------------------------- */
+
+.pt-frame {
+  --pt-size: min(90vw, 60vh, 30rem);
+  width: var(--pt-size);
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 10px 10px 14px;
+  background: var(--pt-paper);
+  border-radius: 6px;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.35), 0 14px 28px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+.pt-frame::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 84px;
+  height: 22px;
+  transform: translateX(-50%) rotate(-2deg);
+  background: var(--pt-tape);
+}
+.pt-frame img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--pt-paper-edge);
+}
+
+.pt-note {
+  background: var(--pt-paper);
+  color: var(--pt-ink);
+  border-radius: 6px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+  font-size: 1.15rem;
+  line-height: 1.4;
+}
+.pt-note-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-family: var(--font-label), sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pt-ink-soft);
+}
+.pt-badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--secondary-container);
+  color: var(--on-secondary-container);
+  font-weight: 700;
+}
+
+.pt-textarea {
+  width: 100%;
+  min-height: 7rem;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 2px solid var(--outline-variant);
+  background: var(--pt-paper);
+  color: var(--pt-ink);
+  font-size: 1.1rem;
+  line-height: 1.4;
+  resize: vertical;
+}
+.pt-textarea:focus-visible {
+  outline: 3px solid var(--ds-primary);
+  outline-offset: 2px;
+}
+.pt-count {
+  font-size: 0.8rem;
+  color: var(--on-surface-variant);
+  text-align: right;
+}
+
+/* --- Handoff and working -------------------------------------------------- */
+
+.pt-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: center;
+}
+.pt-avatar {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--surface-container-high);
+  border: 3px solid var(--primary-container);
+  font-size: 2.5rem;
+  font-family: var(--font-headline), sans-serif;
+}
+
+.pt-spinner {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 5px solid var(--outline-variant);
+  border-top-color: var(--ds-primary);
+  animation: pt-spin 0.9s linear infinite;
+}
+@keyframes pt-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* --- Reveal ---------------------------------------------------------------- */
+
+.pt-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pt-chain > li {
+  animation: pt-in 0.35s ease-out both;
+}
+@keyframes pt-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pt-spinner {
+    animation: none;
+    border-top-color: var(--outline-variant);
+    border-right-color: var(--ds-primary);
+  }
+  .pt-chain > li {
+    animation: none;
+  }
+}
+
+.pt-bar {
+  position: relative;
+}
+.pt-leave-floating {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  margin-top: 8px;
+}
