@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import { AiGate } from '@/components/ai-gate'
 import { ChunkyButton } from '@/components/ui/chunky-button'
 import { type SeatMode, defaultSeats } from '@/lib/picture-telephone/personalities'
+import { isMockProvider } from '@/lib/picture-telephone/provider'
 import {
   DEFAULT_CHAIN,
   MAX_CHAIN,
@@ -18,11 +20,35 @@ import { SeatEditor } from './SeatEditor'
 
 import type { Seat, Settings } from '@/lib/picture-telephone/types'
 
+/** Why pictures are off, or null. A failed lookup never blocks play: the server says no on its own. */
+function useImagesOffReason(enabled: boolean): string | null {
+  const [reason, setReason] = useState<string | null>(null)
+  useEffect(() => {
+    if (!enabled) return
+    let cancelled = false
+    fetch('/api/v1/image-generation-status')
+      .then(res => (res.ok ? res.json() : null))
+      .then(data => {
+        if (cancelled || !data) return
+        if (data.allowed === false && !data.pictureTelephoneMock) {
+          setReason(typeof data.disableReason === 'string' ? data.disableReason : 'Pictures are switched off right now.')
+        }
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [enabled])
+  return reason
+}
+
 export function Setup({ onStart }: { onStart: (settings: Settings) => void }) {
   const [mode, setMode] = useState<SeatMode>('solo')
   const [seats, setSeats] = useState<Seat[]>(() => defaultSeats('solo'))
   const [chainLength, setChainLength] = useState(DEFAULT_CHAIN)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const mock = isMockProvider()
+  const imagesOff = useImagesOffReason(!mock)
 
   useEffect(() => {
     headingRef.current?.focus()
@@ -38,6 +64,12 @@ export function Setup({ onStart }: { onStart: (settings: Settings) => void }) {
     chainLength,
   }
   const check = validateSettings(settings)
+
+  const startButton = (
+    <ChunkyButton size="hero" disabled={!check.ok || imagesOff !== null} onClick={() => check.ok && onStart(settings)}>
+      Start
+    </ChunkyButton>
+  )
 
   return (
     <section className="flex flex-1 flex-col gap-5" aria-labelledby="pt-setup-heading">
@@ -107,10 +139,20 @@ export function Setup({ onStart }: { onStart: (settings: Settings) => void }) {
         </p>
       )}
 
+      {imagesOff && (
+        <p role="alert" className="pt-notice">
+          {imagesOff}
+        </p>
+      )}
+
       <div className="pt-actions pt-actions-sticky">
-        <ChunkyButton size="hero" disabled={!check.ok} onClick={() => check.ok && onStart(settings)}>
-          Start
-        </ChunkyButton>
+        {mock ? (
+          startButton
+        ) : (
+          <AiGate game="Picture Telephone" redirectTo="/picture-telephone" what="play" compact>
+            {startButton}
+          </AiGate>
+        )}
       </div>
     </section>
   )

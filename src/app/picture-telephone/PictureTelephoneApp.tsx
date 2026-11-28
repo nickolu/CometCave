@@ -12,9 +12,10 @@ import { Working } from './components/Working'
 import { usePictureTelephone } from './store'
 
 /* Picture Telephone — a pass-the-device game with an immersive layout (the game
-   owns the window and its own exit). Anonymous-playable in this first version:
-   nothing here calls a model. The session is `setup -> (handoff | turn |
-   working)* -> reveal`, and the whole game lives in memory. */
+   owns the window and its own exit). Anyone can open the page; starting a game
+   goes through AiGate unless the client mock is on. The session is
+   `setup -> (handoff | turn | working)* -> reveal`, and the whole game lives in
+   memory. */
 
 export default function PictureTelephoneApp() {
   const { state, dispatch, start, submit } = usePictureTelephone()

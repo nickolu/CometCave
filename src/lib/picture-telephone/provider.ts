@@ -1,6 +1,11 @@
+import { createApiProvider } from './api-provider'
 import { createMockProvider } from './mock'
 
-import type { WorkError, WorkErrorCode } from './types'
+import { ProviderError } from './provider-error'
+
+import type { WorkError } from './types'
+
+export { ProviderError }
 
 /** Everything the game needs from "the outside". The model never talks to the network itself. */
 export interface PictureProvider {
@@ -14,18 +19,6 @@ export interface PictureProvider {
   checkText(text: string): Promise<{ ok: boolean; message?: string }>
 }
 
-export class ProviderError extends Error {
-  code: WorkErrorCode
-  retryable: boolean
-
-  constructor(code: WorkErrorCode, message: string, retryable = false) {
-    super(message)
-    this.name = 'ProviderError'
-    this.code = code
-    this.retryable = retryable
-  }
-}
-
 export function toWorkError(err: unknown): WorkError {
   if (err instanceof ProviderError) {
     return { code: err.code, message: err.message, retryable: err.retryable }
@@ -33,7 +26,12 @@ export function toWorkError(err: unknown): WorkError {
   return { code: 'UNKNOWN', message: 'Something went wrong. Try again.', retryable: true }
 }
 
-/** The first playable version always uses the sample-picture provider. */
+/** True when the client should use sample pictures and canned AI players (local play, tests). */
+export function isMockProvider(): boolean {
+  // Referenced literally so Next can inline it at build time.
+  return process.env.NEXT_PUBLIC_PICTURE_TELEPHONE_MOCK === 'true'
+}
+
 export function getProvider(): PictureProvider {
-  return createMockProvider()
+  return isMockProvider() ? createMockProvider() : createApiProvider()
 }
