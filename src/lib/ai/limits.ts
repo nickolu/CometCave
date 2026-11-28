@@ -39,6 +39,13 @@ export const AI_FEATURES = {
   'whowouldwininator-text': 1,
   'whowouldwininator-image': 10,
   'avatar-maker-image': 10,
+
+  // Picture Telephone. Tunable. An image is a low-quality 1024px render, much
+  // cheaper than the 10-credit portraits above, so it weighs 3. Moderation
+  // calls are free and have no key here.
+  'picture-telephone-image': 3, // one low-quality picture (plus a rare one-time regenerate)
+  'picture-telephone-describe': 1, // an AI seat captions a picture with a small vision model
+  'picture-telephone-starter': 1, // "AI starts": one opening sentence from a small model
 } as const
 
 export type AiFeature = keyof typeof AI_FEATURES
