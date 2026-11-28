@@ -11,6 +11,7 @@ const games: readonly { title: string; icon: string; href: string; description: 
   { title: 'Clusters', icon: 'grid_view', href: ROUTE_CONSTANTS.CLUSTERS, description: 'Sixteen words hide four groups of four — find them all before four mistakes' },
   { title: 'Meteor Coins', icon: 'toll', href: ROUTE_CONSTANTS.METEOR_COINS, description: 'Time your drops from a swinging arm and push a heap of coins over the edge' },
   { title: 'Blanks', icon: 'edit_note', href: ROUTE_CONSTANTS.BLANKS, description: 'Pick a topic, fill in the blanks blind, then read the story you accidentally wrote' },
+  { title: 'Picture Telephone', icon: 'brush', href: ROUTE_CONSTANTS.PICTURE_TELEPHONE, description: 'Describe a picture, draw the next one, and watch a sentence drift as it gets passed along' },
   { title: 'Hum', icon: 'graphic_eq', href: ROUTE_CONSTANTS.HUM, description: 'Turn a flat line into sound one knob at a time, then build a beat from it' },
   { title: 'Starmatch', icon: 'hub', href: ROUTE_CONSTANTS.STARMATCH, description: 'Two star charts, one shared sign — race to spot the twin' },
   { title: 'Comet Cards', icon: 'style', href: ROUTE_CONSTANTS.COMET_CARDS, description: 'Daily Cards — Stack chips, multiply, and bend the rules with jokers' },
