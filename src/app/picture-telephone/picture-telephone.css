@@ -363,6 +363,7 @@
 }
 .pt-chain > li {
   animation: pt-in 0.35s ease-out both;
+  animation-delay: calc(var(--pt-i, 0) * 90ms);
 }
 @keyframes pt-in {
   from {
@@ -392,4 +393,18 @@
   right: 0;
   z-index: 10;
   margin-top: 8px;
+}
+
+/* Share status and the reveal's action row on a 360px phone: buttons wrap
+   instead of overflowing, and long unbroken words in notes wrap too. */
+.pt-note p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 400px) {
+  .pt-actions > * {
+    flex: 1 1 100%;
+  }
+  .pt-heading {
+    font-size: 1.35rem;
+  }
 }

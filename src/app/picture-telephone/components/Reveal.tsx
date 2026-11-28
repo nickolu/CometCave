@@ -2,9 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react'
 
+import type { CSSProperties } from 'react'
+
 import { ChunkyButton } from '@/components/ui/chunky-button'
 
 import { ImageCard } from './ImageCard'
+import { ShareButton } from './ShareButton'
+
+import { stepLabel } from '@/lib/picture-telephone/share/layout'
 
 import type { Entry, Seat } from '@/lib/picture-telephone/types'
 
@@ -15,25 +20,20 @@ interface RevealProps {
   onNewSetup: () => void
 }
 
-function labelFor(entries: Entry[], index: number): string {
-  const textIndexes = entries.map((e, i) => (e.kind === 'text' ? i : -1)).filter(i => i >= 0)
-  if (index === textIndexes[0]) return 'Opening sentence'
-  if (index === textIndexes[textIndexes.length - 1]) return 'Final guess'
-  return 'Said'
-}
-
 export function Reveal({ entries, seats, onPlayAgain, onNewSetup }: RevealProps) {
   const [shown, setShown] = useState(1)
-  const [copied, setCopied] = useState<'done' | 'failed' | null>(null)
   const headingRef = useRef<HTMLHeadingElement>(null)
   const endRef = useRef<HTMLLIElement>(null)
   const firstRender = useRef(true)
+  // Entries added by the latest tap fade in one after another; earlier ones stay put.
+  const batchStart = useRef(0)
 
   useEffect(() => {
     headingRef.current?.focus()
   }, [])
 
   useEffect(() => {
+    batchStart.current = shown
     if (firstRender.current) {
       firstRender.current = false
       return
@@ -44,16 +44,6 @@ export function Reveal({ entries, seats, onPlayAgain, onNewSetup }: RevealProps)
 
   const done = shown >= entries.length
   const nameOf = (id: string) => seats.find(s => s.id === id)?.name ?? 'Someone'
-
-  // PR3 replaces this with a picture of the whole chain.
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/picture-telephone`)
-      setCopied('done')
-    } catch {
-      setCopied('failed')
-    }
-  }
 
   return (
     <section className="flex flex-1 flex-col gap-5" aria-labelledby="pt-reveal-heading">
@@ -66,16 +56,26 @@ export function Reveal({ entries, seats, onPlayAgain, onNewSetup }: RevealProps)
         </p>
       </div>
 
+      {entries.length === 0 && (
+        <p className="pt-notice" role="status">
+          There is nothing to show yet. Start a new game to make a chain.
+        </p>
+      )}
+
       <ol className="pt-chain" aria-label="The chain, in order">
         {entries.slice(0, shown).map((entry, i) => (
-          <li key={i} ref={i === shown - 1 ? endRef : undefined}>
+          <li
+            key={i}
+            ref={i === shown - 1 ? endRef : undefined}
+            style={{ '--pt-i': Math.min(6, Math.max(0, i - batchStart.current)) } as CSSProperties}
+          >
             {entry.kind === 'image' ? (
               <ImageCard src={entry.src} alt={`Picture ${Math.ceil((i + 1) / 2)} of the chain`} />
             ) : (
               <div className="pt-note">
                 <p className="pt-note-meta">
                   <span>
-                    {labelFor(entries, i)} · {nameOf(entry.seatId)}
+                    {stepLabel(entries, i)} · {nameOf(entry.seatId)}
                   </span>
                   {entry.viaAi && <span className="pt-badge">AI</span>}
                 </p>
@@ -95,9 +95,7 @@ export function Reveal({ entries, seats, onPlayAgain, onNewSetup }: RevealProps)
             <ChunkyButton variant="secondary" size="lg" onClick={onNewSetup}>
               New setup
             </ChunkyButton>
-            <ChunkyButton variant="utility" size="lg" onClick={copyLink}>
-              Copy game link
-            </ChunkyButton>
+            <ShareButton entries={entries} seats={seats} />
           </>
         ) : (
           <>
@@ -110,10 +108,6 @@ export function Reveal({ entries, seats, onPlayAgain, onNewSetup }: RevealProps)
           </>
         )}
       </div>
-      <p role="status" className="pt-sub">
-        {copied === 'done' && 'Link copied.'}
-        {copied === 'failed' && 'Could not copy. The game lives at /picture-telephone.'}
-      </p>
     </section>
   )
 }
