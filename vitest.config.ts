@@ -33,6 +33,7 @@ export default defineConfig({
       'src/lib/meteor-coins/**/*.test.ts',
       'src/lib/ai/**/*.test.ts',
       'src/lib/blanks/**/*.test.ts',
+      'src/lib/picture-telephone/**/*.test.ts',
       'src/lib/api/**/*.test.ts',
     ],
     coverage: {
