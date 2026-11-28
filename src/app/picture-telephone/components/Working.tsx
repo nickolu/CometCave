@@ -20,7 +20,7 @@ export function Working({ kind, name, emoji, error, onRetry }: WorkingProps) {
 
   useEffect(() => {
     headingRef.current?.focus()
-  }, [kind, name])
+  }, [kind, name, error])
 
   const message =
     kind === 'image'
@@ -34,7 +34,7 @@ export function Working({ kind, name, emoji, error, onRetry }: WorkingProps) {
       <div className="pt-avatar" aria-hidden>
         {kind === 'image' ? '🖍️' : (emoji ?? '🤖')}
       </div>
-      <div role="status" aria-live="polite" className="flex flex-col items-center gap-3">
+      <div role="status" aria-live="polite" aria-atomic="true" className="flex flex-col items-center gap-3">
         <h2 id="pt-working-heading" ref={headingRef} tabIndex={-1} className="pt-heading">
           {error ? 'That did not work' : message}
         </h2>
